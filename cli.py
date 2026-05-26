@@ -3789,12 +3789,27 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
+        # Load declaration from compile_meta for config alignment
+        from openpine.artifacts import ArtifactStore
+        store = ArtifactStore()
+        artifact = store.get_artifact(s.artifact_id, s.pine_id)
+        compile_meta = artifact.get("compile_meta", {})
+        declaration = compile_meta.get("translation_metadata", {}).get("declaration", {})
+        decl_args = declaration.get("arguments", {})
+
         params = _json.loads(s.params_json) if s.params_json else {}
         config = BacktestRunConfig(
             symbol=s.symbol,
             timeframe=s.timeframe,
             start_time=start_ms,
             end_time=end_ms,
+            initial_capital=decl_args.get("initial_capital", 10000.0),
+            default_qty_type=decl_args.get("default_qty_type", "fixed"),
+            default_qty_value=decl_args.get("default_qty_value", 1.0),
+            commission_type=decl_args.get("commission_type", "none"),
+            commission_value=decl_args.get("commission_value", 0.0),
+            exit_matching=decl_args.get("close_entries_rule", "fifo"),
+            pyramiding=decl_args.get("pyramiding", 0),
         )
         registry.update_status(strategy_id, "running")
         try:
@@ -3917,12 +3932,27 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
+        # Load declaration from compile_meta for config alignment
+        from openpine.artifacts import ArtifactStore
+        store = ArtifactStore()
+        artifact = store.get_artifact(s.artifact_id, s.pine_id)
+        compile_meta = artifact.get("compile_meta", {})
+        declaration = compile_meta.get("translation_metadata", {}).get("declaration", {})
+        decl_args = declaration.get("arguments", {})
+
         params = _json.loads(s.params_json) if s.params_json else {}
         config = BacktestRunConfig(
             symbol=s.symbol,
             timeframe=s.timeframe,
             start_time=start_ms,
             end_time=end_ms,
+            initial_capital=decl_args.get("initial_capital", 10000.0),
+            default_qty_type=decl_args.get("default_qty_type", "fixed"),
+            default_qty_value=decl_args.get("default_qty_value", 1.0),
+            commission_type=decl_args.get("commission_type", "none"),
+            commission_value=decl_args.get("commission_value", 0.0),
+            exit_matching=decl_args.get("close_entries_rule", "fifo"),
+            pyramiding=decl_args.get("pyramiding", 0),
         )
         registry.update_status(strategy_id, "running")
         try:

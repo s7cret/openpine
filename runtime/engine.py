@@ -21,6 +21,12 @@ class BacktestRunConfig:
     start_time: int
     end_time: int
     initial_capital: float = 10_000.0
+    default_qty_type: str = "fixed"
+    default_qty_value: float = 1.0
+    commission_type: str = "none"
+    commission_value: float = 0.0
+    exit_matching: str = "fifo"
+    pyramiding: int = 0
 
 
 @dataclass(frozen=True)
@@ -167,7 +173,12 @@ class BacktestEngineAdapter:
             start_time=config.start_time,
             end_time=config.end_time,
             initial_capital=config.initial_capital,
-            commission_type="none",
+            default_qty_type=config.default_qty_type,
+            default_qty_value=config.default_qty_value,
+            commission_type=config.commission_type,
+            commission_value=config.commission_value,
+            exit_matching=config.exit_matching,
+            pyramiding=config.pyramiding,
         )
         engine = self._module.BacktestEngine(engine_config)
         result = engine.run(
