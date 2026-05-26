@@ -1219,6 +1219,77 @@ def data_backfill(
     console.print(f"  from={from_date} to={to_date or 'today'}")
 
 
+@data.command("parallel-backfill")
+@click.argument("symbols", required=True)
+@click.argument("timeframe", required=True)
+@click.option("--from", "from_date", required=True, help="Start date (YYYY-MM-DD)")
+@click.option("--to", "to_date", default=None, help="End date (YYYY-MM-DD, default: today)")
+@click.option("--exchange", default="binance", help="Exchange name")
+@click.option("--workers", "max_workers", default=None, type=int, help="Max parallel workers (default: half CPU cores)")
+@click.option("--chunked", is_flag=True, help="Use chunked parallel fetch for large ranges")
+def data_parallel_backfill(
+    symbols: str,
+    timeframe: str,
+    from_date: str,
+    to_date: str | None,
+    exchange: str,
+    max_workers: int | None,
+    chunked: bool,
+) -> None:
+    """Parallel backfill for multiple symbols (comma-separated)."""
+    from datetime import datetime as dt
+    from openpine.data.parallel_fetcher import ParallelDataFetcher, FetchJob
+
+    symbol_list = [s.strip().upper() for s in symbols.split(",")]
+
+    # Parse dates
+    try:
+        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
+    except ValueError:
+        console.print(f"[red]Invalid --from date format: {from_date} (use YYYY-MM-DD)[/red]")
+        return
+
+    if to_date:
+        try:
+            end_ms = int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000)
+        except ValueError:
+            console.print(f"[red]Invalid --to date format: {to_date} (use YYYY-MM-DD)[/red]")
+            return
+    else:
+        end_ms = int(dt.now().timestamp() * 1000)
+
+    console.print(f"[bold]Parallel backfill[/bold] {len(symbol_list)} symbols, tf={timeframe}")
+    console.print(f"  symbols: {', '.join(symbol_list)}")
+    console.print(f"  range: {from_date} to {to_date or 'today'}")
+    console.print(f"  workers: {max_workers or 'auto (half cores)'}")
+
+    fetcher = ParallelDataFetcher(max_workers=max_workers)
+
+    if chunked and len(symbol_list) == 1:
+        # Single symbol chunked mode
+        bars = fetcher.fetch_chunked(
+            symbol_list[0], timeframe, start_ms, end_ms, exchange=exchange
+        )
+        console.print(f"[green]Chunked fetch complete: {len(bars)} bars[/green]")
+        return
+
+    # Multi-symbol parallel mode
+    jobs = [
+        FetchJob(symbol=sym, timeframe=timeframe, start_ms=start_ms, end_ms=end_ms, exchange=exchange)
+        for sym in symbol_list
+    ]
+
+    def _progress(key: str, done: int, total: int) -> None:
+        console.print(f"  [{done}/{total}] {key}")
+
+    results = fetcher.fetch_many(jobs, progress_callback=_progress)
+
+    total_bars = sum(len(bars) for bars in results.values())
+    console.print(f"[green]Parallel backfill complete: {total_bars} total bars[/green]")
+    for key, bars in results.items():
+        console.print(f"  {key}: {len(bars)} bars")
+
+
 @data.command("inspect")
 @click.argument("symbol", required=True)
 @click.argument("timeframe", required=True)
@@ -4009,6 +4080,16 @@ def daemon_run(telegram: bool) -> None:
 
     async def _run() -> None:
         services: list[DaemonService] = []
+
+        # Start market data refresh service
+        try:
+            from openpine.daemon.refresh_service import MarketDataRefreshService
+            refresh_svc = MarketDataRefreshService()
+            services.append(refresh_svc)
+            await refresh_svc.start()
+            console.print("[green]✓ Market data refresh service started[/green]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: could not start market data refresh service: {e}[/yellow]")
 
         # Always start the Telegram service if enabled in config
         config = OpenPineConfig.load()

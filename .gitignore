@@ -110,6 +110,10 @@ dmypy.json
 *.sqlite
 *.db
 *.parquet
-data/
+# data/  # commented out — we need data/*.py modules
 logs/
 backups/
+
+# But ignore data subdirectories that are runtime
+!data/*.py
+!data/__init__.py
