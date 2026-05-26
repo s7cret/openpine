@@ -16,8 +16,8 @@ from openpine.contracts import Bar, BarQuery, InstrumentKey, Timeframe
 log = structlog.get_logger(__name__)
 
 DEFAULT_PROVIDER_ROOTS = (
-    Path("[local-home]/marketdata-provider"),
     Path("[local-home]/marketdata_provider"),
+    Path("[local-home]/marketdata_provider/src"),
 )
 
 
@@ -143,8 +143,14 @@ class LocalMarketDataProviderAdapter:
         module = importlib.import_module("marketdata_provider")
         provider_cls = getattr(module, "MarketDataProvider", None)
         if provider_cls is None:
-            provider_module = importlib.import_module("marketdata_provider.provider")
-            provider_cls = getattr(provider_module, "MarketDataProvider")
+            # Try submodule paths
+            try:
+                provider_module = importlib.import_module("marketdata_provider.provider")
+                provider_cls = getattr(provider_module, "MarketDataProvider", None)
+            except ModuleNotFoundError:
+                pass
+        if provider_cls is None:
+            return None
         return cls(provider_cls())
 
     def get_bars(self, query: BarQuery) -> list[Bar]:
