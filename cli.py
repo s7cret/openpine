@@ -3946,6 +3946,54 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
         registry.close()
 
 
+@strategy.command("enable")
+@click.argument("strategy_id")
+def strategy_enable(strategy_id: str) -> None:
+    """Enable a strategy for auto-refresh and trading."""
+    import time as _time_module
+    from openpine.registry import SQLiteStrategyRegistry
+    registry = SQLiteStrategyRegistry()
+    try:
+        s = registry.get_strategy(strategy_id)
+        registry._conn.execute(
+            "UPDATE strategy_instances SET enabled = 1, updated_at = ? WHERE strategy_id = ?",
+            (int(_time_module.time() * 1000), strategy_id),
+        )
+        registry._conn.commit()
+        s.enabled = True
+        console.print(f"[green]Strategy enabled: {strategy_id}[/green]")
+        console.print(f"  name: {s.name}")
+        console.print(f"  symbol: {s.symbol} tf: {s.timeframe}")
+    except KeyError:
+        console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+        sys.exit(1)
+    finally:
+        registry.close()
+
+
+@strategy.command("disable")
+@click.argument("strategy_id")
+def strategy_disable(strategy_id: str) -> None:
+    """Disable a strategy."""
+    import time as _time_module
+    from openpine.registry import SQLiteStrategyRegistry
+    registry = SQLiteStrategyRegistry()
+    try:
+        s = registry.get_strategy(strategy_id)
+        registry._conn.execute(
+            "UPDATE strategy_instances SET enabled = 0, updated_at = ? WHERE strategy_id = ?",
+            (int(_time_module.time() * 1000), strategy_id),
+        )
+        registry._conn.commit()
+        s.enabled = False
+        console.print(f"[yellow]Strategy disabled: {strategy_id}[/yellow]")
+    except KeyError:
+        console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+        sys.exit(1)
+    finally:
+        registry.close()
+
+
 @strategy.command("paper")
 @click.argument("strategy_id")
 @click.argument("action", type=click.Choice(["start", "stop"]))
