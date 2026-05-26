@@ -3700,7 +3700,12 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
             start_ms=start_ms,
             end_ms=end_ms,
         )
-        bars = DataOrchestrator().get_bars(query)
+        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+        orch = DataOrchestrator()
+        provider = create_local_marketdata_provider_adapter()
+        if provider:
+            orch.set_provider(provider)
+        bars = orch.get_bars(query)
         if not bars:
             console.print(
                 f"[red]No candle data found for {s.symbol} {s.timeframe} "
