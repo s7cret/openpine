@@ -67,7 +67,7 @@ def load_strategy_class_from_artifact(
 
     module = _load_generated_module(strategy_path, source_id, artifact_id)
     strategy_class = _select_strategy_class(module, artifact.get("compile_meta", {}))
-    if getattr(strategy_class, "__name__", "") == "GeneratedStrategy":
+    if getattr(strategy_class, "__name__", "") in ("GeneratedStrategy", "GeneratedIndicator"):
         return _adapt_generated_strategy(strategy_class, symbol=symbol, timeframe=timeframe)
     return strategy_class
 
