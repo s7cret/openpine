@@ -96,16 +96,20 @@ def _select_strategy_class(module: Any, compile_meta: dict[str, Any]) -> type:
     candidates = [
         compile_meta.get("class_name"),
         "GeneratedStrategy",
+        "GeneratedIndicator",
         "Strategy",
     ]
     for name in candidates:
         if isinstance(name, str):
             value = getattr(module, name, None)
-            if isinstance(value, type):
+            if isinstance(value, type) and callable(getattr(value, "_process_bar", None)):
                 return value
 
     for value in vars(module).values():
         if isinstance(value, type) and callable(getattr(value, "_process_bar", None)):
+            # Skip imported base classes that are not defined in this module
+            if value.__module__ != getattr(module, "__name__", None):
+                continue
             return value
 
     raise BacktestArtifactError(
