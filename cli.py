@@ -3830,10 +3830,11 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
         console.print(f"  engine:     {'backtest_engine' if result.uses_backtest_engine else 'unknown'}")
 
         # Save backtest results to persistent storage
-        from openpine.storage import BacktestStorage
-        bt_storage = BacktestStorage()
+        from openpine.storage import BacktestResultStore, BacktestRunRequest
+        bt_store = BacktestResultStore()
         try:
-            run_id = bt_storage.save_run(
+            # Create run record
+            run_request = BacktestRunRequest(
                 strategy_id=s.strategy_id,
                 pine_id=s.pine_id,
                 artifact_id=s.artifact_id,
@@ -3842,18 +3843,27 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
                 timeframe=s.timeframe,
                 exchange=s.exchange,
                 market_type=s.market_type,
-                start_ms=start_ms,
-                end_ms=end_ms,
-                raw_result=result.raw_result,
-                status=result.status,
+                from_time=start_ms,
+                to_time=end_ms,
+            )
+            run_id = bt_store.create_run(run_request)
+            
+            # Save result
+            bt_store.save_result(
+                run_id=run_id,
+                result=result.raw_result,
+                trades=getattr(result.raw_result, "trades", []),
+                equity_curve=getattr(result.raw_result, "equity_curve", None),
             )
             console.print(f"[green]Backtest saved:[/green] {run_id}")
             console.print(f"  trades:     {len(getattr(result.raw_result, 'closed_trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
             console.print(f"  artifacts:  ~/.openpine/data/backtests/{s.strategy_id}/{run_id}/")
         except Exception as exc:
             console.print(f"[yellow]Warning: failed to save backtest results: {exc}[/yellow]")
+            import traceback
+            traceback.print_exc()
         finally:
-            bt_storage.close()
+            bt_store.close()
 
         registry.update_status(strategy_id, "paused")
     finally:
@@ -4060,7 +4070,7 @@ def strategy_disable(strategy_id: str) -> None:
 def strategy_metrics(strategy_id: str, run_id: str | None, as_json: bool) -> None:
     """Show backtest metrics for a strategy."""
     from openpine.registry import SQLiteStrategyRegistry
-    from openpine.storage import BacktestStorage
+    from openpine.storage import BacktestResultStore
 
     registry = SQLiteStrategyRegistry()
     try:
@@ -4070,13 +4080,13 @@ def strategy_metrics(strategy_id: str, run_id: str | None, as_json: bool) -> Non
             console.print(f"[red]Strategy not found: {strategy_id}[/red]")
             sys.exit(1)
 
-        bt_storage = BacktestStorage()
+        bt_store = BacktestResultStore()
         try:
             if run_id:
-                run = bt_storage.get_run(run_id)
+                run = bt_store.get_run(run_id)
             else:
-                runs = bt_storage.list_runs(strategy_id=strategy_id, limit=1)
-                run = runs[0] if runs else None
+                run = bt_store.get_latest_run(strategy_id)
+                
 
             if not run:
                 console.print(f"[yellow]No backtest runs found for {strategy_id}[/yellow]")
@@ -4084,8 +4094,8 @@ def strategy_metrics(strategy_id: str, run_id: str | None, as_json: bool) -> Non
 
             if as_json:
                 import json as _json
-                trades = bt_storage.get_trades(run["run_id"])
-                artifacts = bt_storage.get_artifacts(run["run_id"])
+                trades = bt_store.list_trades(run.run_id)
+                artifacts = bt_store.list_artifacts(run.run_id)
                 output = {
                     "run": run,
                     "trades": trades,
@@ -4093,42 +4103,42 @@ def strategy_metrics(strategy_id: str, run_id: str | None, as_json: bool) -> Non
                 }
                 console.print(_json.dumps(output, indent=2, default=str))
             else:
-                console.print(f"[bold]Backtest Metrics: {run['run_id']}[/bold]")
+                console.print(f"[bold]Backtest Metrics: {run.run_id}[/bold]")
                 console.print(f"  strategy:   {s.name}")
-                console.print(f"  period:     {run['from_time']} - {run['to_time']}")
-                console.print(f"  status:     {run['status']}")
+                console.print(f"  period:     {run.from_time} - {run.to_time}")
+                console.print(f"  status:     {run.status}")
                 console.print()
                 console.print("[bold]Performance[/bold]")
-                console.print(f"  initial_capital:    {run.get('initial_capital')}")
-                console.print(f"  final_equity:       {run.get('final_equity')}")
-                console.print(f"  net_profit:         {run.get('net_profit')}")
-                console.print(f"  net_profit_%:       {run.get('net_profit_percent')}")
-                console.print(f"  gross_profit:       {run.get('gross_profit')}")
-                console.print(f"  gross_loss:         {run.get('gross_loss')}")
-                console.print(f"  profit_factor:      {run.get('profit_factor')}")
-                console.print(f"  max_drawdown:       {run.get('max_drawdown')}")
-                console.print(f"  max_drawdown_%:     {run.get('max_drawdown_percent')}")
-                console.print(f"  sharpe_ratio:       {run.get('sharpe_ratio')}")
-                console.print(f"  sortino_ratio:      {run.get('sortino_ratio')}")
-                console.print(f"  win_rate:           {run.get('win_rate')}")
-                console.print(f"  total_trades:       {run.get('total_trades')}")
-                console.print(f"  winning_trades:     {run.get('winning_trades')}")
-                console.print(f"  losing_trades:      {run.get('losing_trades')}")
-                console.print(f"  avg_trade:          {run.get('avg_trade')}")
-                console.print(f"  avg_win:            {run.get('avg_win')}")
-                console.print(f"  avg_loss:           {run.get('avg_loss')}")
-                console.print(f"  commission_total:   {run.get('commission_total')}")
-                console.print(f"  expectancy:         {run.get('expectancy')}")
+                console.print(f"  initial_capital:    {run.metrics.initial_capital}")
+                console.print(f"  final_equity:       {run.metrics.final_equity}")
+                console.print(f"  net_profit:         {run.metrics.net_profit}")
+                console.print(f"  net_profit_%:       {run.metrics.net_profit_pct}")
+                console.print(f"  gross_profit:       {run.metrics.gross_profit}")
+                console.print(f"  gross_loss:         {run.metrics.gross_loss}")
+                console.print(f"  profit_factor:      {run.metrics.profit_factor}")
+                console.print(f"  max_drawdown:       {run.metrics.max_drawdown}")
+                console.print(f"  max_drawdown_%:     {run.metrics.max_drawdown_pct}")
+                console.print(f"  sharpe_ratio:       {run.metrics.sharpe}")
+                console.print(f"  sortino_ratio:      {run.metrics.sortino}")
+                console.print(f"  win_rate:           {run.metrics.win_rate}")
+                console.print(f"  total_trades:       {run.metrics.trades_total}")
+                console.print(f"  winning_trades:     {run.metrics.winning_trades}")
+                console.print(f"  losing_trades:      {run.metrics.losing_trades}")
+                console.print(f"  avg_trade:          {run.metrics.avg_trade}")
+                console.print(f"  avg_win:            {run.metrics.avg_win}")
+                console.print(f"  avg_loss:           {run.metrics.avg_loss}")
+                console.print(f"  commission_total:   {run.metrics.commission_total}")
+                console.print(f"  expectancy:         {run.metrics.expectancy}")
                 console.print()
-                trades = bt_storage.get_trades(run["run_id"])
+                trades = bt_store.list_trades(run.run_id)
                 console.print(f"[bold]Trades:[/bold] {len(trades)} total")
                 for t in trades[:10]:
-                    dir_emoji = "🟢" if t.get("profit", 0) and t["profit"] > 0 else "🔴"
-                    console.print(f"  {dir_emoji} {t['direction']} {t['entry_price']} -> {t.get('exit_price', '...')} | P&L: {t.get('profit', 'N/A')}")
+                    dir_emoji = "🟢" if t.net_pnl and t.net_pnl > 0 else "🔴"
+                    console.print(f"  {dir_emoji} {t.direction} {t.entry_price} -> {t.exit_price or "..."} | P&L: {t.net_pnl}")
                 if len(trades) > 10:
                     console.print(f"  ... and {len(trades) - 10} more")
         finally:
-            bt_storage.close()
+            bt_store.close()
     finally:
         registry.close()
 

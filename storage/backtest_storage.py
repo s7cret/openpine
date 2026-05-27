@@ -1,6 +1,7 @@
 """Backtest result storage for OpenPine.
 
-Stores summary metrics in SQLite and large time-series as Parquet artifacts.
+Implements the BacktestResultStore contract.
+Stores summary metrics in SQLite, large time-series as Parquet artifacts.
 """
 
 from __future__ import annotations
@@ -16,17 +17,26 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from openpine.config import DEFAULT_CONFIG
+from openpine.storage.backtest_dto import (
+    ARTIFACT_TYPE_BAR_OUTPUTS,
+    ARTIFACT_TYPE_EQUITY_CURVE,
+    ARTIFACT_TYPE_REPORT_JSON,
+    ARTIFACT_TYPE_TRADES,
+    BacktestArtifact,
+    BacktestMetricsSummary,
+    BacktestRun,
+    BacktestRunRequest,
+    BacktestTrade,
+)
 from openpine.storage.sqlite_storage import SQLiteStorage
 
 
-class BacktestStorage:
+class BacktestResultStore:
     """Storage for backtest runs, trades, and artifacts."""
 
     def __init__(self, storage: SQLiteStorage | None = None) -> None:
         if storage is None:
             # Use the real ~/.openpine path, not workspace-relative
-            from pathlib import Path
             real_path = Path("~/.openpine/openpine.sqlite").expanduser()
             self._storage = SQLiteStorage(real_path)
         else:
@@ -37,126 +47,97 @@ class BacktestStorage:
     def _run_dir(self, strategy_id: str, run_id: str) -> Path:
         return self._data_dir / strategy_id / run_id
 
-    def save_run(
-        self,
-        strategy_id: str,
-        pine_id: str,
-        artifact_id: str,
-        params_hash: str,
-        symbol: str,
-        timeframe: str,
-        exchange: str,
-        market_type: str,
-        start_ms: int,
-        end_ms: int,
-        raw_result: Any,
-        status: str = "completed",
-        error_message: str | None = None,
-    ) -> str:
-        """Save a backtest run. Returns run_id."""
+    def create_run(self, request: BacktestRunRequest) -> str:
+        """Create a new backtest run record. Returns run_id."""
         run_id = f"run_{uuid.uuid4().hex[:16]}_{int(time.time() * 1000)}"
         now = int(time.time() * 1000)
 
-        # Extract metrics from backtest result
-        metrics = {
-            "initial_capital": getattr(raw_result, "initial_capital", None),
-            "final_equity": getattr(raw_result, "final_equity", None),
-            "net_profit": getattr(raw_result, "net_profit", None),
-            "net_profit_percent": getattr(raw_result, "net_profit_percent", None),
-            "gross_profit": getattr(raw_result, "gross_profit", None),
-            "gross_loss": getattr(raw_result, "gross_loss", None),
-            "profit_factor": getattr(raw_result, "profit_factor", None),
-            "max_drawdown": getattr(raw_result, "max_drawdown", None),
-            "max_drawdown_percent": getattr(raw_result, "max_drawdown_percent", None),
-            "sharpe_ratio": getattr(raw_result, "sharpe_ratio", None),
-            "sortino_ratio": getattr(raw_result, "sortino_ratio", None),
-            "win_rate": getattr(raw_result, "win_rate", None),
-            "total_trades": getattr(raw_result, "total_trades", None),
-            "winning_trades": getattr(raw_result, "winning_trades", None),
-            "losing_trades": getattr(raw_result, "losing_trades", None),
-            "avg_trade": getattr(raw_result, "avg_trade", None),
-            "avg_win": getattr(raw_result, "avg_win", None),
-            "avg_loss": getattr(raw_result, "avg_loss", None),
-            "largest_win": getattr(raw_result, "largest_win", None),
-            "largest_loss": getattr(raw_result, "largest_loss", None),
-            "avg_bars_in_trade": getattr(raw_result, "avg_bars_in_trade", None),
-            "commission_total": getattr(raw_result, "commission_total", None),
-            "expectancy": getattr(raw_result, "expectancy", None),
-        }
+        self._storage.execute(
+            """
+            INSERT INTO backtest_runs
+            (run_id, strategy_id, pine_id, artifact_id, params_hash,
+             exchange, market_type, symbol, price_type, timeframe,
+             from_time, to_time, warmup_bars, status, started_at, finished_at,
+             created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                run_id, request.strategy_id, request.pine_id, request.artifact_id,
+                request.params_hash, request.exchange, request.market_type,
+                request.symbol, request.price_type, request.timeframe,
+                request.from_time, request.to_time, request.warmup_bars,
+                "running", now, None, now, now,
+            ),
+        )
+        self._storage.commit()
+        return run_id
 
-        with self._storage.transaction():
-            self._storage.execute(
-                """
-                INSERT INTO backtest_runs
-                (run_id, strategy_id, pine_id, artifact_id, params_hash,
-                 exchange, market_type, symbol, price_type, timeframe,
-                 from_time, to_time, warmup_bars, status, started_at, finished_at,
-                 initial_capital, final_equity, net_profit, net_profit_percent,
-                 gross_profit, gross_loss, profit_factor, max_drawdown,
-                 max_drawdown_percent, sharpe_ratio, sortino_ratio, win_rate,
-                 total_trades, winning_trades, losing_trades, avg_trade,
-                 avg_win, avg_loss, largest_win, largest_loss, avg_bars_in_trade,
-                 commission_total, expectancy, error_message)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    run_id, strategy_id, pine_id, artifact_id, params_hash,
-                    exchange, market_type, symbol, "trade", timeframe,
-                    start_ms, end_ms, 0, status, now, now,
-                    metrics["initial_capital"], metrics["final_equity"],
-                    metrics["net_profit"], metrics["net_profit_percent"],
-                    metrics["gross_profit"], metrics["gross_loss"],
-                    metrics["profit_factor"], metrics["max_drawdown"],
-                    metrics["max_drawdown_percent"], metrics["sharpe_ratio"],
-                    metrics["sortino_ratio"], metrics["win_rate"],
-                    metrics["total_trades"], metrics["winning_trades"],
-                    metrics["losing_trades"], metrics["avg_trade"],
-                    metrics["avg_win"], metrics["avg_loss"],
-                    metrics["largest_win"], metrics["largest_loss"],
-                    metrics["avg_bars_in_trade"], metrics["commission_total"],
-                    metrics["expectancy"], error_message,
-                ),
-            )
+    def mark_running(self, run_id: str) -> None:
+        """Mark a run as running."""
+        self._storage.execute(
+            "UPDATE backtest_runs SET status = ? WHERE run_id = ?",
+            ("running", run_id),
+        )
+        self._storage.commit()
 
-            # Save trades
-            trades = getattr(raw_result, "closed_trades", []) + getattr(raw_result, "open_trades", [])
-            if trades:
-                trade_rows = []
-                for i, t in enumerate(trades):
-                    trade_rows.append((
-                        f"{run_id}_trade_{i}",
-                        run_id,
-                        t.direction,
-                        t.entry_time,
-                        t.entry_price,
-                        getattr(t, "exit_time", None),
-                        getattr(t, "exit_price", None),
-                        t.qty,
-                        getattr(t, "profit", None),
-                        getattr(t, "profit_percent", None),
-                        getattr(t, "mfe", None),
-                        getattr(t, "mae", None),
-                        getattr(t, "exit_reason", None),
-                        getattr(t, "bars_held", None),
-                        getattr(t, "is_open", False),
-                    ))
-                self._storage.execute_many(
-                    """
-                    INSERT INTO backtest_trades
-                    (trade_id, run_id, direction, entry_time, entry_price,
-                     exit_time, exit_price, qty, profit, profit_percent,
-                     mfe, mae, exit_reason, bars_held, is_open)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    trade_rows,
-                )
+    def save_result(
+        self,
+        run_id: str,
+        result: Any,
+        trades: list[Any],
+        equity_curve: list[Any] | None = None,
+        bar_outputs: list[dict] | None = None,
+    ) -> None:
+        """Save backtest result, trades, and artifacts."""
+        now = int(time.time() * 1000)
+        strategy_id = self._get_strategy_id(run_id)
 
-        # Save artifacts (Parquet files)
+        # Extract metrics
+        metrics = BacktestMetricsSummary(
+            initial_capital=getattr(result, "initial_capital", None),
+            final_equity=getattr(result, "final_equity", None),
+            net_profit=getattr(result, "net_profit", None),
+            net_profit_pct=getattr(result, "net_profit_percent", None),
+            gross_profit=getattr(result, "gross_profit", None),
+            gross_loss=getattr(result, "gross_loss", None),
+            profit_factor=getattr(result, "profit_factor", None),
+            max_drawdown=getattr(result, "max_drawdown", None),
+            max_drawdown_pct=getattr(result, "max_drawdown_percent", None),
+            sharpe=getattr(result, "sharpe_ratio", None),
+            sortino=getattr(result, "sortino_ratio", None),
+            calmar=None,  # Not provided by backtest_engine yet
+            win_rate=getattr(result, "win_rate", None),
+            trades_total=getattr(result, "total_trades", 0),
+            winning_trades=getattr(result, "winning_trades", 0),
+            losing_trades=getattr(result, "losing_trades", 0),
+            avg_trade=getattr(result, "avg_trade", None),
+            avg_win=getattr(result, "avg_win", None),
+            avg_loss=getattr(result, "avg_loss", None),
+            largest_win=getattr(result, "largest_win", None),
+            largest_loss=getattr(result, "largest_loss", None),
+            avg_bars_in_trade=getattr(result, "avg_bars_in_trade", None),
+            commission_total=getattr(result, "commission_total", None),
+            expectancy=getattr(result, "expectancy", None),
+        )
+
+        # Build result_json
+        result_json = json.dumps({
+            "net_profit": metrics.net_profit,
+            "net_profit_pct": metrics.net_profit_pct,
+            "profit_factor": metrics.profit_factor,
+            "max_drawdown": metrics.max_drawdown,
+            "sharpe": metrics.sharpe,
+            "sortino": metrics.sortino,
+            "win_rate": metrics.win_rate,
+            "total_trades": metrics.trades_total,
+        }, default=str)
+
+        # Save artifacts
         run_dir = self._run_dir(strategy_id, run_id)
         run_dir.mkdir(parents=True, exist_ok=True)
 
         # Equity curve
-        equity_curve = getattr(raw_result, "equity_curve", None)
+        equity_curve_path: str | None = None
         if equity_curve:
             eq_records = []
             for e in equity_curve:
@@ -174,22 +155,14 @@ class BacktestStorage:
             eq_df = pd.DataFrame(eq_records)
             eq_path = run_dir / "equity_curve.parquet"
             pq.write_table(pa.Table.from_pandas(eq_df), str(eq_path), compression="zstd")
-            eq_checksum = hashlib.sha256(eq_path.read_bytes()).hexdigest()
-            with self._storage.transaction():
-                self._storage.execute(
-                    """
-                    INSERT INTO backtest_artifacts
-                    (artifact_id, run_id, artifact_type, file_path, file_size, row_count, checksum, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (f"{run_id}_equity", run_id, "equity_curve", str(eq_path),
-                     eq_path.stat().st_size, len(eq_records), eq_checksum, now),
-                )
+            self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_EQUITY_CURVE, eq_path, len(eq_records), now)
+            equity_curve_path = str(eq_path)
 
-        # Trades artifact (optional, for convenience)
+        # Trades
+        trades_path: str | None = None
         if trades:
             trade_records = []
-            for t in trades:
+            for i, t in enumerate(trades):
                 trade_records.append({
                     "trade_id": t.id,
                     "direction": t.direction,
@@ -207,93 +180,351 @@ class BacktestStorage:
                     "is_open": getattr(t, "is_open", False),
                 })
             trades_df = pd.DataFrame(trade_records)
-            trades_path = run_dir / "trades.parquet"
-            pq.write_table(pa.Table.from_pandas(trades_df), str(trades_path), compression="zstd")
-            trades_checksum = hashlib.sha256(trades_path.read_bytes()).hexdigest()
-            with self._storage.transaction():
-                self._storage.execute(
-                    """
-                    INSERT INTO backtest_artifacts
-                    (artifact_id, run_id, artifact_type, file_path, file_size, row_count, checksum, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (f"{run_id}_trades", run_id, "trades", str(trades_path),
-                     trades_path.stat().st_size, len(trade_records), trades_checksum, now),
-                )
+            t_path = run_dir / "trades.parquet"
+            pq.write_table(pa.Table.from_pandas(trades_df), str(t_path), compression="zstd")
+            self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_TRADES, t_path, len(trade_records), now)
+            trades_path = str(t_path)
+
+        # Bar outputs
+        bar_outputs_path: str | None = None
+        if bar_outputs:
+            bo_df = pd.DataFrame(bar_outputs)
+            bo_path = run_dir / "bar_outputs.parquet"
+            pq.write_table(pa.Table.from_pandas(bo_df), str(bo_path), compression="zstd")
+            self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_BAR_OUTPUTS, bo_path, len(bar_outputs), now)
+            bar_outputs_path = str(bo_path)
 
         # Report JSON
         report = {
             "run_id": run_id,
             "strategy_id": strategy_id,
-            "symbol": symbol,
-            "timeframe": timeframe,
+            "symbol": getattr(result, "symbol", ""),
+            "timeframe": getattr(result, "timeframe", ""),
             "started_at": now,
-            "status": status,
-            **{k: v for k, v in metrics.items() if v is not None},
+            "status": "completed",
+            "metrics": {
+                "initial_capital": metrics.initial_capital,
+                "final_equity": metrics.final_equity,
+                "net_profit": metrics.net_profit,
+                "net_profit_pct": metrics.net_profit_pct,
+                "profit_factor": metrics.profit_factor,
+                "max_drawdown": metrics.max_drawdown,
+                "sharpe": metrics.sharpe,
+                "sortino": metrics.sortino,
+                "win_rate": metrics.win_rate,
+                "total_trades": metrics.trades_total,
+            },
         }
         report_path = run_dir / "report.json"
         report_path.write_text(json.dumps(report, indent=2, default=str))
-        with self._storage.transaction():
-            self._storage.execute(
+        self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_REPORT_JSON, report_path, 0, now)
+
+        # Update run record
+        self._storage.execute(
+            """
+            UPDATE backtest_runs SET
+                status = ?,
+                finished_at = ?,
+                initial_capital = ?,
+                final_equity = ?,
+                net_profit = ?,
+                net_profit_pct = ?,
+                gross_profit = ?,
+                gross_loss = ?,
+                profit_factor = ?,
+                max_drawdown = ?,
+                max_drawdown_pct = ?,
+                sharpe = ?,
+                sortino = ?,
+                calmar = ?,
+                win_rate = ?,
+                trades_total = ?,
+                winning_trades = ?,
+                losing_trades = ?,
+                avg_trade = ?,
+                avg_win = ?,
+                avg_loss = ?,
+                largest_win = ?,
+                largest_loss = ?,
+                avg_bars_in_trade = ?,
+                commission_total = ?,
+                expectancy = ?,
+                result_json = ?,
+                report_path = ?,
+                equity_curve_path = ?,
+                bar_outputs_path = ?,
+                updated_at = ?
+            WHERE run_id = ?
+            """,
+            (
+                "completed", now,
+                metrics.initial_capital, metrics.final_equity,
+                metrics.net_profit, metrics.net_profit_pct,
+                metrics.gross_profit, metrics.gross_loss,
+                metrics.profit_factor, metrics.max_drawdown,
+                metrics.max_drawdown_pct, metrics.sharpe,
+                metrics.sortino, metrics.calmar,
+                metrics.win_rate, metrics.trades_total,
+                metrics.winning_trades, metrics.losing_trades,
+                metrics.avg_trade, metrics.avg_win, metrics.avg_loss,
+                metrics.largest_win, metrics.largest_loss,
+                metrics.avg_bars_in_trade, metrics.commission_total,
+                metrics.expectancy,
+                result_json, str(report_path), equity_curve_path, bar_outputs_path,
+                now, run_id,
+            ),
+        )
+        self._storage.commit()
+
+        # Save trades to SQLite
+        if trades:
+            trade_rows = []
+            for i, t in enumerate(trades):
+                trade_rows.append((
+                    f"{run_id}_trade_{i}",
+                    run_id,
+                    strategy_id,
+                    t.id,
+                    getattr(t, "exit_id", None),
+                    t.direction,
+                    t.entry_time,
+                    getattr(t, "exit_time", None),
+                    t.entry_price,
+                    getattr(t, "exit_price", None),
+                    t.qty,
+                    getattr(t, "profit", None),
+                    getattr(t, "profit", None),
+                    getattr(t, "profit_percent", None),
+                    getattr(t, "commission_entry", 0) + getattr(t, "commission_exit", 0),
+                    0.0,  # slippage not tracked by engine
+                    getattr(t, "bars_held", None),
+                    getattr(t, "exit_reason", None),
+                    now,
+                ))
+            self._storage.execute_many(
                 """
-                INSERT INTO backtest_artifacts
-                (artifact_id, run_id, artifact_type, file_path, file_size, row_count, checksum, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO backtest_trades
+                (trade_id, run_id, strategy_id, entry_id, exit_id, direction,
+                 entry_time, exit_time, entry_price, exit_price, qty,
+                 gross_pnl, net_pnl, net_pnl_pct, fee, slippage,
+                 bars_held, exit_reason, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (f"{run_id}_report", run_id, "report_json", str(report_path),
-                 report_path.stat().st_size, 0, "", now),
+                trade_rows,
             )
+            self._storage.commit()
 
-        return run_id
+    def mark_failed(
+        self,
+        run_id: str,
+        error_message: str,
+        traceback_id: str | None = None,
+    ) -> None:
+        """Mark a run as failed."""
+        now = int(time.time() * 1000)
+        self._storage.execute(
+            """
+            UPDATE backtest_runs SET
+                status = ?,
+                finished_at = ?,
+                error_message = ?,
+                traceback_id = ?,
+                updated_at = ?
+            WHERE run_id = ?
+            """,
+            ("failed", now, error_message, traceback_id, now, run_id),
+        )
+        self._storage.commit()
 
-    def get_run(self, run_id: str) -> dict[str, Any] | None:
+    def get_run(self, run_id: str) -> BacktestRun | None:
         """Get a backtest run by ID."""
         row = self._storage.execute(
             "SELECT * FROM backtest_runs WHERE run_id = ?", (run_id,)
         ).fetchone()
         if not row:
             return None
-        cols = [d[0] for d in self._storage.execute("SELECT * FROM backtest_runs WHERE run_id = ?", (run_id,)).description]
-        return dict(zip(cols, row))
+        return self._row_to_run(row)
 
-    def list_runs(self, strategy_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
-        """List backtest runs, optionally filtered by strategy."""
-        if strategy_id:
-            rows = self._storage.execute(
-                "SELECT * FROM backtest_runs WHERE strategy_id = ? ORDER BY started_at DESC LIMIT ?",
-                (strategy_id, limit),
-            ).fetchall()
-        else:
-            rows = self._storage.execute(
-                "SELECT * FROM backtest_runs ORDER BY started_at DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
-        if not rows:
-            return []
-        cols = [d[0] for d in self._storage.execute("SELECT * FROM backtest_runs LIMIT 1").description]
-        return [dict(zip(cols, row)) for row in rows]
+    def get_latest_run(self, strategy_id: str) -> BacktestRun | None:
+        """Get the latest run for a strategy."""
+        row = self._storage.execute(
+            """
+            SELECT * FROM backtest_runs
+            WHERE strategy_id = ?
+            ORDER BY started_at DESC
+            LIMIT 1
+            """,
+            (strategy_id,),
+        ).fetchone()
+        if not row:
+            return None
+        return self._row_to_run(row)
 
-    def get_trades(self, run_id: str) -> list[dict[str, Any]]:
-        """Get trades for a run."""
+    def list_runs(self, strategy_id: str, limit: int = 20) -> list[BacktestRun]:
+        """List backtest runs for a strategy."""
         rows = self._storage.execute(
-            "SELECT * FROM backtest_trades WHERE run_id = ? ORDER BY entry_time",
+            """
+            SELECT * FROM backtest_runs
+            WHERE strategy_id = ?
+            ORDER BY started_at DESC
+            LIMIT ?
+            """,
+            (strategy_id, limit),
+        ).fetchall()
+        return [self._row_to_run(row) for row in rows]
+
+    def list_trades(self, run_id: str) -> list[BacktestTrade]:
+        """List trades for a run."""
+        rows = self._storage.execute(
+            """
+            SELECT * FROM backtest_trades WHERE run_id = ? ORDER BY entry_time
+            """,
             (run_id,),
         ).fetchall()
-        if not rows:
-            return []
-        cols = [d[0] for d in self._storage.execute("SELECT * FROM backtest_trades LIMIT 1").description]
-        return [dict(zip(cols, row)) for row in rows]
+        return [self._row_to_trade(row) for row in rows]
 
-    def get_artifacts(self, run_id: str) -> list[dict[str, Any]]:
-        """Get artifacts for a run."""
+    def list_artifacts(self, run_id: str) -> list[BacktestArtifact]:
+        """List artifacts for a run."""
         rows = self._storage.execute(
-            "SELECT * FROM backtest_artifacts WHERE run_id = ?",
+            """
+            SELECT * FROM backtest_artifacts WHERE run_id = ?
+            """,
             (run_id,),
         ).fetchall()
-        if not rows:
-            return []
-        cols = [d[0] for d in self._storage.execute("SELECT * FROM backtest_artifacts LIMIT 1").description]
-        return [dict(zip(cols, row)) for row in rows]
+        return [self._row_to_artifact(row) for row in rows]
+
+    def _get_strategy_id(self, run_id: str) -> str:
+        row = self._storage.execute(
+            "SELECT strategy_id FROM backtest_runs WHERE run_id = ?", (run_id,)
+        ).fetchone()
+        if row:
+            return row[0]
+        return ""
+
+    def _save_artifact(
+        self,
+        run_id: str,
+        strategy_id: str,
+        artifact_type: str,
+        path: Path,
+        row_count: int,
+        created_at: int,
+    ) -> None:
+        artifact_row_id = f"{run_id}_{artifact_type}"
+        self._storage.execute(
+            """
+            INSERT INTO backtest_artifacts
+            (artifact_row_id, run_id, strategy_id, artifact_type, path, format, row_count, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (artifact_row_id, run_id, strategy_id, artifact_type, str(path), "parquet", row_count, created_at),
+        )
+
+    def _row_to_run(self, row: tuple) -> BacktestRun:
+        """Convert a DB row to BacktestRun."""
+        # Get column names
+        cursor = self._storage.execute("SELECT * FROM backtest_runs LIMIT 0")
+        cols = [d[0] for d in cursor.description]
+        data = dict(zip(cols, row))
+
+        metrics = BacktestMetricsSummary(
+            initial_capital=data.get("initial_capital"),
+            final_equity=data.get("final_equity"),
+            net_profit=data.get("net_profit"),
+            net_profit_pct=data.get("net_profit_pct"),
+            gross_profit=data.get("gross_profit"),
+            gross_loss=data.get("gross_loss"),
+            profit_factor=data.get("profit_factor"),
+            max_drawdown=data.get("max_drawdown"),
+            max_drawdown_pct=data.get("max_drawdown_pct"),
+            sharpe=data.get("sharpe"),
+            sortino=data.get("sortino"),
+            calmar=data.get("calmar"),
+            win_rate=data.get("win_rate"),
+            trades_total=data.get("trades_total", 0),
+            winning_trades=data.get("winning_trades", 0),
+            losing_trades=data.get("losing_trades", 0),
+            avg_trade=data.get("avg_trade"),
+            avg_win=data.get("avg_win"),
+            avg_loss=data.get("avg_loss"),
+            largest_win=data.get("largest_win"),
+            largest_loss=data.get("largest_loss"),
+            avg_bars_in_trade=data.get("avg_bars_in_trade"),
+            commission_total=data.get("commission_total"),
+            expectancy=data.get("expectancy"),
+        )
+
+        return BacktestRun(
+            run_id=data["run_id"],
+            strategy_id=data["strategy_id"],
+            pine_id=data["pine_id"],
+            artifact_id=data["artifact_id"],
+            params_hash=data["params_hash"],
+            exchange=data["exchange"],
+            market_type=data["market_type"],
+            symbol=data["symbol"],
+            price_type=data["price_type"],
+            timeframe=data["timeframe"],
+            from_time=data.get("from_time"),
+            to_time=data.get("to_time"),
+            warmup_bars=data.get("warmup_bars", 0),
+            status=data["status"],
+            started_at=data["started_at"],
+            finished_at=data.get("finished_at"),
+            metrics=metrics,
+            result_json=data.get("result_json"),
+            report_path=data.get("report_path"),
+            equity_curve_path=data.get("equity_curve_path"),
+            bar_outputs_path=data.get("bar_outputs_path"),
+            error_message=data.get("error_message"),
+            traceback_id=data.get("traceback_id"),
+            created_at=data.get("created_at", 0),
+            updated_at=data.get("updated_at", 0),
+        )
+
+    def _row_to_trade(self, row: tuple) -> BacktestTrade:
+        cursor = self._storage.execute("SELECT * FROM backtest_trades LIMIT 0")
+        cols = [d[0] for d in cursor.description]
+        data = dict(zip(cols, row))
+        return BacktestTrade(
+            trade_id=data["trade_id"],
+            run_id=data["run_id"],
+            strategy_id=data["strategy_id"],
+            direction=data["direction"],
+            entry_time=data["entry_time"],
+            entry_price=data["entry_price"],
+            qty=data["qty"],
+            entry_id=data.get("entry_id"),
+            exit_id=data.get("exit_id"),
+            exit_time=data.get("exit_time"),
+            exit_price=data.get("exit_price"),
+            gross_pnl=data.get("gross_pnl"),
+            net_pnl=data.get("net_pnl"),
+            net_pnl_pct=data.get("net_pnl_pct"),
+            fee=data.get("fee"),
+            slippage=data.get("slippage"),
+            bars_held=data.get("bars_held"),
+            exit_reason=data.get("exit_reason"),
+            created_at=data.get("created_at", 0),
+        )
+
+    def _row_to_artifact(self, row: tuple) -> BacktestArtifact:
+        cursor = self._storage.execute("SELECT * FROM backtest_artifacts LIMIT 0")
+        cols = [d[0] for d in cursor.description]
+        data = dict(zip(cols, row))
+        return BacktestArtifact(
+            artifact_row_id=data["artifact_row_id"],
+            run_id=data["run_id"],
+            strategy_id=data["strategy_id"],
+            artifact_type=data["artifact_type"],
+            path=data["path"],
+            format=data["format"],
+            row_count=data.get("row_count"),
+            min_time=data.get("min_time"),
+            max_time=data.get("max_time"),
+            schema_hash=data.get("schema_hash"),
+            created_at=data.get("created_at", 0),
+        )
 
     def close(self) -> None:
         self._storage.close()

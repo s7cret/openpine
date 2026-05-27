@@ -16,14 +16,35 @@ from openpine.storage.manifests import ManifestStore
 from openpine.storage.migrations import MigrationRunner
 from openpine.storage.sqlite_storage import SQLiteStorage
 
-from openpine.storage.backtest_storage import BacktestStorage
+from openpine.storage.backtest_dto import (
+    ARTIFACT_TYPE_BAR_OUTPUTS,
+    ARTIFACT_TYPE_EQUITY_CURVE,
+    ARTIFACT_TYPE_REPORT_JSON,
+    ARTIFACT_TYPE_TRADES,
+    BacktestArtifact,
+    BacktestMetricsSummary,
+    BacktestRun,
+    BacktestRunRequest,
+    BacktestTrade,
+)
+from openpine.storage.backtest_storage import BacktestResultStore
 
 __all__ = [
     # Core SQLite
     "SQLiteStorage",
     "MigrationRunner",
     "ManifestStore",
-    "BacktestStorage",
+    "BacktestResultStore",
+    # DTOs
+    "BacktestRunRequest",
+    "BacktestRun",
+    "BacktestMetricsSummary",
+    "BacktestTrade",
+    "BacktestArtifact",
+    "ARTIFACT_TYPE_EQUITY_CURVE",
+    "ARTIFACT_TYPE_BAR_OUTPUTS",
+    "ARTIFACT_TYPE_TRADES",
+    "ARTIFACT_TYPE_REPORT_JSON",
     # Adapters
     "SQLiteControlStorageAdapter",
     "ParquetDataLakeAdapter",

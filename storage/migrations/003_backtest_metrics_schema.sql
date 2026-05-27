@@ -26,18 +26,20 @@ CREATE TABLE IF NOT EXISTS backtest_runs (
     initial_capital REAL,
     final_equity REAL,
     net_profit REAL,
-    net_profit_percent REAL,
+    net_profit_pct REAL,
     gross_profit REAL,
     gross_loss REAL,
     profit_factor REAL,
     max_drawdown REAL,
-    max_drawdown_percent REAL,
-    sharpe_ratio REAL,
-    sortino_ratio REAL,
+    max_drawdown_pct REAL,
+    sharpe REAL,
+    sortino REAL,
+    calmar REAL,
     win_rate REAL,
-    total_trades INTEGER,
-    winning_trades INTEGER,
-    losing_trades INTEGER,
+    trades_total INTEGER DEFAULT 0,
+    winning_trades INTEGER DEFAULT 0,
+    losing_trades INTEGER DEFAULT 0,
+
     avg_trade REAL,
     avg_win REAL,
     avg_loss REAL,
@@ -47,53 +49,75 @@ CREATE TABLE IF NOT EXISTS backtest_runs (
     commission_total REAL,
     expectancy REAL,
 
-    error_message TEXT
+    result_json TEXT,
+    report_path TEXT,
+    equity_curve_path TEXT,
+    bar_outputs_path TEXT,
+    error_message TEXT,
+    traceback_id TEXT,
+
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_backtest_runs_strategy_id
-    ON backtest_runs(strategy_id);
+CREATE INDEX IF NOT EXISTS idx_backtest_runs_strategy_time
+    ON backtest_runs(strategy_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_backtest_runs_symbol_tf
+    ON backtest_runs(symbol, timeframe, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_backtest_runs_status
-    ON backtest_runs(status);
-CREATE INDEX IF NOT EXISTS idx_backtest_runs_started_at
-    ON backtest_runs(started_at DESC);
+    ON backtest_runs(status, started_at DESC);
 
 CREATE TABLE IF NOT EXISTS backtest_trades (
     trade_id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL,
+    strategy_id TEXT NOT NULL,
+
+    entry_id TEXT,
+    exit_id TEXT,
     direction TEXT NOT NULL,
+
     entry_time INTEGER NOT NULL,
-    entry_price REAL NOT NULL,
     exit_time INTEGER,
+    entry_price REAL NOT NULL,
     exit_price REAL,
+
     qty REAL NOT NULL,
-    profit REAL,
-    profit_percent REAL,
-    mfe REAL,
-    mae REAL,
-    exit_reason TEXT,
+    gross_pnl REAL,
+    net_pnl REAL,
+    net_pnl_pct REAL,
+    fee REAL,
+    slippage REAL,
+
     bars_held INTEGER,
-    is_open INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY (run_id) REFERENCES backtest_runs(run_id)
+    exit_reason TEXT,
+
+    created_at INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_backtest_trades_run_id
-    ON backtest_trades(run_id);
-CREATE INDEX IF NOT EXISTS idx_backtest_trades_entry_time
-    ON backtest_trades(entry_time);
+CREATE INDEX IF NOT EXISTS idx_backtest_trades_run
+    ON backtest_trades(run_id, entry_time);
+CREATE INDEX IF NOT EXISTS idx_backtest_trades_strategy
+    ON backtest_trades(strategy_id, entry_time DESC);
+CREATE INDEX IF NOT EXISTS idx_backtest_trades_pnl
+    ON backtest_trades(run_id, net_pnl);
 
 CREATE TABLE IF NOT EXISTS backtest_artifacts (
-    artifact_id TEXT PRIMARY KEY,
+    artifact_row_id TEXT PRIMARY KEY,
     run_id TEXT NOT NULL,
+    strategy_id TEXT NOT NULL,
+
     artifact_type TEXT NOT NULL,
-    file_path TEXT NOT NULL,
-    file_size INTEGER,
+    path TEXT NOT NULL,
+    format TEXT NOT NULL,
     row_count INTEGER,
-    checksum TEXT,
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY (run_id) REFERENCES backtest_runs(run_id)
+    min_time INTEGER,
+    max_time INTEGER,
+    schema_hash TEXT,
+
+    created_at INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_backtest_artifacts_run_id
-    ON backtest_artifacts(run_id);
-CREATE INDEX IF NOT EXISTS idx_backtest_artifacts_type
-    ON backtest_artifacts(artifact_type);
+CREATE INDEX IF NOT EXISTS idx_backtest_artifacts_run
+    ON backtest_artifacts(run_id, artifact_type);
+CREATE INDEX IF NOT EXISTS idx_backtest_artifacts_strategy
+    ON backtest_artifacts(strategy_id, created_at DESC);
