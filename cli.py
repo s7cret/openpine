@@ -3808,7 +3808,7 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
             default_qty_value=decl_args.get("default_qty_value", 1.0),
             commission_type=decl_args.get("commission_type", "none"),
             commission_value=decl_args.get("commission_value", 0.0),
-            exit_matching=decl_args.get("close_entries_rule", "fifo"),
+            exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
             pyramiding=decl_args.get("pyramiding", 0),
         )
         registry.update_status(strategy_id, "running")
@@ -3828,6 +3828,33 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
         console.print(f"  status:     {result.status}")
         console.print(f"  bars:       {result.bars_processed}")
         console.print(f"  engine:     {'backtest_engine' if result.uses_backtest_engine else 'unknown'}")
+
+        # Save backtest results to persistent storage
+        from openpine.storage import BacktestStorage
+        bt_storage = BacktestStorage()
+        try:
+            run_id = bt_storage.save_run(
+                strategy_id=s.strategy_id,
+                pine_id=s.pine_id,
+                artifact_id=s.artifact_id,
+                params_hash=s.params_hash,
+                symbol=s.symbol,
+                timeframe=s.timeframe,
+                exchange=s.exchange,
+                market_type=s.market_type,
+                start_ms=start_ms,
+                end_ms=end_ms,
+                raw_result=result.raw_result,
+                status=result.status,
+            )
+            console.print(f"[green]Backtest saved:[/green] {run_id}")
+            console.print(f"  trades:     {len(getattr(result.raw_result, 'closed_trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
+            console.print(f"  artifacts:  ~/.openpine/data/backtests/{s.strategy_id}/{run_id}/")
+        except Exception as exc:
+            console.print(f"[yellow]Warning: failed to save backtest results: {exc}[/yellow]")
+        finally:
+            bt_storage.close()
+
         registry.update_status(strategy_id, "paused")
     finally:
         registry.close()
@@ -3951,7 +3978,7 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             default_qty_value=decl_args.get("default_qty_value", 1.0),
             commission_type=decl_args.get("commission_type", "none"),
             commission_value=decl_args.get("commission_value", 0.0),
-            exit_matching=decl_args.get("close_entries_rule", "fifo"),
+            exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
             pyramiding=decl_args.get("pyramiding", 0),
         )
         registry.update_status(strategy_id, "running")
@@ -4023,6 +4050,87 @@ def strategy_disable(strategy_id: str) -> None:
     finally:
         registry.close()
 
+
+
+
+@strategy.command("metrics")
+@click.argument("strategy_id")
+@click.option("--run-id", help="Specific run ID (default: latest)")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def strategy_metrics(strategy_id: str, run_id: str | None, as_json: bool) -> None:
+    """Show backtest metrics for a strategy."""
+    from openpine.registry import SQLiteStrategyRegistry
+    from openpine.storage import BacktestStorage
+
+    registry = SQLiteStrategyRegistry()
+    try:
+        try:
+            s = registry.get_strategy(strategy_id)
+        except KeyError:
+            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+            sys.exit(1)
+
+        bt_storage = BacktestStorage()
+        try:
+            if run_id:
+                run = bt_storage.get_run(run_id)
+            else:
+                runs = bt_storage.list_runs(strategy_id=strategy_id, limit=1)
+                run = runs[0] if runs else None
+
+            if not run:
+                console.print(f"[yellow]No backtest runs found for {strategy_id}[/yellow]")
+                sys.exit(1)
+
+            if as_json:
+                import json as _json
+                trades = bt_storage.get_trades(run["run_id"])
+                artifacts = bt_storage.get_artifacts(run["run_id"])
+                output = {
+                    "run": run,
+                    "trades": trades,
+                    "artifacts": artifacts,
+                }
+                console.print(_json.dumps(output, indent=2, default=str))
+            else:
+                console.print(f"[bold]Backtest Metrics: {run['run_id']}[/bold]")
+                console.print(f"  strategy:   {s.name}")
+                console.print(f"  period:     {run['from_time']} - {run['to_time']}")
+                console.print(f"  status:     {run['status']}")
+                console.print()
+                console.print("[bold]Performance[/bold]")
+                console.print(f"  initial_capital:    {run.get('initial_capital')}")
+                console.print(f"  final_equity:       {run.get('final_equity')}")
+                console.print(f"  net_profit:         {run.get('net_profit')}")
+                console.print(f"  net_profit_%:       {run.get('net_profit_percent')}")
+                console.print(f"  gross_profit:       {run.get('gross_profit')}")
+                console.print(f"  gross_loss:         {run.get('gross_loss')}")
+                console.print(f"  profit_factor:      {run.get('profit_factor')}")
+                console.print(f"  max_drawdown:       {run.get('max_drawdown')}")
+                console.print(f"  max_drawdown_%:     {run.get('max_drawdown_percent')}")
+                console.print(f"  sharpe_ratio:       {run.get('sharpe_ratio')}")
+                console.print(f"  sortino_ratio:      {run.get('sortino_ratio')}")
+                console.print(f"  win_rate:           {run.get('win_rate')}")
+                console.print(f"  total_trades:       {run.get('total_trades')}")
+                console.print(f"  winning_trades:     {run.get('winning_trades')}")
+                console.print(f"  losing_trades:      {run.get('losing_trades')}")
+                console.print(f"  avg_trade:          {run.get('avg_trade')}")
+                console.print(f"  avg_win:            {run.get('avg_win')}")
+                console.print(f"  avg_loss:           {run.get('avg_loss')}")
+                console.print(f"  commission_total:   {run.get('commission_total')}")
+                console.print(f"  expectancy:         {run.get('expectancy')}")
+                console.print()
+                trades = bt_storage.get_trades(run["run_id"])
+                console.print(f"[bold]Trades:[/bold] {len(trades)} total")
+                for t in trades[:10]:
+                    dir_emoji = "🟢" if t.get("profit", 0) and t["profit"] > 0 else "🔴"
+                    console.print(f"  {dir_emoji} {t['direction']} {t['entry_price']} -> {t.get('exit_price', '...')} | P&L: {t.get('profit', 'N/A')}")
+                if len(trades) > 10:
+                    console.print(f"  ... and {len(trades) - 10} more")
+        finally:
+            bt_storage.close()
+    finally:
+        registry.close()
 
 @strategy.command("paper")
 @click.argument("strategy_id")
