@@ -20,6 +20,7 @@ from openpine.storage.backtest_dto import (
     ARTIFACT_TYPE_BAR_OUTPUTS,
     ARTIFACT_TYPE_EQUITY_CURVE,
     ARTIFACT_TYPE_REPORT_JSON,
+    ARTIFACT_TYPE_REPORT_MD,
     ARTIFACT_TYPE_TRADES,
     BacktestArtifact,
     BacktestMetricsSummary,
@@ -45,6 +46,7 @@ __all__ = [
     "ARTIFACT_TYPE_BAR_OUTPUTS",
     "ARTIFACT_TYPE_TRADES",
     "ARTIFACT_TYPE_REPORT_JSON",
+    "ARTIFACT_TYPE_REPORT_MD",
     # Adapters
     "SQLiteControlStorageAdapter",
     "ParquetDataLakeAdapter",

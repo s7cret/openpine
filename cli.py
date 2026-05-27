@@ -4142,6 +4142,197 @@ def strategy_metrics(strategy_id: str, run_id: str | None, as_json: bool) -> Non
     finally:
         registry.close()
 
+
+@strategy.command("runs")
+@click.argument("strategy_id")
+@click.option("--limit", default=20, help="Max runs to show")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def strategy_runs(strategy_id: str, limit: int, as_json: bool) -> None:
+    """List backtest runs for a strategy."""
+    from openpine.registry import SQLiteStrategyRegistry
+    from openpine.storage import BacktestResultStore
+
+    registry = SQLiteStrategyRegistry()
+    try:
+        try:
+            s = registry.get_strategy(strategy_id)
+        except KeyError:
+            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+            sys.exit(1)
+
+        bt_store = BacktestResultStore()
+        try:
+            runs = bt_store.list_runs(strategy_id, limit=limit)
+            if not runs:
+                console.print(f"[yellow]No backtest runs for {strategy_id}[/yellow]")
+                sys.exit(1)
+
+            if as_json:
+                import json as _json
+                console.print(_json.dumps([r.__dict__ for r in runs], indent=2, default=str))
+            else:
+                console.print(f"[bold]Backtest Runs: {s.name}[/bold]")
+                console.print(f"  {'Run ID':<30} {'Status':<10} {'Net Profit':<12} {'Max DD%':<10} {'PF':<8} {'Win%':<8} {'Trades':<8}")
+                console.print(f"  {'-'*30} {'-'*10} {'-'*12} {'-'*10} {'-'*8} {'-'*8} {'-'*8}")
+                for r in runs:
+                    m = r.metrics
+                    console.print(
+                        f"  {r.run_id:<30} {r.status:<10} "
+                        f"{str(m.net_profit)[:11]:<12} "
+                        f"{str(m.max_drawdown_pct)[:9]:<10} "
+                        f"{str(m.profit_factor)[:7]:<8} "
+                        f"{str(m.win_rate)[:7]:<8} "
+                        f"{m.trades_total:<8}"
+                    )
+        finally:
+            bt_store.close()
+    finally:
+        registry.close()
+
+
+@strategy.command("run")
+@click.argument("run_id")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def strategy_run_show(run_id: str, as_json: bool) -> None:
+    """Show details for a specific backtest run."""
+    from openpine.storage import BacktestResultStore
+
+    bt_store = BacktestResultStore()
+    try:
+        run = bt_store.get_run(run_id)
+        if not run:
+            console.print(f"[red]Run not found: {run_id}[/red]")
+            sys.exit(1)
+
+        if as_json:
+            import json as _json
+            trades = bt_store.list_trades(run_id)
+            artifacts = bt_store.list_artifacts(run_id)
+            output = {
+                "run": run.__dict__,
+                "trades": [t.__dict__ for t in trades],
+                "artifacts": [a.__dict__ for a in artifacts],
+            }
+            console.print(_json.dumps(output, indent=2, default=str))
+        else:
+            console.print(f"[bold]Run Details: {run.run_id}[/bold]")
+            console.print(f"  strategy:   {run.strategy_id}")
+            console.print(f"  status:     {run.status}")
+            console.print(f"  period:     {run.from_time} - {run.to_time}")
+            console.print(f"  started:    {run.started_at}")
+            console.print(f"  finished:   {run.finished_at}")
+            console.print()
+            console.print("[bold]Metrics[/bold]")
+            m = run.metrics
+            for k, v in m.__dict__.items():
+                if v is not None:
+                    console.print(f"  {k}: {v}")
+            console.print()
+            artifacts = bt_store.list_artifacts(run_id)
+            console.print(f"[bold]Artifacts:[/bold] {len(artifacts)}")
+            for a in artifacts:
+                console.print(f"  {a.artifact_type}: {a.path}")
+    finally:
+        bt_store.close()
+
+
+@strategy.command("trades")
+@click.argument("strategy_id")
+@click.option("--run-id", help="Specific run ID (default: latest)")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def strategy_trades(strategy_id: str, run_id: str | None, as_json: bool) -> None:
+    """Show trades for a strategy."""
+    from openpine.registry import SQLiteStrategyRegistry
+    from openpine.storage import BacktestResultStore
+
+    registry = SQLiteStrategyRegistry()
+    try:
+        try:
+            s = registry.get_strategy(strategy_id)
+        except KeyError:
+            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+            sys.exit(1)
+
+        bt_store = BacktestResultStore()
+        try:
+            if run_id:
+                run = bt_store.get_run(run_id)
+            else:
+                run = bt_store.get_latest_run(strategy_id)
+
+            if not run:
+                console.print(f"[yellow]No backtest runs for {strategy_id}[/yellow]")
+                sys.exit(1)
+
+            trades = bt_store.list_trades(run.run_id)
+            if as_json:
+                import json as _json
+                console.print(_json.dumps([t.__dict__ for t in trades], indent=2, default=str))
+            else:
+                console.print(f"[bold]Trades: {s.name} ({run.run_id})[/bold]")
+                console.print(f"  {'Direction':<10} {'Entry':<12} {'Exit':<12} {'Qty':<10} {'Net P&L':<12} {'Bars':<8} {'Reason':<15}")
+                console.print(f"  {'-'*10} {'-'*12} {'-'*12} {'-'*10} {'-'*12} {'-'*8} {'-'*15}")
+                for t in trades:
+                    console.print(
+                        f"  {t.direction:<10} {t.entry_price:<12.2f} {t.exit_price or 0:<12.2f} "
+                        f"{t.qty:<10.6f} {t.net_pnl or 0:<12.4f} {t.bars_held or 0:<8} {t.exit_reason or '':<15}"
+                    )
+        finally:
+            bt_store.close()
+    finally:
+        registry.close()
+
+
+@strategy.command("equity")
+@click.argument("strategy_id")
+@click.option("--run-id", help="Specific run ID (default: latest)")
+@click.option("--tail", default=5, help="Show last N equity points")
+def strategy_equity(strategy_id: str, run_id: str | None, tail: int) -> None:
+    """Show equity curve artifact path and tail."""
+    from openpine.registry import SQLiteStrategyRegistry
+    from openpine.storage import BacktestResultStore, ARTIFACT_TYPE_EQUITY_CURVE
+
+    registry = SQLiteStrategyRegistry()
+    try:
+        try:
+            s = registry.get_strategy(strategy_id)
+        except KeyError:
+            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+            sys.exit(1)
+
+        bt_store = BacktestResultStore()
+        try:
+            if run_id:
+                run = bt_store.get_run(run_id)
+            else:
+                run = bt_store.get_latest_run(strategy_id)
+
+            if not run:
+                console.print(f"[yellow]No backtest runs for {strategy_id}[/yellow]")
+                sys.exit(1)
+
+            artifacts = bt_store.list_artifacts(run.run_id)
+            eq_artifact = next((a for a in artifacts if a.artifact_type == ARTIFACT_TYPE_EQUITY_CURVE), None)
+            if not eq_artifact:
+                console.print(f"[yellow]No equity curve artifact for run {run.run_id}[/yellow]")
+                sys.exit(1)
+
+            console.print(f"[bold]Equity Curve: {run.run_id}[/bold]")
+            console.print(f"  path: {eq_artifact.path}")
+            console.print(f"  rows: {eq_artifact.row_count}")
+            console.print()
+
+            # Show tail
+            import pandas as pd
+            df = pd.read_parquet(eq_artifact.path)
+            console.print(f"[bold]Last {tail} equity points:[/bold]")
+            console.print(df.tail(tail).to_string(index=False))
+        finally:
+            bt_store.close()
+    finally:
+        registry.close()
+
+
 @strategy.command("paper")
 @click.argument("strategy_id")
 @click.argument("action", type=click.Choice(["start", "stop"]))

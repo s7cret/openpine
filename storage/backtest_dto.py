@@ -127,6 +127,8 @@ class BacktestArtifact:
     created_at: int = 0
 
 
+ARTIFACT_TYPE_REPORT_MD = "report_md"
+
 # Artifact type constants
 ARTIFACT_TYPE_EQUITY_CURVE = "equity_curve"
 ARTIFACT_TYPE_BAR_OUTPUTS = "bar_outputs"

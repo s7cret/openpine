@@ -6,8 +6,9 @@ Stores summary metrics in SQLite, large time-series as Parquet artifacts.
 
 from __future__ import annotations
 
-import hashlib
 import json
+import os
+import shutil
 import time
 import uuid
 from pathlib import Path
@@ -21,6 +22,7 @@ from openpine.storage.backtest_dto import (
     ARTIFACT_TYPE_BAR_OUTPUTS,
     ARTIFACT_TYPE_EQUITY_CURVE,
     ARTIFACT_TYPE_REPORT_JSON,
+    ARTIFACT_TYPE_REPORT_MD,
     ARTIFACT_TYPE_TRADES,
     BacktestArtifact,
     BacktestMetricsSummary,
@@ -36,7 +38,6 @@ class BacktestResultStore:
 
     def __init__(self, storage: SQLiteStorage | None = None) -> None:
         if storage is None:
-            # Use the real ~/.openpine path, not workspace-relative
             real_path = Path("~/.openpine/openpine.sqlite").expanduser()
             self._storage = SQLiteStorage(real_path)
         else:
@@ -88,123 +89,43 @@ class BacktestResultStore:
         equity_curve: list[Any] | None = None,
         bar_outputs: list[dict] | None = None,
     ) -> None:
-        """Save backtest result, trades, and artifacts."""
+        """Save backtest result, trades, and artifacts atomically."""
         now = int(time.time() * 1000)
         strategy_id = self._get_strategy_id(run_id)
-
-        # Extract metrics
-        metrics = BacktestMetricsSummary(
-            initial_capital=getattr(result, "initial_capital", None),
-            final_equity=getattr(result, "final_equity", None),
-            net_profit=getattr(result, "net_profit", None),
-            net_profit_pct=getattr(result, "net_profit_percent", None),
-            gross_profit=getattr(result, "gross_profit", None),
-            gross_loss=getattr(result, "gross_loss", None),
-            profit_factor=getattr(result, "profit_factor", None),
-            max_drawdown=getattr(result, "max_drawdown", None),
-            max_drawdown_pct=getattr(result, "max_drawdown_percent", None),
-            sharpe=getattr(result, "sharpe_ratio", None),
-            sortino=getattr(result, "sortino_ratio", None),
-            calmar=None,  # Not provided by backtest_engine yet
-            win_rate=getattr(result, "win_rate", None),
-            trades_total=getattr(result, "total_trades", 0),
-            winning_trades=getattr(result, "winning_trades", 0),
-            losing_trades=getattr(result, "losing_trades", 0),
-            avg_trade=getattr(result, "avg_trade", None),
-            avg_win=getattr(result, "avg_win", None),
-            avg_loss=getattr(result, "avg_loss", None),
-            largest_win=getattr(result, "largest_win", None),
-            largest_loss=getattr(result, "largest_loss", None),
-            avg_bars_in_trade=getattr(result, "avg_bars_in_trade", None),
-            commission_total=getattr(result, "commission_total", None),
-            expectancy=getattr(result, "expectancy", None),
-        )
-
-        # Build result_json
-        result_json = json.dumps({
-            "net_profit": metrics.net_profit,
-            "net_profit_pct": metrics.net_profit_pct,
-            "profit_factor": metrics.profit_factor,
-            "max_drawdown": metrics.max_drawdown,
-            "sharpe": metrics.sharpe,
-            "sortino": metrics.sortino,
-            "win_rate": metrics.win_rate,
-            "total_trades": metrics.trades_total,
-        }, default=str)
-
-        # Save artifacts
         run_dir = self._run_dir(strategy_id, run_id)
-        run_dir.mkdir(parents=True, exist_ok=True)
+        tmp_dir = run_dir.with_suffix(".tmp")
+        tmp_dir.mkdir(parents=True, exist_ok=True)
 
-        # Equity curve
-        equity_curve_path: str | None = None
-        if equity_curve:
-            eq_records = []
-            for e in equity_curve:
-                eq_records.append({
-                    "time": e.time,
-                    "equity": e.equity,
-                    "cash": e.cash,
-                    "position_size": e.position_size,
-                    "position_avg_price": e.position_avg_price,
-                    "open_profit": e.open_profit,
-                    "realized_profit": e.realized_profit,
-                    "drawdown": e.drawdown,
-                    "drawdown_percent": e.drawdown_percent,
-                })
-            eq_df = pd.DataFrame(eq_records)
-            eq_path = run_dir / "equity_curve.parquet"
-            pq.write_table(pa.Table.from_pandas(eq_df), str(eq_path), compression="zstd")
-            self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_EQUITY_CURVE, eq_path, len(eq_records), now)
-            equity_curve_path = str(eq_path)
+        try:
+            # Extract metrics
+            metrics = BacktestMetricsSummary(
+                initial_capital=getattr(result, "initial_capital", None),
+                final_equity=getattr(result, "final_equity", None),
+                net_profit=getattr(result, "net_profit", None),
+                net_profit_pct=getattr(result, "net_profit_percent", None),
+                gross_profit=getattr(result, "gross_profit", None),
+                gross_loss=getattr(result, "gross_loss", None),
+                profit_factor=getattr(result, "profit_factor", None),
+                max_drawdown=getattr(result, "max_drawdown", None),
+                max_drawdown_pct=getattr(result, "max_drawdown_percent", None),
+                sharpe=getattr(result, "sharpe_ratio", None),
+                sortino=getattr(result, "sortino_ratio", None),
+                calmar=None,
+                win_rate=getattr(result, "win_rate", None),
+                trades_total=getattr(result, "total_trades", 0),
+                winning_trades=getattr(result, "winning_trades", 0),
+                losing_trades=getattr(result, "losing_trades", 0),
+                avg_trade=getattr(result, "avg_trade", None),
+                avg_win=getattr(result, "avg_win", None),
+                avg_loss=getattr(result, "avg_loss", None),
+                largest_win=getattr(result, "largest_win", None),
+                largest_loss=getattr(result, "largest_loss", None),
+                avg_bars_in_trade=getattr(result, "avg_bars_in_trade", None),
+                commission_total=getattr(result, "commission_total", None),
+                expectancy=getattr(result, "expectancy", None),
+            )
 
-        # Trades
-        trades_path: str | None = None
-        if trades:
-            trade_records = []
-            for i, t in enumerate(trades):
-                trade_records.append({
-                    "trade_id": t.id,
-                    "direction": t.direction,
-                    "entry_time": t.entry_time,
-                    "entry_price": t.entry_price,
-                    "exit_time": getattr(t, "exit_time", None),
-                    "exit_price": getattr(t, "exit_price", None),
-                    "qty": t.qty,
-                    "profit": getattr(t, "profit", None),
-                    "profit_percent": getattr(t, "profit_percent", None),
-                    "mfe": getattr(t, "mfe", None),
-                    "mae": getattr(t, "mae", None),
-                    "exit_reason": getattr(t, "exit_reason", None),
-                    "bars_held": getattr(t, "bars_held", None),
-                    "is_open": getattr(t, "is_open", False),
-                })
-            trades_df = pd.DataFrame(trade_records)
-            t_path = run_dir / "trades.parquet"
-            pq.write_table(pa.Table.from_pandas(trades_df), str(t_path), compression="zstd")
-            self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_TRADES, t_path, len(trade_records), now)
-            trades_path = str(t_path)
-
-        # Bar outputs
-        bar_outputs_path: str | None = None
-        if bar_outputs:
-            bo_df = pd.DataFrame(bar_outputs)
-            bo_path = run_dir / "bar_outputs.parquet"
-            pq.write_table(pa.Table.from_pandas(bo_df), str(bo_path), compression="zstd")
-            self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_BAR_OUTPUTS, bo_path, len(bar_outputs), now)
-            bar_outputs_path = str(bo_path)
-
-        # Report JSON
-        report = {
-            "run_id": run_id,
-            "strategy_id": strategy_id,
-            "symbol": getattr(result, "symbol", ""),
-            "timeframe": getattr(result, "timeframe", ""),
-            "started_at": now,
-            "status": "completed",
-            "metrics": {
-                "initial_capital": metrics.initial_capital,
-                "final_equity": metrics.final_equity,
+            result_json = json.dumps({
                 "net_profit": metrics.net_profit,
                 "net_profit_pct": metrics.net_profit_pct,
                 "profit_factor": metrics.profit_factor,
@@ -213,106 +134,246 @@ class BacktestResultStore:
                 "sortino": metrics.sortino,
                 "win_rate": metrics.win_rate,
                 "total_trades": metrics.trades_total,
-            },
-        }
-        report_path = run_dir / "report.json"
-        report_path.write_text(json.dumps(report, indent=2, default=str))
-        self._save_artifact(run_id, strategy_id, ARTIFACT_TYPE_REPORT_JSON, report_path, 0, now)
+            }, default=str)
 
-        # Update run record
-        self._storage.execute(
-            """
-            UPDATE backtest_runs SET
-                status = ?,
-                finished_at = ?,
-                initial_capital = ?,
-                final_equity = ?,
-                net_profit = ?,
-                net_profit_pct = ?,
-                gross_profit = ?,
-                gross_loss = ?,
-                profit_factor = ?,
-                max_drawdown = ?,
-                max_drawdown_pct = ?,
-                sharpe = ?,
-                sortino = ?,
-                calmar = ?,
-                win_rate = ?,
-                trades_total = ?,
-                winning_trades = ?,
-                losing_trades = ?,
-                avg_trade = ?,
-                avg_win = ?,
-                avg_loss = ?,
-                largest_win = ?,
-                largest_loss = ?,
-                avg_bars_in_trade = ?,
-                commission_total = ?,
-                expectancy = ?,
-                result_json = ?,
-                report_path = ?,
-                equity_curve_path = ?,
-                bar_outputs_path = ?,
-                updated_at = ?
-            WHERE run_id = ?
-            """,
-            (
-                "completed", now,
-                metrics.initial_capital, metrics.final_equity,
-                metrics.net_profit, metrics.net_profit_pct,
-                metrics.gross_profit, metrics.gross_loss,
-                metrics.profit_factor, metrics.max_drawdown,
-                metrics.max_drawdown_pct, metrics.sharpe,
-                metrics.sortino, metrics.calmar,
-                metrics.win_rate, metrics.trades_total,
-                metrics.winning_trades, metrics.losing_trades,
-                metrics.avg_trade, metrics.avg_win, metrics.avg_loss,
-                metrics.largest_win, metrics.largest_loss,
-                metrics.avg_bars_in_trade, metrics.commission_total,
-                metrics.expectancy,
-                result_json, str(report_path), equity_curve_path, bar_outputs_path,
-                now, run_id,
-            ),
-        )
-        self._storage.commit()
+            artifact_paths: dict[str, Path] = {}
 
-        # Save trades to SQLite
-        if trades:
-            trade_rows = []
-            for i, t in enumerate(trades):
-                trade_rows.append((
-                    f"{run_id}_trade_{i}",
-                    run_id,
-                    strategy_id,
-                    t.id,
-                    getattr(t, "exit_id", None),
-                    t.direction,
-                    t.entry_time,
-                    getattr(t, "exit_time", None),
-                    t.entry_price,
-                    getattr(t, "exit_price", None),
-                    t.qty,
-                    getattr(t, "profit", None),
-                    getattr(t, "profit", None),
-                    getattr(t, "profit_percent", None),
-                    getattr(t, "commission_entry", 0) + getattr(t, "commission_exit", 0),
-                    0.0,  # slippage not tracked by engine
-                    getattr(t, "bars_held", None),
-                    getattr(t, "exit_reason", None),
-                    now,
-                ))
-            self._storage.execute_many(
-                """
-                INSERT INTO backtest_trades
-                (trade_id, run_id, strategy_id, entry_id, exit_id, direction,
-                 entry_time, exit_time, entry_price, exit_price, qty,
-                 gross_pnl, net_pnl, net_pnl_pct, fee, slippage,
-                 bars_held, exit_reason, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                trade_rows,
-            )
+            # Equity curve
+            if equity_curve:
+                eq_records = []
+                for e in equity_curve:
+                    eq_records.append({
+                        "time": e.time,
+                        "equity": e.equity,
+                        "cash": e.cash,
+                        "position_size": e.position_size,
+                        "position_avg_price": e.position_avg_price,
+                        "open_profit": e.open_profit,
+                        "realized_profit": e.realized_profit,
+                        "drawdown": e.drawdown,
+                        "drawdown_percent": e.drawdown_percent,
+                    })
+                eq_df = pd.DataFrame(eq_records)
+                eq_tmp = tmp_dir / "equity_curve.parquet"
+                pq.write_table(pa.Table.from_pandas(eq_df), str(eq_tmp), compression="zstd")
+                artifact_paths[ARTIFACT_TYPE_EQUITY_CURVE] = eq_tmp
+
+            # Trades
+            if trades:
+                trade_records = []
+                for i, t in enumerate(trades):
+                    trade_records.append({
+                        "trade_id": t.id,
+                        "direction": t.direction,
+                        "entry_time": t.entry_time,
+                        "entry_price": t.entry_price,
+                        "exit_time": getattr(t, "exit_time", None),
+                        "exit_price": getattr(t, "exit_price", None),
+                        "qty": t.qty,
+                        "profit": getattr(t, "profit", None),
+                        "profit_percent": getattr(t, "profit_percent", None),
+                        "mfe": getattr(t, "mfe", None),
+                        "mae": getattr(t, "mae", None),
+                        "exit_reason": getattr(t, "exit_reason", None),
+                        "bars_held": getattr(t, "bars_held", None),
+                        "is_open": getattr(t, "is_open", False),
+                    })
+                trades_df = pd.DataFrame(trade_records)
+                trades_tmp = tmp_dir / "trades.parquet"
+                pq.write_table(pa.Table.from_pandas(trades_df), str(trades_tmp), compression="zstd")
+                artifact_paths[ARTIFACT_TYPE_TRADES] = trades_tmp
+
+            # Bar outputs
+            if bar_outputs:
+                bo_df = pd.DataFrame(bar_outputs)
+                bo_tmp = tmp_dir / "bar_outputs.parquet"
+                pq.write_table(pa.Table.from_pandas(bo_df), str(bo_tmp), compression="zstd")
+                artifact_paths[ARTIFACT_TYPE_BAR_OUTPUTS] = bo_tmp
+
+            # Report JSON
+            report = {
+                "run_id": run_id,
+                "strategy_id": strategy_id,
+                "symbol": getattr(result, "symbol", ""),
+                "timeframe": getattr(result, "timeframe", ""),
+                "started_at": now,
+                "status": "done",
+                "metrics": {
+                    "initial_capital": metrics.initial_capital,
+                    "final_equity": metrics.final_equity,
+                    "net_profit": metrics.net_profit,
+                    "net_profit_pct": metrics.net_profit_pct,
+                    "profit_factor": metrics.profit_factor,
+                    "max_drawdown": metrics.max_drawdown,
+                    "sharpe": metrics.sharpe,
+                    "sortino": metrics.sortino,
+                    "win_rate": metrics.win_rate,
+                    "total_trades": metrics.trades_total,
+                },
+            }
+            report_tmp = tmp_dir / "report.json"
+            report_tmp.write_text(json.dumps(report, indent=2, default=str))
+            artifact_paths[ARTIFACT_TYPE_REPORT_JSON] = report_tmp
+
+            # Report MD
+            md_lines = [
+                f"# Backtest Report: {run_id}",
+                "",
+                f"- **Strategy**: {strategy_id}",
+                f"- **Symbol**: {getattr(result, 'symbol', 'N/A')} {getattr(result, 'timeframe', 'N/A')}",
+                f"- **Status**: done",
+                "",
+                "## Metrics",
+                "",
+                f"| Metric | Value |",
+                f"|--------|-------|",
+                f"| Initial Capital | {metrics.initial_capital} |",
+                f"| Final Equity | {metrics.final_equity} |",
+                f"| Net Profit | {metrics.net_profit} |",
+                f"| Net Profit % | {metrics.net_profit_pct} |",
+                f"| Profit Factor | {metrics.profit_factor} |",
+                f"| Max Drawdown | {metrics.max_drawdown} |",
+                f"| Sharpe | {metrics.sharpe} |",
+                f"| Win Rate | {metrics.win_rate} |",
+                f"| Total Trades | {metrics.trades_total} |",
+                "",
+            ]
+            md_tmp = tmp_dir / "report.md"
+            md_tmp.write_text("\n".join(md_lines))
+            artifact_paths[ARTIFACT_TYPE_REPORT_MD] = md_tmp
+
+            # Validate artifacts
+            for atype, path in artifact_paths.items():
+                if not path.exists():
+                    raise RuntimeError(f"Artifact validation failed: {atype} at {path}")
+
+            # Atomic move
+            if run_dir.exists():
+                shutil.rmtree(run_dir)
+            os.rename(str(tmp_dir), str(run_dir))
+
+            # Save to SQLite (after successful file move)
+            with self._storage.transaction():
+                self._storage.execute(
+                    """
+                    UPDATE backtest_runs SET
+                        status = ?,
+                        finished_at = ?,
+                        initial_capital = ?,
+                        final_equity = ?,
+                        net_profit = ?,
+                        net_profit_pct = ?,
+                        gross_profit = ?,
+                        gross_loss = ?,
+                        profit_factor = ?,
+                        max_drawdown = ?,
+                        max_drawdown_pct = ?,
+                        sharpe = ?,
+                        sortino = ?,
+                        calmar = ?,
+                        win_rate = ?,
+                        trades_total = ?,
+                        winning_trades = ?,
+                        losing_trades = ?,
+                        avg_trade = ?,
+                        avg_win = ?,
+                        avg_loss = ?,
+                        largest_win = ?,
+                        largest_loss = ?,
+                        avg_bars_in_trade = ?,
+                        commission_total = ?,
+                        expectancy = ?,
+                        result_json = ?,
+                        report_path = ?,
+                        equity_curve_path = ?,
+                        bar_outputs_path = ?,
+                        updated_at = ?
+                    WHERE run_id = ?
+                    """,
+                    (
+                        "done", now,
+                        metrics.initial_capital, metrics.final_equity,
+                        metrics.net_profit, metrics.net_profit_pct,
+                        metrics.gross_profit, metrics.gross_loss,
+                        metrics.profit_factor, metrics.max_drawdown,
+                        metrics.max_drawdown_pct, metrics.sharpe,
+                        metrics.sortino, metrics.calmar,
+                        metrics.win_rate, metrics.trades_total,
+                        metrics.winning_trades, metrics.losing_trades,
+                        metrics.avg_trade, metrics.avg_win, metrics.avg_loss,
+                        metrics.largest_win, metrics.largest_loss,
+                        metrics.avg_bars_in_trade, metrics.commission_total,
+                        metrics.expectancy,
+                        result_json, str(run_dir / "report.json"),
+                        str(run_dir / "equity_curve.parquet") if equity_curve else None,
+                        str(run_dir / "bar_outputs.parquet") if bar_outputs else None,
+                        now, run_id,
+                    ),
+                )
+
+                if trades:
+                    trade_rows = []
+                    for i, t in enumerate(trades):
+                        trade_rows.append((
+                            f"{run_id}_trade_{i}",
+                            run_id,
+                            strategy_id,
+                            t.id,
+                            getattr(t, "exit_id", None),
+                            t.direction,
+                            t.entry_time,
+                            getattr(t, "exit_time", None),
+                            t.entry_price,
+                            getattr(t, "exit_price", None),
+                            t.qty,
+                            getattr(t, "profit", None),
+                            getattr(t, "profit", None),
+                            getattr(t, "profit_percent", None),
+                            getattr(t, "commission_entry", 0) + getattr(t, "commission_exit", 0),
+                            0.0,
+                            getattr(t, "bars_held", None),
+                            getattr(t, "exit_reason", None),
+                            now,
+                        ))
+                    self._storage.execute_many(
+                        """
+                        INSERT INTO backtest_trades
+                        (trade_id, run_id, strategy_id, entry_id, exit_id, direction,
+                         entry_time, exit_time, entry_price, exit_price, qty,
+                         gross_pnl, net_pnl, net_pnl_pct, fee, slippage,
+                         bars_held, exit_reason, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        trade_rows,
+                    )
+
+                for atype in artifact_paths:
+                    path = run_dir / artifact_paths[atype].name
+                    row_count = None
+                    if atype in (ARTIFACT_TYPE_EQUITY_CURVE, ARTIFACT_TYPE_TRADES, ARTIFACT_TYPE_BAR_OUTPUTS):
+                        try:
+                            table = pq.read_table(str(path))
+                            row_count = table.num_rows
+                        except Exception:
+                            pass
+                    artifact_row_id = f"{run_id}_{atype}"
+                    self._storage.execute(
+                        """
+                        INSERT INTO backtest_artifacts
+                        (artifact_row_id, run_id, strategy_id, artifact_type, path, format, row_count, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (artifact_row_id, run_id, strategy_id, atype, str(path),
+                         "parquet" if path.suffix == ".parquet" else "json",
+                         row_count, now),
+                    )
+
             self._storage.commit()
+
+        except Exception:
+            if tmp_dir.exists():
+                shutil.rmtree(tmp_dir)
+            raise
 
     def mark_failed(
         self,
@@ -401,28 +462,7 @@ class BacktestResultStore:
             return row[0]
         return ""
 
-    def _save_artifact(
-        self,
-        run_id: str,
-        strategy_id: str,
-        artifact_type: str,
-        path: Path,
-        row_count: int,
-        created_at: int,
-    ) -> None:
-        artifact_row_id = f"{run_id}_{artifact_type}"
-        self._storage.execute(
-            """
-            INSERT INTO backtest_artifacts
-            (artifact_row_id, run_id, strategy_id, artifact_type, path, format, row_count, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (artifact_row_id, run_id, strategy_id, artifact_type, str(path), "parquet", row_count, created_at),
-        )
-
     def _row_to_run(self, row: tuple) -> BacktestRun:
-        """Convert a DB row to BacktestRun."""
-        # Get column names
         cursor = self._storage.execute("SELECT * FROM backtest_runs LIMIT 0")
         cols = [d[0] for d in cursor.description]
         data = dict(zip(cols, row))
