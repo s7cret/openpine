@@ -11,6 +11,7 @@ import click
 from rich.console import Console
 
 from openpine import __version__
+from openpine.data.candle_storage import PARQUET_SCHEMA
 from openpine.jobs import Job, JobScheduler, JobStatus, JobType
 
 # Global instances — created once at module load
@@ -1406,50 +1407,315 @@ def data_inspect(
         console.print(f"[dim]No parquet files found for {symbol} {timeframe}[/dim]")
         return
 
+    # Use CandleStorage for canonical (deduplicated) read
+    from openpine.data.candle_storage import CandleStorage
+    from openpine.data.bar_query import BarQuery
+
+    storage = CandleStorage()
+    query = BarQuery(
+        instrument_key=f"{exchange}:{market}:{symbol}:trade",
+        timeframe=timeframe,
+        from_time=start_ms,
+        to_time=end_ms,
+    )
+    bars = storage.read_candles(query)
+
+    if not bars:
+        console.print(f"[dim](no bars in range {from_date} → {to_date or 'today'})[/dim]")
+        return
+
+    # Also compute raw vs canonical stats for transparency
+    raw_rows = 0
+    for pf in parquet_files:
+        try:
+            df = pd.read_parquet(pf)
+            raw_rows += len(df[(df["open_time"] >= start_ms) & (df["open_time"] <= end_ms)])
+        except Exception:
+            pass
+
+    from rich.table import Table
+
+    tbl = Table(title=f"Candles: {symbol} {timeframe} ({from_date} → {to_date or 'today'})")
+    tbl.add_column("open_time", style="cyan")
+    tbl.add_column("open", style="green")
+    tbl.add_column("high", style="green")
+    tbl.add_column("low", style="red")
+    tbl.add_column("close", style="green")
+    tbl.add_column("volume", style="yellow")
+
+    for bar in bars[:20]:
+        ot = datetime.fromtimestamp(bar.time / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
+        tbl.add_row(
+            ot,
+            str(round(bar.open, 6)),
+            str(round(bar.high, 6)),
+            str(round(bar.low, 6)),
+            str(round(bar.close, 6)),
+            str(round(bar.volume, 2)),
+        )
+    console.print(tbl)
+    console.print(f"[dim]Canonical bars: {len(bars)} | Raw rows: {raw_rows} | Duplicates removed: {raw_rows - len(bars)}[/dim]")
+
+
+@data.command("doctor")
+@click.argument("symbol", required=True)
+@click.argument("timeframe", required=True)
+@click.option("--from", "from_date", required=True, help="Start date (YYYY-MM-DD)")
+@click.option("--to", "to_date", default=None, help="End date (YYYY-MM-DD, default: today)")
+@click.option("--exchange", default="binance", help="Exchange name")
+@click.option("--market", default="spot", help="Market type")
+@click.option("--price-type", "price_type", default="trade", help="Price type")
+def data_doctor(
+    symbol: str,
+    timeframe: str,
+    from_date: str,
+    to_date: str | None,
+    exchange: str,
+    market: str,
+    price_type: str,
+) -> None:
+    """Run diagnostic checks on candle data."""
+    from datetime import datetime as dt, timezone
+    from openpine.config import OpenPineConfig
+    from openpine.data.candle_storage import CandleStorage
+    from openpine.data.bar_query import BarQuery
+    import pandas as pd
+
+    console.print(f"[bold]Data doctor[/bold] {symbol} {timeframe}")
+
     try:
-        dfs = []
-        for pf in parquet_files:
-            try:
-                df = pd.read_parquet(pf)
-                dfs.append(df)
-            except Exception:
-                pass
-        if not dfs:
-            console.print("[red]Could not read any parquet files[/red]")
-            return
+        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
+    except ValueError:
+        console.print(f"[red]Invalid --from date format: {from_date}[/red]")
+        return
 
-        all_df = pd.concat(dfs, ignore_index=True)
-        mask = (all_df["open_time"] >= start_ms) & (all_df["open_time"] <= end_ms)
-        subset = all_df[mask].sort_values("open_time").head(20)
+    end_ms = int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000) if to_date else int(dt.now().timestamp() * 1000)
 
-        if subset.empty:
-            console.print(f"[dim](no bars in range {from_date} → {to_date or 'today'})[/dim]")
-            return
+    # Read canonical bars
+    storage = CandleStorage()
+    query = BarQuery(
+        instrument_key=f"{exchange}:{market}:{symbol}:{price_type}",
+        timeframe=timeframe,
+        from_time=start_ms,
+        to_time=end_ms,
+    )
+    bars = storage.read_candles(query)
 
-        from rich.table import Table
+    # Read raw rows from active manifest files only
+    raw_rows = 0
+    duplicate_rows = 0
+    conflicting_duplicates = 0
+    files_read = 0
+    all_raw_rows: list[dict] = []
 
-        tbl = Table(title=f"Candles: {symbol} {timeframe} ({from_date} → {to_date or 'today'})")
-        tbl.add_column("open_time", style="cyan")
-        tbl.add_column("open", style="green")
-        tbl.add_column("high", style="green")
-        tbl.add_column("low", style="red")
-        tbl.add_column("close", style="green")
-        tbl.add_column("volume", style="yellow")
+    active_manifests = storage.list_manifests(query)
+    for m in active_manifests:
+        try:
+            df = pd.read_parquet(m.partition_path)
+            mask = (df["open_time"] >= start_ms) & (df["open_time"] <= end_ms)
+            subset = df[mask]
+            raw_rows += len(subset)
+            all_raw_rows.extend(subset.to_dict("records"))
+            files_read += 1
+        except Exception:
+            pass
 
-        for _, row in subset.iterrows():
-            ot = datetime.utcfromtimestamp(row["open_time"] / 1000).strftime("%Y-%m-%d %H:%M")
-            tbl.add_row(
-                ot,
-                str(round(row.get("open", 0), 6)),
-                str(round(row.get("high", 0), 6)),
-                str(round(row.get("low", 0), 6)),
-                str(round(row.get("close", 0), 6)),
-                str(round(row.get("volume", 0), 2)),
-            )
-        console.print(tbl)
-        console.print(f"[dim]Showing {len(subset)} of {len(all_df)} total bars[/dim]")
-    except Exception as e:
-        console.print(f"[red]Error inspecting data: {e}[/red]")
+    # Detect duplicates and conflicts
+    seen: dict[int, dict] = {}
+    for row in all_raw_rows:
+        ot = int(row["open_time"])
+        if ot in seen:
+            duplicate_rows += 1
+            existing = seen[ot]
+            if (
+                existing.get("open") != row.get("open")
+                or existing.get("high") != row.get("high")
+                or existing.get("low") != row.get("low")
+                or existing.get("close") != row.get("close")
+                or existing.get("volume") != row.get("volume")
+            ):
+                conflicting_duplicates += 1
+        else:
+            seen[ot] = row
+
+    # Manifest check
+    manifests = storage.list_manifests(query)
+
+    # Classification
+    if conflicting_duplicates > 0:
+        classification = "DUPLICATES_CONFLICTING"
+    elif duplicate_rows > 0:
+        classification = "DUPLICATES_IDENTICAL"
+    elif len(bars) == 0:
+        classification = "NO_DATA"
+    else:
+        classification = "DATA_OK"
+
+    # Output report
+    console.print(f"\n[bold]Diagnostic Report[/bold]")
+    console.print(f"  Classification: [bold]{classification}[/bold]")
+    console.print(f"  Canonical bars: {len(bars)}")
+    console.print(f"  Raw rows: {raw_rows}")
+    console.print(f"  Duplicate rows: {duplicate_rows}")
+    console.print(f"  Conflicting duplicates: {conflicting_duplicates}")
+    console.print(f"  Manifests: {len(manifests)}")
+    console.print(f"  Parquet files scanned: {files_read}")
+    console.print(f"  Time range: {from_date} → {to_date or 'today'}")
+
+    if classification == "DUPLICATES_IDENTICAL":
+        console.print(f"[yellow]  Warning: {duplicate_rows} identical duplicate rows found.[/yellow]")
+        console.print(f"[dim]  Run 'openpine data compact {symbol} {timeframe}' to merge manifests.[/dim]")
+    elif classification == "DUPLICATES_CONFLICTING":
+        console.print(f"[red]  Critical: {conflicting_duplicates} conflicting duplicate rows found.[/red]")
+        console.print(f"[red]  Same open_time but different OHLCV values — manual audit required.[/red]")
+    elif classification == "DATA_OK":
+        console.print(f"[green]  Data is clean — no duplicates or conflicts.[/green]")
+
+
+@data.command("compact")
+@click.argument("symbol", required=True)
+@click.argument("timeframe", required=True)
+@click.option("--from", "from_date", required=True, help="Start date (YYYY-MM-DD)")
+@click.option("--to", "to_date", default=None, help="End date (YYYY-MM-DD, default: today)")
+@click.option("--exchange", default="binance", help="Exchange name")
+@click.option("--market", default="spot", help="Market type")
+@click.option("--price-type", "price_type", default="trade", help="Price type")
+def data_compact(
+    symbol: str,
+    timeframe: str,
+    from_date: str,
+    to_date: str | None,
+    exchange: str,
+    market: str,
+    price_type: str,
+) -> None:
+    """Compact overlapping candle manifests into a single canonical parquet file."""
+    from datetime import datetime as dt, timezone
+    from openpine.config import OpenPineConfig
+    from openpine.data.candle_storage import CandleStorage
+    from openpine.data.bar_query import BarQuery
+    import pandas as pd
+    import shutil
+
+    console.print(f"[bold]Data compact[/bold] {symbol} {timeframe}")
+
+    try:
+        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
+    except ValueError:
+        console.print(f"[red]Invalid --from date format: {from_date}[/red]")
+        return
+
+    end_ms = int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000) if to_date else int(dt.now().timestamp() * 1000)
+
+    # Read canonical bars
+    storage = CandleStorage()
+    query = BarQuery(
+        instrument_key=f"{exchange}:{market}:{symbol}:{price_type}",
+        timeframe=timeframe,
+        from_time=start_ms,
+        to_time=end_ms,
+    )
+    bars = storage.read_candles(query)
+
+    if not bars:
+        console.print(f"[yellow]No bars to compact in range {from_date} → {to_date or 'today'}[/yellow]")
+        return
+
+    # Build DataFrame from canonical bars
+    rows = []
+    for bar in bars:
+        rows.append({
+            "exchange": exchange,
+            "market_type": market,
+            "symbol": symbol,
+            "price_type": price_type,
+            "timeframe": timeframe,
+            "open_time": bar.time,
+            "close_time": bar.time_close or bar.time,
+            "open": bar.open,
+            "high": bar.high,
+            "low": bar.low,
+            "close": bar.close,
+            "volume": bar.volume,
+            "quote_volume": None,
+            "trades_count": None,
+            "is_closed": True,
+            "source": "openpine-compacted",
+            "provider": "openpine",
+            "ingested_at": int(dt.now(timezone.utc).timestamp() * 1000),
+        })
+
+    df = pd.DataFrame(rows)
+    df = df.sort_values("open_time")
+
+    # Write to temp path first
+    config = OpenPineConfig.load()
+    candle_dir = (
+        config.data_dir
+        / "candles"
+        / f"exchange={exchange}"
+        / f"market_type={market}"
+        / f"symbol={symbol}"
+        / f"price_type={price_type}"
+        / f"timeframe={timeframe}"
+        / f"year={dt.utcfromtimestamp(start_ms / 1000).year}"
+        / f"month={dt.utcfromtimestamp(start_ms / 1000).month:02d}"
+    )
+    candle_dir.mkdir(parents=True, exist_ok=True)
+
+    ts = int(dt.now(timezone.utc).timestamp() * 1000)
+    final_path = candle_dir / f"part-compact-{ts}.parquet"
+    tmp_path = candle_dir / f".part-compact-{ts}.parquet.tmp"
+
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    table = pa.Table.from_pandas(df, schema=PARQUET_SCHEMA, preserve_index=False)
+    pq.write_table(table, str(tmp_path), compression="zstd")
+    shutil.move(str(tmp_path), str(final_path))
+
+    # Update manifest: mark old manifests as superseded, add new compact manifest
+    from openpine.data.models import CandleManifest
+    import hashlib
+
+    old_manifests = storage.list_manifests(query)
+    conn = storage._get_conn()
+
+    # Mark old manifests as superseded
+    for m in old_manifests:
+        conn.execute(
+            "UPDATE candle_manifests SET is_active = 0, superseded_by = ? WHERE manifest_id = ?",
+            (f"compact-{ts}", m.manifest_id),
+        )
+
+    # Add new compact manifest
+    checksum = hashlib.sha256(df.to_string().encode()).hexdigest()[:16]
+    new_manifest = CandleManifest(
+        manifest_id=f"m_compact_{ts}_{hashlib.sha256(final_path.name.encode()).hexdigest()[:8]}",
+        exchange=exchange,
+        market_type=market,
+        symbol=symbol,
+        price_type=price_type,
+        timeframe=timeframe,
+        partition_path=str(final_path),
+        min_open_time=int(df["open_time"].min()),
+        max_open_time=int(df["open_time"].max()),
+        row_count=len(df),
+        schema_hash=storage._schema_hash,
+        checksum=checksum,
+        file_size_bytes=final_path.stat().st_size,
+        provider="openpine",
+        ingested_at=ts,
+        created_at=ts,
+        updated_at=ts,
+    )
+    storage._insert_manifest(new_manifest)
+
+    console.print(f"[green]Compaction complete:[/green]")
+    console.print(f"  Output: {final_path}")
+    console.print(f"  Canonical rows: {len(df)}")
+    console.print(f"  Old manifests superseded: {len(old_manifests)}")
+    console.print(f"[dim]Run 'openpine data doctor {symbol} {timeframe} --from {from_date}' to verify.[/dim]")
 
 
 @data.command("providers")
