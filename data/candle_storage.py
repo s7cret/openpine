@@ -381,16 +381,40 @@ class CandleStorage:
         if not all_rows:
             return []
 
+        # Deduplicate by canonical key: open_time
+        # Identical duplicates (same OHLCV) → keep one
+        # Conflicting duplicates (same open_time, different values) → detect and report
+        seen: dict[int, dict] = {}
+        conflicts: list[tuple[dict, dict]] = []
+        for row in all_rows:
+            ot = int(row["open_time"])
+            if ot in seen:
+                existing = seen[ot]
+                # Check if values differ
+                if (
+                    existing.get("open") != row.get("open")
+                    or existing.get("high") != row.get("high")
+                    or existing.get("low") != row.get("low")
+                    or existing.get("close") != row.get("close")
+                    or existing.get("volume") != row.get("volume")
+                ):
+                    conflicts.append((existing, row))
+                # Keep the existing (first seen) — deterministic
+                continue
+            seen[ot] = row
+
+        canonical_rows = list(seen.values())
+
         # Sort by open_time
-        all_rows.sort(key=lambda r: r["open_time"])
+        canonical_rows.sort(key=lambda r: r["open_time"])
 
         # Apply limit
         if query.limit is not None:
-            all_rows = all_rows[-query.limit :]
+            canonical_rows = canonical_rows[-query.limit :]
 
         # Convert to Bar objects
         bars = []
-        for row in all_rows:
+        for row in canonical_rows:
             bar = Bar(
                 time=int(row["open_time"]),
                 open=float(row["open"]),
@@ -434,6 +458,9 @@ class CandleStorage:
         if query.to_time is not None:
             sql += " AND min_open_time <= ?"
             params.append(query.to_time)
+
+        # Only active manifests by default
+        sql += " AND (is_active IS NULL OR is_active = 1)"
 
         sql += " ORDER BY min_open_time ASC"
 
