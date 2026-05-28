@@ -1152,6 +1152,8 @@ def data_repair(symbol: str, timeframe: str, from_ts: int, to_ts: int, exchange:
 @click.option("--exchange", default="binance", help="Exchange name")
 @click.option("--market", default="usdm", help="Market type")
 @click.option("--price-type", "price_type", default="trade", help="Price type")
+@click.option("--wait", is_flag=True, help="Wait for backfill to complete synchronously")
+@click.option("--timeout", default=600, help="Timeout in seconds for --wait mode")
 def data_backfill(
     symbol: str,
     timeframe: str,
@@ -1160,6 +1162,8 @@ def data_backfill(
     exchange: str,
     market: str,
     price_type: str,
+    wait: bool,
+    timeout: int,
 ) -> None:
     """Trigger backfill for a symbol/timeframe."""
     from datetime import datetime as dt
@@ -1183,27 +1187,79 @@ def data_backfill(
     else:
         end_ms = int(dt.now().timestamp() * 1000)
 
-    # Try DataOrchestrator.trigger_backfill if available
-    try:
-        from openpine.data.orchestrator import DataOrchestrator
+    if wait:
+        # Synchronous backfill using Binance REST API.
+        # NOTE: This is a synchronous CLI convenience path, not a durable
+        # worker scheduler. Jobs system remains in-memory only.
+        import requests
+        from marketdata_provider.core.bar import Bar
+        from openpine.data.candle_storage import CandleStorage
+        from openpine.data.contracts import WriteMode
 
-        orch = DataOrchestrator()
-        if hasattr(orch, "trigger_backfill"):
-            orch.trigger_backfill(
-                symbol=symbol,
-                timeframe=timeframe,
-                exchange=exchange,
-                market=market,
-                price_type=price_type,
-                start_ms=start_ms,
-                end_ms=end_ms,
-            )
-            console.print(f"[green]Backfill triggered via DataOrchestrator[/green]")
+        console.print("[dim]Fetching candles synchronously...[/dim]")
+        all_bars: list[Bar] = []
+        current_start = start_ms
+        chunk_size = 1000
+        url = "https://api.binance.com/api/v3/klines"
+
+        import time as _time
+        t0 = _time.time()
+        while current_start < end_ms:
+            if _time.time() - t0 > timeout:
+                console.print(f"[red]Backfill timed out after {timeout}s[/red]")
+                console.print(f"[yellow]Fetched {len(all_bars)} bars so far[/yellow]")
+                return
+
+            params = {
+                "symbol": symbol.upper(),
+                "interval": timeframe,
+                "startTime": current_start,
+                "endTime": end_ms,
+                "limit": chunk_size,
+            }
+            try:
+                resp = requests.get(url, params=params, timeout=30)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as exc:
+                console.print(f"[red]Fetch failed: {exc}[/red]")
+                return
+
+            if not data:
+                break
+
+            for row in data:
+                all_bars.append(Bar(
+                    time=int(row[0]),
+                    open=float(row[1]),
+                    high=float(row[2]),
+                    low=float(row[3]),
+                    close=float(row[4]),
+                    volume=float(row[5]),
+                    time_close=int(row[6]),
+                ))
+
+            current_start = int(data[-1][6]) + 1
+            if len(data) < chunk_size:
+                break
+
+        if not all_bars:
+            console.print("[yellow]No candles fetched[/yellow]")
             return
-    except Exception:
-        pass
 
-    # Fallback: enqueue a backfill job
+        storage = CandleStorage()
+        instrument_key = f"{exchange.lower()}:{market.lower()}:{symbol.upper()}:{price_type}"
+        result = storage.write_candles(
+            all_bars,
+            mode=WriteMode.UPSERT_PARTITION,
+            instrument_key=instrument_key,
+            timeframe=timeframe,
+        )
+        console.print(f"[green]Backfill complete: {result.rows_written} candles written[/green]")
+        console.print(f"  manifests: {len(result.manifests_created or [])}")
+        return
+
+    # Async path: enqueue a backfill job
     from openpine.jobs import Job, JobStatus, JobType
 
     job = Job(
@@ -1217,6 +1273,8 @@ def data_backfill(
     console.print(f"[green]Backfill job enqueued: {job.id[:8]}[/green]")
     console.print(f"  symbol={symbol} tf={timeframe} exchange={exchange}")
     console.print(f"  from={from_date} to={to_date or 'today'}")
+    console.print(f"[dim]Use --wait to fetch synchronously, or check:[/dim]")
+    console.print(f"  openpine jobs show {job.id[:8]}")
 
 
 @data.command("parallel-backfill")
