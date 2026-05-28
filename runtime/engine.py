@@ -195,12 +195,15 @@ class BacktestEngineAdapter:
         )
 
     def _to_engine_bar(self, bar: Bar) -> Any:
+        # Handle both marketdata_provider.Bar (time, time_close) and adapter Bar (timestamp, close_time_ms)
+        bar_time = getattr(bar, "timestamp", getattr(bar, "time", 0))
+        bar_time_close = getattr(bar, "close_time_ms", getattr(bar, "time_close", 0))
         return self._module.Bar(
-            time=int(bar.timestamp),
+            time=int(bar_time),
             open=float(bar.open),
             high=float(bar.high),
             low=float(bar.low),
             close=float(bar.close),
             volume=float(bar.volume),
-            time_close=int(bar.close_time_ms),
+            time_close=int(bar_time_close),
         )
