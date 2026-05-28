@@ -40,6 +40,16 @@ class OpenPineConfig(pydantic.BaseModel):
     kill_switch: bool = False
     plugins: PluginsConfig = PluginsConfig()
 
+    @pydantic.field_validator("data_dir", "config_dir", "sqlite_path", "duckdb_path", mode="before")
+    @classmethod
+    def _expand_user_paths(cls, v: Path | str) -> Path:
+        """Ensure user home paths are expanded before validation."""
+        if isinstance(v, str):
+            return Path(v).expanduser()
+        if isinstance(v, Path):
+            return v.expanduser()
+        return v
+
     def config_path(self) -> Path:
         """Path to the YAML config file (resolved from config_dir)."""
         return Path(os.path.expanduser(str(self.config_dir / "config.yaml")))
