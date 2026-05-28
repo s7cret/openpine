@@ -26,6 +26,7 @@ class StrategyInstance:
     timeframe: str
     exchange: str = "binance"
     market_type: str = "usdm"
+    price_type: str = "trade"
     mode: str = "paper"
     enabled: bool = False
     status: str = "pending"
@@ -44,6 +45,7 @@ class StrategyInstance:
             "timeframe": self.timeframe,
             "exchange": self.exchange,
             "market_type": self.market_type,
+            "price_type": self.price_type,
             "mode": self.mode,
             "enabled": self.enabled,
             "status": self.status,
@@ -64,6 +66,7 @@ class StrategyInstance:
             timeframe=data["timeframe"],
             exchange=data.get("exchange", "binance"),
             market_type=data.get("market_type", "usdm"),
+            price_type=data.get("price_type", "trade"),
             mode=data.get("mode", "paper"),
             enabled=data.get("enabled", False),
             status=data.get("status", "pending"),
@@ -115,21 +118,29 @@ class SQLiteStrategyRegistry:
     def _init_db(self) -> None:
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS strategy_instances (
-                strategy_id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                pine_id TEXT NOT NULL,
+                id TEXT PRIMARY KEY,
+                strategy_id TEXT UNIQUE,
+                name TEXT UNIQUE,
+                pine_id TEXT,
                 artifact_id TEXT NOT NULL,
-                params_json TEXT NOT NULL,
+                params_json TEXT NOT NULL DEFAULT '{}',
                 params_hash TEXT NOT NULL,
                 symbol TEXT NOT NULL,
+                exchange TEXT DEFAULT 'BINANCE',
+                market_type TEXT NOT NULL DEFAULT 'spot',
+                price_type TEXT NOT NULL DEFAULT 'trade',
                 timeframe TEXT NOT NULL,
-                exchange TEXT NOT NULL DEFAULT 'binance',
-                market_type TEXT NOT NULL DEFAULT 'usdm',
-                mode TEXT NOT NULL DEFAULT 'paper',
+                data_provider TEXT NOT NULL DEFAULT 'local',
+                execution_provider TEXT NOT NULL DEFAULT 'paper',
+                mode TEXT NOT NULL DEFAULT 'disabled',
                 enabled INTEGER NOT NULL DEFAULT 0,
+                live_enabled INTEGER NOT NULL DEFAULT 0,
+                risk_profile_id TEXT,
                 status TEXT NOT NULL DEFAULT 'pending',
                 created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
+                updated_at INTEGER NOT NULL,
+                FOREIGN KEY (pine_id) REFERENCES pine_sources(id),
+                FOREIGN KEY (artifact_id) REFERENCES compile_artifacts(id)
             )
         """)
         self._conn.execute("""
@@ -141,17 +152,20 @@ class SQLiteStrategyRegistry:
             ON strategy_instances(status)
         """)
         self._conn.commit()
-        # Load existing rows
-        for row in self._conn.execute("SELECT strategy_id FROM strategy_instances"):
+        # Load existing rows using explicit column names
+        for row in self._conn.execute("SELECT strategy_id FROM strategy_instances WHERE strategy_id IS NOT NULL"):
             (sid,) = row
             row_data = self._conn.execute(
-                "SELECT * FROM strategy_instances WHERE strategy_id = ?", (sid,)
+                """SELECT strategy_id, name, pine_id, artifact_id, params_json, params_hash,
+                          symbol, timeframe, exchange, market_type, price_type, mode, enabled, status,
+                          created_at, updated_at
+                   FROM strategy_instances WHERE strategy_id = ?""", (sid,)
             ).fetchone()
             if row_data:
                 self._mem[sid] = StrategyInstance(
                     strategy_id=row_data[0],
                     name=row_data[1],
-                    pine_id=row_data[2],
+                    pine_id=row_data[2] or "",
                     artifact_id=row_data[3],
                     params_json=row_data[4],
                     params_hash=row_data[5],
@@ -159,11 +173,12 @@ class SQLiteStrategyRegistry:
                     timeframe=row_data[7],
                     exchange=row_data[8],
                     market_type=row_data[9],
-                    mode=row_data[10],
-                    enabled=bool(row_data[11]),
-                    status=row_data[12],
-                    created_at=row_data[13],
-                    updated_at=row_data[14],
+                    price_type=row_data[10],
+                    mode=row_data[11],
+                    enabled=bool(row_data[12]),
+                    status=row_data[13],
+                    created_at=row_data[14],
+                    updated_at=row_data[15],
                 )
 
     def register_strategy(
@@ -197,13 +212,13 @@ class SQLiteStrategyRegistry:
 
         self._conn.execute(
             """INSERT INTO strategy_instances
-               (strategy_id, name, pine_id, artifact_id, params_json, params_hash,
-                symbol, timeframe, exchange, market_type, mode, enabled, status,
-                created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (si.strategy_id, si.name, si.pine_id, si.artifact_id, si.params_json,
-             si.params_hash, si.symbol, si.timeframe, si.exchange, si.market_type,
-             si.mode, int(si.enabled), si.status, si.created_at, si.updated_at),
+               (id, strategy_id, name, pine_id, artifact_id, params_json, params_hash,
+                symbol, exchange, market_type, price_type, timeframe, data_provider,
+                execution_provider, mode, enabled, status, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (strategy_id, si.strategy_id, si.name, si.pine_id, si.artifact_id, si.params_json,
+             si.params_hash, si.symbol, si.exchange, si.market_type, si.price_type, si.timeframe,
+             "local", "paper", si.mode, int(si.enabled), si.status, si.created_at, si.updated_at),
         )
         self._conn.commit()
         self._mem[si.strategy_id] = si

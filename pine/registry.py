@@ -55,7 +55,10 @@ class SQLitePineSourceRegistry:
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS pine_sources (
                 id TEXT PRIMARY KEY,
-                name TEXT UNIQUE NOT NULL,
+                pine_id TEXT UNIQUE,
+                name TEXT NOT NULL UNIQUE,
+                source_path TEXT,
+                source_hash TEXT,
                 source_text TEXT NOT NULL,
                 version TEXT NOT NULL DEFAULT '1.0.0',
                 source_type TEXT NOT NULL DEFAULT 'strategy',
@@ -77,13 +80,15 @@ class SQLitePineSourceRegistry:
             if row:
                 self._mem[row_id] = PineSource(
                     id=row[0],
-                    name=row[1],
-                    source_text=row[2],
-                    version=row[3],
-                    source_type=row[4],
-                    active_artifact_id=row[5],
-                    created_at=row[6],
-                    updated_at=row[7],
+                    name=row[2],
+                    source_text=row[5],
+                    source_path=row[3],
+                    source_hash=row[4],
+                    version=row[6],
+                    source_type=row[7],
+                    active_artifact_id=row[8],
+                    created_at=row[9],
+                    updated_at=row[10],
                 )
 
     def add_source(self, source_text: str, name: str) -> PineSource:
@@ -101,9 +106,9 @@ class SQLitePineSourceRegistry:
         )
         self._conn.execute(
             """INSERT INTO pine_sources
-               (id, name, source_text, version, source_type, active_artifact_id, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (source.id, source.name, source.source_text, source.version,
+               (id, pine_id, name, source_text, version, source_type, active_artifact_id, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (source.id, None, source.name, source.source_text, source.version,
              source.source_type, source.active_artifact_id, source.created_at, source.updated_at),
         )
         self._conn.commit()
