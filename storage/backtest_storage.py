@@ -21,6 +21,7 @@ import pyarrow.parquet as pq
 from openpine.storage.backtest_dto import (
     ARTIFACT_TYPE_BAR_OUTPUTS,
     ARTIFACT_TYPE_EQUITY_CURVE,
+    ARTIFACT_TYPE_PLOT_OUTPUTS,
     ARTIFACT_TYPE_REPORT_JSON,
     ARTIFACT_TYPE_REPORT_MD,
     ARTIFACT_TYPE_TRADES,
@@ -88,6 +89,7 @@ class BacktestResultStore:
         trades: list[Any],
         equity_curve: list[Any] | None = None,
         bar_outputs: list[dict] | None = None,
+        plots: Any = None,
     ) -> None:
         """Save backtest result, trades, and artifacts atomically."""
         now = int(time.time() * 1000)
@@ -190,6 +192,45 @@ class BacktestResultStore:
                 pq.write_table(pa.Table.from_pandas(bo_df), str(bo_tmp), compression="zstd")
                 artifact_paths[ARTIFACT_TYPE_BAR_OUTPUTS] = bo_tmp
 
+            # Plot outputs
+            if plots is not None:
+                from pinelib.plot import PlotRecorder
+                plot_records = []
+                if isinstance(plots, PlotRecorder):
+                    records = plots.get_records()
+                else:
+                    records = plots
+                for rec in records:
+                    if isinstance(rec, tuple) and len(rec) >= 4:
+                        val = rec[2]
+                        # Convert PineNASentinel to None for Parquet compatibility
+                        if val is not None and type(val).__name__ in ("PineNASentinel", "na"):
+                            val = None
+                        plot_records.append({
+                            "bar_time": rec[0],
+                            "bar_index": rec[1],
+                            "value": val,
+                            "title": rec[3],
+                        })
+                    elif hasattr(rec, 'bar_time'):
+                        val = rec.value
+                        if val is not None and type(val).__name__ in ("PineNASentinel", "na"):
+                            val = None
+                        plot_records.append({
+                            "bar_time": rec.bar_time,
+                            "bar_index": getattr(rec, 'bar_index', None),
+                            "value": val,
+                            "title": rec.title,
+                        })
+                if plot_records:
+                    plots_df = pd.DataFrame(plot_records)
+                    plots_tmp = tmp_dir / "plot_outputs.parquet"
+                    pq.write_table(pa.Table.from_pandas(plots_df), str(plots_tmp), compression="zstd")
+                    artifact_paths[ARTIFACT_TYPE_PLOT_OUTPUTS] = plots_tmp
+                    # Optional CSV
+                    plots_csv_tmp = tmp_dir / "plot_outputs.csv"
+                    plots_df.to_csv(str(plots_csv_tmp), index=False)
+
             # Report JSON
             report = {
                 "run_id": run_id,
@@ -210,6 +251,7 @@ class BacktestResultStore:
                     "win_rate": metrics.win_rate,
                     "total_trades": metrics.trades_total,
                 },
+                "plot_outputs_path": str(run_dir / "plot_outputs.parquet") if ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths else None,
             }
             report_tmp = tmp_dir / "report.json"
             report_tmp.write_text(json.dumps(report, indent=2, default=str))
@@ -287,6 +329,7 @@ class BacktestResultStore:
                         report_path = ?,
                         equity_curve_path = ?,
                         bar_outputs_path = ?,
+                        plot_outputs_path = ?,
                         updated_at = ?
                     WHERE run_id = ?
                     """,
@@ -307,6 +350,7 @@ class BacktestResultStore:
                         result_json, str(run_dir / "report.json"),
                         str(run_dir / "equity_curve.parquet") if equity_curve else None,
                         str(run_dir / "bar_outputs.parquet") if bar_outputs else None,
+                        str(run_dir / "plot_outputs.parquet") if ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths else None,
                         now, run_id,
                     ),
                 )
@@ -350,7 +394,7 @@ class BacktestResultStore:
                 for atype in artifact_paths:
                     path = run_dir / artifact_paths[atype].name
                     row_count = None
-                    if atype in (ARTIFACT_TYPE_EQUITY_CURVE, ARTIFACT_TYPE_TRADES, ARTIFACT_TYPE_BAR_OUTPUTS):
+                    if atype in (ARTIFACT_TYPE_EQUITY_CURVE, ARTIFACT_TYPE_TRADES, ARTIFACT_TYPE_BAR_OUTPUTS, ARTIFACT_TYPE_PLOT_OUTPUTS):
                         try:
                             table = pq.read_table(str(path))
                             row_count = table.num_rows
@@ -516,6 +560,7 @@ class BacktestResultStore:
             report_path=data.get("report_path"),
             equity_curve_path=data.get("equity_curve_path"),
             bar_outputs_path=data.get("bar_outputs_path"),
+            plot_outputs_path=data.get("plot_outputs_path"),
             error_message=data.get("error_message"),
             traceback_id=data.get("traceback_id"),
             created_at=data.get("created_at", 0),

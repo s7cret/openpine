@@ -3688,7 +3688,8 @@ def strategy_remove(strategy_id: str) -> None:
 @click.argument("strategy_id")
 @click.option("--from", "from_date")
 @click.option("--to", "to_date")
-def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | None) -> None:
+@click.option("--capture-plots", is_flag=True, help="Capture and save plot outputs from runtime")
+def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | None, capture_plots: bool) -> None:
     """Run backtest for a strategy."""
     import json as _json
     from datetime import timezone as _timezone
@@ -3813,11 +3814,24 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
         )
         registry.update_status(strategy_id, "running")
         try:
+            _backend = None
+            _strategy_class = strategy_class
+            # Always use PineRuntimeBackend for generated strategies to ensure
+            # consistent execution semantics regardless of --capture-plots flag.
+            # capture_plots only controls whether plots are persisted, not execution.
+            if hasattr(strategy_class, "generated_strategy_class_ref"):
+                _strategy_class = strategy_class.generated_strategy_class_ref
+                try:
+                    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
+                    _backend = PineRuntimeBackend()
+                except Exception as exc:
+                    console.print(f"[yellow]Warning: cannot set up plot backend: {exc}[/yellow]")
             result = BacktestEngineAdapter().run(
-                strategy_class,
+                _strategy_class,
                 bars,
                 config,
                 params=params,
+                execution_backend=_backend,
             )
         except Exception as exc:
             registry.update_status(strategy_id, "error")
@@ -3854,10 +3868,21 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
                 result=result.raw_result,
                 trades=getattr(result.raw_result, "trades", []),
                 equity_curve=getattr(result.raw_result, "equity_curve", None),
+                plots=getattr(result.raw_result, "plots", None) if capture_plots else None,
             )
             console.print(f"[green]Backtest saved:[/green] {run_id}")
-            console.print(f"  trades:     {len(getattr(result.raw_result, 'closed_trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
+            console.print(f"  trades:     {len(getattr(result.raw_result, 'trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
             console.print(f"  artifacts:  ~/.openpine/data/backtests/{s.strategy_id}/{run_id}/")
+            if capture_plots:
+                plots = getattr(result.raw_result, "plots", None)
+                if plots:
+                    recs = plots if isinstance(plots, list) else (plots.get_records() if hasattr(plots, "get_records") else [])
+                    if recs:
+                        console.print(f"[green]  plots:      {len(recs)} plot records captured[/green]")
+                    else:
+                        console.print(f"[yellow]  plots:      plot recorder empty[/yellow]")
+                else:
+                    console.print(f"[yellow]  plots:      plot outputs unavailable from engine result[/yellow]")
         except Exception as exc:
             console.print(f"[yellow]Warning: failed to save backtest results: {exc}[/yellow]")
             import traceback
@@ -4327,6 +4352,64 @@ def strategy_equity(strategy_id: str, run_id: str | None, tail: int) -> None:
             df = pd.read_parquet(eq_artifact.path)
             console.print(f"[bold]Last {tail} equity points:[/bold]")
             console.print(df.tail(tail).to_string(index=False))
+        finally:
+            bt_store.close()
+    finally:
+        registry.close()
+
+
+@strategy.command("plots")
+@click.argument("strategy_id")
+@click.option("--run-id", help="Specific run ID (default: latest)")
+@click.option("--latest", is_flag=True, help="Show latest run plot artifact")
+def strategy_plots(strategy_id: str, run_id: str | None, latest: bool) -> None:
+    """Show plot outputs artifact path and summary for a strategy."""
+    from openpine.registry import SQLiteStrategyRegistry
+    from openpine.storage import BacktestResultStore, ARTIFACT_TYPE_PLOT_OUTPUTS
+
+    registry = SQLiteStrategyRegistry()
+    try:
+        try:
+            s = registry.get_strategy(strategy_id)
+        except KeyError:
+            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+            sys.exit(1)
+
+        bt_store = BacktestResultStore()
+        try:
+            if run_id:
+                run = bt_store.get_run(run_id)
+            else:
+                run = bt_store.get_latest_run(strategy_id)
+
+            if not run:
+                console.print(f"[yellow]No backtest runs for {strategy_id}[/yellow]")
+                sys.exit(1)
+
+            artifacts = bt_store.list_artifacts(run.run_id)
+            plot_artifact = next((a for a in artifacts if a.artifact_type == ARTIFACT_TYPE_PLOT_OUTPUTS), None)
+            if not plot_artifact:
+                console.print(f"[yellow]No plot outputs artifact for run {run.run_id}[/yellow]")
+                console.print(f"[dim]Tip: run with --capture-plots to save plot outputs[/dim]")
+                sys.exit(1)
+
+            console.print(f"[bold]Plot Outputs: {run.run_id}[/bold]")
+            console.print(f"  path:     {plot_artifact.path}")
+            console.print(f"  format:   {plot_artifact.format}")
+            console.print(f"  row_count: {plot_artifact.row_count}")
+            console.print()
+
+            # Show plot names/columns
+            import pandas as pd
+            df = pd.read_parquet(plot_artifact.path)
+            if 'title' in df.columns:
+                titles = df['title'].unique().tolist()
+                console.print(f"[bold]Plot columns ({len(titles)}):[/bold]")
+                for title in titles:
+                    count = len(df[df['title'] == title])
+                    console.print(f"  {title}: {count} rows")
+            else:
+                console.print(f"[bold]Columns:[/bold] {list(df.columns)}")
         finally:
             bt_store.close()
     finally:

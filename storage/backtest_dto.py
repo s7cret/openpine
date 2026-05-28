@@ -79,6 +79,7 @@ class BacktestRun:
     report_path: str | None = None
     equity_curve_path: str | None = None
     bar_outputs_path: str | None = None
+    plot_outputs_path: str | None = None
     error_message: str | None = None
     traceback_id: str | None = None
     created_at: int = 0
@@ -127,6 +128,7 @@ class BacktestArtifact:
     created_at: int = 0
 
 
+ARTIFACT_TYPE_PLOT_OUTPUTS = "plot_outputs"
 ARTIFACT_TYPE_REPORT_MD = "report_md"
 
 # Artifact type constants
