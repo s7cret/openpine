@@ -780,6 +780,8 @@ def pine_run_plots(
         mintick=0.01,
         currency="USD",
         data_provider=getattr(provider, "_provider", None),
+        exchange=exchange.lower(),
+        market_type=market_type.lower(),
     )
     backend_result = PineRuntimeBackend().execute(
         generated_class,
@@ -789,6 +791,7 @@ def pine_run_plots(
         runtime_kwargs={
             "symbol": symbol,
             "timeframe": timeframe,
+            "data_provider": getattr(provider, "_provider", None),
             "plot_from_ms": compare_from_ms,
             "plot_to_ms": compare_to_ms,
             "progress_callback": _progress,
@@ -4352,6 +4355,9 @@ def strategy_backtest(
             timeframe=s.timeframe,
             start_time=start_ms,
             end_time=end_ms,
+            exchange=s.exchange.lower(),
+            market_type=s.market_type.lower(),
+            data_provider=getattr(provider, "_provider", None),
             initial_capital=decl_args.get("initial_capital", 10000.0),
             default_qty_type=decl_args.get("default_qty_type", "fixed"),
             default_qty_value=decl_args.get("default_qty_value", 1.0),

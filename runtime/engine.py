@@ -20,6 +20,9 @@ class BacktestRunConfig:
     timeframe: str
     start_time: int
     end_time: int
+    exchange: str = "binance"
+    market_type: str = "spot"
+    data_provider: Any | None = None
     initial_capital: float = 10_000.0
     default_qty_type: str = "fixed"
     default_qty_value: float = 1.0
@@ -212,6 +215,9 @@ class BacktestEngineAdapter:
             qty_step=config.qty_step,
             qty_rounding=config.qty_rounding_mode,
         )
+        setattr(engine_config, "exchange", config.exchange)
+        setattr(engine_config, "market_type", config.market_type)
+        setattr(engine_config, "data_provider", config.data_provider)
         engine = self._module.BacktestEngine(engine_config)
         runtime_kwargs = {
             "symbol": config.symbol,
