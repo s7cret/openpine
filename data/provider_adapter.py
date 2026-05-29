@@ -16,6 +16,8 @@ from openpine.contracts import Bar, BarQuery, InstrumentKey, Timeframe
 log = structlog.get_logger(__name__)
 
 DEFAULT_PROVIDER_ROOTS = (
+    Path("[local-home]/marketdata-provider"),
+    Path("[local-home]/marketdata-provider/src"),
     Path("[local-home]/marketdata_provider"),
     Path("[local-home]/marketdata_provider/src"),
 )
@@ -162,7 +164,10 @@ class LocalMarketDataProviderAdapter:
             except ModuleNotFoundError:
                 pass
         if provider_cls is None:
-            return None
+            provider = _create_function_provider()
+            if provider is None:
+                return None
+            return cls(provider)
         return cls(provider_cls())
 
     def get_bars(self, query: BarQuery) -> list[Bar]:
@@ -224,6 +229,49 @@ def create_local_marketdata_provider_adapter(
     if installation is None:
         return None
     return LocalMarketDataProviderAdapter.from_local_installation(installation)
+
+
+def _create_function_provider() -> Any | None:
+    """Create an adapter for function-based marketdata-provider installs."""
+
+    try:
+        from marketdata_provider.config import BinanceConfig
+        from marketdata_provider.exchanges.binance.provider import binance_get_bars_sync
+        from marketdata_provider.exchanges.bybit.provider import BybitConfig, bybit_get_bars_sync
+    except Exception:
+        return None
+
+    class FunctionMarketDataProvider:
+        def get_bars(self, query: BarQuery) -> list[Any]:
+            exchange = query.instrument_key.exchange.lower()
+            market = query.instrument_key.market_type.lower()
+            symbol = query.instrument_key.symbol
+            timeframe = query.timeframe.value
+            max_bars = query.limit
+
+            if exchange == "binance":
+                return binance_get_bars_sync(
+                    symbol,
+                    timeframe,
+                    query.start_ms,
+                    query.end_ms,
+                    BinanceConfig(),
+                    market=market,
+                    max_bars=max_bars,
+                )
+            if exchange == "bybit":
+                return bybit_get_bars_sync(
+                    symbol,
+                    timeframe,
+                    query.start_ms,
+                    query.end_ms,
+                    BybitConfig(),
+                    market=market,
+                    max_bars=max_bars,
+                )
+            raise ValueError(f"unsupported marketdata-provider exchange: {exchange}")
+
+    return FunctionMarketDataProvider()
 
 
 __all__ = [
