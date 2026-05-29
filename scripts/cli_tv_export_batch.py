@@ -11,6 +11,7 @@ import argparse
 import csv
 import json
 import re
+import selectors
 import subprocess
 import time
 from datetime import datetime, timezone
@@ -130,6 +131,9 @@ def process_case(
         source = pine_path.read_text(encoding="utf-8", errors="ignore")
         kind = "strategy" if re.search(r"\bstrategy\s*\(", source) else "indicator"
         compare_from, compare_to = infer_tv_window(folder)
+        run_to_date = args.to_date
+        if run_to_date is None and compare_to is not None:
+            run_to_date = datetime.fromtimestamp(compare_to / 1000, tz=timezone.utc).isoformat()
         pine_name = f"tvbatch_{case}"
 
         record.update(
@@ -140,6 +144,7 @@ def process_case(
                 "compare_from": compare_from,
                 "compare_to": compare_to,
                 "calculation_from": run_from_date,
+                "calculation_to": run_to_date,
                 "inferred_tv_history_start": inferred_start_ms,
             }
         )
@@ -190,8 +195,8 @@ def process_case(
                 "--from",
                 run_from_date,
             ]
-            if args.to_date:
-                command += ["--to", args.to_date]
+            if run_to_date:
+                command += ["--to", run_to_date]
             command += [
                 "--output",
                 str(case_output),
@@ -258,7 +263,7 @@ def process_case(
                     "--from",
                     run_from_date,
                 ]
-                + (["--to", args.to_date] if args.to_date else [])
+                + (["--to", run_to_date] if run_to_date else [])
                 + ["--capture-plots"]
                 + (["--capture-from", str(compare_from)] if compare_from is not None else [])
                 + (["--capture-to", str(compare_to)] if compare_to is not None else []),
@@ -322,25 +327,48 @@ def run_command(
         if dry_run:
             log.write("[dry-run]\n")
             return ""
+        proc = subprocess.Popen(
+            command,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+        )
+        output: list[str] = []
+        started = time.monotonic()
+        assert proc.stdout is not None
+        selector = selectors.DefaultSelector()
+        selector.register(proc.stdout, selectors.EVENT_READ)
         try:
-            proc = subprocess.run(
-                command,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                timeout=timeout,
-            )
-        except subprocess.TimeoutExpired as exc:
-            stdout = exc.stdout or ""
-            if isinstance(stdout, bytes):
-                stdout = stdout.decode(errors="replace")
-            log.write(stdout)
-            log.write(f"\n[timeout] command exceeded {timeout}s\n")
-            raise RuntimeError(f"command timed out: {' '.join(command)}") from exc
-        log.write(proc.stdout)
+            while proc.poll() is None:
+                if timeout is not None and time.monotonic() - started > timeout:
+                    proc.kill()
+                    remainder = proc.stdout.read()
+                    if remainder:
+                        output.append(remainder)
+                        log.write(remainder)
+                    log.write(f"\n[timeout] command exceeded {timeout}s\n")
+                    log.flush()
+                    raise RuntimeError(f"command timed out: {' '.join(command)}")
+                for key, _ in selector.select(timeout=0.2):
+                    line = key.fileobj.readline()
+                    if not line:
+                        continue
+                    output.append(line)
+                    log.write(line)
+                    log.flush()
+            remainder = proc.stdout.read()
+            if remainder:
+                output.append(remainder)
+                log.write(remainder)
+                log.flush()
+        finally:
+            selector.close()
+            proc.stdout.close()
+        stdout = "".join(output)
         if proc.returncode and not allow_fail:
             raise RuntimeError(f"command failed ({proc.returncode}): {' '.join(command)}")
-        return proc.stdout
+        return stdout
 
 
 def timed(timings: dict[str, float], key: str, fn, *args, **kwargs):
