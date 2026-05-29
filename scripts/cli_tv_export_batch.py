@@ -19,6 +19,10 @@ from pathlib import Path
 
 
 RUN_ID_RE = re.compile(r"Backtest saved:\s*(run_[A-Za-z0-9_]+)")
+MAX_BARS_BACK_RE = re.compile(
+    r"\b(?:indicator|strategy)\s*\([^)]*\bmax_bars_back\s*=\s*(\d+)",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def main() -> int:
@@ -131,6 +135,18 @@ def process_case(
         source = pine_path.read_text(encoding="utf-8", errors="ignore")
         kind = "strategy" if re.search(r"\bstrategy\s*\(", source) else "indicator"
         compare_from, compare_to = infer_tv_window(folder)
+        case_run_from_date = run_from_date
+        max_bars_back = extract_max_bars_back(source)
+        prehistory_start_ms = None
+        prehistory_bars = 0
+        if inferred_start_ms is None and max_bars_back:
+            base_start_ms = parse_datetime_ms(run_from_date)
+            prehistory_bars = max_bars_back
+            prehistory_start_ms = max(0, base_start_ms - max_bars_back * parse_timeframe_seconds(args.timeframe) * 1000)
+            case_run_from_date = datetime.fromtimestamp(
+                prehistory_start_ms / 1000,
+                tz=timezone.utc,
+            ).isoformat()
         run_to_date = args.to_date
         if run_to_date is None and compare_to is not None:
             run_to_date = datetime.fromtimestamp(compare_to / 1000, tz=timezone.utc).isoformat()
@@ -143,9 +159,12 @@ def process_case(
                 "pine_name": pine_name,
                 "compare_from": compare_from,
                 "compare_to": compare_to,
-                "calculation_from": run_from_date,
+                "calculation_from": case_run_from_date,
                 "calculation_to": run_to_date,
                 "inferred_tv_history_start": inferred_start_ms,
+                "max_bars_back": max_bars_back,
+                "prehistory_bars": prehistory_bars,
+                "prehistory_start_ms": prehistory_start_ms,
             }
         )
 
@@ -193,7 +212,7 @@ def process_case(
                 "--market-type",
                 args.market_type,
                 "--from",
-                run_from_date,
+                case_run_from_date,
             ]
             if run_to_date:
                 command += ["--to", run_to_date]
@@ -261,7 +280,7 @@ def process_case(
                     "backtest",
                     strategy_id,
                     "--from",
-                    run_from_date,
+                    case_run_from_date,
                 ]
                 + (["--to", run_to_date] if run_to_date else [])
                 + ["--capture-plots"]
@@ -393,7 +412,7 @@ def infer_tv_history_start(folders: list[Path], *, timeframe: str) -> int | None
     timeframe_seconds = parse_timeframe_seconds(timeframe)
     starts: list[int] = []
     for folder in folders:
-        charts = sorted(folder.glob("tv_*_chart.csv"))
+        charts = find_chart_csvs(folder)
         if not charts:
             continue
         with charts[0].open(newline="", encoding="utf-8", errors="ignore") as fh:
@@ -424,6 +443,30 @@ def infer_tv_history_start(folders: list[Path], *, timeframe: str) -> int | None
     return max(counts, key=counts.get)
 
 
+def extract_max_bars_back(source: str) -> int | None:
+    match = MAX_BARS_BACK_RE.search(source)
+    if not match:
+        return None
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return None
+
+
+def parse_datetime_ms(value: str) -> int:
+    raw = value.strip()
+    if raw.isdigit():
+        number = int(raw)
+        return number if number > 10_000_000_000 else number * 1000
+    normalized = raw[:-1] + "+00:00" if raw.endswith("Z") else raw
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", normalized):
+        normalized += "T00:00:00+00:00"
+    dt = datetime.fromisoformat(normalized)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return int(dt.timestamp() * 1000)
+
+
 def parse_timeframe_seconds(timeframe: str) -> int:
     value = timeframe.strip().lower()
     if value.endswith("m"):
@@ -440,7 +483,7 @@ def sanitize_name(value: str) -> str:
 
 
 def infer_tv_window(folder: Path) -> tuple[int | None, int | None]:
-    charts = sorted(folder.glob("tv_*_chart.csv"))
+    charts = find_chart_csvs(folder)
     if not charts:
         return None, None
     first_time = None
@@ -458,6 +501,22 @@ def infer_tv_window(folder: Path) -> tuple[int | None, int | None]:
                 first_time = ts
             last_time = ts
     return first_time, last_time
+
+
+def find_chart_csvs(folder: Path) -> list[Path]:
+    charts = sorted(folder.glob("tv_*_chart.csv"))
+    if charts:
+        return charts
+    candidates: list[Path] = []
+    for path in sorted(folder.glob("*.csv")):
+        try:
+            with path.open(newline="", encoding="utf-8", errors="ignore") as fh:
+                fieldnames = csv.DictReader(fh).fieldnames or []
+        except OSError:
+            continue
+        if "time" in fieldnames:
+            candidates.append(path)
+    return candidates
 
 
 def find_strategy_id(log_path: Path) -> str | None:

@@ -33,6 +33,10 @@ TRADE_COLUMNS = [
 ]
 
 
+def _plot_scalar(value: Any) -> Any:
+    return getattr(value, "_current", value)
+
+
 def parse_time_ms(value: str | None) -> int | None:
     if value is None or value == "":
         return None
@@ -108,7 +112,7 @@ def export_plot_records(
                 {
                     "bar_time": rec[0],
                     "bar_index": rec[1],
-                    "value": rec[2],
+                    "value": _plot_scalar(rec[2]),
                     "title": rec[3],
                 }
             )
@@ -117,7 +121,7 @@ def export_plot_records(
                 {
                     "bar_time": rec.bar_time,
                     "bar_index": getattr(rec, "bar_index", None),
-                    "value": rec.value,
+                    "value": _plot_scalar(rec.value),
                     "title": rec.title,
                 }
             )

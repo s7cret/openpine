@@ -200,9 +200,12 @@ class BacktestResultStore:
                     records = plots.get_records()
                 else:
                     records = plots
+                def _plot_value(value):
+                    return getattr(value, "_current", value)
+
                 for rec in records:
                     if isinstance(rec, tuple) and len(rec) >= 4:
-                        val = rec[2]
+                        val = _plot_value(rec[2])
                         # Convert PineNASentinel to None for Parquet compatibility
                         if val is not None and type(val).__name__ in ("PineNASentinel", "na"):
                             val = None
@@ -213,7 +216,7 @@ class BacktestResultStore:
                             "title": rec[3],
                         })
                     elif hasattr(rec, 'bar_time'):
-                        val = rec.value
+                        val = _plot_value(rec.value)
                         if val is not None and type(val).__name__ in ("PineNASentinel", "na"):
                             val = None
                         plot_records.append({
