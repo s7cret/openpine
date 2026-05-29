@@ -29,6 +29,8 @@ class BacktestRunConfig:
     pyramiding: int = 0
     qty_step: float | None = None
     qty_rounding_mode: str = "none"
+    plot_from_ms: int | None = None
+    plot_to_ms: int | None = None
 
 
 @dataclass(frozen=True)
@@ -211,16 +213,21 @@ class BacktestEngineAdapter:
             qty_rounding=config.qty_rounding_mode,
         )
         engine = self._module.BacktestEngine(engine_config)
+        runtime_kwargs = {
+            "symbol": config.symbol,
+            "timeframe": config.timeframe,
+            "plot_from_ms": config.plot_from_ms,
+            "plot_to_ms": config.plot_to_ms,
+        }
+        if progress_callback is not None:
+            runtime_kwargs["progress_callback"] = progress_callback
+
         result = engine.run(
             strategy_class,
             params=params or {},
             bars=engine_bars,
             execution_backend=execution_backend,
-            runtime_kwargs={
-                "symbol": config.symbol,
-                "timeframe": config.timeframe,
-                "progress_callback": progress_callback,
-            } if progress_callback is not None else None,
+            runtime_kwargs=runtime_kwargs,
         )
         return BacktestRunResult(
             status=getattr(result, "status", "ok"),

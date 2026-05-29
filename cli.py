@@ -789,6 +789,8 @@ def pine_run_plots(
         runtime_kwargs={
             "symbol": symbol,
             "timeframe": timeframe,
+            "plot_from_ms": compare_from_ms,
+            "plot_to_ms": compare_to_ms,
             "progress_callback": _progress,
         },
         params={},
@@ -4207,7 +4209,16 @@ def strategy_remove(strategy_id: str) -> None:
 @click.option("--from", "from_date")
 @click.option("--to", "to_date")
 @click.option("--capture-plots", is_flag=True, help="Capture and save plot outputs from runtime")
-def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | None, capture_plots: bool) -> None:
+@click.option("--capture-from", default=None, help="Optional plot capture window start")
+@click.option("--capture-to", default=None, help="Optional plot capture window end")
+def strategy_backtest(
+    strategy_id: str,
+    from_date: str | None,
+    to_date: str | None,
+    capture_plots: bool,
+    capture_from: str | None,
+    capture_to: str | None,
+) -> None:
     """Run backtest for a strategy."""
     import json as _json
     import time as _time
@@ -4272,6 +4283,8 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
 
         end_ms = _parse_date_ms(to_date, int(_time_module.time() * 1000))
         start_ms = _parse_date_ms(from_date, 0)
+        capture_from_ms = _parse_date_ms(capture_from, start_ms) if capture_from else None
+        capture_to_ms = _parse_date_ms(capture_to, end_ms) if capture_to else None
         if start_ms >= end_ms:
             console.print("[red]Invalid backtest window: --from must be before --to[/red]")
             registry.update_status(strategy_id, "paused")
@@ -4346,6 +4359,8 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
             commission_value=decl_args.get("commission_value", 0.0),
             exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
             pyramiding=decl_args.get("pyramiding", 0),
+            plot_from_ms=capture_from_ms if capture_plots else None,
+            plot_to_ms=capture_to_ms if capture_plots else None,
         )
         registry.update_status(strategy_id, "running")
         try:
