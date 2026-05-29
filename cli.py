@@ -24,6 +24,18 @@ def _fmt_utc_ms(timestamp_ms: int) -> str:
     return f"{datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc):%Y-%m-%d %H:%M:%S}"
 
 
+def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | None:
+    """Return observed TV quantity precision for common crypto spot symbols."""
+    if exchange.lower() == "binance" and market_type.lower() == "spot":
+        if symbol.upper() in {"BTCUSD", "BTCUSDT"}:
+            return 1e-6
+    return None
+
+
+def _default_qty_rounding_mode(exchange: str, market_type: str, symbol: str) -> str:
+    return "truncate" if _default_qty_step(exchange, market_type, symbol) is not None else "none"
+
+
 @click.group()
 @click.version_option(version=__version__, prog_name="openpine")
 def cli() -> None:
@@ -4365,6 +4377,8 @@ def strategy_backtest(
             commission_value=decl_args.get("commission_value", 0.0),
             exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
             pyramiding=decl_args.get("pyramiding", 0),
+            qty_step=_default_qty_step(s.exchange, s.market_type, s.symbol),
+            qty_rounding_mode=_default_qty_rounding_mode(s.exchange, s.market_type, s.symbol),
             plot_from_ms=capture_from_ms if capture_plots else None,
             plot_to_ms=capture_to_ms if capture_plots else None,
         )
@@ -4624,6 +4638,8 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             commission_value=decl_args.get("commission_value", 0.0),
             exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
             pyramiding=decl_args.get("pyramiding", 0),
+            qty_step=_default_qty_step(s.exchange, s.market_type, s.symbol),
+            qty_rounding_mode=_default_qty_rounding_mode(s.exchange, s.market_type, s.symbol),
         )
         registry.update_status(strategy_id, "running")
         try:
