@@ -117,6 +117,16 @@ def normalize_provider_bar(
     )
 
 
+def _is_synthetic_empty_provider_bar(provider_bar: Any) -> bool:
+    if not _has_field(provider_bar, "volume"):
+        return False
+    try:
+        volume = float(_attr_or_item(provider_bar, "volume"))
+    except (TypeError, ValueError):
+        return False
+    return volume == 0.0
+
+
 def _has_field(obj: Any, name: str) -> bool:
     return (isinstance(obj, dict) and name in obj) or hasattr(obj, name)
 
@@ -168,7 +178,11 @@ class LocalMarketDataProviderAdapter:
             log.warning("local_marketdata_provider.get_bars_failed", query=str(query), error=str(exc))
             raise
 
-        return [normalize_provider_bar(raw_bar, query) for raw_bar in raw_bars or []]
+        return [
+            normalize_provider_bar(raw_bar, query)
+            for raw_bar in raw_bars or []
+            if not _is_synthetic_empty_provider_bar(raw_bar)
+        ]
 
     def _call_provider(self, query: BarQuery, kwargs: dict[str, Any]) -> Any:
         get_bars = self._provider.get_bars
