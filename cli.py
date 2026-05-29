@@ -647,6 +647,180 @@ def pine_compile(name: str, force: bool) -> None:
         registry.close()
 
 
+@pine.command("run-plots")
+@click.argument("name")
+@click.option("--symbol", required=True, help="Symbol, e.g. BTCUSDT")
+@click.option("--timeframe", required=True, help="Chart timeframe, e.g. 15m")
+@click.option("--from", "from_date", required=True, help="Calculation start date")
+@click.option("--to", "to_date", default=None, help="Calculation end date")
+@click.option("--output", "output_dir", type=click.Path(file_okay=False), required=True)
+@click.option("--compare-from", default=None, help="Optional export window start")
+@click.option("--compare-to", default=None, help="Optional export window end")
+@click.option("--progress-every", default=10_000, show_default=True, help="Progress print interval in bars")
+def pine_run_plots(
+    name: str,
+    symbol: str,
+    timeframe: str,
+    from_date: str,
+    to_date: str | None,
+    output_dir: str,
+    compare_from: str | None,
+    compare_to: str | None,
+    progress_every: int,
+) -> None:
+    """Run an indicator Pine source and export normalized plot CSV."""
+    import time as _time
+    from types import SimpleNamespace
+
+    from openpine.contracts import BarQuery, InstrumentKey, Timeframe
+    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+    from openpine.exports import export_plot_records, parse_time_ms, write_json
+    from openpine.pine.registry import SQLitePineSourceRegistry
+    from openpine.runtime.engine import BacktestArtifactError, load_generated_class_from_artifact
+
+    start_total = _time.perf_counter()
+    timings: dict[str, float] = {}
+
+    registry = SQLitePineSourceRegistry()
+    try:
+        try:
+            source = registry.get_source(name)
+        except KeyError:
+            console.print(f"[red]Pine source not found: {name}[/red]")
+            sys.exit(1)
+    finally:
+        registry.close()
+
+    if not source.active_artifact_id:
+        console.print(
+            f"[red]Pine source {name} has no active artifact. "
+            f"Compile it first with: openpine pine pine-compile {name}[/red]"
+        )
+        sys.exit(1)
+
+    start_ms = parse_time_ms(from_date)
+    end_ms = parse_time_ms(to_date) or int(_time_module.time() * 1000)
+    compare_from_ms = parse_time_ms(compare_from)
+    compare_to_ms = parse_time_ms(compare_to)
+    if start_ms is None or start_ms >= end_ms:
+        console.print("[red]Invalid run window: --from must be before --to[/red]")
+        sys.exit(1)
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    console.print(f"[bold]Indicator plots: {name}[/bold]")
+    console.print(f"  artifact:   {source.active_artifact_id}")
+    console.print(f"  symbol:     {symbol}")
+    console.print(f"  timeframe:  {timeframe}")
+    console.print(f"  from:       {from_date}")
+    console.print(f"  to:         {to_date or 'now'}")
+
+    t0 = _time.perf_counter()
+    try:
+        generated_class = load_generated_class_from_artifact(source.id, source.active_artifact_id)
+    except BacktestArtifactError as exc:
+        console.print(f"[red]{exc}[/red]")
+        sys.exit(1)
+    timings["load_artifact_sec"] = _time.perf_counter() - t0
+
+    t0 = _time.perf_counter()
+    query = BarQuery(
+        instrument_key=InstrumentKey(symbol=symbol, exchange="BINANCE"),
+        timeframe=Timeframe(value=timeframe),
+        start_ms=start_ms,
+        end_ms=end_ms,
+    )
+    orch = DataOrchestrator()
+    provider = create_local_marketdata_provider_adapter()
+    if provider:
+        orch.set_provider(provider)
+    console.print("[dim]data: loading bars[/dim]")
+    bars = orch.get_bars(query)
+    timings["data_load_sec"] = _time.perf_counter() - t0
+    if not bars:
+        console.print(f"[red]No candle data found for {symbol} {timeframe}[/red]")
+        sys.exit(1)
+    console.print(f"[green]data: {len(bars)} bars loaded in {timings['data_load_sec']:.2f}s[/green]")
+    data_fetch_info = getattr(getattr(provider, "_provider", None), "last_fetch_info", None)
+
+    progress_every = max(1, progress_every)
+    last_progress = 0
+
+    def _progress(done: int, total: int) -> None:
+        nonlocal last_progress
+        if done == total or done - last_progress >= progress_every:
+            last_progress = done
+            console.print(f"[dim]runtime: {done}/{total} bars[/dim]")
+
+    t0 = _time.perf_counter()
+    from openpine.integrations import import_library
+
+    import_library("backtest_engine")
+    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
+
+    config = SimpleNamespace(
+        symbol=symbol,
+        timeframe=timeframe,
+        parity_mode=None,
+        process_orders_on_close=None,
+        calc_on_order_fills=None,
+        calc_on_every_tick=None,
+        mintick=0.01,
+        currency="USD",
+        data_provider=getattr(provider, "_provider", None),
+    )
+    backend_result = PineRuntimeBackend().execute(
+        generated_class,
+        bars,
+        config=config,
+        execution_window=None,
+        runtime_kwargs={
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "progress_callback": _progress,
+        },
+        params={},
+        is_indicator=True,
+    )
+    timings["runtime_sec"] = _time.perf_counter() - t0
+
+    t0 = _time.perf_counter()
+    plots_csv = output_path / "plots.csv"
+    plots_rows = export_plot_records(
+        list(getattr(backend_result, "plots", []) or []),
+        plots_csv,
+        from_ms=compare_from_ms,
+        to_ms=compare_to_ms,
+    )
+    timings["export_sec"] = _time.perf_counter() - t0
+    timings["total_sec"] = _time.perf_counter() - start_total
+
+    meta = {
+        "type": "indicator",
+        "pine_name": name,
+        "pine_id": source.id,
+        "artifact_id": source.active_artifact_id,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "calculation_from": start_ms,
+        "calculation_to": end_ms,
+        "compare_from": compare_from_ms,
+        "compare_to": compare_to_ms,
+        "bars_total": len(bars),
+        "data_fetch": data_fetch_info,
+        "plots_rows": plots_rows,
+        "timings": timings,
+        "outputs": {"plots": str(plots_csv)},
+    }
+    write_json(output_path / "run_meta.json", meta)
+    console.print("[green]Indicator plots exported[/green]")
+    console.print(f"  plots:     {plots_csv}")
+    console.print(f"  rows:      {plots_rows}")
+    console.print(f"  meta:      {output_path / 'run_meta.json'}")
+
+
 @pine.command("artifacts")
 @click.argument("name")
 def pine_artifacts(name: str) -> None:
@@ -4016,6 +4190,7 @@ def strategy_remove(strategy_id: str) -> None:
 def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | None, capture_plots: bool) -> None:
     """Run backtest for a strategy."""
     import json as _json
+    import time as _time
     from datetime import timezone as _timezone
 
     from openpine.contracts import BarQuery, InstrumentKey, Timeframe
@@ -4041,6 +4216,8 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
 
     registry = SQLiteStrategyRegistry()
     try:
+        total_t0 = _time.perf_counter()
+        timings: dict[str, float] = {}
         try:
             s = registry.get_strategy(strategy_id)
         except KeyError:
@@ -4078,6 +4255,7 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
+        t0 = _time.perf_counter()
         try:
             strategy_class = load_strategy_class_from_artifact(
                 s.pine_id,
@@ -4089,6 +4267,7 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
             console.print(f"[red]{exc}[/red]")
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
+        timings["load_artifact_sec"] = _time.perf_counter() - t0
 
         query = BarQuery(
             instrument_key=InstrumentKey(symbol=s.symbol, exchange=s.exchange.upper()),
@@ -4101,7 +4280,10 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
         provider = create_local_marketdata_provider_adapter()
         if provider:
             orch.set_provider(provider)
+        console.print("[dim]data: loading bars[/dim]")
+        t0 = _time.perf_counter()
         bars = orch.get_bars(query)
+        timings["data_load_sec"] = _time.perf_counter() - t0
         if not bars:
             console.print(
                 f"[red]No candle data found for {s.symbol} {s.timeframe} "
@@ -4113,6 +4295,8 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
             )
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
+        console.print(f"[green]data: {len(bars)} bars loaded in {timings['data_load_sec']:.2f}s[/green]")
+        data_fetch_info = getattr(getattr(provider, "_provider", None), "last_fetch_info", None)
 
         # Load declaration from compile_meta for config alignment
         from openpine.artifacts import ArtifactStore
@@ -4150,13 +4334,25 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
                     _backend = PineRuntimeBackend()
                 except Exception as exc:
                     console.print(f"[yellow]Warning: cannot set up plot backend: {exc}[/yellow]")
+            progress_every = max(1, len(bars) // 20)
+            last_progress = 0
+
+            def _progress(done: int, total: int) -> None:
+                nonlocal last_progress
+                if done == total or done - last_progress >= progress_every:
+                    last_progress = done
+                    console.print(f"[dim]runtime: {done}/{total} bars[/dim]")
+
+            t0 = _time.perf_counter()
             result = BacktestEngineAdapter().run(
                 _strategy_class,
                 bars,
                 config,
                 params=params,
                 execution_backend=_backend,
+                progress_callback=_progress,
             )
+            timings["backtest_sec"] = _time.perf_counter() - t0
         except Exception as exc:
             registry.update_status(strategy_id, "error")
             console.print(f"[red]Backtest failed: {type(exc).__name__}: {exc}[/red]")
@@ -4171,6 +4367,7 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
         from openpine.storage import BacktestResultStore, BacktestRunRequest
         bt_store = BacktestResultStore()
         try:
+            t0 = _time.perf_counter()
             # Create run record
             run_request = BacktestRunRequest(
                 strategy_id=s.strategy_id,
@@ -4194,6 +4391,39 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
                 equity_curve=getattr(result.raw_result, "equity_curve", None),
                 plots=getattr(result.raw_result, "plots", None) if capture_plots else None,
             )
+            timings["save_sec"] = _time.perf_counter() - t0
+            timings["total_sec"] = _time.perf_counter() - total_t0
+            run_dir = Path("~/.openpine/data/backtests").expanduser() / s.strategy_id / run_id
+            _plots = getattr(result.raw_result, "plots", None)
+            if _plots is None or not capture_plots:
+                _plot_record_count = 0
+            elif isinstance(_plots, list):
+                _plot_record_count = len(_plots)
+            elif hasattr(_plots, "get_records"):
+                _plot_record_count = len(_plots.get_records())
+            else:
+                _plot_record_count = 0
+            meta = {
+                "type": "strategy",
+                "strategy_id": s.strategy_id,
+                "strategy_name": s.name,
+                "pine_id": s.pine_id,
+                "artifact_id": s.artifact_id,
+                "symbol": s.symbol,
+                "timeframe": s.timeframe,
+                "calculation_from": start_ms,
+                "calculation_to": end_ms,
+                "bars_total": len(bars),
+                "data_fetch": data_fetch_info,
+                "bars_processed": result.bars_processed,
+                "trades_rows": len(getattr(result.raw_result, "trades", []) or []),
+                "open_trades": len(getattr(result.raw_result, "open_trades", []) or []),
+                "plots_records": _plot_record_count,
+                "process_next_bar_available": result.process_next_bar_available,
+                "timings": timings,
+            }
+            from openpine.exports import write_json
+            write_json(run_dir / "run_meta.json", meta)
             console.print(f"[green]Backtest saved:[/green] {run_id}")
             console.print(f"  trades:     {len(getattr(result.raw_result, 'trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
             console.print(f"  artifacts:  ~/.openpine/data/backtests/{s.strategy_id}/{run_id}/")
@@ -4734,6 +4964,114 @@ def strategy_plots(strategy_id: str, run_id: str | None, latest: bool) -> None:
                     console.print(f"  {title}: {count} rows")
             else:
                 console.print(f"[bold]Columns:[/bold] {list(df.columns)}")
+        finally:
+            bt_store.close()
+    finally:
+        registry.close()
+
+
+@strategy.command("export-run")
+@click.argument("strategy_id")
+@click.option("--run-id", help="Specific run ID (default: latest)")
+@click.option("--output", "output_dir", type=click.Path(file_okay=False), required=True)
+@click.option("--compare-from", default=None, help="Optional export window start")
+@click.option("--compare-to", default=None, help="Optional export window end")
+@click.option("--no-plots", is_flag=True, help="Do not export plots.csv")
+@click.option("--no-trades", is_flag=True, help="Do not export trades.csv")
+@click.option("--no-metrics", is_flag=True, help="Do not export metrics.json")
+def strategy_export_run(
+    strategy_id: str,
+    run_id: str | None,
+    output_dir: str,
+    compare_from: str | None,
+    compare_to: str | None,
+    no_plots: bool,
+    no_trades: bool,
+    no_metrics: bool,
+) -> None:
+    """Export a backtest run to normalized CSV/JSON files."""
+    from openpine.exports import (
+        export_plot_outputs,
+        export_trades,
+        parse_time_ms,
+        write_json,
+    )
+    from openpine.registry import SQLiteStrategyRegistry
+    from openpine.storage import BacktestResultStore, ARTIFACT_TYPE_PLOT_OUTPUTS
+
+    registry = SQLiteStrategyRegistry()
+    try:
+        try:
+            s = registry.get_strategy(strategy_id)
+        except KeyError:
+            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+            sys.exit(1)
+
+        bt_store = BacktestResultStore()
+        try:
+            run = bt_store.get_run(run_id) if run_id else bt_store.get_latest_run(strategy_id)
+            if not run:
+                console.print(f"[yellow]No backtest runs found for {strategy_id}[/yellow]")
+                sys.exit(1)
+
+            output_path = Path(output_dir)
+            output_path.mkdir(parents=True, exist_ok=True)
+            artifacts = bt_store.list_artifacts(run.run_id)
+            trades = bt_store.list_trades(run.run_id)
+            compare_from_ms = parse_time_ms(compare_from)
+            compare_to_ms = parse_time_ms(compare_to)
+
+            exported: dict[str, str] = {}
+            rows: dict[str, int] = {}
+
+            if not no_plots:
+                plot_artifact = next(
+                    (a for a in artifacts if a.artifact_type == ARTIFACT_TYPE_PLOT_OUTPUTS),
+                    None,
+                )
+                if plot_artifact:
+                    plots_path = output_path / "plots.csv"
+                    rows["plots"] = export_plot_outputs(
+                        plot_artifact.path,
+                        plots_path,
+                        from_ms=compare_from_ms,
+                        to_ms=compare_to_ms,
+                    )
+                    exported["plots"] = str(plots_path)
+                else:
+                    rows["plots"] = 0
+
+            if not no_trades:
+                trades_path = output_path / "trades.csv"
+                rows["trades"] = export_trades(trades, trades_path)
+                exported["trades"] = str(trades_path)
+
+            if not no_metrics:
+                metrics_path = output_path / "metrics.json"
+                run_payload = dict(run.__dict__)
+                run_payload["metrics"] = run.metrics.__dict__
+                write_json(
+                    metrics_path,
+                    {
+                        "run": run_payload,
+                        "metrics": run.metrics.__dict__,
+                        "artifacts": [a.__dict__ for a in artifacts],
+                    },
+                )
+                exported["metrics"] = str(metrics_path)
+
+            run_meta_path = Path("~/.openpine/data/backtests").expanduser() / strategy_id / run.run_id / "run_meta.json"
+            if run_meta_path.exists():
+                target_meta = output_path / "run_meta.json"
+                target_meta.write_text(run_meta_path.read_text(encoding="utf-8"), encoding="utf-8")
+                exported["run_meta"] = str(target_meta)
+
+            console.print(f"[green]Run exported:[/green] {run.run_id}")
+            console.print(f"  strategy: {s.name}")
+            for key, path in exported.items():
+                console.print(f"  {key}: {path}")
+            for key, count in rows.items():
+                console.print(f"  {key}_rows: {count}")
         finally:
             bt_store.close()
     finally:

@@ -27,6 +27,8 @@ class BacktestRunConfig:
     commission_value: float = 0.0
     exit_matching: str = "fifo"
     pyramiding: int = 0
+    qty_step: float | None = None
+    qty_rounding_mode: str = "none"
 
 
 @dataclass(frozen=True)
@@ -76,6 +78,31 @@ def load_strategy_class_from_artifact(
     if getattr(strategy_class, "__name__", "") in ("GeneratedStrategy", "GeneratedIndicator"):
         return _adapt_generated_strategy(strategy_class, symbol=symbol, timeframe=timeframe)
     return strategy_class
+
+
+def load_generated_class_from_artifact(source_id: str, artifact_id: str) -> type:
+    """Load the raw AST2Python generated class from a compiled artifact."""
+    from openpine.artifacts import ArtifactStore
+
+    store = ArtifactStore()
+    try:
+        artifact = store.get_artifact(artifact_id, source_id)
+    except FileNotFoundError as exc:
+        raise BacktestArtifactError(
+            f"Compiled artifact not found: {artifact_id}. "
+            f"Recompile the Pine source with: openpine pine compile <pine-name>"
+        ) from exc
+
+    artifact_dir = Path(str(artifact["artifact_dir"]))
+    strategy_path = artifact_dir / "generated_strategy.py"
+    if not strategy_path.exists():
+        raise BacktestArtifactError(
+            f"Artifact {artifact_id} has no generated_strategy.py. "
+            f"Recompile the Pine source with: openpine pine compile <pine-name>"
+        )
+
+    module = _load_generated_module(strategy_path, source_id, artifact_id)
+    return _select_strategy_class(module, artifact.get("compile_meta", {}))
 
 
 def _load_generated_module(path: Path, source_id: str, artifact_id: str) -> Any:
@@ -164,6 +191,7 @@ class BacktestEngineAdapter:
         config: BacktestRunConfig,
         params: dict | None = None,
         execution_backend: Any | None = None,
+        progress_callback: Any | None = None,
     ) -> BacktestRunResult:
         """Run a strategy through the external BacktestEngine."""
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
@@ -179,6 +207,8 @@ class BacktestEngineAdapter:
             commission_value=config.commission_value,
             exit_matching=config.exit_matching,
             pyramiding=config.pyramiding,
+            qty_step=config.qty_step,
+            qty_rounding=config.qty_rounding_mode,
         )
         engine = self._module.BacktestEngine(engine_config)
         result = engine.run(
@@ -186,6 +216,11 @@ class BacktestEngineAdapter:
             params=params or {},
             bars=engine_bars,
             execution_backend=execution_backend,
+            runtime_kwargs={
+                "symbol": config.symbol,
+                "timeframe": config.timeframe,
+                "progress_callback": progress_callback,
+            } if progress_callback is not None else None,
         )
         return BacktestRunResult(
             status=getattr(result, "status", "ok"),
