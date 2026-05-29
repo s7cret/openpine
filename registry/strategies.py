@@ -25,7 +25,7 @@ class StrategyInstance:
     symbol: str
     timeframe: str
     exchange: str = "binance"
-    market_type: str = "usdm"
+    market_type: str = "spot"
     price_type: str = "trade"
     mode: str = "paper"
     enabled: bool = False
@@ -85,7 +85,15 @@ class StrategyRegistry(Protocol):
     """Protocol for strategy registry — section 7.3."""
 
     def register_strategy(
-        self, artifact_id: str, symbol: str, timeframe: str, params: dict, name: str | None = None
+        self,
+        artifact_id: str,
+        symbol: str,
+        timeframe: str,
+        params: dict,
+        name: str | None = None,
+        exchange: str = "binance",
+        market_type: str = "spot",
+        price_type: str = "trade",
     ) -> StrategyInstance:
         """Register a new strategy instance."""
         ...
@@ -189,6 +197,9 @@ class SQLiteStrategyRegistry:
         params: dict,
         name: str | None = None,
         pine_id: str = "",
+        exchange: str = "binance",
+        market_type: str = "spot",
+        price_type: str = "trade",
     ) -> StrategyInstance:
         """Register a new strategy instance."""
         now = int(time.time() * 1000)
@@ -206,6 +217,9 @@ class SQLiteStrategyRegistry:
             params_hash=params_hash,
             symbol=symbol,
             timeframe=timeframe,
+            exchange=exchange,
+            market_type=market_type,
+            price_type=price_type,
             created_at=now,
             updated_at=now,
         )

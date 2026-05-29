@@ -35,11 +35,13 @@ class InstrumentKey(pydantic.BaseModel):
 
     symbol: str
     exchange: str = "BINANCE"
+    market_type: str = "spot"
+    price_type: str = "trade"
     base: Optional[str] = None
     quote: Optional[str] = None
 
     def __str__(self) -> str:
-        return f"{self.exchange}:{self.symbol}"
+        return f"{self.exchange}:{self.market_type}:{self.symbol}:{self.price_type}"
 
 
 class Timeframe(pydantic.BaseModel):

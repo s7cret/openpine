@@ -97,6 +97,8 @@ def normalize_provider_bar(
     instrument = InstrumentKey(
         symbol=symbol,
         exchange=exchange,
+        market_type=query.instrument_key.market_type,
+        price_type=query.instrument_key.price_type,
         base=query.instrument_key.base,
         quote=query.instrument_key.quote,
     )
@@ -182,11 +184,12 @@ class LocalMarketDataProviderAdapter:
             if {"exchange", "market", "symbol", "timeframe"} <= set(params):
                 return get_bars(
                     exchange=query.instrument_key.exchange.lower(),
-                    market="spot",
+                    market=query.instrument_key.market_type.lower(),
                     symbol=query.instrument_key.symbol,
                     timeframe=query.timeframe.value,
                     start=query.start_ms,
                     end=query.end_ms,
+                    **kwargs,
                 )
 
         return get_bars(

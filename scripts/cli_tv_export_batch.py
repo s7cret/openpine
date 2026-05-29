@@ -25,6 +25,8 @@ def main() -> int:
     parser.add_argument("--output", required=True, help="Normalized OpenPine output directory")
     parser.add_argument("--symbol", default="BTCUSDT")
     parser.add_argument("--timeframe", default="15m")
+    parser.add_argument("--exchange", default="binance")
+    parser.add_argument("--market-type", default="spot")
     parser.add_argument("--from", dest="from_date", default="2017-01-01")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--case", action="append", default=[])
@@ -54,6 +56,10 @@ def main() -> int:
                 "backfill",
                 args.symbol,
                 args.timeframe,
+                "--exchange",
+                args.exchange,
+                "--market",
+                args.market_type,
                 "--from",
                 args.from_date,
                 "--wait",
@@ -138,6 +144,10 @@ def process_case(folder: Path, output_root: Path, args: argparse.Namespace) -> d
                 args.symbol,
                 "--timeframe",
                 args.timeframe,
+                "--exchange",
+                args.exchange,
+                "--market-type",
+                args.market_type,
                 "--from",
                 args.from_date,
                 "--output",
@@ -167,6 +177,10 @@ def process_case(folder: Path, output_root: Path, args: argparse.Namespace) -> d
                     args.symbol,
                     "--timeframe",
                     args.timeframe,
+                    "--exchange",
+                    args.exchange,
+                    "--market-type",
+                    args.market_type,
                     "--mode",
                     "backtest",
                 ],

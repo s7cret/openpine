@@ -651,6 +651,8 @@ def pine_compile(name: str, force: bool) -> None:
 @click.argument("name")
 @click.option("--symbol", required=True, help="Symbol, e.g. BTCUSDT")
 @click.option("--timeframe", required=True, help="Chart timeframe, e.g. 15m")
+@click.option("--exchange", default="binance", show_default=True, help="Exchange name")
+@click.option("--market-type", default="spot", show_default=True, help="Market type, e.g. spot/usdm")
 @click.option("--from", "from_date", required=True, help="Calculation start date")
 @click.option("--to", "to_date", default=None, help="Calculation end date")
 @click.option("--output", "output_dir", type=click.Path(file_okay=False), required=True)
@@ -661,6 +663,8 @@ def pine_run_plots(
     name: str,
     symbol: str,
     timeframe: str,
+    exchange: str,
+    market_type: str,
     from_date: str,
     to_date: str | None,
     output_dir: str,
@@ -713,6 +717,8 @@ def pine_run_plots(
     console.print(f"[bold]Indicator plots: {name}[/bold]")
     console.print(f"  artifact:   {source.active_artifact_id}")
     console.print(f"  symbol:     {symbol}")
+    console.print(f"  exchange:   {exchange}")
+    console.print(f"  market:     {market_type}")
     console.print(f"  timeframe:  {timeframe}")
     console.print(f"  from:       {from_date}")
     console.print(f"  to:         {to_date or 'now'}")
@@ -727,7 +733,11 @@ def pine_run_plots(
 
     t0 = _time.perf_counter()
     query = BarQuery(
-        instrument_key=InstrumentKey(symbol=symbol, exchange="BINANCE"),
+        instrument_key=InstrumentKey(
+            symbol=symbol,
+            exchange=exchange.upper(),
+            market_type=market_type.lower(),
+        ),
         timeframe=Timeframe(value=timeframe),
         start_ms=start_ms,
         end_ms=end_ms,
@@ -803,6 +813,8 @@ def pine_run_plots(
         "pine_id": source.id,
         "artifact_id": source.active_artifact_id,
         "symbol": symbol,
+        "exchange": exchange,
+        "market_type": market_type,
         "timeframe": timeframe,
         "calculation_from": start_ms,
         "calculation_to": end_ms,
@@ -3990,6 +4002,8 @@ def strategy_status(strategy_id: str) -> None:
 @click.option("--pine", required=True, help="Pine source name")
 @click.option("--symbol", required=True)
 @click.option("--timeframe", required=True)
+@click.option("--exchange", default="binance", show_default=True, help="Exchange name")
+@click.option("--market-type", default="spot", show_default=True, help="Market type, e.g. spot/usdm")
 @click.option(
     "--mode",
     default="paper",
@@ -4001,6 +4015,8 @@ def strategy_create(
     pine: str,
     symbol: str,
     timeframe: str,
+    exchange: str,
+    market_type: str,
     mode: str,
     param: tuple[str, ...],
 ) -> None:
@@ -4046,6 +4062,8 @@ def strategy_create(
             params=params,
             name=strategy_id,
             pine_id=source.id,
+            exchange=exchange.lower(),
+            market_type=market_type.lower(),
         )
         # Set initial status based on mode
         initial_status = {
@@ -4061,6 +4079,8 @@ def strategy_create(
         console.print(f"  params_hash: {si.params_hash}")
         console.print(f"  status:      {initial_status}")
         console.print(f"  mode:        {mode}")
+        console.print(f"  exchange:    {si.exchange}")
+        console.print(f"  market_type: {si.market_type}")
     finally:
         registry.close()
 
@@ -4229,6 +4249,8 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
         console.print(f"  artifact:   {s.artifact_id}")
         console.print(f"  params:     {s.params_json}")
         console.print(f"  symbol:     {s.symbol}")
+        console.print(f"  exchange:   {s.exchange}")
+        console.print(f"  market:     {s.market_type}")
         console.print(f"  timeframe:  {s.timeframe}")
         console.print(f"  from:       {from_date or 'N/A'}")
         console.print(f"  to:         {to_date or 'N/A'}")
@@ -4270,7 +4292,12 @@ def strategy_backtest(strategy_id: str, from_date: str | None, to_date: str | No
         timings["load_artifact_sec"] = _time.perf_counter() - t0
 
         query = BarQuery(
-            instrument_key=InstrumentKey(symbol=s.symbol, exchange=s.exchange.upper()),
+            instrument_key=InstrumentKey(
+                symbol=s.symbol,
+                exchange=s.exchange.upper(),
+                market_type=s.market_type.lower(),
+                price_type=s.price_type.lower(),
+            ),
             timeframe=Timeframe(value=s.timeframe),
             start_ms=start_ms,
             end_ms=end_ms,
@@ -4491,6 +4518,8 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
         console.print(f"  artifact:   {s.artifact_id}")
         console.print(f"  params:     {s.params_json}")
         console.print(f"  symbol:     {s.symbol}")
+        console.print(f"  exchange:   {s.exchange}")
+        console.print(f"  market:     {s.market_type}")
         console.print(f"  timeframe:  {s.timeframe}")
         console.print(f"  from:       {from_date or 'N/A'}")
         console.print(f"  to:         {to_date or 'N/A'}")
@@ -4530,7 +4559,12 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             sys.exit(1)
 
         query = BarQuery(
-            instrument_key=InstrumentKey(symbol=s.symbol, exchange=s.exchange.upper()),
+            instrument_key=InstrumentKey(
+                symbol=s.symbol,
+                exchange=s.exchange.upper(),
+                market_type=s.market_type.lower(),
+                price_type=s.price_type.lower(),
+            ),
             timeframe=Timeframe(value=s.timeframe),
             start_ms=start_ms,
             end_ms=end_ms,
