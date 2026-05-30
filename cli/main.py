@@ -4058,17 +4058,6 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
         load_strategy_class_from_artifact,
     )
 
-    def _parse_date_ms(value: str | None, default: int) -> int:
-        if not value:
-            return default
-        if value.isdigit():
-            raw = int(value)
-            return raw if raw > 10_000_000_000 else raw * 1000
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        return int(parsed.timestamp() * 1000)
-
     registry = SQLiteStrategyRegistry()
     try:
         try:
@@ -4102,8 +4091,8 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        end_ms = _parse_date_ms(to_date, int(_time_module.time() * 1000))
-        start_ms = _parse_date_ms(from_date, 0)
+        end_ms = _parse_cli_date_ms(to_date, int(_time_module.time() * 1000))
+        start_ms = _parse_cli_date_ms(from_date, 0)
         if start_ms >= end_ms:
             console.print("[red]Invalid replay window: --from must be before --to[/red]")
             registry.update_status(strategy_id, "paused")
@@ -4121,15 +4110,16 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        query = BarQuery(
-            instrument=InstrumentKey(
-                symbol=s.symbol.upper(),
-                exchange=s.exchange.upper(),
-                market=s.market_type.lower(),
-            ),
-            timeframe=parse_timeframe(s.timeframe),
+        query = _build_cli_bar_query(
+            symbol=s.symbol,
+            exchange=s.exchange,
+            market_type=s.market_type,
+            timeframe=s.timeframe,
             start_ms=start_ms,
             end_ms=end_ms,
+            bar_query_cls=BarQuery,
+            instrument_key_cls=InstrumentKey,
+            parse_timeframe_func=parse_timeframe,
         )
         bars = DataOrchestrator().get_bars(query)
         if not bars:
