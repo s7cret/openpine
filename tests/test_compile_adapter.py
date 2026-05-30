@@ -111,6 +111,25 @@ def test_parse_with_pine2ast_subprocess_retries_v5_rejection(
     assert compile_meta["compatibility_fallback"]["pine_version_to"] == 6
 
 
+def test_parse_with_library_api_retries_v5_rejection() -> None:
+    metadata = {}
+    apis = _fake_library_apis_with_v5_retry(metadata)
+    compile_meta = {}
+
+    ast, error = adapter_module._parse_with_library_api(
+        apis=apis,
+        source_text="//@version=5\nindicator('x')\n",
+        options=SimpleNamespace(),
+        profile=CompileProfile.diagnostic(allow_implicit_version_rewrite=True),
+        compile_meta=compile_meta,
+    )
+
+    assert error is None
+    assert ast == {"kind": "Program"}
+    assert compile_meta["unsafe"] is True
+    assert compile_meta["compatibility_fallback"]["pine_version_to"] == 6
+
+
 def _fake_library_apis(metadata: dict):
     return adapter_module._LibraryApis(
         parse_code=lambda _source, _options: SimpleNamespace(

@@ -371,6 +371,69 @@ def _parse_with_pine2ast_subprocess(
     return result_p2a, None
 
 
+def _parse_with_library_api(
+    *,
+    apis: _LibraryApis,
+    source_text: str,
+    options: Any,
+    profile: CompileProfile,
+    compile_meta: dict[str, Any],
+) -> tuple[Any | None, CompileResult | None]:
+    parse_result = apis.parse_code(source_text, options)
+    ast = getattr(parse_result, "ast", None)
+    diagnostics = list(getattr(parse_result, "diagnostics", []) or [])
+    ok = bool(getattr(parse_result, "ok", False))
+    if ast is not None and ok:
+        return ast, None
+
+    parse_errors = [_diagnostic_message(diagnostic) for diagnostic in diagnostics] or [
+        "pine2ast returned no AST"
+    ]
+    normalized_source, normalized = _normalize_pine_v5_directive(source_text)
+    if not (normalized and _is_pine_v5_version_rejection(parse_errors)):
+        return None, CompileResult(
+            success=False,
+            errors=parse_errors,
+            compile_meta=compile_meta,
+        )
+
+    if not profile.allow_implicit_version_rewrite:
+        return None, CompileResult(
+            success=False,
+            errors=parse_errors,
+            compile_meta=compile_meta,
+        )
+
+    parse_result = apis.parse_code(normalized_source, options)
+    ast = getattr(parse_result, "ast", None)
+    diagnostics = list(getattr(parse_result, "diagnostics", []) or [])
+    ok = bool(getattr(parse_result, "ok", False))
+    warnings = list(compile_meta.get("warnings", []))
+    warnings.append(_PINE_V5_FALLBACK_WARNING)
+    _mark_compile_meta_unsafe(compile_meta, _PINE_V5_FALLBACK_UNSAFE_REASON)
+    compile_meta.update(
+        {
+            "warnings": warnings,
+            "compatibility_fallback": {
+                "pine_version_from": 5,
+                "pine_version_to": 6,
+                "reason": "pine2ast_version_rejection",
+            },
+            "original_parse_errors": parse_errors,
+        }
+    )
+    if ast is None or not ok:
+        retry_errors = [_diagnostic_message(diagnostic) for diagnostic in diagnostics] or [
+            "pine2ast returned no AST"
+        ]
+        return None, CompileResult(
+            success=False,
+            errors=retry_errors,
+            compile_meta=compile_meta,
+        )
+    return ast, None
+
+
 def _profile_from_kwargs(kwargs: dict[str, Any]) -> CompileProfile:
     raw = kwargs.get("profile")
     if isinstance(raw, CompileProfile):
@@ -504,66 +567,16 @@ class SubprocessCompilerAdapter:
             options = apis.parse_options(
                 source_name=kwargs.get("source_name", "<memory>"),
             )
-            parse_result = apis.parse_code(source_text, options)
-            ast = getattr(parse_result, "ast", None)
-            diagnostics = list(getattr(parse_result, "diagnostics", []) or [])
-            ok = bool(getattr(parse_result, "ok", False))
-            if ast is None or not ok:
-                parse_errors = [
-                    _diagnostic_message(diagnostic) for diagnostic in diagnostics
-                ] or ["pine2ast returned no AST"]
-                normalized_source, normalized = _normalize_pine_v5_directive(source_text)
-                if normalized and _is_pine_v5_version_rejection(parse_errors):
-                    if not profile.allow_implicit_version_rewrite:
-                        return CompileResult(
-                            success=False,
-                            errors=parse_errors,
-                            compile_meta=compile_meta,
-                        )
-                    parse_result = apis.parse_code(normalized_source, options)
-                    ast = getattr(parse_result, "ast", None)
-                    diagnostics = list(getattr(parse_result, "diagnostics", []) or [])
-                    ok = bool(getattr(parse_result, "ok", False))
-                    warnings = list(compile_meta.get("warnings", []))
-                    warnings.append(_PINE_V5_FALLBACK_WARNING)
-                    _mark_compile_meta_unsafe(
-                        compile_meta, _PINE_V5_FALLBACK_UNSAFE_REASON
-                    )
-                    compile_meta.update(
-                        {
-                            "warnings": warnings,
-                            "compatibility_fallback": {
-                                "pine_version_from": 5,
-                                "pine_version_to": 6,
-                                "reason": "pine2ast_version_rejection",
-                            },
-                            "original_parse_errors": parse_errors,
-                        }
-                    )
-                    if ast is None or not ok:
-                        retry_errors = [
-                            _diagnostic_message(diagnostic) for diagnostic in diagnostics
-                        ] or ["pine2ast returned no AST"]
-                        return CompileResult(
-                            success=False,
-                            errors=retry_errors,
-                            compile_meta=compile_meta,
-                        )
-
-                if ast is None or not ok:
-                    return CompileResult(
-                        success=False,
-                        errors=parse_errors,
-                        compile_meta=compile_meta,
-                    )
-
-            if ast is None or not ok:
-                return CompileResult(
-                    success=False,
-                    errors=[_diagnostic_message(diagnostic) for diagnostic in diagnostics]
-                    or ["pine2ast returned no AST"],
-                    compile_meta=compile_meta,
-                )
+            ast, parse_error = _parse_with_library_api(
+                apis=apis,
+                source_text=source_text,
+                options=options,
+                profile=profile,
+                compile_meta=compile_meta,
+            )
+            if parse_error is not None:
+                return parse_error
+            assert ast is not None
 
             ast_json = apis.ast_to_json(ast)
             ast_payload = json.loads(ast_json)
