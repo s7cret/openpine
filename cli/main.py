@@ -452,6 +452,11 @@ def _print_indicator_plot_header(
     console.print(f"  to:         {to_date or 'now'}")
 
 
+def _ensure_output_dir(output_dir: str) -> Path:
+    output_path = _ensure_output_dir(output_dir)
+    return output_path
+
+
 def _load_indicator_plot_bars(
     *,
     symbol: str,
@@ -519,6 +524,47 @@ def _execute_indicator_plot_runtime(
         params={},
         is_indicator=True,
     )
+
+
+def _run_indicator_plot_runtime(
+    *,
+    generated_class,
+    bars,
+    symbol: str,
+    timeframe: str,
+    exchange: str,
+    market_type: str,
+    provider,
+    compare_from_ms: int | None,
+    compare_to_ms: int | None,
+    progress_every: int,
+    console,
+    perf_counter,
+) -> tuple[object, float]:
+    t0 = perf_counter()
+    config = _build_indicator_plot_config(
+        symbol=symbol,
+        timeframe=timeframe,
+        exchange=exchange,
+        market_type=market_type,
+        provider=provider,
+    )
+    backend_result = _execute_indicator_plot_runtime(
+        generated_class=generated_class,
+        bars=bars,
+        config=config,
+        symbol=symbol,
+        timeframe=timeframe,
+        provider=provider,
+        compare_from_ms=compare_from_ms,
+        compare_to_ms=compare_to_ms,
+        progress_callback=_build_progress_callback(
+            bars_total=len(bars),
+            console=console,
+            progress_every=progress_every,
+        ),
+    )
+    return backend_result, perf_counter() - t0
 
 
 def _write_indicator_plot_outputs(
@@ -837,6 +883,45 @@ def _save_strategy_backtest_result(
         console=console,
     )
     return run_id, run_dir
+
+
+def _save_strategy_backtest_result_safely(
+    *,
+    store,
+    request_cls,
+    strategy,
+    start_ms: int,
+    end_ms: int,
+    bars_total: int,
+    data_fetch_info,
+    result,
+    capture_plots: bool,
+    timings: dict[str, float],
+    total_started: float,
+    perf_counter,
+    console,
+) -> None:
+    try:
+        _save_strategy_backtest_result(
+            store=store,
+            request_cls=request_cls,
+            strategy=strategy,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            bars_total=bars_total,
+            data_fetch_info=data_fetch_info,
+            result=result,
+            capture_plots=capture_plots,
+            timings=timings,
+            total_started=total_started,
+            perf_counter=perf_counter,
+            console=console,
+        )
+    except Exception as exc:
+        console.print(f"[yellow]Warning: failed to save backtest results: {exc}[/yellow]")
+        import traceback
+
+        traceback.print_exc()
 
 
 def _run_strategy_backtest_adapter(
@@ -1789,30 +1874,20 @@ def pine_run_plots(
         console=console,
     )
 
-    t0 = _time.perf_counter()
-    config = _build_indicator_plot_config(
+    backend_result, timings["runtime_sec"] = _run_indicator_plot_runtime(
+        generated_class=prepared.generated_class,
+        bars=prepared.bars,
         symbol=symbol,
         timeframe=timeframe,
         exchange=exchange,
         market_type=market_type,
         provider=prepared.provider,
-    )
-    backend_result = _execute_indicator_plot_runtime(
-        generated_class=prepared.generated_class,
-        bars=prepared.bars,
-        config=config,
-        symbol=symbol,
-        timeframe=timeframe,
-        provider=prepared.provider,
         compare_from_ms=prepared.compare_from_ms,
         compare_to_ms=prepared.compare_to_ms,
-        progress_callback=_build_progress_callback(
-            bars_total=len(prepared.bars),
-            console=console,
-            progress_every=progress_every,
-        ),
+        progress_every=progress_every,
+        console=console,
+        perf_counter=_time.perf_counter,
     )
-    timings["runtime_sec"] = _time.perf_counter() - t0
 
     plots_csv, plots_rows, timings["export_sec"] = _write_indicator_plot_outputs(
         backend_result=backend_result,
@@ -4633,7 +4708,7 @@ def strategy_backtest(
         from openpine.storage import BacktestResultStore, BacktestRunRequest
         bt_store = BacktestResultStore()
         try:
-            _save_strategy_backtest_result(
+            _save_strategy_backtest_result_safely(
                 store=bt_store,
                 request_cls=BacktestRunRequest,
                 strategy=s,
@@ -4648,10 +4723,6 @@ def strategy_backtest(
                 perf_counter=_time.perf_counter,
                 console=console,
             )
-        except Exception as exc:
-            console.print(f"[yellow]Warning: failed to save backtest results: {exc}[/yellow]")
-            import traceback
-            traceback.print_exc()
         finally:
             bt_store.close()
 
