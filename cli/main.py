@@ -348,6 +348,93 @@ def _prepare_strategy_backtest_inputs(
     )
 
 
+def _prepare_strategy_replay_inputs(
+    *,
+    strategy,
+    strategy_id: str,
+    from_date: str | None,
+    to_date: str | None,
+    now_ms: int,
+    registry,
+    load_strategy_class,
+    artifact_error_cls,
+    artifact_store_cls,
+    bar_query_cls,
+    instrument_key_cls,
+    parse_timeframe_func,
+    orchestrator_cls,
+    config_cls,
+    perf_counter,
+    console,
+):
+    start_ms, end_ms, _, _ = _parse_strategy_backtest_window(
+        from_date=from_date,
+        to_date=to_date,
+        capture_from=None,
+        capture_to=None,
+        now_ms=now_ms,
+    )
+    if start_ms >= end_ms:
+        console.print("[red]Invalid replay window: --from must be before --to[/red]")
+        registry.update_status(strategy_id, "paused")
+        sys.exit(1)
+
+    try:
+        strategy_class, _ = _load_strategy_backtest_class(
+            strategy=strategy,
+            load_strategy_class=load_strategy_class,
+            perf_counter=perf_counter,
+        )
+    except artifact_error_cls as exc:
+        console.print(f"[red]{exc}[/red]")
+        registry.update_status(strategy_id, "paused")
+        sys.exit(1)
+
+    bars, _, _, _ = _load_strategy_backtest_bars(
+        strategy=strategy,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        bar_query_cls=bar_query_cls,
+        instrument_key_cls=instrument_key_cls,
+        parse_timeframe_func=parse_timeframe_func,
+        orchestrator_cls=orchestrator_cls,
+        provider_factory=lambda: None,
+        console=console,
+    )
+    _exit_if_no_strategy_bars(
+        bars=bars,
+        strategy=strategy,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        from_date=from_date,
+        to_date=to_date,
+        registry=registry,
+        strategy_id=strategy_id,
+        console=console,
+    )
+
+    decl_args = _strategy_backtest_declaration_args(
+        artifact_store_cls=artifact_store_cls,
+        strategy=strategy,
+    )
+    import json as _json
+
+    params = _json.loads(strategy.params_json) if strategy.params_json else {}
+    config = _build_strategy_replay_config(
+        strategy=strategy,
+        decl_args=decl_args,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        config_cls=config_cls,
+    )
+    return SimpleNamespace(
+        strategy_class=strategy_class,
+        bars=bars,
+        params=params,
+        config=config,
+    )
+
+
 def _build_strategy_backtest_run_request(
     *,
     strategy,
@@ -4737,7 +4824,6 @@ def strategy_backtest(
 @click.option("--to", "to_date")
 def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None) -> None:
     """Run replay for a strategy."""
-    import json as _json
     import time as _time_module
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
@@ -4752,11 +4838,11 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
 
     registry = SQLiteStrategyRegistry()
     try:
-        try:
-            s = registry.get_strategy(strategy_id)
-        except KeyError:
-            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
-            sys.exit(1)
+        s = _get_strategy_or_exit(
+            registry=registry,
+            strategy_id=strategy_id,
+            console=console,
+        )
         _print_strategy_command_header(
             label="Replay",
             strategy_id=strategy_id,
@@ -4772,74 +4858,32 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        start_ms, end_ms, _, _ = _parse_strategy_backtest_window(
+        from openpine.artifacts import ArtifactStore
+        prepared = _prepare_strategy_replay_inputs(
+            strategy=s,
+            strategy_id=strategy_id,
             from_date=from_date,
             to_date=to_date,
-            capture_from=None,
-            capture_to=None,
             now_ms=int(_time_module.time() * 1000),
-        )
-        if start_ms >= end_ms:
-            console.print("[red]Invalid replay window: --from must be before --to[/red]")
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-
-        try:
-            strategy_class, _ = _load_strategy_backtest_class(
-                strategy=s,
-                load_strategy_class=load_strategy_class_from_artifact,
-                perf_counter=_time_module.perf_counter,
-            )
-        except BacktestArtifactError as exc:
-            console.print(f"[red]{exc}[/red]")
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-
-        bars, _, _, _ = _load_strategy_backtest_bars(
-            strategy=s,
-            start_ms=start_ms,
-            end_ms=end_ms,
+            registry=registry,
+            load_strategy_class=load_strategy_class_from_artifact,
+            artifact_error_cls=BacktestArtifactError,
+            artifact_store_cls=ArtifactStore,
             bar_query_cls=BarQuery,
             instrument_key_cls=InstrumentKey,
             parse_timeframe_func=parse_timeframe,
             orchestrator_cls=DataOrchestrator,
-            provider_factory=lambda: None,
-            console=console,
-        )
-        if not bars:
-            console.print(
-                f"[red]No candle data found for {s.symbol} {s.timeframe} "
-                f"in {start_ms}-{end_ms}.[/red]"
-            )
-            console.print(
-                f"[yellow]Run: openpine data backfill {s.symbol} {s.timeframe} "
-                f"--from {from_date or start_ms} --to {to_date or end_ms}[/yellow]"
-            )
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-
-        # Load declaration from compile_meta for config alignment
-        from openpine.artifacts import ArtifactStore
-        decl_args = _strategy_backtest_declaration_args(
-            artifact_store_cls=ArtifactStore,
-            strategy=s,
-        )
-
-        params = _json.loads(s.params_json) if s.params_json else {}
-        config = _build_strategy_replay_config(
-            strategy=s,
-            decl_args=decl_args,
-            start_ms=start_ms,
-            end_ms=end_ms,
             config_cls=BacktestRunConfig,
+            perf_counter=_time_module.perf_counter,
+            console=console,
         )
         registry.update_status(strategy_id, "running")
         try:
             result = BacktestEngineAdapter().run(
-                strategy_class,
-                bars,
-                config,
-                params=params,
+                prepared.strategy_class,
+                prepared.bars,
+                prepared.config,
+                params=prepared.params,
             )
         except Exception as exc:
             registry.update_status(strategy_id, "error")
