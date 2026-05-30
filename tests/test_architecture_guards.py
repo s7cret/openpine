@@ -213,6 +213,19 @@ def test_data_backfill_wait_uses_orchestrator_store_boundary() -> None:
     assert "WriteMode" not in backfill_source
 
 
+def test_data_gaps_cli_uses_orchestrator_boundary() -> None:
+    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    gaps_start = source.index('@data.command("gaps")')
+    repair_start = source.index('@data.command("repair")')
+    gaps_source = source[gaps_start:repair_start]
+
+    assert "DataOrchestrator" in gaps_source
+    assert "detect_gaps" in gaps_source
+    assert "create_local_marketdata_provider_adapter" not in gaps_source
+    assert "fetch_bars" not in gaps_source
+    assert "_timeframe_to_ms" not in source
+
+
 def test_data_cli_does_not_expose_legacy_compaction_command() -> None:
     source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
 

@@ -1179,46 +1179,33 @@ def data_status(symbol: str | None, exchange: str, tf: str | None) -> None:
 def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
     """Find and list data gaps for a symbol/timeframe."""
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+    from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
 
     console.print(f"[bold]Data gaps[/bold] {symbol} {timeframe} (exchange={exchange}, market={market})")
 
+    query = BarQuery(
+        instrument=InstrumentKey(exchange=exchange, symbol=symbol, market=market),
+        timeframe=parse_timeframe(timeframe),
+        start_ms=0,
+        end_ms=int(2**63 - 1),
+        source="storage",
+        gap_policy="allow_with_metadata",
+    )
     try:
-        provider_adapter = create_local_marketdata_provider_adapter()
-        query = BarQuery(
-            instrument=InstrumentKey(exchange=exchange.upper(), symbol=symbol.upper(), market=market),
-            timeframe=parse_timeframe(timeframe),
-            start_ms=0,
-            end_ms=int(2**63 - 1),
-        )
-        series = provider_adapter.fetch_bars(query)
-    except Exception as exc:
-        raise click.ClickException(f"marketdata-provider gap scan failed: {exc}") from exc
-
-    bars = list(series.bars)
-    if not bars:
-        console.print("[dim](no data returned by provider)[/dim]")
-        return
-
-    gaps: list[tuple[int, int]] = []
-    bar_times = sorted(set(bar.time for bar in bars))
-    tf_ms = _timeframe_to_ms(timeframe)
-    for i in range(1, len(bar_times)):
-        prev = bar_times[i - 1]
-        curr = bar_times[i]
-        if curr - prev > tf_ms * 1.5:
-            gaps.append((prev, curr))
+        gaps = DataOrchestrator().detect_gaps(query)
+    except StorageUnavailableError as exc:
+        raise click.ClickException(f"storage gap scan failed: {exc}") from exc
 
     if not gaps:
-        console.print(f"[green]No gaps found ({len(bar_times)} bars loaded)[/green]")
+        console.print("[green]No gaps found[/green]")
         return
 
     console.print(f"[yellow]{len(gaps)} gap(s) found:[/yellow]")
-    for g_start, g_end in gaps:
+    for gap in gaps:
         console.print(
-            f"  gap: {datetime.utcfromtimestamp(g_start / 1000):%Y-%m-%d %H:%M}"
-            f" → {datetime.utcfromtimestamp(g_end / 1000):%Y-%m-%d %H:%M}"
-            f"  ({(g_end - g_start) / 1000 / 3600:.1f}h missing)"
+            f"  gap: {datetime.utcfromtimestamp(gap.gap_start / 1000):%Y-%m-%d %H:%M}"
+            f" → {datetime.utcfromtimestamp(gap.gap_end / 1000):%Y-%m-%d %H:%M}"
+            f"  ({(gap.gap_end - gap.gap_start) / 1000 / 3600:.1f}h missing)"
         )
 
 
@@ -1730,16 +1717,6 @@ def data_providers() -> None:
             status,
         )
     console.print(tbl)
-
-
-def _timeframe_to_ms(timeframe: str) -> int:
-    """Convert timeframe string to milliseconds through canonical contracts."""
-    from marketdata_provider.contracts import parse_timeframe
-
-    duration_ms = parse_timeframe(timeframe).duration_ms
-    if duration_ms is None:
-        raise click.ClickException(f"timeframe has no fixed millisecond duration: {timeframe}")
-    return duration_ms
 
 
 @data.command("ensure-active")
