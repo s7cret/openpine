@@ -231,7 +231,9 @@ def test_data_backfill_wait_uses_orchestrator_store_boundary() -> None:
     source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
     backfill_start = source.index('@data.command("backfill")')
     parallel_start = source.index('@data.command("parallel-backfill")')
-    backfill_source = source[backfill_start:parallel_start]
+    helper_start = source.index("def _run_sync_binance_backfill")
+    helper_end = source.index("def _build_indicator_plot_config")
+    backfill_source = source[backfill_start:parallel_start] + source[helper_start:helper_end]
 
     assert "DataOrchestrator" in backfill_source
     assert "store_bars" in backfill_source

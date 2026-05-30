@@ -362,10 +362,19 @@ def test_strategy_backtest_data_and_declaration_helpers():
 
 
 def test_data_backfill_helpers_parse_dates_and_klines():
-    from openpine.cli.main import _binance_kline_to_bar, _parse_cli_ymd_ms
+    from openpine.cli.main import (
+        _binance_kline_to_bar,
+        _parse_cli_ymd_ms,
+        _parse_data_backfill_window,
+    )
 
     start_ms, error = _parse_cli_ymd_ms("2024-01-01", option_name="--from")
     bad_ms, bad_error = _parse_cli_ymd_ms("2024/01/01", option_name="--from")
+    window = _parse_data_backfill_window(
+        from_date="2024-01-01",
+        to_date=None,
+        now_ms=1_800_000_000_000,
+    )
     bar = _binance_kline_to_bar(
         [1000, "1.0", "2.0", "0.5", "1.5", "10.0", 1999],
         instrument="instrument",
@@ -376,6 +385,7 @@ def test_data_backfill_helpers_parse_dates_and_klines():
     assert error is None
     assert bad_ms is None
     assert bad_error == "Invalid --from date format: 2024/01/01 (use YYYY-MM-DD)"
+    assert window == (1_704_056_400_000, 1_800_000_000_000, None)
     assert bar.instrument == "instrument"
     assert bar.timeframe == "15m"
     assert bar.time == 1000
