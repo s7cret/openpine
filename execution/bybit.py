@@ -385,7 +385,7 @@ class BybitLiveExecutionAdapter:
         For explicit symbol, use cancel_order_for_symbol(order_id, symbol).
 
         FAIL-CLOSED: exchange unavailability raises for known-symbol cancels.
-        FAIL-CLOSED: No tracked symbol and no explicit symbol => False
+        FAIL-CLOSED: No tracked symbol and no explicit symbol raises.
 
         Args:
             order_id: Exchange order ID
@@ -395,7 +395,9 @@ class BybitLiveExecutionAdapter:
         """
         symbol = self._get_tracked_symbol(order_id)
         if symbol is None:
-            return False  # Need symbol, fail-closed
+            raise ExecutionUnavailableError(
+                "Bybit cancel requires a tracked symbol or explicit symbol"
+            )
         return await self.cancel_order_for_symbol(order_id, symbol)
 
     async def cancel_order_for_symbol(self, order_id: str, symbol: str) -> bool:
@@ -447,7 +449,7 @@ class BybitLiveExecutionAdapter:
         For explicit symbol, use get_order_status_for_symbol(order_id, symbol).
 
         FAIL-CLOSED: exchange unavailability raises for known-symbol status checks.
-        FAIL-CLOSED: No tracked symbol => None
+        FAIL-CLOSED: No tracked symbol raises.
 
         Args:
             order_id: Exchange order ID
@@ -457,7 +459,9 @@ class BybitLiveExecutionAdapter:
         """
         symbol = self._get_tracked_symbol(order_id)
         if symbol is None:
-            return None  # Need symbol, fail-closed
+            raise ExecutionUnavailableError(
+                "Bybit order status requires a tracked symbol or explicit symbol"
+            )
         return await self.get_order_status_for_symbol(order_id, symbol)
 
     async def get_order_status_for_symbol(

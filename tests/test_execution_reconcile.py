@@ -60,6 +60,28 @@ async def test_live_cancel_fails_closed_without_synthetic_false(
 @pytest.mark.parametrize(
     "adapter,error_text",
     [
+        (
+            BinanceLiveExecutionAdapter(client=_FailingClient()),
+            "Binance cancel requires a tracked symbol",
+        ),
+        (
+            BybitLiveExecutionAdapter(client=_FailingClient()),
+            "Bybit cancel requires a tracked symbol",
+        ),
+    ],
+)
+async def test_live_protocol_cancel_fails_closed_without_tracked_symbol(
+    adapter,
+    error_text: str,
+) -> None:
+    with pytest.raises(ExecutionUnavailableError, match=error_text):
+        await adapter.cancel_order("order-1")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "adapter,error_text",
+    [
         (BinanceLiveExecutionAdapter(), "Binance order status requires an injected client"),
         (BybitLiveExecutionAdapter(), "Bybit order status requires an injected client"),
         (BinanceLiveExecutionAdapter(client=_FailingClient()), "Binance order status failed"),
@@ -72,3 +94,25 @@ async def test_live_status_fails_closed_without_synthetic_none(
 ) -> None:
     with pytest.raises(ExecutionUnavailableError, match=error_text):
         await adapter.get_order_status_for_symbol("order-1", "BTCUSDT")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "adapter,error_text",
+    [
+        (
+            BinanceLiveExecutionAdapter(client=_FailingClient()),
+            "Binance order status requires a tracked symbol",
+        ),
+        (
+            BybitLiveExecutionAdapter(client=_FailingClient()),
+            "Bybit order status requires a tracked symbol",
+        ),
+    ],
+)
+async def test_live_protocol_status_fails_closed_without_tracked_symbol(
+    adapter,
+    error_text: str,
+) -> None:
+    with pytest.raises(ExecutionUnavailableError, match=error_text):
+        await adapter.get_order_status("order-1")
