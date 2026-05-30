@@ -31,7 +31,7 @@ dev = [
 ]
 
 [project.scripts]
-openpine = "openpine.cli:cli"
+openpine = "openpine.cli.main:main"
 
 [tool.setuptools]
 package-dir = {"openpine" = "."}

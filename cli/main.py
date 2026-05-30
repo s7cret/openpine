@@ -43,20 +43,9 @@ def cli() -> None:
     pass
 
 
-@cli.group()
-def batch() -> None:
-    """Batch execution commands."""
-    pass
+from openpine.cli.batch import batch
 
-
-@batch.command("run", context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
-@click.pass_context
-def batch_run(ctx: click.Context) -> None:
-    """Run the manifest-driven Pine export batch runner."""
-    from openpine.batch.runner import main as batch_main
-
-    argv = ["--phase", "run", *ctx.args]
-    raise SystemExit(batch_main(argv))
+cli.add_command(batch)
 
 
 def _validate_event_schema(event_type: str) -> bool:
@@ -2446,64 +2435,9 @@ def workers_resume() -> None:
 # ── config (top-level) ─────────────────────────────────────────────────────────
 
 
-@cli.group()
-def config() -> None:
-    """Configuration management commands."""
-    pass
+from openpine.cli.config import config as config_group
 
-
-@config.command("show")
-def config_show() -> None:
-    """Show current OpenPine configuration."""
-    from openpine.config import OpenPineConfig, DEFAULT_CONFIG
-
-    cfg = OpenPineConfig.load()
-    console.print("[bold]OpenPine Configuration[/bold]")
-    console.print(f"  data_dir:       {cfg.data_dir}")
-    console.print(f"  config_dir:     {cfg.config_dir}")
-    console.print(f"  sqlite_path:    {cfg.sqlite_path}")
-    console.print(f"  duckdb_path:    {cfg.duckdb_path}")
-    console.print(f"  log_level:      {cfg.log_level}")
-    console.print(f"  live_enabled:   {cfg.live_enabled}")
-    console.print(f"  kill_switch:    {cfg.kill_switch}")
-    console.print(f"  plugins.telegram.enabled: {cfg.plugins.telegram.enabled}")
-    console.print(f"  plugins.telegram.token_ref: {cfg.plugins.telegram.token_ref}")
-
-
-@config.command("validate")
-def config_validate() -> None:
-    """Validate the current OpenPine configuration."""
-    from openpine.config import OpenPineConfig
-
-    cfg = OpenPineConfig.load()
-    errors: list[str] = []
-
-    # Required fields check
-    if cfg.data_dir is None:
-        errors.append("data_dir is required")
-    if cfg.config_dir is None:
-        errors.append("config_dir is required")
-    if cfg.sqlite_path is None:
-        errors.append("sqlite_path is required")
-
-    # Type checks
-    if not isinstance(cfg.live_enabled, bool):
-        errors.append("live_enabled must be a boolean")
-    if not isinstance(cfg.kill_switch, bool):
-        errors.append("kill_switch must be a boolean")
-    if not isinstance(cfg.log_level, str):
-        errors.append("log_level must be a string")
-    if cfg.log_level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
-        errors.append(f"log_level must be one of DEBUG/INFO/WARNING/ERROR/CRITICAL, got {cfg.log_level}")
-
-    console.print("[bold]Config Validation[/bold]")
-    if errors:
-        console.print("[red]Validation failed:[/red]")
-        for err in errors:
-            console.print(f"  [red]- {err}[/red]")
-        sys.exit(1)
-    else:
-        console.print("[green]Configuration is valid.[/green]")
+cli.add_command(config_group)
 
 
 # ── init (top-level) ──────────────────────────────────────────────────────────
@@ -3324,30 +3258,9 @@ def core_check() -> None:
         sys.exit(1)
 
 
-@cli.group()
-def optimizer() -> None:
-    """Optimization commands."""
-    pass
+from openpine.cli.optimizer import optimizer
 
-
-@optimizer.command("dry-run")
-@click.option("--strategy", "strategy_id", required=True, help="Strategy ID")
-@click.option("--trials", required=True, type=int, help="Number of trials to plan")
-def optimizer_dry_run(strategy_id: str, trials: int) -> None:
-    """Validate optimizer routing without launching external work."""
-    from openpine.optimizer import OptimizerService
-
-    if trials < 1:
-        console.print("[red]--trials must be >= 1[/red]")
-        sys.exit(1)
-
-    result = OptimizerService().validate_config(strategy_id=strategy_id, trials=trials)
-    console.print("[bold]Optimizer config validation[/bold]")
-    console.print(f"strategy_id:               {result.strategy_id}")
-    console.print(f"trials_requested:          {result.trials_requested}")
-    console.print(f"status:                    {result.status}")
-    if result.reason:
-        console.print(f"reason:                    {result.reason}")
+cli.add_command(optimizer)
 
 
 # ── reports ────────────────────────────────────────────────────────────────────
@@ -4405,8 +4318,9 @@ def strategy_backtest(
             # Always use PineRuntimeBackend for generated strategies to ensure
             # consistent execution semantics regardless of --capture-plots flag.
             # capture_plots only controls whether plots are persisted, not execution.
-            if hasattr(strategy_class, "generated_strategy_class_ref"):
-                _strategy_class = strategy_class.generated_strategy_class_ref
+            generated_ref = vars(strategy_class).get("generated_strategy_class_ref")
+            if generated_ref is not None:
+                _strategy_class = generated_ref
                 try:
                     from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
                     _backend = PineRuntimeBackend()
