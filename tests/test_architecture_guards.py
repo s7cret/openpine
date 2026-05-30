@@ -299,6 +299,12 @@ def test_production_compile_profile_rejects_stub_flags() -> None:
     assert "unsafe compile allowances" in result.errors[0]
 
 
+def test_openpine_compile_profile_reexports_ast2python_contract() -> None:
+    from ast2python.profiles import CompileProfile as AstCompileProfile
+
+    assert CompileProfile is AstCompileProfile
+
+
 def test_optimizer_dry_run_validation_is_not_production_result() -> None:
     result = OptimizerService().validate_config(strategy_id="s1", trials=1)
 

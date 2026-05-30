@@ -13,6 +13,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, Literal, Protocol
 
+from ast2python.profiles import CompileProfile
+
 # Common installation locations for pine2ast/ast2python
 TOOL_SEARCH_PATHS = [
     Path.home() / ".local" / "bin",
@@ -27,31 +29,6 @@ _PINE_V5_FALLBACK_WARNING = (
     "Pine v5 compatibility fallback: parser rejected //@version=5; "
     "retried as //@version=6"
 )
-
-
-@dataclass(frozen=True)
-class CompileProfile:
-    """Compile safety profile for product vs diagnostic paths."""
-
-    name: Literal["production", "diagnostic"] = "production"
-    allow_external_library_stubs: bool = False
-    allow_unsupported_request_stubs: bool = False
-    allow_subprocess_fallback: bool = False
-    allow_implicit_version_rewrite: bool = False
-
-    @classmethod
-    def production(cls) -> "CompileProfile":
-        return cls()
-
-    @classmethod
-    def diagnostic(cls) -> "CompileProfile":
-        return cls(
-            name="diagnostic",
-            allow_external_library_stubs=True,
-            allow_unsupported_request_stubs=True,
-            allow_subprocess_fallback=True,
-            allow_implicit_version_rewrite=True,
-        )
 
 
 def _find_tool(name: str) -> Path | None:
@@ -265,13 +242,22 @@ def _profile_from_kwargs(kwargs: dict[str, Any]) -> CompileProfile:
     if isinstance(raw, CompileProfile):
         profile = raw
     elif raw == "diagnostic":
-        profile = CompileProfile.diagnostic()
+        unsafe = True
+        profile = CompileProfile(
+            name="diagnostic",
+            allow_external_library_stubs=unsafe,
+            allow_unsupported_request_stubs=unsafe,
+            allow_invalid_ast=unsafe,
+            allow_subprocess_fallback=unsafe,
+            allow_implicit_version_rewrite=unsafe,
+        )
     else:
         profile = CompileProfile.production()
 
     if profile.name == "production" and (
         profile.allow_external_library_stubs
         or profile.allow_unsupported_request_stubs
+        or profile.allow_invalid_ast
         or profile.allow_subprocess_fallback
         or profile.allow_implicit_version_rewrite
     ):
@@ -451,7 +437,7 @@ class SubprocessCompilerAdapter:
                 module_name=module_name,
                 strict=strict,
                 emit_source_comments=kwargs.get("emit_source_comments", True),
-                allow_invalid_ast=kwargs.get("allow_invalid_ast", False),
+                allow_invalid_ast=kwargs.get("allow_invalid_ast", profile.allow_invalid_ast),
                 allow_contract_mismatch=kwargs.get("allow_contract_mismatch", False),
                 allow_external_library_stubs=kwargs.get(
                     "allow_external_library_stubs", profile.allow_external_library_stubs
