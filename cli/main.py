@@ -1179,113 +1179,48 @@ def data_status(symbol: str | None, exchange: str, tf: str | None) -> None:
 @click.option("--market", default="usdm", help="Market type")
 def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
     """Find and list data gaps for a symbol/timeframe."""
-    from openpine.config import OpenPineConfig
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 
     console.print(f"[bold]Data gaps[/bold] {symbol} {timeframe} (exchange={exchange}, market={market})")
 
-    # Try using marketdata_provider
     try:
         provider_adapter = create_local_marketdata_provider_adapter()
-    except Exception:
-        provider_adapter = None
-
-    if provider_adapter is not None:
-        try:
-            from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-            from openpine.data.orchestrator import DataOrchestrator
-
-            ik = InstrumentKey(exchange=exchange.upper(), symbol=symbol.upper(), market=market)
-            query = BarQuery(instrument=ik, timeframe=parse_timeframe(timeframe), start_ms=0, end_ms=int(2**63 - 1))
-            bars = provider_adapter.fetch_bars(query)
-            if not bars:
-                console.print("[dim](no data returned by provider)[/dim]")
-                return
-
-            gaps: list[tuple[int, int]] = []
-            bar_times = sorted(set(b.time for b in bars))
-            for i in range(1, len(bar_times)):
-                prev = bar_times[i - 1]
-                curr = bar_times[i]
-                # Expected step in ms for the timeframe
-                tf_ms = _timeframe_to_ms(timeframe)
-                if curr - prev > tf_ms * 1.5:
-                    gaps.append((prev, curr))
-
-            if not gaps:
-                console.print(f"[green]No gaps found ({len(bar_times)} bars loaded)[/green]")
-            else:
-                console.print(f"[yellow]{len(gaps)} gap(s) found:[/yellow]")
-                for g_start, g_end in gaps:
-                    console.print(
-                        f"  gap: {datetime.utcfromtimestamp(g_start / 1000):%Y-%m-%d %H:%M}"
-                        f" → {datetime.utcfromtimestamp(g_end / 1000):%Y-%m-%d %H:%M}"
-                        f"  ({(g_end - g_start) / 1000 / 3600:.1f}h missing)"
-                    )
-            return
-        except Exception as e:
-            console.print(f"[dim]marketdata_provider error ({e}), falling back to direct query[/dim]")
-
-    # Fallback: query parquet files directly
-    from openpine.config import OpenPineConfig
-
-    config = OpenPineConfig.load()
-    candle_dir = (
-        config.data_dir
-        / "candles"
-        / f"exchange={exchange}"
-        / f"market_type={market}"
-        / f"symbol={symbol}"
-        / "price_type=trade"
-        / f"timeframe={timeframe}"
-    )
-
-    if not candle_dir.exists():
-        console.print(
-            f"[dim]No candle data found at: {candle_dir}\n"
-            f"  → run 'openpine data backfill {symbol} {timeframe} ...' first[/dim]"
+        query = BarQuery(
+            instrument=InstrumentKey(exchange=exchange.upper(), symbol=symbol.upper(), market=market),
+            timeframe=parse_timeframe(timeframe),
+            start_ms=0,
+            end_ms=int(2**63 - 1),
         )
+        series = provider_adapter.fetch_bars(query)
+    except Exception as exc:
+        raise click.ClickException(f"marketdata-provider gap scan failed: {exc}") from exc
+
+    bars = list(series.bars)
+    if not bars:
+        console.print("[dim](no data returned by provider)[/dim]")
         return
 
-    try:
-        import pandas as pd
-    except ImportError:
-        console.print("[dim]pandas not available — cannot read parquet files[/dim]")
+    gaps: list[tuple[int, int]] = []
+    bar_times = sorted(set(bar.time for bar in bars))
+    tf_ms = _timeframe_to_ms(timeframe)
+    for i in range(1, len(bar_times)):
+        prev = bar_times[i - 1]
+        curr = bar_times[i]
+        if curr - prev > tf_ms * 1.5:
+            gaps.append((prev, curr))
+
+    if not gaps:
+        console.print(f"[green]No gaps found ({len(bar_times)} bars loaded)[/green]")
         return
 
-    parquet_files = sorted(candle_dir.rglob("*.parquet"))
-    if not parquet_files:
-        console.print(f"[dim]No parquet files found for {symbol} {timeframe}[/dim]")
-        return
-
-    try:
-        df = pd.concat((pd.read_parquet(f) for f in parquet_files), ignore_index=True)
-        df = df.sort_values("open_time")
-        bar_times = df["open_time"].drop_duplicates().tolist()
-        if len(bar_times) < 2:
-            console.print(f"[dim](only {len(bar_times)} bar(s), too few to detect gaps)[/dim]")
-            return
-
-        gaps: list[tuple[int, int]] = []
-        tf_ms = _timeframe_to_ms(timeframe)
-        for i in range(1, len(bar_times)):
-            prev = bar_times[i - 1]
-            curr = bar_times[i]
-            if curr - prev > tf_ms * 1.5:
-                gaps.append((prev, curr))
-
-        if not gaps:
-            console.print(f"[green]No gaps found ({len(bar_times)} bars across {len(parquet_files)} file(s))[/green]")
-        else:
-            console.print(f"[yellow]{len(gaps)} gap(s) found:[/yellow]")
-            for g_start, g_end in sorted(gaps):
-                console.print(
-                    f"  gap: {datetime.utcfromtimestamp(g_start / 1000):%Y-%m-%d %H:%M}"
-                    f" → {datetime.utcfromtimestamp(g_end / 1000):%Y-%m-%d %H:%M}"
-                    f"  ({(g_end - g_start) / 1000 / 3600:.1f}h missing)"
-                )
-    except Exception as e:
-        console.print(f"[red]Error reading parquet files: {e}[/red]")
+    console.print(f"[yellow]{len(gaps)} gap(s) found:[/yellow]")
+    for g_start, g_end in gaps:
+        console.print(
+            f"  gap: {datetime.utcfromtimestamp(g_start / 1000):%Y-%m-%d %H:%M}"
+            f" → {datetime.utcfromtimestamp(g_end / 1000):%Y-%m-%d %H:%M}"
+            f"  ({(g_end - g_start) / 1000 / 3600:.1f}h missing)"
+        )
 
 
 @data.command("repair")
