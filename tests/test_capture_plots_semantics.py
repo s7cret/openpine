@@ -249,6 +249,71 @@ def test_cli_bar_query_helper_normalizes_instrument_identity():
     assert query.end_ms == 200
 
 
+def test_strategy_backtest_data_and_declaration_helpers():
+    from openpine.cli.main import (
+        _load_strategy_backtest_bars,
+        _strategy_backtest_declaration_args,
+    )
+
+    bars_fixture = [SimpleNamespace(time=100)]
+    provider_core = SimpleNamespace(last_fetch_info={"source": "fixture"})
+    provider = SimpleNamespace(_provider=provider_core)
+    captured_query = {}
+
+    class FakeOrchestrator:
+        def set_provider(self, value):
+            self.provider = value
+
+        def get_bars(self, query):
+            captured_query["query"] = query
+            return bars_fixture
+
+    class FakeStore:
+        def get_artifact(self, artifact_id, pine_id):
+            assert (artifact_id, pine_id) == ("artifact-1", "pine-1")
+            return {
+                "compile_meta": {
+                    "translation_metadata": {
+                        "declaration": {"arguments": {"initial_capital": 50_000}}
+                    }
+                }
+            }
+
+    messages: list[tuple] = []
+    console = SimpleNamespace(print=lambda *args, **kwargs: messages.append(args))
+    strategy = SimpleNamespace(
+        symbol="BTCUSDT",
+        exchange="binance",
+        market_type="spot",
+        timeframe="15m",
+        artifact_id="artifact-1",
+        pine_id="pine-1",
+    )
+
+    bars, loaded_provider, data_fetch, load_sec = _load_strategy_backtest_bars(
+        strategy=strategy,
+        start_ms=100,
+        end_ms=200,
+        bar_query_cls=lambda **kwargs: SimpleNamespace(**kwargs),
+        instrument_key_cls=lambda **kwargs: SimpleNamespace(**kwargs),
+        parse_timeframe_func=lambda value: f"tf:{value}",
+        orchestrator_cls=FakeOrchestrator,
+        provider_factory=lambda: provider,
+        console=console,
+    )
+    decl_args = _strategy_backtest_declaration_args(
+        artifact_store_cls=FakeStore,
+        strategy=strategy,
+    )
+
+    assert bars == bars_fixture
+    assert loaded_provider is provider
+    assert data_fetch == {"source": "fixture"}
+    assert load_sec >= 0
+    assert captured_query["query"].timeframe == "tf:15m"
+    assert decl_args == {"initial_capital": 50_000}
+
+
 def test_data_backfill_helpers_parse_dates_and_klines():
     from openpine.cli.main import _binance_kline_to_bar, _parse_cli_ymd_ms
 

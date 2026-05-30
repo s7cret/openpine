@@ -249,6 +249,53 @@ def _print_strategy_plot_capture_status(*, raw_result, capture_plots: bool, cons
         console.print("[yellow]  plots:      plot outputs unavailable from engine result[/yellow]")
 
 
+def _load_strategy_backtest_bars(
+    *,
+    strategy,
+    start_ms: int,
+    end_ms: int,
+    bar_query_cls,
+    instrument_key_cls,
+    parse_timeframe_func,
+    orchestrator_cls,
+    provider_factory,
+    console,
+):
+    import time as _time
+
+    query = _build_cli_bar_query(
+        symbol=strategy.symbol,
+        exchange=strategy.exchange,
+        market_type=strategy.market_type,
+        timeframe=strategy.timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        bar_query_cls=bar_query_cls,
+        instrument_key_cls=instrument_key_cls,
+        parse_timeframe_func=parse_timeframe_func,
+    )
+    orch = orchestrator_cls()
+    provider = provider_factory()
+    if provider:
+        orch.set_provider(provider)
+    console.print("[dim]data: loading bars[/dim]")
+    t0 = _time.perf_counter()
+    bars = orch.get_bars(query)
+    data_load_sec = _time.perf_counter() - t0
+    if bars:
+        console.print(f"[green]data: {len(bars)} bars loaded in {data_load_sec:.2f}s[/green]")
+    data_fetch_info = getattr(getattr(provider, "_provider", None), "last_fetch_info", None)
+    return bars, provider, data_fetch_info, data_load_sec
+
+
+def _strategy_backtest_declaration_args(*, artifact_store_cls, strategy) -> dict:
+    store = artifact_store_cls()
+    artifact = store.get_artifact(strategy.artifact_id, strategy.pine_id)
+    compile_meta = artifact.get("compile_meta", {})
+    declaration = compile_meta.get("translation_metadata", {}).get("declaration", {})
+    return declaration.get("arguments", {})
+
+
 def _build_cli_bar_query(
     *,
     symbol: str,
@@ -3999,26 +4046,18 @@ def strategy_backtest(
             sys.exit(1)
         timings["load_artifact_sec"] = _time.perf_counter() - t0
 
-        query = _build_cli_bar_query(
-            symbol=s.symbol,
-            exchange=s.exchange,
-            market_type=s.market_type,
-            timeframe=s.timeframe,
+        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+        bars, provider, data_fetch_info, timings["data_load_sec"] = _load_strategy_backtest_bars(
+            strategy=s,
             start_ms=start_ms,
             end_ms=end_ms,
             bar_query_cls=BarQuery,
             instrument_key_cls=InstrumentKey,
             parse_timeframe_func=parse_timeframe,
+            orchestrator_cls=DataOrchestrator,
+            provider_factory=create_local_marketdata_provider_adapter,
+            console=console,
         )
-        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
-        orch = DataOrchestrator()
-        provider = create_local_marketdata_provider_adapter()
-        if provider:
-            orch.set_provider(provider)
-        console.print("[dim]data: loading bars[/dim]")
-        t0 = _time.perf_counter()
-        bars = orch.get_bars(query)
-        timings["data_load_sec"] = _time.perf_counter() - t0
         if not bars:
             console.print(
                 f"[red]No candle data found for {s.symbol} {s.timeframe} "
@@ -4030,16 +4069,13 @@ def strategy_backtest(
             )
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
-        console.print(f"[green]data: {len(bars)} bars loaded in {timings['data_load_sec']:.2f}s[/green]")
-        data_fetch_info = getattr(getattr(provider, "_provider", None), "last_fetch_info", None)
 
         # Load declaration from compile_meta for config alignment
         from openpine.artifacts import ArtifactStore
-        store = ArtifactStore()
-        artifact = store.get_artifact(s.artifact_id, s.pine_id)
-        compile_meta = artifact.get("compile_meta", {})
-        declaration = compile_meta.get("translation_metadata", {}).get("declaration", {})
-        decl_args = declaration.get("arguments", {})
+        decl_args = _strategy_backtest_declaration_args(
+            artifact_store_cls=ArtifactStore,
+            strategy=s,
+        )
 
         params = _json.loads(s.params_json) if s.params_json else {}
         config = _build_strategy_backtest_config(
