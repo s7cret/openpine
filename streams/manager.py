@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import structlog
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, is_dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
@@ -26,6 +26,14 @@ if TYPE_CHECKING:
     from openpine.data.orchestrator import DataOrchestrator
 
 log = structlog.get_logger(__name__)
+
+
+def _serialize_marketdata_model(value: object) -> dict:
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    if is_dataclass(value):
+        return asdict(value)
+    return dict(value)  # type: ignore[arg-type]
 
 
 class SubscriptionStatus(StrEnum):
@@ -64,8 +72,8 @@ class StreamSubscription:
         """Factory: create a new subscription from domain objects."""
         return cls(
             subscription_id=f"sub_{uuid.uuid4().hex[:16]}",
-            instrument_key=instrument_key.model_dump() if hasattr(instrument_key, "model_dump") else dict(instrument_key),
-            timeframe=timeframe.model_dump() if hasattr(timeframe, "model_dump") else dict(timeframe),
+            instrument_key=_serialize_marketdata_model(instrument_key),
+            timeframe=_serialize_marketdata_model(timeframe),
             status=SubscriptionStatus.ACTIVE,
             provider=provider,
         )
@@ -126,15 +134,18 @@ class MarketDataStreamManager:
         Returns:
             StreamSubscription for the new subscription.
         """
+        instrument_data = _serialize_marketdata_model(instrument_key)
+        timeframe_data = _serialize_marketdata_model(timeframe)
+
         # Check for existing active subscription
         for sub in self._subscriptions.values():
-            if sub.status == SubscriptionStatus.ACTIVE:
-                sub_ik = sub.instrument_key
-                sub_tf = sub.timeframe
-                if sub_ik == (instrument_key.model_dump() if hasattr(instrument_key, "model_dump") else dict(instrument_key)):
-                    if sub_tf == (timeframe.model_dump() if hasattr(timeframe, "model_dump") else dict(timeframe)):
-                        log.debug("market_data_stream_manager.already_subscribed", subscription_id=sub.subscription_id)
-                        return sub
+            if (
+                sub.status == SubscriptionStatus.ACTIVE
+                and sub.instrument_key == instrument_data
+                and sub.timeframe == timeframe_data
+            ):
+                log.debug("market_data_stream_manager.already_subscribed", subscription_id=sub.subscription_id)
+                return sub
 
         # Create new subscription
         sub = StreamSubscription.create(instrument_key, timeframe)
