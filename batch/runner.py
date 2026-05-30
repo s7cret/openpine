@@ -93,6 +93,9 @@ def _write_progress(
     phase: str,
     status: str,
     note: str = "",
+    selected_count: int | None = None,
+    processed_count: int | None = None,
+    summary_by_timeframe: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     """Write durable current_progress.json for operator visibility.
 
@@ -108,6 +111,12 @@ def _write_progress(
     }
     if entry_id is not None:
         payload["current_entry_id"] = entry_id
+    if selected_count is not None:
+        payload["selected_count"] = selected_count
+    if processed_count is not None:
+        payload["processed_count"] = processed_count
+    if summary_by_timeframe is not None:
+        payload["summary_by_timeframe"] = summary_by_timeframe
     write_json(root / "current_progress.json", payload)
 BAR_CACHE: dict[tuple[str, str, str, str, int, int], list[Any]] = {}
 
@@ -683,12 +692,17 @@ def entry_summary(entry: ExportEntry) -> dict[str, Any]:
     }
 
 
+def _selected_timeframes(entry: ExportEntry, args: argparse.Namespace) -> list[str]:
+    return [chart.timeframe for chart in _wanted_charts(entry, args)]
+
+
 def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", library_revisions: dict[str, str] | None = None) -> dict[str, Any]:
     started = time.perf_counter()
     timings: dict[str, float] = {}
     status: dict[str, Any] = {
         **entry_summary(entry),
         "phase": args.phase,
+        "selected_timeframes": _selected_timeframes(entry, args),
         "started_at": utc_now(),
         "status": "planned",
         "timings": timings,
@@ -812,6 +826,53 @@ def summarize(results: list[dict[str, Any]]) -> dict[str, Any]:
     return {"stats": stats, "by_kind": by_kind, "by_timeframe": by_tf}
 
 
+def summary_by_timeframe(results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Aggregate actual batch outcomes by TradingView timeframe."""
+
+    out: dict[str, dict[str, Any]] = {}
+
+    def ensure(tf: str) -> dict[str, Any]:
+        if tf not in out:
+            out[tf] = {
+                "selected": 0,
+                "statuses": {},
+                "bars": 0,
+                "plots_rows": 0,
+                "trades_rows": 0,
+                "equity_rows": 0,
+            }
+        return out[tf]
+
+    for result in results:
+        runs = result.get("runs") or []
+        if runs:
+            for run in runs:
+                tf = str(run.get("timeframe") or "unknown")
+                bucket = ensure(tf)
+                bucket["selected"] += 1
+                status = str(run.get("status") or "unknown")
+                bucket["statuses"][status] = bucket["statuses"].get(status, 0) + 1
+                for key in ("bars", "plots_rows", "trades_rows", "equity_rows"):
+                    value = run.get(key)
+                    if isinstance(value, (int, float)):
+                        bucket[key] += int(value)
+            continue
+
+        timeframes = result.get("selected_timeframes") or [
+            chart.get("timeframe", "unknown")
+            for chart in result.get("charts", [])
+            if isinstance(chart, dict)
+        ]
+        for tf_value in timeframes:
+            tf = str(tf_value or "unknown")
+            bucket = ensure(tf)
+            bucket["selected"] += 1
+            status = str(result.get("status") or "unknown")
+            bucket["statuses"][status] = bucket["statuses"].get(status, 0) + 1
+
+    return {tf: out[tf] for tf in sorted(out)}
+
+
 def resolve_calculation_to_by_timeframe(
     entries: list[ExportEntry],
     args: argparse.Namespace,
@@ -888,16 +949,50 @@ def main(argv: list[str] | None = None) -> int:
         }
         print(f"calculation_to_by_timeframe={json.dumps(resolved, ensure_ascii=False)}")
 
-    _write_progress(args.root, batch_id, None, args.phase, "running", f"selected={len(selected)}")
+    _write_progress(
+        args.root,
+        batch_id,
+        None,
+        args.phase,
+        "running",
+        f"selected={len(selected)}",
+        selected_count=len(selected),
+        processed_count=0,
+        summary_by_timeframe={},
+    )
     results: list[dict[str, Any]] = []
     for idx, entry in enumerate(selected, 1):
-        _write_progress(args.root, batch_id, entry.export_id, args.phase, "entry_start", entry.folder)
+        _write_progress(
+            args.root,
+            batch_id,
+            entry.export_id,
+            args.phase,
+            "entry_start",
+            entry.folder,
+            selected_count=len(selected),
+            processed_count=idx - 1,
+            summary_by_timeframe=summary_by_timeframe(results),
+        )
         print(f"[{idx}/{len(selected)}] {entry.export_id:04d} {entry.kind} {entry.folder}")
         if completed_for_selection(entry, args):
-            result = {**entry_summary(entry), "phase": args.phase, "status": "skipped_completed"}
+            result = {
+                **entry_summary(entry),
+                "phase": args.phase,
+                "selected_timeframes": _selected_timeframes(entry, args),
+                "status": "skipped_completed",
+            }
             results.append(result)
             print("  -> skipped_completed")
-            _write_progress(args.root, batch_id, entry.export_id, args.phase, "skipped_completed")
+            _write_progress(
+                args.root,
+                batch_id,
+                entry.export_id,
+                args.phase,
+                "skipped_completed",
+                selected_count=len(selected),
+                processed_count=idx,
+                summary_by_timeframe=summary_by_timeframe(results),
+            )
             continue
         try:
             result = run_entry(entry, args, batch_id=batch_id, library_revisions=library_revisions)
@@ -905,6 +1000,7 @@ def main(argv: list[str] | None = None) -> int:
             result = {
                 **entry_summary(entry),
                 "phase": args.phase,
+                "selected_timeframes": _selected_timeframes(entry, args),
                 "status": "fatal_error",
                 "error_type": type(exc).__name__,
                 "error": str(exc),
@@ -920,14 +1016,33 @@ def main(argv: list[str] | None = None) -> int:
         write_json(entry.root / "openpine_outputs" / "openpine_batch_status.json", status_record)
         if result_has_error(result):
             append_jsonl(errors_path, {**result, "created_at": utc_now()})
-        _write_progress(args.root, batch_id, entry.export_id, args.phase, result.get("status", "unknown"))
+        _write_progress(
+            args.root,
+            batch_id,
+            entry.export_id,
+            args.phase,
+            result.get("status", "unknown"),
+            selected_count=len(selected),
+            processed_count=idx,
+            summary_by_timeframe=summary_by_timeframe(results),
+        )
         print(f"  -> {result.get('status')}")
         if args.stop_on_error and result.get("status") in {"compile_error", "fatal_error", "partial_or_error"}:
             break
 
     # Write durable current_progress.json marking batch complete
     final_status = "completed" if all(r.get("status") != "fatal_error" for r in results) else "failed"
-    _write_progress(args.root, batch_id, None, args.phase, final_status)
+    timeframe_summary = summary_by_timeframe(results)
+    _write_progress(
+        args.root,
+        batch_id,
+        None,
+        args.phase,
+        final_status,
+        selected_count=len(selected),
+        processed_count=len(results),
+        summary_by_timeframe=timeframe_summary,
+    )
 
     # Per-timeframe summary CSV
     tf_rows: list[dict[str, Any]] = []
@@ -971,6 +1086,7 @@ def main(argv: list[str] | None = None) -> int:
         "total_manifest_entries": len(entries),
         "library_revisions": library_revisions,
         "summary": summarize(results),
+        "summary_by_timeframe": timeframe_summary,
         "results": results,
     }
     write_json(summary_path, payload)

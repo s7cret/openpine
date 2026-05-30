@@ -11,7 +11,9 @@ from openpine.batch.runner import (
     _build_run_meta,
     _build_run_summary,
     _run_meta_valid,
+    _write_progress,
     completed_for_selection,
+    summary_by_timeframe,
     write_json,
 )
 
@@ -124,3 +126,83 @@ def test_skip_completed_rejects_missing_run_summary(tmp_path: Path) -> None:
     (entry.root / "openpine_outputs" / "15m" / "summary.json").unlink()
 
     assert not completed_for_selection(entry, _args())
+
+
+def test_summary_by_timeframe_reports_actual_run_statuses() -> None:
+    results = [
+        {
+            "id": 1,
+            "kind": "strategy",
+            "status": "partial_or_error",
+            "runs": [
+                {
+                    "timeframe": "15m",
+                    "status": "ok",
+                    "bars": 10,
+                    "plots_rows": 2,
+                    "trades_rows": 1,
+                    "equity_rows": 3,
+                },
+                {
+                    "timeframe": "1h",
+                    "status": "run_error",
+                    "error": "boom",
+                },
+            ],
+        },
+        {
+            "id": 2,
+            "kind": "indicator",
+            "status": "compile_error",
+            "selected_timeframes": ["15m"],
+        },
+    ]
+
+    assert summary_by_timeframe(results) == {
+        "15m": {
+            "selected": 2,
+            "statuses": {"ok": 1, "compile_error": 1},
+            "bars": 10,
+            "plots_rows": 2,
+            "trades_rows": 1,
+            "equity_rows": 3,
+        },
+        "1h": {
+            "selected": 1,
+            "statuses": {"run_error": 1},
+            "bars": 0,
+            "plots_rows": 0,
+            "trades_rows": 0,
+            "equity_rows": 0,
+        },
+    }
+
+
+def test_current_progress_can_publish_timeframe_summary(tmp_path: Path) -> None:
+    summary = {
+        "15m": {
+            "selected": 1,
+            "statuses": {"ok": 1},
+            "bars": 10,
+            "plots_rows": 2,
+            "trades_rows": 1,
+            "equity_rows": 3,
+        },
+    }
+
+    _write_progress(
+        tmp_path,
+        "batch-1",
+        1,
+        "run",
+        "ok",
+        selected_count=3,
+        processed_count=1,
+        summary_by_timeframe=summary,
+    )
+
+    payload = json.loads((tmp_path / "current_progress.json").read_text(encoding="utf-8"))
+
+    assert payload["selected_count"] == 3
+    assert payload["processed_count"] == 1
+    assert payload["summary_by_timeframe"] == summary
