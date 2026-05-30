@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def load_env_file(path: Path | None = None) -> None:
-    env_path = path or Path("~/.openpine/env").expanduser()
+    env_path = path or Path(".openpine/env")
     if not env_path.exists():
         return
     for line in env_path.read_text(encoding="utf-8").splitlines():

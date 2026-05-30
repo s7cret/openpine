@@ -19,13 +19,13 @@ class OpenPineConfig(pydantic.BaseModel):
     """Root configuration for OpenPine."""
 
     workspace_root: Path = Path(".").resolve()
-    data_dir: Path = Path("~/.openpine/data").expanduser()
+    data_dir: Path = Path(".openpine/data")
     data_cache_root: Path | None = None
     output_root: Path | None = None
-    config_dir: Path = Path("~/.openpine").expanduser()
-    sqlite_path: Path = Path("~/.openpine/openpine.sqlite").expanduser()
+    config_dir: Path = Path(".openpine")
+    sqlite_path: Path = Path(".openpine/openpine.sqlite")
     db_path: Path | None = None
-    duckdb_path: Path = Path("~/.openpine/openpine.duckdb").expanduser()
+    duckdb_path: Path = Path(".openpine/openpine.duckdb")
     log_level: str = "INFO"
     live_enabled: bool = False
     kill_switch: bool = False
@@ -54,12 +54,23 @@ class OpenPineConfig(pydantic.BaseModel):
         return v
 
     def model_post_init(self, __context: object) -> None:
+        self.workspace_root = self.workspace_root.expanduser().resolve()
+        for field_name in ("data_dir", "config_dir", "sqlite_path", "duckdb_path"):
+            value = getattr(self, field_name)
+            if not value.is_absolute():
+                setattr(self, field_name, self.workspace_root / value)
         if self.data_cache_root is None:
             self.data_cache_root = self.data_dir / "cache"
+        elif not self.data_cache_root.is_absolute():
+            self.data_cache_root = self.workspace_root / self.data_cache_root
         if self.output_root is None:
             self.output_root = self.data_dir / "outputs"
+        elif not self.output_root.is_absolute():
+            self.output_root = self.workspace_root / self.output_root
         if self.db_path is None:
             self.db_path = self.sqlite_path
+        elif not self.db_path.is_absolute():
+            self.db_path = self.workspace_root / self.db_path
 
     def config_path(self) -> Path:
         """Path to the YAML config file (resolved from config_dir)."""

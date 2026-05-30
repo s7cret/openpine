@@ -320,6 +320,12 @@ def test_cli_backtest_artifact_paths_are_config_driven() -> None:
     assert "~/.openpine/data/backtests" not in source
 
 
+def test_config_defaults_are_workspace_relative() -> None:
+    for relative in ("config/model.py", "config/loader.py", "config/env.py"):
+        source = (ROOT / relative).read_text(encoding="utf-8")
+        assert "~/.openpine" not in source
+
+
 def test_openpine_has_single_data_planning_model_family() -> None:
     production_files = [
         ROOT / "contracts" / "__init__.py",

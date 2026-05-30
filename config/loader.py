@@ -14,7 +14,7 @@ def default_config_path() -> tuple[Path, Path | None]:
     if config_dir_env:
         config_dir = Path(config_dir_env).expanduser()
         return config_dir / "config.yaml", config_dir
-    return Path("~/.openpine/config.yaml").expanduser(), None
+    return Path(".openpine/config.yaml"), Path(".openpine")
 
 
 def load_config(config_path: Path | None = None) -> OpenPineConfig:

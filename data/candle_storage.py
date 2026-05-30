@@ -147,7 +147,52 @@ class CandleStorage:
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.sqlite_path), check_same_thread=False)
             self._conn.execute("PRAGMA busy_timeout=30000")
+            self._ensure_schema(self._conn)
         return self._conn  # type: ignore[return-value]
+
+    def _ensure_schema(self, conn: "sqlite3.Connection") -> None:
+        """Create the legacy manifest table for fresh configured stores."""
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS candle_manifests (
+                manifest_id TEXT PRIMARY KEY,
+                exchange TEXT NOT NULL,
+                market_type TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                price_type TEXT NOT NULL,
+                timeframe TEXT NOT NULL,
+                partition_path TEXT NOT NULL UNIQUE,
+                min_open_time INTEGER NOT NULL,
+                max_open_time INTEGER NOT NULL,
+                row_count INTEGER NOT NULL,
+                schema_hash TEXT NOT NULL,
+                checksum TEXT NOT NULL,
+                file_size_bytes INTEGER,
+                provider TEXT NOT NULL DEFAULT 'binance',
+                ingested_at INTEGER NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                superseded_by TEXT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_candle_manifests_instrument
+                ON candle_manifests(exchange, market_type, symbol, price_type, timeframe)
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_candle_manifests_time_range
+                ON candle_manifests(
+                    exchange, market_type, symbol, price_type, timeframe, min_open_time, max_open_time
+                )
+            """
+        )
+        conn.commit()
 
     def _partition_path(
         self,
