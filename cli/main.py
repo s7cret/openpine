@@ -264,6 +264,12 @@ def _load_pine_source_or_exit(*, registry_cls, name: str, console):
         registry.close()
 
 
+def _load_generated_class_timed(*, source, load_generated_class, perf_counter):
+    t0 = perf_counter()
+    generated_class = load_generated_class(source.id, source.active_artifact_id)
+    return generated_class, perf_counter() - t0
+
+
 def _print_indicator_plot_header(
     *,
     name: str,
@@ -373,6 +379,52 @@ def _write_indicator_plot_outputs(
         to_ms=compare_to_ms,
     )
     return plots_csv, plots_rows, perf_counter() - t0
+
+
+def _write_indicator_plot_run_meta(
+    *,
+    name: str,
+    source,
+    symbol: str,
+    exchange: str,
+    market_type: str,
+    timeframe: str,
+    start_ms: int,
+    end_ms: int,
+    compare_from_ms: int | None,
+    compare_to_ms: int | None,
+    bars_total: int,
+    data_fetch_info,
+    plots_rows: int,
+    timings: dict[str, float],
+    plots_csv: Path,
+    output_path: Path,
+    write_json_func,
+    console,
+) -> None:
+    meta = _build_indicator_plot_run_meta(
+        name=name,
+        source=source,
+        symbol=symbol,
+        exchange=exchange,
+        market_type=market_type,
+        timeframe=timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        compare_from_ms=compare_from_ms,
+        compare_to_ms=compare_to_ms,
+        bars_total=bars_total,
+        data_fetch_info=data_fetch_info,
+        plots_rows=plots_rows,
+        timings=timings,
+        plots_csv=plots_csv,
+    )
+    meta_path = output_path / "run_meta.json"
+    write_json_func(meta_path, meta)
+    console.print("[green]Indicator plots exported[/green]")
+    console.print(f"  plots:     {plots_csv}")
+    console.print(f"  rows:      {plots_rows}")
+    console.print(f"  meta:      {meta_path}")
 
 
 def _build_strategy_backtest_run_meta(
@@ -1484,13 +1536,15 @@ def pine_run_plots(
         console=console,
     )
 
-    t0 = _time.perf_counter()
     try:
-        generated_class = load_generated_class_from_artifact(source.id, source.active_artifact_id)
+        generated_class, timings["load_artifact_sec"] = _load_generated_class_timed(
+            source=source,
+            load_generated_class=load_generated_class_from_artifact,
+            perf_counter=_time.perf_counter,
+        )
     except BacktestArtifactError as exc:
         console.print(f"[red]{exc}[/red]")
         sys.exit(1)
-    timings["load_artifact_sec"] = _time.perf_counter() - t0
 
     bars, provider, data_fetch_info, timings["data_load_sec"] = _load_indicator_plot_bars(
         symbol=symbol,
@@ -1545,7 +1599,7 @@ def pine_run_plots(
     )
     timings["total_sec"] = _time.perf_counter() - start_total
 
-    meta = _build_indicator_plot_run_meta(
+    _write_indicator_plot_run_meta(
         name=name,
         source=source,
         symbol=symbol,
@@ -1561,12 +1615,10 @@ def pine_run_plots(
         plots_rows=plots_rows,
         timings=timings,
         plots_csv=plots_csv,
+        output_path=output_path,
+        write_json_func=write_json,
+        console=console,
     )
-    write_json(output_path / "run_meta.json", meta)
-    console.print("[green]Indicator plots exported[/green]")
-    console.print(f"  plots:     {plots_csv}")
-    console.print(f"  rows:      {plots_rows}")
-    console.print(f"  meta:      {output_path / 'run_meta.json'}")
 
 
 @pine.command("artifacts")
