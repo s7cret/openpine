@@ -10,6 +10,7 @@ import time
 from typing import TYPE_CHECKING, Protocol
 
 from openpine.accounts.models import Account, AccountType
+from openpine.execution.models import ExecutionUnavailableError
 from openpine.orders.models import (
     Order,
     OrderIntent,
@@ -212,9 +213,13 @@ class ExecutionRouter:
 
         adapter = self._adapters.get(account.account_type)
         if adapter is None:
-            return False
+            raise ExecutionUnavailableError(
+                f"No adapter registered for account type: {account.account_type}"
+            )
 
         try:
             return await adapter.cancel_order(order_id)
-        except Exception:
-            return False
+        except ExecutionUnavailableError:
+            raise
+        except Exception as exc:
+            raise ExecutionUnavailableError(f"Adapter cancel failed: {exc}") from exc
