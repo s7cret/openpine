@@ -191,29 +191,6 @@ class BacktestResultStore:
                 )
 
                 if trades:
-                    trade_rows = []
-                    for i, t in enumerate(trades):
-                        trade_rows.append((
-                            f"{run_id}_trade_{i}",
-                            run_id,
-                            strategy_id,
-                            t.id,
-                            getattr(t, "exit_id", None),
-                            t.direction,
-                            t.entry_time,
-                            getattr(t, "exit_time", None),
-                            t.entry_price,
-                            getattr(t, "exit_price", None),
-                            t.qty,
-                            getattr(t, "profit", None),
-                            getattr(t, "profit", None),
-                            getattr(t, "profit_percent", None),
-                            getattr(t, "commission_entry", 0) + getattr(t, "commission_exit", 0),
-                            0.0,
-                            getattr(t, "bars_held", None),
-                            getattr(t, "exit_reason", None),
-                            now,
-                        ))
                     self._storage.execute_many(
                         """
                         INSERT INTO backtest_trades
@@ -223,28 +200,28 @@ class BacktestResultStore:
                          bars_held, exit_reason, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                        trade_rows,
+                        self._trade_db_rows(
+                            run_id=run_id,
+                            strategy_id=strategy_id,
+                            trades=trades,
+                            now=now,
+                        ),
                     )
 
                 for atype in artifact_paths:
-                    path = run_dir / artifact_paths[atype].name
-                    row_count = None
-                    if atype in (ARTIFACT_TYPE_EQUITY_CURVE, ARTIFACT_TYPE_TRADES, ARTIFACT_TYPE_BAR_OUTPUTS, ARTIFACT_TYPE_PLOT_OUTPUTS):
-                        try:
-                            table = pq.read_table(str(path))
-                            row_count = table.num_rows
-                        except Exception:
-                            pass
-                    artifact_row_id = f"{run_id}_{atype}"
                     self._storage.execute(
                         """
                         INSERT INTO backtest_artifacts
                         (artifact_row_id, run_id, strategy_id, artifact_type, path, format, row_count, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                        (artifact_row_id, run_id, strategy_id, atype, str(path),
-                         "parquet" if path.suffix == ".parquet" else "json",
-                         row_count, now),
+                        self._artifact_db_row(
+                            run_id=run_id,
+                            strategy_id=strategy_id,
+                            artifact_type=atype,
+                            path=run_dir / artifact_paths[atype].name,
+                            now=now,
+                        ),
                     )
 
             self._storage.commit()
@@ -253,6 +230,70 @@ class BacktestResultStore:
             if tmp_dir.exists():
                 shutil.rmtree(tmp_dir)
             raise
+
+    @staticmethod
+    def _trade_db_rows(
+        *,
+        run_id: str,
+        strategy_id: str,
+        trades: list[Any],
+        now: int,
+    ) -> list[tuple[Any, ...]]:
+        return [
+            (
+                f"{run_id}_trade_{i}",
+                run_id,
+                strategy_id,
+                t.id,
+                getattr(t, "exit_id", None),
+                t.direction,
+                t.entry_time,
+                getattr(t, "exit_time", None),
+                t.entry_price,
+                getattr(t, "exit_price", None),
+                t.qty,
+                getattr(t, "profit", None),
+                getattr(t, "profit", None),
+                getattr(t, "profit_percent", None),
+                getattr(t, "commission_entry", 0) + getattr(t, "commission_exit", 0),
+                0.0,
+                getattr(t, "bars_held", None),
+                getattr(t, "exit_reason", None),
+                now,
+            )
+            for i, t in enumerate(trades)
+        ]
+
+    @staticmethod
+    def _artifact_db_row(
+        *,
+        run_id: str,
+        strategy_id: str,
+        artifact_type: str,
+        path: Path,
+        now: int,
+    ) -> tuple[Any, ...]:
+        row_count = None
+        if artifact_type in (
+            ARTIFACT_TYPE_EQUITY_CURVE,
+            ARTIFACT_TYPE_TRADES,
+            ARTIFACT_TYPE_BAR_OUTPUTS,
+            ARTIFACT_TYPE_PLOT_OUTPUTS,
+        ):
+            try:
+                row_count = pq.read_table(str(path)).num_rows
+            except Exception:
+                pass
+        return (
+            f"{run_id}_{artifact_type}",
+            run_id,
+            strategy_id,
+            artifact_type,
+            str(path),
+            "parquet" if path.suffix == ".parquet" else "json",
+            row_count,
+            now,
+        )
 
     def mark_failed(
         self,

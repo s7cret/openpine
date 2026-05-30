@@ -240,6 +240,72 @@ def test_result_artifact_record_helpers_map_equity_and_trades():
     assert trade_records[0]["bars_held"] == 3
 
 
+def test_result_database_row_helpers_map_trades_and_artifacts(tmp_path: Path):
+    trade_rows = BacktestResultStore._trade_db_rows(
+        run_id="run_1",
+        strategy_id="strat_1",
+        trades=[
+            FakeTrade(
+                "T1",
+                "long",
+                1000,
+                100.0,
+                1.0,
+                exit_time=2000,
+                exit_price=110.0,
+                profit=10.0,
+                profit_percent=0.1,
+                commission_entry=0.25,
+                commission_exit=0.25,
+                bars_held=3,
+                exit_reason="take_profit",
+            )
+        ],
+        now=3000,
+    )
+    artifact_path = tmp_path / "report.json"
+    artifact_path.write_text("{}", encoding="utf-8")
+    artifact_row = BacktestResultStore._artifact_db_row(
+        run_id="run_1",
+        strategy_id="strat_1",
+        artifact_type=ARTIFACT_TYPE_REPORT_JSON,
+        path=artifact_path,
+        now=3000,
+    )
+
+    assert trade_rows[0] == (
+        "run_1_trade_0",
+        "run_1",
+        "strat_1",
+        "T1",
+        None,
+        "long",
+        1000,
+        2000,
+        100.0,
+        110.0,
+        1.0,
+        10.0,
+        10.0,
+        0.1,
+        0.5,
+        0.0,
+        3,
+        "take_profit",
+        3000,
+    )
+    assert artifact_row == (
+        "run_1_report_json",
+        "run_1",
+        "strat_1",
+        ARTIFACT_TYPE_REPORT_JSON,
+        str(artifact_path),
+        "json",
+        None,
+        3000,
+    )
+
+
 def test_plot_records_support_tuple_records_and_na_values():
     class FakeNA:
         pass
