@@ -3,7 +3,12 @@ from __future__ import annotations
 import pytest
 
 from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
-from openpine.data.parallel_fetcher import FetchJob, ParallelDataFetcher, ParallelFetchError
+from openpine.data.parallel_fetcher import (
+    FetchJob,
+    ParallelDataFetcher,
+    ParallelFetchError,
+    _default_workers,
+)
 
 
 def _bar(time: int) -> Bar:
@@ -32,6 +37,12 @@ def test_parallel_fetcher_fails_closed_on_job_error() -> None:
 
     with pytest.raises(ParallelFetchError, match="provider unavailable"):
         fetcher.fetch_many([FetchJob("BTCUSDT", "1m", 1, 2)])
+
+
+def test_default_workers_falls_back_when_cpu_count_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("openpine.data.parallel_fetcher.os.cpu_count", lambda: None)
+
+    assert _default_workers() == 1
 
 
 def test_chunked_fetch_deduplicates_canonical_bar_time() -> None:

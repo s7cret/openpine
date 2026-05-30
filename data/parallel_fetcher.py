@@ -23,7 +23,7 @@ log = structlog.get_logger(__name__)
 
 def _default_workers() -> int:
     """Default: half of CPU cores, minimum 1."""
-    return max(1, os.cpu_count() // 2)
+    return max(1, (os.cpu_count() or 1) // 2)
 
 
 @dataclass(frozen=True)
