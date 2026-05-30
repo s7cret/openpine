@@ -8,6 +8,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from openpine.config import OpenPineConfig
+
 
 class ManifestStore:
     """Stores and retrieves strategy manifests as JSON files."""
@@ -16,10 +18,10 @@ class ManifestStore:
         """Initialize manifest store.
 
         Args:
-            manifest_dir: Directory to store manifests. Defaults to ~/.openpine/manifests/
+            manifest_dir: Directory to store manifests. Defaults to config_dir/manifests.
         """
         if manifest_dir is None:
-            manifest_dir = Path("~/.openpine/manifests").expanduser()
+            manifest_dir = OpenPineConfig.load().config_dir / "manifests"
         self.manifest_dir = Path(manifest_dir)
         self.manifest_dir.mkdir(parents=True, exist_ok=True)
 
