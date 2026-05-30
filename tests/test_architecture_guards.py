@@ -88,6 +88,20 @@ def test_no_executable_legacy_scripts_remain() -> None:
     assert script_files == []
 
 
+def test_batch_runner_is_not_a_legacy_executable_surface() -> None:
+    source = (ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    assert not source.startswith("#!")
+    assert not any(
+        isinstance(node, ast.Compare)
+        and isinstance(node.left, ast.Name)
+        and node.left.id == "__name__"
+        and any(isinstance(comparator, ast.Constant) and comparator.value == "__main__" for comparator in node.comparators)
+        for node in ast.walk(tree)
+    )
+
+
 def test_production_source_does_not_mutate_sys_path_or_hardcode_home_paths() -> None:
     sys_path_mutations: list[str] = []
     home_paths: list[str] = []

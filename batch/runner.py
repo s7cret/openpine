@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Manifest-driven OpenPine batch runner for the clean TV export corpus.
 
 The script is intentionally staged:
@@ -1093,7 +1092,3 @@ def main(argv: list[str] | None = None) -> int:
     print(f"summary={summary_path}")
     print(json.dumps(payload["summary"], ensure_ascii=False, indent=2))
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

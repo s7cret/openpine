@@ -4,6 +4,9 @@ import argparse
 import json
 from pathlib import Path
 
+from click.testing import CliRunner
+
+from openpine.batch import runner as batch_runner
 from openpine.batch.runner import (
     LIBRARY_NAMES,
     ChartExport,
@@ -206,3 +209,20 @@ def test_current_progress_can_publish_timeframe_summary(tmp_path: Path) -> None:
     assert payload["selected_count"] == 3
     assert payload["processed_count"] == 1
     assert payload["summary_by_timeframe"] == summary
+
+
+def test_batch_run_cli_pins_run_phase(monkeypatch) -> None:
+    from openpine.cli.batch import batch
+
+    captured: dict[str, list[str]] = {}
+
+    def fake_main(argv: list[str]) -> int:
+        captured["argv"] = argv
+        return 0
+
+    monkeypatch.setattr(batch_runner, "main", fake_main)
+
+    result = CliRunner().invoke(batch, ["run", "--phase", "plan", "--limit", "1"])
+
+    assert result.exit_code == 0
+    assert captured["argv"] == ["--phase", "plan", "--limit", "1", "--phase", "run"]

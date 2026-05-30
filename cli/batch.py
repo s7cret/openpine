@@ -17,5 +17,5 @@ def batch_run(ctx: click.Context) -> None:
     """Run the manifest-driven Pine export batch runner."""
     from openpine.batch.runner import main as batch_main
 
-    argv = ["--phase", "run", *ctx.args]
+    argv = [*ctx.args, "--phase", "run"]
     raise SystemExit(batch_main(argv))
