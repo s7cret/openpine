@@ -15,6 +15,7 @@ import hashlib
 import os
 import shutil
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 
@@ -99,6 +100,10 @@ def _storage_unavailable(message: str) -> Exception:
     from openpine.data.orchestrator import StorageUnavailableError
 
     return StorageUnavailableError(message)
+
+
+def _utc_from_ms(timestamp_ms: int) -> datetime:
+    return datetime.fromtimestamp(timestamp_ms / 1000, UTC)
 
 
 def _parse_instrument_key(instrument_key: str) -> tuple[str, str, str, str]:
@@ -268,9 +273,7 @@ class CandleStorage:
 
         Path: exchange=X/market_type=Y/symbol=Z/price_type=W/timeframe=T/year=YYYY/month=MM/
         """
-        from datetime import datetime
-
-        dt = datetime.utcfromtimestamp(open_time_ms / 1000)
+        dt = _utc_from_ms(open_time_ms)
         layout = PARQUET_LAYOUT.format(
             exchange=exchange,
             market_type=market_type,
@@ -313,14 +316,10 @@ class CandleStorage:
         except ValueError as exc:
             return WriteResult(success=False, error=str(exc))
 
-        # Group candles by year/month partition
-        # All bars within the same year/month go into the same parquet file
-        from datetime import datetime
-
         partitions: dict[tuple, list] = {}
         for bar in candles:
             open_time_ms = bar.time
-            dt = datetime.utcfromtimestamp(open_time_ms / 1000)
+            dt = _utc_from_ms(open_time_ms)
             bucket = (dt.year, dt.month)
             key = (exchange, market_type, symbol, price_type, timeframe, bucket)
             if key not in partitions:
