@@ -350,8 +350,8 @@ def doctor(strict: bool, deep: bool) -> None:
                 AggregationWorkerPool.JOB_TYPES.isdisjoint(FeatureWorkerPool.JOB_TYPES),
             ),
             (
-                "OptimizerService adapter boundary",
-                OptimizerService().dry_run("doctor_smoke", 1).uses_backtest_engine_path,
+                "OptimizerService validation boundary",
+                OptimizerService().validate_config("doctor_smoke", 1).status == "valid",
             ),
         ]
         for name, ok in strict_checks:
@@ -3341,14 +3341,13 @@ def optimizer_dry_run(strategy_id: str, trials: int) -> None:
         console.print("[red]--trials must be >= 1[/red]")
         sys.exit(1)
 
-    result = OptimizerService().dry_run(strategy_id=strategy_id, trials=trials)
-    console.print("[bold]Optimizer dry run[/bold]")
-    console.print(f"optimization_id:           {result.optimization_id}")
+    result = OptimizerService().validate_config(strategy_id=strategy_id, trials=trials)
+    console.print("[bold]Optimizer config validation[/bold]")
     console.print(f"strategy_id:               {result.strategy_id}")
     console.print(f"trials_requested:          {result.trials_requested}")
-    console.print(f"trials_completed:          {result.trials_completed}")
     console.print(f"status:                    {result.status}")
-    console.print(f"uses_backtest_engine_path: {result.uses_backtest_engine_path}")
+    if result.reason:
+        console.print(f"reason:                    {result.reason}")
 
 
 # ── reports ────────────────────────────────────────────────────────────────────

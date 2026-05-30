@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 
-from openpine.compile.adapter import CompileResult, CompilerAdapter
+from openpine.compile.adapter import CompileResult, CompilerAdapter, CompileProfile
 from openpine.pine.source import PineSource
 
 
@@ -31,7 +31,7 @@ def compile_pipeline(
     """
     from openpine.artifacts.store import ArtifactStore
 
-    extra_options = extra_options or {}
+    extra_options = {"profile": CompileProfile.production(), **(extra_options or {})}
 
     result = adapter.compile(source.source_text, **extra_options)
 

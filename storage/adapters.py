@@ -228,15 +228,12 @@ class ParquetDataLakeAdapter(StorageBackend):
                     version="pyarrow",
                     extra={"backend": "parquet", **schema_extra},
                 )
-            else:
-                # JSONL fallback — check we can list/write .jsonl files
-                return BackendInfo(
-                    name=self.name,
-                    role=self.role,
-                    health=BackendHealth.AVAILABLE,
-                    version="jsonl_fallback",
-                    extra={"backend": "jsonl", "reason": "pyarrow not installed"},
-                )
+            return BackendInfo(
+                name=self.name,
+                role=self.role,
+                health=BackendHealth.UNAVAILABLE_ERROR,
+                error="pyarrow is required for production parquet storage",
+            )
         except Exception as exc:
             return BackendInfo(
                 name=self.name,

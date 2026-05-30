@@ -1,6 +1,7 @@
 """openpine.compile — Pine compilation pipeline."""
 
 from openpine.compile.adapter import (
+    CompileProfile,
     CompilerAdapter,
     CompileResult,
     LibraryAvailability,
@@ -10,6 +11,7 @@ from openpine.compile.pipeline import compile_pipeline
 
 __all__ = [
     "CompilerAdapter",
+    "CompileProfile",
     "CompileResult",
     "LibraryAvailability",
     "SubprocessCompilerAdapter",

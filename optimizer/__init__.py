@@ -1,7 +1,7 @@
 """Optimizer integration boundary for OpenPine."""
 
 from openpine.optimizer.adapter import (
-    DryRunOptimizerAdapter,
+    DryRunValidationResult,
     LocalOptimizerAdapter,
     OptimizerAdapter,
     OptimizerLibraryDetection,
@@ -12,7 +12,7 @@ from openpine.optimizer.adapter import (
 )
 
 __all__ = [
-    "DryRunOptimizerAdapter",
+    "DryRunValidationResult",
     "LocalOptimizerAdapter",
     "OptimizerAdapter",
     "OptimizerLibraryDetection",

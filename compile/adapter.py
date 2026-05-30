@@ -11,7 +11,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Literal, Protocol
 
 # Common installation locations for pine2ast/ast2python
 TOOL_SEARCH_PATHS = [
@@ -27,6 +27,31 @@ _PINE_V5_FALLBACK_WARNING = (
     "Pine v5 compatibility fallback: parser rejected //@version=5; "
     "retried as //@version=6"
 )
+
+
+@dataclass(frozen=True)
+class CompileProfile:
+    """Compile safety profile for product vs diagnostic paths."""
+
+    name: Literal["production", "diagnostic"] = "production"
+    allow_external_library_stubs: bool = False
+    allow_unsupported_request_stubs: bool = False
+    allow_subprocess_fallback: bool = False
+    allow_implicit_version_rewrite: bool = False
+
+    @classmethod
+    def production(cls) -> "CompileProfile":
+        return cls()
+
+    @classmethod
+    def diagnostic(cls) -> "CompileProfile":
+        return cls(
+            name="diagnostic",
+            allow_external_library_stubs=True,
+            allow_unsupported_request_stubs=True,
+            allow_subprocess_fallback=True,
+            allow_implicit_version_rewrite=True,
+        )
 
 
 def _find_tool(name: str) -> Path | None:
@@ -195,6 +220,25 @@ class CompileResult:
     ast_json: str | None = None
 
 
+def _profile_from_kwargs(kwargs: dict[str, Any]) -> CompileProfile:
+    raw = kwargs.get("profile")
+    if isinstance(raw, CompileProfile):
+        profile = raw
+    elif raw == "diagnostic":
+        profile = CompileProfile.diagnostic()
+    else:
+        profile = CompileProfile.production()
+
+    if profile.name == "production" and (
+        profile.allow_external_library_stubs
+        or profile.allow_unsupported_request_stubs
+        or profile.allow_subprocess_fallback
+        or profile.allow_implicit_version_rewrite
+    ):
+        raise ValueError("production CompileProfile cannot enable unsafe compile allowances")
+    return profile
+
+
 class CompilerAdapter(Protocol):
     """Protocol for Pine compiler adapters — section 30.1."""
 
@@ -232,11 +276,27 @@ class SubprocessCompilerAdapter:
             CompileResult with success=True and python_code on success,
             or success=False with errors list.
         """
+        try:
+            profile = _profile_from_kwargs(kwargs)
+        except ValueError as exc:
+            return CompileResult(success=False, errors=[str(exc)])
+        if profile.name == "production" and (
+            kwargs.get("allow_external_library_stubs")
+            or kwargs.get("allow_unsupported_request_stubs")
+            or kwargs.get("fallback_to_subprocess")
+            or kwargs.get("allow_implicit_version_rewrite")
+        ):
+            return CompileResult(
+                success=False,
+                errors=["production compile cannot enable unsafe compile allowances"],
+            )
+        kwargs["profile"] = profile
+
         if self.prefer_library:
             apis, status = _load_library_apis()
             if apis is not None:
                 return self._compile_with_library(apis, source_text, **kwargs)
-            if not self.fallback_to_subprocess:
+            if not (self.fallback_to_subprocess and profile.allow_subprocess_fallback):
                 return CompileResult(
                     success=False,
                     errors=status.errors or ["Python compiler APIs unavailable"],
@@ -248,6 +308,12 @@ class SubprocessCompilerAdapter:
                     },
                 )
 
+        if not profile.allow_subprocess_fallback:
+            return CompileResult(
+                success=False,
+                errors=["subprocess compile fallback is disabled by compile profile"],
+                compile_meta={"compile_profile": profile.name},
+            )
         return self._compile_with_subprocess(source_text, **kwargs)
 
     def _compile_with_library(
@@ -255,12 +321,24 @@ class SubprocessCompilerAdapter:
     ) -> CompileResult:
         module_name = kwargs.get("module_name", "generated_strategy")
         strict = kwargs.get("strict", False)
+        profile = _profile_from_kwargs(kwargs)
+        if profile.name == "production" and (
+            kwargs.get("allow_external_library_stubs")
+            or kwargs.get("allow_unsupported_request_stubs")
+            or kwargs.get("allow_implicit_version_rewrite")
+        ):
+            return CompileResult(
+                success=False,
+                errors=["production compile cannot enable unsafe compile allowances"],
+                compile_meta={"compile_profile": profile.name},
+            )
         compile_meta = {
             **apis.versions,
             "adapter": "python-library",
             "adapter_status": "available",
             "module_name": module_name,
             "strict": strict,
+            "compile_profile": profile.name,
             "library_paths": {name: "installed-package" for name in COMPILER_PACKAGES},
         }
 
@@ -278,6 +356,12 @@ class SubprocessCompilerAdapter:
                 ] or ["pine2ast returned no AST"]
                 normalized_source, normalized = _normalize_pine_v5_directive(source_text)
                 if normalized and _is_pine_v5_version_rejection(parse_errors):
+                    if not profile.allow_implicit_version_rewrite:
+                        return CompileResult(
+                            success=False,
+                            errors=parse_errors,
+                            compile_meta=compile_meta,
+                        )
                     parse_result = apis.parse_code(normalized_source, options)
                     ast = getattr(parse_result, "ast", None)
                     diagnostics = list(getattr(parse_result, "diagnostics", []) or [])
@@ -330,10 +414,10 @@ class SubprocessCompilerAdapter:
                 allow_invalid_ast=kwargs.get("allow_invalid_ast", False),
                 allow_contract_mismatch=kwargs.get("allow_contract_mismatch", False),
                 allow_external_library_stubs=kwargs.get(
-                    "allow_external_library_stubs", False
+                    "allow_external_library_stubs", profile.allow_external_library_stubs
                 ),
                 allow_unsupported_request_stubs=kwargs.get(
-                    "allow_unsupported_request_stubs", False
+                    "allow_unsupported_request_stubs", profile.allow_unsupported_request_stubs
                 ),
                 allow_realtime_local_simulation=kwargs.get(
                     "allow_realtime_local_simulation", False
@@ -361,6 +445,13 @@ class SubprocessCompilerAdapter:
 
     def _compile_with_subprocess(self, source_text: str, **kwargs) -> CompileResult:
         """Compile Pine source text via the original subprocess pipeline."""
+        profile = _profile_from_kwargs(kwargs)
+        if not profile.allow_subprocess_fallback:
+            return CompileResult(
+                success=False,
+                errors=["subprocess compile fallback is disabled by compile profile"],
+                compile_meta={"compile_profile": profile.name},
+            )
         pine2ast_path = _find_tool("pine2ast")
         ast2python_path = _find_tool("ast2python")
 
@@ -394,6 +485,7 @@ class SubprocessCompilerAdapter:
                 "adapter_status": "fallback" if self.prefer_library else "selected",
                 "module_name": module_name,
                 "strict": strict,
+                "compile_profile": profile.name,
                 "tool_paths": {
                     "pine2ast": str(pine2ast_path),
                     "ast2python": str(ast2python_path),
@@ -414,6 +506,12 @@ class SubprocessCompilerAdapter:
                 ]
                 normalized_source, normalized = _normalize_pine_v5_directive(source_text)
                 if normalized and _is_pine_v5_version_rejection(parse_errors):
+                    if not profile.allow_implicit_version_rewrite:
+                        return CompileResult(
+                            success=False,
+                            errors=parse_errors,
+                            compile_meta=compile_meta,
+                        )
                     src_path.write_text(normalized_source)
                     result_p2a = subprocess.run(
                         [str(pine2ast_path), "parse", str(src_path)],

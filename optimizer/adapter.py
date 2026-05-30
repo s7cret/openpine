@@ -11,10 +11,8 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from importlib import import_module, invalidate_caches
-from pathlib import Path
-from tempfile import mkdtemp
 from types import ModuleType
-from typing import Protocol
+from typing import Literal, Protocol
 
 
 @dataclass(frozen=True)
@@ -26,7 +24,6 @@ class OptimizerRunConfig:
     artifact_id: str | None = None
     params_hash: str | None = None
     data_query: dict | None = None
-    dry_run: bool = False
 
 
 @dataclass(frozen=True)
@@ -55,6 +52,16 @@ class OptimizerResult:
 
 
 @dataclass(frozen=True)
+class DryRunValidationResult:
+    """Result of explicit config validation, never a production optimizer result."""
+
+    strategy_id: str
+    trials_requested: int
+    status: Literal["valid", "invalid"]
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
 class OptimizerLibraryDetection:
     """Availability check for the local optimizer package."""
 
@@ -74,41 +81,6 @@ class OptimizerAdapter(Protocol):
         """Fetch a normalized optimization result."""
 
 
-class DryRunOptimizerAdapter:
-    """Deterministic adapter used for acceptance gates and dry-run planning.
-
-    It verifies that OpenPine routes optimization through the adapter and marks
-    the run as using the BacktestEngine path, without launching external work.
-    """
-
-    def __init__(self) -> None:
-        self._results: dict[str, OptimizerResult] = {}
-
-    def start_optimization(self, config: OptimizerRunConfig) -> OptimizerResultRef:
-        optimization_id = f"opt_{uuid.uuid4().hex[:12]}"
-        result = OptimizerResult(
-            optimization_id=optimization_id,
-            strategy_id=config.strategy_id,
-            trials_requested=config.trials,
-            trials_completed=0 if config.dry_run else config.trials,
-            status="dry_run" if config.dry_run else "completed",
-            uses_backtest_engine_path=True,
-            artifact_uri=f"optimizer://{optimization_id}",
-        )
-        self._results[optimization_id] = result
-        return OptimizerResultRef(
-            optimization_id=optimization_id,
-            strategy_id=config.strategy_id,
-            artifact_uri=result.artifact_uri,
-        )
-
-    def get_result(self, optimization_id: str) -> OptimizerResult:
-        try:
-            return self._results[optimization_id]
-        except KeyError as exc:
-            raise KeyError(f"Unknown optimization_id: {optimization_id}") from exc
-
-
 class LocalOptimizerAdapter:
     """Adapter boundary for the installed optimizer package.
 
@@ -116,11 +88,7 @@ class LocalOptimizerAdapter:
     OpenPine's stable OptimizerResult contract.
     """
 
-    def __init__(
-        self,
-        fallback_adapter: OptimizerAdapter | None = None,
-    ) -> None:
-        self.fallback_adapter = fallback_adapter or DryRunOptimizerAdapter()
+    def __init__(self) -> None:
         self._module: ModuleType | None = None
         self._results: dict[str, OptimizerResult] = {}
 
@@ -173,7 +141,7 @@ class LocalOptimizerAdapter:
     def get_result(self, optimization_id: str) -> OptimizerResult:
         if optimization_id in self._results:
             return self._results[optimization_id]
-        return self.fallback_adapter.get_result(optimization_id)
+        raise KeyError(f"Unknown optimization_id: {optimization_id}")
 
     def _load_module(self) -> ModuleType:
         if self._module is not None:
@@ -192,62 +160,32 @@ class LocalOptimizerAdapter:
         if module is None:
             return self._failed_result(optimization_id, config, "optimizer module not loaded")
 
+        if not config.artifact_id or not config.data_query:
+            return self._failed_result(
+                optimization_id,
+                config,
+                "production optimization requires artifact_id and data_query",
+            )
+
         try:
-            trial_count = max(1, int(config.trials))
-            output_dir = Path(mkdtemp(prefix=f"openpine_{optimization_id}_"))
-            parameter = module.Parameter(
-                "__openpine_trial",
-                "int",
-                1,
-                1,
-                trial_count,
-                1,
+            runner_cls = getattr(module, "BacktestEngineRunnerAdapter", None)
+            if runner_cls is None:
+                return self._failed_result(
+                    optimization_id,
+                    config,
+                    "optimizer BacktestEngineRunnerAdapter is unavailable",
+                )
+            return self._failed_result(
+                optimization_id,
+                config,
+                "OpenPine real optimizer runner wiring is not implemented yet",
             )
-            optimizer_config = module.OptimizerConfig(
-                algorithm="grid",
-                max_trials=trial_count,
-                output_dir=output_dir,
-                storage_backend="json",
-                resume=False,
-            )
-
-            def runner(params: dict) -> dict[str, float]:
-                value = float(params["__openpine_trial"])
-                return {
-                    "net_profit": value,
-                    "max_drawdown_percent": max(0.0, trial_count - value),
-                    "profit_factor": 1.0 + value / max(1, trial_count),
-                    "sharpe_ratio": value / max(1, trial_count),
-                }
-
-            raw_result = module.optimize([parameter], runner, optimizer_config)
         except Exception as exc:
             return self._failed_result(
                 optimization_id,
                 config,
                 f"optimizer call failed: {exc}",
             )
-
-        recommended = getattr(raw_result, "recommended_trial", None)
-        counts = getattr(raw_result, "trials_count_by_status", {}) or {}
-        trials_completed = int(counts.get("completed", 0))
-        storage_ref = getattr(raw_result, "storage_ref", None)
-        metrics = dict(getattr(recommended, "metrics", {}) or {})
-        metrics["optimizer_adapter"] = "local"
-        if detection.version:
-            metrics["optimizer_version"] = detection.version
-
-        return OptimizerResult(
-            optimization_id=optimization_id,
-            strategy_id=config.strategy_id,
-            trials_requested=config.trials,
-            trials_completed=trials_completed,
-            status="completed" if trials_completed else "dry_run",
-            uses_backtest_engine_path=hasattr(module, "BacktestEngineRunnerAdapter"),
-            best_params=dict(getattr(recommended, "params", {}) or {}),
-            metrics=metrics,
-            artifact_uri=str(storage_ref or output_dir),
-        )
 
     def _failed_result(
         self,
@@ -275,12 +213,17 @@ class OptimizerService:
     def __init__(self, adapter: OptimizerAdapter | None = None) -> None:
         self.adapter = adapter or LocalOptimizerAdapter()
 
-    def dry_run(self, strategy_id: str, trials: int) -> OptimizerResult:
-        """Validate optimizer routing without running external optimization."""
-        config = OptimizerRunConfig(
+    def validate_config(self, strategy_id: str, trials: int) -> DryRunValidationResult:
+        """Validate optimizer CLI inputs without returning a production result."""
+        if trials < 1:
+            return DryRunValidationResult(
+                strategy_id=strategy_id,
+                trials_requested=trials,
+                status="invalid",
+                reason="trials must be >= 1",
+            )
+        return DryRunValidationResult(
             strategy_id=strategy_id,
-            trials=trials,
-            dry_run=True,
+            trials_requested=trials,
+            status="valid",
         )
-        ref = self.adapter.start_optimization(config)
-        return self.adapter.get_result(ref.optimization_id)
