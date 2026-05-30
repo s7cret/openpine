@@ -219,6 +219,74 @@ def _parse_indicator_plot_window(
     return start_ms, end_ms, compare_from_ms, compare_to_ms
 
 
+def _load_pine_source_or_exit(*, registry_cls, name: str, console):
+    registry = registry_cls()
+    try:
+        try:
+            return registry.get_source(name)
+        except KeyError:
+            console.print(f"[red]Pine source not found: {name}[/red]")
+            sys.exit(1)
+    finally:
+        registry.close()
+
+
+def _print_indicator_plot_header(
+    *,
+    name: str,
+    source,
+    symbol: str,
+    exchange: str,
+    market_type: str,
+    timeframe: str,
+    from_date: str,
+    to_date: str | None,
+    console,
+) -> None:
+    console.print(f"[bold]Indicator plots: {name}[/bold]")
+    console.print(f"  artifact:   {source.active_artifact_id}")
+    console.print(f"  symbol:     {symbol}")
+    console.print(f"  exchange:   {exchange}")
+    console.print(f"  market:     {market_type}")
+    console.print(f"  timeframe:  {timeframe}")
+    console.print(f"  from:       {from_date}")
+    console.print(f"  to:         {to_date or 'now'}")
+
+
+def _load_indicator_plot_bars(
+    *,
+    symbol: str,
+    exchange: str,
+    market_type: str,
+    timeframe: str,
+    start_ms: int,
+    end_ms: int,
+    bar_query_cls,
+    instrument_key_cls,
+    parse_timeframe_func,
+    orchestrator_cls,
+    provider_factory,
+    console,
+):
+    strategy = SimpleNamespace(
+        symbol=symbol,
+        exchange=exchange,
+        market_type=market_type,
+        timeframe=timeframe,
+    )
+    return _load_strategy_backtest_bars(
+        strategy=strategy,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        bar_query_cls=bar_query_cls,
+        instrument_key_cls=instrument_key_cls,
+        parse_timeframe_func=parse_timeframe_func,
+        orchestrator_cls=orchestrator_cls,
+        provider_factory=provider_factory,
+        console=console,
+    )
+
+
 def _execute_indicator_plot_runtime(
     *,
     generated_class,
@@ -252,6 +320,26 @@ def _execute_indicator_plot_runtime(
         params={},
         is_indicator=True,
     )
+
+
+def _write_indicator_plot_outputs(
+    *,
+    backend_result,
+    output_path: Path,
+    compare_from_ms: int | None,
+    compare_to_ms: int | None,
+    export_plot_records_func,
+    perf_counter,
+) -> tuple[Path, int, float]:
+    t0 = perf_counter()
+    plots_csv = output_path / "plots.csv"
+    plots_rows = export_plot_records_func(
+        list(getattr(backend_result, "plots", []) or []),
+        plots_csv,
+        from_ms=compare_from_ms,
+        to_ms=compare_to_ms,
+    )
+    return plots_csv, plots_rows, perf_counter() - t0
 
 
 def _build_strategy_backtest_run_meta(
@@ -1189,15 +1277,11 @@ def pine_run_plots(
     start_total = _time.perf_counter()
     timings: dict[str, float] = {}
 
-    registry = SQLitePineSourceRegistry()
-    try:
-        try:
-            source = registry.get_source(name)
-        except KeyError:
-            console.print(f"[red]Pine source not found: {name}[/red]")
-            sys.exit(1)
-    finally:
-        registry.close()
+    source = _load_pine_source_or_exit(
+        registry_cls=SQLitePineSourceRegistry,
+        name=name,
+        console=console,
+    )
 
     if not source.active_artifact_id:
         console.print(
@@ -1221,14 +1305,17 @@ def pine_run_plots(
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    console.print(f"[bold]Indicator plots: {name}[/bold]")
-    console.print(f"  artifact:   {source.active_artifact_id}")
-    console.print(f"  symbol:     {symbol}")
-    console.print(f"  exchange:   {exchange}")
-    console.print(f"  market:     {market_type}")
-    console.print(f"  timeframe:  {timeframe}")
-    console.print(f"  from:       {from_date}")
-    console.print(f"  to:         {to_date or 'now'}")
+    _print_indicator_plot_header(
+        name=name,
+        source=source,
+        symbol=symbol,
+        exchange=exchange,
+        market_type=market_type,
+        timeframe=timeframe,
+        from_date=from_date,
+        to_date=to_date,
+        console=console,
+    )
 
     t0 = _time.perf_counter()
     try:
@@ -1238,8 +1325,7 @@ def pine_run_plots(
         sys.exit(1)
     timings["load_artifact_sec"] = _time.perf_counter() - t0
 
-    t0 = _time.perf_counter()
-    query = _build_cli_bar_query(
+    bars, provider, data_fetch_info, timings["data_load_sec"] = _load_indicator_plot_bars(
         symbol=symbol,
         exchange=exchange,
         market_type=market_type,
@@ -1249,19 +1335,13 @@ def pine_run_plots(
         bar_query_cls=BarQuery,
         instrument_key_cls=InstrumentKey,
         parse_timeframe_func=parse_timeframe,
+        orchestrator_cls=DataOrchestrator,
+        provider_factory=create_local_marketdata_provider_adapter,
+        console=console,
     )
-    orch = DataOrchestrator()
-    provider = create_local_marketdata_provider_adapter()
-    if provider:
-        orch.set_provider(provider)
-    console.print("[dim]data: loading bars[/dim]")
-    bars = orch.get_bars(query)
-    timings["data_load_sec"] = _time.perf_counter() - t0
     if not bars:
         console.print(f"[red]No candle data found for {symbol} {timeframe}[/red]")
         sys.exit(1)
-    console.print(f"[green]data: {len(bars)} bars loaded in {timings['data_load_sec']:.2f}s[/green]")
-    data_fetch_info = getattr(getattr(provider, "_provider", None), "last_fetch_info", None)
 
     t0 = _time.perf_counter()
     config = _build_indicator_plot_config(
@@ -1288,15 +1368,14 @@ def pine_run_plots(
     )
     timings["runtime_sec"] = _time.perf_counter() - t0
 
-    t0 = _time.perf_counter()
-    plots_csv = output_path / "plots.csv"
-    plots_rows = export_plot_records(
-        list(getattr(backend_result, "plots", []) or []),
-        plots_csv,
-        from_ms=compare_from_ms,
-        to_ms=compare_to_ms,
+    plots_csv, plots_rows, timings["export_sec"] = _write_indicator_plot_outputs(
+        backend_result=backend_result,
+        output_path=output_path,
+        compare_from_ms=compare_from_ms,
+        compare_to_ms=compare_to_ms,
+        export_plot_records_func=export_plot_records,
+        perf_counter=_time.perf_counter,
     )
-    timings["export_sec"] = _time.perf_counter() - t0
     timings["total_sec"] = _time.perf_counter() - start_total
 
     meta = _build_indicator_plot_run_meta(
