@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from openpine.exports import export_plot_outputs, export_trades
+from openpine.exports import ExportWindow, export_equity_curve, export_plot_outputs, export_trades
 
 
 def test_export_plot_outputs_wide_and_filters_window(tmp_path):
@@ -19,7 +19,7 @@ def test_export_plot_outputs_wide_and_filters_window(tmp_path):
         ]
     ).to_parquet(source)
 
-    rows = export_plot_outputs(source, output, from_ms=2000, to_ms=2000)
+    rows = export_plot_outputs(source, output, from_ms=2000, to_ms=3000)
 
     exported = pd.read_csv(output)
     assert rows == 1
@@ -32,21 +32,18 @@ def test_export_plot_outputs_wide_and_filters_window(tmp_path):
 @dataclass
 class Trade:
     trade_id: str
-    entry_id: str
-    exit_id: str
+    status: str
     direction: str
-    entry_time: int
-    exit_time: int
+    entry_time_ms: int
+    exit_time_ms: int
     entry_price: float
     exit_price: float
     qty: float
-    gross_pnl: float
-    net_pnl: float
-    net_pnl_pct: float
-    fee: float
-    slippage: float
-    bars_held: int
-    exit_reason: str
+    gross_profit: float
+    commission: float
+    net_profit: float
+    max_runup: float
+    max_drawdown: float
 
 
 def test_export_trades_writes_stable_header(tmp_path):
@@ -54,29 +51,73 @@ def test_export_trades_writes_stable_header(tmp_path):
     rows = export_trades(
         [
             Trade(
-                "t1",
-                "e1",
-                "x1",
-                "long",
-                1000,
-                2000,
-                10.0,
-                11.0,
-                2.0,
-                2.0,
-                1.9,
-                9.5,
-                0.1,
-                0.0,
-                1,
-                "close",
+                trade_id="t1",
+                status="closed",
+                direction="long",
+                entry_time_ms=1000,
+                exit_time_ms=2000,
+                entry_price=10.0,
+                exit_price=11.0,
+                qty=2.0,
+                gross_profit=2.0,
+                commission=0.1,
+                net_profit=1.9,
+                max_runup=2.5,
+                max_drawdown=0.5,
             )
         ],
         output,
+        window=ExportWindow(1500, 2500),
     )
 
     assert rows == 1
     text = output.read_text()
-    assert text.splitlines()[0].startswith("trade_id,entry_id,exit_id,direction")
-    assert "t1,e1,x1,long" in text
+    assert text.splitlines()[0].startswith("trade_id,status,direction,entry_time_ms")
+    assert "t1,closed,long,1000,2000" in text
 
+
+def test_export_trades_filters_closed_by_exit_time(tmp_path):
+    output = tmp_path / "trades.csv"
+
+    rows = export_trades(
+        [
+            {
+                "trade_id": "out",
+                "status": "closed",
+                "direction": "long",
+                "entry_time_ms": 1000,
+                "exit_time_ms": 1400,
+            },
+            {
+                "trade_id": "in",
+                "status": "closed",
+                "direction": "long",
+                "entry_time_ms": 1000,
+                "exit_time_ms": 2000,
+            },
+        ],
+        output,
+        window=ExportWindow(1500, 2500),
+    )
+
+    exported = pd.read_csv(output)
+    assert rows == 1
+    assert exported["trade_id"].tolist() == ["in"]
+
+
+def test_export_equity_curve_filters_visible_window(tmp_path):
+    output = tmp_path / "equity_curve.csv"
+
+    rows = export_equity_curve(
+        [
+            {"bar_time_ms": 1000, "equity": 10_000},
+            {"bar_time_ms": 2000, "equity": 10_100},
+            {"bar_time_ms": 3000, "equity": 10_200},
+        ],
+        output,
+        window=ExportWindow(1500, 3000),
+    )
+
+    exported = pd.read_csv(output)
+    assert rows == 1
+    assert exported["bar_time_ms"].tolist() == [2000]
