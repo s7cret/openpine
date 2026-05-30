@@ -111,7 +111,7 @@ def test_production_source_does_not_mutate_sys_path_or_hardcode_home_paths() -> 
             if (
                 isinstance(node, ast.Constant)
                 and isinstance(node.value, str)
-                and "/home/" in node.value
+                and ("/home/" in node.value or "~/.openpine" in node.value)
             ):
                 home_paths.append(f"{relative_path}:{node.lineno}")
 

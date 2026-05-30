@@ -11,8 +11,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
-# Auto-load ~/.openpine/env if it exists
-_ENV_FILE = Path("~/.openpine/env").expanduser()
+# Auto-load workspace-local OpenPine env if it exists.
+_ENV_FILE = Path(".openpine/env")
 if _ENV_FILE.exists():
     for line in _ENV_FILE.read_text().splitlines():
         line = line.strip()
@@ -962,7 +962,7 @@ class TelegramBotHandler:
             # Save to incoming dir
             import time
             safe_name = filename.replace(" ", "_").replace("/", "_")
-            incoming_dir = Path("~/.openpine/incoming").expanduser()
+            incoming_dir = Path(".openpine/incoming")
             incoming_dir.mkdir(parents=True, exist_ok=True)
             dest_path = incoming_dir / f"{int(time.time())}_{safe_name}"
             dest_path.write_bytes(content)
