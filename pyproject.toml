@@ -39,6 +39,7 @@ packages = [
     "openpine",
     "openpine.accounts",
     "openpine.artifacts",
+    "openpine.batch",
     "openpine.compile",
     "openpine.contracts",
     "openpine.daemon",
