@@ -481,6 +481,61 @@ def _parse_with_library_api(
     return ast, None
 
 
+def _translate_ast_with_library_api(
+    *,
+    apis: _LibraryApis,
+    ast: Any,
+    module_name: str,
+    strict: bool,
+    profile: CompileProfile,
+    compile_meta: dict[str, Any],
+    kwargs: dict[str, Any],
+) -> CompileResult:
+    ast_json = apis.ast_to_json(ast)
+    ast_payload = json.loads(ast_json)
+    translation = apis.translate_ast(
+        ast_payload,
+        module_name=module_name,
+        strict=strict,
+        emit_source_comments=kwargs.get("emit_source_comments", True),
+        allow_invalid_ast=kwargs.get("allow_invalid_ast", profile.allow_invalid_ast),
+        allow_contract_mismatch=kwargs.get("allow_contract_mismatch", False),
+        allow_external_library_stubs=kwargs.get(
+            "allow_external_library_stubs", profile.allow_external_library_stubs
+        ),
+        allow_unsupported_request_stubs=kwargs.get(
+            "allow_unsupported_request_stubs",
+            profile.allow_unsupported_request_stubs,
+        ),
+        allow_realtime_local_simulation=kwargs.get(
+            "allow_realtime_local_simulation", False
+        ),
+    )
+    translation_meta = getattr(translation, "metadata", {}) or {}
+    compile_meta.update(
+        {
+            "translation_metadata": translation_meta,
+            "source_map_entries": len(getattr(translation, "source_map", []) or []),
+        }
+    )
+    if profile.name == "production":
+        blockers = _production_metadata_blockers(translation_meta)
+        if blockers:
+            compile_meta["production_blockers"] = blockers
+            return CompileResult(
+                success=False,
+                errors=blockers,
+                ast_json=ast_json,
+                compile_meta=compile_meta,
+            )
+    return CompileResult(
+        success=True,
+        python_code=getattr(translation, "code"),
+        ast_json=ast_json,
+        compile_meta=compile_meta,
+    )
+
+
 def _profile_from_kwargs(kwargs: dict[str, Any]) -> CompileProfile:
     raw = kwargs.get("profile")
     if isinstance(raw, CompileProfile):
@@ -625,47 +680,14 @@ class SubprocessCompilerAdapter:
                 return parse_error
             assert ast is not None
 
-            ast_json = apis.ast_to_json(ast)
-            ast_payload = json.loads(ast_json)
-            translation = apis.translate_ast(
-                ast_payload,
+            return _translate_ast_with_library_api(
+                apis=apis,
+                ast=ast,
                 module_name=module_name,
                 strict=strict,
-                emit_source_comments=kwargs.get("emit_source_comments", True),
-                allow_invalid_ast=kwargs.get("allow_invalid_ast", profile.allow_invalid_ast),
-                allow_contract_mismatch=kwargs.get("allow_contract_mismatch", False),
-                allow_external_library_stubs=kwargs.get(
-                    "allow_external_library_stubs", profile.allow_external_library_stubs
-                ),
-                allow_unsupported_request_stubs=kwargs.get(
-                    "allow_unsupported_request_stubs", profile.allow_unsupported_request_stubs
-                ),
-                allow_realtime_local_simulation=kwargs.get(
-                    "allow_realtime_local_simulation", False
-                ),
-            )
-            translation_meta = getattr(translation, "metadata", {}) or {}
-            compile_meta.update(
-                {
-                    "translation_metadata": translation_meta,
-                    "source_map_entries": len(getattr(translation, "source_map", []) or []),
-                }
-            )
-            if profile.name == "production":
-                blockers = _production_metadata_blockers(translation_meta)
-                if blockers:
-                    compile_meta["production_blockers"] = blockers
-                    return CompileResult(
-                        success=False,
-                        errors=blockers,
-                        ast_json=ast_json,
-                        compile_meta=compile_meta,
-                    )
-            return CompileResult(
-                success=True,
-                python_code=getattr(translation, "code"),
-                ast_json=ast_json,
+                profile=profile,
                 compile_meta=compile_meta,
+                kwargs=kwargs,
             )
         except Exception as exc:
             production_error = (
