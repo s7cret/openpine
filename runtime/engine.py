@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from openpine.contracts import Bar
+from marketdata_provider.contracts import Bar
 from openpine.integrations import import_library
 
 

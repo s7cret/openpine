@@ -7,7 +7,6 @@ import json
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,17 +15,12 @@ from typing import Any, Callable, Protocol
 
 # Common installation locations for pine2ast/ast2python
 TOOL_SEARCH_PATHS = [
-    Path("[local-home]/.local/bin"),
+    Path.home() / ".local" / "bin",
     Path("/usr/local/bin"),
     Path("/usr/bin"),
-    Path.home() / ".local" / "bin",
 ]
 
-LOCAL_PACKAGE_PATHS = {
-    "pine2ast": Path("[local-home]/pine2ast"),
-    "ast2python": Path("[local-home]/ast2python"),
-    "pinelib": Path("[local-home]/pinelib"),
-}
+COMPILER_PACKAGES = ("pine2ast", "ast2python", "pinelib")
 
 _PINE_V5_DIRECTIVE_RE = re.compile(r"^(\s*//\s*@version\s*=\s*)5(\b.*)$")
 _PINE_V5_FALLBACK_WARNING = (
@@ -113,9 +107,8 @@ class _LibraryApis:
 
 
 def _import_local_module(name: str) -> ModuleType:
-    root = LOCAL_PACKAGE_PATHS[name]
-    if root.exists() and str(root) not in sys.path:
-        sys.path.insert(0, str(root))
+    if name not in COMPILER_PACKAGES:
+        raise ValueError(f"Unsupported compiler package: {name}")
     return importlib.import_module(name)
 
 
@@ -123,7 +116,7 @@ def _load_library_apis() -> tuple[_LibraryApis | None, LibraryAvailability]:
     errors: list[str] = []
     modules: dict[str, ModuleType] = {}
 
-    for name in ("pine2ast", "ast2python", "pinelib"):
+    for name in COMPILER_PACKAGES:
         try:
             modules[name] = _import_local_module(name)
         except Exception as exc:  # pragma: no cover - exact import failures are environment-specific
@@ -139,7 +132,7 @@ def _load_library_apis() -> tuple[_LibraryApis | None, LibraryAvailability]:
         return None, LibraryAvailability(
             available=False,
             errors=errors,
-            paths={name: str(path) for name, path in LOCAL_PACKAGE_PATHS.items()},
+            paths={name: "installed-package" for name in COMPILER_PACKAGES},
         )
 
     pine2ast = modules["pine2ast"]
@@ -173,7 +166,7 @@ def _load_library_apis() -> tuple[_LibraryApis | None, LibraryAvailability]:
     status = LibraryAvailability(
         available=not missing,
         errors=[f"missing Python API: {name}" for name in missing],
-        paths={name: str(path) for name, path in LOCAL_PACKAGE_PATHS.items()},
+        paths={name: "installed-package" for name in COMPILER_PACKAGES},
         versions=versions,
     )
     if missing:
@@ -221,7 +214,7 @@ class SubprocessCompilerAdapter:
 
     timeout: int = 60
     prefer_library: bool = True
-    fallback_to_subprocess: bool = True
+    fallback_to_subprocess: bool = False
 
     def library_status(self) -> LibraryAvailability:
         """Return import/API availability for the local Python compiler stack."""
@@ -268,9 +261,7 @@ class SubprocessCompilerAdapter:
             "adapter_status": "available",
             "module_name": module_name,
             "strict": strict,
-            "library_paths": {
-                name: str(path) for name, path in LOCAL_PACKAGE_PATHS.items()
-            },
+            "library_paths": {name: "installed-package" for name in COMPILER_PACKAGES},
         }
 
         try:

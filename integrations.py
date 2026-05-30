@@ -3,23 +3,18 @@
 from __future__ import annotations
 
 import importlib
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 from types import ModuleType
 
 
-# Centralized library paths — same as tools/openpine_batch_1527_runner.py
-# In production, all libraries should be installed as editable packages (pip install -e).
-# This dict provides fallback paths for development/non-installed runs.
-LIBRARY_PATHS: dict[str, Path] = {
-    "pine2ast": Path("[local-home]/pine2ast"),
-    "ast2python": Path("[local-home]/ast2python"),
-    "pinelib": Path("[local-home]/pinelib"),
-    "marketdata_provider": Path("[local-home]/marketdata-provider"),
-    "backtest_engine": Path("[local-home]/backtest_engine"),
-    "optimizer": Path("[local-home]/optimizer"),
-}
+CORE_LIBRARIES: tuple[str, ...] = (
+    "pine2ast",
+    "ast2python",
+    "pinelib",
+    "marketdata_provider",
+    "backtest_engine",
+    "optimizer",
+)
 
 
 @dataclass(frozen=True)
@@ -27,30 +22,20 @@ class LibraryStatus:
     """Import status for one external library."""
 
     name: str
-    path: str
     importable: bool
     version: str | None = None
     error: str | None = None
 
 
-def ensure_library_path(name: str) -> None:
-    """Put a known local library path on sys.path if it exists."""
-    path = LIBRARY_PATHS.get(name)
-    if path is not None and path.exists():
-        path_s = str(path)
-        if path_s not in sys.path:
-            sys.path.insert(0, path_s)
-
-
 def import_library(name: str) -> ModuleType:
-    """Import a local external library by logical module name."""
-    ensure_library_path(name)
+    """Import an installed external library by logical module name."""
+    if name not in CORE_LIBRARIES:
+        raise ValueError(f"Unsupported core library: {name}")
     return importlib.import_module(name)
 
 
 def check_library(name: str) -> LibraryStatus:
-    """Return import status for a configured local library."""
-    path = LIBRARY_PATHS.get(name)
+    """Return import status for an installed core library."""
     try:
         module = import_library(name)
         version = (
@@ -60,14 +45,12 @@ def check_library(name: str) -> LibraryStatus:
         )
         return LibraryStatus(
             name=name,
-            path=str(path or ""),
             importable=True,
             version=str(version) if version is not None else None,
         )
     except Exception as exc:
         return LibraryStatus(
             name=name,
-            path=str(path or ""),
             importable=False,
             error=f"{type(exc).__name__}: {exc}",
         )
@@ -75,4 +58,4 @@ def check_library(name: str) -> LibraryStatus:
 
 def check_core_libraries() -> list[LibraryStatus]:
     """Check all six core libraries required by OpenPine v3."""
-    return [check_library(name) for name in LIBRARY_PATHS]
+    return [check_library(name) for name in CORE_LIBRARIES]

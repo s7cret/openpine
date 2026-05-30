@@ -9,7 +9,7 @@ from __future__ import annotations
 from marketdata_provider.contracts import BarQuery
 from openpine.data.candle_storage import CandleStorage
 from openpine.data.contracts import WriteMode
-from openpine.data.data_orchestrator import (
+from openpine.data.orchestrator import (
     DataOrchestrator,
     MarketDataProvider,
 )

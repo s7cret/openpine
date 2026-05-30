@@ -21,9 +21,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from openpine.contracts import InstrumentKey, Timeframe
+    from marketdata_provider.contracts import InstrumentKey, Timeframe
     from openpine.events.bus import EventBus
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
 
 log = structlog.get_logger(__name__)
 
@@ -177,7 +177,7 @@ class MarketDataStreamManager:
             try:
                 loop = asyncio.get_running_loop()
                 # Reconstruct minimal key objects for unsubscribe
-                from openpine.contracts import InstrumentKey as CK, Timeframe as TF
+                from marketdata_provider.contracts import InstrumentKey as CK, Timeframe as TF
                 ik = CK(**sub.instrument_key) if sub.instrument_key else None
                 tf = TF(**sub.timeframe) if sub.timeframe else None
                 if ik and tf:

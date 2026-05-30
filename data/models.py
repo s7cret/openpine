@@ -95,19 +95,6 @@ class DataGap:
     updated_at: int = 0
 
 
-@dataclass(frozen=True)
-class BarQuery:
-    """Query for reading bars from candle storage."""
-
-    instrument_key: str
-    timeframe: str
-    from_time: Optional[int] = None
-    to_time: Optional[int] = None
-    limit: Optional[int] = None
-    include_open_candle: bool = False
-    source: Literal["storage", "provider", "auto"] = "auto"
-
-
 @dataclass
 class WriteResult:
     """Result of a candle write operation."""
@@ -158,7 +145,6 @@ __all__ = [
     "DataRequirement",
     "AggregationRequirement",
     "DataGap",
-    "BarQuery",
     "WriteResult",
     "EnsureDataResult",
     "CandleCommitResult",

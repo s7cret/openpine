@@ -22,7 +22,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from openpine.data.bar_query import BarQuery
+from marketdata_provider.contracts import BarQuery
 from openpine.data.contracts import PARQUET_LAYOUT, WriteMode
 from openpine.data.models import (
     CandleManifest,
@@ -74,6 +74,25 @@ def _compute_schema_hash() -> str:
         return xxhash.xxh64(schema_str).hexdigest()
     except ImportError:
         return hashlib.sha256(schema_str.encode()).hexdigest()[:16]
+
+
+def _storage_identity(query: BarQuery) -> tuple[str, str, str, str, str, int, int]:
+    """Map canonical marketdata query to OpenPine's parquet partition identity."""
+
+    return (
+        query.instrument.exchange,
+        query.instrument.market,
+        query.instrument.symbol,
+        "trade",
+        query.timeframe.canonical,
+        query.start_ms,
+        query.end_ms,
+    )
+
+
+def _storage_instrument_key(query: BarQuery) -> str:
+    exchange, market_type, symbol, price_type, _, _, _ = _storage_identity(query)
+    return f"{exchange}:{market_type}:{symbol}:{price_type}"
 
 
 class CandleStorage:
@@ -354,7 +373,7 @@ class CandleStorage:
         """
         from marketdata_provider.core.bar import Bar
 
-        exchange, market_type, symbol, price_type = query.instrument_parts
+        exchange, market_type, symbol, price_type, _, _, _ = _storage_identity(query)
 
         # Find matching manifest files
         manifests = self.list_manifests(query)
@@ -371,10 +390,7 @@ class CandleStorage:
             df = table.to_pandas()
 
             # Apply time filter
-            if query.from_time is not None:
-                df = df[df["open_time"] >= query.from_time]
-            if query.to_time is not None:
-                df = df[df["open_time"] <= query.to_time]
+            df = df[(df["open_time"] >= query.start_ms) & (df["open_time"] < query.end_ms)]
 
             all_rows.extend(df.to_dict("records"))
 
@@ -409,9 +425,6 @@ class CandleStorage:
         canonical_rows.sort(key=lambda r: r["open_time"])
 
         # Apply limit
-        if query.limit is not None:
-            canonical_rows = canonical_rows[-query.limit :]
-
         # Convert to Bar objects
         bars = []
         for row in canonical_rows:
@@ -439,7 +452,7 @@ class CandleStorage:
         """
         import sqlite3
 
-        exchange, market_type, symbol, price_type = query.instrument_parts
+        exchange, market_type, symbol, price_type, timeframe, start_ms, end_ms = _storage_identity(query)
 
         conn = self._get_conn()
         sql = """
@@ -450,14 +463,12 @@ class CandleStorage:
             WHERE exchange = ? AND market_type = ? AND symbol = ? AND price_type = ?
               AND timeframe = ?
         """
-        params: list = [exchange, market_type, symbol, price_type, query.timeframe]
+        params: list = [exchange, market_type, symbol, price_type, timeframe]
 
-        if query.from_time is not None:
-            sql += " AND max_open_time >= ?"
-            params.append(query.from_time)
-        if query.to_time is not None:
-            sql += " AND min_open_time <= ?"
-            params.append(query.to_time)
+        sql += " AND max_open_time >= ?"
+        params.append(start_ms)
+        sql += " AND min_open_time < ?"
+        params.append(end_ms)
 
         # Only active manifests by default
         sql += " AND (is_active IS NULL OR is_active = 1)"
@@ -505,27 +516,25 @@ class CandleStorage:
         manifests = self.list_manifests(query)
         if not manifests:
             # If no manifests at all, the entire requested range is a gap
-            if query.from_time and query.to_time:
-                return [
-                    DataGap(
-                        gap_id=f"gap_{query.instrument_key}_{query.timeframe}_{query.from_time}_{query.to_time}",
-                        exchange=query.instrument_parts[0],
-                        market_type=query.instrument_parts[1],
-                        symbol=query.instrument_parts[2],
-                        price_type=query.instrument_parts[3],
-                        timeframe=query.timeframe,
-                        provider=self.provider,
-                        gap_start=query.from_time,
-                        gap_end=query.to_time,
-                        created_at=int(time.time() * 1000),
-                        updated_at=int(time.time() * 1000),
-                    )
-                ]
-            return []
+            exchange, market_type, symbol, price_type, timeframe, start_ms, end_ms = _storage_identity(query)
+            return [
+                DataGap(
+                    gap_id=f"gap_{_storage_instrument_key(query)}_{timeframe}_{start_ms}_{end_ms}",
+                    exchange=exchange,
+                    market_type=market_type,
+                    symbol=symbol,
+                    price_type=price_type,
+                    timeframe=timeframe,
+                    provider=self.provider,
+                    gap_start=start_ms,
+                    gap_end=end_ms,
+                    created_at=int(time.time() * 1000),
+                    updated_at=int(time.time() * 1000),
+                )
+            ]
 
         gaps: list[DataGap] = []
-        from_time = query.from_time or manifests[0].min_open_time
-        to_time = query.to_time or manifests[-1].max_open_time
+        exchange, market_type, symbol, price_type, timeframe, _, _ = _storage_identity(query)
 
         for i in range(len(manifests) - 1):
             current = manifests[i]
@@ -534,12 +543,12 @@ class CandleStorage:
             if next_m.min_open_time - current.max_open_time > 60_000:  # > 1 minute gap
                 gaps.append(
                     DataGap(
-                        gap_id=f"gap_{query.instrument_key}_{query.timeframe}_{current.max_open_time}_{next_m.min_open_time}",
-                        exchange=query.instrument_parts[0],
-                        market_type=query.instrument_parts[1],
-                        symbol=query.instrument_parts[2],
-                        price_type=query.instrument_parts[3],
-                        timeframe=query.timeframe,
+                        gap_id=f"gap_{_storage_instrument_key(query)}_{timeframe}_{current.max_open_time}_{next_m.min_open_time}",
+                        exchange=exchange,
+                        market_type=market_type,
+                        symbol=symbol,
+                        price_type=price_type,
+                        timeframe=timeframe,
                         provider=self.provider,
                         gap_start=current.max_open_time,
                         gap_end=next_m.min_open_time,

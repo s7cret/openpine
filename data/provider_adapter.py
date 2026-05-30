@@ -31,7 +31,7 @@ def ensure_marketdata_provider_version() -> None:
         raise RuntimeError(
             "OpenPine requires marketdata-provider "
             f"{REQUIRED_MARKETDATA_PROVIDER_VERSION}; imported {actual!r}. "
-            "Install the canonical [local-home]/marketdata-provider package."
+            "Install the canonical marketdata-provider package."
         )
 
 

@@ -10,9 +10,6 @@ from typing import Optional
 
 import pydantic
 
-from openpine.contracts import InstrumentKey as ContractInstrumentKey
-from openpine.contracts import Timeframe as ContractTimeframe
-
 
 class DataRequirement(pydantic.BaseModel):
     """Data requirement for a strategy — section 5.7.

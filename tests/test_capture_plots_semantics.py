@@ -23,7 +23,7 @@ def test_capture_plots_does_not_change_execution_backend():
     # Patch at the source modules where imports come from
     with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, \
          patch("openpine.registry.SQLiteStrategyRegistry") as MockRegistry, \
-         patch("openpine.data.data_orchestrator.DataOrchestrator") as MockOrch, \
+         patch("openpine.data.orchestrator.DataOrchestrator") as MockOrch, \
          patch("openpine.data.provider_adapter.create_local_marketdata_provider_adapter") as MockProvider, \
          patch("openpine.artifacts.ArtifactStore") as MockArtifactStore, \
          patch("openpine.storage.BacktestResultStore") as MockStore, \
@@ -62,7 +62,7 @@ def test_capture_plots_does_not_change_execution_backend():
         mock_instance.run.return_value = mock_result
         
         # Test A: without capture_plots
-        from cli import strategy_backtest
+        from openpine.cli import strategy_backtest
         from click.testing import CliRunner
         
         runner = CliRunner()
@@ -100,7 +100,7 @@ def test_no_generated_ref_no_backend():
     
     with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, \
          patch("openpine.registry.SQLiteStrategyRegistry") as MockRegistry, \
-         patch("openpine.data.data_orchestrator.DataOrchestrator") as MockOrch, \
+         patch("openpine.data.orchestrator.DataOrchestrator") as MockOrch, \
          patch("openpine.data.provider_adapter.create_local_marketdata_provider_adapter") as MockProvider, \
          patch("openpine.artifacts.ArtifactStore") as MockArtifactStore, \
          patch("openpine.storage.BacktestResultStore") as MockStore, \
@@ -137,7 +137,7 @@ def test_no_generated_ref_no_backend():
         mock_result.uses_backtest_engine = True
         mock_instance.run.return_value = mock_result
         
-        from cli import strategy_backtest
+        from openpine.cli import strategy_backtest
         from click.testing import CliRunner
         
         runner = CliRunner()

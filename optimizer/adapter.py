@@ -110,41 +110,29 @@ class DryRunOptimizerAdapter:
 
 
 class LocalOptimizerAdapter:
-    """Adapter boundary for the local [local-home]/optimizer package.
+    """Adapter boundary for the installed optimizer package.
 
     The adapter intentionally normalizes the external package output into
-    OpenPine's stable OptimizerResult contract. The OpenPine "dry-run" command
-    still exercises the local optimizer package with a synthetic no-exchange
-    runner when the library is available.
+    OpenPine's stable OptimizerResult contract.
     """
 
     def __init__(
         self,
-        local_root: str | Path = "[local-home]/optimizer",
         fallback_adapter: OptimizerAdapter | None = None,
     ) -> None:
-        self.local_root = Path(local_root)
         self.fallback_adapter = fallback_adapter or DryRunOptimizerAdapter()
         self._module: ModuleType | None = None
         self._results: dict[str, OptimizerResult] = {}
 
     def detect(self) -> OptimizerLibraryDetection:
         """Return whether the local optimizer library is importable and usable."""
-        package_init = self.local_root / "optimizer" / "__init__.py"
-        if not package_init.exists():
-            return OptimizerLibraryDetection(
-                available=False,
-                root=str(self.local_root),
-                reason="optimizer package not found",
-            )
-
         try:
             module = self._load_module()
         except Exception as exc:  # pragma: no cover - exact import failures vary.
             self._module = None
             return OptimizerLibraryDetection(
                 available=False,
-                root=str(self.local_root),
+                root="installed-package",
                 reason=f"optimizer import failed: {exc}",
             )
 
@@ -156,14 +144,14 @@ class LocalOptimizerAdapter:
         if missing:
             return OptimizerLibraryDetection(
                 available=False,
-                root=str(self.local_root),
+                root="installed-package",
                 reason=f"optimizer API missing: {', '.join(missing)}",
             )
 
         self._module = module
         return OptimizerLibraryDetection(
             available=True,
-            root=str(self.local_root),
+            root="installed-package",
             version=getattr(module, "__version__", None),
         )
 
@@ -171,7 +159,7 @@ class LocalOptimizerAdapter:
         optimization_id = f"opt_{uuid.uuid4().hex[:12]}"
         detection = self.detect()
         if not detection.available:
-            result = self._fallback_result(optimization_id, config, detection.reason)
+            result = self._failed_result(optimization_id, config, detection.reason)
         else:
             result = self._run_local_optimizer(optimization_id, config, detection)
 
@@ -191,39 +179,8 @@ class LocalOptimizerAdapter:
         if self._module is not None:
             return self._module
 
-        root = str(self.local_root)
         invalidate_caches()
-        import sys
-
-        previous_path = list(sys.path)
-        existing = {
-            name: module
-            for name, module in sys.modules.items()
-            if name == "optimizer" or name.startswith("optimizer.")
-        }
-        for name in list(existing):
-            sys.modules.pop(name, None)
-
-        try:
-            sys.path.insert(0, root)
-            module = import_module("optimizer")
-        finally:
-            sys.path[:] = previous_path
-
-        loaded_file = Path(getattr(module, "__file__", "")).resolve()
-        try:
-            loaded_file.relative_to(self.local_root.resolve())
-        except ValueError as exc:
-            for name in [
-                name
-                for name in sys.modules
-                if name == "optimizer" or name.startswith("optimizer.")
-            ]:
-                sys.modules.pop(name, None)
-            sys.modules.update(existing)
-            raise ImportError(f"optimizer resolved outside {self.local_root}") from exc
-
-        return module
+        return import_module("optimizer")
 
     def _run_local_optimizer(
         self,
@@ -233,7 +190,7 @@ class LocalOptimizerAdapter:
     ) -> OptimizerResult:
         module = self._module
         if module is None:
-            return self._fallback_result(optimization_id, config, "optimizer module not loaded")
+            return self._failed_result(optimization_id, config, "optimizer module not loaded")
 
         try:
             trial_count = max(1, int(config.trials))
@@ -265,7 +222,7 @@ class LocalOptimizerAdapter:
 
             raw_result = module.optimize([parameter], runner, optimizer_config)
         except Exception as exc:
-            return self._fallback_result(
+            return self._failed_result(
                 optimization_id,
                 config,
                 f"optimizer call failed: {exc}",
@@ -292,24 +249,23 @@ class LocalOptimizerAdapter:
             artifact_uri=str(storage_ref or output_dir),
         )
 
-    def _fallback_result(
+    def _failed_result(
         self,
         optimization_id: str,
         config: OptimizerRunConfig,
         reason: str | None,
     ) -> OptimizerResult:
-        metrics = {"optimizer_adapter": "dry_run_fallback"}
+        metrics = {"optimizer_adapter": "local"}
         if reason:
-            metrics["fallback_reason"] = reason
+            metrics["failure_reason"] = reason
         return OptimizerResult(
             optimization_id=optimization_id,
             strategy_id=config.strategy_id,
             trials_requested=config.trials,
             trials_completed=0,
-            status="dry_run",
-            uses_backtest_engine_path=True,
+            status="failed",
+            uses_backtest_engine_path=False,
             metrics=metrics,
-            artifact_uri=f"optimizer://{optimization_id}",
         )
 
 

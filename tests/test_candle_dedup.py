@@ -9,9 +9,8 @@ def test_read_candles_deduplicates_identical_rows():
     """CandleStorage.read_candles must return unique open_time values
     even when multiple manifests contain identical duplicates."""
     from openpine.data.candle_storage import CandleStorage
-    from openpine.data.bar_query import BarQuery
     from openpine.data.models import CandleManifest
-    from marketdata_provider.core.bar import Bar
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
     storage = CandleStorage()
 
@@ -91,10 +90,11 @@ def test_read_candles_deduplicates_identical_rows():
     storage._insert_manifest(manifest_b)
 
     query = BarQuery(
-        instrument_key="binance:spot:TESTDEDUP:trade",
-        timeframe="1h",
-        from_time=1704067200000,
-        to_time=1704153600000,
+        instrument=InstrumentKey(exchange="binance", market="spot", symbol="TESTDEDUP"),
+        timeframe=parse_timeframe("1h"),
+        start_ms=1704067200000,
+        end_ms=1704157200000,
+        source="storage",
     )
     bars = storage.read_candles(query)
 
@@ -116,8 +116,8 @@ def test_conflicting_duplicate_detection():
     """Data doctor must detect conflicting duplicates (same open_time,
     different OHLCV values)."""
     from openpine.data.candle_storage import CandleStorage
-    from openpine.data.bar_query import BarQuery
     from openpine.data.models import CandleManifest
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
     storage = CandleStorage()
 
@@ -195,10 +195,11 @@ def test_conflicting_duplicate_detection():
     storage._insert_manifest(manifest_b)
 
     query = BarQuery(
-        instrument_key="binance:spot:BTCUSDT:trade",
-        timeframe="1h",
-        from_time=1704067200000,
-        to_time=1704067200000,
+        instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+        timeframe=parse_timeframe("1h"),
+        start_ms=1704067200000,
+        end_ms=1704070800000,
+        source="storage",
     )
 
     # read_candles should detect conflict but still return one bar (first seen)
@@ -217,8 +218,8 @@ def test_conflicting_duplicate_detection():
 def test_list_manifests_filters_inactive():
     """list_manifests must not return superseded (inactive) manifests."""
     from openpine.data.candle_storage import CandleStorage
-    from openpine.data.bar_query import BarQuery
     from openpine.data.models import CandleManifest
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
     storage = CandleStorage()
 
@@ -270,10 +271,11 @@ def test_list_manifests_filters_inactive():
     conn.commit()
 
     query = BarQuery(
-        instrument_key="binance:spot:BTCUSDT:trade",
-        timeframe="1h",
-        from_time=1704067200000,
-        to_time=1704153600000,
+        instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+        timeframe=parse_timeframe("1h"),
+        start_ms=1704067200000,
+        end_ms=1704157200000,
+        source="storage",
     )
     manifests = storage.list_manifests(query)
     ids = [m.manifest_id for m in manifests]

@@ -25,7 +25,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 if TYPE_CHECKING:
-    from openpine.contracts import Bar, InstrumentKey, Timeframe
+    from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe
 
 
 class KlineUpdateEnvelope:

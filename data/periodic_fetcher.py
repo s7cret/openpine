@@ -14,7 +14,7 @@ from typing import Callable
 
 from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 from marketdata_provider.timeframes import timeframe_ms
-from openpine.data.data_orchestrator import DataOrchestrator
+from openpine.data.orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
 

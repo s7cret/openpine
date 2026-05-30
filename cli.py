@@ -190,7 +190,7 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
 
     # Provider connectivity smoke test
     try:
-        from openpine.data.data_orchestrator import DataOrchestrator
+        from openpine.data.orchestrator import DataOrchestrator
         orch = DataOrchestrator()
         # Smoke test: try to get bars (will return empty if no provider)
         console.print(f"  [green]✓[/green] DataOrchestrator smoke test passed")
@@ -688,7 +688,7 @@ def pine_run_plots(
     from types import SimpleNamespace
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
     from openpine.exports import export_plot_records, parse_time_ms, write_json
     from openpine.pine.registry import SQLitePineSourceRegistry
@@ -1063,7 +1063,7 @@ def data() -> None:
 def data_plan(strategy_id: str | None, explain: bool) -> None:
     """Plan data requirements for a strategy (dry-run)."""
     from openpine.config import OpenPineConfig
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.planner import DataPlan, DataPlanner
     from openpine.streams import MarketDataStreamManager
     from openpine.universe import ActiveUniverse
@@ -1106,7 +1106,7 @@ def data_plan(strategy_id: str | None, explain: bool) -> None:
 def data_status(symbol: str | None, exchange: str, tf: str | None) -> None:
     """Show data pipeline status: configured symbols/timeframes, last backfill, gaps count."""
     from openpine.config import OpenPineConfig
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.storage import SQLiteStorage
 
     console.print("[bold]Data pipeline status[/bold]")
@@ -1188,7 +1188,7 @@ def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
     if provider_adapter is not None:
         try:
             from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-            from openpine.data.data_orchestrator import DataOrchestrator
+            from openpine.data.orchestrator import DataOrchestrator
 
             ik = InstrumentKey(exchange=exchange.upper(), symbol=symbol.upper(), market=market)
             query = BarQuery(instrument=ik, timeframe=parse_timeframe(timeframe), start_ms=0, end_ms=int(2**63 - 1))
@@ -1610,15 +1610,16 @@ def data_inspect(
         return
 
     # Use CandleStorage for canonical (deduplicated) read
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.candle_storage import CandleStorage
-    from openpine.data.bar_query import BarQuery
 
     storage = CandleStorage()
     query = BarQuery(
-        instrument_key=f"{exchange}:{market}:{symbol}:trade",
-        timeframe=timeframe,
-        from_time=start_ms,
-        to_time=end_ms,
+        instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
+        timeframe=parse_timeframe(timeframe),
+        start_ms=start_ms,
+        end_ms=end_ms,
+        source="storage",
     )
     bars = storage.read_candles(query)
 
@@ -1631,7 +1632,7 @@ def data_inspect(
     for pf in parquet_files:
         try:
             df = pd.read_parquet(pf)
-            raw_rows += len(df[(df["open_time"] >= start_ms) & (df["open_time"] <= end_ms)])
+            raw_rows += len(df[(df["open_time"] >= start_ms) & (df["open_time"] < end_ms)])
         except Exception:
             pass
 
@@ -1678,9 +1679,9 @@ def data_doctor(
 ) -> None:
     """Run diagnostic checks on candle data."""
     from datetime import datetime as dt, timezone
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.config import OpenPineConfig
     from openpine.data.candle_storage import CandleStorage
-    from openpine.data.bar_query import BarQuery
     import pandas as pd
 
     console.print(f"[bold]Data doctor[/bold] {symbol} {timeframe}")
@@ -1696,10 +1697,11 @@ def data_doctor(
     # Read canonical bars
     storage = CandleStorage()
     query = BarQuery(
-        instrument_key=f"{exchange}:{market}:{symbol}:{price_type}",
-        timeframe=timeframe,
-        from_time=start_ms,
-        to_time=end_ms,
+        instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
+        timeframe=parse_timeframe(timeframe),
+        start_ms=start_ms,
+        end_ms=end_ms,
+        source="storage",
     )
     bars = storage.read_candles(query)
 
@@ -1714,7 +1716,7 @@ def data_doctor(
     for m in active_manifests:
         try:
             df = pd.read_parquet(m.partition_path)
-            mask = (df["open_time"] >= start_ms) & (df["open_time"] <= end_ms)
+            mask = (df["open_time"] >= start_ms) & (df["open_time"] < end_ms)
             subset = df[mask]
             raw_rows += len(subset)
             all_raw_rows.extend(subset.to_dict("records"))
@@ -1793,9 +1795,9 @@ def data_compact(
 ) -> None:
     """Compact overlapping candle manifests into a single canonical parquet file."""
     from datetime import datetime as dt, timezone
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.config import OpenPineConfig
     from openpine.data.candle_storage import CandleStorage
-    from openpine.data.bar_query import BarQuery
     import pandas as pd
     import shutil
 
@@ -1812,10 +1814,11 @@ def data_compact(
     # Read canonical bars
     storage = CandleStorage()
     query = BarQuery(
-        instrument_key=f"{exchange}:{market}:{symbol}:{price_type}",
-        timeframe=timeframe,
-        from_time=start_ms,
-        to_time=end_ms,
+        instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
+        timeframe=parse_timeframe(timeframe),
+        start_ms=start_ms,
+        end_ms=end_ms,
+        source="storage",
     )
     bars = storage.read_candles(query)
 
@@ -2015,7 +2018,7 @@ def _timeframe_to_ms(timeframe: str) -> int:
 @data.command("ensure-active")
 def data_ensure_active() -> None:
     """Ensure all active strategies have required data."""
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.planner import DataPlanner
     from openpine.streams import MarketDataStreamManager
     from openpine.universe import ActiveUniverse
@@ -2043,7 +2046,7 @@ def data_ensure_active() -> None:
 @data.command("backfill-active")
 def data_backfill_active() -> None:
     """Trigger backfill for all active strategies' data requirements."""
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.planner import DataPlanner
     from openpine.streams import MarketDataStreamManager
     from openpine.universe import ActiveUniverse
@@ -2667,7 +2670,7 @@ def streams_status() -> None:
     from openpine.events import EventBus
     from openpine.streams import MarketDataStreamManager
     from openpine.storage import SQLiteStorage
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
 
     console.print("[bold]Streams status[/bold]")
 
@@ -2866,7 +2869,7 @@ def state_invalid() -> None:
 def state_rebuild(strategy_id: str, from_bar_time: int | None) -> None:
     """Rebuild state for a strategy from snapshots (section 30.8)."""
     from openpine.config import OpenPineConfig
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.recovery import StateRebuilder
     from openpine.state.store import StateStore
     from openpine.state.errors import StateInconsistencyError
@@ -4239,7 +4242,7 @@ def strategy_backtest(
     from datetime import timezone as _timezone
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.runtime.engine import (
         BacktestArtifactError,
@@ -4519,7 +4522,7 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
     import time as _time_module
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.data_orchestrator import DataOrchestrator
+    from openpine.data.orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.runtime.engine import (
         BacktestArtifactError,

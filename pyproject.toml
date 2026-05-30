@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openpine"
+version = "2.17.0"
+description = "OpenPine product orchestration boundary for the Pine stack"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0.0",
+    "structlog>=24.0.0",
+    "pine2ast==2.17.0",
+    "ast2python==2.17.0",
+    "pinelib==2.17.0",
+    "backtest_engine==2.17.0",
+    "marketdata-provider==2.17.0",
+    "optimizer==2.17.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+]
+
+[project.scripts]
+openpine = "openpine.cli:cli"
+
+[tool.setuptools]
+package-dir = {"openpine" = "."}
+packages = [
+    "openpine",
+    "openpine.accounts",
+    "openpine.artifacts",
+    "openpine.compile",
+    "openpine.contracts",
+    "openpine.daemon",
+    "openpine.data",
+    "openpine.domain",
+    "openpine.events",
+    "openpine.execution",
+    "openpine.jobs",
+    "openpine.notifications",
+    "openpine.optimizer",
+    "openpine.orders",
+    "openpine.pine",
+    "openpine.recovery",
+    "openpine.registry",
+    "openpine.risk",
+    "openpine.runtime",
+    "openpine.state",
+    "openpine.storage",
+    "openpine.streams",
+    "openpine.universe",
+    "openpine.workers",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-q --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = false
