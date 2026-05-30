@@ -11,8 +11,9 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from importlib import import_module, invalidate_caches
+from pathlib import Path
 from types import ModuleType
-from typing import Literal, Protocol
+from typing import Any, Callable, Literal, Protocol
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,14 @@ class OptimizerRunConfig:
     artifact_id: str | None = None
     params_hash: str | None = None
     data_query: dict | None = None
+    parameters: tuple[dict[str, Any], ...] = ()
+    engine_factory: Callable[[], Any] | None = None
+    strategy: Any | None = None
+    bars: tuple[Any, ...] = ()
+    static_params: dict[str, Any] = field(default_factory=dict)
+    objective: str = "net_profit"
+    output_dir: str | Path | None = None
+    storage_backend: Literal["sqlite", "json"] = "sqlite"
 
 
 @dataclass(frozen=True)
@@ -88,8 +97,8 @@ class LocalOptimizerAdapter:
     OpenPine's stable OptimizerResult contract.
     """
 
-    def __init__(self) -> None:
-        self._module: ModuleType | None = None
+    def __init__(self, optimizer_module: ModuleType | None = None) -> None:
+        self._module: ModuleType | None = optimizer_module
         self._results: dict[str, OptimizerResult] = {}
 
     def detect(self) -> OptimizerLibraryDetection:
@@ -106,7 +115,7 @@ class LocalOptimizerAdapter:
 
         missing = [
             name
-            for name in ("Parameter", "OptimizerConfig", "optimize")
+            for name in ("BacktestEngineRunnerAdapter", "Parameter", "OptimizerConfig", "optimize")
             if not hasattr(module, name)
         ]
         if missing:
@@ -166,26 +175,83 @@ class LocalOptimizerAdapter:
                 config,
                 "production optimization requires artifact_id and data_query",
             )
-
-        try:
-            runner_cls = getattr(module, "BacktestEngineRunnerAdapter", None)
-            if runner_cls is None:
-                return self._failed_result(
-                    optimization_id,
-                    config,
-                    "optimizer BacktestEngineRunnerAdapter is unavailable",
-                )
+        if not config.parameters:
             return self._failed_result(
                 optimization_id,
                 config,
-                "OpenPine real optimizer runner wiring is not implemented yet",
+                "production optimization requires a non-empty parameter space",
             )
+        if config.engine_factory is None or config.strategy is None or not config.bars:
+            return self._failed_result(
+                optimization_id,
+                config,
+                "production optimization requires engine_factory, strategy, and bars",
+            )
+
+        try:
+            parameters = [
+                module.Parameter(
+                    spec["name"],
+                    spec.get("type", spec.get("param_type", "float")),
+                    spec.get("default"),
+                    spec.get("min", spec.get("min_val")),
+                    spec.get("max", spec.get("max_val")),
+                    spec.get("step"),
+                    spec.get("options"),
+                    spec.get("enabled", True),
+                    spec.get("group"),
+                    spec.get("description"),
+                )
+                for spec in config.parameters
+            ]
+            runner = module.BacktestEngineRunnerAdapter(
+                engine_factory=config.engine_factory,
+                strategy=config.strategy,
+                bars=config.bars,
+                static_params=config.static_params,
+            )
+            optimizer_config = module.OptimizerConfig(
+                output_dir=Path(config.output_dir or "optimizer_results") / optimization_id,
+                storage_backend=config.storage_backend,
+                objective=config.objective,
+                max_trials=config.trials,
+                use_profile_auto_constraints=False,
+            )
+            raw_result = module.optimize(parameters, runner, optimizer_config)
+            return self._normalize_optimizer_result(optimization_id, config, raw_result)
         except Exception as exc:
             return self._failed_result(
                 optimization_id,
                 config,
                 f"optimizer call failed: {exc}",
             )
+
+    def _normalize_optimizer_result(
+        self,
+        optimization_id: str,
+        config: OptimizerRunConfig,
+        raw_result: Any,
+    ) -> OptimizerResult:
+        counts = dict(getattr(raw_result, "trials_count_by_status", {}) or {})
+        completed = int(counts.get("completed", 0))
+        recommended = getattr(raw_result, "recommended_trial", None)
+        best_params = dict(getattr(recommended, "params", {}) or {})
+        metrics = dict(getattr(recommended, "metrics", {}) or {})
+        metrics["optimizer_adapter"] = "local"
+        metrics["optimizer_result_type"] = type(raw_result).__name__
+        storage_ref = getattr(raw_result, "storage_ref", None)
+        status = "completed" if completed > 0 and recommended is not None else "failed"
+        return OptimizerResult(
+            optimization_id=optimization_id,
+            strategy_id=config.strategy_id,
+            trials_requested=config.trials,
+            trials_completed=completed,
+            status=status,
+            uses_backtest_engine_path=True,
+            best_params=best_params,
+            metrics=metrics,
+            artifact_uri=str(storage_ref) if storage_ref else None,
+        )
 
     def _failed_result(
         self,
