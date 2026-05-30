@@ -206,6 +206,26 @@ def test_indicator_plot_helpers_build_config_and_meta(tmp_path):
     assert meta["outputs"] == {"plots": str(plots_csv)}
 
 
+def test_indicator_plot_window_helper_uses_now_default():
+    from openpine.cli.main import _parse_indicator_plot_window
+
+    values = {
+        "from": 100,
+        "compare-from": 120,
+        "compare-to": 180,
+    }
+    start_ms, end_ms, compare_from_ms, compare_to_ms = _parse_indicator_plot_window(
+        from_date="from",
+        to_date=None,
+        compare_from="compare-from",
+        compare_to="compare-to",
+        parse_time_ms_func=lambda value: values.get(value),
+        now_ms=200,
+    )
+
+    assert (start_ms, end_ms, compare_from_ms, compare_to_ms) == (100, 200, 120, 180)
+
+
 def test_cli_bar_query_helper_normalizes_instrument_identity():
     from openpine.cli.main import _build_cli_bar_query
 

@@ -138,8 +138,8 @@ def _prepare_strategy_backtest_runtime(strategy_class, console):
     return selected_strategy_class, backend
 
 
-def _build_progress_callback(*, bars_total: int, console):
-    progress_every = max(1, bars_total // 20)
+def _build_progress_callback(*, bars_total: int, console, progress_every: int | None = None):
+    progress_every = max(1, progress_every if progress_every is not None else bars_total // 20)
     state = {"last_progress": 0}
 
     def _progress(done: int, total: int) -> None:
@@ -148,6 +148,57 @@ def _build_progress_callback(*, bars_total: int, console):
             console.print(f"[dim]runtime: {done}/{total} bars[/dim]")
 
     return _progress
+
+
+def _parse_indicator_plot_window(
+    *,
+    from_date: str,
+    to_date: str | None,
+    compare_from: str | None,
+    compare_to: str | None,
+    parse_time_ms_func,
+    now_ms: int,
+) -> tuple[int | None, int, int | None, int | None]:
+    start_ms = parse_time_ms_func(from_date)
+    end_ms = parse_time_ms_func(to_date) or now_ms
+    compare_from_ms = parse_time_ms_func(compare_from)
+    compare_to_ms = parse_time_ms_func(compare_to)
+    return start_ms, end_ms, compare_from_ms, compare_to_ms
+
+
+def _execute_indicator_plot_runtime(
+    *,
+    generated_class,
+    bars,
+    config,
+    symbol: str,
+    timeframe: str,
+    provider,
+    compare_from_ms: int | None,
+    compare_to_ms: int | None,
+    progress_callback,
+):
+    from openpine.integrations import import_library
+
+    import_library("backtest_engine")
+    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
+
+    return PineRuntimeBackend().execute(
+        generated_class,
+        bars,
+        config=config,
+        execution_window=None,
+        runtime_kwargs={
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "data_provider": getattr(provider, "_provider", None),
+            "plot_from_ms": compare_from_ms,
+            "plot_to_ms": compare_to_ms,
+            "progress_callback": progress_callback,
+        },
+        params={},
+        is_indicator=True,
+    )
 
 
 def _build_strategy_backtest_run_meta(
@@ -991,10 +1042,14 @@ def pine_run_plots(
         )
         sys.exit(1)
 
-    start_ms = parse_time_ms(from_date)
-    end_ms = parse_time_ms(to_date) or int(_time_module.time() * 1000)
-    compare_from_ms = parse_time_ms(compare_from)
-    compare_to_ms = parse_time_ms(compare_to)
+    start_ms, end_ms, compare_from_ms, compare_to_ms = _parse_indicator_plot_window(
+        from_date=from_date,
+        to_date=to_date,
+        compare_from=compare_from,
+        compare_to=compare_to,
+        parse_time_ms_func=parse_time_ms,
+        now_ms=int(_time_module.time() * 1000),
+    )
     if start_ms is None or start_ms >= end_ms:
         console.print("[red]Invalid run window: --from must be before --to[/red]")
         sys.exit(1)
@@ -1044,21 +1099,7 @@ def pine_run_plots(
     console.print(f"[green]data: {len(bars)} bars loaded in {timings['data_load_sec']:.2f}s[/green]")
     data_fetch_info = getattr(getattr(provider, "_provider", None), "last_fetch_info", None)
 
-    progress_every = max(1, progress_every)
-    last_progress = 0
-
-    def _progress(done: int, total: int) -> None:
-        nonlocal last_progress
-        if done == total or done - last_progress >= progress_every:
-            last_progress = done
-            console.print(f"[dim]runtime: {done}/{total} bars[/dim]")
-
     t0 = _time.perf_counter()
-    from openpine.integrations import import_library
-
-    import_library("backtest_engine")
-    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
-
     config = _build_indicator_plot_config(
         symbol=symbol,
         timeframe=timeframe,
@@ -1066,21 +1107,20 @@ def pine_run_plots(
         market_type=market_type,
         provider=provider,
     )
-    backend_result = PineRuntimeBackend().execute(
-        generated_class,
-        bars,
+    backend_result = _execute_indicator_plot_runtime(
+        generated_class=generated_class,
+        bars=bars,
         config=config,
-        execution_window=None,
-        runtime_kwargs={
-            "symbol": symbol,
-            "timeframe": timeframe,
-            "data_provider": getattr(provider, "_provider", None),
-            "plot_from_ms": compare_from_ms,
-            "plot_to_ms": compare_to_ms,
-            "progress_callback": _progress,
-        },
-        params={},
-        is_indicator=True,
+        symbol=symbol,
+        timeframe=timeframe,
+        provider=provider,
+        compare_from_ms=compare_from_ms,
+        compare_to_ms=compare_to_ms,
+        progress_callback=_build_progress_callback(
+            bars_total=len(bars),
+            console=console,
+            progress_every=progress_every,
+        ),
     )
     timings["runtime_sec"] = _time.perf_counter() - t0
 
