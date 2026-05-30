@@ -127,6 +127,14 @@ def _build_strategy_replay_config(
     )
 
 
+def _get_strategy_or_exit(*, registry, strategy_id: str, console):
+    try:
+        return registry.get_strategy(strategy_id)
+    except KeyError:
+        console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+        sys.exit(1)
+
+
 def _print_strategy_command_header(
     *,
     label: str,
@@ -186,6 +194,158 @@ def _load_strategy_backtest_class(*, strategy, load_strategy_class, perf_counter
         timeframe=strategy.timeframe,
     )
     return strategy_class, perf_counter() - t0
+
+
+def _exit_if_no_strategy_bars(
+    *,
+    bars,
+    strategy,
+    start_ms: int,
+    end_ms: int,
+    from_date: str | None,
+    to_date: str | None,
+    registry,
+    strategy_id: str,
+    console,
+) -> None:
+    if bars:
+        return
+    console.print(
+        f"[red]No candle data found for {strategy.symbol} {strategy.timeframe} "
+        f"in {start_ms}-{end_ms}.[/red]"
+    )
+    console.print(
+        f"[yellow]Run: openpine data backfill {strategy.symbol} {strategy.timeframe} "
+        f"--from {from_date or start_ms} --to {to_date or end_ms}[/yellow]"
+    )
+    registry.update_status(strategy_id, "paused")
+    sys.exit(1)
+
+
+def _build_strategy_backtest_params_and_config(
+    *,
+    strategy,
+    decl_args: dict,
+    params_json: str | None,
+    start_ms: int,
+    end_ms: int,
+    capture_plots: bool,
+    capture_from_ms: int | None,
+    capture_to_ms: int | None,
+    config_cls,
+) -> tuple[dict, object]:
+    import json as _json
+
+    params = _json.loads(params_json) if params_json else {}
+    config = _build_strategy_backtest_config(
+        strategy=strategy,
+        decl_args=decl_args,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        capture_plots=capture_plots,
+        capture_from_ms=capture_from_ms,
+        capture_to_ms=capture_to_ms,
+        config_cls=config_cls,
+    )
+    return params, config
+
+
+def _prepare_strategy_backtest_inputs(
+    *,
+    strategy,
+    strategy_id: str,
+    from_date: str | None,
+    to_date: str | None,
+    capture_plots: bool,
+    capture_from: str | None,
+    capture_to: str | None,
+    now_ms: int,
+    registry,
+    load_strategy_class,
+    artifact_error_cls,
+    artifact_store_cls,
+    bar_query_cls,
+    instrument_key_cls,
+    parse_timeframe_func,
+    orchestrator_cls,
+    provider_factory,
+    config_cls,
+    perf_counter,
+    console,
+):
+    start_ms, end_ms, capture_from_ms, capture_to_ms = _parse_strategy_backtest_window(
+        from_date=from_date,
+        to_date=to_date,
+        capture_from=capture_from,
+        capture_to=capture_to,
+        now_ms=now_ms,
+    )
+    if start_ms >= end_ms:
+        console.print("[red]Invalid backtest window: --from must be before --to[/red]")
+        registry.update_status(strategy_id, "paused")
+        sys.exit(1)
+
+    timings: dict[str, float] = {}
+    try:
+        strategy_class, timings["load_artifact_sec"] = _load_strategy_backtest_class(
+            strategy=strategy,
+            load_strategy_class=load_strategy_class,
+            perf_counter=perf_counter,
+        )
+    except artifact_error_cls as exc:
+        console.print(f"[red]{exc}[/red]")
+        registry.update_status(strategy_id, "paused")
+        sys.exit(1)
+
+    bars, provider, data_fetch_info, timings["data_load_sec"] = _load_strategy_backtest_bars(
+        strategy=strategy,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        bar_query_cls=bar_query_cls,
+        instrument_key_cls=instrument_key_cls,
+        parse_timeframe_func=parse_timeframe_func,
+        orchestrator_cls=orchestrator_cls,
+        provider_factory=provider_factory,
+        console=console,
+    )
+    _exit_if_no_strategy_bars(
+        bars=bars,
+        strategy=strategy,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        from_date=from_date,
+        to_date=to_date,
+        registry=registry,
+        strategy_id=strategy_id,
+        console=console,
+    )
+
+    decl_args = _strategy_backtest_declaration_args(
+        artifact_store_cls=artifact_store_cls,
+        strategy=strategy,
+    )
+    params, config = _build_strategy_backtest_params_and_config(
+        strategy=strategy,
+        decl_args=decl_args,
+        params_json=strategy.params_json,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        capture_plots=capture_plots,
+        capture_from_ms=capture_from_ms,
+        capture_to_ms=capture_to_ms,
+        config_cls=config_cls,
+    )
+    return SimpleNamespace(
+        start_ms=start_ms,
+        end_ms=end_ms,
+        strategy_class=strategy_class,
+        bars=bars,
+        provider=provider,
+        data_fetch_info=data_fetch_info,
+        params=params,
+        config=config,
+        timings=timings,
+    )
 
 
 def _build_strategy_backtest_run_request(
@@ -4320,7 +4480,6 @@ def strategy_backtest(
     capture_to: str | None,
 ) -> None:
     """Run backtest for a strategy."""
-    import json as _json
     import time as _time
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
@@ -4337,11 +4496,11 @@ def strategy_backtest(
     try:
         total_t0 = _time.perf_counter()
         timings: dict[str, float] = {}
-        try:
-            s = registry.get_strategy(strategy_id)
-        except KeyError:
-            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
-            sys.exit(1)
+        s = _get_strategy_or_exit(
+            registry=registry,
+            strategy_id=strategy_id,
+            console=console,
+        )
         registry.update_status(strategy_id, "running")
         _print_strategy_command_header(
             label="Backtest",
@@ -4358,80 +4517,40 @@ def strategy_backtest(
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        start_ms, end_ms, capture_from_ms, capture_to_ms = _parse_strategy_backtest_window(
+        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+        from openpine.artifacts import ArtifactStore
+        prepared = _prepare_strategy_backtest_inputs(
+            strategy=s,
+            strategy_id=strategy_id,
             from_date=from_date,
             to_date=to_date,
+            capture_plots=capture_plots,
             capture_from=capture_from,
             capture_to=capture_to,
             now_ms=int(_time_module.time() * 1000),
-        )
-        if start_ms >= end_ms:
-            console.print("[red]Invalid backtest window: --from must be before --to[/red]")
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-
-        try:
-            strategy_class, timings["load_artifact_sec"] = _load_strategy_backtest_class(
-                strategy=s,
-                load_strategy_class=load_strategy_class_from_artifact,
-                perf_counter=_time.perf_counter,
-            )
-        except BacktestArtifactError as exc:
-            console.print(f"[red]{exc}[/red]")
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-
-        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
-        bars, provider, data_fetch_info, timings["data_load_sec"] = _load_strategy_backtest_bars(
-            strategy=s,
-            start_ms=start_ms,
-            end_ms=end_ms,
+            registry=registry,
+            load_strategy_class=load_strategy_class_from_artifact,
+            artifact_error_cls=BacktestArtifactError,
+            artifact_store_cls=ArtifactStore,
             bar_query_cls=BarQuery,
             instrument_key_cls=InstrumentKey,
             parse_timeframe_func=parse_timeframe,
             orchestrator_cls=DataOrchestrator,
             provider_factory=create_local_marketdata_provider_adapter,
+            config_cls=BacktestRunConfig,
+            perf_counter=_time.perf_counter,
             console=console,
         )
-        if not bars:
-            console.print(
-                f"[red]No candle data found for {s.symbol} {s.timeframe} "
-                f"in {start_ms}-{end_ms}.[/red]"
-            )
-            console.print(
-                f"[yellow]Run: openpine data backfill {s.symbol} {s.timeframe} "
-                f"--from {from_date or start_ms} --to {to_date or end_ms}[/yellow]"
-            )
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-
-        # Load declaration from compile_meta for config alignment
-        from openpine.artifacts import ArtifactStore
-        decl_args = _strategy_backtest_declaration_args(
-            artifact_store_cls=ArtifactStore,
-            strategy=s,
-        )
-
-        params = _json.loads(s.params_json) if s.params_json else {}
-        config = _build_strategy_backtest_config(
-            strategy=s,
-            decl_args=decl_args,
-            start_ms=start_ms,
-            end_ms=end_ms,
-            capture_plots=capture_plots,
-            capture_from_ms=capture_from_ms,
-            capture_to_ms=capture_to_ms,
-            config_cls=BacktestRunConfig,
-        )
+        timings.update(prepared.timings)
         registry.update_status(strategy_id, "running")
         try:
             result, timings["backtest_sec"] = _run_strategy_backtest_adapter(
                 adapter_cls=BacktestEngineAdapter,
-                strategy_class=strategy_class,
-                bars=bars,
-                config=config,
-                params=params,
-                provider=provider,
+                strategy_class=prepared.strategy_class,
+                bars=prepared.bars,
+                config=prepared.config,
+                params=prepared.params,
+                provider=prepared.provider,
                 console=console,
                 perf_counter=_time.perf_counter,
             )
@@ -4453,10 +4572,10 @@ def strategy_backtest(
                 store=bt_store,
                 request_cls=BacktestRunRequest,
                 strategy=s,
-                start_ms=start_ms,
-                end_ms=end_ms,
-                bars_total=len(bars),
-                data_fetch_info=data_fetch_info,
+                start_ms=prepared.start_ms,
+                end_ms=prepared.end_ms,
+                bars_total=len(prepared.bars),
+                data_fetch_info=prepared.data_fetch_info,
                 result=result,
                 capture_plots=capture_plots,
                 timings=timings,
