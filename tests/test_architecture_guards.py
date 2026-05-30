@@ -147,6 +147,19 @@ def test_production_source_does_not_use_notimplemented_control_flow() -> None:
     assert offenders == []
 
 
+def test_production_source_does_not_use_deprecated_utcfromtimestamp() -> None:
+    offenders: list[str] = []
+    for path in _production_python_files():
+        module = _parse(path)
+        relative_path = path.relative_to(ROOT).as_posix()
+
+        for node in ast.walk(module):
+            if isinstance(node, ast.Attribute) and node.attr == "utcfromtimestamp":
+                offenders.append(f"{relative_path}:{node.lineno}")
+
+    assert offenders == []
+
+
 def test_openpine_production_does_not_define_duplicate_marketdata_contracts() -> None:
     duplicate_definitions: list[str] = []
 

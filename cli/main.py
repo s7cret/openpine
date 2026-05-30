@@ -23,6 +23,14 @@ def _fmt_utc_ms(timestamp_ms: int) -> str:
     return f"{datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc):%Y-%m-%d %H:%M:%S}"
 
 
+def _fmt_utc_seconds(timestamp_seconds: int) -> str:
+    return f"{datetime.fromtimestamp(timestamp_seconds, timezone.utc):%Y-%m-%d %H:%M:%S}"
+
+
+def _fmt_utc_ms_as(timestamp_ms: int, fmt: str) -> str:
+    return datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc).strftime(fmt)
+
+
 def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | None:
     """Return observed TV quantity precision for common crypto spot symbols."""
     if exchange.lower() == "binance" and market_type.lower() == "spot":
@@ -465,8 +473,7 @@ def storage_migrate(path: str | None) -> None:
     if rows:
         console.print(f"[bold]Applied migrations ({len(rows)})[/bold]")
         for version, name, applied_at, description in rows:
-            from datetime import datetime as dt
-            ts = dt.utcfromtimestamp(applied_at).strftime("%Y-%m-%d %H:%M:%S")
+            ts = _fmt_utc_seconds(applied_at)
             console.print(f"  {version}  {name}  — {description}  [{ts}]")
     else:
         console.print("[dim]No migrations applied yet[/dim]")
@@ -1105,8 +1112,7 @@ def data_status(symbol: str | None, exchange: str, tf: str | None) -> None:
             for row in rows:
                 exch, sym, timeframe, provider, status, updated_at = row
                 updated_str = (
-                    datetime.utcfromtimestamp(updated_at / 1000).strftime("%Y-%m-%d %H:%M")
-                    if updated_at else "N/A"
+                    _fmt_utc_ms_as(updated_at, "%Y-%m-%d %H:%M") if updated_at else "N/A"
                 )
                 tbl.add_row(exch, sym, timeframe, provider or "-", status or "-", updated_str)
             console.print(tbl)
@@ -1161,8 +1167,8 @@ def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
     console.print(f"[yellow]{len(gaps)} gap(s) found:[/yellow]")
     for gap in gaps:
         console.print(
-            f"  gap: {datetime.utcfromtimestamp(gap.gap_start / 1000):%Y-%m-%d %H:%M}"
-            f" → {datetime.utcfromtimestamp(gap.gap_end / 1000):%Y-%m-%d %H:%M}"
+            f"  gap: {_fmt_utc_ms_as(gap.gap_start, '%Y-%m-%d %H:%M')}"
+            f" → {_fmt_utc_ms_as(gap.gap_end, '%Y-%m-%d %H:%M')}"
             f"  ({(gap.gap_end - gap.gap_start) / 1000 / 3600:.1f}h missing)"
         )
 
@@ -2030,7 +2036,7 @@ def jobs_list() -> None:
         console.print(
             f"  [{j.status.value}] {j.id[:8]}  type={j.type.value}  "
             f"strategy={getattr(j, 'strategy_id', '-')}  "
-            f"created={datetime.utcfromtimestamp(j.created_at_ms / 1000):%H:%M:%S}"
+            f"created={_fmt_utc_ms_as(j.created_at_ms, '%H:%M:%S')}"
         )
 
 
@@ -2048,11 +2054,11 @@ def jobs_show(job_id: str) -> None:
     console.print(f"  strategy_id:   {job.strategy_id or '-'}")
     console.print(f"  priority:      {job.priority}")
     console.print(f"  idempotency_key: {job.idempotency_key or '-'}")
-    console.print(f"  created_at:    {datetime.utcfromtimestamp(job.created_at / 1000):%Y-%m-%d %H:%M:%S} UTC")
+    console.print(f"  created_at:    {_fmt_utc_ms(job.created_at)} UTC")
     if job.started_at:
-        console.print(f"  started_at:    {datetime.utcfromtimestamp(job.started_at / 1000):%Y-%m-%d %H:%M:%S} UTC")
+        console.print(f"  started_at:    {_fmt_utc_ms(job.started_at)} UTC")
     if job.finished_at:
-        console.print(f"  finished_at:   {datetime.utcfromtimestamp(job.finished_at / 1000):%Y-%m-%d %H:%M:%S} UTC")
+        console.print(f"  finished_at:   {_fmt_utc_ms(job.finished_at)} UTC")
     if job.error:
         console.print(f"  error:         {job.error}")
     if job.result:
@@ -2265,8 +2271,8 @@ def state_list(strategy_id: str | None) -> None:
         console.print(f"Total: {len(snapshots)} snapshot(s)")
 
     for snap in sorted(snapshots, key=lambda s: s.saved_at, reverse=True):
-        ts = datetime.utcfromtimestamp(snap.saved_at / 1000).strftime("%Y-%m-%d %H:%M:%S")
-        bar_ts = datetime.utcfromtimestamp(snap.bar_time / 1000).strftime("%Y-%m-%d %H:%M") if snap.bar_time else "-"
+        ts = _fmt_utc_ms(snap.saved_at)
+        bar_ts = _fmt_utc_ms_as(snap.bar_time, "%Y-%m-%d %H:%M") if snap.bar_time else "-"
         size_kb = snap.size_bytes // 1024
         status_color = {
             "active": "green",
