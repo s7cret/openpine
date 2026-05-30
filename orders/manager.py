@@ -23,6 +23,21 @@ if TYPE_CHECKING:
     from openpine.storage.sqlite_storage import SQLiteStorage
 
 
+def _intent_payload(order: OrderIntent) -> dict:
+    return {
+        "client_order_id": order.client_order_id,
+        "strategy_id": order.strategy_id,
+        "account_id": order.account_id,
+        "symbol": order.symbol,
+        "side": order.side.value,
+        "order_type": order.order_type.value,
+        "quantity": order.quantity,
+        "price": order.price,
+        "stop_price": order.stop_price,
+        "created_at": order.created_at,
+    }
+
+
 class OrderManager:
     """Manages order lifecycle with duplicate client_order_id protection.
 
@@ -69,19 +84,7 @@ class OrderManager:
         # Create order record
         now = int(time.time() * 1000)
         order_id = generate_order_id()
-
-        intent_json = json.dumps({
-            "client_order_id": order.client_order_id,
-            "strategy_id": order.strategy_id,
-            "account_id": order.account_id,
-            "symbol": order.symbol,
-            "side": order.side.value,
-            "order_type": order.order_type.value,
-            "quantity": order.quantity,
-            "price": order.price,
-            "stop_price": order.stop_price,
-            "created_at": order.created_at,
-        })
+        intent_json = json.dumps(_intent_payload(order))
 
         self.storage.execute(
             """
