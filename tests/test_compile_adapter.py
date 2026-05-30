@@ -1,12 +1,37 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from types import SimpleNamespace
 
 import pytest
 
 from openpine.compile import CompileProfile, SubprocessCompilerAdapter
 from openpine.compile import adapter as adapter_module
+
+
+def test_pine2ast_subprocess_errors_prefer_stderr_then_stdout() -> None:
+    stderr_result = subprocess.CompletedProcess(
+        args=["pine2ast"],
+        returncode=3,
+        stdout="stdout details",
+        stderr="stderr details",
+    )
+    stdout_result = subprocess.CompletedProcess(
+        args=["pine2ast"],
+        returncode=4,
+        stdout="stdout details",
+        stderr="",
+    )
+
+    assert adapter_module._pine2ast_subprocess_errors(stderr_result) == [
+        "pine2ast failed (exit 3)",
+        "stderr details",
+    ]
+    assert adapter_module._pine2ast_subprocess_errors(stdout_result) == [
+        "pine2ast failed (exit 4)",
+        "stdout details",
+    ]
 
 
 def _fake_library_apis(metadata: dict):

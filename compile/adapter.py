@@ -133,6 +133,13 @@ def _unsupported_request_error(exc: Exception) -> str | None:
     return None
 
 
+def _pine2ast_subprocess_errors(result: subprocess.CompletedProcess[str]) -> list[str]:
+    return [
+        f"pine2ast failed (exit {result.returncode})",
+        result.stderr or result.stdout,
+    ]
+
+
 def _mark_compile_meta_unsafe(compile_meta: dict[str, Any], reason: str) -> None:
     compile_meta["unsafe"] = True
     reasons = list(compile_meta.get("unsafe_reasons", []))
@@ -561,10 +568,7 @@ class SubprocessCompilerAdapter:
                 timeout=self.timeout,
             )
             if result_p2a.returncode != 0:
-                parse_errors = [
-                    f"pine2ast failed (exit {result_p2a.returncode})",
-                    result_p2a.stderr or result_p2a.stdout,
-                ]
+                parse_errors = _pine2ast_subprocess_errors(result_p2a)
                 normalized_source, normalized = _normalize_pine_v5_directive(source_text)
                 if normalized and _is_pine_v5_version_rejection(parse_errors):
                     if not profile.allow_implicit_version_rewrite:
@@ -599,10 +603,7 @@ class SubprocessCompilerAdapter:
                     if result_p2a.returncode != 0:
                         return CompileResult(
                             success=False,
-                            errors=[
-                                f"pine2ast failed (exit {result_p2a.returncode})",
-                                result_p2a.stderr or result_p2a.stdout,
-                            ],
+                            errors=_pine2ast_subprocess_errors(result_p2a),
                             compile_meta=compile_meta,
                         )
                 else:
@@ -614,10 +615,7 @@ class SubprocessCompilerAdapter:
             if result_p2a.returncode != 0:
                 return CompileResult(
                     success=False,
-                    errors=[
-                        f"pine2ast failed (exit {result_p2a.returncode})",
-                        result_p2a.stderr or result_p2a.stdout,
-                    ],
+                    errors=_pine2ast_subprocess_errors(result_p2a),
                 )
 
             ast_json = result_p2a.stdout
