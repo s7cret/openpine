@@ -344,7 +344,6 @@ def test_openpine_has_single_data_planning_model_family() -> None:
     production_files = [
         ROOT / "contracts" / "__init__.py",
         ROOT / "data" / "models.py",
-        ROOT / "data" / "planner.py",
     ]
     definitions: list[str] = []
     for path in production_files:
@@ -356,11 +355,9 @@ def test_openpine_has_single_data_planning_model_family() -> None:
             and node.name in {"DataRequirement", "AggregationRequirement", "DataPlan"}
         )
 
-    assert definitions == [
-        "data/planner.py:DataRequirement",
-        "data/planner.py:AggregationRequirement",
-        "data/planner.py:DataPlan",
-    ]
+    assert definitions == []
+    assert not (ROOT / "data" / "planner.py").exists()
+    assert not (ROOT / "universe" / "active_universe.py").exists()
 
 
 def test_batch_runner_does_not_parse_tv_corpus_csv_directly() -> None:

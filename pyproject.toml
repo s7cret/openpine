@@ -63,7 +63,6 @@ packages = [
     "openpine.state",
     "openpine.storage",
     "openpine.streams",
-    "openpine.universe",
     "openpine.workers",
 ]
 
