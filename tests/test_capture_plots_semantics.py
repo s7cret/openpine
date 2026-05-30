@@ -158,6 +158,53 @@ def test_cli_backtest_runtime_meta_and_progress_helpers():
     assert "2 plot records captured" in messages[-1][0]
 
 
+def test_strategy_backtest_readiness_window_and_load_helpers():
+    from openpine.cli.main import (
+        _load_strategy_backtest_class,
+        _parse_strategy_backtest_window,
+        _strategy_backtest_readiness_error,
+    )
+
+    ready = SimpleNamespace(
+        pine_id="pine-1",
+        artifact_id="artifact-1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    missing_pine = SimpleNamespace(pine_id="", artifact_id="artifact-1")
+    missing_artifact = SimpleNamespace(pine_id="pine-1", artifact_id="")
+
+    assert _strategy_backtest_readiness_error(ready) is None
+    assert "no pine_id" in _strategy_backtest_readiness_error(missing_pine)
+    assert "no compiled artifact" in _strategy_backtest_readiness_error(missing_artifact)
+
+    window = _parse_strategy_backtest_window(
+        from_date="1700000000",
+        to_date=None,
+        capture_from="1700000010",
+        capture_to=None,
+        now_ms=1_700_000_100_000,
+    )
+    assert window == (1_700_000_000_000, 1_700_000_100_000, 1_700_000_010_000, None)
+
+    strategy_class, elapsed = _load_strategy_backtest_class(
+        strategy=ready,
+        load_strategy_class=lambda pine_id, artifact_id, **kwargs: {
+            "pine": pine_id,
+            "artifact": artifact_id,
+            **kwargs,
+        },
+        perf_counter=iter([10.0, 12.5]).__next__,
+    )
+    assert strategy_class == {
+        "pine": "pine-1",
+        "artifact": "artifact-1",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+    }
+    assert elapsed == 2.5
+
+
 def test_indicator_plot_helpers_build_config_and_meta(tmp_path):
     from openpine.cli.main import (
         _build_indicator_plot_config,

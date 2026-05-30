@@ -102,6 +102,59 @@ def _build_strategy_backtest_config(
     )
 
 
+def _print_strategy_backtest_header(*, strategy_id: str, strategy, from_date: str | None, to_date: str | None, console) -> None:
+    console.print(f"[bold]Backtest: {strategy_id}[/bold]")
+    console.print(f"  strategy:   {strategy.name}")
+    console.print(f"  artifact:   {strategy.artifact_id}")
+    console.print(f"  params:     {strategy.params_json}")
+    console.print(f"  symbol:     {strategy.symbol}")
+    console.print(f"  exchange:   {strategy.exchange}")
+    console.print(f"  market:     {strategy.market_type}")
+    console.print(f"  timeframe:  {strategy.timeframe}")
+    console.print(f"  from:       {from_date or 'N/A'}")
+    console.print(f"  to:         {to_date or 'N/A'}")
+
+
+def _strategy_backtest_readiness_error(strategy) -> str | None:
+    if not strategy.pine_id:
+        return (
+            "Strategy has no pine_id. Recreate it with: "
+            "openpine strategy create <name> --pine <pine-name> ..."
+        )
+    if not strategy.artifact_id:
+        return (
+            "Strategy has no compiled artifact. Compile first with: "
+            "openpine pine compile <pine-name>"
+        )
+    return None
+
+
+def _parse_strategy_backtest_window(
+    *,
+    from_date: str | None,
+    to_date: str | None,
+    capture_from: str | None,
+    capture_to: str | None,
+    now_ms: int,
+) -> tuple[int, int, int | None, int | None]:
+    end_ms = _parse_cli_date_ms(to_date, now_ms)
+    start_ms = _parse_cli_date_ms(from_date, 0)
+    capture_from_ms = _parse_cli_date_ms(capture_from, start_ms) if capture_from else None
+    capture_to_ms = _parse_cli_date_ms(capture_to, end_ms) if capture_to else None
+    return start_ms, end_ms, capture_from_ms, capture_to_ms
+
+
+def _load_strategy_backtest_class(*, strategy, load_strategy_class, perf_counter):
+    t0 = perf_counter()
+    strategy_class = load_strategy_class(
+        strategy.pine_id,
+        strategy.artifact_id,
+        symbol=strategy.symbol,
+        timeframe=strategy.timeframe,
+    )
+    return strategy_class, perf_counter() - t0
+
+
 def _build_strategy_backtest_run_request(
     *,
     strategy,
@@ -4061,54 +4114,42 @@ def strategy_backtest(
             console.print(f"[red]Strategy not found: {strategy_id}[/red]")
             sys.exit(1)
         registry.update_status(strategy_id, "running")
-        console.print(f"[bold]Backtest: {strategy_id}[/bold]")
-        console.print(f"  strategy:   {s.name}")
-        console.print(f"  artifact:   {s.artifact_id}")
-        console.print(f"  params:     {s.params_json}")
-        console.print(f"  symbol:     {s.symbol}")
-        console.print(f"  exchange:   {s.exchange}")
-        console.print(f"  market:     {s.market_type}")
-        console.print(f"  timeframe:  {s.timeframe}")
-        console.print(f"  from:       {from_date or 'N/A'}")
-        console.print(f"  to:         {to_date or 'N/A'}")
+        _print_strategy_backtest_header(
+            strategy_id=strategy_id,
+            strategy=s,
+            from_date=from_date,
+            to_date=to_date,
+            console=console,
+        )
 
-        if not s.pine_id:
-            console.print(
-                "[red]Strategy has no pine_id. Recreate it with: "
-                "openpine strategy create <name> --pine <pine-name> ...[/red]"
-            )
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-        if not s.artifact_id:
-            console.print(
-                "[red]Strategy has no compiled artifact. Compile first with: "
-                "openpine pine compile <pine-name>[/red]"
-            )
+        readiness_error = _strategy_backtest_readiness_error(s)
+        if readiness_error:
+            console.print(f"[red]{readiness_error}[/red]")
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        end_ms = _parse_cli_date_ms(to_date, int(_time_module.time() * 1000))
-        start_ms = _parse_cli_date_ms(from_date, 0)
-        capture_from_ms = _parse_cli_date_ms(capture_from, start_ms) if capture_from else None
-        capture_to_ms = _parse_cli_date_ms(capture_to, end_ms) if capture_to else None
+        start_ms, end_ms, capture_from_ms, capture_to_ms = _parse_strategy_backtest_window(
+            from_date=from_date,
+            to_date=to_date,
+            capture_from=capture_from,
+            capture_to=capture_to,
+            now_ms=int(_time_module.time() * 1000),
+        )
         if start_ms >= end_ms:
             console.print("[red]Invalid backtest window: --from must be before --to[/red]")
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        t0 = _time.perf_counter()
         try:
-            strategy_class = load_strategy_class_from_artifact(
-                s.pine_id,
-                s.artifact_id,
-                symbol=s.symbol,
-                timeframe=s.timeframe,
+            strategy_class, timings["load_artifact_sec"] = _load_strategy_backtest_class(
+                strategy=s,
+                load_strategy_class=load_strategy_class_from_artifact,
+                perf_counter=_time.perf_counter,
             )
         except BacktestArtifactError as exc:
             console.print(f"[red]{exc}[/red]")
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
-        timings["load_artifact_sec"] = _time.perf_counter() - t0
 
         from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
         bars, provider, data_fetch_info, timings["data_load_sec"] = _load_strategy_backtest_bars(
