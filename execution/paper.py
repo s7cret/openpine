@@ -12,9 +12,7 @@ from typing import TYPE_CHECKING
 from openpine.orders.models import (
     Order,
     OrderIntent,
-    OrderSide,
     OrderStatus,
-    OrderType,
     generate_order_id,
 )
 
@@ -40,6 +38,27 @@ class PaperExecutionAdapter:
         self._client_orders: dict[str, Order] = {}  # client_order_id -> Order
         self._fills: list[dict] = []
 
+    @staticmethod
+    def _fill_price(order: OrderIntent) -> float:
+        return order.price if order.price is not None else 0.0
+
+    @staticmethod
+    def _fill_record(order: OrderIntent, filled: Order, fill_price: float, fill_time: int) -> dict:
+        return {
+            "fill_id": f"fill_{filled.order_id}",
+            "order_id": filled.order_id,
+            "strategy_id": order.strategy_id,
+            "account_id": order.account_id,
+            "symbol": order.symbol,
+            "side": order.side.value,
+            "qty": order.quantity,
+            "price": fill_price,
+            "fee": 0.0,
+            "fee_asset": None,
+            "fill_time": fill_time,
+            "created_at": fill_time,
+        }
+
     async def submit_order(self, order: OrderIntent) -> Order:
         """Simulate immediate fill at requested price for paper.
 
@@ -55,11 +74,7 @@ class PaperExecutionAdapter:
         now = int(time.time() * 1000)
         order_id = generate_order_id()
 
-        # Determine fill price
-        fill_price = order.price
-        if fill_price is None:
-            # Market order without price — use 0 as placeholder
-            fill_price = 0.0
+        fill_price = self._fill_price(order)
 
         # Create filled order
         filled = Order(
@@ -83,20 +98,7 @@ class PaperExecutionAdapter:
         # Record fill
         self._orders[order_id] = filled
         self._client_orders[order.client_order_id] = filled
-        self._fills.append({
-            "fill_id": f"fill_{order_id}",
-            "order_id": order_id,
-            "strategy_id": order.strategy_id,
-            "account_id": order.account_id,
-            "symbol": order.symbol,
-            "side": order.side.value,
-            "qty": order.quantity,
-            "price": fill_price,
-            "fee": 0.0,
-            "fee_asset": None,
-            "fill_time": now,
-            "created_at": now,
-        })
+        self._fills.append(self._fill_record(order, filled, fill_price, now))
 
         return filled
 
