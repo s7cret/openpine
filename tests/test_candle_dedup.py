@@ -96,6 +96,78 @@ def test_write_candles_persists_rows_with_explicit_instrument_key(tmp_path):
     assert [bar.close for bar in bars] == [100.5]
 
 
+def test_read_candles_defaults_missing_close_time_and_volume(tmp_path):
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+    from openpine.data.candle_storage import CandleStorage, PARQUET_SCHEMA
+    from openpine.data.models import CandleManifest
+
+    import pandas as pd
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    parquet_path = tmp_path / "missing_optional.parquet"
+    open_time = 1704067200000
+    df = pd.DataFrame(
+        {
+            "exchange": ["binance"],
+            "market_type": ["spot"],
+            "symbol": ["BTCUSDT"],
+            "price_type": ["trade"],
+            "timeframe": ["1h"],
+            "open_time": [open_time],
+            "close_time": [None],
+            "open": [100.0],
+            "high": [101.0],
+            "low": [99.0],
+            "close": [100.5],
+            "volume": [None],
+            "quote_volume": [None],
+            "trades_count": [None],
+            "is_closed": [True],
+            "source": ["test"],
+            "provider": ["binance"],
+            "ingested_at": [0],
+        }
+    )
+    pq.write_table(pa.Table.from_pandas(df, schema=PARQUET_SCHEMA, preserve_index=False), parquet_path)
+
+    storage = CandleStorage(data_root=tmp_path, sqlite_path=tmp_path / "test.sqlite")
+    storage._insert_manifest(
+        CandleManifest(
+            manifest_id="m_missing_optional",
+            exchange="binance",
+            market_type="spot",
+            symbol="BTCUSDT",
+            price_type="trade",
+            timeframe="1h",
+            partition_path=str(parquet_path),
+            min_open_time=open_time,
+            max_open_time=open_time,
+            row_count=1,
+            schema_hash="test",
+            checksum="test",
+            file_size_bytes=parquet_path.stat().st_size,
+            provider="binance",
+            ingested_at=0,
+            created_at=0,
+            updated_at=0,
+        )
+    )
+
+    bars = storage.read_candles(
+        BarQuery(
+            instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+            timeframe=parse_timeframe("1h"),
+            start_ms=open_time,
+            end_ms=open_time + 60_000,
+            source="storage",
+        )
+    )
+
+    assert bars[0].time_close == open_time + 3_600_000
+    assert bars[0].volume == 0.0
+
+
 def test_read_candles_deduplicates_identical_rows():
     """CandleStorage.read_candles must return unique open_time values
     even when multiple manifests contain identical duplicates."""

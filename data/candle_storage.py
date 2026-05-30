@@ -161,6 +161,40 @@ def _bar_to_parquet_row(
     }
 
 
+def _deduplicate_rows_by_open_time(rows: list[dict]) -> list[dict]:
+    seen: dict[int, dict] = {}
+    for row in rows:
+        open_time = int(row["open_time"])
+        if open_time in seen:
+            continue
+        seen[open_time] = row
+    canonical_rows = list(seen.values())
+    canonical_rows.sort(key=lambda r: r["open_time"])
+    return canonical_rows
+
+
+def _row_value_is_missing(value: object) -> bool:
+    return value is None or bool(pd.isna(value))
+
+
+def _row_to_bar(row: dict, query: BarQuery) -> Bar:
+    close_time = row["close_time"]
+    volume = row["volume"]
+    open_time = int(row["open_time"])
+    return Bar(
+        instrument=query.instrument,
+        timeframe=query.timeframe,
+        time=open_time,
+        time_close=open_time + query.timeframe.duration_ms if _row_value_is_missing(close_time) else int(close_time),
+        open=float(row["open"]),
+        high=float(row["high"]),
+        low=float(row["low"]),
+        close=float(row["close"]),
+        volume=0.0 if _row_value_is_missing(volume) else float(volume),
+        closed=True,
+    )
+
+
 class CandleStorage:
     """CandleStorage manages OHLCV parquet partitions with SQLite manifest tracking.
 
@@ -485,52 +519,7 @@ class CandleStorage:
         if not all_rows:
             raise _storage_unavailable(f"no candle rows for query: {_storage_instrument_key(query)}")
 
-        # Deduplicate by canonical key: open_time
-        # Identical duplicates (same OHLCV) → keep one
-        # Conflicting duplicates (same open_time, different values) → detect and report
-        seen: dict[int, dict] = {}
-        conflicts: list[tuple[dict, dict]] = []
-        for row in all_rows:
-            ot = int(row["open_time"])
-            if ot in seen:
-                existing = seen[ot]
-                # Check if values differ
-                if (
-                    existing.get("open") != row.get("open")
-                    or existing.get("high") != row.get("high")
-                    or existing.get("low") != row.get("low")
-                    or existing.get("close") != row.get("close")
-                    or existing.get("volume") != row.get("volume")
-                ):
-                    conflicts.append((existing, row))
-                # Keep the existing (first seen) — deterministic
-                continue
-            seen[ot] = row
-
-        canonical_rows = list(seen.values())
-
-        # Sort by open_time
-        canonical_rows.sort(key=lambda r: r["open_time"])
-
-        # Apply limit
-        # Convert to Bar objects
-        bars = []
-        for row in canonical_rows:
-            bar = Bar(
-                instrument=query.instrument,
-                timeframe=query.timeframe,
-                time=int(row["open_time"]),
-                time_close=int(row["close_time"]) if row["close_time"] else int(row["open_time"]),
-                open=float(row["open"]),
-                high=float(row["high"]),
-                low=float(row["low"]),
-                close=float(row["close"]),
-                volume=float(row["volume"]) if row["volume"] else 0.0,
-                closed=True,
-            )
-            bars.append(bar)
-
-        return bars
+        return [_row_to_bar(row, query) for row in _deduplicate_rows_by_open_time(all_rows)]
 
     def list_manifests(self, query: BarQuery) -> list[CandleManifest]:
         """List candle manifests matching the query.
