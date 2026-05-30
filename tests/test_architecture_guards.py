@@ -211,6 +211,30 @@ def test_batch_runner_uses_single_strategy_export_boundary() -> None:
     assert "export_equity_curve(" not in source
 
 
+def test_export_package_has_separate_writer_modules() -> None:
+    export_root = ROOT / "export"
+    expected_modules = {
+        "__init__.py",
+        "batch.py",
+        "equity.py",
+        "json.py",
+        "plots.py",
+        "schemas.py",
+        "trades.py",
+        "window.py",
+    }
+    actual_modules = {path.name for path in export_root.glob("*.py")}
+    init_tree = ast.parse((export_root / "__init__.py").read_text(encoding="utf-8"))
+    init_definitions = [
+        node
+        for node in ast.walk(init_tree)
+        if isinstance(node, ast.FunctionDef | ast.ClassDef)
+    ]
+
+    assert expected_modules <= actual_modules
+    assert init_definitions == []
+
+
 def test_backtest_run_config_does_not_carry_engine_data_provider() -> None:
     from dataclasses import fields
 

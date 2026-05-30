@@ -6,14 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from openpine.export import (
-    ExportWindow,
-    export_equity_curve,
-    export_plot_records,
-    export_trades,
-    _equity_row,
-    _int_or_none,
-)
+from openpine.export.equity import export_equity_curve, initial_equity_at_export_start
+from openpine.export.plots import export_plot_records
+from openpine.export.trades import export_trades
+from openpine.export.window import ExportWindow
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,23 +77,8 @@ def export_strategy_result(
             "trades": str(trades_path),
             "equity_curve": str(equity_path),
         },
-        initial_equity_at_export_start=_initial_equity_at_export_start(
+        initial_equity_at_export_start=initial_equity_at_export_start(
             equity_points,
             window,
         ),
     )
-
-
-def _initial_equity_at_export_start(
-    points: list[Any],
-    window: ExportWindow,
-) -> Any | None:
-    selected: tuple[int, Any] | None = None
-    for point in points:
-        row = _equity_row(point)
-        ts_ms = _int_or_none(row.get("bar_time_ms"))
-        if ts_ms is None or ts_ms > window.from_ms:
-            continue
-        if selected is None or ts_ms >= selected[0]:
-            selected = (ts_ms, row.get("equity"))
-    return None if selected is None else selected[1]
