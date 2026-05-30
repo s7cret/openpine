@@ -7,6 +7,7 @@ import json
 import sqlite3
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Protocol
 
 from openpine.config import DEFAULT_CONFIG
@@ -65,7 +66,7 @@ class StrategyInstance:
             symbol=data["symbol"],
             timeframe=data["timeframe"],
             exchange=data.get("exchange", "binance"),
-            market_type=data.get("market_type", "usdm"),
+            market_type=data.get("market_type", "spot"),
             price_type=data.get("price_type", "trade"),
             mode=data.get("mode", "paper"),
             enabled=data.get("enabled", False),
@@ -264,7 +265,3 @@ class SQLiteStrategyRegistry:
     def close(self) -> None:
         """Close the database connection."""
         self._conn.close()
-
-
-# Needed for type hint
-from pathlib import Path
