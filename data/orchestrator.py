@@ -16,18 +16,21 @@ Architecture:
 
 from __future__ import annotations
 
-from typing import Optional, Protocol
+from typing import Any, Optional, Protocol
 
+from marketdata_provider import create_candle_store
+from marketdata_provider.config import MarketDataConfig, StorageConfig
 from marketdata_provider.contracts import (
     Bar,
     BarSeries,
+    CandleStore,
     CoverageReport,
     InstrumentKey,
+    StoreResult,
     parse_timeframe,
 )
 from marketdata_provider.contracts import BarQuery as MDPBarQuery
 from openpine.data.candle_storage import CandleStorage
-from openpine.data.contracts import WriteMode
 from openpine.data.models import (
     AggregationRequirement,
     CandleCommitResult,
@@ -68,6 +71,60 @@ class StorageUnavailableError(DataCoverageError):
     """Raised when storage access fails."""
 
 
+class _LegacyCandleStorageAdapter:
+    """Adapt legacy OpenPine CandleStorage to the canonical CandleStore protocol."""
+
+    def __init__(self, storage: Any) -> None:
+        self._storage = storage
+
+    def read(self, query: MDPBarQuery) -> BarSeries:
+        bars = tuple(
+            _canonical_bar_from_storage_bar(bar, query)
+            for bar in self._storage.read_candles(query)
+        )
+        return BarSeries(
+            query=query,
+            bars=bars,
+            coverage=_coverage_for(query, bars, "storage"),
+        )
+
+    def write(self, series: BarSeries) -> StoreResult:
+        result = self._storage.write_candles(
+            candles=list(series.bars),
+            instrument_key=(
+                f"{series.query.instrument.exchange}:"
+                f"{series.query.instrument.market}:"
+                f"{series.query.instrument.symbol}:trade"
+            ),
+            timeframe=series.query.timeframe.canonical,
+        )
+        return StoreResult(
+            success=bool(result.success),
+            rows_written=getattr(result, "rows_written", len(series.bars) if result.success else 0),
+            error=getattr(result, "error", None),
+        )
+
+    def coverage(self, query: MDPBarQuery) -> CoverageReport:
+        return self.read(query).coverage
+
+    def detect_gaps(self, query: MDPBarQuery) -> list[DataGap]:
+        return self._storage.detect_gaps(query)
+
+    def list_manifests(self, query: MDPBarQuery) -> list[CandleManifest]:
+        return self._storage.list_manifests(query)
+
+
+def _default_candle_store() -> CandleStore:
+    from openpine.config import OpenPineConfig
+
+    config = OpenPineConfig.load()
+    return create_candle_store(
+        MarketDataConfig(
+            storage=StorageConfig(cache_dir=config.data_cache_root),
+        )
+    )
+
+
 class DataOrchestrator:
     """Single OpenPine boundary for bar reading/writing.
 
@@ -83,15 +140,22 @@ class DataOrchestrator:
     def __init__(
         self,
         candle_storage: Optional[CandleStorage] = None,
+        candle_store: Optional[CandleStore] = None,
         provider: Optional[MarketDataProvider] = None,
     ) -> None:
         """Initialize DataOrchestrator.
 
         Args:
-            candle_storage: CandleStorage instance for parquet read/write
+            candle_storage: Legacy CandleStorage-compatible instance.
+            candle_store: Canonical marketdata-provider CandleStore.
             provider: Optional market data provider for live data
         """
-        self._candle_storage = candle_storage or CandleStorage()
+        self._legacy_candle_storage = candle_storage
+        self._candle_store = candle_store or (
+            _LegacyCandleStorageAdapter(candle_storage)
+            if candle_storage is not None
+            else _default_candle_store()
+        )
         self._provider = provider
         self._pending_bars: list[tuple] = []  # (bar, instrument_key, timeframe, source)
 
@@ -142,7 +206,7 @@ class DataOrchestrator:
                 source="storage",
             )
 
-            gaps = self._candle_storage.detect_gaps(query)
+            gaps = self.detect_gaps(query)
             if gaps:
                 gaps_remaining.extend(gaps)
 
@@ -185,18 +249,9 @@ class DataOrchestrator:
 
     def _load_from_storage(self, query: MDPBarQuery, *, require_complete: bool) -> BarSeries:
         try:
-            bars = tuple(
-                _canonical_bar_from_storage_bar(bar, query)
-                for bar in self._candle_storage.read_candles(query)
-            )
+            series = self._candle_store.read(query)
         except Exception as exc:
             raise StorageUnavailableError(str(exc)) from exc
-
-        series = BarSeries(
-            query=query,
-            bars=bars,
-            coverage=_coverage_for(query, bars, "storage"),
-        )
         return self._require_complete(series, "storage") if require_complete else series
 
     def _load_from_provider(self, query: MDPBarQuery) -> BarSeries:
@@ -210,15 +265,7 @@ class DataOrchestrator:
     def _write_provider_series(self, series: BarSeries) -> None:
         if not series.bars:
             return
-        result = self._candle_storage.write_candles(
-            candles=list(series.bars),
-            instrument_key=(
-                f"{series.query.instrument.exchange}:"
-                f"{series.query.instrument.market}:"
-                f"{series.query.instrument.symbol}:trade"
-            ),
-            timeframe=series.query.timeframe.canonical,
-        )
+        result = self._candle_store.write(series)
         if not result.success:
             raise StorageUnavailableError(result.error or "failed to persist provider bars")
 
@@ -242,7 +289,10 @@ class DataOrchestrator:
         Returns:
             List of DataGap objects
         """
-        return self._candle_storage.detect_gaps(query)
+        if hasattr(self._candle_store, "detect_gaps"):
+            return list(self._candle_store.detect_gaps(query))  # type: ignore[attr-defined]
+        coverage = self._candle_store.coverage(query)
+        return [_data_gap_from_interval(query, start, end) for start, end in coverage.missing_intervals]
 
     def schedule_backfill(self, requirement: DataRequirement) -> str:
         """Schedule a backfill job for a data requirement.
@@ -280,21 +330,23 @@ class DataOrchestrator:
             CandleCommitResult with success status and manifest_id
         """
         try:
-            result = self._candle_storage.write_candles(
-                candles=[bar],
-                mode=WriteMode.UPSERT_PARTITION,
-                instrument_key=instrument_key,
-                timeframe=timeframe,
+            query = MDPBarQuery(
+                instrument=bar.instrument,
+                timeframe=bar.timeframe,
+                start_ms=bar.time,
+                end_ms=bar.time_close,
+                source="storage",
             )
-
-            if result.success and result.manifests_created:
-                manifest_id = result.manifests_created[0].manifest_id
-            else:
-                manifest_id = None
+            result = self._candle_store.write(
+                BarSeries(
+                    query=query,
+                    bars=(bar,),
+                    coverage=_coverage_for(query, (bar,), source),
+                )
+            )
 
             return CandleCommitResult(
                 success=result.success,
-                manifest_id=manifest_id,
                 error=result.error,
             )
 
@@ -313,7 +365,9 @@ class DataOrchestrator:
         Returns:
             List of CandleManifest objects
         """
-        return self._candle_storage.list_manifests(query)
+        if hasattr(self._candle_store, "list_manifests"):
+            return list(self._candle_store.list_manifests(query))  # type: ignore[attr-defined]
+        return []
 
 
 def _canonical_bar_from_storage_bar(bar: object, query: MDPBarQuery) -> Bar:
@@ -386,6 +440,26 @@ def _missing_intervals(query: MDPBarQuery, bars: tuple[Bar, ...]) -> tuple[tuple
     if delivered_end < query.end_ms:
         intervals.append((delivered_end, query.end_ms))
     return tuple(intervals)
+
+
+def _data_gap_from_interval(query: MDPBarQuery, start_ms: int, end_ms: int) -> DataGap:
+    now_ms = int(__import__("time").time() * 1000)
+    return DataGap(
+        gap_id=(
+            f"gap_{query.instrument.exchange}:{query.instrument.market}:"
+            f"{query.instrument.symbol}:trade_{query.timeframe.canonical}_{start_ms}_{end_ms}"
+        ),
+        exchange=query.instrument.exchange,
+        market_type=query.instrument.market,
+        symbol=query.instrument.symbol,
+        price_type="trade",
+        timeframe=query.timeframe.canonical,
+        provider="marketdata-provider",
+        gap_start=start_ms,
+        gap_end=end_ms,
+        created_at=now_ms,
+        updated_at=now_ms,
+    )
 
 
 def _is_complete(series: BarSeries) -> bool:
