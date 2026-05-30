@@ -8,7 +8,95 @@ The flag should be read-only/export-only and never affect execution.
 """
 from __future__ import annotations
 
+from dataclasses import fields, make_dataclass
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
+
+
+def test_cli_backtest_helpers_parse_dates_and_count_plots():
+    from openpine.cli.main import _parse_cli_date_ms, _plot_record_count
+
+    assert _parse_cli_date_ms(None, 123) == 123
+    assert _parse_cli_date_ms("1700000000", 0) == 1_700_000_000_000
+    assert _parse_cli_date_ms("1700000000000", 0) == 1_700_000_000_000
+    assert _parse_cli_date_ms("2024-01-01T00:00:00Z", 0) == 1_704_067_200_000
+
+    recorder = SimpleNamespace(get_records=lambda: [{"plot": "x"}, {"plot": "y"}])
+    assert _plot_record_count(None) == 0
+    assert _plot_record_count([{"plot": "x"}]) == 1
+    assert _plot_record_count(recorder) == 2
+
+
+def test_cli_backtest_config_helper_maps_declaration_values():
+    from openpine.cli.main import _build_strategy_backtest_config
+
+    Config = make_dataclass(
+        "Config",
+        [
+            ("symbol", str),
+            ("timeframe", str),
+            ("start_time", int),
+            ("end_time", int),
+            ("exchange", str),
+            ("market_type", str),
+            ("initial_capital", float),
+            ("default_qty_type", str),
+            ("default_qty_value", float),
+            ("commission_type", str),
+            ("commission_value", float),
+            ("exit_matching", str),
+            ("pyramiding", int),
+            ("qty_step", float | None),
+            ("qty_rounding_mode", str),
+            ("plot_from_ms", int | None),
+            ("plot_to_ms", int | None),
+        ],
+    )
+    strategy = SimpleNamespace(
+        symbol="BTCUSDT",
+        timeframe="15m",
+        exchange="binance",
+        market_type="spot",
+    )
+
+    config = _build_strategy_backtest_config(
+        strategy=strategy,
+        decl_args={
+            "initial_capital": 25_000,
+            "default_qty_type": "percent_of_equity",
+            "default_qty_value": 50,
+            "commission_type": "percent",
+            "commission_value": 0.1,
+            "close_entries_rule": "any",
+            "pyramiding": 2,
+        },
+        start_ms=100,
+        end_ms=200,
+        capture_plots=True,
+        capture_from_ms=120,
+        capture_to_ms=180,
+        config_cls=Config,
+    )
+
+    assert {field.name: getattr(config, field.name) for field in fields(config)} == {
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "start_time": 100,
+        "end_time": 200,
+        "exchange": "binance",
+        "market_type": "spot",
+        "initial_capital": 25_000,
+        "default_qty_type": "percent_of_equity",
+        "default_qty_value": 50,
+        "commission_type": "percent",
+        "commission_value": 0.1,
+        "exit_matching": "ANY",
+        "pyramiding": 2,
+        "qty_step": 1e-6,
+        "qty_rounding_mode": "truncate",
+        "plot_from_ms": 120,
+        "plot_to_ms": 180,
+    }
 
 
 def test_capture_plots_does_not_change_execution_backend():

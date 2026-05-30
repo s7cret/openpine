@@ -43,6 +43,85 @@ def _default_qty_rounding_mode(exchange: str, market_type: str, symbol: str) -> 
     return "truncate" if _default_qty_step(exchange, market_type, symbol) is not None else "none"
 
 
+def _parse_cli_date_ms(value: str | None, default: int) -> int:
+    if not value:
+        return default
+    if value.isdigit():
+        raw = int(value)
+        return raw if raw > 10_000_000_000 else raw * 1000
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return int(parsed.timestamp() * 1000)
+
+
+def _plot_record_count(plots) -> int:
+    if plots is None:
+        return 0
+    if isinstance(plots, list):
+        return len(plots)
+    if hasattr(plots, "get_records"):
+        return len(plots.get_records())
+    return 0
+
+
+def _build_strategy_backtest_config(
+    *,
+    strategy,
+    decl_args: dict,
+    start_ms: int,
+    end_ms: int,
+    capture_plots: bool,
+    capture_from_ms: int | None,
+    capture_to_ms: int | None,
+    config_cls,
+):
+    return config_cls(
+        symbol=strategy.symbol,
+        timeframe=strategy.timeframe,
+        start_time=start_ms,
+        end_time=end_ms,
+        exchange=strategy.exchange.lower(),
+        market_type=strategy.market_type.lower(),
+        initial_capital=decl_args.get("initial_capital", 10000.0),
+        default_qty_type=decl_args.get("default_qty_type", "fixed"),
+        default_qty_value=decl_args.get("default_qty_value", 1.0),
+        commission_type=decl_args.get("commission_type", "none"),
+        commission_value=decl_args.get("commission_value", 0.0),
+        exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
+        pyramiding=decl_args.get("pyramiding", 0),
+        qty_step=_default_qty_step(strategy.exchange, strategy.market_type, strategy.symbol),
+        qty_rounding_mode=_default_qty_rounding_mode(
+            strategy.exchange,
+            strategy.market_type,
+            strategy.symbol,
+        ),
+        plot_from_ms=capture_from_ms if capture_plots else None,
+        plot_to_ms=capture_to_ms if capture_plots else None,
+    )
+
+
+def _build_strategy_backtest_run_request(
+    *,
+    strategy,
+    start_ms: int,
+    end_ms: int,
+    request_cls,
+):
+    return request_cls(
+        strategy_id=strategy.strategy_id,
+        pine_id=strategy.pine_id,
+        artifact_id=strategy.artifact_id,
+        params_hash=strategy.params_hash,
+        symbol=strategy.symbol,
+        timeframe=strategy.timeframe,
+        exchange=strategy.exchange,
+        market_type=strategy.market_type,
+        from_time=start_ms,
+        to_time=end_ms,
+    )
+
+
 @click.group()
 @click.version_option(version=__version__, prog_name="openpine")
 def cli() -> None:
@@ -3639,7 +3718,6 @@ def strategy_backtest(
     """Run backtest for a strategy."""
     import json as _json
     import time as _time
-    from datetime import timezone as _timezone
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.orchestrator import DataOrchestrator
@@ -3650,17 +3728,6 @@ def strategy_backtest(
         BacktestRunConfig,
         load_strategy_class_from_artifact,
     )
-
-    def _parse_date_ms(value: str | None, default: int) -> int:
-        if not value:
-            return default
-        if value.isdigit():
-            raw = int(value)
-            return raw if raw > 10_000_000_000 else raw * 1000
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=_timezone.utc)
-        return int(parsed.timestamp() * 1000)
 
     registry = SQLiteStrategyRegistry()
     try:
@@ -3698,10 +3765,10 @@ def strategy_backtest(
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        end_ms = _parse_date_ms(to_date, int(_time_module.time() * 1000))
-        start_ms = _parse_date_ms(from_date, 0)
-        capture_from_ms = _parse_date_ms(capture_from, start_ms) if capture_from else None
-        capture_to_ms = _parse_date_ms(capture_to, end_ms) if capture_to else None
+        end_ms = _parse_cli_date_ms(to_date, int(_time_module.time() * 1000))
+        start_ms = _parse_cli_date_ms(from_date, 0)
+        capture_from_ms = _parse_cli_date_ms(capture_from, start_ms) if capture_from else None
+        capture_to_ms = _parse_cli_date_ms(capture_to, end_ms) if capture_to else None
         if start_ms >= end_ms:
             console.print("[red]Invalid backtest window: --from must be before --to[/red]")
             registry.update_status(strategy_id, "paused")
@@ -3763,24 +3830,15 @@ def strategy_backtest(
         decl_args = declaration.get("arguments", {})
 
         params = _json.loads(s.params_json) if s.params_json else {}
-        config = BacktestRunConfig(
-            symbol=s.symbol,
-            timeframe=s.timeframe,
-            start_time=start_ms,
-            end_time=end_ms,
-            exchange=s.exchange.lower(),
-            market_type=s.market_type.lower(),
-            initial_capital=decl_args.get("initial_capital", 10000.0),
-            default_qty_type=decl_args.get("default_qty_type", "fixed"),
-            default_qty_value=decl_args.get("default_qty_value", 1.0),
-            commission_type=decl_args.get("commission_type", "none"),
-            commission_value=decl_args.get("commission_value", 0.0),
-            exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
-            pyramiding=decl_args.get("pyramiding", 0),
-            qty_step=_default_qty_step(s.exchange, s.market_type, s.symbol),
-            qty_rounding_mode=_default_qty_rounding_mode(s.exchange, s.market_type, s.symbol),
-            plot_from_ms=capture_from_ms if capture_plots else None,
-            plot_to_ms=capture_to_ms if capture_plots else None,
+        config = _build_strategy_backtest_config(
+            strategy=s,
+            decl_args=decl_args,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            capture_plots=capture_plots,
+            capture_from_ms=capture_from_ms,
+            capture_to_ms=capture_to_ms,
+            config_cls=BacktestRunConfig,
         )
         registry.update_status(strategy_id, "running")
         try:
@@ -3832,18 +3890,11 @@ def strategy_backtest(
         bt_store = BacktestResultStore()
         try:
             t0 = _time.perf_counter()
-            # Create run record
-            run_request = BacktestRunRequest(
-                strategy_id=s.strategy_id,
-                pine_id=s.pine_id,
-                artifact_id=s.artifact_id,
-                params_hash=s.params_hash,
-                symbol=s.symbol,
-                timeframe=s.timeframe,
-                exchange=s.exchange,
-                market_type=s.market_type,
-                from_time=start_ms,
-                to_time=end_ms,
+            run_request = _build_strategy_backtest_run_request(
+                strategy=s,
+                start_ms=start_ms,
+                end_ms=end_ms,
+                request_cls=BacktestRunRequest,
             )
             run_id = bt_store.create_run(run_request)
             
@@ -3861,14 +3912,7 @@ def strategy_backtest(
 
             run_dir = OpenPineConfig.load().data_dir / "backtests" / s.strategy_id / run_id
             _plots = getattr(result.raw_result, "plots", None)
-            if _plots is None or not capture_plots:
-                _plot_record_count = 0
-            elif isinstance(_plots, list):
-                _plot_record_count = len(_plots)
-            elif hasattr(_plots, "get_records"):
-                _plot_record_count = len(_plots.get_records())
-            else:
-                _plot_record_count = 0
+            plot_record_count = _plot_record_count(_plots) if capture_plots else 0
             meta = {
                 "type": "strategy",
                 "strategy_id": s.strategy_id,
@@ -3884,7 +3928,7 @@ def strategy_backtest(
                 "bars_processed": result.bars_processed,
                 "trades_rows": len(getattr(result.raw_result, "trades", []) or []),
                 "open_trades": len(getattr(result.raw_result, "open_trades", []) or []),
-                "plots_records": _plot_record_count,
+                "plots_records": plot_record_count,
                 "process_next_bar_available": result.process_next_bar_available,
                 "timings": timings,
             }
