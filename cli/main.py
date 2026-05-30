@@ -540,8 +540,36 @@ def _print_indicator_plot_header(
 
 
 def _ensure_output_dir(output_dir: str) -> Path:
-    output_path = _ensure_output_dir(output_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
     return output_path
+
+
+def _strategy_backtest_dependencies():
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+    from openpine.artifacts import ArtifactStore
+    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+    from openpine.runtime.engine import (
+        BacktestArtifactError,
+        BacktestEngineAdapter,
+        BacktestRunConfig,
+        load_strategy_class_from_artifact,
+    )
+    from openpine.storage import BacktestResultStore, BacktestRunRequest
+
+    return SimpleNamespace(**locals())
+
+
+def _indicator_plot_dependencies():
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+    from openpine.export import export_plot_records, parse_time_ms, write_json
+    from openpine.pine.registry import SQLitePineSourceRegistry
+    from openpine.runtime.engine import BacktestArtifactError, load_generated_class_from_artifact
+
+    return SimpleNamespace(**locals())
 
 
 def _load_indicator_plot_bars(
@@ -718,6 +746,68 @@ def _write_indicator_plot_run_meta(
     console.print(f"  plots:     {plots_csv}")
     console.print(f"  rows:      {plots_rows}")
     console.print(f"  meta:      {meta_path}")
+
+
+def _write_indicator_plot_run_outputs(
+    *,
+    deps,
+    prepared,
+    name: str,
+    symbol: str,
+    timeframe: str,
+    exchange: str,
+    market_type: str,
+    output_dir: str,
+    progress_every: int,
+    timings: dict[str, float],
+    start_total: float,
+    perf_counter,
+    console,
+) -> None:
+    output_path = _ensure_output_dir(output_dir)
+    backend_result, timings["runtime_sec"] = _run_indicator_plot_runtime(
+        generated_class=prepared.generated_class,
+        bars=prepared.bars,
+        symbol=symbol,
+        timeframe=timeframe,
+        exchange=exchange,
+        market_type=market_type,
+        provider=prepared.provider,
+        compare_from_ms=prepared.compare_from_ms,
+        compare_to_ms=prepared.compare_to_ms,
+        progress_every=progress_every,
+        console=console,
+        perf_counter=perf_counter,
+    )
+    plots_csv, plots_rows, timings["export_sec"] = _write_indicator_plot_outputs(
+        backend_result=backend_result,
+        output_path=output_path,
+        compare_from_ms=prepared.compare_from_ms,
+        compare_to_ms=prepared.compare_to_ms,
+        export_plot_records_func=deps.export_plot_records,
+        perf_counter=perf_counter,
+    )
+    timings["total_sec"] = perf_counter() - start_total
+    _write_indicator_plot_run_meta(
+        name=name,
+        source=prepared.source,
+        symbol=symbol,
+        exchange=exchange,
+        market_type=market_type,
+        timeframe=timeframe,
+        start_ms=prepared.start_ms,
+        end_ms=prepared.end_ms,
+        compare_from_ms=prepared.compare_from_ms,
+        compare_to_ms=prepared.compare_to_ms,
+        bars_total=len(prepared.bars),
+        data_fetch_info=prepared.data_fetch_info,
+        plots_rows=plots_rows,
+        timings=timings,
+        plots_csv=plots_csv,
+        output_path=output_path,
+        write_json_func=deps.write_json,
+        console=console,
+    )
 
 
 def _prepare_indicator_plot_inputs(
@@ -1009,6 +1099,39 @@ def _save_strategy_backtest_result_safely(
         import traceback
 
         traceback.print_exc()
+
+
+def _persist_strategy_backtest_result(
+    *,
+    deps,
+    strategy,
+    prepared,
+    result,
+    capture_plots: bool,
+    timings: dict[str, float],
+    total_started: float,
+    perf_counter,
+    console,
+) -> None:
+    bt_store = deps.BacktestResultStore()
+    try:
+        _save_strategy_backtest_result_safely(
+            store=bt_store,
+            request_cls=deps.BacktestRunRequest,
+            strategy=strategy,
+            start_ms=prepared.start_ms,
+            end_ms=prepared.end_ms,
+            bars_total=len(prepared.bars),
+            data_fetch_info=prepared.data_fetch_info,
+            result=result,
+            capture_plots=capture_plots,
+            timings=timings,
+            total_started=total_started,
+            perf_counter=perf_counter,
+            console=console,
+        )
+    finally:
+        bt_store.close()
 
 
 def _run_strategy_backtest_adapter(
@@ -1911,13 +2034,7 @@ def pine_run_plots(
     """Run an indicator Pine source and export normalized plot CSV."""
     import time as _time
 
-    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.orchestrator import DataOrchestrator
-    from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
-    from openpine.export import export_plot_records, parse_time_ms, write_json
-    from openpine.pine.registry import SQLitePineSourceRegistry
-    from openpine.runtime.engine import BacktestArtifactError, load_generated_class_from_artifact
-
+    deps = _indicator_plot_dependencies()
     start_total = _time.perf_counter()
     timings: dict[str, float] = {}
 
@@ -1932,22 +2049,19 @@ def pine_run_plots(
         compare_from=compare_from,
         compare_to=compare_to,
         now_ms=int(_time_module.time() * 1000),
-        registry_cls=SQLitePineSourceRegistry,
-        parse_time_ms_func=parse_time_ms,
-        load_generated_class=load_generated_class_from_artifact,
-        artifact_error_cls=BacktestArtifactError,
-        bar_query_cls=BarQuery,
-        instrument_key_cls=InstrumentKey,
-        parse_timeframe_func=parse_timeframe,
-        orchestrator_cls=DataOrchestrator,
-        provider_factory=create_local_marketdata_provider_adapter,
+        registry_cls=deps.SQLitePineSourceRegistry,
+        parse_time_ms_func=deps.parse_time_ms,
+        load_generated_class=deps.load_generated_class_from_artifact,
+        artifact_error_cls=deps.BacktestArtifactError,
+        bar_query_cls=deps.BarQuery,
+        instrument_key_cls=deps.InstrumentKey,
+        parse_timeframe_func=deps.parse_timeframe,
+        orchestrator_cls=deps.DataOrchestrator,
+        provider_factory=deps.create_local_marketdata_provider_adapter,
         perf_counter=_time.perf_counter,
         console=console,
     )
     timings.update(prepared.timings)
-
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
 
     _print_indicator_plot_header(
         name=name,
@@ -1961,49 +2075,19 @@ def pine_run_plots(
         console=console,
     )
 
-    backend_result, timings["runtime_sec"] = _run_indicator_plot_runtime(
-        generated_class=prepared.generated_class,
-        bars=prepared.bars,
-        symbol=symbol,
-        timeframe=timeframe,
-        exchange=exchange,
-        market_type=market_type,
-        provider=prepared.provider,
-        compare_from_ms=prepared.compare_from_ms,
-        compare_to_ms=prepared.compare_to_ms,
-        progress_every=progress_every,
-        console=console,
-        perf_counter=_time.perf_counter,
-    )
-
-    plots_csv, plots_rows, timings["export_sec"] = _write_indicator_plot_outputs(
-        backend_result=backend_result,
-        output_path=output_path,
-        compare_from_ms=prepared.compare_from_ms,
-        compare_to_ms=prepared.compare_to_ms,
-        export_plot_records_func=export_plot_records,
-        perf_counter=_time.perf_counter,
-    )
-    timings["total_sec"] = _time.perf_counter() - start_total
-
-    _write_indicator_plot_run_meta(
+    _write_indicator_plot_run_outputs(
+        deps=deps,
+        prepared=prepared,
         name=name,
-        source=prepared.source,
         symbol=symbol,
+        timeframe=timeframe,
         exchange=exchange,
         market_type=market_type,
-        timeframe=timeframe,
-        start_ms=prepared.start_ms,
-        end_ms=prepared.end_ms,
-        compare_from_ms=prepared.compare_from_ms,
-        compare_to_ms=prepared.compare_to_ms,
-        bars_total=len(prepared.bars),
-        data_fetch_info=prepared.data_fetch_info,
-        plots_rows=plots_rows,
+        output_dir=output_dir,
+        progress_every=progress_every,
         timings=timings,
-        plots_csv=plots_csv,
-        output_path=output_path,
-        write_json_func=write_json,
+        start_total=start_total,
+        perf_counter=_time.perf_counter,
         console=console,
     )
 
@@ -4709,16 +4793,9 @@ def strategy_backtest(
     """Run backtest for a strategy."""
     import time as _time
 
-    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
-    from openpine.runtime.engine import (
-        BacktestArtifactError,
-        BacktestEngineAdapter,
-        BacktestRunConfig,
-        load_strategy_class_from_artifact,
-    )
 
+    deps = _strategy_backtest_dependencies()
     registry = SQLiteStrategyRegistry()
     try:
         total_t0 = _time.perf_counter()
@@ -4744,8 +4821,6 @@ def strategy_backtest(
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
-        from openpine.artifacts import ArtifactStore
         prepared = _prepare_strategy_backtest_inputs(
             strategy=s,
             strategy_id=strategy_id,
@@ -4756,15 +4831,15 @@ def strategy_backtest(
             capture_to=capture_to,
             now_ms=int(_time_module.time() * 1000),
             registry=registry,
-            load_strategy_class=load_strategy_class_from_artifact,
-            artifact_error_cls=BacktestArtifactError,
-            artifact_store_cls=ArtifactStore,
-            bar_query_cls=BarQuery,
-            instrument_key_cls=InstrumentKey,
-            parse_timeframe_func=parse_timeframe,
-            orchestrator_cls=DataOrchestrator,
-            provider_factory=create_local_marketdata_provider_adapter,
-            config_cls=BacktestRunConfig,
+            load_strategy_class=deps.load_strategy_class_from_artifact,
+            artifact_error_cls=deps.BacktestArtifactError,
+            artifact_store_cls=deps.ArtifactStore,
+            bar_query_cls=deps.BarQuery,
+            instrument_key_cls=deps.InstrumentKey,
+            parse_timeframe_func=deps.parse_timeframe,
+            orchestrator_cls=deps.DataOrchestrator,
+            provider_factory=deps.create_local_marketdata_provider_adapter,
+            config_cls=deps.BacktestRunConfig,
             perf_counter=_time.perf_counter,
             console=console,
         )
@@ -4772,7 +4847,7 @@ def strategy_backtest(
         registry.update_status(strategy_id, "running")
         try:
             result, timings["backtest_sec"] = _run_strategy_backtest_adapter(
-                adapter_cls=BacktestEngineAdapter,
+                adapter_cls=deps.BacktestEngineAdapter,
                 strategy_class=prepared.strategy_class,
                 bars=prepared.bars,
                 config=prepared.config,
@@ -4791,27 +4866,17 @@ def strategy_backtest(
         console.print(f"  bars:       {result.bars_processed}")
         console.print(f"  engine:     {'backtest_engine' if result.uses_backtest_engine else 'unknown'}")
 
-        # Save backtest results to persistent storage
-        from openpine.storage import BacktestResultStore, BacktestRunRequest
-        bt_store = BacktestResultStore()
-        try:
-            _save_strategy_backtest_result_safely(
-                store=bt_store,
-                request_cls=BacktestRunRequest,
-                strategy=s,
-                start_ms=prepared.start_ms,
-                end_ms=prepared.end_ms,
-                bars_total=len(prepared.bars),
-                data_fetch_info=prepared.data_fetch_info,
-                result=result,
-                capture_plots=capture_plots,
-                timings=timings,
-                total_started=total_t0,
-                perf_counter=_time.perf_counter,
-                console=console,
-            )
-        finally:
-            bt_store.close()
+        _persist_strategy_backtest_result(
+            deps=deps,
+            strategy=s,
+            prepared=prepared,
+            result=result,
+            capture_plots=capture_plots,
+            timings=timings,
+            total_started=total_t0,
+            perf_counter=_time.perf_counter,
+            console=console,
+        )
 
         registry.update_status(strategy_id, "paused")
     finally:
