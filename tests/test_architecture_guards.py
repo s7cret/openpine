@@ -313,6 +313,21 @@ def test_parquet_storage_reads_end_timestamp_exclusive(tmp_path) -> None:
     assert [bar["timestamp"] for bar in adapter.read_ohlcv("BTC/USDT", "1m", 1, 3)] == [1, 2]
 
 
+def test_parquet_health_check_reports_corrupt_latest_schema(tmp_path) -> None:
+    from openpine.storage.adapters import BackendHealth, ParquetDataLakeAdapter
+
+    adapter = ParquetDataLakeAdapter(data_dir=tmp_path)
+    if not adapter.available():
+        pytest.skip("pyarrow unavailable in this environment")
+
+    (tmp_path / "bad.parquet").write_text("not parquet")
+
+    info = adapter.health_check()
+
+    assert info.health == BackendHealth.UNAVAILABLE_ERROR
+    assert info.error
+
+
 def test_artifact_store_default_root_is_config_driven() -> None:
     source = (ROOT / "artifacts" / "store.py").read_text(encoding="utf-8")
 

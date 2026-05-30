@@ -219,11 +219,8 @@ class ParquetDataLakeAdapter(StorageBackend):
             latest = self._latest_parquet_file()
             if latest:
                 schema_extra["latest_file"] = str(latest)
-                try:
-                    pf = pq.ParquetFile(latest)
-                    schema_extra["schema"] = str(pf.schema_arrow)
-                except Exception:
-                    pass
+                pf = pq.ParquetFile(latest)
+                schema_extra["schema"] = str(pf.schema_arrow)
 
             return BackendInfo(
                 name=self.name,
@@ -241,13 +238,10 @@ class ParquetDataLakeAdapter(StorageBackend):
             )
 
     def _latest_parquet_file(self) -> Path | None:
-        try:
-            candidates = list(self._data_dir.glob("**/*.parquet"))
-            if not candidates:
-                return None
-            return max(candidates, key=lambda p: p.stat().st_mtime)
-        except OSError:
+        candidates = list(self._data_dir.glob("**/*.parquet"))
+        if not candidates:
             return None
+        return max(candidates, key=lambda p: p.stat().st_mtime)
 
     # ------------------------------------------------------------------ #
     # Data-plane write API (used by orchestrator / backtest output)
