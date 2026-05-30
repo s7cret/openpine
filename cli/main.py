@@ -102,8 +102,41 @@ def _build_strategy_backtest_config(
     )
 
 
-def _print_strategy_backtest_header(*, strategy_id: str, strategy, from_date: str | None, to_date: str | None, console) -> None:
-    console.print(f"[bold]Backtest: {strategy_id}[/bold]")
+def _build_strategy_replay_config(
+    *,
+    strategy,
+    decl_args: dict,
+    start_ms: int,
+    end_ms: int,
+    config_cls,
+):
+    return config_cls(
+        symbol=strategy.symbol,
+        timeframe=strategy.timeframe,
+        start_time=start_ms,
+        end_time=end_ms,
+        initial_capital=decl_args.get("initial_capital", 10000.0),
+        default_qty_type=decl_args.get("default_qty_type", "fixed"),
+        default_qty_value=decl_args.get("default_qty_value", 1.0),
+        commission_type=decl_args.get("commission_type", "none"),
+        commission_value=decl_args.get("commission_value", 0.0),
+        exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
+        pyramiding=decl_args.get("pyramiding", 0),
+        qty_step=_default_qty_step(strategy.exchange, strategy.market_type, strategy.symbol),
+        qty_rounding_mode=_default_qty_rounding_mode(strategy.exchange, strategy.market_type, strategy.symbol),
+    )
+
+
+def _print_strategy_command_header(
+    *,
+    label: str,
+    strategy_id: str,
+    strategy,
+    from_date: str | None,
+    to_date: str | None,
+    console,
+) -> None:
+    console.print(f"[bold]{label}: {strategy_id}[/bold]")
     console.print(f"  strategy:   {strategy.name}")
     console.print(f"  artifact:   {strategy.artifact_id}")
     console.print(f"  params:     {strategy.params_json}")
@@ -4230,7 +4263,8 @@ def strategy_backtest(
             console.print(f"[red]Strategy not found: {strategy_id}[/red]")
             sys.exit(1)
         registry.update_status(strategy_id, "running")
-        _print_strategy_backtest_header(
+        _print_strategy_command_header(
+            label="Backtest",
             strategy_id=strategy_id,
             strategy=s,
             from_date=from_date,
@@ -4394,63 +4428,55 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
         except KeyError:
             console.print(f"[red]Strategy not found: {strategy_id}[/red]")
             sys.exit(1)
-        console.print(f"[bold]Replay: {strategy_id}[/bold]")
-        console.print(f"  strategy:   {s.name}")
-        console.print(f"  artifact:   {s.artifact_id}")
-        console.print(f"  params:     {s.params_json}")
-        console.print(f"  symbol:     {s.symbol}")
-        console.print(f"  exchange:   {s.exchange}")
-        console.print(f"  market:     {s.market_type}")
-        console.print(f"  timeframe:  {s.timeframe}")
-        console.print(f"  from:       {from_date or 'N/A'}")
-        console.print(f"  to:         {to_date or 'N/A'}")
+        _print_strategy_command_header(
+            label="Replay",
+            strategy_id=strategy_id,
+            strategy=s,
+            from_date=from_date,
+            to_date=to_date,
+            console=console,
+        )
 
-        if not s.pine_id:
-            console.print(
-                "[red]Strategy has no pine_id. Recreate it with: "
-                "openpine strategy create <name> --pine <pine-name> ...[/red]"
-            )
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
-        if not s.artifact_id:
-            console.print(
-                "[red]Strategy has no compiled artifact. Compile first with: "
-                "openpine pine compile <pine-name>[/red]"
-            )
+        readiness_error = _strategy_backtest_readiness_error(s)
+        if readiness_error:
+            console.print(f"[red]{readiness_error}[/red]")
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        end_ms = _parse_cli_date_ms(to_date, int(_time_module.time() * 1000))
-        start_ms = _parse_cli_date_ms(from_date, 0)
+        start_ms, end_ms, _, _ = _parse_strategy_backtest_window(
+            from_date=from_date,
+            to_date=to_date,
+            capture_from=None,
+            capture_to=None,
+            now_ms=int(_time_module.time() * 1000),
+        )
         if start_ms >= end_ms:
             console.print("[red]Invalid replay window: --from must be before --to[/red]")
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
         try:
-            strategy_class = load_strategy_class_from_artifact(
-                s.pine_id,
-                s.artifact_id,
-                symbol=s.symbol,
-                timeframe=s.timeframe,
+            strategy_class, _ = _load_strategy_backtest_class(
+                strategy=s,
+                load_strategy_class=load_strategy_class_from_artifact,
+                perf_counter=_time_module.perf_counter,
             )
         except BacktestArtifactError as exc:
             console.print(f"[red]{exc}[/red]")
             registry.update_status(strategy_id, "paused")
             sys.exit(1)
 
-        query = _build_cli_bar_query(
-            symbol=s.symbol,
-            exchange=s.exchange,
-            market_type=s.market_type,
-            timeframe=s.timeframe,
+        bars, _, _, _ = _load_strategy_backtest_bars(
+            strategy=s,
             start_ms=start_ms,
             end_ms=end_ms,
             bar_query_cls=BarQuery,
             instrument_key_cls=InstrumentKey,
             parse_timeframe_func=parse_timeframe,
+            orchestrator_cls=DataOrchestrator,
+            provider_factory=lambda: None,
+            console=console,
         )
-        bars = DataOrchestrator().get_bars(query)
         if not bars:
             console.print(
                 f"[red]No candle data found for {s.symbol} {s.timeframe} "
@@ -4465,27 +4491,18 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
 
         # Load declaration from compile_meta for config alignment
         from openpine.artifacts import ArtifactStore
-        store = ArtifactStore()
-        artifact = store.get_artifact(s.artifact_id, s.pine_id)
-        compile_meta = artifact.get("compile_meta", {})
-        declaration = compile_meta.get("translation_metadata", {}).get("declaration", {})
-        decl_args = declaration.get("arguments", {})
+        decl_args = _strategy_backtest_declaration_args(
+            artifact_store_cls=ArtifactStore,
+            strategy=s,
+        )
 
         params = _json.loads(s.params_json) if s.params_json else {}
-        config = BacktestRunConfig(
-            symbol=s.symbol,
-            timeframe=s.timeframe,
-            start_time=start_ms,
-            end_time=end_ms,
-            initial_capital=decl_args.get("initial_capital", 10000.0),
-            default_qty_type=decl_args.get("default_qty_type", "fixed"),
-            default_qty_value=decl_args.get("default_qty_value", 1.0),
-            commission_type=decl_args.get("commission_type", "none"),
-            commission_value=decl_args.get("commission_value", 0.0),
-            exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
-            pyramiding=decl_args.get("pyramiding", 0),
-            qty_step=_default_qty_step(s.exchange, s.market_type, s.symbol),
-            qty_rounding_mode=_default_qty_rounding_mode(s.exchange, s.market_type, s.symbol),
+        config = _build_strategy_replay_config(
+            strategy=s,
+            decl_args=decl_args,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            config_cls=BacktestRunConfig,
         )
         registry.update_status(strategy_id, "running")
         try:
