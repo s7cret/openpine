@@ -248,6 +248,20 @@ def test_data_package_does_not_export_legacy_planner_models() -> None:
     assert "EnsureDataResult" not in exported
 
 
+def test_cli_does_not_expose_placeholder_planning_commands() -> None:
+    cli_source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    telegram_source = (ROOT / "telegram_commands.py").read_text(encoding="utf-8")
+
+    for source in (cli_source, telegram_source):
+        assert "DataPlanner" not in source
+        assert "ActiveUniverse" not in source
+        assert "ensure-active" not in source
+        assert "backfill-active" not in source
+        assert "data_ensure_active" not in source
+        assert "data_backfill_active" not in source
+        assert "data_aggregate" not in source
+
+
 def test_data_orchestrator_has_no_placeholder_planning_api() -> None:
     source = (ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
 
