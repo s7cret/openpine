@@ -11,11 +11,14 @@ from openpine.batch.runner import (
     LIBRARY_NAMES,
     ChartExport,
     ExportEntry,
+    _build_arg_parser,
+    _build_batch_summary_payload,
     _build_run_meta,
     _build_run_summary,
     _build_strategy_run_config,
     _finish_entry_status,
     _run_meta_valid,
+    _write_timeframe_summary_csv,
     _write_progress,
     completed_for_selection,
     summary_by_timeframe,
@@ -272,6 +275,82 @@ def test_finish_entry_status_adds_elapsed_seconds(monkeypatch) -> None:
     status = _finish_entry_status({"status": "planned"}, batch_runner.time.perf_counter())
 
     assert status == {"status": "planned", "elapsed_sec": 2.346}
+
+
+def test_batch_arg_parser_exposes_run_defaults() -> None:
+    args = _build_arg_parser().parse_args(["--phase", "run", "--limit", "3"])
+
+    assert args.phase == "run"
+    assert args.limit == 3
+    assert args.symbol == "BTCUSDT"
+    assert args.exchange == "binance"
+    assert args.market_type == "spot"
+    assert args.progress_every == 10_000
+
+
+def test_write_timeframe_summary_csv_writes_run_rows(tmp_path: Path) -> None:
+    path = _write_timeframe_summary_csv(
+        root=tmp_path,
+        phase="run",
+        batch_id="batch-1",
+        results=[
+            {
+                "id": 1,
+                "kind": "strategy",
+                "runs": [
+                    {
+                        "timeframe": "15m",
+                        "status": "ok",
+                        "bars": 10,
+                        "plots_rows": 2,
+                        "trades_rows": 1,
+                        "equity_rows": 3,
+                    }
+                ],
+            }
+        ],
+    )
+
+    assert path == tmp_path / "openpine_batch_run_batch-1_by_timeframe.csv"
+    assert path is not None
+    text = path.read_text(encoding="utf-8")
+    assert "batch_id,export_id,kind,timeframe,status,bars" in text
+    assert "batch-1,1,strategy,15m,ok,10" in text
+
+
+def test_build_batch_summary_payload_serializes_timeframe_bounds(tmp_path: Path) -> None:
+    entry = _entry(tmp_path)
+    args = argparse.Namespace(
+        phase="run",
+        root=tmp_path,
+        manifest=tmp_path / "manifest.json",
+        symbol="ETHUSDT",
+        exchange="binance",
+        market_type="spot",
+        calculation_from="2024-01-01",
+        calculation_to=None,
+        _calculation_to_by_timeframe={"15m": entry.charts[0].end_ms},
+    )
+
+    payload = _build_batch_summary_payload(
+        args=args,
+        batch_id="batch-1",
+        errors_path=tmp_path / "errors.jsonl",
+        library_revisions={"openpine": "abc123"},
+        selected=[entry],
+        entries=[entry, entry],
+        results=[{"status": "ok"}],
+        timeframe_summary={"15m": {"selected": 1}},
+    )
+
+    assert payload["batch_id"] == "batch-1"
+    assert payload["selected"] == 1
+    assert payload["total_manifest_entries"] == 2
+    assert payload["summary"]["stats"] == {"ok": 1}
+    assert payload["summary_by_timeframe"] == {"15m": {"selected": 1}}
+    assert payload["calculation_to_by_timeframe"] == {
+        "15m": "2023-11-15T00:28:20+00:00"
+    }
 
 
 def test_batch_run_cli_pins_run_phase(monkeypatch) -> None:

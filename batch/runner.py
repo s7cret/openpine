@@ -910,7 +910,7 @@ def resolve_calculation_to_by_timeframe(
     return out
 
 
-def main(argv: list[str] | None = None) -> int:
+def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=CLEAN_ROOT)
     parser.add_argument("--manifest", type=Path, default=MANIFEST)
@@ -942,6 +942,76 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--progress-every", type=int, default=10_000, help="Runtime bar progress interval. 0 disables.")
     parser.add_argument("--qty-step", type=float, default=1e-6)
     parser.add_argument("--qty-rounding-mode", default="truncate")
+    return parser
+
+
+def _write_timeframe_summary_csv(
+    *,
+    root: Path,
+    phase: str,
+    batch_id: str,
+    results: list[dict[str, Any]],
+) -> Path | None:
+    tf_rows: list[dict[str, Any]] = []
+    for r in results:
+        for run in r.get("runs", []):
+            tf_rows.append({
+                "batch_id": batch_id,
+                "export_id": r.get("id"),
+                "kind": r.get("kind"),
+                "timeframe": run.get("timeframe"),
+                "status": run.get("status"),
+                "bars": run.get("bars"),
+                "plots_rows": run.get("plots_rows"),
+                "trades_rows": run.get("trades_rows"),
+                "equity_rows": run.get("equity_rows"),
+            })
+    if not tf_rows:
+        return None
+    tf_summary_path = root / f"openpine_batch_{phase}_{batch_id}_by_timeframe.csv"
+    pd.DataFrame(tf_rows).to_csv(tf_summary_path, index=False)
+    return tf_summary_path
+
+
+def _build_batch_summary_payload(
+    *,
+    args: argparse.Namespace,
+    batch_id: str,
+    errors_path: Path,
+    library_revisions: dict[str, str],
+    selected: list[ExportEntry],
+    entries: list[ExportEntry],
+    results: list[dict[str, Any]],
+    timeframe_summary: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "batch_id": batch_id,
+        "created_at": utc_now(),
+        "phase": args.phase,
+        "root": str(args.root),
+        "manifest": str(args.manifest),
+        "errors": str(errors_path),
+        "symbol": args.symbol,
+        "exchange": args.exchange,
+        "market_type": args.market_type,
+        "calculation_from": args.calculation_from,
+        "calculation_to": args.calculation_to,
+        "calculation_to_by_timeframe": {
+            tf: ms_to_utc_iso(value)
+            for tf, value in sorted(getattr(args, "_calculation_to_by_timeframe", {}).items())
+        },
+        "bar_cache_entries": len(BAR_CACHE),
+        "selected": len(selected),
+        "total_manifest_entries": len(entries),
+        "library_revisions": library_revisions,
+        "summary": summarize(results),
+        "summary_by_timeframe": timeframe_summary,
+        "results": results,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _build_arg_parser()
     args = parser.parse_args(argv)
 
     entries = load_manifest(args.manifest, args.root)
@@ -1064,51 +1134,25 @@ def main(argv: list[str] | None = None) -> int:
         summary_by_timeframe=timeframe_summary,
     )
 
-    # Per-timeframe summary CSV
-    tf_rows: list[dict[str, Any]] = []
-    for r in results:
-        for run in r.get("runs", []):
-            tf_rows.append({
-                "batch_id": batch_id,
-                "export_id": r.get("id"),
-                "kind": r.get("kind"),
-                "timeframe": run.get("timeframe"),
-                "status": run.get("status"),
-                "bars": run.get("bars"),
-                "plots_rows": run.get("plots_rows"),
-                "trades_rows": run.get("trades_rows"),
-                "equity_rows": run.get("equity_rows"),
-            })
-    if tf_rows:
-        tf_df = pd.DataFrame(tf_rows)
-        tf_summary_path = args.root / f"openpine_batch_{args.phase}_{batch_id}_by_timeframe.csv"
-        tf_df.to_csv(tf_summary_path, index=False)
+    tf_summary_path = _write_timeframe_summary_csv(
+        root=args.root,
+        phase=args.phase,
+        batch_id=batch_id,
+        results=results,
+    )
+    if tf_summary_path is not None:
         print(f"per-timeframe summary={tf_summary_path}")
 
-    payload = {
-        "batch_id": batch_id,
-        "created_at": utc_now(),
-        "phase": args.phase,
-        "root": str(args.root),
-        "manifest": str(args.manifest),
-        "errors": str(errors_path),
-        "symbol": args.symbol,
-        "exchange": args.exchange,
-        "market_type": args.market_type,
-        "calculation_from": args.calculation_from,
-        "calculation_to": args.calculation_to,
-        "calculation_to_by_timeframe": {
-            tf: ms_to_utc_iso(value)
-            for tf, value in sorted(getattr(args, "_calculation_to_by_timeframe", {}).items())
-        },
-        "bar_cache_entries": len(BAR_CACHE),
-        "selected": len(selected),
-        "total_manifest_entries": len(entries),
-        "library_revisions": library_revisions,
-        "summary": summarize(results),
-        "summary_by_timeframe": timeframe_summary,
-        "results": results,
-    }
+    payload = _build_batch_summary_payload(
+        args=args,
+        batch_id=batch_id,
+        errors_path=errors_path,
+        library_revisions=library_revisions,
+        selected=selected,
+        entries=entries,
+        results=results,
+        timeframe_summary=timeframe_summary,
+    )
     write_json(summary_path, payload)
     print(f"summary={summary_path}")
     print(json.dumps(payload["summary"], ensure_ascii=False, indent=2))
