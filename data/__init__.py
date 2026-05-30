@@ -7,7 +7,6 @@ Section OP-DL-004: Candle Data Lake.
 from __future__ import annotations
 
 from marketdata_provider.contracts import BarQuery
-from openpine.data.candle_storage import CandleStorage
 from openpine.data.contracts import WriteMode
 from openpine.data.orchestrator import (
     DataOrchestrator,
@@ -29,17 +28,9 @@ from openpine.data.provider_adapter import (
     ensure_marketdata_provider_version,
     normalize_provider_bar,
 )
-from openpine.data.planner import (
-    AggregationRequirement as LegacyAggregationRequirement,
-    DataPlan as LegacyDataPlan,
-    DataPlanner,
-    DataRequirement as LegacyDataRequirement,
-    FeatureRequirement,
-)
 
 __all__ = [
     # Core classes (OP-DL-004)
-    "CandleStorage",
     "DataOrchestrator",
     # Query
     "BarQuery",
@@ -55,11 +46,6 @@ __all__ = [
     "CandleCommitResult",
     # Enums
     "WriteMode",
-    "LegacyDataRequirement",
-    "LegacyAggregationRequirement",
-    "LegacyDataPlan",
-    "DataPlanner",
-    "FeatureRequirement",
     "MarketDataProvider",
     "create_local_marketdata_provider_adapter",
     "ensure_marketdata_provider_version",

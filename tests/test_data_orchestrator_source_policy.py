@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageReport, InstrumentKey, parse_timeframe
-from openpine.data.models import WriteResult
+from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageReport, InstrumentKey, StoreResult, parse_timeframe
 from openpine.data.orchestrator import (
     DataOrchestrator,
     IncompleteCoverageError,
@@ -44,14 +43,17 @@ class _Storage:
         self.write_success = write_success
         self.writes: list[list[Bar]] = []
 
-    def read_candles(self, query: BarQuery) -> list[Bar]:
-        return list(self.bars)
+    def read(self, query: BarQuery) -> BarSeries:
+        return BarSeries(query=query, bars=self.bars, coverage=_coverage(query, self.bars, "storage"))
 
-    def write_candles(self, candles, **kwargs) -> WriteResult:
-        self.writes.append(list(candles))
+    def write(self, series: BarSeries) -> StoreResult:
+        self.writes.append(list(series.bars))
         if not self.write_success:
-            return WriteResult(success=False, error="write failed")
-        return WriteResult(success=True, rows_written=len(candles))
+            return StoreResult(success=False, error="write failed")
+        return StoreResult(success=True, rows_written=len(series.bars))
+
+    def coverage(self, query: BarQuery) -> CoverageReport:
+        return self.read(query).coverage
 
 
 class _Provider:
@@ -61,30 +63,48 @@ class _Provider:
 
     def fetch_bars(self, query: BarQuery) -> BarSeries:
         self.calls.append(query)
+        bars = tuple(bar for bar in self.bars if query.start_ms <= bar.time < query.end_ms)
         return BarSeries(
             query=query,
-            bars=self.bars,
-            coverage=CoverageReport(
-                requested_start_ms=query.start_ms,
-                requested_end_ms=query.end_ms,
-                delivered_start_ms=self.bars[0].time if self.bars else None,
-                delivered_end_ms=self.bars[-1].time_close if self.bars else None,
-                missing_intervals=() if self.bars else ((query.start_ms, query.end_ms),),
-                source_mix=("provider",),
-                status="valid" if self.bars else "empty",
-            ),
+            bars=bars,
+            coverage=_coverage(query, bars, "provider"),
         )
 
 
+def _coverage(query: BarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:
+    if not bars:
+        return CoverageReport(
+            requested_start_ms=query.start_ms,
+            requested_end_ms=query.end_ms,
+            delivered_start_ms=None,
+            delivered_end_ms=None,
+            missing_intervals=((query.start_ms, query.end_ms),),
+            source_mix=(source,),
+            status="empty",
+        )
+    delivered = {bar.time for bar in bars}
+    expected = range(query.start_ms, query.end_ms, query.timeframe.duration_ms or query.end_ms)
+    missing = tuple((start, start + (query.timeframe.duration_ms or 0)) for start in expected if start not in delivered)
+    return CoverageReport(
+        requested_start_ms=query.start_ms,
+        requested_end_ms=query.end_ms,
+        delivered_start_ms=bars[0].time,
+        delivered_end_ms=bars[-1].time_close,
+        missing_intervals=missing,
+        source_mix=(source,),
+        status="gap" if missing else "valid",
+    )
+
+
 def test_storage_source_fails_on_incomplete_coverage() -> None:
-    orchestrator = DataOrchestrator(candle_storage=_Storage((_bar(0),)))
+    orchestrator = DataOrchestrator(candle_store=_Storage((_bar(0),)))
 
     with pytest.raises(IncompleteCoverageError):
         orchestrator.load_bars(_query(source="storage"))
 
 
 def test_provider_source_requires_configured_provider() -> None:
-    orchestrator = DataOrchestrator(candle_storage=_Storage(()))
+    orchestrator = DataOrchestrator(candle_store=_Storage(()))
 
     with pytest.raises(ProviderUnavailableError):
         orchestrator.load_bars(_query(source="provider"))
@@ -93,20 +113,23 @@ def test_provider_source_requires_configured_provider() -> None:
 def test_auto_fetches_provider_persists_and_merges_when_storage_incomplete() -> None:
     storage = _Storage((_bar(0),))
     provider = _Provider((_bar(60_000), _bar(120_000)))
-    orchestrator = DataOrchestrator(candle_storage=storage, provider=provider)
+    orchestrator = DataOrchestrator(candle_store=storage, provider=provider)
 
     series = orchestrator.load_bars(_query(source="auto"))
 
     assert [bar.time for bar in series.bars] == [0, 60_000, 120_000]
     assert series.coverage.status == "valid"
-    assert len(provider.calls) == 1
+    assert [(call.start_ms, call.end_ms) for call in provider.calls] == [
+        (60_000, 120_000),
+        (120_000, 180_000),
+    ]
     assert [[bar.time for bar in write] for write in storage.writes] == [[60_000, 120_000]]
 
 
 def test_auto_raises_when_provider_write_through_fails() -> None:
     storage = _Storage((_bar(0),), write_success=False)
     provider = _Provider((_bar(60_000), _bar(120_000)))
-    orchestrator = DataOrchestrator(candle_storage=storage, provider=provider)
+    orchestrator = DataOrchestrator(candle_store=storage, provider=provider)
 
     with pytest.raises(StorageUnavailableError):
         orchestrator.load_bars(_query(source="auto"))

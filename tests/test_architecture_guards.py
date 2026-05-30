@@ -136,6 +136,25 @@ def test_openpine_uses_marketdata_provider_stable_api_only() -> None:
     assert violations == []
 
 
+def test_data_orchestrator_has_no_legacy_candle_storage_boundary() -> None:
+    source = (ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
+
+    assert "CandleStorage" not in source
+    assert "read_candles" not in source
+    assert "write_candles" not in source
+    assert "_LegacyCandleStorageAdapter" not in source
+
+
+def test_data_package_does_not_export_legacy_planner_models() -> None:
+    import openpine.data as data
+
+    exported = set(data.__all__)
+
+    assert not {name for name in exported if name.startswith("Legacy")}
+    assert "CandleStorage" not in exported
+    assert "DataPlanner" not in exported
+
+
 def test_production_compile_profile_rejects_stub_flags() -> None:
     adapter = SubprocessCompilerAdapter(prefer_library=False)
 
