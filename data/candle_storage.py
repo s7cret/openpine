@@ -161,6 +161,30 @@ def _bar_to_parquet_row(
     }
 
 
+def _partition_candles_by_month(
+    candles: list["Bar"],
+    *,
+    exchange: str,
+    market_type: str,
+    symbol: str,
+    price_type: str,
+    timeframe: str,
+) -> dict[tuple[str, str, str, str, str, tuple[int, int]], list["Bar"]]:
+    partitions: dict[tuple[str, str, str, str, str, tuple[int, int]], list["Bar"]] = {}
+    for bar in candles:
+        dt = _utc_from_ms(bar.time)
+        key = (
+            exchange,
+            market_type,
+            symbol,
+            price_type,
+            timeframe,
+            (dt.year, dt.month),
+        )
+        partitions.setdefault(key, []).append(bar)
+    return partitions
+
+
 def _deduplicate_rows_by_open_time(rows: list[dict]) -> list[dict]:
     seen: dict[int, dict] = {}
     for row in rows:
@@ -350,105 +374,106 @@ class CandleStorage:
         except ValueError as exc:
             return WriteResult(success=False, error=str(exc))
 
-        partitions: dict[tuple, list] = {}
-        for bar in candles:
-            open_time_ms = bar.time
-            dt = _utc_from_ms(open_time_ms)
-            bucket = (dt.year, dt.month)
-            key = (exchange, market_type, symbol, price_type, timeframe, bucket)
-            if key not in partitions:
-                partitions[key] = []
-            partitions[key].append(bar)
+        partitions = _partition_candles_by_month(
+            candles,
+            exchange=exchange,
+            market_type=market_type,
+            symbol=symbol,
+            price_type=price_type,
+            timeframe=timeframe,
+        )
 
         manifests: list[CandleManifest] = []
         total_rows = 0
 
         for (exchange, market_type, symbol, price_type, timeframe, (year, month)), bars in partitions.items():
-            first_bar = bars[0]
-            # Use first bar's time to determine partition path
-            partition_dir = self._partition_path(
-                exchange, market_type, symbol, price_type, timeframe, first_bar.time
-            )
-
-            # Determine filename based on mode
-            if mode == WriteMode.REPLACE_PARTITION:
-                filename = f"part-{int(time.time() * 1000):012d}.parquet"
-            else:
-                # Generate unique filename
-                ts = int(time.time() * 1000)
-                filename = f"part-{ts}.parquet"
-
-            final_path = partition_dir / filename
-            tmp_path = self._tmp_path(final_path)
-
-            # Build DataFrame
-            ingested_at = int(time.time() * 1000)
-            rows = []
-            for bar in bars:
-                rows.append(
-                    _bar_to_parquet_row(
-                        bar,
-                        exchange=exchange,
-                        market_type=market_type,
-                        symbol=symbol,
-                        price_type=price_type,
-                        timeframe=timeframe,
-                        provider=self.provider,
-                        ingested_at=ingested_at,
-                    )
-                )
-
-            df = pd.DataFrame(rows)
-            df = df.sort_values("open_time")
-
-            # Validate schema
-            table = pa.Table.from_pandas(df, schema=PARQUET_SCHEMA, preserve_index=False)
-
-            # Write to .tmp
-            partition_dir.mkdir(parents=True, exist_ok=True)
-            pq.write_table(table, str(tmp_path), compression="zstd")
-
-            # Atomic rename
-            shutil.move(str(tmp_path), str(final_path))
-
-            # Compute metadata
-            checksum = _compute_checksum(df)
-            file_size = final_path.stat().st_size
-            min_time = int(df["open_time"].min())
-            max_time = int(df["open_time"].max())
-            row_count = len(df)
-
-            # Create manifest
-            manifest = CandleManifest(
-                manifest_id=f"m_{int(time.time() * 1000)}_{hashlib.sha256(final_path.name.encode()).hexdigest()[:8]}",
+            manifest = self._write_partition(
+                bars=bars,
+                mode=mode,
                 exchange=exchange,
                 market_type=market_type,
                 symbol=symbol,
                 price_type=price_type,
                 timeframe=timeframe,
-                partition_path=str(final_path),
-                min_open_time=min_time,
-                max_open_time=max_time,
-                row_count=row_count,
-                schema_hash=self._schema_hash,
-                checksum=checksum,
-                file_size_bytes=file_size,
-                provider=self.provider,
-                ingested_at=int(time.time() * 1000),
-                created_at=int(time.time() * 1000),
-                updated_at=int(time.time() * 1000),
             )
 
             # Insert manifest to SQLite
             self._insert_manifest(manifest)
             manifests.append(manifest)
-            total_rows += row_count
+            total_rows += manifest.row_count
 
         return WriteResult(
             success=True,
             rows_written=total_rows,
-            partition_path=str(final_path) if manifests else None,
+            partition_path=manifests[-1].partition_path if manifests else None,
             manifests_created=manifests,
+        )
+
+    def _write_partition(
+        self,
+        *,
+        bars: list["Bar"],
+        mode: WriteMode,
+        exchange: str,
+        market_type: str,
+        symbol: str,
+        price_type: str,
+        timeframe: str,
+    ) -> CandleManifest:
+        first_bar = bars[0]
+        partition_dir = self._partition_path(
+            exchange, market_type, symbol, price_type, timeframe, first_bar.time
+        )
+        ts = int(time.time() * 1000)
+        filename = (
+            f"part-{ts:012d}.parquet"
+            if mode == WriteMode.REPLACE_PARTITION
+            else f"part-{ts}.parquet"
+        )
+        final_path = partition_dir / filename
+        tmp_path = self._tmp_path(final_path)
+
+        ingested_at = int(time.time() * 1000)
+        df = pd.DataFrame(
+            [
+                _bar_to_parquet_row(
+                    bar,
+                    exchange=exchange,
+                    market_type=market_type,
+                    symbol=symbol,
+                    price_type=price_type,
+                    timeframe=timeframe,
+                    provider=self.provider,
+                    ingested_at=ingested_at,
+                )
+                for bar in bars
+            ]
+        ).sort_values("open_time")
+        table = pa.Table.from_pandas(df, schema=PARQUET_SCHEMA, preserve_index=False)
+
+        partition_dir.mkdir(parents=True, exist_ok=True)
+        pq.write_table(table, str(tmp_path), compression="zstd")
+        shutil.move(str(tmp_path), str(final_path))
+
+        now = int(time.time() * 1000)
+        return CandleManifest(
+            manifest_id=f"m_{now}_{hashlib.sha256(final_path.name.encode()).hexdigest()[:8]}",
+            exchange=exchange,
+            market_type=market_type,
+            symbol=symbol,
+            price_type=price_type,
+            timeframe=timeframe,
+            partition_path=str(final_path),
+            min_open_time=int(df["open_time"].min()),
+            max_open_time=int(df["open_time"].max()),
+            row_count=len(df),
+            schema_hash=self._schema_hash,
+            checksum=_compute_checksum(df),
+            file_size_bytes=final_path.stat().st_size,
+            provider=self.provider,
+            ingested_at=now,
+            created_at=now,
+            updated_at=now,
         )
 
     def _insert_manifest(self, manifest: CandleManifest) -> None:

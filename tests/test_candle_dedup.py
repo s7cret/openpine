@@ -96,6 +96,51 @@ def test_write_candles_persists_rows_with_explicit_instrument_key(tmp_path):
     assert [bar.close for bar in bars] == [100.5]
 
 
+def test_partition_candles_by_month_groups_utc_buckets():
+    from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
+    from openpine.data.candle_storage import _partition_candles_by_month
+
+    instrument = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
+    timeframe = parse_timeframe("1h")
+    jan_bar = Bar(
+        instrument=instrument,
+        timeframe=timeframe,
+        time=1704067200000,
+        time_close=1704070800000,
+        open=100.0,
+        high=101.0,
+        low=99.0,
+        close=100.5,
+        volume=10.0,
+        closed=True,
+    )
+    feb_bar = Bar(
+        instrument=instrument,
+        timeframe=timeframe,
+        time=1706745600000,
+        time_close=1706749200000,
+        open=110.0,
+        high=111.0,
+        low=109.0,
+        close=110.5,
+        volume=12.0,
+        closed=True,
+    )
+
+    partitions = _partition_candles_by_month(
+        [jan_bar, feb_bar],
+        exchange="binance",
+        market_type="spot",
+        symbol="BTCUSDT",
+        price_type="trade",
+        timeframe="1h",
+    )
+
+    assert sorted(key[-1] for key in partitions) == [(2024, 1), (2024, 2)]
+    assert partitions[("binance", "spot", "BTCUSDT", "trade", "1h", (2024, 1))] == [jan_bar]
+    assert partitions[("binance", "spot", "BTCUSDT", "trade", "1h", (2024, 2))] == [feb_bar]
+
+
 def test_read_candles_defaults_missing_close_time_and_volume(tmp_path):
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.candle_storage import CandleStorage, PARQUET_SCHEMA
