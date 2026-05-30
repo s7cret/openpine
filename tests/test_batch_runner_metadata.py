@@ -14,6 +14,7 @@ from openpine.batch.runner import (
     _build_run_meta,
     _build_run_summary,
     _build_strategy_run_config,
+    _finish_entry_status,
     _run_meta_valid,
     _write_progress,
     completed_for_selection,
@@ -262,6 +263,15 @@ def test_strategy_run_config_uses_declaration_values() -> None:
     assert config.qty_rounding_mode == "truncate"
     assert config.plot_from_ms == chart.start_ms
     assert config.plot_to_ms == chart.end_ms
+
+
+def test_finish_entry_status_adds_elapsed_seconds(monkeypatch) -> None:
+    ticks = iter([10.0, 12.3456])
+    monkeypatch.setattr(batch_runner.time, "perf_counter", lambda: next(ticks))
+
+    status = _finish_entry_status({"status": "planned"}, batch_runner.time.perf_counter())
+
+    assert status == {"status": "planned", "elapsed_sec": 2.346}
 
 
 def test_batch_run_cli_pins_run_phase(monkeypatch) -> None:

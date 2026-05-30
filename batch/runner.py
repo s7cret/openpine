@@ -713,6 +713,15 @@ def _selected_timeframes(entry: ExportEntry, args: argparse.Namespace) -> list[s
     return [chart.timeframe for chart in _wanted_charts(entry, args)]
 
 
+def _elapsed_sec_since(started: float) -> float:
+    return round(time.perf_counter() - started, 3)
+
+
+def _finish_entry_status(status: dict[str, Any], started: float) -> dict[str, Any]:
+    status["elapsed_sec"] = _elapsed_sec_since(started)
+    return status
+
+
 def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", library_revisions: dict[str, str] | None = None) -> dict[str, Any]:
     started = time.perf_counter()
     timings: dict[str, float] = {}
@@ -728,16 +737,14 @@ def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", 
     }
 
     if args.phase == "plan":
-        status["elapsed_sec"] = round(time.perf_counter() - started, 3)
-        return status
+        return _finish_entry_status(status, started)
 
     source, added = timed_call(timings, "ingest_sec", get_or_add_source, entry, write=True)
     status["source_id"] = source.id
     status["source_added"] = added
     status["status"] = "ingested"
     if args.phase == "ingest":
-        status["elapsed_sec"] = round(time.perf_counter() - started, 3)
-        return status
+        return _finish_entry_status(status, started)
 
     artifact_id, compile_info = timed_call(timings, "compile_sec", compile_source, source, force=args.force_compile)
     status["compile"] = {
@@ -747,13 +754,11 @@ def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", 
     }
     if artifact_id is None:
         status["status"] = "compile_error"
-        status["elapsed_sec"] = round(time.perf_counter() - started, 3)
-        return status
+        return _finish_entry_status(status, started)
     status["artifact_id"] = artifact_id
     status["status"] = "compiled"
     if args.phase == "compile":
-        status["elapsed_sec"] = round(time.perf_counter() - started, 3)
-        return status
+        return _finish_entry_status(status, started)
 
     t0 = time.perf_counter()
     registered: list[dict[str, Any]] = []
@@ -767,8 +772,7 @@ def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", 
     status["registered_strategies"] = registered
     status["status"] = "registered"
     if args.phase == "register":
-        status["elapsed_sec"] = round(time.perf_counter() - started, 3)
-        return status
+        return _finish_entry_status(status, started)
 
     t0 = time.perf_counter()
     runs: list[dict[str, Any]] = []
@@ -810,8 +814,7 @@ def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", 
     timings["run_sec"] = round(time.perf_counter() - t0, 3)
     status["runs"] = runs
     status["status"] = "ok" if all(r.get("status") == "ok" for r in runs) else "partial_or_error"
-    status["elapsed_sec"] = round(time.perf_counter() - started, 3)
-    return status
+    return _finish_entry_status(status, started)
 
 
 def parse_ids(value: str | None) -> set[int] | None:
