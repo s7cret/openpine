@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from openpine.exports import ExportWindow, export_equity_curve, export_plot_outputs, export_trades
+from openpine.export import ExportWindow, export_equity_curve, export_plot_outputs, export_trades
 
 
 def test_export_plot_outputs_wide_and_filters_window(tmp_path):

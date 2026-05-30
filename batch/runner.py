@@ -389,7 +389,7 @@ def load_calculation_bars(
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
-    from openpine.exports import parse_time_ms
+    from openpine.export import parse_time_ms
 
     calculation_from = parse_time_ms(args.calculation_from)
     if calculation_from is None:
@@ -461,22 +461,6 @@ def load_calculation_bars(
     }
 
 
-def export_object_records(records: Any, path: Path) -> int:
-    if records is None:
-        pd.DataFrame().to_csv(path, index=False)
-        return 0
-    rows = []
-    for item in list(records or []):
-        if hasattr(item, "__dict__"):
-            rows.append(dict(item.__dict__))
-        elif isinstance(item, dict):
-            rows.append(item)
-        else:
-            rows.append({"value": repr(item)})
-    pd.DataFrame(rows).to_csv(path, index=False)
-    return len(rows)
-
-
 def run_indicator(
     entry: ExportEntry,
     source: Any,
@@ -486,7 +470,7 @@ def run_indicator(
     args: argparse.Namespace,
 ) -> dict[str, Any]:
     from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
-    from openpine.exports import export_plot_records
+    from openpine.export import export_plot_records
     from openpine.runtime.engine import load_generated_class_from_artifact
 
     timings: dict[str, float] = {}
@@ -562,7 +546,7 @@ def run_strategy(
 ) -> dict[str, Any]:
     from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
     from openpine.artifacts import ArtifactStore
-    from openpine.exports import ExportWindow, export_equity_curve, export_plot_records, export_trades
+    from openpine.export import ExportWindow, export_equity_curve, export_plot_records, export_trades
     from openpine.runtime.engine import BacktestEngineAdapter, BacktestRunConfig, load_strategy_class_from_artifact
 
     timings: dict[str, float] = {}

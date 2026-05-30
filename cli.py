@@ -706,7 +706,7 @@ def pine_run_plots(
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
-    from openpine.exports import export_plot_records, parse_time_ms, write_json
+    from openpine.export import export_plot_records, parse_time_ms, write_json
     from openpine.pine.registry import SQLitePineSourceRegistry
     from openpine.runtime.engine import BacktestArtifactError, load_generated_class_from_artifact
 
@@ -4500,7 +4500,7 @@ def strategy_backtest(
                 "process_next_bar_available": result.process_next_bar_available,
                 "timings": timings,
             }
-            from openpine.exports import write_json
+            from openpine.export import write_json
             write_json(run_dir / "run_meta.json", meta)
             console.print(f"[green]Backtest saved:[/green] {run_id}")
             console.print(f"  trades:     {len(getattr(result.raw_result, 'trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
@@ -5076,7 +5076,7 @@ def strategy_export_run(
     no_metrics: bool,
 ) -> None:
     """Export a backtest run to normalized CSV/JSON files."""
-    from openpine.exports import (
+    from openpine.export import (
         export_plot_outputs,
         export_trades,
         parse_time_ms,
