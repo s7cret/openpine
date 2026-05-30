@@ -1,19 +1,14 @@
-"""Live stream adapter boundary for local marketdata-provider installations."""
+"""Live stream adapter boundary for the canonical marketdata-provider package."""
 
 from __future__ import annotations
 
 import importlib
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from openpine.contracts import Bar, InstrumentKey, Timeframe
-from openpine.data.provider_adapter import (
-    DEFAULT_PROVIDER_ROOTS,
-    LocalProviderInstallation,
-    detect_local_marketdata_provider,
-    ensure_provider_import_path,
-)
+from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe, parse_timeframe
+from marketdata_provider.timeframes import close_time_ms
+from openpine.data.provider_adapter import ensure_marketdata_provider_version
 from openpine.streams.adapter import KlineUpdateEnvelope
 
 
@@ -44,14 +39,17 @@ def normalize_provider_kline_update(
 
     return KlineUpdateEnvelope(
         instrument_key=InstrumentKey(
-            symbol=str(_attr_or_item(update, "symbol")) if _has_field(update, "symbol") else instrument_key.symbol,
-            exchange=str(_attr_or_item(update, "exchange")).upper() if _has_field(update, "exchange") else instrument_key.exchange,
-            base=instrument_key.base,
-            quote=instrument_key.quote,
+            exchange=str(_attr_or_item(update, "exchange")).lower()
+            if _has_field(update, "exchange")
+            else instrument_key.exchange,
+            market=str(_attr_or_item(update, "market")).lower()
+            if _has_field(update, "market")
+            else instrument_key.market,
+            symbol=str(_attr_or_item(update, "symbol")).upper()
+            if _has_field(update, "symbol")
+            else instrument_key.symbol,
         ),
-        timeframe=Timeframe(
-            value=str(_attr_or_item(update, "timeframe")) if _has_field(update, "timeframe") else timeframe.value,
-        ),
+        timeframe=parse_timeframe(str(_attr_or_item(update, "timeframe"))) if _has_field(update, "timeframe") else timeframe,
         timestamp=int(_attr_or_item(update, "open_time", "time", "timestamp", "open_time_ms")),
         open=float(_attr_or_item(update, "open")),
         high=float(_attr_or_item(update, "high")),
@@ -71,10 +69,12 @@ def envelope_to_bar(envelope: KlineUpdateEnvelope) -> Bar:
         instrument = InstrumentKey(**instrument)
     if isinstance(timeframe, dict):
         timeframe = Timeframe(**timeframe)
+    time = int(envelope.timestamp)
     return Bar(
-        instrument_key=instrument,
+        instrument=instrument,
         timeframe=timeframe,
-        timestamp=envelope.timestamp,
+        time=time,
+        time_close=close_time_ms(time, timeframe.canonical) + 1,
         open=envelope.open,
         high=envelope.high,
         low=envelope.low,
@@ -88,22 +88,11 @@ def envelope_to_bar(envelope: KlineUpdateEnvelope) -> Bar:
 class LocalProviderLiveDataFeedAdapter:
     """OpenPine live-data boundary around marketdata-provider websocket clients."""
 
-    installation: LocalProviderInstallation
     _callbacks: list[Callable[[Bar], None]] = field(default_factory=list)
     _clients: dict[tuple[str, str], Any] = field(default_factory=dict)
 
-    @classmethod
-    def from_local_installation(
-        cls,
-        installation: LocalProviderInstallation | None = None,
-    ) -> "LocalProviderLiveDataFeedAdapter | None":
-        installation = installation or detect_local_marketdata_provider()
-        if installation is None:
-            return None
-        return cls(installation)
-
     async def connect(self) -> None:
-        ensure_provider_import_path(self.installation)
+        ensure_marketdata_provider_version()
 
     async def disconnect(self) -> None:
         for client in list(self._clients.values()):
@@ -117,10 +106,10 @@ class LocalProviderLiveDataFeedAdapter:
         instrument_key: InstrumentKey,
         timeframe: Timeframe,
     ) -> None:
-        ensure_provider_import_path(self.installation)
+        ensure_marketdata_provider_version()
         stream_module = importlib.import_module("marketdata_provider.streaming")
         symbol = instrument_key.symbol
-        tf = timeframe.value
+        tf = timeframe.canonical
         exchange = instrument_key.exchange.lower()
 
         def on_kline(update: Any) -> None:
@@ -166,14 +155,13 @@ class LocalProviderLiveDataFeedAdapter:
 
 
 def create_local_live_data_feed_adapter(
-    roots: Iterable[str | Path] = DEFAULT_PROVIDER_ROOTS,
-) -> LocalProviderLiveDataFeedAdapter | None:
-    """Create a local live-feed adapter, or None when no local package exists."""
+    roots: Iterable[str] | None = None,
+) -> LocalProviderLiveDataFeedAdapter:
+    """Create a local live-feed adapter using the installed canonical package."""
 
-    installation = detect_local_marketdata_provider(roots)
-    if installation is None:
-        return None
-    return LocalProviderLiveDataFeedAdapter.from_local_installation(installation)
+    del roots
+    ensure_marketdata_provider_version()
+    return LocalProviderLiveDataFeedAdapter()
 
 
 __all__ = [

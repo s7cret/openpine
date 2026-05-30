@@ -190,7 +190,7 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
 
     # Provider connectivity smoke test
     try:
-        from openpine.data.orchestrator import DataOrchestrator
+        from openpine.data.data_orchestrator import DataOrchestrator
         from openpine.contracts import BarQuery
         orch = DataOrchestrator()
         # Smoke test: try to get bars (will return empty if no provider)
@@ -689,7 +689,7 @@ def pine_run_plots(
     from types import SimpleNamespace
 
     from openpine.contracts import BarQuery, InstrumentKey, Timeframe
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
     from openpine.exports import export_plot_records, parse_time_ms, write_json
     from openpine.pine.registry import SQLitePineSourceRegistry
@@ -1064,7 +1064,7 @@ def data() -> None:
 def data_plan(strategy_id: str | None, explain: bool) -> None:
     """Plan data requirements for a strategy (dry-run)."""
     from openpine.config import OpenPineConfig
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.data.planner import DataPlan, DataPlanner
     from openpine.streams import MarketDataStreamManager
     from openpine.universe import ActiveUniverse
@@ -1107,7 +1107,7 @@ def data_plan(strategy_id: str | None, explain: bool) -> None:
 def data_status(symbol: str | None, exchange: str, tf: str | None) -> None:
     """Show data pipeline status: configured symbols/timeframes, last backfill, gaps count."""
     from openpine.config import OpenPineConfig
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.storage import SQLiteStorage
 
     console.print("[bold]Data pipeline status[/bold]")
@@ -1189,7 +1189,7 @@ def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
     if provider_adapter is not None:
         try:
             from openpine.contracts import BarQuery, InstrumentKey
-            from openpine.data.orchestrator import DataOrchestrator
+            from openpine.data.data_orchestrator import DataOrchestrator
 
             ik = InstrumentKey(exchange=exchange, symbol=symbol, market_type=market)
             query = BarQuery(instrument_key=ik, timeframe=timeframe, start_ms=0, end_ms=int(2**63 - 1), limit=10000)
@@ -2016,7 +2016,7 @@ def _timeframe_to_ms(timeframe: str) -> int:
 @data.command("ensure-active")
 def data_ensure_active() -> None:
     """Ensure all active strategies have required data."""
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.data.planner import DataPlanner
     from openpine.streams import MarketDataStreamManager
     from openpine.universe import ActiveUniverse
@@ -2044,7 +2044,7 @@ def data_ensure_active() -> None:
 @data.command("backfill-active")
 def data_backfill_active() -> None:
     """Trigger backfill for all active strategies' data requirements."""
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.data.planner import DataPlanner
     from openpine.streams import MarketDataStreamManager
     from openpine.universe import ActiveUniverse
@@ -2668,7 +2668,7 @@ def streams_status() -> None:
     from openpine.events import EventBus
     from openpine.streams import MarketDataStreamManager
     from openpine.storage import SQLiteStorage
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
 
     console.print("[bold]Streams status[/bold]")
 
@@ -2867,7 +2867,7 @@ def state_invalid() -> None:
 def state_rebuild(strategy_id: str, from_bar_time: int | None) -> None:
     """Rebuild state for a strategy from snapshots (section 30.8)."""
     from openpine.config import OpenPineConfig
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.recovery import StateRebuilder
     from openpine.state.store import StateStore
     from openpine.state.errors import StateInconsistencyError
@@ -4240,7 +4240,7 @@ def strategy_backtest(
     from datetime import timezone as _timezone
 
     from openpine.contracts import BarQuery, InstrumentKey, Timeframe
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.runtime.engine import (
         BacktestArtifactError,
@@ -4521,7 +4521,7 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
     import time as _time_module
 
     from openpine.contracts import BarQuery, InstrumentKey, Timeframe
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.runtime.engine import (
         BacktestArtifactError,

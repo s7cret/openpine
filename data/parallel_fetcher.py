@@ -14,8 +14,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Callable
 
-from openpine.contracts import Bar, BarQuery
-from openpine.data.orchestrator import DataOrchestrator
+from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
+from openpine.data.data_orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 
 log = structlog.get_logger(__name__)
@@ -52,14 +52,12 @@ class ParallelDataFetcher:
 
     def __init__(self, max_workers: int | None = None) -> None:
         self.max_workers = max_workers or _default_workers()
-        self._orchestrator = DataOrchestrator()
         provider = create_local_marketdata_provider_adapter()
-        if provider:
-            self._orchestrator.set_provider(provider)
+        self._orchestrator = DataOrchestrator(provider=provider)
         log.info(
             "parallel_fetcher.init",
             max_workers=self.max_workers,
-            provider_set=provider is not None,
+            provider_set=True,
         )
 
     def fetch_single(
@@ -71,13 +69,12 @@ class ParallelDataFetcher:
         exchange: str = "binance",
     ) -> list[Bar]:
         """Fetch bars for a single symbol/timeframe."""
-        from openpine.contracts import InstrumentKey, Timeframe
-
         query = BarQuery(
-            instrument_key=InstrumentKey(symbol=symbol, exchange=exchange.upper()),
-            timeframe=Timeframe(value=timeframe),
-            start_ms=start_ms,
-            end_ms=end_ms,
+            instrument=InstrumentKey(exchange=exchange, market="usdm", symbol=symbol),
+            timeframe=parse_timeframe(timeframe),
+            start_ms=start_ms if start_ms is not None else 0,
+            end_ms=end_ms if end_ms is not None else int(10**18),
+            source="provider",
         )
         return self._orchestrator.get_bars(query)
 

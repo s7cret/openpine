@@ -1,48 +1,37 @@
 from types import SimpleNamespace
 
-from openpine.contracts import BarQuery, InstrumentKey, Timeframe
-from openpine.data.provider_adapter import LocalMarketDataProviderAdapter
+from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
+from openpine.data.provider_adapter import normalize_provider_bar
 
 
-class _Provider:
-    def get_bars(self, *args, **kwargs):
-        del args, kwargs
-        return [
-            SimpleNamespace(
-                symbol="BTCUSD",
-                exchange="BINANCE",
-                timeframe="15",
-                time=1_000,
-                open=10,
-                high=10,
-                low=10,
-                close=10,
-                volume=0,
-                closed=True,
-            ),
-            SimpleNamespace(
-                symbol="BTCUSD",
-                exchange="BINANCE",
-                timeframe="15",
-                time=2_000,
-                open=11,
-                high=12,
-                low=10,
-                close=11,
-                volume=5,
-                closed=True,
-            ),
-        ]
-
-
-def test_local_provider_filters_synthetic_empty_bars():
+def test_normalize_provider_bar_uses_canonical_contract_shape():
     query = BarQuery(
-        instrument_key=InstrumentKey(symbol="BTCUSD", exchange="BINANCE", market_type="spot"),
-        timeframe=Timeframe(value="15"),
+        instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSD"),
+        timeframe=parse_timeframe("15"),
         start_ms=0,
         end_ms=3_000,
+        source="provider",
     )
 
-    bars = LocalMarketDataProviderAdapter(_Provider()).get_bars(query)
+    bar = normalize_provider_bar(
+        SimpleNamespace(
+            symbol="BTCUSD",
+            exchange="BINANCE",
+            market="spot",
+            time=1_000,
+            time_close=2_000,
+            open=10,
+            high=11,
+            low=9,
+            close=10,
+            volume=5,
+            is_closed=True,
+        ),
+        query,
+    )
 
-    assert [bar.timestamp for bar in bars] == [2_000]
+    assert bar.instrument.serialize() == "binance/spot/BTCUSD"
+    assert bar.time == 1_000
+    assert bar.time_close == 2_000
+    assert bar.volume == 5.0

@@ -5,8 +5,6 @@ from dataclasses import dataclass
 import pandas as pd
 
 from openpine.exports import export_plot_outputs, export_trades
-from openpine.contracts import BarQuery, InstrumentKey, Timeframe
-from openpine.data.provider_adapter import LocalMarketDataProviderAdapter
 
 
 def test_export_plot_outputs_wide_and_filters_window(tmp_path):
@@ -82,45 +80,3 @@ def test_export_trades_writes_stable_header(tmp_path):
     assert text.splitlines()[0].startswith("trade_id,entry_id,exit_id,direction")
     assert "t1,e1,x1,long" in text
 
-
-def test_local_provider_adapter_forwards_market_type():
-    class Provider:
-        def __init__(self):
-            self.calls = []
-
-        def get_bars(self, exchange, market, symbol, timeframe, start, end, max_bars=None):
-            self.calls.append(
-                {
-                    "exchange": exchange,
-                    "market": market,
-                    "symbol": symbol,
-                    "timeframe": timeframe,
-                    "start": start,
-                    "end": end,
-                    "max_bars": max_bars,
-                }
-            )
-            return []
-
-    provider = Provider()
-    adapter = LocalMarketDataProviderAdapter(provider)
-    query = BarQuery(
-        instrument_key=InstrumentKey(symbol="BTCUSDT", exchange="BINANCE", market_type="spot"),
-        timeframe=Timeframe(value="15m"),
-        start_ms=1,
-        end_ms=2,
-        limit=10,
-    )
-
-    assert adapter.get_bars(query) == []
-    assert provider.calls == [
-        {
-            "exchange": "binance",
-            "market": "spot",
-            "symbol": "BTCUSDT",
-            "timeframe": "15m",
-            "start": 1,
-            "end": 2,
-            "max_bars": 10,
-        }
-    ]

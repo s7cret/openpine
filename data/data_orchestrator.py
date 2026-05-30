@@ -14,7 +14,14 @@ from __future__ import annotations
 import time
 from typing import Optional, Protocol
 
-from openpine.data.bar_query import BarQuery
+from marketdata_provider.contracts import (
+    Bar,
+    BarQuery,
+    BarSeries,
+    CoverageReport,
+    StoreResult,
+)
+from openpine.data.bar_query import BarQuery as StorageBarQuery
 from openpine.data.candle_storage import CandleStorage
 from openpine.data.contracts import WriteMode
 from openpine.data.models import (
@@ -38,9 +45,7 @@ class StrategyInstance:
 class MarketDataProvider(Protocol):
     """Protocol for market data providers that can supply bars."""
 
-    def get_bars(self, query: BarQuery) -> list["Bar"]:
-        """Get bars for the given query."""
-        ...
+    def fetch_bars(self, query: BarQuery) -> BarSeries: ...
 
 
 class DataOrchestrator:
@@ -107,7 +112,7 @@ class DataOrchestrator:
 
             # Build a query to check for existing data
             instrument_key = f"{req.exchange}:{req.market_type}:{req.symbol}:{req.price_type}"
-            query = BarQuery(
+            query = StorageBarQuery(
                 instrument_key=instrument_key,
                 timeframe=req.timeframe,
                 from_time=req.from_time,
@@ -124,36 +129,63 @@ class DataOrchestrator:
             gaps_remaining=gaps_remaining,
         )
 
-    def get_bars(self, query: BarQuery) -> list["Bar"]:
-        """Single read contract for bars.
+    def load_bars(self, query: BarQuery) -> BarSeries:
+        """Single canonical read contract for bars.
 
-        Tries storage first, then provider if storage has no data.
-
-        Args:
-            query: BarQuery specifying instrument, timeframe, time range
-
-        Returns:
-            List of Bar objects matching the query
+        Reads according to query.source. Storage/provider errors are raised, never converted
+        into an empty result.
         """
-        # Try storage first
+        storage_bars: list[Bar] = []
+        storage_error: Exception | None = None
+
         if query.source in ("storage", "auto"):
             try:
-                bars = self._candle_storage.read_candles(query)
-                if bars:
-                    return bars
-            except Exception:
-                pass
+                storage_bars = [
+                    _canonical_bar_from_storage_bar(bar, query)
+                    for bar in self._candle_storage.read_candles(_to_storage_query(query))
+                ]
+            except Exception as exc:
+                storage_error = exc
+                if query.source == "storage":
+                    raise
+            if storage_bars:
+                bars_tuple = tuple(storage_bars)
+                return BarSeries(
+                    query=query,
+                    bars=bars_tuple,
+                    coverage=_coverage_for(query, bars_tuple, "storage"),
+                )
 
-        # Try provider
         if query.source in ("provider", "auto") and self._provider is not None:
             try:
-                return self._provider.get_bars(query)
+                return self._provider.fetch_bars(query)
             except Exception:
-                pass
+                raise
 
-        return []
+        if storage_error is not None:
+            raise storage_error
+        if query.source == "provider" and self._provider is None:
+            raise RuntimeError("market data provider is not configured")
 
-    def detect_gaps(self, query: BarQuery) -> list[DataGap]:
+        return BarSeries(
+            query=query,
+            bars=(),
+            coverage=CoverageReport(
+                requested_start_ms=query.start_ms,
+                requested_end_ms=query.end_ms,
+                delivered_start_ms=None,
+                delivered_end_ms=None,
+                missing_intervals=((query.start_ms, query.end_ms),),
+                status="empty",
+            ),
+        )
+
+    def get_bars(self, query: BarQuery) -> list[Bar]:
+        """Return canonical bars for callers that need a plain sequence."""
+
+        return list(self.load_bars(query).bars)
+
+    def detect_gaps(self, query: BarQuery | StorageBarQuery) -> list[DataGap]:
         """Detect gaps in the candle data.
 
         Args:
@@ -162,7 +194,8 @@ class DataOrchestrator:
         Returns:
             List of DataGap objects
         """
-        return self._candle_storage.detect_gaps(query)
+        storage_query = _to_storage_query(query) if isinstance(query, BarQuery) else query
+        return self._candle_storage.detect_gaps(storage_query)
 
     def schedule_backfill(self, requirement: DataRequirement) -> str:
         """Schedule a backfill job for a data requirement.
@@ -199,8 +232,6 @@ class DataOrchestrator:
         Returns:
             CandleCommitResult with success status and manifest_id
         """
-        from marketdata_provider.core.bar import Bar
-
         try:
             # Ensure instrument_key is set on bar if it has that attribute
             if hasattr(bar, "instrument_key"):
@@ -232,7 +263,7 @@ class DataOrchestrator:
                 error=str(e),
             )
 
-    def list_manifests(self, query: BarQuery) -> list[CandleManifest]:
+    def list_manifests(self, query: BarQuery | StorageBarQuery) -> list[CandleManifest]:
         """List candle manifests for a query.
 
         Args:
@@ -241,7 +272,68 @@ class DataOrchestrator:
         Returns:
             List of CandleManifest objects
         """
-        return self._candle_storage.list_manifests(query)
+        storage_query = _to_storage_query(query) if isinstance(query, BarQuery) else query
+        return self._candle_storage.list_manifests(storage_query)
+
+
+def _to_storage_query(query: BarQuery) -> StorageBarQuery:
+    return StorageBarQuery(
+        instrument_key=(
+            f"{query.instrument.exchange}:{query.instrument.market}:{query.instrument.symbol}:trade"
+        ),
+        timeframe=query.timeframe.canonical,
+        from_time=query.start_ms,
+        to_time=query.end_ms - 1,
+        include_open_candle=False,
+        source="storage",
+    )
+
+
+def _canonical_bar_from_storage_bar(bar: object, query: BarQuery) -> Bar:
+    time = int(getattr(bar, "time"))
+    return Bar(
+        instrument=query.instrument,
+        timeframe=query.timeframe,
+        time=time,
+        time_close=int(getattr(bar, "time_close", query.end_ms)),
+        open=float(getattr(bar, "open")),
+        high=float(getattr(bar, "high")),
+        low=float(getattr(bar, "low")),
+        close=float(getattr(bar, "close")),
+        volume=float(getattr(bar, "volume")) if getattr(bar, "volume", None) is not None else None,
+        closed=bool(getattr(bar, "closed", True)),
+    )
+
+
+def _coverage_for(query: BarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:
+    if not bars:
+        return CoverageReport(
+            requested_start_ms=query.start_ms,
+            requested_end_ms=query.end_ms,
+            delivered_start_ms=None,
+            delivered_end_ms=None,
+            missing_intervals=((query.start_ms, query.end_ms),),
+            source_mix=(source,),
+            status="empty",
+        )
+    duplicate_timestamps = tuple(
+        sorted({bar.time for bar in bars if sum(1 for other in bars if other.time == bar.time) > 1})
+    )
+    ordered = all(bars[i].time < bars[i + 1].time for i in range(len(bars) - 1))
+    status = "valid"
+    if duplicate_timestamps:
+        status = "duplicate"
+    elif not ordered:
+        status = "unordered"
+    return CoverageReport(
+        requested_start_ms=query.start_ms,
+        requested_end_ms=query.end_ms,
+        delivered_start_ms=bars[0].time,
+        delivered_end_ms=bars[-1].time_close,
+        duplicate_timestamps=duplicate_timestamps,
+        source_mix=(source,),
+        status=status,
+    )
 
 
 __all__ = ["DataOrchestrator", "MarketDataProvider", "StrategyInstance"]

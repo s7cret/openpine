@@ -12,8 +12,9 @@ import threading
 from dataclasses import dataclass, field
 from typing import Callable
 
-from openpine.contracts import BarQuery, InstrumentKey, Timeframe
-from openpine.data.orchestrator import DataOrchestrator
+from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+from marketdata_provider.timeframes import timeframe_ms
+from openpine.data.data_orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
 
@@ -47,12 +48,9 @@ class PeriodicBarFetcher:
     ) -> None:
         self.config = config or RefreshConfig()
         self.registry = registry or SQLiteStrategyRegistry()
-        self.orchestrator = orchestrator or DataOrchestrator()
-
-        if self.orchestrator._provider is None:
-            provider = create_local_marketdata_provider_adapter()
-            if provider:
-                self.orchestrator.set_provider(provider)
+        self.orchestrator = orchestrator or DataOrchestrator(
+            provider=create_local_marketdata_provider_adapter()
+        )
 
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
@@ -133,18 +131,20 @@ class PeriodicBarFetcher:
         """Fetch latest bars for a single strategy."""
         # Calculate lookback window
         now_ms = int(time.time() * 1000)
-        tf_ms = self._timeframe_to_ms(strategy.timeframe)
+        tf_ms = timeframe_ms(strategy.timeframe)
         lookback_ms = tf_ms * self.config.lookback_bars
         start_ms = now_ms - lookback_ms
 
         query = BarQuery(
-            instrument_key=InstrumentKey(
+            instrument=InstrumentKey(
                 symbol=strategy.symbol,
-                exchange=strategy.exchange.upper(),
+                exchange=strategy.exchange,
+                market=getattr(strategy, "market_type", "usdm"),
             ),
-            timeframe=Timeframe(value=strategy.timeframe),
+            timeframe=parse_timeframe(strategy.timeframe),
             start_ms=start_ms,
             end_ms=now_ms,
+            source="provider",
         )
 
         bars = self.orchestrator.get_bars(query)
@@ -160,7 +160,7 @@ class PeriodicBarFetcher:
             for bar in bars:
                 self.orchestrator.on_candle_closed(
                     bar,
-                    instrument_key=str(query.instrument_key),
+                    instrument_key=f"{query.instrument.exchange}:{query.instrument.market}:{query.instrument.symbol}:trade",
                     timeframe=strategy.timeframe,
                     source="live",
                 )
@@ -170,30 +170,6 @@ class PeriodicBarFetcher:
                 strategy_id=strategy.strategy_id,
                 symbol=strategy.symbol,
             )
-
-    @staticmethod
-    def _timeframe_to_ms(timeframe: str) -> int:
-        """Convert timeframe string to milliseconds."""
-        mapping = {
-            "1m": 60_000,
-            "3m": 180_000,
-            "5m": 300_000,
-            "15m": 900_000,
-            "30m": 1_800_000,
-            "60m": 3_600_000,
-            "1h": 3_600_000,
-            "2h": 7_200_000,
-            "4h": 14_400_000,
-            "6h": 21_600_000,
-            "8h": 28_800_000,
-            "12h": 43_200_000,
-            "1d": 86_400_000,
-            "D": 86_400_000,
-            "1w": 604_800_000,
-            "W": 604_800_000,
-        }
-        return mapping.get(timeframe, 900_000)  # default 15m
-
 
 __all__ = [
     "PeriodicBarFetcher",

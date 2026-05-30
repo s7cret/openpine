@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from openpine.contracts import InstrumentKey, Timeframe
     from openpine.events.bus import EventBus
-    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.data.data_orchestrator import DataOrchestrator
 
 log = structlog.get_logger(__name__)
 
