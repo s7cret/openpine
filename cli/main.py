@@ -6,6 +6,7 @@ import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import click
 from rich.console import Console
@@ -120,6 +121,68 @@ def _build_strategy_backtest_run_request(
         from_time=start_ms,
         to_time=end_ms,
     )
+
+
+def _build_indicator_plot_config(
+    *,
+    symbol: str,
+    timeframe: str,
+    exchange: str,
+    market_type: str,
+    provider,
+):
+    return SimpleNamespace(
+        symbol=symbol,
+        timeframe=timeframe,
+        parity_mode=None,
+        process_orders_on_close=None,
+        calc_on_order_fills=None,
+        calc_on_every_tick=None,
+        mintick=0.01,
+        currency="USD",
+        data_provider=getattr(provider, "_provider", None),
+        exchange=exchange.lower(),
+        market_type=market_type.lower(),
+    )
+
+
+def _build_indicator_plot_run_meta(
+    *,
+    name: str,
+    source,
+    symbol: str,
+    exchange: str,
+    market_type: str,
+    timeframe: str,
+    start_ms: int,
+    end_ms: int,
+    compare_from_ms: int | None,
+    compare_to_ms: int | None,
+    bars_total: int,
+    data_fetch_info,
+    plots_rows: int,
+    timings: dict[str, float],
+    plots_csv: Path,
+) -> dict:
+    return {
+        "type": "indicator",
+        "pine_name": name,
+        "pine_id": source.id,
+        "artifact_id": source.active_artifact_id,
+        "symbol": symbol,
+        "exchange": exchange,
+        "market_type": market_type,
+        "timeframe": timeframe,
+        "calculation_from": start_ms,
+        "calculation_to": end_ms,
+        "compare_from": compare_from_ms,
+        "compare_to": compare_to_ms,
+        "bars_total": bars_total,
+        "data_fetch": data_fetch_info,
+        "plots_rows": plots_rows,
+        "timings": timings,
+        "outputs": {"plots": str(plots_csv)},
+    }
 
 
 @click.group()
@@ -775,7 +838,6 @@ def pine_run_plots(
 ) -> None:
     """Run an indicator Pine source and export normalized plot CSV."""
     import time as _time
-    from types import SimpleNamespace
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.orchestrator import DataOrchestrator
@@ -871,18 +933,12 @@ def pine_run_plots(
     import_library("backtest_engine")
     from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
 
-    config = SimpleNamespace(
+    config = _build_indicator_plot_config(
         symbol=symbol,
         timeframe=timeframe,
-        parity_mode=None,
-        process_orders_on_close=None,
-        calc_on_order_fills=None,
-        calc_on_every_tick=None,
-        mintick=0.01,
-        currency="USD",
-        data_provider=getattr(provider, "_provider", None),
-        exchange=exchange.lower(),
-        market_type=market_type.lower(),
+        exchange=exchange,
+        market_type=market_type,
+        provider=provider,
     )
     backend_result = PineRuntimeBackend().execute(
         generated_class,
@@ -913,25 +969,23 @@ def pine_run_plots(
     timings["export_sec"] = _time.perf_counter() - t0
     timings["total_sec"] = _time.perf_counter() - start_total
 
-    meta = {
-        "type": "indicator",
-        "pine_name": name,
-        "pine_id": source.id,
-        "artifact_id": source.active_artifact_id,
-        "symbol": symbol,
-        "exchange": exchange,
-        "market_type": market_type,
-        "timeframe": timeframe,
-        "calculation_from": start_ms,
-        "calculation_to": end_ms,
-        "compare_from": compare_from_ms,
-        "compare_to": compare_to_ms,
-        "bars_total": len(bars),
-        "data_fetch": data_fetch_info,
-        "plots_rows": plots_rows,
-        "timings": timings,
-        "outputs": {"plots": str(plots_csv)},
-    }
+    meta = _build_indicator_plot_run_meta(
+        name=name,
+        source=source,
+        symbol=symbol,
+        exchange=exchange,
+        market_type=market_type,
+        timeframe=timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        compare_from_ms=compare_from_ms,
+        compare_to_ms=compare_to_ms,
+        bars_total=len(bars),
+        data_fetch_info=data_fetch_info,
+        plots_rows=plots_rows,
+        timings=timings,
+        plots_csv=plots_csv,
+    )
     write_json(output_path / "run_meta.json", meta)
     console.print("[green]Indicator plots exported[/green]")
     console.print(f"  plots:     {plots_csv}")

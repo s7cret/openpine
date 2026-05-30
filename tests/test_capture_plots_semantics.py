@@ -99,6 +99,54 @@ def test_cli_backtest_config_helper_maps_declaration_values():
     }
 
 
+def test_indicator_plot_helpers_build_config_and_meta(tmp_path):
+    from openpine.cli.main import (
+        _build_indicator_plot_config,
+        _build_indicator_plot_run_meta,
+    )
+
+    provider = SimpleNamespace(_provider="provider-core")
+    config = _build_indicator_plot_config(
+        symbol="BTCUSDT",
+        timeframe="15m",
+        exchange="BINANCE",
+        market_type="SPOT",
+        provider=provider,
+    )
+
+    assert config.symbol == "BTCUSDT"
+    assert config.timeframe == "15m"
+    assert config.exchange == "binance"
+    assert config.market_type == "spot"
+    assert config.data_provider == "provider-core"
+    assert config.mintick == 0.01
+
+    plots_csv = tmp_path / "plots.csv"
+    meta = _build_indicator_plot_run_meta(
+        name="pine-name",
+        source=SimpleNamespace(id="pine-1", active_artifact_id="artifact-1"),
+        symbol="BTCUSDT",
+        exchange="binance",
+        market_type="spot",
+        timeframe="15m",
+        start_ms=100,
+        end_ms=200,
+        compare_from_ms=120,
+        compare_to_ms=180,
+        bars_total=42,
+        data_fetch_info={"source": "fixture"},
+        plots_rows=3,
+        timings={"runtime_sec": 1.25},
+        plots_csv=plots_csv,
+    )
+
+    assert meta["type"] == "indicator"
+    assert meta["pine_id"] == "pine-1"
+    assert meta["artifact_id"] == "artifact-1"
+    assert meta["bars_total"] == 42
+    assert meta["outputs"] == {"plots": str(plots_csv)}
+
+
 def test_capture_plots_does_not_change_execution_backend():
     """When strategy has generated_strategy_class_ref, same backend is used
     regardless of --capture-plots flag."""
