@@ -385,6 +385,36 @@ def run_indicator(
     }
 
 
+def _build_strategy_run_config(
+    *,
+    chart: ChartExport,
+    args: argparse.Namespace,
+    data_meta: dict[str, Any],
+    decl_args: dict[str, Any],
+    config_cls: Any,
+) -> Any:
+    compare_from, compare_to = chart.start_ms, chart.end_ms
+    return config_cls(
+        symbol=args.symbol,
+        timeframe=chart.timeframe,
+        exchange=args.exchange,
+        market_type=args.market_type,
+        start_time=data_meta["calculation_from"],
+        end_time=data_meta["calculation_to"],
+        initial_capital=decl_args.get("initial_capital", 10_000.0),
+        default_qty_type=decl_args.get("default_qty_type", "fixed"),
+        default_qty_value=decl_args.get("default_qty_value", 1.0),
+        commission_type=decl_args.get("commission_type", "none"),
+        commission_value=decl_args.get("commission_value", 0.0),
+        exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
+        pyramiding=decl_args.get("pyramiding", 0),
+        qty_step=args.qty_step,
+        qty_rounding_mode=args.qty_rounding_mode,
+        plot_from_ms=compare_from,
+        plot_to_ms=compare_to,
+    )
+
+
 def run_strategy(
     entry: ExportEntry,
     source: Any,
@@ -413,24 +443,12 @@ def run_strategy(
     artifact = timed_call(timings, "load_compile_meta_sec", ArtifactStore().get_artifact, artifact_id, source.id)
     decl = artifact.get("compile_meta", {}).get("translation_metadata", {}).get("declaration", {})
     decl_args = decl.get("arguments", {})
-    config = BacktestRunConfig(
-        symbol=args.symbol,
-        timeframe=chart.timeframe,
-        exchange=args.exchange,
-        market_type=args.market_type,
-        start_time=data_meta["calculation_from"],
-        end_time=data_meta["calculation_to"],
-        initial_capital=decl_args.get("initial_capital", 10_000.0),
-        default_qty_type=decl_args.get("default_qty_type", "fixed"),
-        default_qty_value=decl_args.get("default_qty_value", 1.0),
-        commission_type=decl_args.get("commission_type", "none"),
-        commission_value=decl_args.get("commission_value", 0.0),
-        exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
-        pyramiding=decl_args.get("pyramiding", 0),
-        qty_step=args.qty_step,
-        qty_rounding_mode=args.qty_rounding_mode,
-        plot_from_ms=compare_from,
-        plot_to_ms=compare_to,
+    config = _build_strategy_run_config(
+        chart=chart,
+        args=args,
+        data_meta=data_meta,
+        decl_args=decl_args,
+        config_cls=BacktestRunConfig,
     )
     backend = None
     runtime_class = strategy_class

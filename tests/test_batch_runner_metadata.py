@@ -13,6 +13,7 @@ from openpine.batch.runner import (
     ExportEntry,
     _build_run_meta,
     _build_run_summary,
+    _build_strategy_run_config,
     _run_meta_valid,
     _write_progress,
     completed_for_selection,
@@ -209,6 +210,58 @@ def test_current_progress_can_publish_timeframe_summary(tmp_path: Path) -> None:
     assert payload["selected_count"] == 3
     assert payload["processed_count"] == 1
     assert payload["summary_by_timeframe"] == summary
+
+
+def test_strategy_run_config_uses_declaration_values() -> None:
+    chart = ChartExport(
+        timeframe="15m",
+        path=Path("chart.csv"),
+        bars=10,
+        start_ms=1_700_000_000_000,
+        end_ms=1_700_008_100_000,
+    )
+    args = argparse.Namespace(
+        symbol="BTCUSDT",
+        exchange="binance",
+        market_type="spot",
+        qty_step=0.001,
+        qty_rounding_mode="truncate",
+    )
+    data_meta = {
+        "calculation_from": 1_699_000_000_000,
+        "calculation_to": 1_700_008_100_000,
+    }
+    decl_args = {
+        "initial_capital": 25_000,
+        "default_qty_type": "percent_of_equity",
+        "default_qty_value": 50,
+        "commission_type": "percent",
+        "commission_value": 0.1,
+        "close_entries_rule": "any",
+        "pyramiding": 2,
+    }
+
+    config = _build_strategy_run_config(
+        chart=chart,
+        args=args,
+        data_meta=data_meta,
+        decl_args=decl_args,
+        config_cls=argparse.Namespace,
+    )
+
+    assert config.symbol == "BTCUSDT"
+    assert config.timeframe == "15m"
+    assert config.initial_capital == 25_000
+    assert config.default_qty_type == "percent_of_equity"
+    assert config.default_qty_value == 50
+    assert config.commission_type == "percent"
+    assert config.commission_value == 0.1
+    assert config.exit_matching == "ANY"
+    assert config.pyramiding == 2
+    assert config.qty_step == 0.001
+    assert config.qty_rounding_mode == "truncate"
+    assert config.plot_from_ms == chart.start_ms
+    assert config.plot_to_ms == chart.end_ms
 
 
 def test_batch_run_cli_pins_run_phase(monkeypatch) -> None:
