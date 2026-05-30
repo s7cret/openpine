@@ -5277,6 +5277,104 @@ def strategy_plots(strategy_id: str, run_id: str | None, latest: bool) -> None:
         registry.close()
 
 
+def _copy_strategy_export_run_meta(
+    *,
+    strategy_id: str,
+    run_id: str,
+    output_path: Path,
+) -> str | None:
+    from openpine.config import OpenPineConfig
+
+    run_meta_path = (
+        OpenPineConfig.load().data_dir
+        / "backtests"
+        / strategy_id
+        / run_id
+        / "run_meta.json"
+    )
+    if not run_meta_path.exists():
+        return None
+
+    target_meta = output_path / "run_meta.json"
+    target_meta.write_text(run_meta_path.read_text(encoding="utf-8"), encoding="utf-8")
+    return str(target_meta)
+
+
+def _write_strategy_export_files(
+    *,
+    strategy_id: str,
+    run,
+    artifacts,
+    trades,
+    output_path: Path,
+    compare_from: str | None,
+    compare_to: str | None,
+    no_plots: bool,
+    no_trades: bool,
+    no_metrics: bool,
+) -> tuple[dict[str, str], dict[str, int]]:
+    from openpine.export import (
+        export_plot_outputs,
+        export_trades,
+        parse_time_ms,
+        write_json,
+    )
+    from openpine.storage import ARTIFACT_TYPE_PLOT_OUTPUTS
+
+    output_path.mkdir(parents=True, exist_ok=True)
+    compare_from_ms = parse_time_ms(compare_from)
+    compare_to_ms = parse_time_ms(compare_to)
+
+    exported: dict[str, str] = {}
+    rows: dict[str, int] = {}
+
+    if not no_plots:
+        plot_artifact = next(
+            (artifact for artifact in artifacts if artifact.artifact_type == ARTIFACT_TYPE_PLOT_OUTPUTS),
+            None,
+        )
+        if plot_artifact:
+            plots_path = output_path / "plots.csv"
+            rows["plots"] = export_plot_outputs(
+                plot_artifact.path,
+                plots_path,
+                from_ms=compare_from_ms,
+                to_ms=compare_to_ms,
+            )
+            exported["plots"] = str(plots_path)
+        else:
+            rows["plots"] = 0
+
+    if not no_trades:
+        trades_path = output_path / "trades.csv"
+        rows["trades"] = export_trades(trades, trades_path)
+        exported["trades"] = str(trades_path)
+
+    if not no_metrics:
+        metrics_path = output_path / "metrics.json"
+        run_payload = dict(run.__dict__)
+        run_payload["metrics"] = run.metrics.__dict__
+        write_json(
+            metrics_path,
+            {
+                "run": run_payload,
+                "metrics": run.metrics.__dict__,
+                "artifacts": [artifact.__dict__ for artifact in artifacts],
+            },
+        )
+        exported["metrics"] = str(metrics_path)
+
+    run_meta_export = _copy_strategy_export_run_meta(
+        strategy_id=strategy_id,
+        run_id=run.run_id,
+        output_path=output_path,
+    )
+    if run_meta_export:
+        exported["run_meta"] = run_meta_export
+
+    return exported, rows
+
+
 @strategy.command("export-run")
 @click.argument("strategy_id")
 @click.option("--run-id", help="Specific run ID (default: latest)")
@@ -5297,14 +5395,8 @@ def strategy_export_run(
     no_metrics: bool,
 ) -> None:
     """Export a backtest run to normalized CSV/JSON files."""
-    from openpine.export import (
-        export_plot_outputs,
-        export_trades,
-        parse_time_ms,
-        write_json,
-    )
     from openpine.registry import SQLiteStrategyRegistry
-    from openpine.storage import BacktestResultStore, ARTIFACT_TYPE_PLOT_OUTPUTS
+    from openpine.storage import BacktestResultStore
 
     registry = SQLiteStrategyRegistry()
     try:
@@ -5322,64 +5414,20 @@ def strategy_export_run(
                 sys.exit(1)
 
             output_path = Path(output_dir)
-            output_path.mkdir(parents=True, exist_ok=True)
             artifacts = bt_store.list_artifacts(run.run_id)
             trades = bt_store.list_trades(run.run_id)
-            compare_from_ms = parse_time_ms(compare_from)
-            compare_to_ms = parse_time_ms(compare_to)
-
-            exported: dict[str, str] = {}
-            rows: dict[str, int] = {}
-
-            if not no_plots:
-                plot_artifact = next(
-                    (a for a in artifacts if a.artifact_type == ARTIFACT_TYPE_PLOT_OUTPUTS),
-                    None,
-                )
-                if plot_artifact:
-                    plots_path = output_path / "plots.csv"
-                    rows["plots"] = export_plot_outputs(
-                        plot_artifact.path,
-                        plots_path,
-                        from_ms=compare_from_ms,
-                        to_ms=compare_to_ms,
-                    )
-                    exported["plots"] = str(plots_path)
-                else:
-                    rows["plots"] = 0
-
-            if not no_trades:
-                trades_path = output_path / "trades.csv"
-                rows["trades"] = export_trades(trades, trades_path)
-                exported["trades"] = str(trades_path)
-
-            if not no_metrics:
-                metrics_path = output_path / "metrics.json"
-                run_payload = dict(run.__dict__)
-                run_payload["metrics"] = run.metrics.__dict__
-                write_json(
-                    metrics_path,
-                    {
-                        "run": run_payload,
-                        "metrics": run.metrics.__dict__,
-                        "artifacts": [a.__dict__ for a in artifacts],
-                    },
-                )
-                exported["metrics"] = str(metrics_path)
-
-            from openpine.config import OpenPineConfig
-
-            run_meta_path = (
-                OpenPineConfig.load().data_dir
-                / "backtests"
-                / strategy_id
-                / run.run_id
-                / "run_meta.json"
+            exported, rows = _write_strategy_export_files(
+                strategy_id=strategy_id,
+                run=run,
+                artifacts=artifacts,
+                trades=trades,
+                output_path=output_path,
+                compare_from=compare_from,
+                compare_to=compare_to,
+                no_plots=no_plots,
+                no_trades=no_trades,
+                no_metrics=no_metrics,
             )
-            if run_meta_path.exists():
-                target_meta = output_path / "run_meta.json"
-                target_meta.write_text(run_meta_path.read_text(encoding="utf-8"), encoding="utf-8")
-                exported["run_meta"] = str(target_meta)
 
             console.print(f"[green]Run exported:[/green] {run.run_id}")
             console.print(f"  strategy: {s.name}")
