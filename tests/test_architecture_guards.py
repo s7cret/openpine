@@ -7,6 +7,8 @@ from pathlib import Path
 import sys
 import tomllib
 
+import pytest
+
 from openpine.compile import CompileProfile, SubprocessCompilerAdapter
 from openpine.optimizer import LocalOptimizerAdapter, OptimizerRunConfig, OptimizerService
 
@@ -253,6 +255,26 @@ def test_parquet_storage_has_no_jsonl_fallback() -> None:
     assert "write to JSONL" not in source
     assert "json.dumps" not in source
     assert "json.loads" not in source
+
+
+def test_parquet_storage_reads_end_timestamp_exclusive(tmp_path) -> None:
+    from openpine.storage.adapters import ParquetDataLakeAdapter
+
+    adapter = ParquetDataLakeAdapter(data_dir=tmp_path)
+    if not adapter.available():
+        pytest.skip("pyarrow unavailable in this environment")
+
+    adapter.write_ohlcv(
+        "BTC/USDT",
+        "1m",
+        [
+            {"timestamp": 1, "open": 1, "high": 1, "low": 1, "close": 1},
+            {"timestamp": 2, "open": 2, "high": 2, "low": 2, "close": 2},
+            {"timestamp": 3, "open": 3, "high": 3, "low": 3, "close": 3},
+        ],
+    )
+
+    assert [bar["timestamp"] for bar in adapter.read_ohlcv("BTC/USDT", "1m", 1, 3)] == [1, 2]
 
 
 def test_openpine_has_single_data_planning_model_family() -> None:

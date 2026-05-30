@@ -293,7 +293,7 @@ class ParquetDataLakeAdapter(StorageBackend):
             records = table.to_pylist()
             for bar in records:
                 ts = bar.get("timestamp", 0)
-                if start_ts <= ts <= end_ts:
+                if start_ts <= ts < end_ts:
                     results.append(bar)
         return results
 
