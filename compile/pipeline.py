@@ -58,12 +58,14 @@ def compile_pipeline(
     }
 
     if result.success:
+        if not result.python_code:
+            raise RuntimeError("successful compile result did not include generated Python code")
         store = ArtifactStore()
         artifact_path = store.save_artifact(
             artifact_id=artifact_id,
             source_id=source.id,
             params_hash=params_hash,
-            python_code=result.python_code or "",
+            python_code=result.python_code,
             compile_meta=compile_meta,
             source_text=source.source_text,
             ast_json=result.ast_json,
@@ -77,7 +79,7 @@ def compile_pipeline(
             artifact_id=artifact_id,
             source_id=source.id,
             params_hash=params_hash,
-            python_code=result.python_code or "",
+            python_code=None,
             compile_meta=compile_meta,
             source_text=source.source_text,
             ast_json=result.ast_json,

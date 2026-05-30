@@ -17,7 +17,7 @@ class ArtifactStore:
         <config.data_dir>/artifacts/<source_id>/<artifact_id>/
             source.pine
             ast.json
-            generated_strategy.py
+            generated_strategy.py  # successful compile artifacts only
             compile_meta.json
             requirements.json
             diagnostics.log
@@ -40,7 +40,7 @@ class ArtifactStore:
         artifact_id: str,
         source_id: str,
         params_hash: str,
-        python_code: str,
+        python_code: str | None,
         compile_meta: dict,
         source_text: str | None = None,
         ast_json: str | None = None,
@@ -54,7 +54,11 @@ class ArtifactStore:
         artifact_dir = self._artifact_dir(source_id, artifact_id)
         artifact_dir.mkdir(parents=True, exist_ok=True)
 
-        artifact_dir.joinpath("generated_strategy.py").write_text(python_code)
+        strategy_path = artifact_dir / "generated_strategy.py"
+        if python_code:
+            strategy_path.write_text(python_code)
+        elif strategy_path.exists():
+            strategy_path.unlink()
 
         if source_text is not None:
             artifact_dir.joinpath("source.pine").write_text(source_text)
