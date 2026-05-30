@@ -7,6 +7,10 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 
+class ExecutionUnavailableError(RuntimeError):
+    """Raised when live execution state cannot be reconciled with an exchange."""
+
+
 @dataclass(frozen=True)
 class InstrumentRules:
     """Instrument trading rules for precision and size validation.

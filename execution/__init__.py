@@ -2,6 +2,7 @@
 
 from openpine.execution.models import (
     CancelResult,
+    ExecutionUnavailableError,
     InstrumentRules,
     LiveOrderResult,
 )
@@ -15,6 +16,7 @@ __all__ = [
     "ExecutionRouter",
     "ExecutionAdapter",
     "PaperExecutionAdapter",
+    "ExecutionUnavailableError",
     "InstrumentRules",
     "LiveOrderResult",
     "CancelResult",

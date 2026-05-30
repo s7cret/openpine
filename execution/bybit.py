@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from openpine.execution.models import (
     CancelResult,
+    ExecutionUnavailableError,
     InstrumentRules,
     LiveOrderResult,
 )
@@ -543,7 +544,7 @@ class BybitLiveExecutionAdapter:
     async def reconcile(self, account_id: str) -> list[Order]:
         """Reconcile orders with exchange via injected client.
 
-        FAIL-CLOSED: No client => empty list
+        FAIL-CLOSED: exchange unavailability raises, never returns a synthetic empty list.
 
         Args:
             account_id: Account to reconcile
@@ -552,12 +553,12 @@ class BybitLiveExecutionAdapter:
             List of orders from exchange
         """
         if self._client is None:
-            return []
+            raise ExecutionUnavailableError("Bybit reconcile requires an injected client")
 
         try:
             return await self._call_reconcile(account_id)
-        except Exception:
-            return []
+        except Exception as exc:
+            raise ExecutionUnavailableError(f"Bybit reconcile failed: {exc}") from exc
 
     async def _call_reconcile(self, account_id: str) -> list[Order]:
         """Call injected client to fetch open orders.
