@@ -170,6 +170,31 @@ def test_cli_bar_query_helper_normalizes_instrument_identity():
     assert query.end_ms == 200
 
 
+def test_data_backfill_helpers_parse_dates_and_klines():
+    from openpine.cli.main import _binance_kline_to_bar, _parse_cli_ymd_ms
+
+    start_ms, error = _parse_cli_ymd_ms("2024-01-01", option_name="--from")
+    bad_ms, bad_error = _parse_cli_ymd_ms("2024/01/01", option_name="--from")
+    bar = _binance_kline_to_bar(
+        [1000, "1.0", "2.0", "0.5", "1.5", "10.0", 1999],
+        instrument="instrument",
+        timeframe="15m",
+    )
+
+    assert start_ms == 1_704_056_400_000
+    assert error is None
+    assert bad_ms is None
+    assert bad_error == "Invalid --from date format: 2024/01/01 (use YYYY-MM-DD)"
+    assert bar.instrument == "instrument"
+    assert bar.timeframe == "15m"
+    assert bar.time == 1000
+    assert bar.time_close == 1999
+    assert bar.open == 1.0
+    assert bar.close == 1.5
+    assert bar.volume == 10.0
+    assert bar.closed is True
+
+
 def test_capture_plots_does_not_change_execution_backend():
     """When strategy has generated_strategy_class_ref, same backend is used
     regardless of --capture-plots flag."""

@@ -147,6 +147,30 @@ def _build_cli_bar_query(
     )
 
 
+def _parse_cli_ymd_ms(value: str, *, option_name: str) -> tuple[int | None, str | None]:
+    try:
+        return int(datetime.strptime(value, "%Y-%m-%d").timestamp() * 1000), None
+    except ValueError:
+        return None, f"Invalid {option_name} date format: {value} (use YYYY-MM-DD)"
+
+
+def _binance_kline_to_bar(row, *, instrument, timeframe):
+    from marketdata_provider.contracts import Bar
+
+    return Bar(
+        instrument=instrument,
+        timeframe=timeframe,
+        time=int(row[0]),
+        time_close=int(row[6]),
+        open=float(row[1]),
+        high=float(row[2]),
+        low=float(row[3]),
+        close=float(row[4]),
+        volume=float(row[5]),
+        closed=True,
+    )
+
+
 def _build_indicator_plot_config(
     *,
     symbol: str,
@@ -1417,33 +1441,31 @@ def data_backfill(
     timeout: int,
 ) -> None:
     """Trigger backfill for a symbol/timeframe."""
-    from datetime import datetime as dt
 
     console.print(f"[bold]Data backfill[/bold] {symbol} {timeframe} exchange={exchange}")
     console.print(f"  from: {from_date}  to: {to_date or 'today'}")
 
-    # Parse dates to ms
-    try:
-        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
-    except ValueError:
-        console.print(f"[red]Invalid --from date format: {from_date} (use YYYY-MM-DD)[/red]")
+    start_ms, error = _parse_cli_ymd_ms(from_date, option_name="--from")
+    if error:
+        console.print(f"[red]{error}[/red]")
         return
+    assert start_ms is not None
 
     if to_date:
-        try:
-            end_ms = int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000)
-        except ValueError:
-            console.print(f"[red]Invalid --to date format: {to_date} (use YYYY-MM-DD)[/red]")
+        end_ms, error = _parse_cli_ymd_ms(to_date, option_name="--to")
+        if error:
+            console.print(f"[red]{error}[/red]")
             return
+        assert end_ms is not None
     else:
-        end_ms = int(dt.now().timestamp() * 1000)
+        end_ms = int(datetime.now().timestamp() * 1000)
 
     if wait:
         # Synchronous backfill using Binance REST API.
         # NOTE: This is a synchronous CLI convenience path, not a durable
         # worker scheduler. Jobs system remains in-memory only.
         import requests
-        from marketdata_provider.contracts import Bar, BarQuery, BarSeries, InstrumentKey, parse_timeframe
+        from marketdata_provider.contracts import BarQuery, BarSeries, InstrumentKey, parse_timeframe
         from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
 
         console.print("[dim]Fetching candles synchronously...[/dim]")
@@ -1481,17 +1503,10 @@ def data_backfill(
                 break
 
             for row in data:
-                all_bars.append(Bar(
+                all_bars.append(_binance_kline_to_bar(
+                    row,
                     instrument=instrument,
                     timeframe=parsed_timeframe,
-                    time=int(row[0]),
-                    time_close=int(row[6]),
-                    open=float(row[1]),
-                    high=float(row[2]),
-                    low=float(row[3]),
-                    close=float(row[4]),
-                    volume=float(row[5]),
-                    closed=True,
                 ))
 
             current_start = int(data[-1][6]) + 1
