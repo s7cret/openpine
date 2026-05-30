@@ -47,6 +47,8 @@ LIBRARY_NAMES: tuple[str, ...] = (
     "marketdata_provider",
     "optimizer",
 )
+RUN_META_SCHEMA_VERSION = "2"
+PRODUCTION_COMPILE_PROFILE = "production"
 
 
 def _get_library_revisions() -> dict[str, str]:
@@ -671,6 +673,137 @@ def _expected_output_files(entry: ExportEntry, chart: ChartExport) -> list[Path]
     return [out_dir / "plots.csv", out_dir / "trades.csv", out_dir / "equity_curve.csv"]
 
 
+def _wanted_charts(entry: ExportEntry, args: argparse.Namespace) -> list[ChartExport]:
+    return [
+        chart
+        for chart in entry.charts
+        if not args.timeframe or chart.timeframe == normalize_tf(args.timeframe)
+    ]
+
+
+def _output_file_valid(path: Path) -> bool:
+    return path.exists() and path.is_file() and path.stat().st_size > 0
+
+
+def _valid_window(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    from_ms = value.get("from_ms")
+    to_ms = value.get("to_ms")
+    return isinstance(from_ms, int) and isinstance(to_ms, int) and from_ms < to_ms
+
+
+def _run_meta_valid(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        meta = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if meta.get("schema_version") != RUN_META_SCHEMA_VERSION:
+        return False
+    if meta.get("compile_profile") != PRODUCTION_COMPILE_PROFILE:
+        return False
+    for required in ("run_id", "batch_id", "source_id", "strategy_or_indicator"):
+        if not meta.get(required):
+            return False
+    if not _valid_window(meta.get("calculation_window")):
+        return False
+    if not _valid_window(meta.get("export_window")):
+        return False
+    revisions = meta.get("library_revisions")
+    if not isinstance(revisions, dict):
+        return False
+    return all(isinstance(revisions.get(name), str) and revisions.get(name) for name in LIBRARY_NAMES)
+
+
+def _run_summary_valid(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        summary = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return summary.get("schema_version") == RUN_META_SCHEMA_VERSION and summary.get("status") == "ok"
+
+
+def _run_id(batch_id: str, entry: ExportEntry, chart: ChartExport) -> str:
+    safe_batch = batch_id or "manual"
+    return f"{safe_batch}_{entry.export_id:04d}_{chart.timeframe}"
+
+
+def _run_windows(chart: ChartExport, run_info: dict[str, Any]) -> tuple[dict[str, int], dict[str, int]]:
+    data = run_info.get("data") if isinstance(run_info.get("data"), dict) else {}
+    calculation_window = {
+        "from_ms": int(data.get("calculation_from", chart.start_ms)),
+        "to_ms": int(data.get("calculation_to", chart.end_ms)),
+    }
+    export_window = {
+        "from_ms": int(data.get("compare_from", chart.start_ms)),
+        "to_ms": int(data.get("compare_to", chart.end_ms)),
+    }
+    return calculation_window, export_window
+
+
+def _build_run_meta(
+    *,
+    entry: ExportEntry,
+    chart: ChartExport,
+    status: dict[str, Any],
+    run_info: dict[str, Any],
+    batch_id: str,
+    library_revisions: dict[str, str],
+) -> dict[str, Any]:
+    calculation_window, export_window = _run_windows(chart, run_info)
+    return {
+        "schema_version": RUN_META_SCHEMA_VERSION,
+        "run_id": _run_id(batch_id, entry, chart),
+        "batch_id": batch_id,
+        "source_id": status.get("source_id"),
+        "artifact_id": status.get("artifact_id"),
+        "source_entry_id": entry.export_id,
+        "source_folder": entry.folder,
+        "source_group": entry.source_group,
+        "strategy_or_indicator": entry.kind,
+        "timeframe": chart.timeframe,
+        "calculation_window": calculation_window,
+        "export_window": export_window,
+        "library_revisions": library_revisions,
+        "compile_profile": PRODUCTION_COMPILE_PROFILE,
+        "status": run_info.get("status"),
+        "run": run_info,
+    }
+
+
+def _build_run_summary(
+    *,
+    entry: ExportEntry,
+    chart: ChartExport,
+    run_meta: dict[str, Any],
+    run_info: dict[str, Any],
+) -> dict[str, Any]:
+    output_files = {
+        path.name: path.stat().st_size
+        for path in _expected_output_files(entry, chart)
+        if path.exists()
+    }
+    return {
+        "schema_version": RUN_META_SCHEMA_VERSION,
+        "run_id": run_meta["run_id"],
+        "batch_id": run_meta["batch_id"],
+        "source_entry_id": entry.export_id,
+        "source_folder": entry.folder,
+        "strategy_or_indicator": entry.kind,
+        "timeframe": chart.timeframe,
+        "status": run_info.get("status"),
+        "bars": run_info.get("bars"),
+        "plots_rows": run_info.get("plots_rows"),
+        "trades_rows": run_info.get("trades_rows"),
+        "equity_rows": run_info.get("equity_rows"),
+        "output_files": output_files,
+    }
+
+
 def completed_for_selection(entry: ExportEntry, args: argparse.Namespace) -> bool:
     if not args.skip_completed:
         return False
@@ -684,22 +817,19 @@ def completed_for_selection(entry: ExportEntry, args: argparse.Namespace) -> boo
     if status.get("phase") != args.phase:
         return False
     if args.phase == "run":
-        # Per TZ: validate output files AND run_meta.json, not just status JSON
-        run_meta_ok = all(
-            (entry.root / "openpine_outputs" / chart.timeframe / "run_meta.json").exists()
-            for chart in entry.charts
-            if not args.timeframe or chart.timeframe == normalize_tf(args.timeframe)
-        )
-        if not run_meta_ok:
+        wanted_charts = _wanted_charts(entry, args)
+        if not wanted_charts:
             return False
-        # Check status + output file existence for each chart
-        wanted_charts = [
-            c for c in entry.charts
-            if not args.timeframe or c.timeframe == normalize_tf(args.timeframe)
-        ]
         for chart in wanted_charts:
+            out_dir = entry.root / "openpine_outputs" / chart.timeframe
+            if (out_dir / "fatal_error.json").exists():
+                return False
+            if not _run_meta_valid(out_dir / "run_meta.json"):
+                return False
+            if not _run_summary_valid(out_dir / "summary.json"):
+                return False
             for expected in _expected_output_files(entry, chart):
-                if not expected.exists():
+                if not _output_file_valid(expected):
                     return False
         wanted_tfs = {c.timeframe for c in wanted_charts}
         ok_runs = {run.get("timeframe") for run in status.get("runs", []) if run.get("status") == "ok"}
@@ -807,8 +937,19 @@ def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", 
             }
         run_info["timeframe"] = chart.timeframe
         run_info["output_dir"] = str(out_dir)
-        # batch_id and library_revisions already in status dict
-        write_json(out_dir / "run_meta.json", {**status, "run": run_info})
+        run_meta = _build_run_meta(
+            entry=entry,
+            chart=chart,
+            status=status,
+            run_info=run_info,
+            batch_id=batch_id,
+            library_revisions=library_revisions or {},
+        )
+        write_json(out_dir / "run_meta.json", run_meta)
+        write_json(
+            out_dir / "summary.json",
+            _build_run_summary(entry=entry, chart=chart, run_meta=run_meta, run_info=run_info),
+        )
         runs.append(run_info)
     timings["run_sec"] = round(time.perf_counter() - t0, 3)
     status["runs"] = runs
