@@ -151,7 +151,7 @@ class ParallelDataFetcher:
         safely under Binance's 1500 bar limit.
         """
         if end_ms <= start_ms:
-            return []
+            raise ValueError(f"invalid fetch window: start_ms={start_ms} end_ms={end_ms}")
 
         # Generate chunk jobs
         jobs: list[FetchJob] = []

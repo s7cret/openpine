@@ -22,7 +22,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from marketdata_provider.contracts import BarQuery
+from marketdata_provider.contracts import Bar, BarQuery
 from openpine.data.contracts import PARQUET_LAYOUT, WriteMode
 from openpine.data.models import (
     CandleManifest,
@@ -371,8 +371,6 @@ class CandleStorage:
         Returns:
             List of Bar objects matching the query
         """
-        from marketdata_provider.core.bar import Bar
-
         exchange, market_type, symbol, price_type, _, _, _ = _storage_identity(query)
 
         # Find matching manifest files
@@ -429,13 +427,16 @@ class CandleStorage:
         bars = []
         for row in canonical_rows:
             bar = Bar(
+                instrument=query.instrument,
+                timeframe=query.timeframe,
                 time=int(row["open_time"]),
+                time_close=int(row["close_time"]) if row["close_time"] else int(row["open_time"]),
                 open=float(row["open"]),
                 high=float(row["high"]),
                 low=float(row["low"]),
                 close=float(row["close"]),
                 volume=float(row["volume"]) if row["volume"] else 0.0,
-                time_close=int(row["close_time"]) if row["close_time"] else int(row["open_time"]),
+                closed=True,
             )
             bars.append(bar)
 

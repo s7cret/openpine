@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-import importlib
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable
 
+from marketdata_provider import create_live_kline_client
+from marketdata_provider.config import MarketDataConfig
 from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe, parse_timeframe
 from openpine.data.provider_adapter import ensure_marketdata_provider_version
 from openpine.streams.adapter import KlineUpdateEnvelope
@@ -90,15 +92,20 @@ class LocalProviderLiveDataFeedAdapter:
 
     _callbacks: list[Callable[[Bar], None]] = field(default_factory=list)
     _clients: dict[tuple[str, str], Any] = field(default_factory=dict)
+    _tasks: dict[tuple[str, str], asyncio.Task[None]] = field(default_factory=dict)
 
     async def connect(self) -> None:
         ensure_marketdata_provider_version()
 
     async def disconnect(self) -> None:
-        for client in list(self._clients.values()):
-            stop = getattr(client, "stop", None)
-            if stop is not None:
-                stop()
+        for task in list(self._tasks.values()):
+            task.cancel()
+        for task in list(self._tasks.values()):
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        self._tasks.clear()
         self._clients.clear()
 
     async def subscribe(
@@ -107,10 +114,6 @@ class LocalProviderLiveDataFeedAdapter:
         timeframe: Timeframe,
     ) -> None:
         ensure_marketdata_provider_version()
-        stream_module = importlib.import_module("marketdata_provider.streaming")
-        symbol = instrument_key.symbol
-        tf = timeframe.canonical
-        exchange = instrument_key.exchange.lower()
 
         def on_kline(update: Any) -> None:
             envelope = normalize_provider_kline_update(
@@ -124,31 +127,35 @@ class LocalProviderLiveDataFeedAdapter:
             for callback in list(self._callbacks):
                 callback(bar)
 
-        if exchange == "bybit":
-            client_cls = getattr(stream_module, "BybitWebSocket", None)
-            if client_cls is None:
-                client_cls = getattr(importlib.import_module("marketdata_provider.streaming.ws_client"), "BybitWebSocket")
-            client = client_cls(symbol, tf, on_kline=on_kline)
-        else:
-            client_cls = getattr(stream_module, "BinanceWebSocket", None)
-            if client_cls is None:
-                client_cls = getattr(importlib.import_module("marketdata_provider.streaming.ws_client"), "BinanceWebSocket")
-            client = client_cls(symbol, tf, on_kline=on_kline)
+        client = create_live_kline_client(
+            MarketDataConfig(default_exchange=instrument_key.exchange, default_market=instrument_key.market),
+            instrument=instrument_key,
+            timeframe=timeframe,
+        )
+        key = (str(instrument_key), timeframe.canonical)
+        self._clients[key] = client
 
-        self._clients[(str(instrument_key), tf)] = client
-        start = getattr(client, "start", None)
-        if start is not None:
-            start()
+        async def _consume() -> None:
+            async for event in client.events():
+                update = getattr(event, "update", event)
+                on_kline(update)
+
+        self._tasks[key] = asyncio.create_task(_consume())
 
     async def unsubscribe(
         self,
         instrument_key: InstrumentKey,
         timeframe: Timeframe,
     ) -> None:
-        client = self._clients.pop((str(instrument_key), timeframe.value), None)
-        stop = getattr(client, "stop", None)
-        if stop is not None:
-            stop()
+        key = (str(instrument_key), timeframe.canonical)
+        self._clients.pop(key, None)
+        task = self._tasks.pop(key, None)
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
     def on_bar(self, callback: Callable[[Bar], None]) -> None:
         self._callbacks.append(callback)

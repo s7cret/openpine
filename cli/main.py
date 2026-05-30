@@ -1203,7 +1203,7 @@ def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
                 return
 
             gaps: list[tuple[int, int]] = []
-            bar_times = sorted(set(b.open_time_ms for b in bars))
+            bar_times = sorted(set(b.time for b in bars))
             for i in range(1, len(bar_times)):
                 prev = bar_times[i - 1]
                 curr = bar_times[i]
@@ -1400,12 +1400,14 @@ def data_backfill(
         # NOTE: This is a synchronous CLI convenience path, not a durable
         # worker scheduler. Jobs system remains in-memory only.
         import requests
-        from marketdata_provider.core.bar import Bar
+        from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
         from openpine.data.candle_storage import CandleStorage
         from openpine.data.contracts import WriteMode
 
         console.print("[dim]Fetching candles synchronously...[/dim]")
         all_bars: list[Bar] = []
+        instrument = InstrumentKey(exchange=exchange.lower(), market=market.lower(), symbol=symbol.upper())
+        parsed_timeframe = parse_timeframe(timeframe)
         current_start = start_ms
         chunk_size = 1000
         url = "https://api.binance.com/api/v3/klines"
@@ -1438,13 +1440,16 @@ def data_backfill(
 
             for row in data:
                 all_bars.append(Bar(
+                    instrument=instrument,
+                    timeframe=parsed_timeframe,
                     time=int(row[0]),
+                    time_close=int(row[6]),
                     open=float(row[1]),
                     high=float(row[2]),
                     low=float(row[3]),
                     close=float(row[4]),
                     volume=float(row[5]),
-                    time_close=int(row[6]),
+                    closed=True,
                 ))
 
             current_start = int(data[-1][6]) + 1
@@ -2000,24 +2005,13 @@ def data_providers() -> None:
 
 
 def _timeframe_to_ms(timeframe: str) -> int:
-    """Convert timeframe string to milliseconds."""
-    mapping = {
-        "1m": 60_000,
-        "3m": 180_000,
-        "5m": 300_000,
-        "15m": 900_000,
-        "30m": 1_800_000,
-        "1h": 3_600_000,
-        "2h": 7_200_000,
-        "4h": 14_400_000,
-        "6h": 21_600_000,
-        "8h": 28_800_000,
-        "12h": 43_200_000,
-        "1d": 86_400_000,
-        "3d": 259_200_000,
-        "1w": 604_800_000,
-    }
-    return mapping.get(timeframe, 60_000)
+    """Convert timeframe string to milliseconds through canonical contracts."""
+    from marketdata_provider.contracts import parse_timeframe
+
+    duration_ms = parse_timeframe(timeframe).duration_ms
+    if duration_ms is None:
+        raise click.ClickException(f"timeframe has no fixed millisecond duration: {timeframe}")
+    return duration_ms
 
 
 @data.command("ensure-active")

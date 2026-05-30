@@ -24,7 +24,9 @@ PRODUCTION_EXCLUDES = {
 }
 CANONICAL_MARKETDATA_CONTRACTS = {"Bar", "BarQuery", "Timeframe"}
 FORBIDDEN_MARKETDATA_IMPORTS = (
+    "marketdata_provider.core",
     "marketdata_provider.exchanges",
+    "marketdata_provider.streaming",
     "marketdata_provider.timeframes",
 )
 

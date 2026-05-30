@@ -6,7 +6,7 @@ Section 5.5, 5.7, 5.8, 5.9 of OpenPine TZ v3.
 from __future__ import annotations
 
 import hashlib
-from typing import Optional
+from typing import Any, Optional
 
 import pydantic
 
@@ -172,11 +172,44 @@ class DataPlanner:
 
     def list_available_instruments(self) -> list[str]:
         """List available instruments from the active universe."""
-        return []  # Placeholder: would query stream_manager for available data
+        instruments: set[str] = set()
+        plan = self._universe.build_data_plan()
+        for req in (
+            *plan.requirements,
+            *plan.aggregation_requirements,
+            *plan.feature_requirements,
+        ):
+            instruments.add(req.instrument_key)
+
+        if hasattr(self._stream_manager, "_subscriptions"):
+            for sub in self._stream_manager.list_subscriptions():
+                key = _subscription_instrument_key(sub.instrument_key)
+                if key:
+                    instruments.add(key)
+        return sorted(instruments)
 
     def plan_for_strategy(self, strategy_id: str) -> DataPlan:
         """Build data plan for a specific strategy."""
-        return self._universe.build_data_plan()
+        if strategy_id not in self._universe.list_strategies():
+            raise KeyError(f"strategy not found in active universe: {strategy_id}")
+        return DataPlan(
+            requirements=self._universe.get_strategy_requirements(strategy_id),
+            aggregation_requirements=self._universe.get_strategy_aggregation_requirements(strategy_id),
+            feature_requirements=self._universe.get_strategy_feature_requirements(strategy_id),
+        ).deduplicate()
+
+
+def _subscription_instrument_key(value: Any) -> str | None:
+    if isinstance(value, str):
+        return value
+    if not isinstance(value, dict):
+        return None
+    exchange = value.get("exchange")
+    market = value.get("market")
+    symbol = value.get("symbol")
+    if not exchange or not market or not symbol:
+        return None
+    return f"{exchange}:{market}:{symbol}:trade"
 
 
 __all__ = [
