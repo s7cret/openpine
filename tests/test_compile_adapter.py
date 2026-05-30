@@ -34,6 +34,27 @@ def test_pine2ast_subprocess_errors_prefer_stderr_then_stdout() -> None:
     ]
 
 
+def test_subprocess_compile_meta_records_tool_paths_and_profile() -> None:
+    meta = adapter_module._subprocess_compile_meta(
+        profile=CompileProfile.diagnostic(),
+        module_name="custom_module",
+        strict=True,
+        pine2ast_path=adapter_module.Path("/tools/pine2ast"),
+        ast2python_path=adapter_module.Path("/tools/ast2python"),
+        adapter_status="selected",
+    )
+
+    assert meta["adapter"] == "subprocess"
+    assert meta["adapter_status"] == "selected"
+    assert meta["module_name"] == "custom_module"
+    assert meta["strict"] is True
+    assert meta["compile_profile"] == "diagnostic"
+    assert meta["tool_paths"] == {
+        "pine2ast": "/tools/pine2ast",
+        "ast2python": "/tools/ast2python",
+    }
+
+
 def _fake_library_apis(metadata: dict):
     return adapter_module._LibraryApis(
         parse_code=lambda _source, _options: SimpleNamespace(

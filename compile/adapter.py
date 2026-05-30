@@ -140,6 +140,31 @@ def _pine2ast_subprocess_errors(result: subprocess.CompletedProcess[str]) -> lis
     ]
 
 
+def _subprocess_compile_meta(
+    *,
+    profile: CompileProfile,
+    module_name: str,
+    strict: bool,
+    pine2ast_path: Path,
+    ast2python_path: Path,
+    adapter_status: str,
+) -> dict[str, Any]:
+    return {
+        "pine2ast_version": "unknown",
+        "ast2python_version": "unknown",
+        "pinelib_contract_version": "unknown",
+        "adapter": "subprocess",
+        "adapter_status": adapter_status,
+        "module_name": module_name,
+        "strict": strict,
+        "compile_profile": profile.name,
+        "tool_paths": {
+            "pine2ast": str(pine2ast_path),
+            "ast2python": str(ast2python_path),
+        },
+    }
+
+
 def _mark_compile_meta_unsafe(compile_meta: dict[str, Any], reason: str) -> None:
     compile_meta["unsafe"] = True
     reasons = list(compile_meta.get("unsafe_reasons", []))
@@ -545,20 +570,14 @@ class SubprocessCompilerAdapter:
         try:
             module_name = kwargs.get("module_name", "generated_strategy")
             strict = kwargs.get("strict", False)
-            compile_meta = {
-                "pine2ast_version": "unknown",
-                "ast2python_version": "unknown",
-                "pinelib_contract_version": "unknown",
-                "adapter": "subprocess",
-                "adapter_status": "fallback" if self.prefer_library else "selected",
-                "module_name": module_name,
-                "strict": strict,
-                "compile_profile": profile.name,
-                "tool_paths": {
-                    "pine2ast": str(pine2ast_path),
-                    "ast2python": str(ast2python_path),
-                },
-            }
+            compile_meta = _subprocess_compile_meta(
+                profile=profile,
+                module_name=module_name,
+                strict=strict,
+                pine2ast_path=pine2ast_path,
+                ast2python_path=ast2python_path,
+                adapter_status="fallback" if self.prefer_library else "selected",
+            )
 
             # Step 1: pine2ast parse
             result_p2a = subprocess.run(
