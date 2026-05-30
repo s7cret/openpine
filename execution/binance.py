@@ -16,6 +16,7 @@ from openpine.execution.models import (
     InstrumentRules,
     LiveOrderResult,
 )
+from openpine.execution.live_orders import rejected_live_order
 from openpine.orders.models import (
     Order,
     OrderIntent,
@@ -175,41 +176,21 @@ class BinanceLiveExecutionAdapter:
 
         # FAIL-ClOSED: No client => REJECTED
         if self._client is None:
-            return Order(
+            return rejected_live_order(
+                order,
                 order_id=order_id,
-                client_order_id=order.client_order_id,
-                strategy_id=order.strategy_id,
-                account_id=order.account_id,
-                symbol=order.symbol,
-                side=order.side,
-                order_type=order.order_type,
-                quantity=order.quantity,
-                price=order.price,
-                stop_price=order.stop_price,
-                status=OrderStatus.REJECTED,
+                now=now,
                 error="Binance adapter: no client injected (fail-closed)",
-                created_at=order.created_at,
-                updated_at=now,
             )
 
         # Local precision and notional validation BEFORE network call
         valid, error_message = self._validate_order(order)
         if not valid:
-            return Order(
+            return rejected_live_order(
+                order,
                 order_id=order_id,
-                client_order_id=order.client_order_id,
-                strategy_id=order.strategy_id,
-                account_id=order.account_id,
-                symbol=order.symbol,
-                side=order.side,
-                order_type=order.order_type,
-                quantity=order.quantity,
-                price=order.price,
-                stop_price=order.stop_price,
-                status=OrderStatus.REJECTED,
+                now=now,
                 error=f"Binance adapter validation failed: {error_message}",
-                created_at=order.created_at,
-                updated_at=now,
             )
 
         # All local checks passed — call the injected client
@@ -217,21 +198,11 @@ class BinanceLiveExecutionAdapter:
             result = await self._call_create_order(order)
             return self._result_to_order(result, order, order_id, now)
         except Exception as e:
-            return Order(
+            return rejected_live_order(
+                order,
                 order_id=order_id,
-                client_order_id=order.client_order_id,
-                strategy_id=order.strategy_id,
-                account_id=order.account_id,
-                symbol=order.symbol,
-                side=order.side,
-                order_type=order.order_type,
-                quantity=order.quantity,
-                price=order.price,
-                stop_price=order.stop_price,
-                status=OrderStatus.REJECTED,
+                now=now,
                 error=f"Binance adapter error: {e}",
-                created_at=order.created_at,
-                updated_at=now,
             )
 
     async def _call_create_order(self, order: OrderIntent) -> LiveOrderResult:
@@ -354,21 +325,11 @@ class BinanceLiveExecutionAdapter:
                 updated_at=now,
             )
         else:
-            return Order(
+            return rejected_live_order(
+                intent,
                 order_id=order_id,
-                client_order_id=intent.client_order_id,
-                strategy_id=intent.strategy_id,
-                account_id=intent.account_id,
-                symbol=intent.symbol,
-                side=intent.side,
-                order_type=intent.order_type,
-                quantity=intent.quantity,
-                price=intent.price,
-                stop_price=intent.stop_price,
-                status=OrderStatus.REJECTED,
-                error=result.error,
-                created_at=intent.created_at,
-                updated_at=now,
+                now=now,
+                error=result.error or "Binance adapter returned unsuccessful order",
             )
 
     async def cancel_order(self, order_id: str) -> bool:
