@@ -296,6 +296,70 @@ def _strategy_backtest_declaration_args(*, artifact_store_cls, strategy) -> dict
     return declaration.get("arguments", {})
 
 
+def _save_strategy_backtest_result(
+    *,
+    store,
+    request_cls,
+    strategy,
+    start_ms: int,
+    end_ms: int,
+    bars_total: int,
+    data_fetch_info,
+    result,
+    capture_plots: bool,
+    timings: dict[str, float],
+    total_started: float,
+    perf_counter,
+    console,
+):
+    from openpine.config import OpenPineConfig
+    from openpine.export import write_json
+
+    t0 = perf_counter()
+    run_request = _build_strategy_backtest_run_request(
+        strategy=strategy,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        request_cls=request_cls,
+    )
+    run_id = store.create_run(run_request)
+    raw_result = result.raw_result
+    store.save_result(
+        run_id=run_id,
+        result=raw_result,
+        trades=getattr(raw_result, "trades", []),
+        equity_curve=getattr(raw_result, "equity_curve", None),
+        plots=getattr(raw_result, "plots", None) if capture_plots else None,
+    )
+    timings["save_sec"] = perf_counter() - t0
+    timings["total_sec"] = perf_counter() - total_started
+
+    run_dir = OpenPineConfig.load().data_dir / "backtests" / strategy.strategy_id / run_id
+    meta = _build_strategy_backtest_run_meta(
+        strategy=strategy,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        bars_total=bars_total,
+        data_fetch_info=data_fetch_info,
+        result=result,
+        capture_plots=capture_plots,
+        timings=timings,
+    )
+    write_json(run_dir / "run_meta.json", meta)
+    console.print(f"[green]Backtest saved:[/green] {run_id}")
+    console.print(
+        f"  trades:     {len(getattr(raw_result, 'trades', []))} closed + "
+        f"{len(getattr(raw_result, 'open_trades', []))} open"
+    )
+    console.print(f"  artifacts:  {run_dir}/")
+    _print_strategy_plot_capture_status(
+        raw_result=raw_result,
+        capture_plots=capture_plots,
+        console=console,
+    )
+    return run_id, run_dir
+
+
 def _build_cli_bar_query(
     *,
     symbol: str,
@@ -4120,29 +4184,9 @@ def strategy_backtest(
         from openpine.storage import BacktestResultStore, BacktestRunRequest
         bt_store = BacktestResultStore()
         try:
-            t0 = _time.perf_counter()
-            run_request = _build_strategy_backtest_run_request(
-                strategy=s,
-                start_ms=start_ms,
-                end_ms=end_ms,
+            _save_strategy_backtest_result(
+                store=bt_store,
                 request_cls=BacktestRunRequest,
-            )
-            run_id = bt_store.create_run(run_request)
-            
-            # Save result
-            bt_store.save_result(
-                run_id=run_id,
-                result=result.raw_result,
-                trades=getattr(result.raw_result, "trades", []),
-                equity_curve=getattr(result.raw_result, "equity_curve", None),
-                plots=getattr(result.raw_result, "plots", None) if capture_plots else None,
-            )
-            timings["save_sec"] = _time.perf_counter() - t0
-            timings["total_sec"] = _time.perf_counter() - total_t0
-            from openpine.config import OpenPineConfig
-
-            run_dir = OpenPineConfig.load().data_dir / "backtests" / s.strategy_id / run_id
-            meta = _build_strategy_backtest_run_meta(
                 strategy=s,
                 start_ms=start_ms,
                 end_ms=end_ms,
@@ -4151,15 +4195,8 @@ def strategy_backtest(
                 result=result,
                 capture_plots=capture_plots,
                 timings=timings,
-            )
-            from openpine.export import write_json
-            write_json(run_dir / "run_meta.json", meta)
-            console.print(f"[green]Backtest saved:[/green] {run_id}")
-            console.print(f"  trades:     {len(getattr(result.raw_result, 'trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
-            console.print(f"  artifacts:  {run_dir}/")
-            _print_strategy_plot_capture_status(
-                raw_result=result.raw_result,
-                capture_plots=capture_plots,
+                total_started=total_t0,
+                perf_counter=_time.perf_counter,
                 console=console,
             )
         except Exception as exc:
