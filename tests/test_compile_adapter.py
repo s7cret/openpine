@@ -91,6 +91,35 @@ def test_production_compile_rejects_external_import_metadata(monkeypatch) -> Non
     assert result.compile_meta["production_blockers"] == result.errors
 
 
+def test_production_compile_rejects_explicit_unsafe_metadata(monkeypatch) -> None:
+    metadata = {
+        "compile_profile": "production",
+        "codegen_safe": True,
+        "runtime_contract_safe": True,
+        "parity_safe": True,
+        "unsafe": True,
+        "unsupported_features": [],
+        "unsupported_nodes": [],
+        "unsupported_declaration_args": [],
+        "import_aliases": [],
+    }
+    status = adapter_module.LibraryAvailability(available=True)
+    monkeypatch.setattr(
+        adapter_module,
+        "_load_library_apis",
+        lambda: (_fake_library_apis(metadata), status),
+    )
+
+    result = SubprocessCompilerAdapter().compile(
+        "//@version=6\nindicator('x')\nplot(close)\n",
+        profile=CompileProfile.production(),
+    )
+
+    assert not result.success
+    assert result.errors == ["translation metadata reports unsafe=True"]
+    assert result.compile_meta["production_blockers"] == result.errors
+
+
 def test_diagnostic_compile_can_return_unsafe_metadata(monkeypatch) -> None:
     metadata = {
         "compile_profile": "diagnostic",

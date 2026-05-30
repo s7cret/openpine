@@ -97,6 +97,9 @@ def _production_metadata_blockers(metadata: dict[str, Any]) -> list[str]:
         if metadata.get(key) is False:
             blockers.append(f"translation metadata reports {key}=False")
 
+    if metadata.get("unsafe") is True:
+        blockers.append("translation metadata reports unsafe=True")
+
     for key in (
         "unsupported_features",
         "unsupported_nodes",
