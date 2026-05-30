@@ -188,6 +188,31 @@ def test_metrics_from_result_preserves_summary_mapping():
     assert metrics.calmar is None
 
 
+def test_report_markdown_renders_core_summary_fields():
+    result = FakeResult(symbol="BTCUSDT", timeframe="15m")
+    metrics = BacktestResultStore._metrics_from_result(
+        FakeResult(
+            initial_capital=10000.0,
+            final_equity=10050.0,
+            net_profit=50.0,
+            net_profit_percent=0.5,
+            profit_factor=1.5,
+            max_drawdown=10.0,
+            sharpe_ratio=0.5,
+            win_rate=50.0,
+            total_trades=10,
+        )
+    )
+
+    markdown = BacktestResultStore._report_markdown("run_1", "strat_1", result, metrics)
+
+    assert "# Backtest Report: run_1" in markdown
+    assert "- **Strategy**: strat_1" in markdown
+    assert "- **Symbol**: BTCUSDT 15m" in markdown
+    assert "| Net Profit | 50.0 |" in markdown
+    assert "| Total Trades | 10 |" in markdown
+
+
 def test_save_result_inserts_trades(store):
     req = BacktestRunRequest(
         strategy_id="strat_1",

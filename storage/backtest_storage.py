@@ -103,16 +103,7 @@ class BacktestResultStore:
             # Extract metrics
             metrics = self._metrics_from_result(result)
 
-            result_json = json.dumps({
-                "net_profit": metrics.net_profit,
-                "net_profit_pct": metrics.net_profit_pct,
-                "profit_factor": metrics.profit_factor,
-                "max_drawdown": metrics.max_drawdown,
-                "sharpe": metrics.sharpe,
-                "sortino": metrics.sortino,
-                "win_rate": metrics.win_rate,
-                "total_trades": metrics.trades_total,
-            }, default=str)
+            result_json = json.dumps(self._result_json_payload(metrics), default=str)
 
             artifact_paths: dict[str, Path] = {}
 
@@ -211,56 +202,22 @@ class BacktestResultStore:
                     plots_df.to_csv(str(plots_csv_tmp), index=False)
 
             # Report JSON
-            report = {
-                "run_id": run_id,
-                "strategy_id": strategy_id,
-                "symbol": getattr(result, "symbol", ""),
-                "timeframe": getattr(result, "timeframe", ""),
-                "started_at": now,
-                "status": "done",
-                "metrics": {
-                    "initial_capital": metrics.initial_capital,
-                    "final_equity": metrics.final_equity,
-                    "net_profit": metrics.net_profit,
-                    "net_profit_pct": metrics.net_profit_pct,
-                    "profit_factor": metrics.profit_factor,
-                    "max_drawdown": metrics.max_drawdown,
-                    "sharpe": metrics.sharpe,
-                    "sortino": metrics.sortino,
-                    "win_rate": metrics.win_rate,
-                    "total_trades": metrics.trades_total,
-                },
-                "plot_outputs_path": str(run_dir / "plot_outputs.parquet") if ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths else None,
-            }
+            report = self._report_payload(
+                run_id,
+                strategy_id,
+                result,
+                metrics,
+                run_dir,
+                has_plot_outputs=ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths,
+                now=now,
+            )
             report_tmp = tmp_dir / "report.json"
             report_tmp.write_text(json.dumps(report, indent=2, default=str))
             artifact_paths[ARTIFACT_TYPE_REPORT_JSON] = report_tmp
 
             # Report MD
-            md_lines = [
-                f"# Backtest Report: {run_id}",
-                "",
-                f"- **Strategy**: {strategy_id}",
-                f"- **Symbol**: {getattr(result, 'symbol', 'N/A')} {getattr(result, 'timeframe', 'N/A')}",
-                f"- **Status**: done",
-                "",
-                "## Metrics",
-                "",
-                f"| Metric | Value |",
-                f"|--------|-------|",
-                f"| Initial Capital | {metrics.initial_capital} |",
-                f"| Final Equity | {metrics.final_equity} |",
-                f"| Net Profit | {metrics.net_profit} |",
-                f"| Net Profit % | {metrics.net_profit_pct} |",
-                f"| Profit Factor | {metrics.profit_factor} |",
-                f"| Max Drawdown | {metrics.max_drawdown} |",
-                f"| Sharpe | {metrics.sharpe} |",
-                f"| Win Rate | {metrics.win_rate} |",
-                f"| Total Trades | {metrics.trades_total} |",
-                "",
-            ]
             md_tmp = tmp_dir / "report.md"
-            md_tmp.write_text("\n".join(md_lines))
+            md_tmp.write_text(self._report_markdown(run_id, strategy_id, result, metrics))
             artifact_paths[ARTIFACT_TYPE_REPORT_MD] = md_tmp
 
             # Validate artifacts
@@ -513,6 +470,83 @@ class BacktestResultStore:
             commission_total=getattr(result, "commission_total", None),
             expectancy=getattr(result, "expectancy", None),
         )
+
+    @staticmethod
+    def _result_json_payload(metrics: BacktestMetricsSummary) -> dict[str, Any]:
+        return {
+            "net_profit": metrics.net_profit,
+            "net_profit_pct": metrics.net_profit_pct,
+            "profit_factor": metrics.profit_factor,
+            "max_drawdown": metrics.max_drawdown,
+            "sharpe": metrics.sharpe,
+            "sortino": metrics.sortino,
+            "win_rate": metrics.win_rate,
+            "total_trades": metrics.trades_total,
+        }
+
+    @staticmethod
+    def _report_payload(
+        run_id: str,
+        strategy_id: str,
+        result: Any,
+        metrics: BacktestMetricsSummary,
+        run_dir: Path,
+        *,
+        has_plot_outputs: bool,
+        now: int,
+    ) -> dict[str, Any]:
+        return {
+            "run_id": run_id,
+            "strategy_id": strategy_id,
+            "symbol": getattr(result, "symbol", ""),
+            "timeframe": getattr(result, "timeframe", ""),
+            "started_at": now,
+            "status": "done",
+            "metrics": {
+                "initial_capital": metrics.initial_capital,
+                "final_equity": metrics.final_equity,
+                "net_profit": metrics.net_profit,
+                "net_profit_pct": metrics.net_profit_pct,
+                "profit_factor": metrics.profit_factor,
+                "max_drawdown": metrics.max_drawdown,
+                "sharpe": metrics.sharpe,
+                "sortino": metrics.sortino,
+                "win_rate": metrics.win_rate,
+                "total_trades": metrics.trades_total,
+            },
+            "plot_outputs_path": str(run_dir / "plot_outputs.parquet") if has_plot_outputs else None,
+        }
+
+    @staticmethod
+    def _report_markdown(
+        run_id: str,
+        strategy_id: str,
+        result: Any,
+        metrics: BacktestMetricsSummary,
+    ) -> str:
+        md_lines = [
+            f"# Backtest Report: {run_id}",
+            "",
+            f"- **Strategy**: {strategy_id}",
+            f"- **Symbol**: {getattr(result, 'symbol', 'N/A')} {getattr(result, 'timeframe', 'N/A')}",
+            f"- **Status**: done",
+            "",
+            "## Metrics",
+            "",
+            "| Metric | Value |",
+            "|--------|-------|",
+            f"| Initial Capital | {metrics.initial_capital} |",
+            f"| Final Equity | {metrics.final_equity} |",
+            f"| Net Profit | {metrics.net_profit} |",
+            f"| Net Profit % | {metrics.net_profit_pct} |",
+            f"| Profit Factor | {metrics.profit_factor} |",
+            f"| Max Drawdown | {metrics.max_drawdown} |",
+            f"| Sharpe | {metrics.sharpe} |",
+            f"| Win Rate | {metrics.win_rate} |",
+            f"| Total Trades | {metrics.trades_total} |",
+            "",
+        ]
+        return "\n".join(md_lines)
 
     def _row_to_run(self, row: tuple) -> BacktestRun:
         cursor = self._storage.execute("SELECT * FROM backtest_runs LIMIT 0")
