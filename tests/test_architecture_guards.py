@@ -290,6 +290,14 @@ def test_parquet_storage_reads_end_timestamp_exclusive(tmp_path) -> None:
     assert [bar["timestamp"] for bar in adapter.read_ohlcv("BTC/USDT", "1m", 1, 3)] == [1, 2]
 
 
+def test_artifact_store_default_root_is_config_driven() -> None:
+    source = (ROOT / "artifacts" / "store.py").read_text(encoding="utf-8")
+
+    assert "OpenPineConfig.load()" in source
+    assert 'Path("~/.openpine/artifacts")' not in source
+    assert "DEFAULT_CONFIG" not in source
+
+
 def test_openpine_has_single_data_planning_model_family() -> None:
     production_files = [
         ROOT / "contracts" / "__init__.py",

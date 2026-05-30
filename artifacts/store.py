@@ -7,14 +7,14 @@ import json
 import shutil
 from pathlib import Path
 
-from openpine.config import DEFAULT_CONFIG
+from openpine.config import OpenPineConfig
 
 
 class ArtifactStore:
     """Directory-based artifact store.
 
     Layout:
-        ~/.openpine/artifacts/<source_id>/<artifact_id>/
+        <config.data_dir>/artifacts/<source_id>/<artifact_id>/
             source.pine
             ast.json
             generated_strategy.py
@@ -25,7 +25,7 @@ class ArtifactStore:
 
     def __init__(self, root: Path | None = None) -> None:
         if root is None:
-            root = Path("~/.openpine/artifacts").expanduser()
+            root = OpenPineConfig.load().data_dir / "artifacts"
         self._root = root
         self._root.mkdir(parents=True, exist_ok=True)
 
