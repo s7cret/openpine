@@ -165,6 +165,18 @@ def test_batch_runner_does_not_parse_tv_corpus_csv_directly() -> None:
     assert "def load_manifest" not in source
 
 
+def test_backtest_run_config_does_not_carry_engine_data_provider() -> None:
+    from dataclasses import fields
+
+    from openpine.runtime.engine import BacktestRunConfig
+
+    names = {field.name for field in fields(BacktestRunConfig)}
+    source = (ROOT / "runtime" / "engine.py").read_text(encoding="utf-8")
+
+    assert "data_provider" not in names
+    assert 'setattr(engine_config, "data_provider"' not in source
+
+
 def test_production_compile_profile_rejects_stub_flags() -> None:
     adapter = SubprocessCompilerAdapter(prefer_library=False)
 

@@ -4227,7 +4227,6 @@ def strategy_backtest(
             end_time=end_ms,
             exchange=s.exchange.lower(),
             market_type=s.market_type.lower(),
-            data_provider=getattr(provider, "_provider", None),
             initial_capital=decl_args.get("initial_capital", 10000.0),
             default_qty_type=decl_args.get("default_qty_type", "fixed"),
             default_qty_value=decl_args.get("default_qty_value", 1.0),
@@ -4272,6 +4271,7 @@ def strategy_backtest(
                 params=params,
                 execution_backend=_backend,
                 progress_callback=_progress,
+                runtime_data_provider=getattr(provider, "_provider", None),
             )
             timings["backtest_sec"] = _time.perf_counter() - t0
         except Exception as exc:
