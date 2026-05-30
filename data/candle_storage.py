@@ -99,7 +99,7 @@ class CandleStorage:
     """CandleStorage manages OHLCV parquet partitions with SQLite manifest tracking.
 
     Layout:
-        ~/.openpine/data/candles/
+        {configured_data_dir}/candles/
           exchange=binance/
             market_type=spot/
               symbol=BTCUSDT/
@@ -112,8 +112,8 @@ class CandleStorage:
 
     def __init__(
         self,
-        data_root: str = "~/.openpine/data",
-        sqlite_path: str = "~/.openpine/openpine.sqlite",
+        data_root: str | Path | None = None,
+        sqlite_path: str | Path | None = None,
         provider: str = "binance",
     ) -> None:
         """Initialize CandleStorage.
@@ -123,8 +123,14 @@ class CandleStorage:
             sqlite_path: Path to SQLite database
             provider: Default provider name
         """
-        self.data_root = Path(os.path.expanduser(data_root))
-        self.sqlite_path = Path(os.path.expanduser(sqlite_path))
+        if data_root is None or sqlite_path is None:
+            from openpine.config import OpenPineConfig
+
+            config = OpenPineConfig.load()
+            data_root = data_root or config.data_dir
+            sqlite_path = sqlite_path or config.sqlite_path
+        self.data_root = Path(os.path.expanduser(str(data_root)))
+        self.sqlite_path = Path(os.path.expanduser(str(sqlite_path)))
         self.provider = provider
         self._conn: Optional[object] = None  # sqlite3.Connection set lazily
         self._schema_hash = _compute_schema_hash()
@@ -382,7 +388,9 @@ class CandleStorage:
         for m in manifests:
             pq_path = Path(m.partition_path)
             if not pq_path.exists():
-                continue
+                from openpine.data.orchestrator import StorageUnavailableError
+
+                raise StorageUnavailableError(f"candle partition missing: {pq_path}")
             pf = pq.ParquetFile(str(pq_path))
             table = pf.read()
             df = table.to_pandas()

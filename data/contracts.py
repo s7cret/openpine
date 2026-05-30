@@ -28,9 +28,6 @@ PARQUET_LAYOUT = (
     "month={month:02d}/"
 )
 
-# Data directory root
-DATA_ROOT = "~/.openpine/data"
-
 # Parquet schema fields
 PARQUET_FIELDS = [
     "exchange",
@@ -56,6 +53,5 @@ PARQUET_FIELDS = [
 __all__ = [
     "WriteMode",
     "PARQUET_LAYOUT",
-    "DATA_ROOT",
     "PARQUET_FIELDS",
 ]
