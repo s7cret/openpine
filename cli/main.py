@@ -123,6 +123,30 @@ def _build_strategy_backtest_run_request(
     )
 
 
+def _build_cli_bar_query(
+    *,
+    symbol: str,
+    exchange: str,
+    market_type: str,
+    timeframe: str,
+    start_ms: int,
+    end_ms: int,
+    bar_query_cls,
+    instrument_key_cls,
+    parse_timeframe_func,
+):
+    return bar_query_cls(
+        instrument=instrument_key_cls(
+            symbol=symbol.upper(),
+            exchange=exchange.upper(),
+            market=market_type.lower(),
+        ),
+        timeframe=parse_timeframe_func(timeframe),
+        start_ms=start_ms,
+        end_ms=end_ms,
+    )
+
+
 def _build_indicator_plot_config(
     *,
     symbol: str,
@@ -895,15 +919,16 @@ def pine_run_plots(
     timings["load_artifact_sec"] = _time.perf_counter() - t0
 
     t0 = _time.perf_counter()
-    query = BarQuery(
-        instrument=InstrumentKey(
-            symbol=symbol.upper(),
-            exchange=exchange.upper(),
-            market=market_type.lower(),
-        ),
-        timeframe=parse_timeframe(timeframe),
+    query = _build_cli_bar_query(
+        symbol=symbol,
+        exchange=exchange,
+        market_type=market_type,
+        timeframe=timeframe,
         start_ms=start_ms,
         end_ms=end_ms,
+        bar_query_cls=BarQuery,
+        instrument_key_cls=InstrumentKey,
+        parse_timeframe_func=parse_timeframe,
     )
     orch = DataOrchestrator()
     provider = create_local_marketdata_provider_adapter()
@@ -3842,15 +3867,16 @@ def strategy_backtest(
             sys.exit(1)
         timings["load_artifact_sec"] = _time.perf_counter() - t0
 
-        query = BarQuery(
-            instrument=InstrumentKey(
-                symbol=s.symbol.upper(),
-                exchange=s.exchange.upper(),
-                market=s.market_type.lower(),
-            ),
-            timeframe=parse_timeframe(s.timeframe),
+        query = _build_cli_bar_query(
+            symbol=s.symbol,
+            exchange=s.exchange,
+            market_type=s.market_type,
+            timeframe=s.timeframe,
             start_ms=start_ms,
             end_ms=end_ms,
+            bar_query_cls=BarQuery,
+            instrument_key_cls=InstrumentKey,
+            parse_timeframe_func=parse_timeframe,
         )
         from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
         orch = DataOrchestrator()

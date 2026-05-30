@@ -147,6 +147,29 @@ def test_indicator_plot_helpers_build_config_and_meta(tmp_path):
     assert meta["outputs"] == {"plots": str(plots_csv)}
 
 
+def test_cli_bar_query_helper_normalizes_instrument_identity():
+    from openpine.cli.main import _build_cli_bar_query
+
+    query = _build_cli_bar_query(
+        symbol="btcusdt",
+        exchange="binance",
+        market_type="SPOT",
+        timeframe="15m",
+        start_ms=100,
+        end_ms=200,
+        bar_query_cls=lambda **kwargs: SimpleNamespace(**kwargs),
+        instrument_key_cls=lambda **kwargs: SimpleNamespace(**kwargs),
+        parse_timeframe_func=lambda value: f"parsed:{value}",
+    )
+
+    assert query.instrument.symbol == "BTCUSDT"
+    assert query.instrument.exchange == "BINANCE"
+    assert query.instrument.market == "spot"
+    assert query.timeframe == "parsed:15m"
+    assert query.start_ms == 100
+    assert query.end_ms == 200
+
+
 def test_capture_plots_does_not_change_execution_backend():
     """When strategy has generated_strategy_class_ref, same backend is used
     regardless of --capture-plots flag."""
