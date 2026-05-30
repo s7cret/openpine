@@ -25,6 +25,77 @@ def test_read_candles_without_manifests_fails_closed():
         storage.read_candles(query)
 
 
+def test_write_candles_rejects_invalid_instrument_key(tmp_path):
+    from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
+    from openpine.data.candle_storage import CandleStorage
+
+    timeframe = parse_timeframe("1h")
+    storage = CandleStorage(data_root=tmp_path, sqlite_path=tmp_path / "test.sqlite")
+    result = storage.write_candles(
+        [
+            Bar(
+                instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+                timeframe=timeframe,
+                time=1704067200000,
+                time_close=1704070800000,
+                open=100.0,
+                high=101.0,
+                low=99.0,
+                close=100.5,
+                volume=10.0,
+                closed=True,
+            )
+        ],
+        instrument_key="binance:spot:BTCUSDT",
+        timeframe="1h",
+    )
+
+    assert result.success is False
+    assert result.error == "Invalid instrument_key format: binance:spot:BTCUSDT"
+
+
+def test_write_candles_persists_rows_with_explicit_instrument_key(tmp_path):
+    from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
+    from openpine.data.candle_storage import CandleStorage
+
+    instrument = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
+    timeframe = parse_timeframe("1h")
+    storage = CandleStorage(data_root=tmp_path, sqlite_path=tmp_path / "test.sqlite")
+    result = storage.write_candles(
+        [
+            Bar(
+                instrument=instrument,
+                timeframe=timeframe,
+                time=1704067200000,
+                time_close=1704070800000,
+                open=100.0,
+                high=101.0,
+                low=99.0,
+                close=100.5,
+                volume=10.0,
+                closed=True,
+            )
+        ],
+        instrument_key="binance:spot:BTCUSDT:trade",
+        timeframe="1h",
+    )
+
+    assert result.success is True
+    assert result.rows_written == 1
+    assert result.manifests_created[0].symbol == "BTCUSDT"
+
+    bars = storage.read_candles(
+        BarQuery(
+            instrument=instrument,
+            timeframe=timeframe,
+            start_ms=1704067200000,
+            end_ms=1704070800000,
+            source="storage",
+        )
+    )
+    assert [bar.close for bar in bars] == [100.5]
+
+
 def test_read_candles_deduplicates_identical_rows():
     """CandleStorage.read_candles must return unique open_time values
     even when multiple manifests contain identical duplicates."""

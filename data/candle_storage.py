@@ -101,6 +101,61 @@ def _storage_unavailable(message: str) -> Exception:
     return StorageUnavailableError(message)
 
 
+def _parse_instrument_key(instrument_key: str) -> tuple[str, str, str, str]:
+    parts = instrument_key.split(":")
+    if len(parts) != 4:
+        raise ValueError(f"Invalid instrument_key format: {instrument_key}")
+    exchange, market_type, symbol, price_type = parts
+    return exchange, market_type, symbol, price_type
+
+
+def _resolve_write_identity(candles: list["Bar"], instrument_key: str | None) -> tuple[str, str, str, str]:
+    if instrument_key:
+        return _parse_instrument_key(instrument_key)
+
+    first = candles[0]
+    bar_instrument_key = getattr(first, "instrument_key", None)
+    if bar_instrument_key is None:
+        raise ValueError("instrument_key is required either as parameter or bar attribute")
+    try:
+        return _parse_instrument_key(bar_instrument_key)
+    except ValueError as exc:
+        raise ValueError(f"Invalid instrument_key: {bar_instrument_key}") from exc
+
+
+def _bar_to_parquet_row(
+    bar: "Bar",
+    *,
+    exchange: str,
+    market_type: str,
+    symbol: str,
+    price_type: str,
+    timeframe: str,
+    provider: str,
+    ingested_at: int,
+) -> dict:
+    return {
+        "exchange": exchange,
+        "market_type": market_type,
+        "symbol": symbol,
+        "price_type": price_type,
+        "timeframe": timeframe,
+        "open_time": bar.time,
+        "close_time": bar.time_close or bar.time,
+        "open": bar.open,
+        "high": bar.high,
+        "low": bar.low,
+        "close": bar.close,
+        "volume": bar.volume,
+        "quote_volume": None,
+        "trades_count": None,
+        "is_closed": True,
+        "source": "openpine",
+        "provider": provider,
+        "ingested_at": ingested_at,
+    }
+
+
 class CandleStorage:
     """CandleStorage manages OHLCV parquet partitions with SQLite manifest tracking.
 
@@ -253,24 +308,10 @@ class CandleStorage:
         if not candles:
             return WriteResult(success=True, rows_written=0)
 
-        # Resolve instrument parts
-        if instrument_key:
-            parts = instrument_key.split(":")
-            if len(parts) != 4:
-                return WriteResult(success=False, error=f"Invalid instrument_key format: {instrument_key}")
-            exchange, market_type, symbol, price_type = parts
-        else:
-            # Try to get from first bar
-            first = candles[0]
-            if not hasattr(first, "instrument_key"):
-                return WriteResult(
-                    success=False,
-                    error="instrument_key is required either as parameter or bar attribute"
-                )
-            parts = first.instrument_key.split(":")
-            if len(parts) != 4:
-                return WriteResult(success=False, error=f"Invalid instrument_key: {first.instrument_key}")
-            exchange, market_type, symbol, price_type = parts
+        try:
+            exchange, market_type, symbol, price_type = _resolve_write_identity(candles, instrument_key)
+        except ValueError as exc:
+            return WriteResult(success=False, error=str(exc))
 
         # Group candles by year/month partition
         # All bars within the same year/month go into the same parquet file
@@ -308,29 +349,20 @@ class CandleStorage:
             tmp_path = self._tmp_path(final_path)
 
             # Build DataFrame
+            ingested_at = int(time.time() * 1000)
             rows = []
             for bar in bars:
                 rows.append(
-                    {
-                        "exchange": exchange,
-                        "market_type": market_type,
-                        "symbol": symbol,
-                        "price_type": price_type,
-                        "timeframe": timeframe,
-                        "open_time": bar.time,
-                        "close_time": bar.time_close or bar.time,
-                        "open": bar.open,
-                        "high": bar.high,
-                        "low": bar.low,
-                        "close": bar.close,
-                        "volume": bar.volume,
-                        "quote_volume": None,
-                        "trades_count": None,
-                        "is_closed": True,
-                        "source": "openpine",
-                        "provider": self.provider,
-                        "ingested_at": int(time.time() * 1000),
-                    }
+                    _bar_to_parquet_row(
+                        bar,
+                        exchange=exchange,
+                        market_type=market_type,
+                        symbol=symbol,
+                        price_type=price_type,
+                        timeframe=timeframe,
+                        provider=self.provider,
+                        ingested_at=ingested_at,
+                    )
                 )
 
             df = pd.DataFrame(rows)
