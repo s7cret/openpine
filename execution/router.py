@@ -98,6 +98,25 @@ class ExecutionRouter:
         """
         self._adapters[account_type] = adapter
 
+    @staticmethod
+    def _rejected_order(order: OrderIntent, error: str, updated_at: int) -> Order:
+        return Order(
+            order_id=generate_order_id(),
+            client_order_id=order.client_order_id,
+            strategy_id=order.strategy_id,
+            account_id=order.account_id,
+            symbol=order.symbol,
+            side=order.side,
+            order_type=order.order_type,
+            quantity=order.quantity,
+            price=order.price,
+            stop_price=order.stop_price,
+            status=OrderStatus.REJECTED,
+            error=error,
+            created_at=order.created_at,
+            updated_at=updated_at,
+        )
+
     async def submit_order(self, order: OrderIntent) -> Order:
         """Submit order: RiskManager check first.
 
@@ -119,83 +138,31 @@ class ExecutionRouter:
         # Step 1: Look up account
         account = self.account_manager.get_account(order.account_id)
         if account is None:
-            return Order(
-                order_id=generate_order_id(),
-                client_order_id=order.client_order_id,
-                strategy_id=order.strategy_id,
-                account_id=order.account_id,
-                symbol=order.symbol,
-                side=order.side,
-                order_type=order.order_type,
-                quantity=order.quantity,
-                price=order.price,
-                stop_price=order.stop_price,
-                status=OrderStatus.REJECTED,
-                error=f"Account not found: {order.account_id}",
-                created_at=order.created_at,
-                updated_at=now,
-            )
+            return self._rejected_order(order, f"Account not found: {order.account_id}", now)
 
         # Step 2: RiskManager check — ALL orders must pass
         allowed, error_message = self.risk_manager.check_order(order, account)
         if not allowed:
-            return Order(
-                order_id=generate_order_id(),
-                client_order_id=order.client_order_id,
-                strategy_id=order.strategy_id,
-                account_id=order.account_id,
-                symbol=order.symbol,
-                side=order.side,
-                order_type=order.order_type,
-                quantity=order.quantity,
-                price=order.price,
-                stop_price=order.stop_price,
-                status=OrderStatus.REJECTED,
-                error=error_message or "RiskManager blocked order",
-                created_at=order.created_at,
-                updated_at=now,
+            return self._rejected_order(
+                order,
+                error_message or "RiskManager blocked order",
+                now,
             )
 
         # Step 3: Route to adapter
         adapter = self._adapters.get(account.account_type)
         if adapter is None:
-            return Order(
-                order_id=generate_order_id(),
-                client_order_id=order.client_order_id,
-                strategy_id=order.strategy_id,
-                account_id=order.account_id,
-                symbol=order.symbol,
-                side=order.side,
-                order_type=order.order_type,
-                quantity=order.quantity,
-                price=order.price,
-                stop_price=order.stop_price,
-                status=OrderStatus.REJECTED,
-                error=f"No adapter registered for account type: {account.account_type}",
-                created_at=order.created_at,
-                updated_at=now,
+            return self._rejected_order(
+                order,
+                f"No adapter registered for account type: {account.account_type}",
+                now,
             )
 
         # Step 4: Submit to adapter (paper or live)
         try:
             return await adapter.submit_order(order)
         except Exception as e:
-            return Order(
-                order_id=generate_order_id(),
-                client_order_id=order.client_order_id,
-                strategy_id=order.strategy_id,
-                account_id=order.account_id,
-                symbol=order.symbol,
-                side=order.side,
-                order_type=order.order_type,
-                quantity=order.quantity,
-                price=order.price,
-                stop_price=order.stop_price,
-                status=OrderStatus.REJECTED,
-                error=f"Adapter error: {e}",
-                created_at=order.created_at,
-                updated_at=now,
-            )
+            return self._rejected_order(order, f"Adapter error: {e}", now)
 
     async def cancel_order(self, order_id: str, account_id: str) -> bool:
         """Cancel an order.

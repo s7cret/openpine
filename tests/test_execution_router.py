@@ -22,6 +22,11 @@ class _RiskManager:
         return True, None
 
 
+class _BlockingRiskManager:
+    def check_order(self, order: OrderIntent, account: Account) -> tuple[bool, str | None]:
+        return False, "blocked by risk"
+
+
 class _WorkingAdapter:
     async def submit_order(self, order: OrderIntent) -> Order:
         return Order(
@@ -59,6 +64,53 @@ def _live_account() -> Account:
         account_type=AccountType.LIVE,
         live_enabled=True,
     )
+
+
+def _intent(account_id: str = "acct-1") -> OrderIntent:
+    return OrderIntent(
+        client_order_id="client-1",
+        strategy_id="strategy-1",
+        account_id=account_id,
+        symbol="BTCUSDT",
+        side=OrderSide.BUY,
+        order_type=OrderType.MARKET,
+        quantity=1.0,
+    )
+
+
+@pytest.mark.asyncio
+async def test_router_submit_rejects_missing_account() -> None:
+    router = ExecutionRouter(_RiskManager(), _AccountManager(None))
+
+    order = await router.submit_order(_intent())
+
+    assert order.status == OrderStatus.REJECTED
+    assert order.error == "Account not found: acct-1"
+
+
+@pytest.mark.asyncio
+async def test_router_submit_rejects_risk_block_before_adapter() -> None:
+    class _UnexpectedAdapter(_WorkingAdapter):
+        async def submit_order(self, order: OrderIntent) -> Order:
+            raise AssertionError("adapter should not be called")
+
+    router = ExecutionRouter(_BlockingRiskManager(), _AccountManager(_live_account()))
+    router.register_adapter(AccountType.LIVE, _UnexpectedAdapter())
+
+    order = await router.submit_order(_intent())
+
+    assert order.status == OrderStatus.REJECTED
+    assert order.error == "blocked by risk"
+
+
+@pytest.mark.asyncio
+async def test_router_submit_rejects_missing_adapter() -> None:
+    router = ExecutionRouter(_RiskManager(), _AccountManager(_live_account()))
+
+    order = await router.submit_order(_intent())
+
+    assert order.status == OrderStatus.REJECTED
+    assert order.error == "No adapter registered for account type: live"
 
 
 @pytest.mark.asyncio
