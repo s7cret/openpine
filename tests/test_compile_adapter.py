@@ -55,6 +55,62 @@ def test_subprocess_compile_meta_records_tool_paths_and_profile() -> None:
     }
 
 
+def test_resolve_subprocess_tools_reports_missing_tools(monkeypatch) -> None:
+    def fake_find_tool(name: str):
+        return adapter_module.Path("/bin/pine2ast") if name == "pine2ast" else None
+
+    monkeypatch.setattr(adapter_module, "_find_tool", fake_find_tool)
+
+    tools, errors = adapter_module._resolve_subprocess_tools()
+
+    assert tools is None
+    assert errors == ["ast2python not found in PATH or ~/.local/bin"]
+
+
+def test_parse_with_pine2ast_subprocess_retries_v5_rejection(
+    monkeypatch, tmp_path
+) -> None:
+    src_path = tmp_path / "source.pine"
+    src_path.write_text("//@version=5\nindicator('x')\n")
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append((cmd, src_path.read_text()))
+        if len(calls) == 1:
+            return subprocess.CompletedProcess(
+                args=cmd,
+                returncode=1,
+                stdout="",
+                stderr="P2A0103: unsupported Pine version 5",
+            )
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=0,
+            stdout='{"kind":"Program"}',
+            stderr="",
+        )
+
+    monkeypatch.setattr(adapter_module.subprocess, "run", fake_run)
+    compile_meta = {}
+
+    result, error = adapter_module._parse_with_pine2ast_subprocess(
+        pine2ast_path=adapter_module.Path("/bin/pine2ast"),
+        src_path=src_path,
+        source_text="//@version=5\nindicator('x')\n",
+        profile=CompileProfile.diagnostic(allow_implicit_version_rewrite=True),
+        timeout=10,
+        compile_meta=compile_meta,
+    )
+
+    assert error is None
+    assert result is not None
+    assert result.returncode == 0
+    assert len(calls) == 2
+    assert calls[1][1].startswith("//@version=6")
+    assert compile_meta["unsafe"] is True
+    assert compile_meta["compatibility_fallback"]["pine_version_to"] == 6
+
+
 def _fake_library_apis(metadata: dict):
     return adapter_module._LibraryApis(
         parse_code=lambda _source, _options: SimpleNamespace(

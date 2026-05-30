@@ -281,6 +281,96 @@ class CompileResult:
     ast_json: str | None = None
 
 
+@dataclass(frozen=True)
+class _SubprocessTools:
+    pine2ast_path: Path
+    ast2python_path: Path
+
+
+def _resolve_subprocess_tools() -> tuple[_SubprocessTools | None, list[str]]:
+    pine2ast_path = _find_tool("pine2ast")
+    ast2python_path = _find_tool("ast2python")
+
+    errors: list[str] = []
+    if pine2ast_path is None:
+        errors.append("pine2ast not found in PATH or ~/.local/bin")
+    if ast2python_path is None:
+        errors.append("ast2python not found in PATH or ~/.local/bin")
+
+    if errors or pine2ast_path is None or ast2python_path is None:
+        return None, errors
+    return _SubprocessTools(
+        pine2ast_path=pine2ast_path,
+        ast2python_path=ast2python_path,
+    ), []
+
+
+def _write_temp_pine_source(source_text: str) -> Path:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".pine", delete=False) as src_f:
+        src_f.write(source_text)
+        return Path(src_f.name)
+
+
+def _parse_with_pine2ast_subprocess(
+    *,
+    pine2ast_path: Path,
+    src_path: Path,
+    source_text: str,
+    profile: CompileProfile,
+    timeout: int,
+    compile_meta: dict[str, Any],
+) -> tuple[subprocess.CompletedProcess[str] | None, CompileResult | None]:
+    result_p2a = subprocess.run(
+        [str(pine2ast_path), "parse", str(src_path)],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if result_p2a.returncode == 0:
+        return result_p2a, None
+
+    parse_errors = _pine2ast_subprocess_errors(result_p2a)
+    normalized_source, normalized = _normalize_pine_v5_directive(source_text)
+    if not (normalized and _is_pine_v5_version_rejection(parse_errors)):
+        return None, CompileResult(success=False, errors=parse_errors)
+
+    if not profile.allow_implicit_version_rewrite:
+        return None, CompileResult(
+            success=False,
+            errors=parse_errors,
+            compile_meta=compile_meta,
+        )
+
+    src_path.write_text(normalized_source)
+    result_p2a = subprocess.run(
+        [str(pine2ast_path), "parse", str(src_path)],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    warnings = list(compile_meta.get("warnings", []))
+    warnings.append(_PINE_V5_FALLBACK_WARNING)
+    _mark_compile_meta_unsafe(compile_meta, _PINE_V5_FALLBACK_UNSAFE_REASON)
+    compile_meta.update(
+        {
+            "warnings": warnings,
+            "compatibility_fallback": {
+                "pine_version_from": 5,
+                "pine_version_to": 6,
+                "reason": "pine2ast_version_rejection",
+            },
+            "original_parse_errors": parse_errors,
+        }
+    )
+    if result_p2a.returncode != 0:
+        return None, CompileResult(
+            success=False,
+            errors=_pine2ast_subprocess_errors(result_p2a),
+            compile_meta=compile_meta,
+        )
+    return result_p2a, None
+
+
 def _profile_from_kwargs(kwargs: dict[str, Any]) -> CompileProfile:
     raw = kwargs.get("profile")
     if isinstance(raw, CompileProfile):
@@ -545,25 +635,13 @@ class SubprocessCompilerAdapter:
                 errors=["subprocess compile fallback is disabled by compile profile"],
                 compile_meta={"compile_profile": profile.name},
             )
-        pine2ast_path = _find_tool("pine2ast")
-        ast2python_path = _find_tool("ast2python")
-
-        errors: list[str] = []
-        if pine2ast_path is None:
-            errors.append("pine2ast not found in PATH or ~/.local/bin")
-        if ast2python_path is None:
-            errors.append("ast2python not found in PATH or ~/.local/bin")
-
+        tools, errors = _resolve_subprocess_tools()
         if errors:
             return CompileResult(success=False, errors=errors)
+        assert tools is not None
 
-        # Write source to temp file for pine2ast
         try:
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".pine", delete=False
-            ) as src_f:
-                src_f.write(source_text)
-                src_path = Path(src_f.name)
+            src_path = _write_temp_pine_source(source_text)
         except OSError as e:
             return CompileResult(success=False, errors=[f"Failed to write temp source: {e}"])
 
@@ -574,68 +652,22 @@ class SubprocessCompilerAdapter:
                 profile=profile,
                 module_name=module_name,
                 strict=strict,
-                pine2ast_path=pine2ast_path,
-                ast2python_path=ast2python_path,
+                pine2ast_path=tools.pine2ast_path,
+                ast2python_path=tools.ast2python_path,
                 adapter_status="fallback" if self.prefer_library else "selected",
             )
 
-            # Step 1: pine2ast parse
-            result_p2a = subprocess.run(
-                [str(pine2ast_path), "parse", str(src_path)],
-                capture_output=True,
-                text=True,
+            result_p2a, parse_error = _parse_with_pine2ast_subprocess(
+                pine2ast_path=tools.pine2ast_path,
+                src_path=src_path,
+                source_text=source_text,
+                profile=profile,
                 timeout=self.timeout,
+                compile_meta=compile_meta,
             )
-            if result_p2a.returncode != 0:
-                parse_errors = _pine2ast_subprocess_errors(result_p2a)
-                normalized_source, normalized = _normalize_pine_v5_directive(source_text)
-                if normalized and _is_pine_v5_version_rejection(parse_errors):
-                    if not profile.allow_implicit_version_rewrite:
-                        return CompileResult(
-                            success=False,
-                            errors=parse_errors,
-                            compile_meta=compile_meta,
-                        )
-                    src_path.write_text(normalized_source)
-                    result_p2a = subprocess.run(
-                        [str(pine2ast_path), "parse", str(src_path)],
-                        capture_output=True,
-                        text=True,
-                        timeout=self.timeout,
-                    )
-                    warnings = list(compile_meta.get("warnings", []))
-                    warnings.append(_PINE_V5_FALLBACK_WARNING)
-                    _mark_compile_meta_unsafe(
-                        compile_meta, _PINE_V5_FALLBACK_UNSAFE_REASON
-                    )
-                    compile_meta.update(
-                        {
-                            "warnings": warnings,
-                            "compatibility_fallback": {
-                                "pine_version_from": 5,
-                                "pine_version_to": 6,
-                                "reason": "pine2ast_version_rejection",
-                            },
-                            "original_parse_errors": parse_errors,
-                        }
-                    )
-                    if result_p2a.returncode != 0:
-                        return CompileResult(
-                            success=False,
-                            errors=_pine2ast_subprocess_errors(result_p2a),
-                            compile_meta=compile_meta,
-                        )
-                else:
-                    return CompileResult(
-                        success=False,
-                        errors=parse_errors,
-                    )
-
-            if result_p2a.returncode != 0:
-                return CompileResult(
-                    success=False,
-                    errors=_pine2ast_subprocess_errors(result_p2a),
-                )
+            if parse_error is not None:
+                return parse_error
+            assert result_p2a is not None
 
             ast_json = result_p2a.stdout
 
@@ -656,7 +688,7 @@ class SubprocessCompilerAdapter:
                 ast_path = Path(ast_f.name)
 
             cmd = [
-                str(ast2python_path), "translate",
+                str(tools.ast2python_path), "translate",
                 str(ast_path),
                 "-o", "/dev/stdout",
                 "--module-name", module_name,
