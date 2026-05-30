@@ -1010,46 +1010,14 @@ def _build_batch_summary_payload(
     }
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = _build_arg_parser()
-    args = parser.parse_args(argv)
-
-    entries = load_manifest(args.manifest, args.root)
-    selected = filter_entries(
-        entries,
-        kind=args.kind,
-        timeframe=args.timeframe,
-        limit=args.limit,
-        start_id=args.start_id,
-        only_id=parse_ids(args.ids),
-    )
-    args._calculation_to_by_timeframe = resolve_calculation_to_by_timeframe(selected, args)
-    batch_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    summary_path = args.root / (args.summary_name or f"openpine_batch_{args.phase}_{batch_id}.json")
-    errors_path = args.root / args.errors_name
-    library_revisions = _get_library_revisions()
-
-    print(f"root={args.root}")
-    print(f"manifest={args.manifest}")
-    print(f"phase={args.phase} selected={len(selected)} total={len(entries)}")
-    if args._calculation_to_by_timeframe:
-        resolved = {
-            tf: ms_to_utc_iso(value)
-            for tf, value in sorted(args._calculation_to_by_timeframe.items())
-        }
-        print(f"calculation_to_by_timeframe={json.dumps(resolved, ensure_ascii=False)}")
-
-    _write_progress(
-        args.root,
-        batch_id,
-        None,
-        args.phase,
-        "running",
-        f"selected={len(selected)}",
-        selected_count=len(selected),
-        processed_count=0,
-        summary_by_timeframe={},
-    )
+def _run_selected_entries(
+    *,
+    args: argparse.Namespace,
+    selected: list[ExportEntry],
+    batch_id: str,
+    library_revisions: dict[str, str],
+    errors_path: Path,
+) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for idx, entry in enumerate(selected, 1):
         _write_progress(
@@ -1119,6 +1087,56 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  -> {result.get('status')}")
         if args.stop_on_error and result.get("status") in {"compile_error", "fatal_error", "partial_or_error"}:
             break
+    return results
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _build_arg_parser()
+    args = parser.parse_args(argv)
+
+    entries = load_manifest(args.manifest, args.root)
+    selected = filter_entries(
+        entries,
+        kind=args.kind,
+        timeframe=args.timeframe,
+        limit=args.limit,
+        start_id=args.start_id,
+        only_id=parse_ids(args.ids),
+    )
+    args._calculation_to_by_timeframe = resolve_calculation_to_by_timeframe(selected, args)
+    batch_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    summary_path = args.root / (args.summary_name or f"openpine_batch_{args.phase}_{batch_id}.json")
+    errors_path = args.root / args.errors_name
+    library_revisions = _get_library_revisions()
+
+    print(f"root={args.root}")
+    print(f"manifest={args.manifest}")
+    print(f"phase={args.phase} selected={len(selected)} total={len(entries)}")
+    if args._calculation_to_by_timeframe:
+        resolved = {
+            tf: ms_to_utc_iso(value)
+            for tf, value in sorted(args._calculation_to_by_timeframe.items())
+        }
+        print(f"calculation_to_by_timeframe={json.dumps(resolved, ensure_ascii=False)}")
+
+    _write_progress(
+        args.root,
+        batch_id,
+        None,
+        args.phase,
+        "running",
+        f"selected={len(selected)}",
+        selected_count=len(selected),
+        processed_count=0,
+        summary_by_timeframe={},
+    )
+    results = _run_selected_entries(
+        args=args,
+        selected=selected,
+        batch_id=batch_id,
+        library_revisions=library_revisions,
+        errors_path=errors_path,
+    )
 
     # Write durable current_progress.json marking batch complete
     final_status = "completed" if all(r.get("status") != "fatal_error" for r in results) else "failed"
