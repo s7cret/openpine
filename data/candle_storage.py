@@ -95,6 +95,12 @@ def _storage_instrument_key(query: BarQuery) -> str:
     return f"{exchange}:{market_type}:{symbol}:{price_type}"
 
 
+def _storage_unavailable(message: str) -> Exception:
+    from openpine.data.orchestrator import StorageUnavailableError
+
+    return StorageUnavailableError(message)
+
+
 class CandleStorage:
     """CandleStorage manages OHLCV parquet partitions with SQLite manifest tracking.
 
@@ -427,7 +433,7 @@ class CandleStorage:
         # Find matching manifest files
         manifests = self.list_manifests(query)
         if not manifests:
-            return []
+            raise _storage_unavailable(f"no candle manifests for query: {_storage_instrument_key(query)}")
 
         all_rows: list[dict] = []
         for m in manifests:
@@ -446,7 +452,7 @@ class CandleStorage:
             all_rows.extend(df.to_dict("records"))
 
         if not all_rows:
-            return []
+            raise _storage_unavailable(f"no candle rows for query: {_storage_instrument_key(query)}")
 
         # Deduplicate by canonical key: open_time
         # Identical duplicates (same OHLCV) → keep one

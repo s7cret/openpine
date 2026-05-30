@@ -4,6 +4,26 @@ from __future__ import annotations
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+
+def test_read_candles_without_manifests_fails_closed():
+    from openpine.data.candle_storage import CandleStorage
+    from openpine.data.orchestrator import StorageUnavailableError
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
+    storage = CandleStorage()
+    query = BarQuery(
+        instrument=InstrumentKey(exchange="binance", market="spot", symbol="NO_MANIFEST_TEST"),
+        timeframe=parse_timeframe("1h"),
+        start_ms=1704067200000,
+        end_ms=1704070800000,
+        source="storage",
+    )
+
+    with pytest.raises(StorageUnavailableError, match="no candle manifests"):
+        storage.read_candles(query)
+
 
 def test_read_candles_deduplicates_identical_rows():
     """CandleStorage.read_candles must return unique open_time values
