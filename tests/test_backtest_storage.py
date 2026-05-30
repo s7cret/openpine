@@ -213,6 +213,43 @@ def test_report_markdown_renders_core_summary_fields():
     assert "| Total Trades | 10 |" in markdown
 
 
+def test_result_artifact_record_helpers_map_equity_and_trades():
+    equity_records = BacktestResultStore._equity_curve_records(
+        [FakeEquityPoint(1000, 10000.0, cash=9990.0, position_size=1)]
+    )
+    trade_records = BacktestResultStore._trade_artifact_records(
+        [
+            FakeTrade(
+                "T1",
+                "long",
+                1000,
+                100.0,
+                1.0,
+                exit_time=2000,
+                exit_price=110.0,
+                profit=10.0,
+                bars_held=3,
+            )
+        ]
+    )
+
+    assert equity_records[0]["equity"] == 10000.0
+    assert equity_records[0]["cash"] == 9990.0
+    assert trade_records[0]["trade_id"] == "T1"
+    assert trade_records[0]["exit_price"] == 110.0
+    assert trade_records[0]["bars_held"] == 3
+
+
+def test_plot_records_support_tuple_records_and_na_values():
+    class FakeNA:
+        pass
+
+    FakeNA.__name__ = "PineNASentinel"
+    records = BacktestResultStore._plot_records([(1000, 7, FakeNA(), "plot A")])
+
+    assert records == [{"bar_time": 1000, "bar_index": 7, "value": None, "title": "plot A"}]
+
+
 def test_save_result_inserts_trades(store):
     req = BacktestRunRequest(
         strategy_id="strat_1",

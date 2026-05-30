@@ -105,120 +105,19 @@ class BacktestResultStore:
 
             result_json = json.dumps(self._result_json_payload(metrics), default=str)
 
-            artifact_paths: dict[str, Path] = {}
-
-            # Equity curve
-            if equity_curve:
-                eq_records = []
-                for e in equity_curve:
-                    eq_records.append({
-                        "time": e.time,
-                        "equity": e.equity,
-                        "cash": e.cash,
-                        "position_size": e.position_size,
-                        "position_avg_price": e.position_avg_price,
-                        "open_profit": e.open_profit,
-                        "realized_profit": e.realized_profit,
-                        "drawdown": e.drawdown,
-                        "drawdown_percent": e.drawdown_percent,
-                    })
-                eq_df = pd.DataFrame(eq_records)
-                eq_tmp = tmp_dir / "equity_curve.parquet"
-                pq.write_table(pa.Table.from_pandas(eq_df), str(eq_tmp), compression="zstd")
-                artifact_paths[ARTIFACT_TYPE_EQUITY_CURVE] = eq_tmp
-
-            # Trades
-            if trades:
-                trade_records = []
-                for i, t in enumerate(trades):
-                    trade_records.append({
-                        "trade_id": t.id,
-                        "direction": t.direction,
-                        "entry_time": t.entry_time,
-                        "entry_price": t.entry_price,
-                        "exit_time": getattr(t, "exit_time", None),
-                        "exit_price": getattr(t, "exit_price", None),
-                        "qty": t.qty,
-                        "profit": getattr(t, "profit", None),
-                        "profit_percent": getattr(t, "profit_percent", None),
-                        "mfe": getattr(t, "mfe", None),
-                        "mae": getattr(t, "mae", None),
-                        "exit_reason": getattr(t, "exit_reason", None),
-                        "bars_held": getattr(t, "bars_held", None),
-                        "is_open": getattr(t, "is_open", False),
-                    })
-                trades_df = pd.DataFrame(trade_records)
-                trades_tmp = tmp_dir / "trades.parquet"
-                pq.write_table(pa.Table.from_pandas(trades_df), str(trades_tmp), compression="zstd")
-                artifact_paths[ARTIFACT_TYPE_TRADES] = trades_tmp
-
-            # Bar outputs
-            if bar_outputs:
-                bo_df = pd.DataFrame(bar_outputs)
-                bo_tmp = tmp_dir / "bar_outputs.parquet"
-                pq.write_table(pa.Table.from_pandas(bo_df), str(bo_tmp), compression="zstd")
-                artifact_paths[ARTIFACT_TYPE_BAR_OUTPUTS] = bo_tmp
-
-            # Plot outputs
-            if plots is not None:
-                from pinelib.plot import PlotRecorder
-                plot_records = []
-                if isinstance(plots, PlotRecorder):
-                    records = plots.get_records()
-                else:
-                    records = plots
-                def _plot_value(value):
-                    return getattr(value, "_current", value)
-
-                for rec in records:
-                    if isinstance(rec, tuple) and len(rec) >= 4:
-                        val = _plot_value(rec[2])
-                        # Convert PineNASentinel to None for Parquet compatibility
-                        if val is not None and type(val).__name__ in ("PineNASentinel", "na"):
-                            val = None
-                        plot_records.append({
-                            "bar_time": rec[0],
-                            "bar_index": rec[1],
-                            "value": val,
-                            "title": rec[3],
-                        })
-                    elif hasattr(rec, 'bar_time'):
-                        val = _plot_value(rec.value)
-                        if val is not None and type(val).__name__ in ("PineNASentinel", "na"):
-                            val = None
-                        plot_records.append({
-                            "bar_time": rec.bar_time,
-                            "bar_index": getattr(rec, 'bar_index', None),
-                            "value": val,
-                            "title": rec.title,
-                        })
-                if plot_records:
-                    plots_df = pd.DataFrame(plot_records)
-                    plots_tmp = tmp_dir / "plot_outputs.parquet"
-                    pq.write_table(pa.Table.from_pandas(plots_df), str(plots_tmp), compression="zstd")
-                    artifact_paths[ARTIFACT_TYPE_PLOT_OUTPUTS] = plots_tmp
-                    # Optional CSV
-                    plots_csv_tmp = tmp_dir / "plot_outputs.csv"
-                    plots_df.to_csv(str(plots_csv_tmp), index=False)
-
-            # Report JSON
-            report = self._report_payload(
-                run_id,
-                strategy_id,
-                result,
-                metrics,
-                run_dir,
-                has_plot_outputs=ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths,
+            artifact_paths = self._write_result_artifacts(
+                tmp_dir=tmp_dir,
+                run_dir=run_dir,
+                run_id=run_id,
+                strategy_id=strategy_id,
+                result=result,
+                metrics=metrics,
+                equity_curve=equity_curve,
+                trades=trades,
+                bar_outputs=bar_outputs,
+                plots=plots,
                 now=now,
             )
-            report_tmp = tmp_dir / "report.json"
-            report_tmp.write_text(json.dumps(report, indent=2, default=str))
-            artifact_paths[ARTIFACT_TYPE_REPORT_JSON] = report_tmp
-
-            # Report MD
-            md_tmp = tmp_dir / "report.md"
-            md_tmp.write_text(self._report_markdown(run_id, strategy_id, result, metrics))
-            artifact_paths[ARTIFACT_TYPE_REPORT_MD] = md_tmp
 
             # Validate artifacts
             for atype, path in artifact_paths.items():
@@ -470,6 +369,140 @@ class BacktestResultStore:
             commission_total=getattr(result, "commission_total", None),
             expectancy=getattr(result, "expectancy", None),
         )
+
+    @staticmethod
+    def _equity_curve_records(equity_curve: list[Any]) -> list[dict[str, Any]]:
+        return [
+            {
+                "time": e.time,
+                "equity": e.equity,
+                "cash": e.cash,
+                "position_size": e.position_size,
+                "position_avg_price": e.position_avg_price,
+                "open_profit": e.open_profit,
+                "realized_profit": e.realized_profit,
+                "drawdown": e.drawdown,
+                "drawdown_percent": e.drawdown_percent,
+            }
+            for e in equity_curve
+        ]
+
+    @staticmethod
+    def _trade_artifact_records(trades: list[Any]) -> list[dict[str, Any]]:
+        return [
+            {
+                "trade_id": t.id,
+                "direction": t.direction,
+                "entry_time": t.entry_time,
+                "entry_price": t.entry_price,
+                "exit_time": getattr(t, "exit_time", None),
+                "exit_price": getattr(t, "exit_price", None),
+                "qty": t.qty,
+                "profit": getattr(t, "profit", None),
+                "profit_percent": getattr(t, "profit_percent", None),
+                "mfe": getattr(t, "mfe", None),
+                "mae": getattr(t, "mae", None),
+                "exit_reason": getattr(t, "exit_reason", None),
+                "bars_held": getattr(t, "bars_held", None),
+                "is_open": getattr(t, "is_open", False),
+            }
+            for t in trades
+        ]
+
+    @staticmethod
+    def _plot_value(value: Any) -> Any:
+        value = getattr(value, "_current", value)
+        if value is not None and type(value).__name__ in ("PineNASentinel", "na"):
+            return None
+        return value
+
+    @classmethod
+    def _plot_records(cls, plots: Any) -> list[dict[str, Any]]:
+        from pinelib.plot import PlotRecorder
+
+        records = plots.get_records() if isinstance(plots, PlotRecorder) else plots
+        plot_records: list[dict[str, Any]] = []
+        for rec in records:
+            if isinstance(rec, tuple) and len(rec) >= 4:
+                plot_records.append(
+                    {
+                        "bar_time": rec[0],
+                        "bar_index": rec[1],
+                        "value": cls._plot_value(rec[2]),
+                        "title": rec[3],
+                    }
+                )
+            elif hasattr(rec, "bar_time"):
+                plot_records.append(
+                    {
+                        "bar_time": rec.bar_time,
+                        "bar_index": getattr(rec, "bar_index", None),
+                        "value": cls._plot_value(rec.value),
+                        "title": rec.title,
+                    }
+                )
+        return plot_records
+
+    @staticmethod
+    def _write_parquet_artifact(tmp_dir: Path, filename: str, records: list[dict[str, Any]]) -> Path:
+        path = tmp_dir / filename
+        pq.write_table(pa.Table.from_pandas(pd.DataFrame(records)), str(path), compression="zstd")
+        return path
+
+    def _write_result_artifacts(
+        self,
+        *,
+        tmp_dir: Path,
+        run_dir: Path,
+        run_id: str,
+        strategy_id: str,
+        result: Any,
+        metrics: BacktestMetricsSummary,
+        equity_curve: list[Any] | None,
+        trades: list[Any],
+        bar_outputs: list[dict] | None,
+        plots: Any,
+        now: int,
+    ) -> dict[str, Path]:
+        artifact_paths: dict[str, Path] = {}
+        if equity_curve:
+            artifact_paths[ARTIFACT_TYPE_EQUITY_CURVE] = self._write_parquet_artifact(
+                tmp_dir, "equity_curve.parquet", self._equity_curve_records(equity_curve)
+            )
+        if trades:
+            artifact_paths[ARTIFACT_TYPE_TRADES] = self._write_parquet_artifact(
+                tmp_dir, "trades.parquet", self._trade_artifact_records(trades)
+            )
+        if bar_outputs:
+            artifact_paths[ARTIFACT_TYPE_BAR_OUTPUTS] = self._write_parquet_artifact(
+                tmp_dir, "bar_outputs.parquet", bar_outputs
+            )
+        if plots is not None:
+            plot_records = self._plot_records(plots)
+            if plot_records:
+                plots_df = pd.DataFrame(plot_records)
+                plots_tmp = tmp_dir / "plot_outputs.parquet"
+                pq.write_table(pa.Table.from_pandas(plots_df), str(plots_tmp), compression="zstd")
+                artifact_paths[ARTIFACT_TYPE_PLOT_OUTPUTS] = plots_tmp
+                plots_df.to_csv(str(tmp_dir / "plot_outputs.csv"), index=False)
+
+        report = self._report_payload(
+            run_id,
+            strategy_id,
+            result,
+            metrics,
+            run_dir,
+            has_plot_outputs=ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths,
+            now=now,
+        )
+        report_tmp = tmp_dir / "report.json"
+        report_tmp.write_text(json.dumps(report, indent=2, default=str))
+        artifact_paths[ARTIFACT_TYPE_REPORT_JSON] = report_tmp
+
+        md_tmp = tmp_dir / "report.md"
+        md_tmp.write_text(self._report_markdown(run_id, strategy_id, result, metrics))
+        artifact_paths[ARTIFACT_TYPE_REPORT_MD] = md_tmp
+        return artifact_paths
 
     @staticmethod
     def _result_json_payload(metrics: BacktestMetricsSummary) -> dict[str, Any]:
