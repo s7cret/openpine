@@ -4084,7 +4084,9 @@ def strategy_backtest(
             )
             timings["save_sec"] = _time.perf_counter() - t0
             timings["total_sec"] = _time.perf_counter() - total_t0
-            run_dir = Path("~/.openpine/data/backtests").expanduser() / s.strategy_id / run_id
+            from openpine.config import OpenPineConfig
+
+            run_dir = OpenPineConfig.load().data_dir / "backtests" / s.strategy_id / run_id
             _plots = getattr(result.raw_result, "plots", None)
             if _plots is None or not capture_plots:
                 _plot_record_count = 0
@@ -4117,7 +4119,7 @@ def strategy_backtest(
             write_json(run_dir / "run_meta.json", meta)
             console.print(f"[green]Backtest saved:[/green] {run_id}")
             console.print(f"  trades:     {len(getattr(result.raw_result, 'trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
-            console.print(f"  artifacts:  ~/.openpine/data/backtests/{s.strategy_id}/{run_id}/")
+            console.print(f"  artifacts:  {run_dir}/")
             if capture_plots:
                 plots = getattr(result.raw_result, "plots", None)
                 if plots:
@@ -4759,7 +4761,15 @@ def strategy_export_run(
                 )
                 exported["metrics"] = str(metrics_path)
 
-            run_meta_path = Path("~/.openpine/data/backtests").expanduser() / strategy_id / run.run_id / "run_meta.json"
+            from openpine.config import OpenPineConfig
+
+            run_meta_path = (
+                OpenPineConfig.load().data_dir
+                / "backtests"
+                / strategy_id
+                / run.run_id
+                / "run_meta.json"
+            )
             if run_meta_path.exists():
                 target_meta = output_path / "run_meta.json"
                 target_meta.write_text(run_meta_path.read_text(encoding="utf-8"), encoding="utf-8")

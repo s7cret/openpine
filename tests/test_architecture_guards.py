@@ -313,6 +313,13 @@ def test_manifest_store_default_path_is_config_driven() -> None:
     assert 'Path("~/.openpine/manifests")' not in source
 
 
+def test_cli_backtest_artifact_paths_are_config_driven() -> None:
+    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+
+    assert 'Path("~/.openpine/data/backtests")' not in source
+    assert "~/.openpine/data/backtests" not in source
+
+
 def test_openpine_has_single_data_planning_model_family() -> None:
     production_files = [
         ROOT / "contracts" / "__init__.py",
