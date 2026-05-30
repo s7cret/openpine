@@ -173,6 +173,18 @@ def test_data_orchestrator_has_no_legacy_candle_storage_boundary() -> None:
     assert "_LegacyCandleStorageAdapter" not in source
 
 
+def test_data_inspect_cli_uses_orchestrator_boundary() -> None:
+    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    inspect_start = source.index('@data.command("inspect")')
+    doctor_start = source.index('@data.command("doctor")')
+    inspect_source = source[inspect_start:doctor_start]
+
+    assert "DataOrchestrator" in inspect_source
+    assert "CandleStorage" not in inspect_source
+    assert "read_candles" not in inspect_source
+    assert "pd.read_parquet" not in inspect_source
+
+
 def test_data_package_does_not_export_legacy_planner_models() -> None:
     import openpine.data as data
 

@@ -1513,7 +1513,6 @@ def data_inspect(
 ) -> None:
     """Inspect raw candles in a time range."""
     from datetime import datetime as dt
-    from openpine.config import OpenPineConfig
 
     console.print(f"[bold]Data inspect[/bold] {symbol} {timeframe}")
 
@@ -1527,59 +1526,27 @@ def data_inspect(
         dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000
     ) if to_date else int(dt.now().timestamp() * 1000)
 
-    config = OpenPineConfig.load()
-    candle_dir = (
-        config.data_dir
-        / "candles"
-        / f"exchange={exchange}"
-        / f"market_type={market}"
-        / f"symbol={symbol}"
-        / "price_type=trade"
-        / f"timeframe={timeframe}"
-    )
-
-    if not candle_dir.exists():
-        console.print(f"[dim]No candle data found at: {candle_dir}[/dim]")
-        console.print(f"  → run 'openpine data backfill {symbol} {timeframe} ...' first")
-        return
-
-    try:
-        import pandas as pd
-    except ImportError:
-        console.print("[dim]pandas not available for parquet reading[/dim]")
-        return
-
-    parquet_files = sorted(candle_dir.rglob("*.parquet"))
-    if not parquet_files:
-        console.print(f"[dim]No parquet files found for {symbol} {timeframe}[/dim]")
-        return
-
-    # Use CandleStorage for canonical (deduplicated) read
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.candle_storage import CandleStorage
+    from openpine.data.orchestrator import DataOrchestrator, DataCoverageError
 
-    storage = CandleStorage()
     query = BarQuery(
         instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
         timeframe=parse_timeframe(timeframe),
         start_ms=start_ms,
         end_ms=end_ms,
         source="storage",
+        gap_policy="allow_with_metadata",
     )
-    bars = storage.read_candles(query)
+    try:
+        series = DataOrchestrator().load_bars(query)
+    except DataCoverageError as exc:
+        console.print(f"[red]Data read failed:[/red] {exc}")
+        return
+    bars = list(series.bars)
 
     if not bars:
         console.print(f"[dim](no bars in range {from_date} → {to_date or 'today'})[/dim]")
         return
-
-    # Also compute raw vs canonical stats for transparency
-    raw_rows = 0
-    for pf in parquet_files:
-        try:
-            df = pd.read_parquet(pf)
-            raw_rows += len(df[(df["open_time"] >= start_ms) & (df["open_time"] < end_ms)])
-        except Exception:
-            pass
 
     from rich.table import Table
 
@@ -1599,10 +1566,15 @@ def data_inspect(
             str(round(bar.high, 6)),
             str(round(bar.low, 6)),
             str(round(bar.close, 6)),
-            str(round(bar.volume, 2)),
+            "" if bar.volume is None else str(round(bar.volume, 2)),
         )
     console.print(tbl)
-    console.print(f"[dim]Canonical bars: {len(bars)} | Raw rows: {raw_rows} | Duplicates removed: {raw_rows - len(bars)}[/dim]")
+    console.print(
+        "[dim]"
+        f"Canonical bars: {len(bars)} | Coverage: {series.coverage.status} | "
+        f"Missing intervals: {len(series.coverage.missing_intervals)}"
+        "[/dim]"
+    )
 
 
 @data.command("doctor")
