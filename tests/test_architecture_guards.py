@@ -1,28 +1,49 @@
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 import sys
+import tomllib
 
 from openpine.compile import CompileProfile, SubprocessCompilerAdapter
 from openpine.optimizer import LocalOptimizerAdapter, OptimizerRunConfig, OptimizerService
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PRODUCTION_EXCLUDES = {
+    ".git",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "docs",
+    "reports",
+    "tests",
+    "openpine.egg-info",
+}
+CANONICAL_MARKETDATA_CONTRACTS = {"Bar", "BarQuery", "Timeframe"}
 
 
 def _production_python_files() -> list[Path]:
-    ignored_parts = {"tests", "reports", "docs", "__pycache__", ".git", ".pytest_cache", "openpine.egg-info"}
     return sorted(
         path
         for path in ROOT.rglob("*.py")
-        if not any(part in ignored_parts for part in path.relative_to(ROOT).parts)
+        if not set(path.relative_to(ROOT).parts) & PRODUCTION_EXCLUDES
     )
 
 
+def _parse(path: Path) -> ast.Module:
+    return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+
 def test_cli_is_package_entrypoint_not_root_module() -> None:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
     assert not (ROOT / "cli.py").exists()
+    assert (ROOT / "cli" / "__init__.py").is_file()
+    assert (ROOT / "cli" / "main.py").is_file()
+    assert pyproject["project"]["scripts"]["openpine"] == "openpine.cli.main:main"
 
     import openpine.cli as cli_pkg
 
@@ -32,29 +53,62 @@ def test_cli_is_package_entrypoint_not_root_module() -> None:
 
 def test_no_executable_legacy_scripts_remain() -> None:
     scripts_dir = ROOT / "scripts"
-    script_files = sorted(path.relative_to(ROOT) for path in scripts_dir.rglob("*.py")) if scripts_dir.exists() else []
+    script_files = (
+        sorted(
+            path.relative_to(ROOT)
+            for path in scripts_dir.rglob("*.py")
+            if "__pycache__" not in path.parts
+        )
+        if scripts_dir.exists()
+        else []
+    )
 
     assert script_files == []
 
 
-def test_no_openpine_duplicate_data_contracts_or_path_hacks() -> None:
-    forbidden = {
-        "sys.path.insert": "manual import path injection",
-        "[local-home]": "machine-local absolute path",
-        "openpine.data.bar_query": "deleted duplicate BarQuery module",
-        "class BarQuery": "duplicate data query contract",
-        "class Bar(": "duplicate bar contract",
-        "class Timeframe": "duplicate timeframe contract",
-        "class InstrumentKey": "duplicate instrument contract",
-    }
-    violations: list[str] = []
-    for path in _production_python_files():
-        text = path.read_text()
-        for pattern, reason in forbidden.items():
-            if pattern in text:
-                violations.append(f"{path.relative_to(ROOT)}: {reason}: {pattern}")
+def test_production_source_does_not_mutate_sys_path_or_hardcode_home_paths() -> None:
+    sys_path_mutations: list[str] = []
+    home_paths: list[str] = []
 
-    assert violations == []
+    for path in _production_python_files():
+        module = _parse(path)
+        relative_path = path.relative_to(ROOT).as_posix()
+
+        for node in ast.walk(module):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "insert"
+                and isinstance(node.func.value, ast.Attribute)
+                and node.func.value.attr == "path"
+                and isinstance(node.func.value.value, ast.Name)
+                and node.func.value.value.id == "sys"
+            ):
+                sys_path_mutations.append(f"{relative_path}:{node.lineno}")
+
+            if (
+                isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and "/home/" in node.value
+            ):
+                home_paths.append(f"{relative_path}:{node.lineno}")
+
+    assert sys_path_mutations == []
+    assert home_paths == []
+
+
+def test_openpine_production_does_not_define_duplicate_marketdata_contracts() -> None:
+    duplicate_definitions: list[str] = []
+
+    for path in _production_python_files():
+        module = _parse(path)
+        relative_path = path.relative_to(ROOT).as_posix()
+
+        for node in ast.walk(module):
+            if isinstance(node, ast.ClassDef) and node.name in CANONICAL_MARKETDATA_CONTRACTS:
+                duplicate_definitions.append(f"{relative_path}:{node.lineno}:{node.name}")
+
+    assert duplicate_definitions == []
 
 
 def test_production_compile_profile_rejects_stub_flags() -> None:

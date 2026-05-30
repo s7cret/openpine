@@ -52,6 +52,22 @@ class MarketDataProvider(Protocol):
     def fetch_bars(self, query: MDPBarQuery) -> BarSeries: ...
 
 
+class DataCoverageError(RuntimeError):
+    """Base class for fail-closed data coverage errors."""
+
+
+class IncompleteCoverageError(DataCoverageError):
+    """Raised when a query cannot be satisfied under gap_policy='fail'."""
+
+
+class ProviderUnavailableError(DataCoverageError):
+    """Raised when provider data is required but no provider is configured."""
+
+
+class StorageUnavailableError(DataCoverageError):
+    """Raised when storage access fails."""
+
+
 class DataOrchestrator:
     """Single OpenPine boundary for bar reading/writing.
 
@@ -142,55 +158,80 @@ class DataOrchestrator:
         Reads according to query.source. Storage/provider errors are raised, never converted
         into an empty result.
         """
-        storage_bars: list[Bar] = []
-        storage_error: Exception | None = None
+        if query.source == "storage":
+            return self._load_from_storage(query, require_complete=query.gap_policy == "fail")
 
-        if query.source in ("storage", "auto"):
-            try:
-                storage_bars = [
-                    _canonical_bar_from_storage_bar(bar, query)
-                    for bar in self._candle_storage.read_candles(query)
-                ]
-            except Exception as exc:
-                storage_error = exc
-                if query.source == "storage":
-                    raise
-            if storage_bars:
-                bars_tuple = tuple(storage_bars)
-                return BarSeries(
-                    query=query,
-                    bars=bars_tuple,
-                    coverage=_coverage_for(query, bars_tuple, "storage"),
-                )
+        if query.source == "provider":
+            provider_series = self._load_from_provider(query)
+            return self._require_complete(provider_series, "provider") if query.gap_policy == "fail" else provider_series
 
-        if query.source in ("provider", "auto") and self._provider is not None:
-            try:
-                return self._provider.fetch_bars(query)
-            except Exception:
-                raise
+        if query.source != "auto":
+            raise ValueError(f"unsupported data source: {query.source}")
 
-        if storage_error is not None:
-            raise storage_error
-        if query.source == "provider" and self._provider is None:
-            raise RuntimeError("market data provider is not configured")
+        storage_series = self._load_from_storage(query, require_complete=False)
+        if _is_complete(storage_series):
+            return storage_series
 
-        return BarSeries(
-            query=query,
-            bars=(),
-            coverage=CoverageReport(
-                requested_start_ms=query.start_ms,
-                requested_end_ms=query.end_ms,
-                delivered_start_ms=None,
-                delivered_end_ms=None,
-                missing_intervals=((query.start_ms, query.end_ms),),
-                status="empty",
-            ),
-        )
+        provider_series = self._load_from_provider(query)
+        if query.gap_policy == "fail":
+            self._require_complete(provider_series, "provider")
+        self._write_provider_series(provider_series)
+        return _merge_series(query, storage_series, provider_series)
 
     def get_bars(self, query: MDPBarQuery) -> list[Bar]:
         """Return canonical bars for callers that need a plain sequence."""
 
         return list(self.load_bars(query).bars)
+
+    def _load_from_storage(self, query: MDPBarQuery, *, require_complete: bool) -> BarSeries:
+        try:
+            bars = tuple(
+                _canonical_bar_from_storage_bar(bar, query)
+                for bar in self._candle_storage.read_candles(query)
+            )
+        except Exception as exc:
+            raise StorageUnavailableError(str(exc)) from exc
+
+        series = BarSeries(
+            query=query,
+            bars=bars,
+            coverage=_coverage_for(query, bars, "storage"),
+        )
+        return self._require_complete(series, "storage") if require_complete else series
+
+    def _load_from_provider(self, query: MDPBarQuery) -> BarSeries:
+        if self._provider is None:
+            raise ProviderUnavailableError("market data provider is not configured")
+        try:
+            return self._provider.fetch_bars(query)
+        except Exception:
+            raise
+
+    def _write_provider_series(self, series: BarSeries) -> None:
+        if not series.bars:
+            return
+        result = self._candle_storage.write_candles(
+            candles=list(series.bars),
+            instrument_key=(
+                f"{series.query.instrument.exchange}:"
+                f"{series.query.instrument.market}:"
+                f"{series.query.instrument.symbol}:trade"
+            ),
+            timeframe=series.query.timeframe.canonical,
+        )
+        if not result.success:
+            raise StorageUnavailableError(result.error or "failed to persist provider bars")
+
+    @staticmethod
+    def _require_complete(series: BarSeries, source: str) -> BarSeries:
+        if _is_complete(series):
+            return series
+        raise IncompleteCoverageError(
+            f"{source} coverage incomplete for "
+            f"{series.query.instrument.exchange}/{series.query.instrument.market}/"
+            f"{series.query.instrument.symbol} {series.query.timeframe.canonical}: "
+            f"{series.coverage.missing_intervals or series.coverage.status}"
+        )
 
     def detect_gaps(self, query: MDPBarQuery) -> list[DataGap]:
         """Detect gaps in the candle data.
@@ -306,24 +347,68 @@ def _coverage_for(query: MDPBarQuery, bars: tuple[Bar, ...], source: str) -> Cov
             source_mix=(source,),
             status="empty",
         )
-    duplicate_timestamps = tuple(
-        sorted({bar.time for bar in bars if sum(1 for other in bars if other.time == bar.time) > 1})
-    )
+    duplicate_timestamps = tuple(sorted({bar.time for bar in bars if sum(1 for other in bars if other.time == bar.time) > 1}))
     ordered = all(bars[i].time < bars[i + 1].time for i in range(len(bars) - 1))
+    missing_intervals = _missing_intervals(query, bars) if ordered and not duplicate_timestamps else ()
     status = "valid"
     if duplicate_timestamps:
         status = "duplicate"
     elif not ordered:
         status = "unordered"
+    elif missing_intervals:
+        status = "gap"
     return CoverageReport(
         requested_start_ms=query.start_ms,
         requested_end_ms=query.end_ms,
         delivered_start_ms=bars[0].time,
         delivered_end_ms=bars[-1].time_close,
+        missing_intervals=missing_intervals,
         duplicate_timestamps=duplicate_timestamps,
         source_mix=(source,),
         status=status,
     )
 
 
-__all__ = ["DataOrchestrator", "MarketDataProvider", "StrategyInstance"]
+def _missing_intervals(query: MDPBarQuery, bars: tuple[Bar, ...]) -> tuple[tuple[int, int], ...]:
+    intervals: list[tuple[int, int]] = []
+    if bars[0].time > query.start_ms:
+        intervals.append((query.start_ms, bars[0].time))
+
+    duration_ms = query.timeframe.duration_ms
+    if duration_ms:
+        expected_next = bars[0].time + duration_ms
+        for bar in bars[1:]:
+            if bar.time > expected_next:
+                intervals.append((expected_next, bar.time))
+            expected_next = bar.time + duration_ms
+
+    delivered_end = bars[-1].time_close
+    if delivered_end < query.end_ms:
+        intervals.append((delivered_end, query.end_ms))
+    return tuple(intervals)
+
+
+def _is_complete(series: BarSeries) -> bool:
+    return bool(series.bars) and series.coverage.status == "valid" and not series.coverage.missing_intervals
+
+
+def _merge_series(query: MDPBarQuery, left: BarSeries, right: BarSeries) -> BarSeries:
+    by_time = {bar.time: bar for bar in left.bars}
+    by_time.update({bar.time: bar for bar in right.bars})
+    bars = tuple(sorted(by_time.values(), key=lambda bar: bar.time))
+    return BarSeries(
+        query=query,
+        bars=bars,
+        coverage=_coverage_for(query, bars, "storage+provider"),
+    )
+
+
+__all__ = [
+    "DataCoverageError",
+    "DataOrchestrator",
+    "IncompleteCoverageError",
+    "MarketDataProvider",
+    "ProviderUnavailableError",
+    "StorageUnavailableError",
+    "StrategyInstance",
+]
