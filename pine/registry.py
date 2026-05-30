@@ -39,6 +39,21 @@ def _make_source_id(source_text: str) -> str:
     return f"pine_{h}_{ts}"
 
 
+def _source_from_row(row: tuple) -> PineSource:
+    return PineSource(
+        id=row[0],
+        name=row[2],
+        source_text=row[5],
+        source_path=row[3],
+        source_hash=row[4],
+        version=row[6],
+        source_type=row[7],
+        active_artifact_id=row[8],
+        created_at=row[9],
+        updated_at=row[10],
+    )
+
+
 class SQLitePineSourceRegistry:
     """PineSourceRegistry backed by in-memory dict + SQLite persistence."""
 
@@ -78,18 +93,7 @@ class SQLitePineSourceRegistry:
                 "SELECT * FROM pine_sources WHERE id = ?", (row_id,)
             ).fetchone()
             if row:
-                self._mem[row_id] = PineSource(
-                    id=row[0],
-                    name=row[2],
-                    source_text=row[5],
-                    source_path=row[3],
-                    source_hash=row[4],
-                    version=row[6],
-                    source_type=row[7],
-                    active_artifact_id=row[8],
-                    created_at=row[9],
-                    updated_at=row[10],
-                )
+                self._mem[row_id] = _source_from_row(row)
 
     def add_source(self, source_text: str, name: str) -> PineSource:
         """Add a new Pine source."""
