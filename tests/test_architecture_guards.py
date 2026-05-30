@@ -155,6 +155,16 @@ def test_data_package_does_not_export_legacy_planner_models() -> None:
     assert "DataPlanner" not in exported
 
 
+def test_batch_runner_does_not_parse_tv_corpus_csv_directly() -> None:
+    source = (ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
+
+    assert "import csv" not in source
+    assert "DictReader" not in source
+    assert "read_csv(" not in source
+    assert "def read_chart" not in source
+    assert "def load_manifest" not in source
+
+
 def test_production_compile_profile_rejects_stub_flags() -> None:
     adapter = SubprocessCompilerAdapter(prefer_library=False)
 
