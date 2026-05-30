@@ -9,6 +9,54 @@ from openpine.compile import CompileProfile, SubprocessCompilerAdapter
 from openpine.optimizer import LocalOptimizerAdapter, OptimizerRunConfig, OptimizerService
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _production_python_files() -> list[Path]:
+    ignored_parts = {"tests", "reports", "docs", "__pycache__", ".git", ".pytest_cache", "openpine.egg-info"}
+    return sorted(
+        path
+        for path in ROOT.rglob("*.py")
+        if not any(part in ignored_parts for part in path.relative_to(ROOT).parts)
+    )
+
+
+def test_cli_is_package_entrypoint_not_root_module() -> None:
+    assert not (ROOT / "cli.py").exists()
+
+    import openpine.cli as cli_pkg
+
+    assert hasattr(cli_pkg, "__path__")
+    assert cli_pkg.cli.name == "cli"
+
+
+def test_no_executable_legacy_scripts_remain() -> None:
+    scripts_dir = ROOT / "scripts"
+    script_files = sorted(path.relative_to(ROOT) for path in scripts_dir.rglob("*.py")) if scripts_dir.exists() else []
+
+    assert script_files == []
+
+
+def test_no_openpine_duplicate_data_contracts_or_path_hacks() -> None:
+    forbidden = {
+        "sys.path.insert": "manual import path injection",
+        "[local-home]": "machine-local absolute path",
+        "openpine.data.bar_query": "deleted duplicate BarQuery module",
+        "class BarQuery": "duplicate data query contract",
+        "class Bar(": "duplicate bar contract",
+        "class Timeframe": "duplicate timeframe contract",
+        "class InstrumentKey": "duplicate instrument contract",
+    }
+    violations: list[str] = []
+    for path in _production_python_files():
+        text = path.read_text()
+        for pattern, reason in forbidden.items():
+            if pattern in text:
+                violations.append(f"{path.relative_to(ROOT)}: {reason}: {pattern}")
+
+    assert violations == []
+
+
 def test_production_compile_profile_rejects_stub_flags() -> None:
     adapter = SubprocessCompilerAdapter(prefer_library=False)
 
