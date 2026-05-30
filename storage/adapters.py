@@ -9,7 +9,6 @@ Each adapter represents a storage role:
 
 from __future__ import annotations
 
-import json
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -155,14 +154,11 @@ class SQLiteControlStorageAdapter(StorageBackend):
 class ParquetDataLakeAdapter(StorageBackend):
     """Parquet-based data lake for historical and large-format data.
 
-    Falls back to JSONL when pyarrow is not installed so that tests and
-    environments without pyarrow still get a functional (though
-    non-columnar) data layer.
+    Production parquet storage requires pyarrow. Missing dependencies are
+    reported as unavailable instead of silently switching output formats.
 
     Role: DATA_LAKE
     """
-
-    JSONL_SUFFIX = ".jsonl"
 
     def __init__(self, data_dir: Path | None = None) -> None:
         from openpine.config import OpenPineConfig
@@ -187,7 +183,9 @@ class ParquetDataLakeAdapter(StorageBackend):
         return BackendRole.DATA_LAKE
 
     def available(self) -> bool:
-        """Parquet/JSONL is available if we can write to the data directory."""
+        """Parquet is available only when pyarrow and the data dir are usable."""
+        if not self._pyarrow_available:
+            return False
         try:
             self._data_dir.mkdir(parents=True, exist_ok=True)
             probe = self._data_dir / ".probe"
@@ -199,6 +197,13 @@ class ParquetDataLakeAdapter(StorageBackend):
 
     def health_check(self) -> BackendInfo:
         try:
+            if not self._pyarrow_available:
+                return BackendInfo(
+                    name=self.name,
+                    role=self.role,
+                    health=BackendHealth.UNAVAILABLE_MISSING_DEPS,
+                    error="pyarrow is required for production parquet storage",
+                )
             if not self.available():
                 return BackendInfo(
                     name=self.name,
@@ -207,32 +212,25 @@ class ParquetDataLakeAdapter(StorageBackend):
                     error="data directory not writable",
                 )
 
-            if self._pyarrow_available:
-                import pyarrow.parquet as pq
+            import pyarrow.parquet as pq
 
-                # Read schema metadata from a known path if present
-                schema_extra = {}
-                latest = self._latest_parquet_file()
-                if latest:
-                    schema_extra["latest_file"] = str(latest)
-                    try:
-                        pf = pq.ParquetFile(latest)
-                        schema_extra["schema"] = str(pf.schema_arrow)
-                    except Exception:
-                        pass
+            # Read schema metadata from a known path if present
+            schema_extra = {}
+            latest = self._latest_parquet_file()
+            if latest:
+                schema_extra["latest_file"] = str(latest)
+                try:
+                    pf = pq.ParquetFile(latest)
+                    schema_extra["schema"] = str(pf.schema_arrow)
+                except Exception:
+                    pass
 
-                return BackendInfo(
-                    name=self.name,
-                    role=self.role,
-                    health=BackendHealth.AVAILABLE,
-                    version="pyarrow",
-                    extra={"backend": "parquet", **schema_extra},
-                )
             return BackendInfo(
                 name=self.name,
                 role=self.role,
-                health=BackendHealth.UNAVAILABLE_ERROR,
-                error="pyarrow is required for production parquet storage",
+                health=BackendHealth.AVAILABLE,
+                version="pyarrow",
+                extra={"backend": "parquet", **schema_extra},
             )
         except Exception as exc:
             return BackendInfo(
@@ -258,17 +256,18 @@ class ParquetDataLakeAdapter(StorageBackend):
     def write_ohlcv(self, symbol: str, timeframe: str, bars: list[dict]) -> None:
         """Write OHLCV bars to the lake.
 
-        Uses Parquet when pyarrow is available, JSONL otherwise.
+        Uses Parquet only. Diagnostic JSONL exports must be explicit elsewhere.
         """
         import datetime
 
+        self._require_pyarrow()
         date_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
         prefix = f"{symbol.replace('/', '_')}_{timeframe}_{date_str}"
+        self._write_ohlcv_parquet(prefix, bars)
 
-        if self._pyarrow_available:
-            self._write_ohlcv_parquet(prefix, bars)
-        else:
-            self._write_ohlcv_jsonl(prefix, bars)
+    def _require_pyarrow(self) -> None:
+        if not self._pyarrow_available:
+            raise RuntimeError("pyarrow is required for production parquet storage")
 
     def _write_ohlcv_parquet(self, prefix: str, bars: list[dict]) -> None:
         import pyarrow as pa
@@ -278,18 +277,10 @@ class ParquetDataLakeAdapter(StorageBackend):
         path = self._data_dir / f"{prefix}.parquet"
         pq.write_table(table, path)
 
-    def _write_ohlcv_jsonl(self, prefix: str, bars: list[dict]) -> None:
-        path = self._data_dir / f"{prefix}.jsonl"
-        with path.open("a") as fh:
-            for bar in bars:
-                fh.write(json.dumps(bar) + "\n")
-
     def read_ohlcv(self, symbol: str, timeframe: str, start_ts: int, end_ts: int) -> list[dict]:
         """Read OHLCV bars from the lake."""
-        if self._pyarrow_available:
-            return self._read_ohlcv_parquet(symbol, timeframe, start_ts, end_ts)
-        else:
-            return self._read_ohlcv_jsonl(symbol, timeframe, start_ts, end_ts)
+        self._require_pyarrow()
+        return self._read_ohlcv_parquet(symbol, timeframe, start_ts, end_ts)
 
     def _read_ohlcv_parquet(self, symbol: str, timeframe: str, start_ts: int, end_ts: int) -> list[dict]:
         import pyarrow.parquet as pq
@@ -305,20 +296,6 @@ class ParquetDataLakeAdapter(StorageBackend):
                 if start_ts <= ts <= end_ts:
                     results.append(bar)
         return results
-
-    def _read_ohlcv_jsonl(self, symbol: str, timeframe: str, start_ts: int, end_ts: int) -> list[dict]:
-        prefix = f"{symbol.replace('/', '_')}_{timeframe}_"
-        matches = list(self._data_dir.glob(f"{prefix}*.jsonl"))
-        results: list[dict] = []
-        for path in matches:
-            with path.open() as fh:
-                for line in fh:
-                    bar = json.loads(line)
-                    ts = bar.get("timestamp", 0)
-                    if start_ts <= ts <= end_ts:
-                        results.append(bar)
-        return results
-
 
 # --------------------------------------------------------------------------- #
 # DuckDB — analytics / query layer over Parquet

@@ -198,6 +198,17 @@ def test_data_orchestrator_has_no_placeholder_planning_api() -> None:
     assert "return []" not in source
 
 
+def test_parquet_storage_has_no_jsonl_fallback() -> None:
+    source = (ROOT / "storage" / "adapters.py").read_text(encoding="utf-8")
+
+    assert "JSONL_SUFFIX" not in source
+    assert "_write_ohlcv_jsonl" not in source
+    assert "_read_ohlcv_jsonl" not in source
+    assert "write to JSONL" not in source
+    assert "json.dumps" not in source
+    assert "json.loads" not in source
+
+
 def test_openpine_has_single_data_planning_model_family() -> None:
     production_files = [
         ROOT / "contracts" / "__init__.py",
