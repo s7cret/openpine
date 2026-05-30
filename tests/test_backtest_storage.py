@@ -146,6 +146,48 @@ def test_save_result_updates_status_and_metrics(store):
     assert run.equity_curve_path is not None
 
 
+def test_metrics_from_result_preserves_summary_mapping():
+    result = FakeResult(
+        initial_capital=10000.0,
+        final_equity=10050.0,
+        net_profit=50.0,
+        net_profit_percent=0.5,
+        gross_profit=75.0,
+        gross_loss=-25.0,
+        profit_factor=1.5,
+        max_drawdown=10.0,
+        max_drawdown_percent=0.1,
+        sharpe_ratio=0.5,
+        sortino_ratio=0.6,
+        win_rate=50.0,
+        total_trades=10,
+        winning_trades=5,
+        losing_trades=5,
+        avg_trade=5.0,
+        avg_win=15.0,
+        avg_loss=-5.0,
+        largest_win=25.0,
+        largest_loss=-10.0,
+        avg_bars_in_trade=3.0,
+        commission_total=1.25,
+        expectancy=2.5,
+    )
+
+    metrics = BacktestResultStore._metrics_from_result(result)
+
+    assert metrics.initial_capital == 10000.0
+    assert metrics.net_profit_pct == 0.5
+    assert metrics.max_drawdown_pct == 0.1
+    assert metrics.sharpe == 0.5
+    assert metrics.sortino == 0.6
+    assert metrics.trades_total == 10
+    assert metrics.winning_trades == 5
+    assert metrics.losing_trades == 5
+    assert metrics.commission_total == 1.25
+    assert metrics.expectancy == 2.5
+    assert metrics.calmar is None
+
+
 def test_save_result_inserts_trades(store):
     req = BacktestRunRequest(
         strategy_id="strat_1",

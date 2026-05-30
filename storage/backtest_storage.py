@@ -101,32 +101,7 @@ class BacktestResultStore:
 
         try:
             # Extract metrics
-            metrics = BacktestMetricsSummary(
-                initial_capital=getattr(result, "initial_capital", None),
-                final_equity=getattr(result, "final_equity", None),
-                net_profit=getattr(result, "net_profit", None),
-                net_profit_pct=getattr(result, "net_profit_percent", None),
-                gross_profit=getattr(result, "gross_profit", None),
-                gross_loss=getattr(result, "gross_loss", None),
-                profit_factor=getattr(result, "profit_factor", None),
-                max_drawdown=getattr(result, "max_drawdown", None),
-                max_drawdown_pct=getattr(result, "max_drawdown_percent", None),
-                sharpe=getattr(result, "sharpe_ratio", None),
-                sortino=getattr(result, "sortino_ratio", None),
-                calmar=None,
-                win_rate=getattr(result, "win_rate", None),
-                trades_total=getattr(result, "total_trades", 0),
-                winning_trades=getattr(result, "winning_trades", 0),
-                losing_trades=getattr(result, "losing_trades", 0),
-                avg_trade=getattr(result, "avg_trade", None),
-                avg_win=getattr(result, "avg_win", None),
-                avg_loss=getattr(result, "avg_loss", None),
-                largest_win=getattr(result, "largest_win", None),
-                largest_loss=getattr(result, "largest_loss", None),
-                avg_bars_in_trade=getattr(result, "avg_bars_in_trade", None),
-                commission_total=getattr(result, "commission_total", None),
-                expectancy=getattr(result, "expectancy", None),
-            )
+            metrics = self._metrics_from_result(result)
 
             result_json = json.dumps({
                 "net_profit": metrics.net_profit,
@@ -509,6 +484,35 @@ class BacktestResultStore:
         if row:
             return row[0]
         return ""
+
+    @staticmethod
+    def _metrics_from_result(result: Any) -> BacktestMetricsSummary:
+        return BacktestMetricsSummary(
+            initial_capital=getattr(result, "initial_capital", None),
+            final_equity=getattr(result, "final_equity", None),
+            net_profit=getattr(result, "net_profit", None),
+            net_profit_pct=getattr(result, "net_profit_percent", None),
+            gross_profit=getattr(result, "gross_profit", None),
+            gross_loss=getattr(result, "gross_loss", None),
+            profit_factor=getattr(result, "profit_factor", None),
+            max_drawdown=getattr(result, "max_drawdown", None),
+            max_drawdown_pct=getattr(result, "max_drawdown_percent", None),
+            sharpe=getattr(result, "sharpe_ratio", None),
+            sortino=getattr(result, "sortino_ratio", None),
+            calmar=None,
+            win_rate=getattr(result, "win_rate", None),
+            trades_total=getattr(result, "total_trades", 0),
+            winning_trades=getattr(result, "winning_trades", 0),
+            losing_trades=getattr(result, "losing_trades", 0),
+            avg_trade=getattr(result, "avg_trade", None),
+            avg_win=getattr(result, "avg_win", None),
+            avg_loss=getattr(result, "avg_loss", None),
+            largest_win=getattr(result, "largest_win", None),
+            largest_loss=getattr(result, "largest_loss", None),
+            avg_bars_in_trade=getattr(result, "avg_bars_in_trade", None),
+            commission_total=getattr(result, "commission_total", None),
+            expectancy=getattr(result, "expectancy", None),
+        )
 
     def _row_to_run(self, row: tuple) -> BacktestRun:
         cursor = self._storage.execute("SELECT * FROM backtest_runs LIMIT 0")
