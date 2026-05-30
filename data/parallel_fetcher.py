@@ -38,6 +38,10 @@ class FetchJob:
     market_type: str = "usdm"
 
 
+class ParallelFetchError(RuntimeError):
+    """Raised when a parallel fetch job fails."""
+
+
 class ParallelDataFetcher:
     """Multi-threaded bar fetcher with automatic chunking.
 
@@ -124,7 +128,7 @@ class ParallelDataFetcher:
                     )
                 except Exception as exc:
                     log.error("parallel_fetcher.job_failed", key=key, error=str(exc))
-                    results[key] = []
+                    raise ParallelFetchError(f"parallel fetch failed for {key}: {exc}") from exc
                 if progress_callback:
                     progress_callback(key, completed, total)
 
@@ -184,17 +188,18 @@ class ParallelDataFetcher:
         seen_times: set[int] = set()
         for key, bars in results.items():
             for bar in bars:
-                if bar.timestamp not in seen_times:
-                    seen_times.add(bar.timestamp)
+                if bar.time not in seen_times:
+                    seen_times.add(bar.time)
                     all_bars.append(bar)
 
         # Sort by timestamp
-        all_bars.sort(key=lambda b: b.timestamp)
+        all_bars.sort(key=lambda b: b.time)
         return all_bars
 
 
 __all__ = [
     "FetchJob",
+    "ParallelFetchError",
     "ParallelDataFetcher",
     "_default_workers",
 ]
