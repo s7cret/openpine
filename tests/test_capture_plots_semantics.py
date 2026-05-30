@@ -99,6 +99,65 @@ def test_cli_backtest_config_helper_maps_declaration_values():
     }
 
 
+def test_cli_backtest_runtime_meta_and_progress_helpers():
+    from openpine.cli.main import (
+        _build_progress_callback,
+        _build_strategy_backtest_run_meta,
+        _print_strategy_plot_capture_status,
+    )
+
+    strategy = SimpleNamespace(
+        strategy_id="strategy-1",
+        name="Test Strategy",
+        pine_id="pine-1",
+        artifact_id="artifact-1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    raw_result = SimpleNamespace(
+        trades=[{"id": 1}],
+        open_trades=[{"id": 2}],
+        plots=SimpleNamespace(get_records=lambda: [{"plot": "a"}, {"plot": "b"}]),
+    )
+    result = SimpleNamespace(
+        raw_result=raw_result,
+        bars_processed=99,
+        process_next_bar_available=True,
+    )
+    meta = _build_strategy_backtest_run_meta(
+        strategy=strategy,
+        start_ms=100,
+        end_ms=200,
+        bars_total=10,
+        data_fetch_info={"provider": "local"},
+        result=result,
+        capture_plots=True,
+        timings={"backtest_sec": 1.5},
+    )
+
+    assert meta["strategy_id"] == "strategy-1"
+    assert meta["bars_processed"] == 99
+    assert meta["trades_rows"] == 1
+    assert meta["open_trades"] == 1
+    assert meta["plots_records"] == 2
+
+    messages: list[tuple] = []
+    console = SimpleNamespace(print=lambda *args, **kwargs: messages.append(args))
+    progress = _build_progress_callback(bars_total=100, console=console)
+    progress(1, 100)
+    progress(5, 100)
+    progress(100, 100)
+    _print_strategy_plot_capture_status(
+        raw_result=raw_result,
+        capture_plots=True,
+        console=console,
+    )
+
+    assert "[dim]runtime: 5/100 bars[/dim]" in messages[0][0]
+    assert "[dim]runtime: 100/100 bars[/dim]" in messages[1][0]
+    assert "2 plot records captured" in messages[-1][0]
+
+
 def test_indicator_plot_helpers_build_config_and_meta(tmp_path):
     from openpine.cli.main import (
         _build_indicator_plot_config,

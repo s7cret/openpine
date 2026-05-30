@@ -123,6 +123,81 @@ def _build_strategy_backtest_run_request(
     )
 
 
+def _prepare_strategy_backtest_runtime(strategy_class, console):
+    backend = None
+    selected_strategy_class = strategy_class
+    generated_ref = vars(strategy_class).get("generated_strategy_class_ref")
+    if generated_ref is not None:
+        selected_strategy_class = generated_ref
+        try:
+            from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
+
+            backend = PineRuntimeBackend()
+        except Exception as exc:
+            console.print(f"[yellow]Warning: cannot set up plot backend: {exc}[/yellow]")
+    return selected_strategy_class, backend
+
+
+def _build_progress_callback(*, bars_total: int, console):
+    progress_every = max(1, bars_total // 20)
+    state = {"last_progress": 0}
+
+    def _progress(done: int, total: int) -> None:
+        if done == total or done - state["last_progress"] >= progress_every:
+            state["last_progress"] = done
+            console.print(f"[dim]runtime: {done}/{total} bars[/dim]")
+
+    return _progress
+
+
+def _build_strategy_backtest_run_meta(
+    *,
+    strategy,
+    start_ms: int,
+    end_ms: int,
+    bars_total: int,
+    data_fetch_info,
+    result,
+    capture_plots: bool,
+    timings: dict[str, float],
+):
+    raw_result = result.raw_result
+    plots = getattr(raw_result, "plots", None)
+    return {
+        "type": "strategy",
+        "strategy_id": strategy.strategy_id,
+        "strategy_name": strategy.name,
+        "pine_id": strategy.pine_id,
+        "artifact_id": strategy.artifact_id,
+        "symbol": strategy.symbol,
+        "timeframe": strategy.timeframe,
+        "calculation_from": start_ms,
+        "calculation_to": end_ms,
+        "bars_total": bars_total,
+        "data_fetch": data_fetch_info,
+        "bars_processed": result.bars_processed,
+        "trades_rows": len(getattr(raw_result, "trades", []) or []),
+        "open_trades": len(getattr(raw_result, "open_trades", []) or []),
+        "plots_records": _plot_record_count(plots) if capture_plots else 0,
+        "process_next_bar_available": result.process_next_bar_available,
+        "timings": timings,
+    }
+
+
+def _print_strategy_plot_capture_status(*, raw_result, capture_plots: bool, console) -> None:
+    if not capture_plots:
+        return
+    plots = getattr(raw_result, "plots", None)
+    if plots:
+        recs = plots if isinstance(plots, list) else (plots.get_records() if hasattr(plots, "get_records") else [])
+        if recs:
+            console.print(f"[green]  plots:      {len(recs)} plot records captured[/green]")
+        else:
+            console.print("[yellow]  plots:      plot recorder empty[/yellow]")
+    else:
+        console.print("[yellow]  plots:      plot outputs unavailable from engine result[/yellow]")
+
+
 def _build_cli_bar_query(
     *,
     symbol: str,
@@ -3939,27 +4014,10 @@ def strategy_backtest(
         )
         registry.update_status(strategy_id, "running")
         try:
-            _backend = None
-            _strategy_class = strategy_class
-            # Always use PineRuntimeBackend for generated strategies to ensure
-            # consistent execution semantics regardless of --capture-plots flag.
-            # capture_plots only controls whether plots are persisted, not execution.
-            generated_ref = vars(strategy_class).get("generated_strategy_class_ref")
-            if generated_ref is not None:
-                _strategy_class = generated_ref
-                try:
-                    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
-                    _backend = PineRuntimeBackend()
-                except Exception as exc:
-                    console.print(f"[yellow]Warning: cannot set up plot backend: {exc}[/yellow]")
-            progress_every = max(1, len(bars) // 20)
-            last_progress = 0
-
-            def _progress(done: int, total: int) -> None:
-                nonlocal last_progress
-                if done == total or done - last_progress >= progress_every:
-                    last_progress = done
-                    console.print(f"[dim]runtime: {done}/{total} bars[/dim]")
+            _strategy_class, _backend = _prepare_strategy_backtest_runtime(
+                strategy_class,
+                console,
+            )
 
             t0 = _time.perf_counter()
             result = BacktestEngineAdapter().run(
@@ -3968,7 +4026,7 @@ def strategy_backtest(
                 config,
                 params=params,
                 execution_backend=_backend,
-                progress_callback=_progress,
+                progress_callback=_build_progress_callback(bars_total=len(bars), console=console),
                 runtime_data_provider=getattr(provider, "_provider", None),
             )
             timings["backtest_sec"] = _time.perf_counter() - t0
@@ -4008,42 +4066,26 @@ def strategy_backtest(
             from openpine.config import OpenPineConfig
 
             run_dir = OpenPineConfig.load().data_dir / "backtests" / s.strategy_id / run_id
-            _plots = getattr(result.raw_result, "plots", None)
-            plot_record_count = _plot_record_count(_plots) if capture_plots else 0
-            meta = {
-                "type": "strategy",
-                "strategy_id": s.strategy_id,
-                "strategy_name": s.name,
-                "pine_id": s.pine_id,
-                "artifact_id": s.artifact_id,
-                "symbol": s.symbol,
-                "timeframe": s.timeframe,
-                "calculation_from": start_ms,
-                "calculation_to": end_ms,
-                "bars_total": len(bars),
-                "data_fetch": data_fetch_info,
-                "bars_processed": result.bars_processed,
-                "trades_rows": len(getattr(result.raw_result, "trades", []) or []),
-                "open_trades": len(getattr(result.raw_result, "open_trades", []) or []),
-                "plots_records": plot_record_count,
-                "process_next_bar_available": result.process_next_bar_available,
-                "timings": timings,
-            }
+            meta = _build_strategy_backtest_run_meta(
+                strategy=s,
+                start_ms=start_ms,
+                end_ms=end_ms,
+                bars_total=len(bars),
+                data_fetch_info=data_fetch_info,
+                result=result,
+                capture_plots=capture_plots,
+                timings=timings,
+            )
             from openpine.export import write_json
             write_json(run_dir / "run_meta.json", meta)
             console.print(f"[green]Backtest saved:[/green] {run_id}")
             console.print(f"  trades:     {len(getattr(result.raw_result, 'trades', []))} closed + {len(getattr(result.raw_result, 'open_trades', []))} open")
             console.print(f"  artifacts:  {run_dir}/")
-            if capture_plots:
-                plots = getattr(result.raw_result, "plots", None)
-                if plots:
-                    recs = plots if isinstance(plots, list) else (plots.get_records() if hasattr(plots, "get_records") else [])
-                    if recs:
-                        console.print(f"[green]  plots:      {len(recs)} plot records captured[/green]")
-                    else:
-                        console.print(f"[yellow]  plots:      plot recorder empty[/yellow]")
-                else:
-                    console.print(f"[yellow]  plots:      plot outputs unavailable from engine result[/yellow]")
+            _print_strategy_plot_capture_status(
+                raw_result=result.raw_result,
+                capture_plots=capture_plots,
+                console=console,
+            )
         except Exception as exc:
             console.print(f"[yellow]Warning: failed to save backtest results: {exc}[/yellow]")
             import traceback
