@@ -384,7 +384,7 @@ class BybitLiveExecutionAdapter:
         Uses tracked symbol if available, otherwise fails-closed.
         For explicit symbol, use cancel_order_for_symbol(order_id, symbol).
 
-        FAIL-CLOSED: No client => False
+        FAIL-CLOSED: exchange unavailability raises for known-symbol cancels.
         FAIL-CLOSED: No tracked symbol and no explicit symbol => False
 
         Args:
@@ -401,7 +401,7 @@ class BybitLiveExecutionAdapter:
     async def cancel_order_for_symbol(self, order_id: str, symbol: str) -> bool:
         """Cancel order via injected client with explicit symbol.
 
-        FAIL-CLOSED: No client => False
+        FAIL-CLOSED: exchange unavailability raises, never returns synthetic False.
 
         Args:
             order_id: Exchange order ID
@@ -411,13 +411,13 @@ class BybitLiveExecutionAdapter:
             True if cancelled, False otherwise
         """
         if self._client is None:
-            return False
+            raise ExecutionUnavailableError("Bybit cancel requires an injected client")
 
         try:
             result = await self._call_cancel_order(order_id, symbol)
             return result.success
-        except Exception:
-            return False
+        except Exception as exc:
+            raise ExecutionUnavailableError(f"Bybit cancel failed: {exc}") from exc
 
     async def _call_cancel_order(
         self, order_id: str, symbol: str
@@ -446,7 +446,7 @@ class BybitLiveExecutionAdapter:
         Uses tracked symbol if available, otherwise fails-closed.
         For explicit symbol, use get_order_status_for_symbol(order_id, symbol).
 
-        FAIL-CLOSED: No client => None
+        FAIL-CLOSED: exchange unavailability raises for known-symbol status checks.
         FAIL-CLOSED: No tracked symbol => None
 
         Args:
@@ -465,7 +465,7 @@ class BybitLiveExecutionAdapter:
     ) -> Order | None:
         """Get order status from exchange via injected client with explicit symbol.
 
-        FAIL-CLOSED: No client => None
+        FAIL-CLOSED: exchange unavailability raises, never returns synthetic None.
 
         Args:
             order_id: Exchange order ID
@@ -475,12 +475,12 @@ class BybitLiveExecutionAdapter:
             Order or None if not found
         """
         if self._client is None:
-            return None
+            raise ExecutionUnavailableError("Bybit order status requires an injected client")
 
         try:
             return await self._call_get_order(order_id, symbol)
-        except Exception:
-            return None
+        except Exception as exc:
+            raise ExecutionUnavailableError(f"Bybit order status failed: {exc}") from exc
 
     async def _call_get_order(self, order_id: str, symbol: str) -> Order | None:
         """Call injected client to get order status.
