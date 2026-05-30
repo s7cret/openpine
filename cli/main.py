@@ -1595,11 +1595,9 @@ def data_doctor(
     price_type: str,
 ) -> None:
     """Run diagnostic checks on candle data."""
-    from datetime import datetime as dt, timezone
+    from datetime import datetime as dt
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.config import OpenPineConfig
-    from openpine.data.candle_storage import CandleStorage
-    import pandas as pd
+    from openpine.data.orchestrator import DataCoverageError, DataOrchestrator
 
     console.print(f"[bold]Data doctor[/bold] {symbol} {timeframe}")
 
@@ -1611,64 +1609,31 @@ def data_doctor(
 
     end_ms = int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000) if to_date else int(dt.now().timestamp() * 1000)
 
-    # Read canonical bars
-    storage = CandleStorage()
     query = BarQuery(
         instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
         timeframe=parse_timeframe(timeframe),
         start_ms=start_ms,
         end_ms=end_ms,
         source="storage",
+        gap_policy="allow_with_metadata",
     )
-    bars = storage.read_candles(query)
-
-    # Read raw rows from active manifest files only
-    raw_rows = 0
-    duplicate_rows = 0
-    conflicting_duplicates = 0
-    files_read = 0
-    all_raw_rows: list[dict] = []
-
-    active_manifests = storage.list_manifests(query)
-    for m in active_manifests:
-        try:
-            df = pd.read_parquet(m.partition_path)
-            mask = (df["open_time"] >= start_ms) & (df["open_time"] < end_ms)
-            subset = df[mask]
-            raw_rows += len(subset)
-            all_raw_rows.extend(subset.to_dict("records"))
-            files_read += 1
-        except Exception:
-            pass
-
-    # Detect duplicates and conflicts
-    seen: dict[int, dict] = {}
-    for row in all_raw_rows:
-        ot = int(row["open_time"])
-        if ot in seen:
-            duplicate_rows += 1
-            existing = seen[ot]
-            if (
-                existing.get("open") != row.get("open")
-                or existing.get("high") != row.get("high")
-                or existing.get("low") != row.get("low")
-                or existing.get("close") != row.get("close")
-                or existing.get("volume") != row.get("volume")
-            ):
-                conflicting_duplicates += 1
-        else:
-            seen[ot] = row
-
-    # Manifest check
-    manifests = storage.list_manifests(query)
+    try:
+        series = DataOrchestrator().load_bars(query)
+    except DataCoverageError as exc:
+        console.print(f"[red]Data doctor failed:[/red] {exc}")
+        return
+    bars = list(series.bars)
+    coverage = series.coverage
 
     # Classification
-    if conflicting_duplicates > 0:
-        classification = "DUPLICATES_CONFLICTING"
-    elif duplicate_rows > 0:
-        classification = "DUPLICATES_IDENTICAL"
-    elif len(bars) == 0:
+    if len(bars) == 0:
         classification = "NO_DATA"
+    elif coverage.duplicate_timestamps:
+        classification = "DUPLICATE_TIMESTAMPS"
+    elif coverage.missing_intervals:
+        classification = "COVERAGE_GAP"
+    elif coverage.status != "valid":
+        classification = coverage.status.upper()
     else:
         classification = "DATA_OK"
 
@@ -1676,21 +1641,17 @@ def data_doctor(
     console.print(f"\n[bold]Diagnostic Report[/bold]")
     console.print(f"  Classification: [bold]{classification}[/bold]")
     console.print(f"  Canonical bars: {len(bars)}")
-    console.print(f"  Raw rows: {raw_rows}")
-    console.print(f"  Duplicate rows: {duplicate_rows}")
-    console.print(f"  Conflicting duplicates: {conflicting_duplicates}")
-    console.print(f"  Manifests: {len(manifests)}")
-    console.print(f"  Parquet files scanned: {files_read}")
+    console.print(f"  Coverage status: {coverage.status}")
+    console.print(f"  Missing intervals: {len(coverage.missing_intervals)}")
+    console.print(f"  Duplicate timestamps: {len(coverage.duplicate_timestamps)}")
     console.print(f"  Time range: {from_date} → {to_date or 'today'}")
 
-    if classification == "DUPLICATES_IDENTICAL":
-        console.print(f"[yellow]  Warning: {duplicate_rows} identical duplicate rows found.[/yellow]")
-        console.print(f"[dim]  Run 'openpine data compact {symbol} {timeframe}' to merge manifests.[/dim]")
-    elif classification == "DUPLICATES_CONFLICTING":
-        console.print(f"[red]  Critical: {conflicting_duplicates} conflicting duplicate rows found.[/red]")
-        console.print(f"[red]  Same open_time but different OHLCV values — manual audit required.[/red]")
+    if classification == "DUPLICATE_TIMESTAMPS":
+        console.print("[red]  Critical: duplicate timestamps found in canonical coverage.[/red]")
+    elif classification == "COVERAGE_GAP":
+        console.print("[yellow]  Warning: requested window has coverage gaps.[/yellow]")
     elif classification == "DATA_OK":
-        console.print(f"[green]  Data is clean — no duplicates or conflicts.[/green]")
+        console.print("[green]  Data coverage is valid.[/green]")
 
 
 @data.command("compact")

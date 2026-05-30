@@ -185,6 +185,19 @@ def test_data_inspect_cli_uses_orchestrator_boundary() -> None:
     assert "pd.read_parquet" not in inspect_source
 
 
+def test_data_doctor_cli_uses_orchestrator_boundary() -> None:
+    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    doctor_start = source.index('@data.command("doctor")')
+    compact_start = source.index('@data.command("compact")')
+    doctor_source = source[doctor_start:compact_start]
+
+    assert "DataOrchestrator" in doctor_source
+    assert "CandleStorage" not in doctor_source
+    assert "read_candles" not in doctor_source
+    assert "list_manifests" not in doctor_source
+    assert "pd.read_parquet" not in doctor_source
+
+
 def test_data_package_does_not_export_legacy_planner_models() -> None:
     import openpine.data as data
 
