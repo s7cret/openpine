@@ -69,6 +69,8 @@ def load_strategy_class_from_artifact(
             f"Recompile the Pine source with: openpine pine compile <pine-name>"
         ) from exc
 
+    _validate_production_compile_artifact(artifact_id, artifact.get("compile_meta", {}))
+
     artifact_dir = Path(str(artifact["artifact_dir"]))
     strategy_path = artifact_dir / "generated_strategy.py"
     if not strategy_path.exists():
@@ -97,6 +99,8 @@ def load_generated_class_from_artifact(source_id: str, artifact_id: str) -> type
             f"Recompile the Pine source with: openpine pine compile <pine-name>"
         ) from exc
 
+    _validate_production_compile_artifact(artifact_id, artifact.get("compile_meta", {}))
+
     artifact_dir = Path(str(artifact["artifact_dir"]))
     strategy_path = artifact_dir / "generated_strategy.py"
     if not strategy_path.exists():
@@ -107,6 +111,22 @@ def load_generated_class_from_artifact(source_id: str, artifact_id: str) -> type
 
     module = _load_generated_module(strategy_path, source_id, artifact_id)
     return _select_strategy_class(module, artifact.get("compile_meta", {}))
+
+
+def _validate_production_compile_artifact(artifact_id: str, compile_meta: dict[str, Any]) -> None:
+    """Reject failed, legacy, or diagnostic compile artifacts before import."""
+
+    status = compile_meta.get("compile_status")
+    if status != "OK":
+        raise BacktestArtifactError(
+            f"Artifact {artifact_id} is not a successful production compile "
+            f"(compile_status={status!r}). Recompile before running."
+        )
+    if compile_meta.get("unsafe") is True:
+        reasons = compile_meta.get("unsafe_reasons") or []
+        raise BacktestArtifactError(
+            f"Artifact {artifact_id} is marked unsafe for production runtime: {reasons!r}"
+        )
 
 
 def _load_generated_module(path: Path, source_id: str, artifact_id: str) -> Any:

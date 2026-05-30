@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import pytest
+
 from marketdata_provider.contracts import Bar, BarQuery, BarSeries, InstrumentKey, parse_timeframe
 
 from openpine.adapters.bars import from_provider_bars, to_engine_bars, to_pinelib_bars
-from openpine.runtime.engine import BacktestEngineAdapter
+from openpine.runtime.engine import (
+    BacktestArtifactError,
+    BacktestEngineAdapter,
+    load_generated_class_from_artifact,
+)
 
 
 def test_bar_adapters_preserve_canonical_window_semantics() -> None:
@@ -42,3 +48,47 @@ def test_bar_adapters_preserve_canonical_window_semantics() -> None:
     assert pine_bar.time == bar.time
     assert pine_bar.time_close == bar.time_close
     assert pine_bar.volume == 0.0
+
+
+def test_runtime_rejects_failed_compile_artifact(monkeypatch, tmp_path) -> None:
+    artifact_dir = tmp_path / "art_failed"
+    artifact_dir.mkdir()
+    (artifact_dir / "generated_strategy.py").write_text("class GeneratedStrategy: pass\n")
+
+    class Store:
+        def get_artifact(self, artifact_id: str, source_id: str) -> dict:
+            return {
+                "artifact_dir": str(artifact_dir),
+                "compile_meta": {"compile_status": "FAILED", "errors": ["boom"]},
+            }
+
+    import openpine.artifacts
+
+    monkeypatch.setattr(openpine.artifacts, "ArtifactStore", Store)
+
+    with pytest.raises(BacktestArtifactError, match="not a successful production compile"):
+        load_generated_class_from_artifact("pine_test", "art_failed")
+
+
+def test_runtime_rejects_unsafe_compile_artifact(monkeypatch, tmp_path) -> None:
+    artifact_dir = tmp_path / "art_unsafe"
+    artifact_dir.mkdir()
+    (artifact_dir / "generated_strategy.py").write_text("class GeneratedStrategy: pass\n")
+
+    class Store:
+        def get_artifact(self, artifact_id: str, source_id: str) -> dict:
+            return {
+                "artifact_dir": str(artifact_dir),
+                "compile_meta": {
+                    "compile_status": "OK",
+                    "unsafe": True,
+                    "unsafe_reasons": ["implicit_pine_version_rewrite"],
+                },
+            }
+
+    import openpine.artifacts
+
+    monkeypatch.setattr(openpine.artifacts, "ArtifactStore", Store)
+
+    with pytest.raises(BacktestArtifactError, match="marked unsafe"):
+        load_generated_class_from_artifact("pine_test", "art_unsafe")
