@@ -3098,72 +3098,11 @@ def plugins_test(plugin_name: str, chat_id: str) -> None:
         sys.exit(1)
 
 
-def _fallback_telegram_command_catalog() -> list[dict[str, object]]:
-    """Built-in Telegram command view used until a catalog module is available."""
-    return [
-        {"command": "/menu", "title": "Open interactive menu", "cli": "openpine plugins telegram send-menu"},
-        {"command": "/help", "title": "Show available commands", "cli": "openpine plugins telegram commands"},
-        {"command": "/status", "title": "System status", "cli": "openpine doctor"},
-        {"command": "/version", "title": "OpenPine version", "cli": "openpine version"},
-        {"command": "/config", "title": "Show configuration", "cli": "openpine config show"},
-        {"command": "/storage", "title": "Storage status", "cli": "openpine storage verify"},
-        {"command": "/pine_list", "title": "List Pine sources", "cli": "openpine pine list"},
-        {"command": "/pine_add", "title": "Add Pine source", "cli": "openpine pine pine-add <name> <file.pine>"},
-        {"command": "/pine_compile", "title": "Compile Pine source", "cli": "openpine pine pine-compile <name>"},
-        {"command": "/pine_show", "title": "Show Pine source", "cli": "openpine pine show <name>"},
-        {"command": "/pine_versions", "title": "List Pine versions", "cli": "openpine pine versions <name>"},
-        {"command": "/pine_activate", "title": "Activate Pine artifact", "cli": "openpine pine activate <name> <artifact_id>"},
-        {"command": "/strategies", "title": "List strategies", "cli": "openpine strategy list"},
-        {"command": "/strategy_create", "title": "Create strategy", "cli": "openpine strategy create --pine <name> --symbol <symbol> --timeframe <tf>"},
-        {"command": "/strategy_show", "title": "Show strategy", "cli": "openpine strategy show <strategy_id>"},
-        {"command": "/strategy_update", "title": "Update strategy params", "cli": "openpine strategy update <strategy_id> --param k=v"},
-        {"command": "/pause", "title": "Pause strategy", "cli": "openpine strategy pause <strategy_id>"},
-        {"command": "/resume", "title": "Resume strategy", "cli": "openpine strategy resume <strategy_id>"},
-        {"command": "/remove", "title": "Remove strategy", "cli": "openpine strategy remove <strategy_id>"},
-        {"command": "/backtest", "title": "Run backtest", "cli": "openpine strategy backtest <strategy_id>"},
-        {"command": "/replay", "title": "Run replay", "cli": "openpine strategy replay <strategy_id>"},
-        {"command": "/paper", "title": "Paper trading controls", "cli": "openpine strategy paper <start|stop|status> <strategy_id>"},
-        {"command": "/live", "title": "Live trading controls", "cli": "openpine strategy live <enable|disable|status> <strategy_id>"},
-        {"command": "/data", "title": "Data status", "cli": "openpine data status"},
-        {"command": "/data_gaps", "title": "Find data gaps", "cli": "openpine data gaps <symbol> <timeframe>"},
-        {"command": "/data_backfill", "title": "Backfill candles", "cli": "openpine data backfill <symbol> <timeframe>"},
-        {"command": "/data_repair", "title": "Repair candles", "cli": "openpine data repair <symbol> <timeframe>"},
-        {"command": "/accounts", "title": "List accounts", "cli": "openpine accounts list"},
-        {"command": "/account_add", "title": "Add account", "cli": "openpine accounts add"},
-        {"command": "/account_test", "title": "Test account", "cli": "openpine accounts test <account_id>"},
-        {"command": "/risk", "title": "Risk status", "cli": "openpine risk status"},
-        {"command": "/kill_on", "title": "Enable kill switch", "cli": "openpine risk kill-switch on"},
-        {"command": "/kill_off", "title": "Disable kill switch", "cli": "openpine risk kill-switch off"},
-        {"command": "/jobs", "title": "List jobs", "cli": "openpine jobs list"},
-        {"command": "/job_show", "title": "Show job", "cli": "openpine jobs show <job_id>"},
-        {"command": "/job_cancel", "title": "Cancel job", "cli": "openpine jobs cancel <job_id>"},
-        {"command": "/reports", "title": "List reports", "cli": "openpine reports list"},
-        {"command": "/report_show", "title": "Show report", "cli": "openpine reports show <report_id>"},
-        {"command": "/plugins", "title": "List plugins", "cli": "openpine plugins list"},
-    ]
-
-
 def _load_telegram_command_catalog() -> list[dict[str, object]]:
-    """Import the shared Telegram command catalog when present, else fallback."""
-    module_names = (
-        "openpine.plugins.telegram.command_catalog",
-        "openpine.telegram.command_catalog",
-        "openpine.notifications.telegram_commands",
-    )
-    for module_name in module_names:
-        try:
-            module = __import__(module_name, fromlist=["x"])
-        except ImportError:
-            continue
-        for attr in ("get_telegram_commands", "telegram_command_catalog", "get_commands"):
-            provider = getattr(module, attr, None)
-            if callable(provider):
-                return [_normalize_telegram_command(item) for item in provider()]
-        for attr in ("TELEGRAM_COMMANDS", "COMMANDS"):
-            commands = getattr(module, attr, None)
-            if commands is not None:
-                return [_normalize_telegram_command(item) for item in commands]
-    return _fallback_telegram_command_catalog()
+    """Load the canonical Telegram command catalog."""
+    from openpine.telegram_commands import TELEGRAM_COMMANDS
+
+    return [_normalize_telegram_command(item) for item in TELEGRAM_COMMANDS]
 
 
 def _normalize_telegram_command(item: object) -> dict[str, object]:
@@ -3172,9 +3111,12 @@ def _normalize_telegram_command(item: object) -> dict[str, object]:
         title = str(item.get("title") or item.get("description") or command)
         cli_cmd = str(item.get("cli") or item.get("cli_command") or "")
     else:
-        command = str(getattr(item, "command", getattr(item, "name", "")))
+        command = str(getattr(item, "command", getattr(item, "slash", getattr(item, "name", ""))))
         title = str(getattr(item, "title", getattr(item, "description", command)))
         cli_cmd = str(getattr(item, "cli", getattr(item, "cli_command", "")))
+        argv = getattr(item, "argv", None)
+        if not cli_cmd and argv is not None:
+            cli_cmd = "openpine " + " ".join(str(part) for part in argv)
     if command and not command.startswith("/"):
         command = f"/{command}"
     return {"command": command, "title": title, "cli": cli_cmd}

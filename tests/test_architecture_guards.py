@@ -262,6 +262,15 @@ def test_cli_does_not_expose_placeholder_planning_commands() -> None:
         assert "data_aggregate" not in source
 
 
+def test_telegram_cli_uses_single_command_catalog() -> None:
+    cli_source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+
+    assert "_fallback_telegram_command_catalog" not in cli_source
+    assert "openpine.plugins.telegram.command_catalog" not in cli_source
+    assert "openpine.notifications.telegram_commands" not in cli_source
+    assert "from openpine.telegram_commands import TELEGRAM_COMMANDS" in cli_source
+
+
 def test_data_orchestrator_has_no_placeholder_planning_api() -> None:
     source = (ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
 
