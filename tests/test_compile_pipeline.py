@@ -83,6 +83,29 @@ def test_artifact_store_list_does_not_hide_corrupt_artifact_dirs(tmp_path) -> No
         store.list_artifacts("pine_test")
 
 
+def test_artifact_store_list_returns_artifacts_in_stable_order(tmp_path) -> None:
+    store = ArtifactStore(root=tmp_path)
+    store.save_artifact(
+        artifact_id="art_b",
+        source_id="pine_test",
+        params_hash="default",
+        python_code="class GeneratedStrategy: pass\n",
+        compile_meta={"compile_status": "OK"},
+    )
+    store.save_artifact(
+        artifact_id="art_a",
+        source_id="pine_test",
+        params_hash="default",
+        python_code="class GeneratedStrategy: pass\n",
+        compile_meta={"compile_status": "OK"},
+    )
+
+    assert [artifact["artifact_id"] for artifact in store.list_artifacts("pine_test")] == [
+        "art_a",
+        "art_b",
+    ]
+
+
 def test_successful_compile_requires_generated_python_code(tmp_path, monkeypatch) -> None:
     config = OpenPineConfig(workspace_root=tmp_path, data_dir=tmp_path / "data")
     monkeypatch.setattr("openpine.artifacts.store.OpenPineConfig.load", lambda: config)

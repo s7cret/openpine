@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
-import shutil
 from pathlib import Path
 
 from openpine.config import OpenPineConfig
@@ -34,6 +32,18 @@ class ArtifactStore:
 
     def _artifact_dir(self, source_id: str, artifact_id: str) -> Path:
         return self._source_dir(source_id) / artifact_id
+
+    @staticmethod
+    def _read_optional_text(artifact_dir: Path, filename: str) -> str:
+        path = artifact_dir / filename
+        return path.read_text() if path.exists() else ""
+
+    @staticmethod
+    def _read_compile_meta(artifact_dir: Path, artifact_id: str) -> dict:
+        meta_path = artifact_dir / "compile_meta.json"
+        if not meta_path.exists():
+            raise FileNotFoundError(f"Artifact metadata not found: {artifact_id}")
+        return json.loads(meta_path.read_text())
 
     def save_artifact(
         self,
@@ -88,25 +98,14 @@ class ArtifactStore:
         if not artifact_dir.exists():
             raise FileNotFoundError(f"Artifact not found: {artifact_id}")
 
-        meta_path = artifact_dir / "compile_meta.json"
-        if not meta_path.exists():
-            raise FileNotFoundError(f"Artifact metadata not found: {artifact_id}")
-        compile_meta = json.loads(meta_path.read_text())
-
         return {
             "artifact_id": artifact_id,
             "source_id": source_id,
             "artifact_dir": str(artifact_dir),
-            "python_code": (artifact_dir / "generated_strategy.py").read_text()
-            if (artifact_dir / "generated_strategy.py").exists()
-            else "",
-            "ast_json": (artifact_dir / "ast.json").read_text()
-            if (artifact_dir / "ast.json").exists()
-            else "",
-            "source_text": (artifact_dir / "source.pine").read_text()
-            if (artifact_dir / "source.pine").exists()
-            else "",
-            "compile_meta": compile_meta,
+            "python_code": self._read_optional_text(artifact_dir, "generated_strategy.py"),
+            "ast_json": self._read_optional_text(artifact_dir, "ast.json"),
+            "source_text": self._read_optional_text(artifact_dir, "source.pine"),
+            "compile_meta": self._read_compile_meta(artifact_dir, artifact_id),
         }
 
     def list_artifacts(self, source_id: str) -> list[dict]:
@@ -116,7 +115,7 @@ class ArtifactStore:
             return []
 
         artifacts = []
-        for artifact_id in source_dir.iterdir():
+        for artifact_id in sorted(source_dir.iterdir()):
             if artifact_id.is_dir():
                 artifacts.append(self.get_artifact(artifact_id.name, source_id))
         return artifacts
