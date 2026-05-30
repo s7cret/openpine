@@ -1,10 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import SimpleNamespace
 
 import pandas as pd
 
-from openpine.export import ExportWindow, export_equity_curve, export_plot_outputs, export_trades
+from openpine.export import (
+    ExportWindow,
+    export_equity_curve,
+    export_plot_outputs,
+    export_strategy_result,
+    export_trades,
+)
 
 
 def test_export_plot_outputs_wide_and_filters_window(tmp_path):
@@ -121,3 +128,67 @@ def test_export_equity_curve_filters_visible_window(tmp_path):
     exported = pd.read_csv(output)
     assert rows == 1
     assert exported["bar_time_ms"].tolist() == [2000]
+
+
+def test_export_strategy_result_filters_all_outputs_to_visible_window(tmp_path):
+    result = SimpleNamespace(
+        plots=[
+            (1000, -1, 1.0, "Plot"),
+            (2000, 0, 2.0, "Plot"),
+            (3000, 1, 3.0, "Plot"),
+        ],
+        trades=[
+            {
+                "trade_id": "prehistory-close",
+                "status": "closed",
+                "direction": "long",
+                "entry_time_ms": 500,
+                "exit_time_ms": 1000,
+            },
+            {
+                "trade_id": "visible-close",
+                "status": "closed",
+                "direction": "long",
+                "entry_time_ms": 500,
+                "exit_time_ms": 2000,
+            },
+            {
+                "trade_id": "visible-open",
+                "status": "open",
+                "direction": "long",
+                "entry_time_ms": 2000,
+                "exit_time_ms": None,
+            },
+            {
+                "trade_id": "post-open",
+                "status": "open",
+                "direction": "long",
+                "entry_time_ms": 3000,
+                "exit_time_ms": None,
+            },
+        ],
+        equity_curve=[
+            {"bar_time_ms": 1000, "equity": 9900.0},
+            {"bar_time_ms": 2000, "equity": 10_000.0},
+            {"bar_time_ms": 3000, "equity": 10_100.0},
+        ],
+    )
+
+    exported = export_strategy_result(
+        result=result,
+        window=ExportWindow(1500, 3000),
+        output_dir=tmp_path,
+    )
+
+    assert exported.plots_rows == 1
+    assert exported.trades_rows == 2
+    assert exported.equity_rows == 1
+    assert exported.initial_equity_at_export_start == 9900.0
+
+    plots = pd.read_csv(tmp_path / "plots.csv")
+    trades = pd.read_csv(tmp_path / "trades.csv")
+    equity = pd.read_csv(tmp_path / "equity_curve.csv")
+
+    assert plots["bar_time"].tolist() == [2000]
+    assert trades["trade_id"].tolist() == ["visible-close", "visible-open"]
+    assert equity["bar_time_ms"].tolist() == [2000]

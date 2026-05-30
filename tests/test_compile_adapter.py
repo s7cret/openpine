@@ -1,0 +1,155 @@
+from __future__ import annotations
+
+import json
+from types import SimpleNamespace
+
+import pytest
+
+from openpine.compile import CompileProfile, SubprocessCompilerAdapter
+from openpine.compile import adapter as adapter_module
+
+
+def _fake_library_apis(metadata: dict):
+    return adapter_module._LibraryApis(
+        parse_code=lambda _source, _options: SimpleNamespace(
+            ast={"kind": "Program"},
+            diagnostics=[],
+            ok=True,
+        ),
+        parse_options=lambda **_kwargs: SimpleNamespace(),
+        ast_to_json=lambda _ast: json.dumps({"kind": "Program"}),
+        translate_ast=lambda *_args, **_kwargs: SimpleNamespace(
+            code="# generated\n",
+            metadata=metadata,
+            source_map=[],
+        ),
+        versions={
+            "pine2ast_version": "test",
+            "ast2python_version": "test",
+            "pinelib_contract_version": "test",
+            "pinelib_version": "test",
+        },
+    )
+
+
+def test_production_compile_rejects_unsafe_translation_metadata(monkeypatch) -> None:
+    metadata = {
+        "compile_profile": "production",
+        "codegen_safe": True,
+        "runtime_contract_safe": False,
+        "parity_safe": True,
+        "unsupported_features": ["request.financial"],
+        "unsupported_nodes": [],
+        "unsupported_declaration_args": [],
+        "import_aliases": [],
+    }
+    status = adapter_module.LibraryAvailability(available=True)
+    monkeypatch.setattr(
+        adapter_module,
+        "_load_library_apis",
+        lambda: (_fake_library_apis(metadata), status),
+    )
+
+    result = SubprocessCompilerAdapter().compile(
+        "//@version=6\nindicator('x')\nplot(close)\n",
+        profile=CompileProfile.production(),
+    )
+
+    assert not result.success
+    assert result.python_code is None
+    assert "runtime_contract_safe=False" in "\n".join(result.errors)
+    assert "unsupported_features" in "\n".join(result.errors)
+    assert result.compile_meta["production_blockers"] == result.errors
+    assert result.compile_meta["translation_metadata"] == metadata
+
+
+def test_production_compile_rejects_external_import_metadata(monkeypatch) -> None:
+    metadata = {
+        "compile_profile": "production",
+        "codegen_safe": True,
+        "runtime_contract_safe": True,
+        "parity_safe": True,
+        "unsupported_features": [],
+        "unsupported_nodes": [],
+        "unsupported_declaration_args": [],
+        "import_aliases": [{"alias": "lib", "path": "user/Lib/1"}],
+    }
+    status = adapter_module.LibraryAvailability(available=True)
+    monkeypatch.setattr(
+        adapter_module,
+        "_load_library_apis",
+        lambda: (_fake_library_apis(metadata), status),
+    )
+
+    result = SubprocessCompilerAdapter().compile(
+        "//@version=6\nindicator('x')\nplot(close)\n",
+        profile=CompileProfile.production(),
+    )
+
+    assert not result.success
+    assert "external library imports" in result.errors[0]
+    assert result.compile_meta["production_blockers"] == result.errors
+
+
+def test_diagnostic_compile_can_return_unsafe_metadata(monkeypatch) -> None:
+    metadata = {
+        "compile_profile": "diagnostic",
+        "codegen_safe": False,
+        "runtime_contract_safe": False,
+        "parity_safe": False,
+        "unsupported_features": ["request.financial"],
+        "unsupported_nodes": [{"kind": "ExternalCall"}],
+        "unsupported_declaration_args": [],
+        "import_aliases": [{"alias": "lib", "path": "user/Lib/1"}],
+    }
+    status = adapter_module.LibraryAvailability(available=True)
+    monkeypatch.setattr(
+        adapter_module,
+        "_load_library_apis",
+        lambda: (_fake_library_apis(metadata), status),
+    )
+
+    result = SubprocessCompilerAdapter().compile(
+        "//@version=6\nindicator('x')\nplot(close)\n",
+        profile=CompileProfile.diagnostic(),
+    )
+
+    assert result.success
+    assert result.python_code == "# generated\n"
+    assert result.compile_meta["translation_metadata"] == metadata
+    assert "production_blockers" not in result.compile_meta
+
+
+def test_live_production_compile_rejects_external_library_import() -> None:
+    adapter = SubprocessCompilerAdapter()
+    if not adapter.library_status().available:
+        pytest.skip("local compiler Python APIs are unavailable")
+
+    result = adapter.compile(
+        "//@version=6\n"
+        "indicator('x')\n"
+        "import user/Lib/1 as lib\n"
+        "y = lib.custom(close)\n"
+        "plot(y)\n",
+        profile=CompileProfile.production(),
+    )
+
+    assert not result.success
+    assert "import" in "\n".join(result.errors).lower()
+
+
+def test_live_production_compile_rejects_unsupported_request() -> None:
+    adapter = SubprocessCompilerAdapter()
+    if not adapter.library_status().available:
+        pytest.skip("local compiler Python APIs are unavailable")
+
+    result = adapter.compile(
+        "//@version=6\n"
+        "indicator('x')\n"
+        "y = request.financial(syminfo.tickerid, 'TOTAL_SHARES_OUTSTANDING', 'FY')\n"
+        "plot(y)\n",
+        profile=CompileProfile.production(),
+    )
+
+    assert not result.success
+    assert "unsupported request" in "\n".join(result.errors).lower()

@@ -256,3 +256,22 @@ def _equity_row(point: Any) -> dict[str, Any]:
         "drawdown": _first(data, "drawdown"),
         "position_size": _first(data, "position_size", "position_qty"),
     }
+
+
+from openpine.export.batch import StrategyExportResult, export_strategy_result
+
+
+__all__ = [
+    "EQUITY_COLUMNS",
+    "ExportWindow",
+    "PLOT_COLUMNS",
+    "StrategyExportResult",
+    "TRADE_COLUMNS",
+    "export_equity_curve",
+    "export_plot_outputs",
+    "export_plot_records",
+    "export_strategy_result",
+    "export_trades",
+    "parse_time_ms",
+    "write_json",
+]

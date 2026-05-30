@@ -387,7 +387,7 @@ def run_strategy(
 ) -> dict[str, Any]:
     from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
     from openpine.artifacts import ArtifactStore
-    from openpine.export import ExportWindow, export_equity_curve, export_plot_records, export_trades
+    from openpine.export import ExportWindow, export_strategy_result
     from openpine.runtime.engine import BacktestEngineAdapter, BacktestRunConfig, load_strategy_class_from_artifact
 
     timings: dict[str, float] = {}
@@ -441,26 +441,12 @@ def run_strategy(
     )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     raw = result.raw_result
-    plots = getattr(raw, "plots", None)
     t0 = time.perf_counter()
-    if plots is None:
-        plot_rows = 0
-    elif isinstance(plots, list):
-        plot_rows = export_plot_records(plots, out_dir / "plots.csv", from_ms=compare_from, to_ms=compare_to)
-    elif hasattr(plots, "get_records"):
-        plot_rows = export_plot_records(plots.get_records(), out_dir / "plots.csv", from_ms=compare_from, to_ms=compare_to)
-    else:
-        plot_rows = 0
     export_window = ExportWindow(compare_from, compare_to)
-    trades_rows = export_trades(
-        list(getattr(raw, "trades", []) or []),
-        out_dir / "trades.csv",
+    export_result = export_strategy_result(
+        result=raw,
         window=export_window,
-    )
-    equity_rows = export_equity_curve(
-        getattr(raw, "equity_curve", None),
-        out_dir / "equity_curve.csv",
-        window=export_window,
+        output_dir=out_dir,
     )
     timings["export_sec"] = round(time.perf_counter() - t0, 3)
     return {
@@ -470,15 +456,12 @@ def run_strategy(
         "bars": result.bars_processed,
         "data": data_meta,
         "engine_status": result.status,
-        "trades_rows": trades_rows,
-        "equity_rows": equity_rows,
-        "plots_rows": plot_rows,
+        "trades_rows": export_result.trades_rows,
+        "equity_rows": export_result.equity_rows,
+        "plots_rows": export_result.plots_rows,
+        "initial_equity_at_export_start": export_result.initial_equity_at_export_start,
         "timings": timings,
-        "outputs": {
-            "plots": str(out_dir / "plots.csv"),
-            "trades": str(out_dir / "trades.csv"),
-            "equity_curve": str(out_dir / "equity_curve.csv"),
-        },
+        "outputs": export_result.outputs,
     }
 
 
@@ -607,6 +590,9 @@ def _build_run_meta(
         "timeframe": chart.timeframe,
         "calculation_window": calculation_window,
         "export_window": export_window,
+        "initial_equity_at_export_start": run_info.get(
+            "initial_equity_at_export_start"
+        ),
         "library_revisions": library_revisions,
         "compile_profile": PRODUCTION_COMPILE_PROFILE,
         "status": run_info.get("status"),

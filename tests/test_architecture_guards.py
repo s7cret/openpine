@@ -203,6 +203,14 @@ def test_batch_runner_does_not_parse_tv_corpus_csv_directly() -> None:
     assert "def load_manifest" not in source
 
 
+def test_batch_runner_uses_single_strategy_export_boundary() -> None:
+    source = (ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
+
+    assert "export_strategy_result" in source
+    assert "export_trades(" not in source
+    assert "export_equity_curve(" not in source
+
+
 def test_backtest_run_config_does_not_carry_engine_data_provider() -> None:
     from dataclasses import fields
 
@@ -291,6 +299,7 @@ def test_optimizer_production_uses_real_backtest_runner(tmp_path) -> None:
         OptimizerRunConfig(
             strategy_id="s1",
             artifact_id="art1",
+            params_hash="params1",
             data_query={"instrument": "binance/spot/BTCUSDT", "timeframe": "15m"},
             trials=1,
             parameters=(
@@ -315,5 +324,65 @@ def test_optimizer_production_uses_real_backtest_runner(tmp_path) -> None:
     assert result.status == "completed"
     assert result.trials_completed == 1
     assert result.uses_backtest_engine_path is True
+    assert result.artifact_id == "art1"
+    assert result.params_hash == "params1"
+    assert result.data_query == {
+        "instrument": "binance/spot/BTCUSDT",
+        "timeframe": "15m",
+    }
     assert result.best_params == {"x": 7}
     assert result.metrics["net_profit"] == 7.0
+    assert result.metrics["optimizer_result_type"] == "OptimizerRunResult"
+    assert result.metrics["runner_adapter"] == "BacktestEngineRunnerAdapter"
+    assert result.metrics["runner_request_contract"] == "openpine.optimizer_runner.v1"
+    assert result.trial_status_counts == {"completed": 1, "failed": 0}
+    assert len(result.trial_metadata) == 1
+    assert result.trial_metadata[0]["status"] == "completed"
+    assert result.trial_metadata[0]["params_hash"]
+    assert "runner_fingerprint" in result.trial_metadata[0]
+    assert ref.artifact_uri == result.artifact_uri
+
+
+class _FakeFailingEngine:
+    def run(self, strategy, *, bars, params):
+        return _FakeBacktestResult(
+            net_profit=0.0,
+            status="failed",
+            errors=("forced failure",),
+        )
+
+
+def test_optimizer_failed_trials_are_not_reported_completed(tmp_path) -> None:
+    service = OptimizerService(adapter=LocalOptimizerAdapter(_external_optimizer_module()))
+    ref = service.adapter.start_optimization(
+        OptimizerRunConfig(
+            strategy_id="s1",
+            artifact_id="art1",
+            data_query={"instrument": "binance/spot/BTCUSDT", "timeframe": "15m"},
+            trials=1,
+            parameters=(
+                {
+                    "name": "x",
+                    "type": "int",
+                    "default": 7,
+                    "min": 7,
+                    "max": 7,
+                    "step": 1,
+                },
+            ),
+            engine_factory=_FakeFailingEngine,
+            strategy=_FakeStrategy,
+            bars=({"time": 1, "close": 1.0},),
+            output_dir=tmp_path,
+            storage_backend="json",
+        )
+    )
+    result = service.adapter.get_result(ref.optimization_id)
+
+    assert result.status == "failed"
+    assert result.trials_completed == 0
+    assert result.uses_backtest_engine_path is True
+    assert result.best_params == {}
+    assert result.trial_status_counts == {"failed": 1, "completed": 0}
+    assert result.trial_metadata[0]["status"] == "failed"
+    assert result.trial_metadata[0]["error_message"]

@@ -112,6 +112,46 @@ def _is_pine_v5_version_rejection(messages: list[str]) -> bool:
     return not diagnostic_codes or diagnostic_codes == {"P2A0103"}
 
 
+def _production_metadata_blockers(metadata: dict[str, Any]) -> list[str]:
+    """Return unsafe translation metadata reasons that production must reject."""
+    blockers: list[str] = []
+
+    for key in ("codegen_safe", "runtime_contract_safe", "parity_safe"):
+        if metadata.get(key) is False:
+            blockers.append(f"translation metadata reports {key}=False")
+
+    for key in (
+        "unsupported_features",
+        "unsupported_nodes",
+        "unsupported_declaration_args",
+    ):
+        values = metadata.get(key)
+        if values:
+            blockers.append(f"translation metadata reports {key}: {values}")
+
+    import_aliases = metadata.get("import_aliases")
+    if import_aliases:
+        blockers.append(
+            "external library imports require stubs/resolution and are not production-safe: "
+            f"{import_aliases}"
+        )
+
+    compile_profile = metadata.get("compile_profile")
+    if compile_profile not in (None, "production"):
+        blockers.append(
+            f"translation metadata compile_profile is {compile_profile!r}, not 'production'"
+        )
+
+    return blockers
+
+
+def _unsupported_request_error(exc: Exception) -> str | None:
+    message = str(exc).strip("'\"")
+    if re.fullmatch(r"request\.[A-Za-z_][A-Za-z0-9_]*", message):
+        return f"unsupported request call is not production lowerable: {message}"
+    return None
+
+
 @dataclass(frozen=True)
 class LibraryAvailability:
     """Availability status for the local Python compiler stack."""
@@ -430,6 +470,16 @@ class SubprocessCompilerAdapter:
                     "source_map_entries": len(getattr(translation, "source_map", []) or []),
                 }
             )
+            if profile.name == "production":
+                blockers = _production_metadata_blockers(translation_meta)
+                if blockers:
+                    compile_meta["production_blockers"] = blockers
+                    return CompileResult(
+                        success=False,
+                        errors=blockers,
+                        ast_json=ast_json,
+                        compile_meta=compile_meta,
+                    )
             return CompileResult(
                 success=True,
                 python_code=getattr(translation, "code"),
@@ -437,6 +487,18 @@ class SubprocessCompilerAdapter:
                 compile_meta=compile_meta,
             )
         except Exception as exc:
+            production_error = (
+                _unsupported_request_error(exc)
+                if _profile_from_kwargs(kwargs).name == "production"
+                else None
+            )
+            if production_error:
+                compile_meta["production_blockers"] = [production_error]
+                return CompileResult(
+                    success=False,
+                    errors=[production_error],
+                    compile_meta=compile_meta,
+                )
             return CompileResult(
                 success=False,
                 errors=[f"Python compiler API failed: {exc}"],

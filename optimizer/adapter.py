@@ -51,12 +51,17 @@ class OptimizerResult:
 
     optimization_id: str
     strategy_id: str
+    artifact_id: str | None
+    params_hash: str | None
+    data_query: dict | None
     trials_requested: int
     trials_completed: int
     status: str
     uses_backtest_engine_path: bool
     best_params: dict = field(default_factory=dict)
     metrics: dict = field(default_factory=dict)
+    trial_status_counts: dict[str, int] = field(default_factory=dict)
+    trial_metadata: tuple[dict[str, Any], ...] = ()
     artifact_uri: str | None = None
 
 
@@ -115,7 +120,14 @@ class LocalOptimizerAdapter:
 
         missing = [
             name
-            for name in ("BacktestEngineRunnerAdapter", "Parameter", "OptimizerConfig", "optimize")
+            for name in (
+                "BacktestEngineRunnerAdapter",
+                "OptimizerRunResult",
+                "Parameter",
+                "Trial",
+                "OptimizerConfig",
+                "optimize",
+            )
             if not hasattr(module, name)
         ]
         if missing:
@@ -138,7 +150,7 @@ class LocalOptimizerAdapter:
         if not detection.available:
             result = self._failed_result(optimization_id, config, detection.reason)
         else:
-            result = self._run_local_optimizer(optimization_id, config, detection)
+            result = self._run_local_optimizer(optimization_id, config)
 
         self._results[optimization_id] = result
         return OptimizerResultRef(
@@ -163,7 +175,6 @@ class LocalOptimizerAdapter:
         self,
         optimization_id: str,
         config: OptimizerRunConfig,
-        detection: OptimizerLibraryDetection,
     ) -> OptimizerResult:
         module = self._module
         if module is None:
@@ -218,7 +229,13 @@ class LocalOptimizerAdapter:
                 use_profile_auto_constraints=False,
             )
             raw_result = module.optimize(parameters, runner, optimizer_config)
-            return self._normalize_optimizer_result(optimization_id, config, raw_result)
+            return self._normalize_optimizer_result(
+                optimization_id,
+                config,
+                raw_result,
+                module,
+                runner,
+            )
         except Exception as exc:
             return self._failed_result(
                 optimization_id,
@@ -231,27 +248,98 @@ class LocalOptimizerAdapter:
         optimization_id: str,
         config: OptimizerRunConfig,
         raw_result: Any,
+        module: ModuleType,
+        runner: Any,
     ) -> OptimizerResult:
-        counts = dict(getattr(raw_result, "trials_count_by_status", {}) or {})
-        completed = int(counts.get("completed", 0))
+        result_type = getattr(module, "OptimizerRunResult", None)
+        if result_type is None or not isinstance(raw_result, result_type):
+            return self._failed_result(
+                optimization_id,
+                config,
+                f"optimizer returned unsupported result type: {type(raw_result).__name__}",
+            )
+
+        trials = tuple(
+            getattr(raw_result, "all_trials", None)
+            or getattr(raw_result, "top_trials", None)
+            or ()
+        )
+        counts = self._trial_status_counts(raw_result, trials)
+        completed_trials = tuple(
+            trial for trial in trials if getattr(trial, "status", None) == "completed"
+        )
+        completed = len(completed_trials) if trials else int(counts.get("completed", 0))
         recommended = getattr(raw_result, "recommended_trial", None)
-        best_params = dict(getattr(recommended, "params", {}) or {})
-        metrics = dict(getattr(recommended, "metrics", {}) or {})
+        if getattr(recommended, "status", None) != "completed":
+            recommended = None
+        best_params = dict(getattr(recommended, "params", {}) or {}) if recommended else {}
+        metrics = dict(getattr(recommended, "metrics", {}) or {}) if recommended else {}
         metrics["optimizer_adapter"] = "local"
         metrics["optimizer_result_type"] = type(raw_result).__name__
+        metrics["artifact_id"] = config.artifact_id
+        metrics["params_hash"] = config.params_hash
+        metrics["data_query"] = dict(config.data_query or {})
+        metrics["trial_status_counts"] = dict(counts)
+        metrics["runner_adapter"] = type(runner).__name__
+        metrics["runner_request_contract"] = "openpine.optimizer_runner.v1"
         storage_ref = getattr(raw_result, "storage_ref", None)
         status = "completed" if completed > 0 and recommended is not None else "failed"
         return OptimizerResult(
             optimization_id=optimization_id,
             strategy_id=config.strategy_id,
+            artifact_id=config.artifact_id,
+            params_hash=config.params_hash,
+            data_query=dict(config.data_query or {}),
             trials_requested=config.trials,
             trials_completed=completed,
             status=status,
             uses_backtest_engine_path=True,
             best_params=best_params,
             metrics=metrics,
+            trial_status_counts=counts,
+            trial_metadata=tuple(self._trial_metadata(trial) for trial in trials),
             artifact_uri=str(storage_ref) if storage_ref else None,
         )
+
+    def _trial_status_counts(self, raw_result: Any, trials: tuple[Any, ...]) -> dict[str, int]:
+        counts = dict(getattr(raw_result, "trials_count_by_status", {}) or {})
+        if trials:
+            counts = {}
+            for trial in trials:
+                status = str(getattr(trial, "status", "unknown"))
+                counts[status] = counts.get(status, 0) + 1
+        counts.setdefault("completed", 0)
+        counts.setdefault("failed", 0)
+        return counts
+
+    def _trial_metadata(self, trial: Any) -> dict[str, Any]:
+        diagnostics = []
+        for diagnostic in getattr(trial, "diagnostics", ()) or ():
+            if hasattr(diagnostic, "to_dict"):
+                diagnostics.append(diagnostic.to_dict())
+            elif hasattr(diagnostic, "__dict__"):
+                diagnostics.append(dict(diagnostic.__dict__))
+            else:
+                diagnostics.append(str(diagnostic))
+
+        return {
+            "id": getattr(trial, "id", None),
+            "status": getattr(trial, "status", None),
+            "params_hash": getattr(trial, "params_hash", None),
+            "result_content_hash": getattr(trial, "result_content_hash", None),
+            "data_fingerprint": getattr(trial, "data_fingerprint", None),
+            "runner_fingerprint": getattr(trial, "runner_fingerprint", None)
+            or "optimizer-runner-fingerprint-unavailable",
+            "engine_config_hash": getattr(trial, "engine_config_hash", None),
+            "parameter_space_hash": getattr(trial, "parameter_space_hash", None),
+            "optimizer_config_hash": getattr(trial, "optimizer_config_hash", None),
+            "objective_value": getattr(trial, "objective_value", None),
+            "passed_constraints": getattr(trial, "passed_constraints", None),
+            "is_baseline": getattr(trial, "is_baseline", None),
+            "error_message": getattr(trial, "error_message", None),
+            "diagnostics": tuple(diagnostics),
+            "metrics": dict(getattr(trial, "metrics", {}) or {}),
+        }
 
     def _failed_result(
         self,
@@ -265,11 +353,15 @@ class LocalOptimizerAdapter:
         return OptimizerResult(
             optimization_id=optimization_id,
             strategy_id=config.strategy_id,
+            artifact_id=config.artifact_id,
+            params_hash=config.params_hash,
+            data_query=dict(config.data_query or {}) if config.data_query else None,
             trials_requested=config.trials,
             trials_completed=0,
             status="failed",
             uses_backtest_engine_path=False,
             metrics=metrics,
+            trial_status_counts={"completed": 0, "failed": 0},
         )
 
 
