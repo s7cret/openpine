@@ -587,6 +587,99 @@ def _write_indicator_plot_run_meta(
     console.print(f"  meta:      {meta_path}")
 
 
+def _prepare_indicator_plot_inputs(
+    *,
+    name: str,
+    symbol: str,
+    timeframe: str,
+    exchange: str,
+    market_type: str,
+    from_date: str,
+    to_date: str | None,
+    compare_from: str | None,
+    compare_to: str | None,
+    now_ms: int,
+    registry_cls,
+    parse_time_ms_func,
+    load_generated_class,
+    artifact_error_cls,
+    bar_query_cls,
+    instrument_key_cls,
+    parse_timeframe_func,
+    orchestrator_cls,
+    provider_factory,
+    perf_counter,
+    console,
+):
+    source = _load_pine_source_or_exit(
+        registry_cls=registry_cls,
+        name=name,
+        console=console,
+    )
+    if not source.active_artifact_id:
+        console.print(
+            f"[red]Pine source {name} has no active artifact. "
+            f"Compile it first with: openpine pine pine-compile {name}[/red]"
+        )
+        sys.exit(1)
+
+    start_ms, end_ms, compare_from_ms, compare_to_ms = _parse_indicator_plot_window(
+        from_date=from_date,
+        to_date=to_date,
+        compare_from=compare_from,
+        compare_to=compare_to,
+        parse_time_ms_func=parse_time_ms_func,
+        now_ms=now_ms,
+    )
+    if start_ms is None or start_ms >= end_ms:
+        console.print("[red]Invalid run window: --from must be before --to[/red]")
+        sys.exit(1)
+
+    try:
+        generated_class, load_artifact_sec = _load_generated_class_timed(
+            source=source,
+            load_generated_class=load_generated_class,
+            perf_counter=perf_counter,
+        )
+    except artifact_error_cls as exc:
+        console.print(f"[red]{exc}[/red]")
+        sys.exit(1)
+
+    bars, provider, data_fetch_info, data_load_sec = _load_indicator_plot_bars(
+        symbol=symbol,
+        exchange=exchange,
+        market_type=market_type,
+        timeframe=timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        bar_query_cls=bar_query_cls,
+        instrument_key_cls=instrument_key_cls,
+        parse_timeframe_func=parse_timeframe_func,
+        orchestrator_cls=orchestrator_cls,
+        provider_factory=provider_factory,
+        console=console,
+    )
+    if not bars:
+        console.print(f"[red]No candle data found for {symbol} {timeframe}[/red]")
+        sys.exit(1)
+
+    return SimpleNamespace(
+        source=source,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        compare_from_ms=compare_from_ms,
+        compare_to_ms=compare_to_ms,
+        generated_class=generated_class,
+        bars=bars,
+        provider=provider,
+        data_fetch_info=data_fetch_info,
+        timings={
+            "load_artifact_sec": load_artifact_sec,
+            "data_load_sec": data_load_sec,
+        },
+    )
+
+
 def _build_strategy_backtest_run_meta(
     *,
     strategy,
@@ -1656,37 +1749,37 @@ def pine_run_plots(
     start_total = _time.perf_counter()
     timings: dict[str, float] = {}
 
-    source = _load_pine_source_or_exit(
-        registry_cls=SQLitePineSourceRegistry,
+    prepared = _prepare_indicator_plot_inputs(
         name=name,
-        console=console,
-    )
-
-    if not source.active_artifact_id:
-        console.print(
-            f"[red]Pine source {name} has no active artifact. "
-            f"Compile it first with: openpine pine pine-compile {name}[/red]"
-        )
-        sys.exit(1)
-
-    start_ms, end_ms, compare_from_ms, compare_to_ms = _parse_indicator_plot_window(
+        symbol=symbol,
+        timeframe=timeframe,
+        exchange=exchange,
+        market_type=market_type,
         from_date=from_date,
         to_date=to_date,
         compare_from=compare_from,
         compare_to=compare_to,
-        parse_time_ms_func=parse_time_ms,
         now_ms=int(_time_module.time() * 1000),
+        registry_cls=SQLitePineSourceRegistry,
+        parse_time_ms_func=parse_time_ms,
+        load_generated_class=load_generated_class_from_artifact,
+        artifact_error_cls=BacktestArtifactError,
+        bar_query_cls=BarQuery,
+        instrument_key_cls=InstrumentKey,
+        parse_timeframe_func=parse_timeframe,
+        orchestrator_cls=DataOrchestrator,
+        provider_factory=create_local_marketdata_provider_adapter,
+        perf_counter=_time.perf_counter,
+        console=console,
     )
-    if start_ms is None or start_ms >= end_ms:
-        console.print("[red]Invalid run window: --from must be before --to[/red]")
-        sys.exit(1)
+    timings.update(prepared.timings)
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
     _print_indicator_plot_header(
         name=name,
-        source=source,
+        source=prepared.source,
         symbol=symbol,
         exchange=exchange,
         market_type=market_type,
@@ -1695,34 +1788,6 @@ def pine_run_plots(
         to_date=to_date,
         console=console,
     )
-
-    try:
-        generated_class, timings["load_artifact_sec"] = _load_generated_class_timed(
-            source=source,
-            load_generated_class=load_generated_class_from_artifact,
-            perf_counter=_time.perf_counter,
-        )
-    except BacktestArtifactError as exc:
-        console.print(f"[red]{exc}[/red]")
-        sys.exit(1)
-
-    bars, provider, data_fetch_info, timings["data_load_sec"] = _load_indicator_plot_bars(
-        symbol=symbol,
-        exchange=exchange,
-        market_type=market_type,
-        timeframe=timeframe,
-        start_ms=start_ms,
-        end_ms=end_ms,
-        bar_query_cls=BarQuery,
-        instrument_key_cls=InstrumentKey,
-        parse_timeframe_func=parse_timeframe,
-        orchestrator_cls=DataOrchestrator,
-        provider_factory=create_local_marketdata_provider_adapter,
-        console=console,
-    )
-    if not bars:
-        console.print(f"[red]No candle data found for {symbol} {timeframe}[/red]")
-        sys.exit(1)
 
     t0 = _time.perf_counter()
     config = _build_indicator_plot_config(
@@ -1730,19 +1795,19 @@ def pine_run_plots(
         timeframe=timeframe,
         exchange=exchange,
         market_type=market_type,
-        provider=provider,
+        provider=prepared.provider,
     )
     backend_result = _execute_indicator_plot_runtime(
-        generated_class=generated_class,
-        bars=bars,
+        generated_class=prepared.generated_class,
+        bars=prepared.bars,
         config=config,
         symbol=symbol,
         timeframe=timeframe,
-        provider=provider,
-        compare_from_ms=compare_from_ms,
-        compare_to_ms=compare_to_ms,
+        provider=prepared.provider,
+        compare_from_ms=prepared.compare_from_ms,
+        compare_to_ms=prepared.compare_to_ms,
         progress_callback=_build_progress_callback(
-            bars_total=len(bars),
+            bars_total=len(prepared.bars),
             console=console,
             progress_every=progress_every,
         ),
@@ -1752,8 +1817,8 @@ def pine_run_plots(
     plots_csv, plots_rows, timings["export_sec"] = _write_indicator_plot_outputs(
         backend_result=backend_result,
         output_path=output_path,
-        compare_from_ms=compare_from_ms,
-        compare_to_ms=compare_to_ms,
+        compare_from_ms=prepared.compare_from_ms,
+        compare_to_ms=prepared.compare_to_ms,
         export_plot_records_func=export_plot_records,
         perf_counter=_time.perf_counter,
     )
@@ -1761,17 +1826,17 @@ def pine_run_plots(
 
     _write_indicator_plot_run_meta(
         name=name,
-        source=source,
+        source=prepared.source,
         symbol=symbol,
         exchange=exchange,
         market_type=market_type,
         timeframe=timeframe,
-        start_ms=start_ms,
-        end_ms=end_ms,
-        compare_from_ms=compare_from_ms,
-        compare_to_ms=compare_to_ms,
-        bars_total=len(bars),
-        data_fetch_info=data_fetch_info,
+        start_ms=prepared.start_ms,
+        end_ms=prepared.end_ms,
+        compare_from_ms=prepared.compare_from_ms,
+        compare_to_ms=prepared.compare_to_ms,
+        bars_total=len(prepared.bars),
+        data_fetch_info=prepared.data_fetch_info,
         plots_rows=plots_rows,
         timings=timings,
         plots_csv=plots_csv,
