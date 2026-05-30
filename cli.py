@@ -191,7 +191,6 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
     # Provider connectivity smoke test
     try:
         from openpine.data.data_orchestrator import DataOrchestrator
-        from openpine.contracts import BarQuery
         orch = DataOrchestrator()
         # Smoke test: try to get bars (will return empty if no provider)
         console.print(f"  [green]✓[/green] DataOrchestrator smoke test passed")
@@ -688,7 +687,7 @@ def pine_run_plots(
     import time as _time
     from types import SimpleNamespace
 
-    from openpine.contracts import BarQuery, InstrumentKey, Timeframe
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
     from openpine.exports import export_plot_records, parse_time_ms, write_json
@@ -745,12 +744,12 @@ def pine_run_plots(
 
     t0 = _time.perf_counter()
     query = BarQuery(
-        instrument_key=InstrumentKey(
-            symbol=symbol,
+        instrument=InstrumentKey(
+            symbol=symbol.upper(),
             exchange=exchange.upper(),
-            market_type=market_type.lower(),
+            market=market_type.lower(),
         ),
-        timeframe=Timeframe(value=timeframe),
+        timeframe=parse_timeframe(timeframe),
         start_ms=start_ms,
         end_ms=end_ms,
     )
@@ -1188,12 +1187,12 @@ def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
 
     if provider_adapter is not None:
         try:
-            from openpine.contracts import BarQuery, InstrumentKey
+            from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
             from openpine.data.data_orchestrator import DataOrchestrator
 
-            ik = InstrumentKey(exchange=exchange, symbol=symbol, market_type=market)
-            query = BarQuery(instrument_key=ik, timeframe=timeframe, start_ms=0, end_ms=int(2**63 - 1), limit=10000)
-            bars = provider_adapter.get_bars(query)
+            ik = InstrumentKey(exchange=exchange.upper(), symbol=symbol.upper(), market=market)
+            query = BarQuery(instrument=ik, timeframe=parse_timeframe(timeframe), start_ms=0, end_ms=int(2**63 - 1))
+            bars = provider_adapter.fetch_bars(query)
             if not bars:
                 console.print("[dim](no data returned by provider)[/dim]")
                 return
@@ -4239,7 +4238,7 @@ def strategy_backtest(
     import time as _time
     from datetime import timezone as _timezone
 
-    from openpine.contracts import BarQuery, InstrumentKey, Timeframe
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.runtime.engine import (
@@ -4320,13 +4319,12 @@ def strategy_backtest(
         timings["load_artifact_sec"] = _time.perf_counter() - t0
 
         query = BarQuery(
-            instrument_key=InstrumentKey(
-                symbol=s.symbol,
+            instrument=InstrumentKey(
+                symbol=s.symbol.upper(),
                 exchange=s.exchange.upper(),
-                market_type=s.market_type.lower(),
-                price_type=s.price_type.lower(),
+                market=s.market_type.lower(),
             ),
-            timeframe=Timeframe(value=s.timeframe),
+            timeframe=parse_timeframe(s.timeframe),
             start_ms=start_ms,
             end_ms=end_ms,
         )
@@ -4520,7 +4518,7 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
     import json as _json
     import time as _time_module
 
-    from openpine.contracts import BarQuery, InstrumentKey, Timeframe
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
     from openpine.data.data_orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.runtime.engine import (
@@ -4594,13 +4592,12 @@ def strategy_replay(strategy_id: str, from_date: str | None, to_date: str | None
             sys.exit(1)
 
         query = BarQuery(
-            instrument_key=InstrumentKey(
-                symbol=s.symbol,
+            instrument=InstrumentKey(
+                symbol=s.symbol.upper(),
                 exchange=s.exchange.upper(),
-                market_type=s.market_type.lower(),
-                price_type=s.price_type.lower(),
+                market=s.market_type.lower(),
             ),
-            timeframe=Timeframe(value=s.timeframe),
+            timeframe=parse_timeframe(s.timeframe),
             start_ms=start_ms,
             end_ms=end_ms,
         )

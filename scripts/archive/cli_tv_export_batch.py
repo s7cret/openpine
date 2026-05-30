@@ -1,3 +1,4 @@
+# DEPRECATED: archived 2026-05-30 — see scripts/archive/README.md
 #!/usr/bin/env python3
 """CLI-only TradingView export batch runner for OpenPine.
 

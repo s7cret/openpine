@@ -1,6 +1,7 @@
 """BarQuery dataclass for candle storage queries.
 
 Section OP-DL-004 of OpenPine.
+Section 7.5 of OpenPine TZ v3.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ class BarQuery:
     """Query for reading bars from candle storage.
 
     Attributes:
-        instrument_key: Full instrument key (e.g. "binance:usdm:BTCUSDT:trade")
+        instrument_key: Full instrument key (e.g. "binance:spot:BTCUSDT:trade")
         timeframe: Timeframe string (e.g. "1m", "5m", "15m")
         from_time: Start time in UTC epoch ms (inclusive), None = earliest
         to_time: End time in UTC epoch ms (inclusive), None = latest

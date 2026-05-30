@@ -9,6 +9,9 @@ from pathlib import Path
 from types import ModuleType
 
 
+# Centralized library paths — same as tools/openpine_batch_1527_runner.py
+# In production, all libraries should be installed as editable packages (pip install -e).
+# This dict provides fallback paths for development/non-installed runs.
 LIBRARY_PATHS: dict[str, Path] = {
     "pine2ast": Path("[local-home]/pine2ast"),
     "ast2python": Path("[local-home]/ast2python"),

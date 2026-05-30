@@ -4,23 +4,28 @@ Section OP-DL-004 of OpenPine.
 Section 7.5 + 33.1 of OpenPine TZ v3.
 
 Rules:
-- get_bars(query: BarQuery) -> list[Bar] is the ONLY read contract for bars.
+- get_bars(query: MDPBarQuery) -> list[Bar] is the ONLY read contract for bars.
 - on_candle_closed(bar, instrument_key, timeframe) is the ONLY write boundary
   for confirmed closed candles from live feeds.
+
+Architecture:
+- Public API (get_bars, load_bars) accepts marketdata_provider.contracts.BarQuery (MDPBarQuery).
+- Internal storage operations use openpine.data.bar_query.BarQuery (StorageBarQuery).
+- Conversion between formats is done by _to_storage_query().
 """
 
 from __future__ import annotations
 
-import time
 from typing import Optional, Protocol
 
 from marketdata_provider.contracts import (
     Bar,
-    BarQuery,
     BarSeries,
     CoverageReport,
-    StoreResult,
+    InstrumentKey,
+    Timeframe,
 )
+from marketdata_provider.contracts import BarQuery as MDPBarQuery
 from openpine.data.bar_query import BarQuery as StorageBarQuery
 from openpine.data.candle_storage import CandleStorage
 from openpine.data.contracts import WriteMode
@@ -45,7 +50,7 @@ class StrategyInstance:
 class MarketDataProvider(Protocol):
     """Protocol for market data providers that can supply bars."""
 
-    def fetch_bars(self, query: BarQuery) -> BarSeries: ...
+    def fetch_bars(self, query: MDPBarQuery) -> BarSeries: ...
 
 
 class DataOrchestrator:
@@ -110,16 +115,16 @@ class DataOrchestrator:
             if not isinstance(req, DataRequirement):
                 continue
 
-            # Build a query to check for existing data
+            # Build a storage-format query to check for existing data
             instrument_key = f"{req.exchange}:{req.market_type}:{req.symbol}:{req.price_type}"
-            query = StorageBarQuery(
+            storage_query = StorageBarQuery(
                 instrument_key=instrument_key,
                 timeframe=req.timeframe,
                 from_time=req.from_time,
                 to_time=req.to_time,
             )
 
-            gaps = self.detect_gaps(query)
+            gaps = self._candle_storage.detect_gaps(storage_query)
             if gaps:
                 gaps_remaining.extend(gaps)
 
@@ -129,7 +134,7 @@ class DataOrchestrator:
             gaps_remaining=gaps_remaining,
         )
 
-    def load_bars(self, query: BarQuery) -> BarSeries:
+    def load_bars(self, query: MDPBarQuery) -> BarSeries:
         """Single canonical read contract for bars.
 
         Reads according to query.source. Storage/provider errors are raised, never converted
@@ -180,21 +185,21 @@ class DataOrchestrator:
             ),
         )
 
-    def get_bars(self, query: BarQuery) -> list[Bar]:
+    def get_bars(self, query: MDPBarQuery) -> list[Bar]:
         """Return canonical bars for callers that need a plain sequence."""
 
         return list(self.load_bars(query).bars)
 
-    def detect_gaps(self, query: BarQuery | StorageBarQuery) -> list[DataGap]:
+    def detect_gaps(self, query: MDPBarQuery | StorageBarQuery) -> list[DataGap]:
         """Detect gaps in the candle data.
 
         Args:
-            query: BarQuery specifying instrument, timeframe, and time range
+            query: BarQuery in canonical (MDPBarQuery) or storage format
 
         Returns:
             List of DataGap objects
         """
-        storage_query = _to_storage_query(query) if isinstance(query, BarQuery) else query
+        storage_query = _to_storage_query(query) if isinstance(query, MDPBarQuery) else query
         return self._candle_storage.detect_gaps(storage_query)
 
     def schedule_backfill(self, requirement: DataRequirement) -> str:
@@ -214,7 +219,7 @@ class DataOrchestrator:
 
     def on_candle_closed(
         self,
-        bar: "Bar",
+        bar: Bar,
         instrument_key: str,
         timeframe: str,
         source: str = "live",
@@ -233,12 +238,6 @@ class DataOrchestrator:
             CandleCommitResult with success status and manifest_id
         """
         try:
-            # Ensure instrument_key is set on bar if it has that attribute
-            if hasattr(bar, "instrument_key"):
-                bar.instrument_key = instrument_key  # type: ignore[attr-defined]
-            if hasattr(bar, "timeframe"):
-                bar.timeframe = timeframe  # type: ignore[attr-defined]
-
             result = self._candle_storage.write_candles(
                 candles=[bar],
                 mode=WriteMode.UPSERT_PARTITION,
@@ -263,20 +262,34 @@ class DataOrchestrator:
                 error=str(e),
             )
 
-    def list_manifests(self, query: BarQuery | StorageBarQuery) -> list[CandleManifest]:
+    def list_manifests(self, query: MDPBarQuery | StorageBarQuery) -> list[CandleManifest]:
         """List candle manifests for a query.
 
         Args:
-            query: BarQuery specifying instrument and time range
+            query: BarQuery in canonical (MDPBarQuery) or storage format
 
         Returns:
             List of CandleManifest objects
         """
-        storage_query = _to_storage_query(query) if isinstance(query, BarQuery) else query
+        storage_query = _to_storage_query(query) if isinstance(query, MDPBarQuery) else query
         return self._candle_storage.list_manifests(storage_query)
 
 
-def _to_storage_query(query: BarQuery) -> StorageBarQuery:
+def _to_storage_query(query: MDPBarQuery | StorageBarQuery) -> StorageBarQuery:
+    """Convert canonical marketdata_provider BarQuery to storage BarQuery.
+
+    marketdata_provider BarQuery:
+      - instrument: InstrumentKey(exchange, market, symbol)
+      - timeframe: Timeframe(canonical)
+      - start_ms, end_ms (end-exclusive per canonical TZ semantics)
+
+    Storage BarQuery:
+      - instrument_key: "exchange:market:symbol:price_type"
+      - timeframe: canonical string
+      - from_time, to_time (inclusive)
+    """
+    if isinstance(query, StorageBarQuery):
+        return query
     return StorageBarQuery(
         instrument_key=(
             f"{query.instrument.exchange}:{query.instrument.market}:{query.instrument.symbol}:trade"
@@ -289,11 +302,15 @@ def _to_storage_query(query: BarQuery) -> StorageBarQuery:
     )
 
 
-def _canonical_bar_from_storage_bar(bar: object, query: BarQuery) -> Bar:
+def _canonical_bar_from_storage_bar(bar: object, query: MDPBarQuery) -> Bar:
     time = int(getattr(bar, "time"))
     return Bar(
-        instrument=query.instrument,
-        timeframe=query.timeframe,
+        instrument=InstrumentKey(
+            exchange=query.instrument.exchange,
+            market=query.instrument.market,
+            symbol=query.instrument.symbol,
+        ),
+        timeframe=Timeframe(canonical=query.timeframe.canonical),
         time=time,
         time_close=int(getattr(bar, "time_close", query.end_ms)),
         open=float(getattr(bar, "open")),
@@ -305,7 +322,7 @@ def _canonical_bar_from_storage_bar(bar: object, query: BarQuery) -> Bar:
     )
 
 
-def _coverage_for(query: BarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:
+def _coverage_for(query: MDPBarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:
     if not bars:
         return CoverageReport(
             requested_start_ms=query.start_ms,
