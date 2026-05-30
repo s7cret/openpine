@@ -244,16 +244,6 @@ class BacktestEngineAdapter:
         )
 
     def _to_engine_bar(self, bar: Bar) -> Any:
-        # Handle both marketdata_provider.Bar (time, time_close) and adapter Bar (timestamp, close_time_ms)
-        bar_time = getattr(bar, "timestamp", getattr(bar, "time", 0))
-        bar_time_close = getattr(bar, "close_time_ms", getattr(bar, "time_close", 0))
-        volume = getattr(bar, "volume", None)
-        return self._module.Bar(
-            time=int(bar_time),
-            open=float(bar.open),
-            high=float(bar.high),
-            low=float(bar.low),
-            close=float(bar.close),
-            volume=None if volume is None else float(volume),
-            time_close=int(bar_time_close),
-        )
+        from openpine.adapters.bars import to_engine_bar
+
+        return to_engine_bar(bar)

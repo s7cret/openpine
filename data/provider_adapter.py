@@ -81,6 +81,7 @@ def normalize_provider_bar(provider_bar: Any, query: BarQuery) -> Bar:
         if _has_any_field(provider_bar, ("symbol", "exchange_symbol"))
         else query.instrument.symbol
     )
+    volume = _attr_or_item(provider_bar, "volume") if _has_field(provider_bar, "volume") else None
     return Bar(
         instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
         timeframe=query.timeframe,
@@ -90,7 +91,7 @@ def normalize_provider_bar(provider_bar: Any, query: BarQuery) -> Bar:
         high=float(_attr_or_item(provider_bar, "high")),
         low=float(_attr_or_item(provider_bar, "low")),
         close=float(_attr_or_item(provider_bar, "close")),
-        volume=float(_attr_or_item(provider_bar, "volume")) if _has_field(provider_bar, "volume") else None,
+        volume=None if volume is None else float(volume),
         closed=bool(_attr_or_item(provider_bar, "is_closed", "closed"))
         if _has_any_field(provider_bar, ("is_closed", "closed"))
         else True,

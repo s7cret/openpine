@@ -38,6 +38,7 @@ package-dir = {"openpine" = "."}
 packages = [
     "openpine",
     "openpine.accounts",
+    "openpine.adapters",
     "openpine.artifacts",
     "openpine.batch",
     "openpine.cli",

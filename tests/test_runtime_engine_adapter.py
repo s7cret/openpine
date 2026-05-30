@@ -1,14 +1,22 @@
 from __future__ import annotations
 
-from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
+from marketdata_provider.contracts import Bar, BarQuery, BarSeries, InstrumentKey, parse_timeframe
 
+from openpine.adapters.bars import from_provider_bars, to_engine_bars, to_pinelib_bars
 from openpine.runtime.engine import BacktestEngineAdapter
 
 
-def test_engine_bar_adapter_preserves_missing_volume() -> None:
+def test_bar_adapters_preserve_canonical_window_semantics() -> None:
     timeframe = parse_timeframe("15m")
-    bar = Bar(
+    query = BarQuery(
         instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+        timeframe=timeframe,
+        start_ms=1_700_000_000_000,
+        end_ms=1_700_001_800_000,
+        source="provider",
+    )
+    bar = Bar(
+        instrument=query.instrument,
         timeframe=timeframe,
         time=1_700_000_000_000,
         time_close=1_700_000_899_999,
@@ -19,9 +27,18 @@ def test_engine_bar_adapter_preserves_missing_volume() -> None:
         volume=None,
         closed=True,
     )
+    series = BarSeries(query=query, bars=(bar,), coverage=from_provider_bars((bar,), query).coverage)
 
     engine_bar = BacktestEngineAdapter()._to_engine_bar(bar)
+    engine_series = to_engine_bars(series)
+    pine_bar = to_pinelib_bars(series)[0]
 
     assert engine_bar.volume is None
     assert engine_bar.time == bar.time
     assert engine_bar.time_close == bar.time_close
+    assert engine_series.get_bar(0).time == bar.time
+    assert engine_series.get_bar(0).time_close == bar.time_close
+    assert engine_series.get_bar(0).volume is None
+    assert pine_bar.time == bar.time
+    assert pine_bar.time_close == bar.time_close
+    assert pine_bar.volume == 0.0
