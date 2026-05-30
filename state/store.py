@@ -158,6 +158,21 @@ class StateStore:
     def _debug_path(self, strategy_id: str, snapshot_id: str) -> Path:
         return self._state_dir(strategy_id) / f"snap_{snapshot_id}.debug.json"
 
+    @staticmethod
+    def _snapshot_payload(state: StrategyState) -> dict[str, Any]:
+        payload = state.to_payload()
+        payload["checksum"] = state.checksum()
+        return payload
+
+    @staticmethod
+    def _debug_payload(payload: dict[str, Any]) -> dict[str, Any]:
+        return {
+            **payload,
+            "runtime_state": "<redacted>",
+            "strategy_state": "<redacted>",
+            "orders_state": "<redacted>",
+        }
+
     def save_snapshot(
         self,
         state: StrategyState,
@@ -189,9 +204,7 @@ class StateStore:
         bar_time = state.bar_time
         saved_at = int(datetime.now().timestamp() * 1000)
 
-        # Build payload
-        payload = state.to_payload()
-        payload["checksum"] = state.checksum()
+        payload = self._snapshot_payload(state)
 
         # Atomic write: temp file → validate → rename
         sd = self._state_dir(state.strategy_id)
@@ -216,13 +229,7 @@ class StateStore:
 
         # Write debug JSON
         debug_path = self._debug_path(state.strategy_id, snapshot_id)
-        debug_payload = {
-            **payload,
-            "runtime_state": "<redacted>",
-            "strategy_state": "<redacted>",
-            "orders_state": "<redacted>",
-        }
-        debug_path.write_text(json.dumps(debug_payload, indent=2))
+        debug_path.write_text(json.dumps(self._debug_payload(payload), indent=2))
 
         # Build metadata
         meta = SnapshotMetadata(
