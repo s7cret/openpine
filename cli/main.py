@@ -534,6 +534,34 @@ def _save_strategy_backtest_result(
     return run_id, run_dir
 
 
+def _run_strategy_backtest_adapter(
+    *,
+    adapter_cls,
+    strategy_class,
+    bars,
+    config,
+    params: dict,
+    provider,
+    console,
+    perf_counter,
+):
+    selected_strategy_class, backend = _prepare_strategy_backtest_runtime(
+        strategy_class,
+        console,
+    )
+    t0 = perf_counter()
+    result = adapter_cls().run(
+        selected_strategy_class,
+        bars,
+        config,
+        params=params,
+        execution_backend=backend,
+        progress_callback=_build_progress_callback(bars_total=len(bars), console=console),
+        runtime_data_provider=getattr(provider, "_provider", None),
+    )
+    return result, perf_counter() - t0
+
+
 def _build_cli_bar_query(
     *,
     symbol: str,
@@ -4345,22 +4373,16 @@ def strategy_backtest(
         )
         registry.update_status(strategy_id, "running")
         try:
-            _strategy_class, _backend = _prepare_strategy_backtest_runtime(
-                strategy_class,
-                console,
-            )
-
-            t0 = _time.perf_counter()
-            result = BacktestEngineAdapter().run(
-                _strategy_class,
-                bars,
-                config,
+            result, timings["backtest_sec"] = _run_strategy_backtest_adapter(
+                adapter_cls=BacktestEngineAdapter,
+                strategy_class=strategy_class,
+                bars=bars,
+                config=config,
                 params=params,
-                execution_backend=_backend,
-                progress_callback=_build_progress_callback(bars_total=len(bars), console=console),
-                runtime_data_provider=getattr(provider, "_provider", None),
+                provider=provider,
+                console=console,
+                perf_counter=_time.perf_counter,
             )
-            timings["backtest_sec"] = _time.perf_counter() - t0
         except Exception as exc:
             registry.update_status(strategy_id, "error")
             console.print(f"[red]Backtest failed: {type(exc).__name__}: {exc}[/red]")

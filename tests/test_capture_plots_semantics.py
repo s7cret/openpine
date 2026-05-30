@@ -205,6 +205,39 @@ def test_strategy_backtest_readiness_window_and_load_helpers():
     assert elapsed == 2.5
 
 
+def test_strategy_backtest_adapter_helper_runs_selected_backend():
+    from openpine.cli.main import _run_strategy_backtest_adapter
+
+    captured = {}
+
+    class FakeAdapter:
+        def run(self, strategy_class, bars, config, **kwargs):
+            captured["strategy_class"] = strategy_class
+            captured["bars"] = bars
+            captured["config"] = config
+            captured["kwargs"] = kwargs
+            return "result"
+
+    messages: list[tuple] = []
+    result, elapsed = _run_strategy_backtest_adapter(
+        adapter_cls=FakeAdapter,
+        strategy_class=SimpleNamespace(),
+        bars=[1, 2],
+        config="config",
+        params={"p": 1},
+        provider=SimpleNamespace(_provider="provider-core"),
+        console=SimpleNamespace(print=lambda *args, **kwargs: messages.append(args)),
+        perf_counter=iter([20.0, 22.25]).__next__,
+    )
+
+    assert result == "result"
+    assert elapsed == 2.25
+    assert captured["bars"] == [1, 2]
+    assert captured["config"] == "config"
+    assert captured["kwargs"]["params"] == {"p": 1}
+    assert captured["kwargs"]["runtime_data_provider"] == "provider-core"
+
+
 def test_indicator_plot_helpers_build_config_and_meta(tmp_path):
     from openpine.cli.main import (
         _build_indicator_plot_config,
