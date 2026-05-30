@@ -59,6 +59,30 @@ def test_artifact_store_removes_stale_generated_strategy_when_compile_has_no_cod
     assert not (artifact_path / "generated_strategy.py").exists()
 
 
+def test_artifact_store_requires_compile_metadata(tmp_path) -> None:
+    store = ArtifactStore(root=tmp_path)
+    artifact_dir = tmp_path / "pine_test" / "art_missing_meta"
+    artifact_dir.mkdir(parents=True)
+
+    with pytest.raises(FileNotFoundError, match="Artifact metadata not found"):
+        store.get_artifact("art_missing_meta", "pine_test")
+
+
+def test_artifact_store_list_does_not_hide_corrupt_artifact_dirs(tmp_path) -> None:
+    store = ArtifactStore(root=tmp_path)
+    store.save_artifact(
+        artifact_id="art_ok",
+        source_id="pine_test",
+        params_hash="default",
+        python_code="class GeneratedStrategy: pass\n",
+        compile_meta={"compile_status": "OK"},
+    )
+    (tmp_path / "pine_test" / "art_corrupt").mkdir()
+
+    with pytest.raises(FileNotFoundError, match="Artifact metadata not found"):
+        store.list_artifacts("pine_test")
+
+
 def test_successful_compile_requires_generated_python_code(tmp_path, monkeypatch) -> None:
     config = OpenPineConfig(workspace_root=tmp_path, data_dir=tmp_path / "data")
     monkeypatch.setattr("openpine.artifacts.store.OpenPineConfig.load", lambda: config)

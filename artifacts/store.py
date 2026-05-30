@@ -89,9 +89,9 @@ class ArtifactStore:
             raise FileNotFoundError(f"Artifact not found: {artifact_id}")
 
         meta_path = artifact_dir / "compile_meta.json"
-        compile_meta = {}
-        if meta_path.exists():
-            compile_meta = json.loads(meta_path.read_text())
+        if not meta_path.exists():
+            raise FileNotFoundError(f"Artifact metadata not found: {artifact_id}")
+        compile_meta = json.loads(meta_path.read_text())
 
         return {
             "artifact_id": artifact_id,
@@ -118,10 +118,7 @@ class ArtifactStore:
         artifacts = []
         for artifact_id in source_dir.iterdir():
             if artifact_id.is_dir():
-                try:
-                    artifacts.append(self.get_artifact(artifact_id.name, source_id))
-                except FileNotFoundError:
-                    continue
+                artifacts.append(self.get_artifact(artifact_id.name, source_id))
         return artifacts
 
     def get_artifact_path(self, artifact_id: str, source_id: str) -> Path:
