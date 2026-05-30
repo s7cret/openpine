@@ -11,7 +11,6 @@ import click
 from rich.console import Console
 
 from openpine import __version__
-from openpine.data.candle_storage import PARQUET_SCHEMA
 from openpine.jobs import Job, JobScheduler, JobStatus, JobType
 
 # Global instances — created once at module load
@@ -1335,9 +1334,8 @@ def data_backfill(
         # NOTE: This is a synchronous CLI convenience path, not a durable
         # worker scheduler. Jobs system remains in-memory only.
         import requests
-        from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
-        from openpine.data.candle_storage import CandleStorage
-        from openpine.data.contracts import WriteMode
+        from marketdata_provider.contracts import Bar, BarQuery, BarSeries, InstrumentKey, parse_timeframe
+        from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
 
         console.print("[dim]Fetching candles synchronously...[/dim]")
         all_bars: list[Bar] = []
@@ -1395,16 +1393,25 @@ def data_backfill(
             console.print("[yellow]No candles fetched[/yellow]")
             return
 
-        storage = CandleStorage()
-        instrument_key = f"{exchange.lower()}:{market.lower()}:{symbol.upper()}:{price_type}"
-        result = storage.write_candles(
-            all_bars,
-            mode=WriteMode.UPSERT_PARTITION,
-            instrument_key=instrument_key,
-            timeframe=timeframe,
+        query = BarQuery(
+            instrument=instrument,
+            timeframe=parsed_timeframe,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            source="storage",
         )
+        try:
+            result = DataOrchestrator().store_bars(
+                BarSeries(
+                    query=query,
+                    bars=tuple(all_bars),
+                    coverage=DataOrchestrator.coverage_for_series(query, tuple(all_bars), "provider"),
+                )
+            )
+        except StorageUnavailableError as exc:
+            console.print(f"[red]Backfill persist failed:[/red] {exc}")
+            return
         console.print(f"[green]Backfill complete: {result.rows_written} candles written[/green]")
-        console.print(f"  manifests: {len(result.manifests_created or [])}")
         return
 
     # Async path: enqueue a backfill job
@@ -1652,153 +1659,6 @@ def data_doctor(
         console.print("[yellow]  Warning: requested window has coverage gaps.[/yellow]")
     elif classification == "DATA_OK":
         console.print("[green]  Data coverage is valid.[/green]")
-
-
-@data.command("compact")
-@click.argument("symbol", required=True)
-@click.argument("timeframe", required=True)
-@click.option("--from", "from_date", required=True, help="Start date (YYYY-MM-DD)")
-@click.option("--to", "to_date", default=None, help="End date (YYYY-MM-DD, default: today)")
-@click.option("--exchange", default="binance", help="Exchange name")
-@click.option("--market", default="spot", help="Market type")
-@click.option("--price-type", "price_type", default="trade", help="Price type")
-def data_compact(
-    symbol: str,
-    timeframe: str,
-    from_date: str,
-    to_date: str | None,
-    exchange: str,
-    market: str,
-    price_type: str,
-) -> None:
-    """Compact overlapping candle manifests into a single canonical parquet file."""
-    from datetime import datetime as dt, timezone
-    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.config import OpenPineConfig
-    from openpine.data.candle_storage import CandleStorage
-    import pandas as pd
-    import shutil
-
-    console.print(f"[bold]Data compact[/bold] {symbol} {timeframe}")
-
-    try:
-        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
-    except ValueError:
-        console.print(f"[red]Invalid --from date format: {from_date}[/red]")
-        return
-
-    end_ms = int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000) if to_date else int(dt.now().timestamp() * 1000)
-
-    # Read canonical bars
-    storage = CandleStorage()
-    query = BarQuery(
-        instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
-        timeframe=parse_timeframe(timeframe),
-        start_ms=start_ms,
-        end_ms=end_ms,
-        source="storage",
-    )
-    bars = storage.read_candles(query)
-
-    if not bars:
-        console.print(f"[yellow]No bars to compact in range {from_date} → {to_date or 'today'}[/yellow]")
-        return
-
-    # Build DataFrame from canonical bars
-    rows = []
-    for bar in bars:
-        rows.append({
-            "exchange": exchange,
-            "market_type": market,
-            "symbol": symbol,
-            "price_type": price_type,
-            "timeframe": timeframe,
-            "open_time": bar.time,
-            "close_time": bar.time_close or bar.time,
-            "open": bar.open,
-            "high": bar.high,
-            "low": bar.low,
-            "close": bar.close,
-            "volume": bar.volume,
-            "quote_volume": None,
-            "trades_count": None,
-            "is_closed": True,
-            "source": "openpine-compacted",
-            "provider": "openpine",
-            "ingested_at": int(dt.now(timezone.utc).timestamp() * 1000),
-        })
-
-    df = pd.DataFrame(rows)
-    df = df.sort_values("open_time")
-
-    # Write to temp path first
-    config = OpenPineConfig.load()
-    candle_dir = (
-        config.data_dir
-        / "candles"
-        / f"exchange={exchange}"
-        / f"market_type={market}"
-        / f"symbol={symbol}"
-        / f"price_type={price_type}"
-        / f"timeframe={timeframe}"
-        / f"year={dt.utcfromtimestamp(start_ms / 1000).year}"
-        / f"month={dt.utcfromtimestamp(start_ms / 1000).month:02d}"
-    )
-    candle_dir.mkdir(parents=True, exist_ok=True)
-
-    ts = int(dt.now(timezone.utc).timestamp() * 1000)
-    final_path = candle_dir / f"part-compact-{ts}.parquet"
-    tmp_path = candle_dir / f".part-compact-{ts}.parquet.tmp"
-
-    import pyarrow as pa
-    import pyarrow.parquet as pq
-
-    table = pa.Table.from_pandas(df, schema=PARQUET_SCHEMA, preserve_index=False)
-    pq.write_table(table, str(tmp_path), compression="zstd")
-    shutil.move(str(tmp_path), str(final_path))
-
-    # Update manifest: mark old manifests as superseded, add new compact manifest
-    from openpine.data.models import CandleManifest
-    import hashlib
-
-    old_manifests = storage.list_manifests(query)
-    conn = storage._get_conn()
-
-    # Mark old manifests as superseded
-    for m in old_manifests:
-        conn.execute(
-            "UPDATE candle_manifests SET is_active = 0, superseded_by = ? WHERE manifest_id = ?",
-            (f"compact-{ts}", m.manifest_id),
-        )
-
-    # Add new compact manifest
-    checksum = hashlib.sha256(df.to_string().encode()).hexdigest()[:16]
-    new_manifest = CandleManifest(
-        manifest_id=f"m_compact_{ts}_{hashlib.sha256(final_path.name.encode()).hexdigest()[:8]}",
-        exchange=exchange,
-        market_type=market,
-        symbol=symbol,
-        price_type=price_type,
-        timeframe=timeframe,
-        partition_path=str(final_path),
-        min_open_time=int(df["open_time"].min()),
-        max_open_time=int(df["open_time"].max()),
-        row_count=len(df),
-        schema_hash=storage._schema_hash,
-        checksum=checksum,
-        file_size_bytes=final_path.stat().st_size,
-        provider="openpine",
-        ingested_at=ts,
-        created_at=ts,
-        updated_at=ts,
-    )
-    storage._insert_manifest(new_manifest)
-
-    console.print(f"[green]Compaction complete:[/green]")
-    console.print(f"  Output: {final_path}")
-    console.print(f"  Canonical rows: {len(df)}")
-    console.print(f"  Old manifests superseded: {len(old_manifests)}")
-    console.print(f"[dim]Run 'openpine data doctor {symbol} {timeframe} --from {from_date}' to verify.[/dim]")
 
 
 @data.command("providers")

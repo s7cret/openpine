@@ -5,7 +5,8 @@ Section 7.5 + 33.1 of OpenPine TZ v3.
 
 Rules:
 - get_bars(query: MDPBarQuery) -> list[Bar] is the ONLY read contract for bars.
-- on_candle_closed(bar, instrument_key, timeframe) is the ONLY write boundary
+- store_bars(series: BarSeries) is the durable write boundary for batch/backfill bars.
+- on_candle_closed(bar, instrument_key, timeframe) is the live write boundary
   for confirmed closed candles from live feeds.
 
 Architecture:
@@ -26,6 +27,7 @@ from marketdata_provider.contracts import (
     BarSeries,
     CandleStore,
     CoverageReport,
+    StoreResult,
 )
 from marketdata_provider.contracts import BarQuery as MDPBarQuery
 from openpine.data.models import (
@@ -125,6 +127,27 @@ class DataOrchestrator:
 
         return list(self.load_bars(query).bars)
 
+    @staticmethod
+    def coverage_for_series(
+        query: MDPBarQuery,
+        bars: tuple[Bar, ...],
+        source: str,
+    ) -> CoverageReport:
+        """Build a canonical coverage report for already-normalized bars."""
+
+        return _coverage_for(query, bars, source)
+
+    def store_bars(self, series: BarSeries) -> StoreResult:
+        """Persist canonical bars through the configured candle store."""
+
+        try:
+            result = self._candle_store.write(series)
+        except Exception as exc:
+            raise StorageUnavailableError(str(exc)) from exc
+        if not result.success:
+            raise StorageUnavailableError(result.error or "failed to persist bars")
+        return result
+
     def _load_from_storage(self, query: MDPBarQuery, *, require_complete: bool) -> BarSeries:
         try:
             series = self._candle_store.read(query)
@@ -166,9 +189,7 @@ class DataOrchestrator:
     def _write_provider_series(self, series: BarSeries) -> None:
         if not series.bars:
             return
-        result = self._candle_store.write(series)
-        if not result.success:
-            raise StorageUnavailableError(result.error or "failed to persist provider bars")
+        self.store_bars(series)
 
     @staticmethod
     def _require_complete(series: BarSeries, source: str) -> BarSeries:

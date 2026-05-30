@@ -188,14 +188,35 @@ def test_data_inspect_cli_uses_orchestrator_boundary() -> None:
 def test_data_doctor_cli_uses_orchestrator_boundary() -> None:
     source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
     doctor_start = source.index('@data.command("doctor")')
-    compact_start = source.index('@data.command("compact")')
-    doctor_source = source[doctor_start:compact_start]
+    providers_start = source.index('@data.command("providers")')
+    doctor_source = source[doctor_start:providers_start]
 
     assert "DataOrchestrator" in doctor_source
     assert "CandleStorage" not in doctor_source
     assert "read_candles" not in doctor_source
     assert "list_manifests" not in doctor_source
     assert "pd.read_parquet" not in doctor_source
+
+
+def test_data_backfill_wait_uses_orchestrator_store_boundary() -> None:
+    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    backfill_start = source.index('@data.command("backfill")')
+    parallel_start = source.index('@data.command("parallel-backfill")')
+    backfill_source = source[backfill_start:parallel_start]
+
+    assert "DataOrchestrator" in backfill_source
+    assert "store_bars" in backfill_source
+    assert "CandleStorage" not in backfill_source
+    assert "write_candles" not in backfill_source
+    assert "WriteMode" not in backfill_source
+
+
+def test_data_cli_does_not_expose_legacy_compaction_command() -> None:
+    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+
+    assert '@data.command("compact")' not in source
+    assert "openpine-compacted" not in source
+    assert "superseded_by" not in source
 
 
 def test_data_package_does_not_export_legacy_planner_models() -> None:
