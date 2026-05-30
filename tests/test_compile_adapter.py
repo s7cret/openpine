@@ -111,6 +111,38 @@ def test_parse_with_pine2ast_subprocess_retries_v5_rejection(
     assert compile_meta["compatibility_fallback"]["pine_version_to"] == 6
 
 
+def test_translate_ast_with_subprocess_reports_failures(monkeypatch) -> None:
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=2,
+            stdout="stdout details",
+            stderr="",
+        )
+
+    monkeypatch.setattr(adapter_module.subprocess, "run", fake_run)
+
+    python_code, error, ast_path = adapter_module._translate_ast_with_subprocess(
+        ast2python_path=adapter_module.Path("/bin/ast2python"),
+        ast_json='{"kind":"Program"}',
+        module_name="generated",
+        strict=True,
+        timeout=5,
+    )
+    try:
+        assert python_code is None
+        assert error is not None
+        assert error.errors == ["ast2python failed (exit 2)", "stdout details"]
+        assert error.ast_json == '{"kind":"Program"}'
+        assert calls[0][0][-1] == "--strict"
+        assert calls[0][1]["timeout"] == 5
+    finally:
+        ast_path.unlink(missing_ok=True)
+
+
 def test_parse_with_library_api_retries_v5_rejection() -> None:
     metadata = {}
     apis = _fake_library_apis_with_v5_retry(metadata)

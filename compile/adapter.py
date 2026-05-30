@@ -371,6 +371,53 @@ def _parse_with_pine2ast_subprocess(
     return result_p2a, None
 
 
+def _translate_ast_with_subprocess(
+    *,
+    ast2python_path: Path,
+    ast_json: str,
+    module_name: str,
+    strict: bool,
+    timeout: int,
+) -> tuple[str | None, CompileResult | None, Path]:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as ast_f:
+        ast_f.write(ast_json)
+        ast_path = Path(ast_f.name)
+
+    cmd = [
+        str(ast2python_path),
+        "translate",
+        str(ast_path),
+        "-o",
+        "/dev/stdout",
+        "--module-name",
+        module_name,
+    ]
+    if strict:
+        cmd.append("--strict")
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if result.returncode != 0:
+        return (
+            None,
+            CompileResult(
+                success=False,
+                errors=[
+                    f"ast2python failed (exit {result.returncode})",
+                    result.stderr or result.stdout,
+                ],
+                ast_json=ast_json,
+            ),
+            ast_path,
+        )
+
+    return result.stdout, None, ast_path
+
+
 def _parse_with_library_api(
     *,
     apis: _LibraryApis,
@@ -693,39 +740,16 @@ class SubprocessCompilerAdapter:
                     errors=[f"pine2ast produced invalid JSON: {e}"],
                 )
 
-            # Step 2: ast2python translate
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".json", delete=False
-            ) as ast_f:
-                ast_f.write(ast_json)
-                ast_path = Path(ast_f.name)
-
-            cmd = [
-                str(tools.ast2python_path), "translate",
-                str(ast_path),
-                "-o", "/dev/stdout",
-                "--module-name", module_name,
-            ]
-            if strict:
-                cmd.append("--strict")
-
-            result_a2p = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
+            python_code, translate_error, ast_path = _translate_ast_with_subprocess(
+                ast2python_path=tools.ast2python_path,
+                ast_json=ast_json,
+                module_name=module_name,
+                strict=strict,
                 timeout=self.timeout,
             )
-            if result_a2p.returncode != 0:
-                return CompileResult(
-                    success=False,
-                    errors=[
-                        f"ast2python failed (exit {result_a2p.returncode})",
-                        result_a2p.stderr or result_a2p.stdout,
-                    ],
-                    ast_json=ast_json,
-                )
-
-            python_code = result_a2p.stdout
+            if translate_error is not None:
+                return translate_error
+            assert python_code is not None
 
             return CompileResult(
                 success=True,
