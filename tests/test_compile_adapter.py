@@ -32,6 +32,43 @@ def _fake_library_apis(metadata: dict):
     )
 
 
+def _fake_library_apis_with_v5_retry(metadata: dict):
+    calls = {"count": 0}
+
+    def parse_code(_source, _options):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return SimpleNamespace(
+                ast=None,
+                diagnostics=[
+                    SimpleNamespace(
+                        severity=SimpleNamespace(value="error"),
+                        code="P2A0103",
+                        message="unsupported Pine version 5",
+                    )
+                ],
+                ok=False,
+            )
+        return SimpleNamespace(ast={"kind": "Program"}, diagnostics=[], ok=True)
+
+    return adapter_module._LibraryApis(
+        parse_code=parse_code,
+        parse_options=lambda **_kwargs: SimpleNamespace(),
+        ast_to_json=lambda _ast: json.dumps({"kind": "Program"}),
+        translate_ast=lambda *_args, **_kwargs: SimpleNamespace(
+            code="# generated\n",
+            metadata=metadata,
+            source_map=[],
+        ),
+        versions={
+            "pine2ast_version": "test",
+            "ast2python_version": "test",
+            "pinelib_contract_version": "test",
+            "pinelib_version": "test",
+        },
+    )
+
+
 def test_production_compile_rejects_unsafe_translation_metadata(monkeypatch) -> None:
     metadata = {
         "compile_profile": "production",
@@ -60,6 +97,37 @@ def test_production_compile_rejects_unsafe_translation_metadata(monkeypatch) -> 
     assert "runtime_contract_safe=False" in "\n".join(result.errors)
     assert "unsupported_features" in "\n".join(result.errors)
     assert result.compile_meta["production_blockers"] == result.errors
+    assert result.compile_meta["translation_metadata"] == metadata
+
+
+def test_diagnostic_version_rewrite_marks_compile_meta_unsafe(monkeypatch) -> None:
+    metadata = {
+        "compile_profile": "diagnostic",
+        "codegen_safe": False,
+        "runtime_contract_safe": False,
+        "parity_safe": False,
+        "unsafe": True,
+        "unsupported_features": [],
+        "unsupported_nodes": [],
+        "unsupported_declaration_args": [],
+        "import_aliases": [],
+    }
+    status = adapter_module.LibraryAvailability(available=True)
+    monkeypatch.setattr(
+        adapter_module,
+        "_load_library_apis",
+        lambda: (_fake_library_apis_with_v5_retry(metadata), status),
+    )
+
+    result = SubprocessCompilerAdapter().compile(
+        "//@version=5\nindicator('x')\nplot(close)\n",
+        profile="diagnostic",
+    )
+
+    assert result.success
+    assert result.compile_meta["unsafe"] is True
+    assert "implicit_pine_version_rewrite" in result.compile_meta["unsafe_reasons"]
+    assert result.compile_meta["compatibility_fallback"]["pine_version_from"] == 5
     assert result.compile_meta["translation_metadata"] == metadata
 
 

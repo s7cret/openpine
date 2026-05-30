@@ -29,6 +29,7 @@ _PINE_V5_FALLBACK_WARNING = (
     "Pine v5 compatibility fallback: parser rejected //@version=5; "
     "retried as //@version=6"
 )
+_PINE_V5_FALLBACK_UNSAFE_REASON = "implicit_pine_version_rewrite"
 
 
 def _find_tool(name: str) -> Path | None:
@@ -130,6 +131,14 @@ def _unsupported_request_error(exc: Exception) -> str | None:
     if re.fullmatch(r"request\.[A-Za-z_][A-Za-z0-9_]*", message):
         return f"unsupported request call is not production lowerable: {message}"
     return None
+
+
+def _mark_compile_meta_unsafe(compile_meta: dict[str, Any], reason: str) -> None:
+    compile_meta["unsafe"] = True
+    reasons = list(compile_meta.get("unsafe_reasons", []))
+    if reason not in reasons:
+        reasons.append(reason)
+    compile_meta["unsafe_reasons"] = reasons
 
 
 @dataclass(frozen=True)
@@ -397,6 +406,9 @@ class SubprocessCompilerAdapter:
                     ok = bool(getattr(parse_result, "ok", False))
                     warnings = list(compile_meta.get("warnings", []))
                     warnings.append(_PINE_V5_FALLBACK_WARNING)
+                    _mark_compile_meta_unsafe(
+                        compile_meta, _PINE_V5_FALLBACK_UNSAFE_REASON
+                    )
                     compile_meta.update(
                         {
                             "warnings": warnings,
@@ -572,6 +584,9 @@ class SubprocessCompilerAdapter:
                     )
                     warnings = list(compile_meta.get("warnings", []))
                     warnings.append(_PINE_V5_FALLBACK_WARNING)
+                    _mark_compile_meta_unsafe(
+                        compile_meta, _PINE_V5_FALLBACK_UNSAFE_REASON
+                    )
                     compile_meta.update(
                         {
                             "warnings": warnings,
