@@ -298,6 +298,14 @@ def test_artifact_store_default_root_is_config_driven() -> None:
     assert "DEFAULT_CONFIG" not in source
 
 
+def test_backtest_result_store_default_paths_are_config_driven() -> None:
+    source = (ROOT / "storage" / "backtest_storage.py").read_text(encoding="utf-8")
+
+    assert "OpenPineConfig.load()" in source
+    assert 'Path("~/.openpine/openpine.sqlite")' not in source
+    assert 'Path("~/.openpine/data/backtests")' not in source
+
+
 def test_openpine_has_single_data_planning_model_family() -> None:
     production_files = [
         ROOT / "contracts" / "__init__.py",

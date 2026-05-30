@@ -18,6 +18,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from openpine.config import OpenPineConfig
 from openpine.storage.backtest_dto import (
     ARTIFACT_TYPE_BAR_OUTPUTS,
     ARTIFACT_TYPE_EQUITY_CURVE,
@@ -38,12 +39,12 @@ class BacktestResultStore:
     """Storage for backtest runs, trades, and artifacts."""
 
     def __init__(self, storage: SQLiteStorage | None = None) -> None:
+        config = OpenPineConfig.load()
         if storage is None:
-            real_path = Path("~/.openpine/openpine.sqlite").expanduser()
-            self._storage = SQLiteStorage(real_path)
+            self._storage = SQLiteStorage(config.sqlite_path)
         else:
             self._storage = storage
-        self._data_dir = Path("~/.openpine/data/backtests").expanduser()
+        self._data_dir = config.data_dir / "backtests"
         self._data_dir.mkdir(parents=True, exist_ok=True)
 
     def _run_dir(self, strategy_id: str, run_id: str) -> Path:
