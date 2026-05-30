@@ -5174,20 +5174,17 @@ def daemon_run(telegram: bool) -> None:
 
         # Wait for shutdown signal
         shutdown_event = asyncio.Event()
+        loop = asyncio.get_event_loop()
 
         def handle_signal(sig: signal.Signals) -> None:
             console.print(f"\n[yellow]Received signal {sig.name}, shutting down...[/yellow]")
-            try:
-                asyncio.get_event_loop().remove_signal_handler(sig)
-            except NotImplementedError:
-                pass  # Windows
-            asyncio.get_event_loop().stop()
+            if sys.platform != "win32":
+                loop.remove_signal_handler(sig)
+            loop.stop()
 
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            try:
-                asyncio.get_event_loop().add_signal_handler(sig, handle_signal, sig)
-            except NotImplementedError:
-                pass  # Windows
+        if sys.platform != "win32":
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(sig, handle_signal, sig)
 
         # Keep running until stopped
         try:

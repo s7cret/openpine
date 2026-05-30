@@ -117,6 +117,20 @@ def test_production_source_does_not_mutate_sys_path_or_hardcode_home_paths() -> 
     assert home_paths == []
 
 
+def test_production_source_does_not_use_notimplemented_control_flow() -> None:
+    offenders: list[str] = []
+    for path in _production_python_files():
+        module = _parse(path)
+        relative_path = path.relative_to(ROOT).as_posix()
+        for node in ast.walk(module):
+            if isinstance(node, ast.ExceptHandler):
+                handled = node.type
+                if isinstance(handled, ast.Name) and handled.id == "NotImplementedError":
+                    offenders.append(f"{relative_path}:{node.lineno}")
+
+    assert offenders == []
+
+
 def test_openpine_production_does_not_define_duplicate_marketdata_contracts() -> None:
     duplicate_definitions: list[str] = []
 
