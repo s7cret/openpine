@@ -31,15 +31,6 @@ class RuntimeStatus(str, Enum):
     LIVE = "live"
 
 
-class DataRequirement(pydantic.BaseModel):
-    """Data requirement for strategy — section 5.7."""
-
-    instrument_key: InstrumentKey
-    timeframe: Timeframe
-    start_ms: int
-    end_ms: int
-
-
 class StrategyInstance(pydantic.BaseModel):
     """Strategy instance — section 5.3."""
 

@@ -133,3 +133,14 @@ def test_auto_raises_when_provider_write_through_fails() -> None:
 
     with pytest.raises(StorageUnavailableError):
         orchestrator.load_bars(_query(source="auto"))
+
+
+def test_candle_closed_write_failure_is_not_returned_as_success_false() -> None:
+    orchestrator = DataOrchestrator(candle_store=_Storage((), write_success=False))
+
+    with pytest.raises(StorageUnavailableError, match="write failed"):
+        orchestrator.on_candle_closed(
+            _bar(0),
+            instrument_key="binance:spot:BTCUSDT:trade",
+            timeframe="1m",
+        )

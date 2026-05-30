@@ -26,26 +26,12 @@ from marketdata_provider.contracts import (
     BarSeries,
     CandleStore,
     CoverageReport,
-    InstrumentKey,
-    StoreResult,
-    parse_timeframe,
 )
 from marketdata_provider.contracts import BarQuery as MDPBarQuery
 from openpine.data.models import (
-    AggregationRequirement,
     CandleCommitResult,
     DataGap,
-    DataPlan,
-    DataRequirement,
-    EnsureDataResult,
 )
-
-
-class StrategyInstance:
-    """Placeholder — replaced by real strategy instance model."""
-
-    def __init__(self, strategy_id: str) -> None:
-        self.id = strategy_id
 
 
 class MarketDataProvider(Protocol):
@@ -88,9 +74,6 @@ class DataOrchestrator:
     - Historical bar reads (get_bars)
     - Live candle persistence (on_candle_closed)
     - Gap detection (detect_gaps)
-    - Data plan building (build_data_plan)
-    - Data assurance (ensure_data)
-    - Backfill scheduling (schedule_backfill)
     """
 
     def __init__(
@@ -111,59 +94,6 @@ class DataOrchestrator:
     def set_provider(self, provider: MarketDataProvider) -> None:
         """Set the market data provider for bar fetching."""
         self._provider = provider
-
-    def build_data_plan(self, strategy_instance: StrategyInstance) -> DataPlan:
-        """Build data plan for a strategy instance.
-
-        Args:
-            strategy_instance: Strategy instance to build plan for
-
-        Returns:
-            DataPlan with requirements
-        """
-        # Placeholder: in production, this would query the strategy for its
-        # data requirements (instrument, timeframe, ranges)
-        return DataPlan(
-            requirements=[],
-            aggregation_requirements=[],
-        )
-
-    def ensure_data(self, plan: DataPlan) -> EnsureDataResult:
-        """Ensure all data in the plan is available.
-
-        Args:
-            plan: DataPlan with requirements to satisfy
-
-        Returns:
-            EnsureDataResult with status and remaining gaps
-        """
-        gaps_remaining: list[DataGap] = []
-
-        for req in plan.requirements:
-            if not isinstance(req, DataRequirement):
-                continue
-
-            query = MDPBarQuery(
-                instrument=InstrumentKey(
-                    exchange=req.exchange,
-                    market=req.market_type,
-                    symbol=req.symbol,
-                ),
-                timeframe=parse_timeframe(req.timeframe),
-                start_ms=req.from_time or 0,
-                end_ms=req.to_time or int(2**63 - 1),
-                source="storage",
-            )
-
-            gaps = self.detect_gaps(query)
-            if gaps:
-                gaps_remaining.extend(gaps)
-
-        return EnsureDataResult(
-            success=True,
-            gaps_filled=0,
-            gaps_remaining=gaps_remaining,
-        )
 
     def load_bars(self, query: MDPBarQuery) -> BarSeries:
         """Single canonical read contract for bars.
@@ -265,21 +195,6 @@ class DataOrchestrator:
         coverage = self._candle_store.coverage(query)
         return [_data_gap_from_interval(query, start, end) for start, end in coverage.missing_intervals]
 
-    def schedule_backfill(self, requirement: DataRequirement) -> str:
-        """Schedule a backfill job for a data requirement.
-
-        Args:
-            requirement: DataRequirement to backfill
-
-        Returns:
-            Job ID for the backfill task
-        """
-        import uuid
-
-        job_id = f"backfill_{uuid.uuid4().hex[:12]}"
-        # In production, this would create a job in the jobs table
-        return job_id
-
     def on_candle_closed(
         self,
         bar: Bar,
@@ -300,45 +215,22 @@ class DataOrchestrator:
         Returns:
             CandleCommitResult with success status and manifest_id
         """
+        query = MDPBarQuery(
+            instrument=bar.instrument,
+            timeframe=bar.timeframe,
+            start_ms=bar.time,
+            end_ms=bar.time_close,
+            source="storage",
+        )
         try:
-            query = MDPBarQuery(
-                instrument=bar.instrument,
-                timeframe=bar.timeframe,
-                start_ms=bar.time,
-                end_ms=bar.time_close,
-                source="storage",
-            )
             result = self._candle_store.write(
-                BarSeries(
-                    query=query,
-                    bars=(bar,),
-                    coverage=_coverage_for(query, (bar,), source),
-                )
+                BarSeries(query=query, bars=(bar,), coverage=_coverage_for(query, (bar,), source))
             )
-
-            return CandleCommitResult(
-                success=result.success,
-                error=result.error,
-            )
-
-        except Exception as e:
-            return CandleCommitResult(
-                success=False,
-                error=str(e),
-            )
-
-    def list_manifests(self, query: MDPBarQuery) -> list[CandleManifest]:
-        """List candle manifests for a query.
-
-        Args:
-            query: Canonical marketdata_provider BarQuery
-
-        Returns:
-            List of CandleManifest objects
-        """
-        if hasattr(self._candle_store, "list_manifests"):
-            return list(self._candle_store.list_manifests(query))  # type: ignore[attr-defined]
-        return []
+        except Exception as exc:
+            raise StorageUnavailableError(str(exc)) from exc
+        if not result.success:
+            raise StorageUnavailableError(result.error or "failed to persist closed candle")
+        return CandleCommitResult(success=True)
 
 
 def _coverage_for(query: MDPBarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:
@@ -435,5 +327,4 @@ __all__ = [
     "MarketDataProvider",
     "ProviderUnavailableError",
     "StorageUnavailableError",
-    "StrategyInstance",
 ]

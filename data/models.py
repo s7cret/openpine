@@ -33,48 +33,6 @@ class CandleManifest:
 
 
 @dataclass(frozen=True)
-class DataRequirement:
-    """Data requirement for a strategy.
-
-    Represents a need to load/store OHLCV bars.
-    """
-
-    requirement_id: str
-    exchange: str
-    market_type: str
-    symbol: str
-    price_type: str
-    timeframe: str
-    provider: str
-    from_time: Optional[int] = None
-    to_time: Optional[int] = None
-    reason: Optional[str] = None
-    required_by_strategy_ids: str = ""
-    status: str = "pending"
-    created_at: int = 0
-    updated_at: int = 0
-
-
-@dataclass(frozen=True)
-class AggregationRequirement:
-    """Aggregation requirement — what aggregations are needed.
-
-    Represents a need to aggregate from lower timeframe to higher timeframe.
-    """
-
-    requirement_id: str
-    instrument_key: str
-    source_timeframe: str
-    target_timeframe: str
-    from_time: Optional[int] = None
-    to_time: Optional[int] = None
-    required_by_strategy_ids: str = ""
-    status: str = "pending"
-    created_at: int = 0
-    updated_at: int = 0
-
-
-@dataclass(frozen=True)
 class DataGap:
     """Gap in the data — missing bars for an instrument/timeframe/range."""
 
@@ -107,16 +65,6 @@ class WriteResult:
 
 
 @dataclass
-class EnsureDataResult:
-    """Result of ensure_data operation."""
-
-    success: bool
-    gaps_filled: int = 0
-    gaps_remaining: list[DataGap] = field(default_factory=list)
-    error: Optional[str] = None
-
-
-@dataclass
 class CandleCommitResult:
     """Result of on_candle_closed operation."""
 
@@ -125,29 +73,9 @@ class CandleCommitResult:
     error: Optional[str] = None
 
 
-@dataclass
-class DataPlan:
-    """Data plan containing requirements for the active universe."""
-
-    requirements: list[DataRequirement] = field(default_factory=list)
-    aggregation_requirements: list[AggregationRequirement] = field(default_factory=list)
-
-
-@dataclass
-class FeaturePlan:
-    """Feature plan containing feature requirements."""
-
-    feature_requirements: list = field(default_factory=list)  # list[FeatureRequirement]
-
-
 __all__ = [
     "CandleManifest",
-    "DataRequirement",
-    "AggregationRequirement",
     "DataGap",
     "WriteResult",
-    "EnsureDataResult",
     "CandleCommitResult",
-    "DataPlan",
-    "FeaturePlan",
 ]

@@ -1,4 +1,4 @@
-"""Data layer — DataOrchestrator, DataPlanner, DataPlan, requirements.
+"""Data layer — DataOrchestrator and candle storage models.
 
 Section 5.5, 5.7, 5.8, 5.9 of OpenPine TZ v3.
 Section OP-DL-004: Candle Data Lake.
@@ -13,14 +13,9 @@ from openpine.data.orchestrator import (
     MarketDataProvider,
 )
 from openpine.data.models import (
-    AggregationRequirement,
     CandleCommitResult,
     CandleManifest,
     DataGap,
-    DataPlan,
-    DataRequirement,
-    EnsureDataResult,
-    FeaturePlan,
     WriteResult,
 )
 from openpine.data.provider_adapter import (
@@ -36,13 +31,8 @@ __all__ = [
     "BarQuery",
     # Models (OP-DL-004)
     "CandleManifest",
-    "DataRequirement",
-    "AggregationRequirement",
     "DataGap",
-    "DataPlan",
-    "FeaturePlan",
     "WriteResult",
-    "EnsureDataResult",
     "CandleCommitResult",
     # Enums
     "WriteMode",

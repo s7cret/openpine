@@ -153,6 +153,44 @@ def test_data_package_does_not_export_legacy_planner_models() -> None:
     assert not {name for name in exported if name.startswith("Legacy")}
     assert "CandleStorage" not in exported
     assert "DataPlanner" not in exported
+    assert "DataRequirement" not in exported
+    assert "AggregationRequirement" not in exported
+    assert "DataPlan" not in exported
+    assert "EnsureDataResult" not in exported
+
+
+def test_data_orchestrator_has_no_placeholder_planning_api() -> None:
+    source = (ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
+
+    assert "Placeholder" not in source
+    assert "build_data_plan" not in source
+    assert "ensure_data" not in source
+    assert "schedule_backfill" not in source
+    assert "list_manifests" not in source
+    assert "return []" not in source
+
+
+def test_openpine_has_single_data_planning_model_family() -> None:
+    production_files = [
+        ROOT / "contracts" / "__init__.py",
+        ROOT / "data" / "models.py",
+        ROOT / "data" / "planner.py",
+    ]
+    definitions: list[str] = []
+    for path in production_files:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        definitions.extend(
+            f"{path.relative_to(ROOT)}:{node.name}"
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ClassDef)
+            and node.name in {"DataRequirement", "AggregationRequirement", "DataPlan"}
+        )
+
+    assert definitions == [
+        "data/planner.py:DataRequirement",
+        "data/planner.py:AggregationRequirement",
+        "data/planner.py:DataPlan",
+    ]
 
 
 def test_batch_runner_does_not_parse_tv_corpus_csv_directly() -> None:
