@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Iterable
+from dataclasses import replace
+from pathlib import Path
+from typing import Any
 
 import structlog
-from marketdata_provider.config import BinanceConfig, BybitConfig
+from marketdata_provider import create_provider
+from marketdata_provider.config import MarketDataConfig
 from marketdata_provider.contracts import (
     Bar,
     BarQuery,
     BarSeries,
     CoverageReport,
     InstrumentKey,
+    MarketDataProvider,
 )
-from marketdata_provider.exchanges.binance.provider import binance_get_bars_sync
-from marketdata_provider.exchanges.bybit.provider import bybit_get_bars_sync
-from marketdata_provider.timeframes import close_time_ms
 
 log = structlog.get_logger(__name__)
 
@@ -53,13 +53,18 @@ def _has_any_field(obj: Any, names: tuple[str, ...]) -> bool:
 
 
 def normalize_provider_bar(provider_bar: Any, query: BarQuery) -> Bar:
-    """Convert a provider bar into the canonical marketdata contract."""
+    """Convert a provider-ish bar into the canonical marketdata contract.
 
+    This is retained for ingestion tests and non-provider boundary inputs. Normal
+    product provider calls use `marketdata_provider.create_provider`.
+    """
     time = int(_attr_or_item(provider_bar, "time", "open_time_ms", "timestamp"))
     time_close = (
         int(_attr_or_item(provider_bar, "time_close", "close_time_ms"))
         if _has_any_field(provider_bar, ("time_close", "close_time_ms"))
-        else close_time_ms(time, query.timeframe.canonical) + 1
+        else time + query.timeframe.duration_ms
+        if query.timeframe.duration_ms is not None
+        else query.end_ms
     )
     exchange = (
         str(_attr_or_item(provider_bar, "exchange")).lower()
@@ -123,62 +128,21 @@ def _coverage_for(query: BarQuery, bars: tuple[Bar, ...], source: str) -> Covera
     )
 
 
-@dataclass(frozen=True)
-class LocalMarketDataProviderAdapter:
-    """Provider adapter that fetches only through the canonical package API."""
+def create_local_marketdata_provider_adapter(
+    config: MarketDataConfig | None = None,
+    *,
+    cache_dir: Path | str | None = None,
+) -> MarketDataProvider:
+    """Create the canonical marketdata-provider adapter for OpenPine."""
 
-    binance: BinanceConfig = BinanceConfig()
-    bybit: BybitConfig = BybitConfig()
-
-    provider_name = "marketdata-provider"
-
-    def fetch_bars(self, query: BarQuery) -> BarSeries:
-        ensure_marketdata_provider_version()
-        raw_bars = self._fetch_raw_bars(query)
-        bars = tuple(
-            normalize_provider_bar(raw_bar, query)
-            for raw_bar in raw_bars
-        )
-        return BarSeries(
-            query=query,
-            bars=bars,
-            coverage=_coverage_for(query, bars, "provider"),
-        )
-
-    def _fetch_raw_bars(self, query: BarQuery) -> Iterable[Any]:
-        exchange = query.instrument.exchange
-        market = query.instrument.market
-        symbol = query.instrument.symbol
-        timeframe = query.timeframe.canonical
-        if exchange == "binance":
-            return binance_get_bars_sync(
-                symbol,
-                timeframe,
-                query.start_ms,
-                query.end_ms,
-                self.binance,
-                market=market,
-            )
-        if exchange == "bybit":
-            bybit_market = "linear" if market in {"usdm", "linear"} else market
-            return bybit_get_bars_sync(
-                symbol,
-                timeframe,
-                query.start_ms,
-                query.end_ms,
-                self.bybit,
-                market=bybit_market,
-            )
-        raise ValueError(f"unsupported marketdata-provider exchange: {exchange}")
-
-
-def create_local_marketdata_provider_adapter() -> LocalMarketDataProviderAdapter:
     ensure_marketdata_provider_version()
-    return LocalMarketDataProviderAdapter()
+    cfg = config or MarketDataConfig()
+    if cache_dir is not None:
+        cfg = replace(cfg, storage=replace(cfg.storage, cache_dir=Path(cache_dir)))
+    return create_provider(cfg)
 
 
 __all__ = [
-    "LocalMarketDataProviderAdapter",
     "create_local_marketdata_provider_adapter",
     "ensure_marketdata_provider_version",
     "normalize_provider_bar",

@@ -25,7 +25,6 @@ from openpine.data.models import (
     WriteResult,
 )
 from openpine.data.provider_adapter import (
-    LocalMarketDataProviderAdapter,
     create_local_marketdata_provider_adapter,
     ensure_marketdata_provider_version,
     normalize_provider_bar,
@@ -62,7 +61,6 @@ __all__ = [
     "DataPlanner",
     "FeatureRequirement",
     "MarketDataProvider",
-    "LocalMarketDataProviderAdapter",
     "create_local_marketdata_provider_adapter",
     "ensure_marketdata_provider_version",
     "normalize_provider_bar",

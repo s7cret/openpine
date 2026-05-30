@@ -23,6 +23,10 @@ PRODUCTION_EXCLUDES = {
     "openpine.egg-info",
 }
 CANONICAL_MARKETDATA_CONTRACTS = {"Bar", "BarQuery", "Timeframe"}
+FORBIDDEN_MARKETDATA_IMPORTS = (
+    "marketdata_provider.exchanges",
+    "marketdata_provider.timeframes",
+)
 
 
 def _production_python_files() -> list[Path]:
@@ -109,6 +113,25 @@ def test_openpine_production_does_not_define_duplicate_marketdata_contracts() ->
                 duplicate_definitions.append(f"{relative_path}:{node.lineno}:{node.name}")
 
     assert duplicate_definitions == []
+
+
+def test_openpine_uses_marketdata_provider_stable_api_only() -> None:
+    violations: list[str] = []
+
+    for path in _production_python_files():
+        module = _parse(path)
+        relative_path = path.relative_to(ROOT).as_posix()
+
+        for node in ast.walk(module):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                if node.module.startswith(FORBIDDEN_MARKETDATA_IMPORTS):
+                    violations.append(f"{relative_path}:{node.lineno}:{node.module}")
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.startswith(FORBIDDEN_MARKETDATA_IMPORTS):
+                        violations.append(f"{relative_path}:{node.lineno}:{alias.name}")
+
+    assert violations == []
 
 
 def test_production_compile_profile_rejects_stub_flags() -> None:

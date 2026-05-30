@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable
 
 from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe, parse_timeframe
-from marketdata_provider.timeframes import close_time_ms
 from openpine.data.provider_adapter import ensure_marketdata_provider_version
 from openpine.streams.adapter import KlineUpdateEnvelope
 
@@ -70,11 +69,12 @@ def envelope_to_bar(envelope: KlineUpdateEnvelope) -> Bar:
     if isinstance(timeframe, dict):
         timeframe = Timeframe(**timeframe)
     time = int(envelope.timestamp)
+    time_close = time + timeframe.duration_ms if timeframe.duration_ms is not None else time
     return Bar(
         instrument=instrument,
         timeframe=timeframe,
         time=time,
-        time_close=close_time_ms(time, timeframe.canonical) + 1,
+        time_close=time_close,
         open=envelope.open,
         high=envelope.high,
         low=envelope.low,

@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-from marketdata_provider.timeframes import timeframe_ms
 from openpine.data.orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
@@ -131,7 +130,10 @@ class PeriodicBarFetcher:
         """Fetch latest bars for a single strategy."""
         # Calculate lookback window
         now_ms = int(time.time() * 1000)
-        tf_ms = timeframe_ms(strategy.timeframe)
+        timeframe = parse_timeframe(strategy.timeframe)
+        if timeframe.duration_ms is None:
+            raise ValueError(f"cannot periodically refresh variable-duration timeframe: {strategy.timeframe}")
+        tf_ms = timeframe.duration_ms
         lookback_ms = tf_ms * self.config.lookback_bars
         start_ms = now_ms - lookback_ms
 
@@ -141,7 +143,7 @@ class PeriodicBarFetcher:
                 exchange=strategy.exchange,
                 market=getattr(strategy, "market_type", "usdm"),
             ),
-            timeframe=parse_timeframe(strategy.timeframe),
+            timeframe=timeframe,
             start_ms=start_ms,
             end_ms=now_ms,
             source="provider",
