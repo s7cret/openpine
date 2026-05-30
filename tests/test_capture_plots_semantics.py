@@ -195,6 +195,23 @@ def test_data_backfill_helpers_parse_dates_and_klines():
     assert bar.closed is True
 
 
+def test_doctor_writable_dir_helper_reports_success_and_failure(tmp_path):
+    from openpine.cli.main import _check_writable_dir
+
+    messages: list[tuple] = []
+    console = SimpleNamespace(print=lambda *args, **kwargs: messages.append(args))
+
+    assert _check_writable_dir(tmp_path / "ok", "Test dir", console) is True
+    assert (tmp_path / "ok").is_dir()
+    assert not (tmp_path / "ok" / ".write_test").exists()
+    assert "Test dir writable" in messages[-1][0]
+
+    blocked_file = tmp_path / "not-a-dir"
+    blocked_file.write_text("already here")
+    assert _check_writable_dir(blocked_file, "Blocked dir", console) is False
+    assert "Blocked dir" in messages[-1][0]
+
+
 def test_capture_plots_does_not_change_execution_backend():
     """When strategy has generated_strategy_class_ref, same backend is used
     regardless of --capture-plots flag."""

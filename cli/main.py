@@ -299,6 +299,90 @@ def _print_state_policy() -> None:
         console.print("max_snapshots:      1000      (default)")
 
 
+def _check_sqlite_reachable(config, console) -> bool:
+    try:
+        from openpine.storage import SQLiteStorage
+
+        storage = SQLiteStorage(config.sqlite_path)
+        cursor = storage.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        storage.close()
+        console.print(f"  [green]✓[/green] SQLite reachable ({len(tables)} tables)")
+        return True
+    except Exception as e:
+        console.print(f"  [red]✗[/red] SQLite: {e}")
+        return False
+
+
+def _check_sqlite_wal_mode(config, console) -> None:
+    try:
+        from openpine.storage import SQLiteStorage
+
+        storage = SQLiteStorage(config.sqlite_path)
+        cursor = storage.execute("PRAGMA journal_mode")
+        mode = cursor.fetchone()[0]
+        storage.close()
+        if mode.upper() == "WAL":
+            console.print("  [green]✓[/green] WAL mode enabled")
+        else:
+            console.print(f"  [yellow]![/yellow] journal_mode={mode} (expected WAL)")
+    except Exception as e:
+        console.print(f"  [red]✗[/red] WAL mode check: {e}")
+
+
+def _check_writable_dir(path: Path, label: str, console) -> bool:
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        test_file = path / ".write_test"
+        test_file.write_text("test")
+        test_file.unlink()
+        console.print(f"  [green]✓[/green] {label} writable: {path}")
+        return True
+    except Exception as e:
+        console.print(f"  [red]✗[/red] {label}: {e}")
+        return False
+
+
+def _check_optional_duckdb(config, console) -> None:
+    try:
+        import duckdb
+
+        con = duckdb.connect(database=str(config.duckdb_path), read_only=True)
+        con.execute("SELECT 1").fetchone()
+        con.close()
+        console.print("  [green]✓[/green] DuckDB query works")
+    except ImportError:
+        console.print("  [dim]  DuckDB not installed (optional)[/dim]")
+    except Exception as e:
+        console.print(f"  [yellow]![/yellow] DuckDB: {e} (optional)")
+
+
+def _check_job_queue_health(console) -> None:
+    try:
+        from openpine.jobs import JobScheduler
+
+        scheduler = JobScheduler()
+        recovered = scheduler.recover_stale_locks()
+        if recovered > 0:
+            console.print(f"  [yellow]![/yellow] Recovered {recovered} stale lock(s)")
+        else:
+            console.print("  [green]✓[/green] No stale locks")
+    except Exception as e:
+        console.print(f"  [red]✗[/red] Stale lock check: {e}")
+
+    try:
+        from openpine.jobs import JobScheduler, JobStatus
+
+        scheduler = JobScheduler()
+        failed = scheduler.list_jobs(status=JobStatus.FAILED)
+        if failed:
+            console.print(f"  [yellow]![/yellow] {len(failed)} failed job(s) in queue")
+        else:
+            console.print("  [green]✓[/green] No failed jobs")
+    except Exception as e:
+        console.print(f"  [red]✗[/red] Failed jobs check: {e}")
+
+
 def _run_deep_checks(config, console, all_ok: bool) -> bool:
     """Run deep diagnostic checks (section 28.1 TZ)."""
     # Python/package versions
@@ -316,79 +400,19 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
             console.print(f"  [red]✗[/red] {status.name}: {status.error}")
             all_ok = False
 
-    # SQLite reachable and schema current
-    try:
-        from openpine.storage import SQLiteStorage
-        storage = SQLiteStorage(config.sqlite_path)
-        cursor = storage.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row[0] for row in cursor.fetchall()]
-        storage.close()
-        console.print(f"  [green]✓[/green] SQLite reachable ({len(tables)} tables)")
-    except Exception as e:
-        console.print(f"  [red]✗[/red] SQLite: {e}")
+    if not _check_sqlite_reachable(config, console):
         all_ok = False
 
-    # WAL mode enabled
-    try:
-        from openpine.storage import SQLiteStorage
-        storage = SQLiteStorage(config.sqlite_path)
-        cursor = storage.execute("PRAGMA journal_mode")
-        mode = cursor.fetchone()[0]
-        storage.close()
-        if mode.upper() == "WAL":
-            console.print(f"  [green]✓[/green] WAL mode enabled")
-        else:
-            console.print(f"  [yellow]![/yellow] journal_mode={mode} (expected WAL)")
-    except Exception as e:
-        console.print(f"  [red]✗[/red] WAL mode check: {e}")
+    _check_sqlite_wal_mode(config, console)
 
-    # Parquet data dir writable
-    parquet_dir = config.data_dir / "parquet"
-    try:
-        parquet_dir.mkdir(parents=True, exist_ok=True)
-        test_file = parquet_dir / ".write_test"
-        test_file.write_text("test")
-        test_file.unlink()
-        console.print(f"  [green]✓[/green] Parquet data dir writable: {parquet_dir}")
-    except Exception as e:
-        console.print(f"  [red]✗[/red] Parquet dir: {e}")
+    if not _check_writable_dir(config.data_dir / "parquet", "Parquet data dir", console):
+        all_ok = False
+    if not _check_writable_dir(config.config_dir / "artifacts", "Artifact dir", console):
+        all_ok = False
+    if not _check_writable_dir(config.config_dir / "state", "State dir", console):
         all_ok = False
 
-    # Artifact dir writable
-    artifact_dir = config.config_dir / "artifacts"
-    try:
-        artifact_dir.mkdir(parents=True, exist_ok=True)
-        test_file = artifact_dir / ".write_test"
-        test_file.write_text("test")
-        test_file.unlink()
-        console.print(f"  [green]✓[/green] Artifact dir writable: {artifact_dir}")
-    except Exception as e:
-        console.print(f"  [red]✗[/red] Artifact dir: {e}")
-        all_ok = False
-
-    # State dir writable
-    state_dir = config.config_dir / "state"
-    try:
-        state_dir.mkdir(parents=True, exist_ok=True)
-        test_file = state_dir / ".write_test"
-        test_file.write_text("test")
-        test_file.unlink()
-        console.print(f"  [green]✓[/green] State dir writable: {state_dir}")
-    except Exception as e:
-        console.print(f"  [red]✗[/red] State dir: {e}")
-        all_ok = False
-
-    # DuckDB query works (if duckdb installed)
-    try:
-        import duckdb
-        con = duckdb.connect(database=str(config.duckdb_path), read_only=True)
-        con.execute("SELECT 1").fetchone()
-        con.close()
-        console.print(f"  [green]✓[/green] DuckDB query works")
-    except ImportError:
-        console.print(f"  [dim]  DuckDB not installed (optional)[/dim]")
-    except Exception as e:
-        console.print(f"  [yellow]![/yellow] DuckDB: {e} (optional)")
+    _check_optional_duckdb(config, console)
 
     # Provider connectivity smoke test
     try:
@@ -429,29 +453,7 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
         console.print(f"  [red]✗[/red] Worker pools: {e}")
         all_ok = False
 
-    # Stale locks check
-    try:
-        from openpine.jobs import JobScheduler
-        scheduler = JobScheduler()
-        recovered = scheduler.recover_stale_locks()
-        if recovered > 0:
-            console.print(f"  [yellow]![/yellow] Recovered {recovered} stale lock(s)")
-        else:
-            console.print(f"  [green]✓[/green] No stale locks")
-    except Exception as e:
-        console.print(f"  [red]✗[/red] Stale lock check: {e}")
-
-    # Failed jobs check
-    try:
-        from openpine.jobs import JobScheduler, JobStatus
-        scheduler = JobScheduler()
-        failed = scheduler.list_jobs(status=JobStatus.FAILED)
-        if failed:
-            console.print(f"  [yellow]![/yellow] {len(failed)} failed job(s) in queue")
-        else:
-            console.print(f"  [green]✓[/green] No failed jobs")
-    except Exception as e:
-        console.print(f"  [red]✗[/red] Failed jobs check: {e}")
+    _check_job_queue_health(console)
 
     # Risk kill switch
     console.print(f"  Kill switch: {config.kill_switch}")
