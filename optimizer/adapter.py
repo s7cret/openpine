@@ -146,11 +146,15 @@ class LocalOptimizerAdapter:
 
     def start_optimization(self, config: OptimizerRunConfig) -> OptimizerResultRef:
         optimization_id = f"opt_{uuid.uuid4().hex[:12]}"
-        detection = self.detect()
-        if not detection.available:
-            result = self._failed_result(optimization_id, config, detection.reason)
+        validation_reason = _validate_trials(config.trials)
+        if validation_reason is not None:
+            result = self._failed_result(optimization_id, config, validation_reason)
         else:
-            result = self._run_local_optimizer(optimization_id, config)
+            detection = self.detect()
+            if not detection.available:
+                result = self._failed_result(optimization_id, config, detection.reason)
+            else:
+                result = self._run_local_optimizer(optimization_id, config)
 
         self._results[optimization_id] = result
         return OptimizerResultRef(
@@ -373,15 +377,22 @@ class OptimizerService:
 
     def validate_config(self, strategy_id: str, trials: int) -> DryRunValidationResult:
         """Validate optimizer CLI inputs without returning a production result."""
-        if trials < 1:
+        validation_reason = _validate_trials(trials)
+        if validation_reason is not None:
             return DryRunValidationResult(
                 strategy_id=strategy_id,
                 trials_requested=trials,
                 status="invalid",
-                reason="trials must be >= 1",
+                reason=validation_reason,
             )
         return DryRunValidationResult(
             strategy_id=strategy_id,
             trials_requested=trials,
             status="valid",
         )
+
+
+def _validate_trials(trials: int) -> str | None:
+    if trials < 1:
+        return "trials must be >= 1"
+    return None

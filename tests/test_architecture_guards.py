@@ -489,6 +489,24 @@ def test_optimizer_production_without_real_runner_fails_closed() -> None:
     assert result.metrics["failure_reason"]
 
 
+def test_optimizer_production_rejects_non_positive_trials_before_detection(monkeypatch) -> None:
+    adapter = LocalOptimizerAdapter()
+
+    def fail_if_called():
+        raise AssertionError("optimizer detection should not run for invalid trial counts")
+
+    monkeypatch.setattr(adapter, "detect", fail_if_called)
+
+    ref = adapter.start_optimization(OptimizerRunConfig(strategy_id="s1", trials=0))
+    result = adapter.get_result(ref.optimization_id)
+
+    assert result.status == "failed"
+    assert result.trials_requested == 0
+    assert result.trials_completed == 0
+    assert result.uses_backtest_engine_path is False
+    assert result.metrics["failure_reason"] == "trials must be >= 1"
+
+
 @dataclass
 class _FakeBacktestResult:
     net_profit: float
