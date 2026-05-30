@@ -57,6 +57,20 @@ def test_cli_is_package_entrypoint_not_root_module() -> None:
     assert cli_pkg.cli.name == "cli"
 
 
+def test_pyproject_includes_all_package_directories() -> None:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    declared_packages = set(pyproject["tool"]["setuptools"]["packages"])
+    package_dirs = {
+        "openpine" if path == ROOT else "openpine." + path.relative_to(ROOT).as_posix().replace("/", ".")
+        for path in ROOT.rglob("*")
+        if path.is_dir()
+        and (path / "__init__.py").is_file()
+        and not set(path.relative_to(ROOT).parts) & PRODUCTION_EXCLUDES
+    }
+
+    assert package_dirs <= declared_packages
+
+
 def test_no_executable_legacy_scripts_remain() -> None:
     scripts_dir = ROOT / "scripts"
     script_files = (
