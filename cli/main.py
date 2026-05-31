@@ -170,6 +170,15 @@ def _strategy_backtest_readiness_error(strategy) -> str | None:
     return None
 
 
+def _exit_if_strategy_not_ready_for_backtest(*, strategy, strategy_id: str, registry, console) -> None:
+    readiness_error = _strategy_backtest_readiness_error(strategy)
+    if not readiness_error:
+        return
+    console.print(f"[red]{readiness_error}[/red]")
+    registry.update_status(strategy_id, "paused")
+    sys.exit(1)
+
+
 def _parse_strategy_backtest_window(
     *,
     from_date: str | None,
@@ -185,6 +194,38 @@ def _parse_strategy_backtest_window(
     return start_ms, end_ms, capture_from_ms, capture_to_ms
 
 
+def _parse_valid_strategy_backtest_window(
+    *,
+    from_date: str | None,
+    to_date: str | None,
+    capture_from: str | None,
+    capture_to: str | None,
+    now_ms: int,
+    registry,
+    strategy_id: str,
+    console,
+) -> tuple[int, int, int | None, int | None]:
+    start_ms, end_ms, capture_from_ms, capture_to_ms = _parse_strategy_backtest_window(
+        from_date=from_date,
+        to_date=to_date,
+        capture_from=capture_from,
+        capture_to=capture_to,
+        now_ms=now_ms,
+    )
+    if start_ms >= end_ms:
+        console.print("[red]Invalid backtest window: --from must be before --to[/red]")
+        registry.update_status(strategy_id, "paused")
+        sys.exit(1)
+    return start_ms, end_ms, capture_from_ms, capture_to_ms
+
+
+def _print_backtest_result_summary(result, *, console) -> None:
+    console.print("[green]Backtest completed[/green]")
+    console.print(f"  status:     {result.status}")
+    console.print(f"  bars:       {result.bars_processed}")
+    console.print(f"  engine:     {'backtest_engine' if result.uses_backtest_engine else 'unknown'}")
+
+
 def _load_strategy_backtest_class(*, strategy, load_strategy_class, perf_counter):
     t0 = perf_counter()
     strategy_class = load_strategy_class(
@@ -194,6 +235,28 @@ def _load_strategy_backtest_class(*, strategy, load_strategy_class, perf_counter
         timeframe=strategy.timeframe,
     )
     return strategy_class, perf_counter() - t0
+
+
+def _load_strategy_backtest_class_or_exit(
+    *,
+    strategy,
+    strategy_id: str,
+    registry,
+    load_strategy_class,
+    artifact_error_cls,
+    perf_counter,
+    console,
+) -> tuple[object, float]:
+    try:
+        return _load_strategy_backtest_class(
+            strategy=strategy,
+            load_strategy_class=load_strategy_class,
+            perf_counter=perf_counter,
+        )
+    except artifact_error_cls as exc:
+        console.print(f"[red]{exc}[/red]")
+        registry.update_status(strategy_id, "paused")
+        sys.exit(1)
 
 
 def _exit_if_no_strategy_bars(
@@ -261,51 +324,41 @@ def _prepare_strategy_backtest_inputs(
     capture_to: str | None,
     now_ms: int,
     registry,
-    load_strategy_class,
-    artifact_error_cls,
-    artifact_store_cls,
-    bar_query_cls,
-    instrument_key_cls,
-    parse_timeframe_func,
-    orchestrator_cls,
-    provider_factory,
-    config_cls,
+    deps,
     perf_counter,
     console,
 ):
-    start_ms, end_ms, capture_from_ms, capture_to_ms = _parse_strategy_backtest_window(
+    start_ms, end_ms, capture_from_ms, capture_to_ms = _parse_valid_strategy_backtest_window(
         from_date=from_date,
         to_date=to_date,
         capture_from=capture_from,
         capture_to=capture_to,
         now_ms=now_ms,
+        registry=registry,
+        strategy_id=strategy_id,
+        console=console,
     )
-    if start_ms >= end_ms:
-        console.print("[red]Invalid backtest window: --from must be before --to[/red]")
-        registry.update_status(strategy_id, "paused")
-        sys.exit(1)
 
     timings: dict[str, float] = {}
-    try:
-        strategy_class, timings["load_artifact_sec"] = _load_strategy_backtest_class(
-            strategy=strategy,
-            load_strategy_class=load_strategy_class,
-            perf_counter=perf_counter,
-        )
-    except artifact_error_cls as exc:
-        console.print(f"[red]{exc}[/red]")
-        registry.update_status(strategy_id, "paused")
-        sys.exit(1)
+    strategy_class, timings["load_artifact_sec"] = _load_strategy_backtest_class_or_exit(
+        strategy=strategy,
+        strategy_id=strategy_id,
+        registry=registry,
+        load_strategy_class=deps.load_strategy_class_from_artifact,
+        artifact_error_cls=deps.BacktestArtifactError,
+        perf_counter=perf_counter,
+        console=console,
+    )
 
     bars, provider, data_fetch_info, timings["data_load_sec"] = _load_strategy_backtest_bars(
         strategy=strategy,
         start_ms=start_ms,
         end_ms=end_ms,
-        bar_query_cls=bar_query_cls,
-        instrument_key_cls=instrument_key_cls,
-        parse_timeframe_func=parse_timeframe_func,
-        orchestrator_cls=orchestrator_cls,
-        provider_factory=provider_factory,
+        bar_query_cls=deps.BarQuery,
+        instrument_key_cls=deps.InstrumentKey,
+        parse_timeframe_func=deps.parse_timeframe,
+        orchestrator_cls=deps.DataOrchestrator,
+        provider_factory=deps.create_local_marketdata_provider_adapter,
         console=console,
     )
     _exit_if_no_strategy_bars(
@@ -321,7 +374,7 @@ def _prepare_strategy_backtest_inputs(
     )
 
     decl_args = _strategy_backtest_declaration_args(
-        artifact_store_cls=artifact_store_cls,
+        artifact_store_cls=deps.ArtifactStore,
         strategy=strategy,
     )
     params, config = _build_strategy_backtest_params_and_config(
@@ -333,7 +386,7 @@ def _prepare_strategy_backtest_inputs(
         capture_plots=capture_plots,
         capture_from_ms=capture_from_ms,
         capture_to_ms=capture_to_ms,
-        config_cls=config_cls,
+        config_cls=deps.BacktestRunConfig,
     )
     return SimpleNamespace(
         start_ms=start_ms,
@@ -509,6 +562,16 @@ def _load_pine_source_or_exit(*, registry_cls, name: str, console):
             sys.exit(1)
     finally:
         registry.close()
+
+
+def _require_active_pine_artifact(source, *, name: str, console) -> None:
+    if source.active_artifact_id:
+        return
+    console.print(
+        f"[red]Pine source {name} has no active artifact. "
+        f"Compile it first with: openpine pine pine-compile {name}[/red]"
+    )
+    sys.exit(1)
 
 
 def _load_generated_class_timed(*, source, load_generated_class, perf_counter):
@@ -839,12 +902,7 @@ def _prepare_indicator_plot_inputs(
         name=name,
         console=console,
     )
-    if not source.active_artifact_id:
-        console.print(
-            f"[red]Pine source {name} has no active artifact. "
-            f"Compile it first with: openpine pine pine-compile {name}[/red]"
-        )
-        sys.exit(1)
+    _require_active_pine_artifact(source, name=name, console=console)
 
     start_ms, end_ms, compare_from_ms, compare_to_ms = _parse_indicator_plot_window(
         from_date=from_date,
@@ -1160,6 +1218,32 @@ def _run_strategy_backtest_adapter(
         runtime_data_provider=getattr(provider, "_provider", None),
     )
     return result, perf_counter() - t0
+
+
+def _run_strategy_backtest_or_exit(
+    *,
+    deps,
+    prepared,
+    registry,
+    strategy_id: str,
+    console,
+    perf_counter,
+):
+    try:
+        return _run_strategy_backtest_adapter(
+            adapter_cls=deps.BacktestEngineAdapter,
+            strategy_class=prepared.strategy_class,
+            bars=prepared.bars,
+            config=prepared.config,
+            params=prepared.params,
+            provider=prepared.provider,
+            console=console,
+            perf_counter=perf_counter,
+        )
+    except Exception as exc:
+        registry.update_status(strategy_id, "error")
+        console.print(f"[red]Backtest failed: {type(exc).__name__}: {exc}[/red]")
+        sys.exit(1)
 
 
 def _build_cli_bar_query(
@@ -4815,11 +4899,12 @@ def strategy_backtest(
             console=console,
         )
 
-        readiness_error = _strategy_backtest_readiness_error(s)
-        if readiness_error:
-            console.print(f"[red]{readiness_error}[/red]")
-            registry.update_status(strategy_id, "paused")
-            sys.exit(1)
+        _exit_if_strategy_not_ready_for_backtest(
+            strategy=s,
+            strategy_id=strategy_id,
+            registry=registry,
+            console=console,
+        )
 
         prepared = _prepare_strategy_backtest_inputs(
             strategy=s,
@@ -4831,40 +4916,22 @@ def strategy_backtest(
             capture_to=capture_to,
             now_ms=int(_time_module.time() * 1000),
             registry=registry,
-            load_strategy_class=deps.load_strategy_class_from_artifact,
-            artifact_error_cls=deps.BacktestArtifactError,
-            artifact_store_cls=deps.ArtifactStore,
-            bar_query_cls=deps.BarQuery,
-            instrument_key_cls=deps.InstrumentKey,
-            parse_timeframe_func=deps.parse_timeframe,
-            orchestrator_cls=deps.DataOrchestrator,
-            provider_factory=deps.create_local_marketdata_provider_adapter,
-            config_cls=deps.BacktestRunConfig,
+            deps=deps,
             perf_counter=_time.perf_counter,
             console=console,
         )
         timings.update(prepared.timings)
         registry.update_status(strategy_id, "running")
-        try:
-            result, timings["backtest_sec"] = _run_strategy_backtest_adapter(
-                adapter_cls=deps.BacktestEngineAdapter,
-                strategy_class=prepared.strategy_class,
-                bars=prepared.bars,
-                config=prepared.config,
-                params=prepared.params,
-                provider=prepared.provider,
-                console=console,
-                perf_counter=_time.perf_counter,
-            )
-        except Exception as exc:
-            registry.update_status(strategy_id, "error")
-            console.print(f"[red]Backtest failed: {type(exc).__name__}: {exc}[/red]")
-            sys.exit(1)
+        result, timings["backtest_sec"] = _run_strategy_backtest_or_exit(
+            deps=deps,
+            prepared=prepared,
+            registry=registry,
+            strategy_id=strategy_id,
+            console=console,
+            perf_counter=_time.perf_counter,
+        )
 
-        console.print("[green]Backtest completed[/green]")
-        console.print(f"  status:     {result.status}")
-        console.print(f"  bars:       {result.bars_processed}")
-        console.print(f"  engine:     {'backtest_engine' if result.uses_backtest_engine else 'unknown'}")
+        _print_backtest_result_summary(result, console=console)
 
         _persist_strategy_backtest_result(
             deps=deps,

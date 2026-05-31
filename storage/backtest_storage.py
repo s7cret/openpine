@@ -119,69 +119,134 @@ class BacktestResultStore:
                 now=now,
             )
 
-            # Validate artifacts
-            for atype, path in artifact_paths.items():
-                if not path.exists():
-                    raise RuntimeError(f"Artifact validation failed: {atype} at {path}")
-
-            # Atomic move
-            if run_dir.exists():
-                shutil.rmtree(run_dir)
-            os.rename(str(tmp_dir), str(run_dir))
-
-            # Save to SQLite (after successful file move)
-            with self._storage.transaction():
-                self._update_run_result_row(
-                    run_id=run_id,
-                    run_dir=run_dir,
-                    metrics=metrics,
-                    result_json=result_json,
-                    has_equity_curve=equity_curve is not None,
-                    has_bar_outputs=bar_outputs is not None,
-                    has_plot_outputs=ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths,
-                    now=now,
-                )
-
-                if trades:
-                    self._storage.execute_many(
-                        """
-                        INSERT INTO backtest_trades
-                        (trade_id, run_id, strategy_id, entry_id, exit_id, direction,
-                         entry_time, exit_time, entry_price, exit_price, qty,
-                         gross_pnl, net_pnl, net_pnl_pct, fee, slippage,
-                         bars_held, exit_reason, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        self._trade_db_rows(
-                            run_id=run_id,
-                            strategy_id=strategy_id,
-                            trades=trades,
-                            now=now,
-                        ),
-                    )
-
-                for atype in artifact_paths:
-                    self._storage.execute(
-                        """
-                        INSERT INTO backtest_artifacts
-                        (artifact_row_id, run_id, strategy_id, artifact_type, path, format, row_count, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        self._artifact_db_row(
-                            run_id=run_id,
-                            strategy_id=strategy_id,
-                            artifact_type=atype,
-                            path=run_dir / artifact_paths[atype].name,
-                            now=now,
-                        ),
-                    )
-
-            self._storage.commit()
+            self._publish_result_artifacts(
+                tmp_dir=tmp_dir,
+                run_dir=run_dir,
+                artifact_paths=artifact_paths,
+            )
+            self._save_result_db_records(
+                run_id=run_id,
+                strategy_id=strategy_id,
+                run_dir=run_dir,
+                metrics=metrics,
+                result_json=result_json,
+                trades=trades,
+                artifact_paths=artifact_paths,
+                has_equity_curve=equity_curve is not None,
+                has_bar_outputs=bar_outputs is not None,
+                now=now,
+            )
 
         except Exception:
             if tmp_dir.exists():
                 shutil.rmtree(tmp_dir)
             raise
+
+    def _publish_result_artifacts(
+        self,
+        *,
+        tmp_dir: Path,
+        run_dir: Path,
+        artifact_paths: dict[str, Path],
+    ) -> None:
+        for atype, path in artifact_paths.items():
+            if not path.exists():
+                raise RuntimeError(f"Artifact validation failed: {atype} at {path}")
+        if run_dir.exists():
+            shutil.rmtree(run_dir)
+        os.rename(str(tmp_dir), str(run_dir))
+
+    def _save_result_db_records(
+        self,
+        *,
+        run_id: str,
+        strategy_id: str,
+        run_dir: Path,
+        metrics: BacktestMetricsSummary,
+        result_json: str,
+        trades: list[Any],
+        artifact_paths: dict[str, Path],
+        has_equity_curve: bool,
+        has_bar_outputs: bool,
+        now: int,
+    ) -> None:
+        with self._storage.transaction():
+            self._update_run_result_row(
+                run_id=run_id,
+                run_dir=run_dir,
+                metrics=metrics,
+                result_json=result_json,
+                has_equity_curve=has_equity_curve,
+                has_bar_outputs=has_bar_outputs,
+                has_plot_outputs=ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths,
+                now=now,
+            )
+            self._insert_trade_db_rows(
+                run_id=run_id,
+                strategy_id=strategy_id,
+                trades=trades,
+                now=now,
+            )
+            self._insert_artifact_db_rows(
+                run_id=run_id,
+                strategy_id=strategy_id,
+                run_dir=run_dir,
+                artifact_paths=artifact_paths,
+                now=now,
+            )
+        self._storage.commit()
+
+    def _insert_trade_db_rows(
+        self,
+        *,
+        run_id: str,
+        strategy_id: str,
+        trades: list[Any],
+        now: int,
+    ) -> None:
+        if not trades:
+            return
+        self._storage.execute_many(
+            """
+            INSERT INTO backtest_trades
+            (trade_id, run_id, strategy_id, entry_id, exit_id, direction,
+             entry_time, exit_time, entry_price, exit_price, qty,
+             gross_pnl, net_pnl, net_pnl_pct, fee, slippage,
+             bars_held, exit_reason, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            self._trade_db_rows(
+                run_id=run_id,
+                strategy_id=strategy_id,
+                trades=trades,
+                now=now,
+            ),
+        )
+
+    def _insert_artifact_db_rows(
+        self,
+        *,
+        run_id: str,
+        strategy_id: str,
+        run_dir: Path,
+        artifact_paths: dict[str, Path],
+        now: int,
+    ) -> None:
+        for atype in artifact_paths:
+            self._storage.execute(
+                """
+                INSERT INTO backtest_artifacts
+                (artifact_row_id, run_id, strategy_id, artifact_type, path, format, row_count, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                self._artifact_db_row(
+                    run_id=run_id,
+                    strategy_id=strategy_id,
+                    artifact_type=atype,
+                    path=run_dir / artifact_paths[atype].name,
+                    now=now,
+                ),
+            )
 
     def _update_run_result_row(
         self,

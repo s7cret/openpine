@@ -418,6 +418,38 @@ def _translate_ast_with_subprocess(
     return result.stdout, None, ast_path
 
 
+def _subprocess_ast_json_or_error(
+    *,
+    pine2ast_path: Path,
+    src_path: Path,
+    source_text: str,
+    profile: CompileProfile,
+    timeout: int,
+    compile_meta: dict[str, Any],
+) -> tuple[str | None, CompileResult | None]:
+    result_p2a, parse_error = _parse_with_pine2ast_subprocess(
+        pine2ast_path=pine2ast_path,
+        src_path=src_path,
+        source_text=source_text,
+        profile=profile,
+        timeout=timeout,
+        compile_meta=compile_meta,
+    )
+    if parse_error is not None:
+        return None, parse_error
+    assert result_p2a is not None
+
+    ast_json = result_p2a.stdout
+    try:
+        json.loads(ast_json)
+    except json.JSONDecodeError as e:
+        return None, CompileResult(
+            success=False,
+            errors=[f"pine2ast produced invalid JSON: {e}"],
+        )
+    return ast_json, None
+
+
 def _parse_with_library_api(
     *,
     apis: _LibraryApis,
@@ -739,7 +771,7 @@ class SubprocessCompilerAdapter:
                 adapter_status="fallback" if self.prefer_library else "selected",
             )
 
-            result_p2a, parse_error = _parse_with_pine2ast_subprocess(
+            ast_json, ast_error = _subprocess_ast_json_or_error(
                 pine2ast_path=tools.pine2ast_path,
                 src_path=src_path,
                 source_text=source_text,
@@ -747,20 +779,9 @@ class SubprocessCompilerAdapter:
                 timeout=self.timeout,
                 compile_meta=compile_meta,
             )
-            if parse_error is not None:
-                return parse_error
-            assert result_p2a is not None
-
-            ast_json = result_p2a.stdout
-
-            # Parse AST to verify it's valid JSON
-            try:
-                json.loads(ast_json)
-            except json.JSONDecodeError as e:
-                return CompileResult(
-                    success=False,
-                    errors=[f"pine2ast produced invalid JSON: {e}"],
-                )
+            if ast_error is not None:
+                return ast_error
+            assert ast_json is not None
 
             python_code, translate_error, ast_path = _translate_ast_with_subprocess(
                 ast2python_path=tools.ast2python_path,

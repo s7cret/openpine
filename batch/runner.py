@@ -722,6 +722,72 @@ def _finish_entry_status(status: dict[str, Any], started: float) -> dict[str, An
     return status
 
 
+def _register_entry_strategies(
+    entry: ExportEntry,
+    source: Any,
+    artifact_id: str,
+    args: argparse.Namespace,
+) -> list[dict[str, Any]]:
+    registered: list[dict[str, Any]] = []
+    if entry.kind != "strategy":
+        return registered
+
+    for chart in entry.charts:
+        if args.timeframe and chart.timeframe != normalize_tf(args.timeframe):
+            continue
+        sid, created = ensure_strategy_instance(entry, source, artifact_id, chart.timeframe)
+        registered.append({"timeframe": chart.timeframe, "strategy_id": sid, "created": created})
+    return registered
+
+
+def _run_entry_charts(
+    entry: ExportEntry,
+    source: Any,
+    artifact_id: str,
+    args: argparse.Namespace,
+    status: dict[str, Any],
+    batch_id: str,
+    library_revisions: dict[str, str] | None,
+) -> list[dict[str, Any]]:
+    runs: list[dict[str, Any]] = []
+    for chart in entry.charts:
+        if args.timeframe and chart.timeframe != normalize_tf(args.timeframe):
+            continue
+        out_dir = entry.root / "openpine_outputs" / chart.timeframe
+        out_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            if entry.kind == "indicator":
+                run_info = run_indicator(entry, source, artifact_id, chart, out_dir, args)
+            elif entry.kind == "strategy":
+                run_info = run_strategy(entry, source, artifact_id, chart, out_dir, args)
+            else:
+                run_info = {"status": "skipped", "reason": f"unsupported kind {entry.kind}"}
+        except Exception as exc:
+            run_info = {
+                "status": "run_error",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+                "traceback": traceback.format_exc(limit=8),
+            }
+        run_info["timeframe"] = chart.timeframe
+        run_info["output_dir"] = str(out_dir)
+        run_meta = _build_run_meta(
+            entry=entry,
+            chart=chart,
+            status=status,
+            run_info=run_info,
+            batch_id=batch_id,
+            library_revisions=library_revisions or {},
+        )
+        write_json(out_dir / "run_meta.json", run_meta)
+        write_json(
+            out_dir / "summary.json",
+            _build_run_summary(entry=entry, chart=chart, run_meta=run_meta, run_info=run_info),
+        )
+        runs.append(run_info)
+    return runs
+
+
 def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", library_revisions: dict[str, str] | None = None) -> dict[str, Any]:
     started = time.perf_counter()
     timings: dict[str, float] = {}
@@ -761,13 +827,7 @@ def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", 
         return _finish_entry_status(status, started)
 
     t0 = time.perf_counter()
-    registered: list[dict[str, Any]] = []
-    if entry.kind == "strategy":
-        for chart in entry.charts:
-            if args.timeframe and chart.timeframe != normalize_tf(args.timeframe):
-                continue
-            sid, created = ensure_strategy_instance(entry, source, artifact_id, chart.timeframe)
-            registered.append({"timeframe": chart.timeframe, "strategy_id": sid, "created": created})
+    registered = _register_entry_strategies(entry, source, artifact_id, args)
     timings["register_sec"] = round(time.perf_counter() - t0, 3)
     status["registered_strategies"] = registered
     status["status"] = "registered"
@@ -775,42 +835,15 @@ def run_entry(entry: ExportEntry, args: argparse.Namespace, batch_id: str = "", 
         return _finish_entry_status(status, started)
 
     t0 = time.perf_counter()
-    runs: list[dict[str, Any]] = []
-    for chart in entry.charts:
-        if args.timeframe and chart.timeframe != normalize_tf(args.timeframe):
-            continue
-        out_dir = entry.root / "openpine_outputs" / chart.timeframe
-        out_dir.mkdir(parents=True, exist_ok=True)
-        try:
-            if entry.kind == "indicator":
-                run_info = run_indicator(entry, source, artifact_id, chart, out_dir, args)
-            elif entry.kind == "strategy":
-                run_info = run_strategy(entry, source, artifact_id, chart, out_dir, args)
-            else:
-                run_info = {"status": "skipped", "reason": f"unsupported kind {entry.kind}"}
-        except Exception as exc:
-            run_info = {
-                "status": "run_error",
-                "error_type": type(exc).__name__,
-                "error": str(exc),
-                "traceback": traceback.format_exc(limit=8),
-            }
-        run_info["timeframe"] = chart.timeframe
-        run_info["output_dir"] = str(out_dir)
-        run_meta = _build_run_meta(
-            entry=entry,
-            chart=chart,
-            status=status,
-            run_info=run_info,
-            batch_id=batch_id,
-            library_revisions=library_revisions or {},
-        )
-        write_json(out_dir / "run_meta.json", run_meta)
-        write_json(
-            out_dir / "summary.json",
-            _build_run_summary(entry=entry, chart=chart, run_meta=run_meta, run_info=run_info),
-        )
-        runs.append(run_info)
+    runs = _run_entry_charts(
+        entry=entry,
+        source=source,
+        artifact_id=artifact_id,
+        args=args,
+        status=status,
+        batch_id=batch_id,
+        library_revisions=library_revisions,
+    )
     timings["run_sec"] = round(time.perf_counter() - t0, 3)
     status["runs"] = runs
     status["status"] = "ok" if all(r.get("status") == "ok" for r in runs) else "partial_or_error"
