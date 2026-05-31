@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Optional
 
 import pydantic
-from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe
+from marketdata_provider import contracts as mdp_contracts
 
 
 class Status(str, Enum):
@@ -37,8 +37,8 @@ class StrategyInstance(pydantic.BaseModel):
     id: str
     artifact_id: str
     params_hash: str
-    instrument_key: InstrumentKey
-    timeframe: Timeframe
+    instrument_key: mdp_contracts.InstrumentKey
+    timeframe: mdp_contracts.Timeframe
     status: Status = Status.PENDING
     created_at: int = pydantic.Field(default_factory=lambda: int(time.time() * 1000))
     updated_at: int = pydantic.Field(default_factory=lambda: int(time.time() * 1000))
@@ -71,8 +71,8 @@ class StrategyRuntimeError(pydantic.BaseModel):
     strategy_id: str
     artifact_id: str
     params_hash: str
-    instrument_key: InstrumentKey
-    timeframe: Timeframe
+    instrument_key: mdp_contracts.InstrumentKey
+    timeframe: mdp_contracts.Timeframe
     bar_time: int
     error_type: str
     message: str
