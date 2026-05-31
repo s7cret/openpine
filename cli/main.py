@@ -12,6 +12,8 @@ import click
 from rich.console import Console
 
 from openpine import __version__
+from openpine.cli.batch import batch
+from openpine.cli.storage import storage
 from openpine.jobs import Job, JobScheduler, JobStatus, JobType
 
 # Global instances — created once at module load
@@ -1469,9 +1471,8 @@ def cli() -> None:
     pass
 
 
-from openpine.cli.batch import batch
-
 cli.add_command(batch)
+cli.add_command(storage)
 
 
 def _validate_event_schema(event_type: str) -> bool:
@@ -1787,190 +1788,6 @@ def doctor(strict: bool, deep: bool) -> None:
     else:
         console.print("\n[bold red]Some checks failed[/bold red]")
         sys.exit(1)
-
-
-@cli.group()
-def storage() -> None:
-    """Storage management commands."""
-    pass
-
-
-@storage.command()
-@click.option("--path", type=click.Path(), default=None)
-@click.option("--dry-run", is_flag=True)
-def storage_init(path: str | None, dry_run: bool) -> None:
-    """Initialize storage."""
-    from openpine.config import OpenPineConfig
-    from openpine.storage import MigrationRunner, SQLiteStorage
-
-    if path is None:
-        config = OpenPineConfig.load()
-        db_path = config.sqlite_path
-    else:
-        db_path = Path(path)
-
-    console.print(f"[bold]Storage init[/bold] — path={db_path}")
-    if dry_run:
-        console.print("[dim]Dry run — no changes made[/dim]")
-        return
-
-    storage = SQLiteStorage(db_path)
-    runner = MigrationRunner()
-    applied = runner.run_migrations(storage)
-    storage.close()
-
-    if applied:
-        console.print(f"[green]Applied migrations: {applied}[/green]")
-    else:
-        console.print("[dim]No pending migrations[/dim]")
-    console.print("[green]Storage initialized[/green]")
-
-
-@storage.command()
-@click.option("--path", type=click.Path(), default=None)
-def storage_schema(path: str | None) -> None:
-    """Show storage schema."""
-    from openpine.config import OpenPineConfig
-    from openpine.storage import SQLiteStorage
-
-    if path is None:
-        config = OpenPineConfig.load()
-        db_path = config.sqlite_path
-    else:
-        db_path = Path(path)
-
-    console.print(f"[bold]Storage schema[/bold] — path={db_path}")
-
-    if not db_path.exists():
-        console.print(f"[red]Database not found: {db_path}[/red]")
-        console.print("Run 'openpine storage init' first.")
-        return
-
-    storage = SQLiteStorage(db_path)
-    cursor = storage.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    )
-    tables = [row[0] for row in cursor.fetchall()]
-    storage.close()
-
-    console.print(f"Tables ({len(tables)}): {', '.join(tables)}")
-    for table in tables:
-        console.print(f"\n  [bold]{table}[/bold]")
-        storage2 = SQLiteStorage(db_path)
-        col_cursor = storage2.execute(f"PRAGMA table_info({table})")
-        for col in col_cursor.fetchall():
-            console.print(f"    {col[1]} {col[2]}  nullable={not col[3]} default={col[4]}")
-        storage2.close()
-
-
-@storage.command("migrate")
-@click.option("--path", type=click.Path(), default=None)
-def storage_migrate(path: str | None) -> None:
-    """Run pending migrations."""
-    from openpine.config import OpenPineConfig
-    from openpine.storage import MigrationRunner, SQLiteStorage
-
-    if path is None:
-        config = OpenPineConfig.load()
-        db_path = config.sqlite_path
-    else:
-        db_path = Path(path)
-
-    console.print(f"[bold]Storage migrate[/bold] — path={db_path}")
-
-    storage = SQLiteStorage(db_path)
-    runner = MigrationRunner()
-    applied = runner.run_migrations(storage)
-    storage.close()
-
-    # Show current state
-    storage2 = SQLiteStorage(db_path)
-    cursor = storage2.execute(
-        "SELECT version, name, applied_at, description FROM schema_migrations ORDER BY id"
-    )
-    rows = cursor.fetchall()
-    storage2.close()
-
-    if rows:
-        console.print(f"[bold]Applied migrations ({len(rows)})[/bold]")
-        for version, name, applied_at, description in rows:
-            ts = _fmt_utc_seconds(applied_at)
-            console.print(f"  {version}  {name}  — {description}  [{ts}]")
-    else:
-        console.print("[dim]No migrations applied yet[/dim]")
-
-    if applied:
-        console.print(f"[green]Newly applied: {applied}[/green]")
-    else:
-        console.print("[dim]No pending migrations[/dim]")
-
-
-@storage.command("backup")
-@click.option("--out", required=True, type=click.Path(), help="Output .tar.gz path")
-def storage_backup(out: str) -> None:
-    """Create OpenPine backup archive."""
-    from openpine.config import OpenPineConfig
-    from openpine.storage.backup import backup_openpine
-
-    config = OpenPineConfig.load()
-    out_path = Path(out)
-    console.print(f"[bold]Creating backup[/bold] → {out_path}")
-    try:
-        backed = backup_openpine(out_path, config)
-        console.print(f"[green]Backup complete[/green] — {len(backed)} items:")
-        for item in backed:
-            console.print(f"  {item}")
-    except Exception as e:
-        console.print(f"[red]Backup failed: {e}[/red]")
-        raise SystemExit(1)
-
-
-@storage.command("restore")
-@click.argument("backup_path", type=click.Path(exists=True))
-@click.option("--target", type=click.Path(), default=None, help="Target data directory")
-def storage_restore(backup_path: str, target: str | None) -> None:
-    """Restore from OpenPine backup archive."""
-    from openpine.storage.backup import restore_openpine
-
-    bp = Path(backup_path)
-    target_path = Path(target) if target else None
-    console.print(f"[bold]Restoring backup[/bold] from {bp}")
-    try:
-        restore_openpine(bp, target_path)
-        console.print("[green]Restore complete[/green]")
-    except Exception as e:
-        console.print(f"[red]Restore failed: {e}[/red]")
-        raise SystemExit(1)
-
-
-@storage.command("verify")
-def storage_verify() -> None:
-    """Verify storage integrity."""
-    from openpine.config import OpenPineConfig
-    from openpine.storage.backup import verify_openpine
-
-    config = OpenPineConfig.load()
-    console.print("[bold]Verifying storage integrity[/bold]")
-    results = verify_openpine(config)
-    critical_checks = {"sqlite_exists", "sqlite_integrity"}
-    critical_failed = False
-    warnings = []
-    for name, passed in results.items():
-        icon = "[green]✓[/green]" if passed else "[red]✗[/red]"
-        if not passed and name in critical_checks:
-            critical_failed = True
-        elif not passed:
-            warnings.append(name)
-        console.print(f"  {icon} {name}: {passed}")
-
-    if critical_failed:
-        console.print("[red]Critical storage checks failed[/red]")
-        raise SystemExit(1)
-    if warnings:
-        console.print(f"[yellow]Warnings:[/yellow] {', '.join(warnings)}")
-        console.print("[green]Critical checks passed[/green]")
-    else:
-        console.print("[green]All checks passed[/green]")
 
 
 @cli.group()
