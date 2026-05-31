@@ -395,7 +395,7 @@ def test_strategy_backtest_data_and_declaration_helpers():
 
 
 def test_data_backfill_helpers_parse_dates_and_klines():
-    from openpine.cli.main import (
+    from openpine.cli.data import (
         _binance_kline_to_bar,
         _parse_cli_ymd_ms,
         _parse_data_backfill_window,
