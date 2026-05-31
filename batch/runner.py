@@ -244,7 +244,7 @@ def load_calculation_bars(
     if calculation_from is None:
         raise ValueError("--calculation-from is required for run phase")
     calculation_to_by_tf = getattr(args, "_calculation_to_by_timeframe", {})
-    calculation_to = parse_time_ms(args.calculation_to) or calculation_to_by_tf.get(chart.timeframe) or chart.end_ms
+    calculation_to = parse_time_ms(args.calculation_to) or calculation_to_by_tf.get(chart.timeframe) or chart_end_exclusive_ms(chart)
     if calculation_from >= calculation_to:
         raise ValueError(f"invalid calculation window: {calculation_from} >= {calculation_to}")
     cache_key = (
@@ -275,6 +275,7 @@ def load_calculation_bars(
             timeframe=parse_timeframe(chart.timeframe),
             start_ms=calculation_from,
             end_ms=calculation_to,
+            gap_policy="allow_with_metadata",
         )
 
         t0 = time.perf_counter()
@@ -289,6 +290,13 @@ def load_calculation_bars(
             f"no calculation bars from OpenPine DataOrchestrator for {args.symbol} {chart.timeframe} "
             f"{ms_to_utc_iso(calculation_from)}..{ms_to_utc_iso(calculation_to)}"
         )
+    bars = _merge_tv_visible_bars(
+        provider_bars=bars,
+        chart=chart,
+        symbol=args.symbol,
+        exchange=args.exchange,
+        market_type=args.market_type,
+    )
 
     return bars, {
         "symbol": args.symbol,
@@ -300,14 +308,61 @@ def load_calculation_bars(
         "calculation_from_iso": ms_to_utc_iso(calculation_from),
         "calculation_to_iso": ms_to_utc_iso(calculation_to),
         "compare_from": chart.start_ms,
-        "compare_to": chart.end_ms,
+        "compare_to": chart_end_exclusive_ms(chart),
         "compare_from_iso": ms_to_utc_iso(chart.start_ms),
-        "compare_to_iso": ms_to_utc_iso(chart.end_ms),
+        "compare_to_iso": ms_to_utc_iso(chart_end_exclusive_ms(chart)),
         "bars_total": len(bars),
         "visible_bars": chart.bars,
         "cache_hit": cache_hit,
         "data_fetch": data_fetch_info,
     }
+
+
+def _merge_tv_visible_bars(
+    *,
+    provider_bars: list[Any],
+    chart: ChartExport,
+    symbol: str,
+    exchange: str,
+    market_type: str,
+) -> list[Any]:
+    """Use TV-exported visible OHLCV rows for oracle parity, provider rows for prehistory."""
+
+    from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
+    from openpine.batch.tv_corpus import read_chart
+
+    timeframe = parse_timeframe(chart.timeframe)
+    duration_ms = int(timeframe.duration_ms or 0)
+    instrument = InstrumentKey(exchange=exchange, market=market_type, symbol=symbol)
+    visible = []
+    for row in read_chart(chart.path).itertuples(index=False):
+        bar_time = int(row.bar_time)
+        visible.append(
+            Bar(
+                instrument=instrument,
+                timeframe=timeframe,
+                time=bar_time,
+                time_close=bar_time + duration_ms,
+                open=float(row.open),
+                high=float(row.high),
+                low=float(row.low),
+                close=float(row.close),
+                volume=float(getattr(row, "Volume", 0.0) or 0.0),
+                closed=True,
+            )
+        )
+    visible_by_time = {bar.time: bar for bar in visible}
+    merged = [bar for bar in provider_bars if bar.time not in visible_by_time]
+    merged.extend(visible)
+    merged.sort(key=lambda bar: bar.time)
+    return merged
+
+
+def chart_end_exclusive_ms(chart: ChartExport) -> int:
+    from marketdata_provider.contracts import parse_timeframe
+
+    duration_ms = parse_timeframe(chart.timeframe).duration_ms
+    return chart.end_ms + int(duration_ms or 0)
 
 
 def run_indicator(
@@ -324,7 +379,7 @@ def run_indicator(
 
     timings: dict[str, float] = {}
     bars, data_meta = load_calculation_bars(chart, args, timings)
-    compare_from, compare_to = chart.start_ms, chart.end_ms
+    compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
     generated_class = timed_call(
         timings,
         "load_artifact_sec",
@@ -393,7 +448,7 @@ def _build_strategy_run_config(
     decl_args: dict[str, Any],
     config_cls: Any,
 ) -> Any:
-    compare_from, compare_to = chart.start_ms, chart.end_ms
+    compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
     return config_cls(
         symbol=args.symbol,
         timeframe=chart.timeframe,
@@ -423,14 +478,13 @@ def run_strategy(
     out_dir: Path,
     args: argparse.Namespace,
 ) -> dict[str, Any]:
-    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
     from openpine.artifacts import ArtifactStore
     from openpine.export import ExportWindow, export_strategy_result
     from openpine.runtime.engine import BacktestEngineAdapter, BacktestRunConfig, load_strategy_class_from_artifact
 
     timings: dict[str, float] = {}
     bars, data_meta = load_calculation_bars(chart, args, timings)
-    compare_from, compare_to = chart.start_ms, chart.end_ms
+    compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
     strategy_class = timed_call(
         timings,
         "load_artifact_sec",
@@ -450,19 +504,14 @@ def run_strategy(
         decl_args=decl_args,
         config_cls=BacktestRunConfig,
     )
-    backend = None
-    runtime_class = strategy_class
-    if hasattr(strategy_class, "generated_strategy_class_ref"):
-        runtime_class = strategy_class.generated_strategy_class_ref
-        backend = PineRuntimeBackend()
     progress = build_progress_callback(f"{entry.export_id:04d}/{chart.timeframe}", args.progress_every)
     t0 = time.perf_counter()
     result = BacktestEngineAdapter().run(
-        runtime_class,
+        strategy_class,
         bars,
         config,
         params={},
-        execution_backend=backend,
+        execution_backend=None,
         progress_callback=progress,
     )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
@@ -939,7 +988,7 @@ def resolve_calculation_to_by_timeframe(
         for chart in entry.charts:
             if args.timeframe and chart.timeframe != normalize_tf(args.timeframe):
                 continue
-            out[chart.timeframe] = max(out.get(chart.timeframe, 0), chart.end_ms)
+            out[chart.timeframe] = max(out.get(chart.timeframe, 0), chart_end_exclusive_ms(chart))
     return out
 
 

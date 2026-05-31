@@ -120,8 +120,7 @@ def test_auto_fetches_provider_persists_and_merges_when_storage_incomplete() -> 
     assert [bar.time for bar in series.bars] == [0, 60_000, 120_000]
     assert series.coverage.status == "valid"
     assert [(call.start_ms, call.end_ms) for call in provider.calls] == [
-        (60_000, 120_000),
-        (120_000, 180_000),
+        (60_000, 180_000),
     ]
     assert [[bar.time for bar in write] for write in storage.writes] == [[60_000, 120_000]]
 

@@ -31,6 +31,13 @@ class BacktestRunConfig:
     pyramiding: int = 0
     qty_step: float | None = None
     qty_rounding_mode: str = "none"
+    max_bars_back: int = 0
+    score_start_time: int | None = None
+    score_end_time: int | None = None
+    max_pre_bars: int = 0
+    warmup_metadata: dict | None = None
+    export_resume_state: bool = False
+    resume_validation_policy: str = "strict"
     plot_from_ms: int | None = None
     plot_to_ms: int | None = None
 
@@ -44,6 +51,7 @@ class BacktestRunResult:
     raw_result: Any
     uses_backtest_engine: bool = True
     process_next_bar_available: bool = False
+    resume_state: Any | None = None
 
 
 class BacktestArtifactError(RuntimeError):
@@ -217,6 +225,8 @@ class BacktestEngineAdapter:
         execution_backend: Any | None = None,
         progress_callback: Any | None = None,
         runtime_data_provider: Any | None = None,
+        resume_state: Any | None = None,
+        effective_pre_bars: int | None = None,
     ) -> BacktestRunResult:
         """Run a strategy through the external BacktestEngine."""
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
@@ -234,6 +244,13 @@ class BacktestEngineAdapter:
             pyramiding=config.pyramiding,
             qty_step=config.qty_step,
             qty_rounding=config.qty_rounding_mode,
+            max_bars_back=config.max_bars_back,
+            score_start_time=config.score_start_time,
+            score_end_time=config.score_end_time,
+            max_pre_bars=config.max_pre_bars,
+            warmup_metadata=config.warmup_metadata,
+            export_resume_state=config.export_resume_state,
+            resume_validation_policy=config.resume_validation_policy,
         )
         setattr(engine_config, "exchange", config.exchange)
         setattr(engine_config, "market_type", config.market_type)
@@ -255,12 +272,15 @@ class BacktestEngineAdapter:
             bars=engine_bars,
             execution_backend=execution_backend,
             runtime_kwargs=runtime_kwargs,
+            resume_state=resume_state,
+            effective_pre_bars=effective_pre_bars,
         )
         return BacktestRunResult(
             status=getattr(result, "status", "ok"),
             bars_processed=len(engine_bars),
             raw_result=result,
             process_next_bar_available=self.process_next_bar_available,
+            resume_state=getattr(result, "resume_state", None),
         )
 
     def _to_engine_bar(self, bar: Bar) -> Any:

@@ -1,4 +1,3 @@
-"""OpenPine Trading Platform."""
+"""OpenPine package."""
 
-__version__ = "0.1.0"
-__author__ = "OpenPine Team"
+__version__ = "2.17.0"

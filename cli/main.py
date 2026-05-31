@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import shutil
 import sys
+import hashlib
+import inspect
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -70,40 +73,69 @@ def _plot_record_count(plots) -> int:
     return 0
 
 
+def _bars_data_fingerprint(bars) -> str:
+    payload = [
+        (
+            int(bar.time),
+            int(getattr(bar, "time_close", 0)),
+            float(bar.open),
+            float(bar.high),
+            float(bar.low),
+            float(bar.close),
+            None if getattr(bar, "volume", None) is None else float(bar.volume),
+        )
+        for bar in bars
+    ]
+    raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
 def _build_strategy_backtest_config(
     *,
     strategy,
     decl_args: dict,
     start_ms: int,
     end_ms: int,
+    requested_start_ms: int | None = None,
+    warmup_bars: int = 0,
+    effective_pre_bars: int = 0,
     capture_plots: bool,
     capture_from_ms: int | None,
     capture_to_ms: int | None,
     config_cls,
 ):
-    return config_cls(
-        symbol=strategy.symbol,
-        timeframe=strategy.timeframe,
-        start_time=start_ms,
-        end_time=end_ms,
-        exchange=strategy.exchange.lower(),
-        market_type=strategy.market_type.lower(),
-        initial_capital=decl_args.get("initial_capital", 10000.0),
-        default_qty_type=decl_args.get("default_qty_type", "fixed"),
-        default_qty_value=decl_args.get("default_qty_value", 1.0),
-        commission_type=decl_args.get("commission_type", "none"),
-        commission_value=decl_args.get("commission_value", 0.0),
-        exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
-        pyramiding=decl_args.get("pyramiding", 0),
-        qty_step=_default_qty_step(strategy.exchange, strategy.market_type, strategy.symbol),
-        qty_rounding_mode=_default_qty_rounding_mode(
+    visible_start_ms = requested_start_ms if requested_start_ms is not None else start_ms
+    kwargs = {
+        "symbol": strategy.symbol,
+        "timeframe": strategy.timeframe,
+        "start_time": visible_start_ms,
+        "end_time": end_ms,
+        "exchange": strategy.exchange.lower(),
+        "market_type": strategy.market_type.lower(),
+        "initial_capital": decl_args.get("initial_capital", 10000.0),
+        "default_qty_type": decl_args.get("default_qty_type", "fixed"),
+        "default_qty_value": decl_args.get("default_qty_value", 1.0),
+        "commission_type": decl_args.get("commission_type", "none"),
+        "commission_value": decl_args.get("commission_value", 0.0),
+        "exit_matching": decl_args.get("close_entries_rule", "fifo").upper(),
+        "pyramiding": decl_args.get("pyramiding", 0),
+        "qty_step": _default_qty_step(strategy.exchange, strategy.market_type, strategy.symbol),
+        "qty_rounding_mode": _default_qty_rounding_mode(
             strategy.exchange,
             strategy.market_type,
             strategy.symbol,
         ),
-        plot_from_ms=capture_from_ms if capture_plots else None,
-        plot_to_ms=capture_to_ms if capture_plots else None,
-    )
+        "max_bars_back": warmup_bars,
+        "score_start_time": visible_start_ms if effective_pre_bars > 0 else None,
+        "score_end_time": end_ms if effective_pre_bars > 0 else None,
+        "max_pre_bars": warmup_bars,
+        "warmup_metadata": {"recommended_pre_bars_raw": warmup_bars} if warmup_bars > 0 else None,
+        "export_resume_state": True,
+        "plot_from_ms": capture_from_ms if capture_plots else None,
+        "plot_to_ms": capture_to_ms if capture_plots else None,
+    }
+    supported = set(inspect.signature(config_cls).parameters)
+    return config_cls(**{key: value for key, value in kwargs.items() if key in supported})
 
 
 def _build_strategy_replay_config(
@@ -296,6 +328,9 @@ def _build_strategy_backtest_params_and_config(
     params_json: str | None,
     start_ms: int,
     end_ms: int,
+    requested_start_ms: int | None,
+    warmup_bars: int,
+    effective_pre_bars: int,
     capture_plots: bool,
     capture_from_ms: int | None,
     capture_to_ms: int | None,
@@ -309,6 +344,9 @@ def _build_strategy_backtest_params_and_config(
         decl_args=decl_args,
         start_ms=start_ms,
         end_ms=end_ms,
+        requested_start_ms=requested_start_ms,
+        warmup_bars=warmup_bars,
+        effective_pre_bars=effective_pre_bars,
         capture_plots=capture_plots,
         capture_from_ms=capture_from_ms,
         capture_to_ms=capture_to_ms,
@@ -326,6 +364,8 @@ def _prepare_strategy_backtest_inputs(
     capture_plots: bool,
     capture_from: str | None,
     capture_to: str | None,
+    history_from: str | None,
+    warmup_bars: int,
     now_ms: int,
     registry,
     deps,
@@ -342,6 +382,21 @@ def _prepare_strategy_backtest_inputs(
         strategy_id=strategy_id,
         console=console,
     )
+    requested_start_ms = start_ms
+    if history_from:
+        history_start_ms = _parse_cli_date_ms(history_from, start_ms)
+        if history_start_ms >= start_ms:
+            console.print("[red]Invalid history window: --history-from must be before --from[/red]")
+            registry.update_status(strategy_id, "paused")
+            sys.exit(1)
+        start_ms = history_start_ms
+    elif warmup_bars > 0:
+        timeframe = deps.parse_timeframe(strategy.timeframe)
+        if timeframe.duration_ms is None:
+            console.print("[red]--warmup-bars requires a fixed-duration timeframe[/red]")
+            registry.update_status(strategy_id, "paused")
+            sys.exit(1)
+        start_ms = max(0, start_ms - warmup_bars * timeframe.duration_ms)
 
     timings: dict[str, float] = {}
     strategy_class, timings["load_artifact_sec"] = _load_strategy_backtest_class_or_exit(
@@ -381,12 +436,16 @@ def _prepare_strategy_backtest_inputs(
         artifact_store_cls=deps.ArtifactStore,
         strategy=strategy,
     )
+    effective_pre_bars = sum(1 for bar in bars if int(bar.time) < requested_start_ms)
     params, config = _build_strategy_backtest_params_and_config(
         strategy=strategy,
         decl_args=decl_args,
         params_json=strategy.params_json,
         start_ms=start_ms,
         end_ms=end_ms,
+        requested_start_ms=requested_start_ms,
+        warmup_bars=warmup_bars or effective_pre_bars,
+        effective_pre_bars=effective_pre_bars,
         capture_plots=capture_plots,
         capture_from_ms=capture_from_ms,
         capture_to_ms=capture_to_ms,
@@ -401,6 +460,8 @@ def _prepare_strategy_backtest_inputs(
         data_fetch_info=data_fetch_info,
         params=params,
         config=config,
+        requested_start_ms=requested_start_ms,
+        effective_pre_bars=effective_pre_bars,
         timings=timings,
     )
 
@@ -970,6 +1031,8 @@ def _build_strategy_backtest_run_meta(
     strategy,
     start_ms: int,
     end_ms: int,
+    visible_start_ms: int | None = None,
+    effective_pre_bars: int = 0,
     bars_total: int,
     data_fetch_info,
     result,
@@ -988,6 +1051,9 @@ def _build_strategy_backtest_run_meta(
         "timeframe": strategy.timeframe,
         "calculation_from": start_ms,
         "calculation_to": end_ms,
+        "visible_from": visible_start_ms,
+        "visible_to": end_ms,
+        "effective_pre_bars": effective_pre_bars,
         "bars_total": bars_total,
         "data_fetch": data_fetch_info,
         "bars_processed": result.bars_processed,
@@ -1067,6 +1133,8 @@ def _save_strategy_backtest_result(
     strategy,
     start_ms: int,
     end_ms: int,
+    visible_start_ms: int | None,
+    effective_pre_bars: int,
     bars_total: int,
     data_fetch_info,
     result,
@@ -1103,6 +1171,8 @@ def _save_strategy_backtest_result(
         strategy=strategy,
         start_ms=start_ms,
         end_ms=end_ms,
+        visible_start_ms=visible_start_ms,
+        effective_pre_bars=effective_pre_bars,
         bars_total=bars_total,
         data_fetch_info=data_fetch_info,
         result=result,
@@ -1131,6 +1201,8 @@ def _save_strategy_backtest_result_safely(
     strategy,
     start_ms: int,
     end_ms: int,
+    visible_start_ms: int | None,
+    effective_pre_bars: int,
     bars_total: int,
     data_fetch_info,
     result,
@@ -1147,6 +1219,8 @@ def _save_strategy_backtest_result_safely(
             strategy=strategy,
             start_ms=start_ms,
             end_ms=end_ms,
+            visible_start_ms=visible_start_ms,
+            effective_pre_bars=effective_pre_bars,
             bars_total=bars_total,
             data_fetch_info=data_fetch_info,
             result=result,
@@ -1183,6 +1257,8 @@ def _persist_strategy_backtest_result(
             strategy=strategy,
             start_ms=prepared.start_ms,
             end_ms=prepared.end_ms,
+            visible_start_ms=prepared.requested_start_ms,
+            effective_pre_bars=prepared.effective_pre_bars,
             bars_total=len(prepared.bars),
             data_fetch_info=prepared.data_fetch_info,
             result=result,
@@ -1194,6 +1270,42 @@ def _persist_strategy_backtest_result(
         )
     finally:
         bt_store.close()
+    _save_strategy_resume_snapshot(
+        strategy=strategy,
+        prepared=prepared,
+        result=result,
+        console=console,
+    )
+
+
+def _save_strategy_resume_snapshot(*, strategy, prepared, result, console) -> None:
+    resume_state = getattr(result, "resume_state", None)
+    if resume_state is None:
+        return
+    try:
+        from openpine.config import OpenPineConfig
+        from openpine.state.store import StateStore
+
+        store = StateStore(OpenPineConfig.load().data_dir / "state")
+        meta = store.save_runtime_snapshot(
+            strategy_id=strategy.strategy_id,
+            artifact_id=strategy.artifact_id,
+            params_hash=strategy.params_hash,
+            instrument_key={
+                "exchange": strategy.exchange.lower(),
+                "market": strategy.market_type.lower(),
+                "symbol": strategy.symbol.upper(),
+            },
+            timeframe={"canonical": strategy.timeframe},
+            runtime_state=resume_state,
+            bar_time=int(prepared.bars[-1].time) if prepared.bars else prepared.end_ms,
+            reason="backtest_complete",
+            data_fingerprint=_bars_data_fingerprint(prepared.bars),
+        )
+        if meta is not None:
+            console.print(f"[green]State snapshot saved:[/green] {meta.snapshot_id}")
+    except Exception as exc:
+        console.print(f"[yellow]Warning: failed to save state snapshot: {exc}[/yellow]")
 
 
 def _run_strategy_backtest_adapter(
@@ -1204,6 +1316,7 @@ def _run_strategy_backtest_adapter(
     config,
     params: dict,
     provider,
+    effective_pre_bars: int | None = None,
     console,
     perf_counter,
 ):
@@ -1220,6 +1333,7 @@ def _run_strategy_backtest_adapter(
         execution_backend=backend,
         progress_callback=_build_progress_callback(bars_total=len(bars), console=console),
         runtime_data_provider=getattr(provider, "_provider", None),
+        effective_pre_bars=effective_pre_bars,
     )
     return result, perf_counter() - t0
 
@@ -1241,6 +1355,7 @@ def _run_strategy_backtest_or_exit(
             config=prepared.config,
             params=prepared.params,
             provider=prepared.provider,
+            effective_pre_bars=prepared.effective_pre_bars if prepared.effective_pre_bars else None,
             console=console,
             perf_counter=perf_counter,
         )
@@ -3478,6 +3593,8 @@ def strategy_remove(strategy_id: str) -> None:
 @click.option("--capture-plots", is_flag=True, help="Capture and save plot outputs from runtime")
 @click.option("--capture-from", default=None, help="Optional plot capture window start")
 @click.option("--capture-to", default=None, help="Optional plot capture window end")
+@click.option("--history-from", default=None, help="Load calculation history before --from")
+@click.option("--warmup-bars", default=0, type=int, help="Load N bars before --from as prehistory")
 def strategy_backtest(
     strategy_id: str,
     from_date: str | None,
@@ -3485,6 +3602,8 @@ def strategy_backtest(
     capture_plots: bool,
     capture_from: str | None,
     capture_to: str | None,
+    history_from: str | None,
+    warmup_bars: int,
 ) -> None:
     """Run backtest for a strategy."""
     import time as _time
@@ -3526,6 +3645,8 @@ def strategy_backtest(
             capture_plots=capture_plots,
             capture_from=capture_from,
             capture_to=capture_to,
+            history_from=history_from,
+            warmup_bars=max(0, warmup_bars),
             now_ms=int(_time_module.time() * 1000),
             registry=registry,
             deps=deps,
