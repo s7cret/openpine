@@ -573,12 +573,13 @@ def _profile_from_kwargs(kwargs: dict[str, Any]) -> CompileProfile:
     if isinstance(raw, CompileProfile):
         profile = raw
     elif raw == "diagnostic":
+        unsafe_diagnostic = True
         profile = CompileProfile.diagnostic(
-            allow_external_library_stubs=True,
-            allow_unsupported_request_stubs=True,
-            allow_invalid_ast=True,
-            allow_subprocess_fallback=True,
-            allow_implicit_version_rewrite=True,
+            allow_external_library_stubs=unsafe_diagnostic,
+            allow_unsupported_request_stubs=unsafe_diagnostic,
+            allow_invalid_ast=unsafe_diagnostic,
+            allow_subprocess_fallback=unsafe_diagnostic,
+            allow_implicit_version_rewrite=unsafe_diagnostic,
         )
     else:
         profile = CompileProfile.production()

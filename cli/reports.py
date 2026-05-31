@@ -37,7 +37,7 @@ def _report_search_names(report_id: str) -> set[str]:
 def _find_report_files(reports_dir: Path, report_id: str) -> list[Path]:
     """Find report files matching an id, newest first."""
     if not reports_dir.exists():
-        return []
+        return list()
 
     names = _report_search_names(report_id)
     found = [

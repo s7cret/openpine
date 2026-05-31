@@ -112,7 +112,7 @@ class ArtifactStore:
         """List all artifacts for a given source."""
         source_dir = self._source_dir(source_id)
         if not source_dir.exists():
-            return []
+            return list()
 
         artifacts = []
         for artifact_id in sorted(source_dir.iterdir()):

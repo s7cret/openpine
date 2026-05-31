@@ -57,7 +57,7 @@ class DaemonService:
         """Start the service.
 
         Sets state to STARTING, calls _on_start, then sets state to RUNNING.
-        Idempotent: calling start on an already-running service is a no-op.
+        Idempotent: calling start on an already-running service leaves state unchanged.
 
         Raises:
             RuntimeError: if service is not in STOPPED state.
