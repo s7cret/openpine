@@ -230,6 +230,7 @@ class BacktestEngineAdapter:
     ) -> BacktestRunResult:
         """Run a strategy through the external BacktestEngine."""
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
+        qty_rounding = "floor" if config.qty_rounding_mode == "truncate" else config.qty_rounding_mode
         engine_config = self._module.BacktestConfig(
             symbol=config.symbol,
             timeframe=config.timeframe,
@@ -243,7 +244,7 @@ class BacktestEngineAdapter:
             exit_matching=config.exit_matching,
             pyramiding=config.pyramiding,
             qty_step=config.qty_step,
-            qty_rounding=config.qty_rounding_mode,
+            qty_rounding=qty_rounding,
             max_bars_back=config.max_bars_back,
             score_start_time=config.score_start_time,
             score_end_time=config.score_end_time,

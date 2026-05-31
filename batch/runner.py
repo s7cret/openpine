@@ -470,6 +470,13 @@ def _build_strategy_run_config(
     )
 
 
+def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | None:
+    if exchange.lower() == "binance" and market_type.lower() == "spot":
+        if symbol.upper() in {"BTCUSD", "BTCUSDT"}:
+            return 1e-5
+    return None
+
+
 def run_strategy(
     entry: ExportEntry,
     source: Any,
@@ -1022,7 +1029,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--calculation-to", default=None, help="Optional calculation end. Default: TV visible window end.")
     parser.add_argument("--progress-every", type=int, default=10_000, help="Runtime bar progress interval. 0 disables.")
-    parser.add_argument("--qty-step", type=float, default=1e-6)
+    parser.add_argument("--qty-step", type=float, default=None)
     parser.add_argument("--qty-rounding-mode", default="truncate")
     return parser
 
@@ -1175,6 +1182,8 @@ def _run_selected_entries(
 def main(argv: list[str] | None = None) -> int:
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
+    if args.qty_step is None:
+        args.qty_step = _default_qty_step(args.exchange, args.market_type, args.symbol)
 
     entries = load_manifest(args.manifest, args.root)
     selected = filter_entries(

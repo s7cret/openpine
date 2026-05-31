@@ -43,7 +43,7 @@ def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | N
     """Return observed TV quantity precision for common crypto spot symbols."""
     if exchange.lower() == "binance" and market_type.lower() == "spot":
         if symbol.upper() in {"BTCUSD", "BTCUSDT"}:
-            return 1e-6
+            return 1e-5
     return None
 
 

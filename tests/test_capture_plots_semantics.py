@@ -92,7 +92,7 @@ def test_cli_backtest_config_helper_maps_declaration_values():
         "commission_value": 0.1,
         "exit_matching": "ANY",
         "pyramiding": 2,
-        "qty_step": 1e-6,
+        "qty_step": 1e-5,
         "qty_rounding_mode": "truncate",
         "plot_from_ms": 120,
         "plot_to_ms": 180,

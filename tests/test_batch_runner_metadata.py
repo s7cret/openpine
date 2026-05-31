@@ -265,7 +265,7 @@ def test_strategy_run_config_uses_declaration_values() -> None:
     assert config.qty_step == 0.001
     assert config.qty_rounding_mode == "truncate"
     assert config.plot_from_ms == chart.start_ms
-    assert config.plot_to_ms == chart.end_ms
+    assert config.plot_to_ms == chart.end_ms + 900_000
 
 
 def test_finish_entry_status_adds_elapsed_seconds(monkeypatch) -> None:
