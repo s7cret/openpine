@@ -291,13 +291,16 @@ def load_calculation_bars(
             f"no calculation bars from OpenPine DataOrchestrator for {args.symbol} {chart.timeframe} "
             f"{ms_to_utc_iso(calculation_from)}..{ms_to_utc_iso(calculation_to)}"
         )
-    bars = _merge_tv_visible_bars(
-        provider_bars=bars,
-        chart=chart,
-        symbol=args.symbol,
-        exchange=args.exchange,
-        market_type=args.market_type,
-    )
+    bar_source = "provider_only"
+    if not args.provider_only_bars:
+        bars = _merge_tv_visible_bars(
+            provider_bars=bars,
+            chart=chart,
+            symbol=args.symbol,
+            exchange=args.exchange,
+            market_type=args.market_type,
+        )
+        bar_source = "provider_with_tv_visible_overlay"
 
     return bars, {
         "symbol": args.symbol,
@@ -316,6 +319,7 @@ def load_calculation_bars(
         "visible_bars": chart.bars,
         "cache_hit": cache_hit,
         "data_fetch": data_fetch_info,
+        "bar_source": bar_source,
     }
 
 
@@ -1170,6 +1174,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="Full calculation/prehistory start. Visible export window still comes from TV chart CSV.",
     )
     parser.add_argument("--calculation-to", default=None, help="Optional calculation end. Default: TV visible window end.")
+    parser.add_argument(
+        "--provider-only-bars",
+        action="store_true",
+        help="Use provider bars for the full calculation range without TV visible-window OHLCV overlay.",
+    )
     parser.add_argument("--progress-every", type=int, default=10_000, help="Runtime bar progress interval. 0 disables.")
     parser.add_argument("--qty-step", type=float, default=None)
     parser.add_argument("--qty-rounding-mode", default="truncate")

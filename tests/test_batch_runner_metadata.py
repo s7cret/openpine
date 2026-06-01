@@ -362,6 +362,7 @@ def test_batch_arg_parser_exposes_run_defaults() -> None:
 
     assert args.phase == "run"
     assert args.limit == 3
+    assert args.provider_only_bars is False
     assert args.symbol == "BTCUSDT"
     assert args.exchange == "binance"
     assert args.market_type == "spot"
