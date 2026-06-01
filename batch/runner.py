@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import math
 import subprocess
 import time
 import traceback
@@ -365,6 +366,143 @@ def chart_end_exclusive_ms(chart: ChartExport) -> int:
     return chart.end_ms + int(duration_ms or 0)
 
 
+def _infer_tv_bar_index_offset(
+    chart: ChartExport,
+    bars: list[Any],
+) -> tuple[int, dict[str, Any] | None]:
+    """Infer Pine ``bar_index`` offset from TV-exported bar-index plots."""
+
+    first_visible_local_index = next(
+        (idx for idx, bar in enumerate(bars) if int(getattr(bar, "time")) >= chart.start_ms),
+        None,
+    )
+    if first_visible_local_index is None:
+        return 0, None
+
+    from openpine.batch.tv_corpus import read_chart
+
+    df = read_chart(chart.path)
+    if df.empty:
+        return 0, None
+
+    ignored = {"time", "bar_time", "open", "high", "low", "close", "volume", "Volume"}
+    candidates: list[tuple[str, int]] = []
+    for column in df.columns:
+        if column in ignored or "BAR" not in column.upper():
+            continue
+        values = pd.to_numeric(df[column], errors="coerce")
+        if values.isna().any() or len(values) < 2:
+            continue
+        first = float(values.iloc[0])
+        if not first.is_integer():
+            continue
+        expected = pd.Series(
+            range(int(first), int(first) + len(values)),
+            index=values.index,
+            dtype="float64",
+        )
+        if (values.astype("float64") - expected).abs().max() <= 1e-9:
+            offset = int(first) - first_visible_local_index
+            candidates.append((column, offset))
+
+    if not candidates:
+        periodic_offset, periodic_meta = _infer_tv_bar_index_offset_from_periodic_na(
+            df,
+            first_visible_local_index,
+        )
+        if periodic_meta is not None:
+            return periodic_offset, periodic_meta
+        return 0, None
+    offsets = {offset for _, offset in candidates}
+    if len(offsets) != 1:
+        return 0, {"status": "ambiguous", "candidates": candidates}
+    column, offset = candidates[0]
+    return offset, {
+        "status": "inferred",
+        "column": column,
+        "first_visible_local_index": first_visible_local_index,
+        "tv_first_bar_index": int(df[column].iloc[0]),
+        "offset": offset,
+    }
+
+
+def _infer_tv_bar_index_offset_from_periodic_na(
+    df: pd.DataFrame,
+    first_visible_local_index: int,
+) -> tuple[int, dict[str, Any] | None]:
+    """Infer ``bar_index`` modulo alignment from periodic artificial-NA plots.
+
+    Some oracle scripts intentionally create ``na`` with expressions like
+    ``bar_index % 7 == 0 ? na : close`` without plotting ``bar_index`` itself.
+    The TV chart CSV still exposes that periodic NA mask, which is enough to
+    recover the modulo offset used by Pine's built-in ``bar_index``.
+    """
+
+    constraints: list[dict[str, Any]] = []
+    ignored = {"time", "bar_time", "open", "high", "low", "close", "volume", "Volume"}
+    for column in df.columns:
+        if column in ignored:
+            continue
+        values = df[column]
+        na_positions = [idx for idx, value in enumerate(values) if pd.isna(value) or value == ""]
+        if len(na_positions) < 3:
+            continue
+        gaps = [b - a for a, b in zip(na_positions, na_positions[1:])]
+        if not gaps:
+            continue
+        period = gaps[0]
+        if period < 2 or period > 128 or any(gap != period for gap in gaps):
+            continue
+        residue = (-na_positions[0]) % period
+        constraints.append(
+            {
+                "column": column,
+                "period": period,
+                "first_visible_bar_index_mod": residue,
+                "na_positions_sample": na_positions[:5],
+            }
+        )
+
+    if not constraints:
+        return 0, None
+
+    # Keep only mutually consistent constraints. Warmup and sparse-data gaps can
+    # look periodic accidentally, so ambiguity should fall back to no shift.
+    modulus = 1
+    residue = 0
+    used: list[dict[str, Any]] = []
+    for item in constraints:
+        next_modulus = int(item["period"])
+        next_residue = int(item["first_visible_bar_index_mod"])
+        gcd = math.gcd(modulus, next_modulus)
+        if (next_residue - residue) % gcd != 0:
+            continue
+        combined_modulus = math.lcm(modulus, next_modulus)
+        combined_residue = next(
+            candidate
+            for candidate in range(residue, combined_modulus, modulus)
+            if candidate % next_modulus == next_residue
+        )
+        modulus = combined_modulus
+        residue = combined_residue
+        used.append(item)
+
+    if len(used) < 2 or modulus <= 1:
+        return 0, None
+
+    current_residue = first_visible_local_index % modulus
+    offset = (residue - current_residue) % modulus
+    return offset, {
+        "status": "inferred_periodic_na",
+        "first_visible_local_index": first_visible_local_index,
+        "first_visible_local_index_mod": current_residue,
+        "tv_first_bar_index_mod": residue,
+        "modulus": modulus,
+        "offset": offset,
+        "constraints": used,
+    }
+
+
 def run_indicator(
     entry: ExportEntry,
     source: Any,
@@ -400,6 +538,9 @@ def run_indicator(
         exchange=args.exchange.lower(),
         market_type=args.market_type.lower(),
     )
+    bar_index_offset, bar_index_alignment = _infer_tv_bar_index_offset(chart, bars)
+    data_meta["bar_index_alignment"] = bar_index_alignment
+    data_meta["bar_index_offset"] = bar_index_offset
     progress = build_progress_callback(f"{entry.export_id:04d}/{chart.timeframe}", args.progress_every)
     t0 = time.perf_counter()
     backend_result = PineRuntimeBackend().execute(
@@ -413,6 +554,7 @@ def run_indicator(
             "data_provider": None,
             "plot_from_ms": compare_from,
             "plot_to_ms": compare_to,
+            "bar_index_offset": bar_index_offset,
             "progress_callback": progress,
         },
         params={},

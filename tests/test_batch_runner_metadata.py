@@ -17,6 +17,7 @@ from openpine.batch.runner import (
     _build_run_summary,
     _build_strategy_run_config,
     _finish_entry_status,
+    _infer_tv_bar_index_offset,
     _run_meta_valid,
     _write_timeframe_summary_csv,
     _write_progress,
@@ -266,6 +267,85 @@ def test_strategy_run_config_uses_declaration_values() -> None:
     assert config.qty_rounding_mode == "truncate"
     assert config.plot_from_ms == chart.start_ms
     assert config.plot_to_ms == chart.end_ms + 900_000
+
+
+def test_infer_tv_bar_index_offset_from_exported_bar_plot(tmp_path: Path) -> None:
+    chart_path = tmp_path / "chart.csv"
+    chart_path.write_text(
+        "\n".join(
+            [
+                "time,open,high,low,close,P012_INT_BAR",
+                "1700001800,1,2,1,2,21304",
+                "1700002700,2,3,2,3,21305",
+                "1700003600,3,4,3,4,21306",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    chart = ChartExport(
+        timeframe="15m",
+        path=chart_path,
+        bars=3,
+        start_ms=1_700_001_800_000,
+        end_ms=1_700_003_600_000,
+    )
+    bars = [
+        argparse.Namespace(time=1_700_000_000_000),
+        argparse.Namespace(time=1_700_000_900_000),
+        argparse.Namespace(time=1_700_001_800_000),
+        argparse.Namespace(time=1_700_002_700_000),
+        argparse.Namespace(time=1_700_003_600_000),
+    ]
+
+    offset, meta = _infer_tv_bar_index_offset(chart, bars)
+
+    assert offset == 21302
+    assert meta == {
+        "status": "inferred",
+        "column": "P012_INT_BAR",
+        "first_visible_local_index": 2,
+        "tv_first_bar_index": 21304,
+        "offset": 21302,
+    }
+
+
+def test_infer_tv_bar_index_offset_from_periodic_artificial_na(tmp_path: Path) -> None:
+    chart_path = tmp_path / "chart.csv"
+    rows = ["time,open,high,low,close,P006_MAYBE_NA,P006_MAYBE_NA2"]
+    first_tv_bar_mod_77 = 51
+    for idx in range(40):
+        tv_bar_index = first_tv_bar_mod_77 + idx
+        maybe_na = "" if tv_bar_index % 7 == 0 else "100"
+        maybe_na2 = "" if tv_bar_index % 11 == 0 else "200"
+        rows.append(f"{1_700_000_000 + idx * 900},1,2,1,2,{maybe_na},{maybe_na2}")
+    chart_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    chart = ChartExport(
+        timeframe="15m",
+        path=chart_path,
+        bars=40,
+        start_ms=1_700_000_000_000,
+        end_ms=1_700_035_100_000,
+    )
+    first_visible_local_index = 18
+    bars = [
+        *[
+            argparse.Namespace(time=chart.start_ms - (first_visible_local_index - idx) * 900_000)
+            for idx in range(first_visible_local_index)
+        ],
+        *[
+            argparse.Namespace(time=chart.start_ms + idx * 900_000)
+            for idx in range(40)
+        ],
+    ]
+
+    offset, meta = _infer_tv_bar_index_offset(chart, bars)
+
+    assert offset == 33
+    assert meta is not None
+    assert meta["status"] == "inferred_periodic_na"
+    assert meta["tv_first_bar_index_mod"] == 51
+    assert meta["modulus"] == 77
 
 
 def test_finish_entry_status_adds_elapsed_seconds(monkeypatch) -> None:

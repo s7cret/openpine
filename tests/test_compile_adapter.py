@@ -403,3 +403,31 @@ def test_live_production_compile_rejects_unsupported_request() -> None:
 
     assert not result.success
     assert "unsupported request" in "\n".join(result.errors).lower()
+
+
+@pytest.mark.parametrize(
+    ("source", "expected_error"),
+    [
+        (
+            "//@version=6\nindicator('x')\nplot(ta.linreg(close, 20))\n",
+            "missing required parameter",
+        ),
+        (
+            "//@version=6\nindicator('x')\nplot(ta.atr20)\n",
+            "ta.atr20",
+        ),
+    ],
+)
+def test_live_production_compile_rejects_invalid_tv_source(
+    source: str,
+    expected_error: str,
+) -> None:
+    adapter = SubprocessCompilerAdapter()
+    if not adapter.library_status().available:
+        pytest.skip("local compiler Python APIs are unavailable")
+
+    result = adapter.compile(source, profile=CompileProfile.production())
+
+    assert not result.success
+    assert result.python_code is None
+    assert expected_error in "\n".join(result.errors).lower()
