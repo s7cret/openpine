@@ -27,8 +27,16 @@ class BacktestRunConfig:
     default_qty_value: float = 1.0
     commission_type: str = "none"
     commission_value: float = 0.0
+    slippage: float = 0.0
+    slippage_type: str = "tick"
     exit_matching: str = "fifo"
     pyramiding: int = 0
+    margin_long: float = 100.0
+    margin_short: float = 100.0
+    process_orders_on_close: bool = False
+    calc_on_order_fills: bool = False
+    calc_on_every_tick: bool = False
+    use_bar_magnifier: bool = False
     qty_step: float | None = None
     qty_rounding_mode: str = "none"
     max_bars_back: int = 0
@@ -56,6 +64,14 @@ class BacktestRunResult:
 
 class BacktestArtifactError(RuntimeError):
     """Raised when a compiled strategy artifact cannot be loaded safely."""
+
+
+class _PineConstantNamespace:
+    def __init__(self, prefix: str) -> None:
+        self._prefix = prefix
+
+    def __getattr__(self, name: str) -> str:
+        return f"{self._prefix}.{name}"
 
 
 def load_strategy_class_from_artifact(
@@ -154,6 +170,9 @@ def _load_generated_module(path: Path, source_id: str, artifact_id: str) -> Any:
         raise BacktestArtifactError(
             f"Failed to import generated strategy artifact {path}: {exc}"
         ) from exc
+    for namespace in ("label", "line", "box", "table", "position", "size"):
+        if not hasattr(module, namespace):
+            setattr(module, namespace, _PineConstantNamespace(namespace))
     return module
 
 
@@ -241,8 +260,16 @@ class BacktestEngineAdapter:
             default_qty_value=config.default_qty_value,
             commission_type=config.commission_type,
             commission_value=config.commission_value,
+            slippage=config.slippage,
+            slippage_type=config.slippage_type,
             exit_matching=config.exit_matching,
             pyramiding=config.pyramiding,
+            margin_long=config.margin_long,
+            margin_short=config.margin_short,
+            process_orders_on_close=config.process_orders_on_close,
+            calc_on_order_fills=config.calc_on_order_fills,
+            calc_on_every_tick=config.calc_on_every_tick,
+            use_bar_magnifier=config.use_bar_magnifier,
             qty_step=config.qty_step,
             qty_rounding=qty_rounding,
             max_bars_back=config.max_bars_back,

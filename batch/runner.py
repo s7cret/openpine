@@ -517,6 +517,7 @@ def run_indicator(
     args: argparse.Namespace,
 ) -> dict[str, Any]:
     from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
+    from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
     from openpine.export import export_plot_records
     from openpine.runtime.engine import load_generated_class_from_artifact
 
@@ -530,6 +531,11 @@ def run_indicator(
         source.id,
         artifact_id,
     )
+    runtime_data_provider = create_local_runtime_data_provider_adapter(
+        exchange=args.exchange,
+        market=args.market_type,
+        prefetch_end_ms=data_meta["calculation_to"],
+    )
     config = SimpleNamespace(
         symbol=args.symbol,
         timeframe=chart.timeframe,
@@ -539,7 +545,7 @@ def run_indicator(
         calc_on_every_tick=None,
         mintick=0.01,
         currency="USD",
-        data_provider=None,
+        data_provider=runtime_data_provider,
         exchange=args.exchange.lower(),
         market_type=args.market_type.lower(),
     )
@@ -556,7 +562,8 @@ def run_indicator(
         runtime_kwargs={
             "symbol": args.symbol,
             "timeframe": chart.timeframe,
-            "data_provider": None,
+            "data_provider": runtime_data_provider,
+            "intrabar_provider": runtime_data_provider,
             "plot_from_ms": compare_from,
             "plot_to_ms": compare_to,
             "bar_index_offset": bar_index_offset,
@@ -596,6 +603,10 @@ def _build_strategy_run_config(
     config_cls: Any,
 ) -> Any:
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
+    commission_type = {
+        "cash_per_order": "fixed_per_order",
+        "cash_per_contract": "fixed_per_contract",
+    }.get(str(decl_args.get("commission_type", "none")), decl_args.get("commission_type", "none"))
     return config_cls(
         symbol=args.symbol,
         timeframe=chart.timeframe,
@@ -606,10 +617,18 @@ def _build_strategy_run_config(
         initial_capital=decl_args.get("initial_capital", 10_000.0),
         default_qty_type=decl_args.get("default_qty_type", "fixed"),
         default_qty_value=decl_args.get("default_qty_value", 1.0),
-        commission_type=decl_args.get("commission_type", "none"),
+        commission_type=commission_type,
         commission_value=decl_args.get("commission_value", 0.0),
+        slippage=decl_args.get("slippage", 0.0),
+        slippage_type=decl_args.get("slippage_type", "tick"),
         exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
         pyramiding=decl_args.get("pyramiding", 0),
+        margin_long=decl_args.get("margin_long", 100.0),
+        margin_short=decl_args.get("margin_short", 100.0),
+        process_orders_on_close=bool(decl_args.get("process_orders_on_close", False)),
+        calc_on_order_fills=bool(decl_args.get("calc_on_order_fills", False)),
+        calc_on_every_tick=bool(decl_args.get("calc_on_every_tick", False)),
+        use_bar_magnifier=bool(decl_args.get("use_bar_magnifier", False)),
         qty_step=args.qty_step,
         qty_rounding_mode=args.qty_rounding_mode,
         plot_from_ms=compare_from,
@@ -630,6 +649,7 @@ def run_strategy(
     args: argparse.Namespace,
 ) -> dict[str, Any]:
     from openpine.artifacts import ArtifactStore
+    from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
     from openpine.export import ExportWindow, export_strategy_result
     from openpine.runtime.engine import BacktestEngineAdapter, BacktestRunConfig, load_strategy_class_from_artifact
 
@@ -655,6 +675,13 @@ def run_strategy(
         decl_args=decl_args,
         config_cls=BacktestRunConfig,
     )
+    runtime_data_provider = create_local_runtime_data_provider_adapter(
+        exchange=args.exchange,
+        market=args.market_type,
+        prefetch_end_ms=data_meta["calculation_to"],
+    )
+    setattr(strategy_class, "runtime_data_provider", runtime_data_provider)
+    setattr(strategy_class, "runtime_intrabar_provider", runtime_data_provider)
     progress = build_progress_callback(f"{entry.export_id:04d}/{chart.timeframe}", args.progress_every)
     t0 = time.perf_counter()
     result = BacktestEngineAdapter().run(
