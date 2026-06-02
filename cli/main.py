@@ -1996,6 +1996,53 @@ def pine_run_plots(
     )
 
 
+@pine.command("compare-tv")
+@click.argument("name")
+@click.option("--openpine-plots", type=click.Path(dir_okay=False), required=True, help="OpenPine plots.csv from pine run-plots")
+@click.option("--tv-chart", type=click.Path(dir_okay=False), required=True, help="TradingView chart/export CSV")
+@click.option("--output", "output_dir", type=click.Path(file_okay=False), required=True)
+@click.option("--abs-tol", default=1e-6, show_default=True, type=float)
+@click.option("--rel-tol", default=1e-9, show_default=True, type=float)
+@click.option("--include-base-columns", is_flag=True, help="Include OHLCV/time/base columns in plot comparison")
+def pine_compare_tv(
+    name: str,
+    openpine_plots: str,
+    tv_chart: str,
+    output_dir: str,
+    abs_tol: float,
+    rel_tol: float,
+    include_base_columns: bool,
+) -> None:
+    """Compare indicator plot CSV against a TradingView chart export."""
+    exclude = set() if include_base_columns else {"time", "bar_time", "bar_index", "open", "high", "low", "close", "volume", "Volume"}
+    output_path = Path(output_dir)
+    summary, top_columns = _compare_rows_by_time(
+        tv_path=Path(tv_chart),
+        op_path=Path(openpine_plots),
+        tv_time_column="time",
+        op_time_column="bar_time",
+        exclude_columns=exclude,
+        abs_tol=abs_tol,
+        rel_tol=rel_tol,
+    )
+    summary["type"] = "plots"
+    result = {
+        "strategy_id": name,
+        "run_id": Path(openpine_plots).name,
+        "abs_tol": abs_tol,
+        "rel_tol": rel_tol,
+        "comparisons": [summary],
+        "failures": [{"type": "plots", "summary": summary, "top_columns": top_columns}] if summary["status"] != "match" else [],
+    }
+    _write_strategy_tv_compare_report(output_path, result)
+    console.print(f"[green]TV comparison written:[/green] {output_path}")
+    console.print(
+        f"  plots: {summary['status']} {summary['classification']} "
+        f"mismatch={summary.get('mismatch_cells')}/{summary.get('total_cells')} "
+        f"max_delta={summary.get('max_abs_delta')} worst={summary.get('worst_column')}"
+    )
+
+
 @pine.command("artifacts")
 @click.argument("name")
 def pine_artifacts(name: str) -> None:
