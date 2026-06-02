@@ -183,6 +183,35 @@ def test_compare_rows_by_time_reports_value_mismatch(tmp_path):
     assert top_columns[0]["column"] == "PLOT"
 
 
+def test_normalized_tv_trades_supports_localized_headers(tmp_path):
+    from openpine.cli.main import _write_normalized_tv_trades
+
+    tv = tmp_path / "tv_trades.csv"
+    normalized = tmp_path / "normalized.csv"
+    tv.write_text(
+        "\n".join(
+            [
+                "Номер сделки,Тип,Дата и время,Сигнал,Цена USDT,Размер (кол-во),Чистая ПР/УБ USDT,Благоприятное отклонение USDT,Неблагоприятное отклонение USDT",
+                "1,Выход из длинной позиции,2026-04-01 12:00,XL,110,0.5,5.5,8,-1",
+                "1,Вход в длинную позицию,2026-04-01 10:00,L,100,0.5,5.5,8,-1",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    _write_normalized_tv_trades(
+        tv_path=tv,
+        output_path=normalized,
+        compare_from_ms=None,
+        compare_to_ms=None,
+    )
+
+    text = normalized.read_text(encoding="utf-8")
+    assert "trade_id,status,direction,entry_time_ms,exit_time_ms" in text
+    assert "1,closed,long,1775037600000,1775044800000,100,110,0.5,5.5,8,-1,L,XL" in text
+
+
 def test_cli_backtest_runtime_meta_and_progress_helpers():
     from openpine.cli.main import (
         _build_progress_callback,
