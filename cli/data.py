@@ -24,23 +24,6 @@ def _parse_cli_ymd_ms(value: str, *, option_name: str) -> tuple[int | None, str 
         return None, f"Invalid {option_name} date format: {value} (use YYYY-MM-DD)"
 
 
-def _binance_kline_to_bar(row, *, instrument, timeframe):
-    from marketdata_provider.contracts import Bar
-
-    return Bar(
-        instrument=instrument,
-        timeframe=timeframe,
-        time=int(row[0]),
-        time_close=int(row[6]),
-        open=float(row[1]),
-        high=float(row[2]),
-        low=float(row[3]),
-        close=float(row[4]),
-        volume=float(row[5]),
-        closed=True,
-    )
-
-
 def _parse_data_backfill_window(
     *,
     from_date: str,
@@ -61,7 +44,7 @@ def _parse_data_backfill_window(
     return start_ms, end_ms, None
 
 
-def _run_sync_binance_backfill(
+def _run_sync_marketdata_backfill(
     *,
     symbol: str,
     timeframe: str,
@@ -72,78 +55,55 @@ def _run_sync_binance_backfill(
     timeout: int,
     console,
 ) -> bool:
-    import requests
-    import time as _time
-    from marketdata_provider.contracts import BarQuery, BarSeries, InstrumentKey, parse_timeframe
-    from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
+    import signal
 
-    console.print("[dim]Fetching candles synchronously...[/dim]")
-    all_bars: list[Bar] = []
-    instrument = InstrumentKey(exchange=exchange.lower(), market=market.lower(), symbol=symbol.upper())
-    parsed_timeframe = parse_timeframe(timeframe)
-    current_start = start_ms
-    chunk_size = 1000
-    url = "https://api.binance.com/api/v3/klines"
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+    from openpine.data.orchestrator import DataCoverageError, DataOrchestrator
+    from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 
-    t0 = _time.time()
-    while current_start < end_ms:
-        if _time.time() - t0 > timeout:
-            console.print(f"[red]Backfill timed out after {timeout}s[/red]")
-            console.print(f"[yellow]Fetched {len(all_bars)} bars so far[/yellow]")
-            return False
+    class BackfillTimeoutError(TimeoutError):
+        pass
 
-        params = {
-            "symbol": symbol.upper(),
-            "interval": timeframe,
-            "startTime": current_start,
-            "endTime": end_ms,
-            "limit": chunk_size,
-        }
-        try:
-            resp = requests.get(url, params=params, timeout=30)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as exc:
-            console.print(f"[red]Fetch failed: {exc}[/red]")
-            return False
+    def _raise_timeout(signum, frame):
+        raise BackfillTimeoutError
 
-        if not data:
-            break
+    console.print("[dim]Fetching candles through marketdata-provider...[/dim]")
+    query = BarQuery(
+        instrument=InstrumentKey(exchange=exchange.lower(), market=market.lower(), symbol=symbol.upper()),
+        timeframe=parse_timeframe(timeframe),
+        start_ms=start_ms,
+        end_ms=end_ms,
+        source="auto",
+        gap_policy="fail",
+    )
 
-        for row in data:
-            all_bars.append(_binance_kline_to_bar(
-                row,
-                instrument=instrument,
-                timeframe=parsed_timeframe,
-            ))
+    previous_handler = None
+    try:
+        previous_handler = signal.signal(signal.SIGALRM, _raise_timeout) if timeout > 0 else None
+        if timeout > 0:
+            signal.setitimer(signal.ITIMER_REAL, timeout)
+        provider = create_local_marketdata_provider_adapter()
+        series = DataOrchestrator(provider=provider).load_bars(query)
+    except BackfillTimeoutError:
+        console.print(f"[red]Backfill timed out after {timeout}s[/red]")
+        return False
+    except DataCoverageError as exc:
+        console.print(f"[red]Backfill failed:[/red] {exc}")
+        return False
+    except Exception as exc:
+        console.print(f"[red]Backfill failed:[/red] {exc}")
+        return False
+    finally:
+        if timeout > 0:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            if previous_handler is not None:
+                signal.signal(signal.SIGALRM, previous_handler)
 
-        current_start = int(data[-1][6]) + 1
-        if len(data) < chunk_size:
-            break
-
-    if not all_bars:
+    if not series.bars:
         console.print("[yellow]No candles fetched[/yellow]")
         return False
 
-    query = BarQuery(
-        instrument=instrument,
-        timeframe=parsed_timeframe,
-        start_ms=start_ms,
-        end_ms=end_ms,
-        source="storage",
-    )
-    try:
-        result = DataOrchestrator().store_bars(
-            BarSeries(
-                query=query,
-                bars=tuple(all_bars),
-                coverage=DataOrchestrator.coverage_for_series(query, tuple(all_bars), "provider"),
-            )
-        )
-    except StorageUnavailableError as exc:
-        console.print(f"[red]Backfill persist failed:[/red] {exc}")
-        return False
-    console.print(f"[green]Backfill complete: {result.rows_written} candles written[/green]")
+    console.print(f"[green]Backfill complete: {len(series.bars)} candles available[/green]")
     return True
 
 
@@ -360,7 +320,7 @@ def data_backfill(
     assert end_ms is not None
 
     if wait:
-        _run_sync_binance_backfill(
+        _run_sync_marketdata_backfill(
             symbol=symbol,
             timeframe=timeframe,
             exchange=exchange,

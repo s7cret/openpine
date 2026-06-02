@@ -227,16 +227,20 @@ def test_data_doctor_cli_uses_orchestrator_boundary() -> None:
     assert "pd.read_parquet" not in doctor_source
 
 
-def test_data_backfill_wait_uses_orchestrator_store_boundary() -> None:
+def test_data_backfill_wait_uses_orchestrator_provider_boundary() -> None:
     source = (ROOT / "cli" / "data.py").read_text(encoding="utf-8")
     backfill_start = source.index('@data.command("backfill")')
     parallel_start = source.index('@data.command("parallel-backfill")')
-    helper_start = source.index("def _run_sync_binance_backfill")
+    helper_start = source.index("def _run_sync_marketdata_backfill")
     helper_end = source.index("@click.group()")
     backfill_source = source[backfill_start:parallel_start] + source[helper_start:helper_end]
 
     assert "DataOrchestrator" in backfill_source
-    assert "store_bars" in backfill_source
+    assert "create_local_marketdata_provider_adapter" in backfill_source
+    assert "load_bars" in backfill_source
+    assert 'source="auto"' in backfill_source
+    assert "requests" not in backfill_source
+    assert "api.binance.com" not in backfill_source
     assert "CandleStorage" not in backfill_source
     assert "write_candles" not in backfill_source
     assert "WriteMode" not in backfill_source

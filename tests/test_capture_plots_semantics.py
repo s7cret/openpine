@@ -394,9 +394,8 @@ def test_strategy_backtest_data_and_declaration_helpers():
     assert decl_args == {"initial_capital": 50_000}
 
 
-def test_data_backfill_helpers_parse_dates_and_klines():
+def test_data_backfill_helpers_parse_dates():
     from openpine.cli.data import (
-        _binance_kline_to_bar,
         _parse_cli_ymd_ms,
         _parse_data_backfill_window,
     )
@@ -408,25 +407,54 @@ def test_data_backfill_helpers_parse_dates_and_klines():
         to_date=None,
         now_ms=1_800_000_000_000,
     )
-    bar = _binance_kline_to_bar(
-        [1000, "1.0", "2.0", "0.5", "1.5", "10.0", 1999],
-        instrument="instrument",
-        timeframe="15m",
-    )
 
     assert start_ms == 1_704_056_400_000
     assert error is None
     assert bad_ms is None
     assert bad_error == "Invalid --from date format: 2024/01/01 (use YYYY-MM-DD)"
     assert window == (1_704_056_400_000, 1_800_000_000_000, None)
-    assert bar.instrument == "instrument"
-    assert bar.timeframe == "15m"
-    assert bar.time == 1000
-    assert bar.time_close == 1999
-    assert bar.open == 1.0
-    assert bar.close == 1.5
-    assert bar.volume == 10.0
-    assert bar.closed is True
+
+
+def test_data_backfill_wait_uses_marketdata_orchestrator(monkeypatch):
+    from openpine.cli.data import _run_sync_marketdata_backfill
+
+    provider = object()
+    captured = {}
+
+    class FakeOrchestrator:
+        def __init__(self, provider=None):
+            captured["provider"] = provider
+
+        def load_bars(self, query):
+            captured["query"] = query
+            return SimpleNamespace(bars=[object(), object()])
+
+    monkeypatch.setattr(
+        "openpine.data.provider_adapter.create_local_marketdata_provider_adapter",
+        lambda: provider,
+    )
+    monkeypatch.setattr("openpine.data.orchestrator.DataOrchestrator", FakeOrchestrator)
+
+    messages: list[tuple] = []
+    ok = _run_sync_marketdata_backfill(
+        symbol="btcusdt",
+        timeframe="15m",
+        exchange="BINANCE",
+        market="USDM",
+        start_ms=100,
+        end_ms=200,
+        timeout=0,
+        console=SimpleNamespace(print=lambda *args, **kwargs: messages.append(args)),
+    )
+
+    assert ok is True
+    assert captured["provider"] is provider
+    assert captured["query"].instrument.exchange == "binance"
+    assert captured["query"].instrument.market == "usdm"
+    assert captured["query"].instrument.symbol == "BTCUSDT"
+    assert captured["query"].source == "auto"
+    assert captured["query"].gap_policy == "fail"
+    assert "2 candles available" in messages[-1][0]
 
 
 def test_doctor_writable_dir_helper_reports_success_and_failure(tmp_path):
