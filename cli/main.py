@@ -143,6 +143,10 @@ def _build_strategy_backtest_config(
         "max_pre_bars": warmup_bars,
         "warmup_metadata": {"recommended_pre_bars_raw": warmup_bars} if warmup_bars > 0 else None,
         "export_resume_state": True,
+        "content_hash_enabled": False,
+        "collect_events": False,
+        "collect_order_lifecycle": False,
+        "capture_plots": capture_plots,
         "plot_from_ms": capture_from_ms if capture_plots else None,
         "plot_to_ms": capture_to_ms if capture_plots else None,
     }

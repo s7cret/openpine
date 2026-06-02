@@ -46,6 +46,10 @@ class BacktestRunConfig:
     warmup_metadata: dict | None = None
     export_resume_state: bool = False
     resume_validation_policy: str = "strict"
+    content_hash_enabled: bool = True
+    collect_events: bool = True
+    collect_order_lifecycle: bool = True
+    capture_plots: bool = False
     plot_from_ms: int | None = None
     plot_to_ms: int | None = None
 
@@ -279,6 +283,9 @@ class BacktestEngineAdapter:
             warmup_metadata=config.warmup_metadata,
             export_resume_state=config.export_resume_state,
             resume_validation_policy=config.resume_validation_policy,
+            content_hash_enabled=config.content_hash_enabled,
+            collect_events=config.collect_events,
+            collect_order_lifecycle=config.collect_order_lifecycle,
         )
         setattr(engine_config, "exchange", config.exchange)
         setattr(engine_config, "market_type", config.market_type)
@@ -286,6 +293,7 @@ class BacktestEngineAdapter:
         runtime_kwargs = {
             "symbol": config.symbol,
             "timeframe": config.timeframe,
+            "capture_plots": config.capture_plots,
             "plot_from_ms": config.plot_from_ms,
             "plot_to_ms": config.plot_to_ms,
         }
@@ -293,6 +301,9 @@ class BacktestEngineAdapter:
             runtime_kwargs["data_provider"] = runtime_data_provider
         if progress_callback is not None:
             runtime_kwargs["progress_callback"] = progress_callback
+        setattr(strategy_class, "runtime_capture_plots", config.capture_plots)
+        setattr(strategy_class, "runtime_plot_from_ms", config.plot_from_ms)
+        setattr(strategy_class, "runtime_plot_to_ms", config.plot_to_ms)
 
         result = engine.run(
             strategy_class,
