@@ -597,6 +597,8 @@ def _prepare_strategy_backtest_runtime(strategy_class, console):
 
 
 def _build_progress_callback(*, bars_total: int, console, progress_every: int | None = None):
+    if progress_every == 0:
+        return None
     progress_every = max(1, progress_every if progress_every is not None else bars_total // 20)
     state = {"last_progress": 0}
 
@@ -770,6 +772,8 @@ def _execute_indicator_plot_runtime(
             "plot_from_ms": compare_from_ms,
             "plot_to_ms": compare_to_ms,
             "progress_callback": progress_callback,
+            "tv_export_barstate": True,
+            "normalize_time_close_exclusive": True,
         },
         params={},
         is_indicator=True,
@@ -1467,6 +1471,189 @@ def _build_indicator_plot_run_meta(
 def cli() -> None:
     """OpenPine Trading Platform CLI."""
     pass
+
+
+def _auto_pine_source_name(source_path: Path) -> str:
+    stem = source_path.stem
+    first = stem.split("_", 1)[0]
+    if first.isdigit():
+        return f"po_{int(first):04d}_{stem}"
+    return f"po_{stem}"
+
+
+def _detect_pine_source_kind(source_path: Path) -> str:
+    import re as _re
+
+    text = source_path.read_text(encoding="utf-8", errors="ignore")
+    if _re.search(r"\bstrategy\s*\(", text):
+        return "strategy"
+    if _re.search(r"\bindicator\s*\(", text) or _re.search(r"\bstudy\s*\(", text):
+        return "indicator"
+    raise click.ClickException("Cannot detect Pine source kind: expected indicator(...) or strategy(...)")
+
+
+def _run_openpine_cli(args: list[str]) -> str:
+    import subprocess as _subprocess
+
+    cmd = [sys.executable, "-m", "openpine.cli.main", *args]
+    result = _subprocess.run(cmd, text=True, capture_output=True)
+    if result.stdout:
+        console.print(result.stdout.rstrip())
+    if result.stderr:
+        console.print(result.stderr.rstrip(), style="dim")
+    if result.returncode != 0:
+        details = (result.stdout + "\n" + result.stderr).strip()
+        raise click.ClickException(f"Command failed: {' '.join(args)}\n{details}")
+    return result.stdout
+
+
+@cli.command("run")
+@click.argument("source_path", type=click.Path(exists=True, dir_okay=False))
+@click.option("--symbol", required=True, help="Symbol, e.g. BTCUSDT")
+@click.option("--timeframe", required=True, help="Chart timeframe, e.g. 15m")
+@click.option("--exchange", default="binance", show_default=True)
+@click.option("--market-type", default="spot", show_default=True)
+@click.option("--from", "from_date", required=True, help="Calculation start date")
+@click.option("--to", "to_date", default=None, help="Calculation end date")
+@click.option("--history-from", default=None, help="Strategy history start before --from")
+@click.option("--compare-from", default=None, help="Optional export/compare window start")
+@click.option("--compare-to", default=None, help="Optional export/compare window end")
+@click.option("--output", "output_dir", type=click.Path(file_okay=False), required=True)
+@click.option("--tv-chart", type=click.Path(dir_okay=False), help="Optional TradingView chart CSV")
+@click.option("--tv-trades", type=click.Path(dir_okay=False), help="Optional TradingView trades CSV")
+@click.option("--tv-equity", type=click.Path(dir_okay=False), help="Optional TradingView equity CSV")
+@click.option("--capture-plots", is_flag=True, help="Capture strategy plots")
+@click.option("--gap-policy", default="fail", show_default=True, type=click.Choice(["fail", "allow_with_metadata"]))
+@click.option("--progress-every", default=10_000, show_default=True)
+def run_pine_file(
+    source_path: str,
+    symbol: str,
+    timeframe: str,
+    exchange: str,
+    market_type: str,
+    from_date: str,
+    to_date: str | None,
+    history_from: str | None,
+    compare_from: str | None,
+    compare_to: str | None,
+    output_dir: str,
+    tv_chart: str | None,
+    tv_trades: str | None,
+    tv_equity: str | None,
+    capture_plots: bool,
+    gap_policy: str,
+    progress_every: int,
+) -> None:
+    """Run a Pine file through the correct indicator or strategy CLI path."""
+    source = Path(source_path)
+    name = _auto_pine_source_name(source)
+    kind = _detect_pine_source_kind(source)
+    output = Path(output_dir)
+    console.print(f"[bold]OpenPine run[/bold] kind={kind} source={source} name={name}")
+
+    try:
+        _run_openpine_cli(["pine", "pine-add", name, str(source)])
+    except click.ClickException as exc:
+        message = str(exc).lower()
+        if "already" not in message and "unique constraint failed" not in message:
+            console.print(f"[dim]pine-add skipped/failed; continuing with existing source if present: {exc}[/dim]")
+    _run_openpine_cli(["pine", "pine-compile", name])
+
+    if kind == "indicator":
+        openpine_out = output / "openpine"
+        args = [
+            "pine",
+            "run-plots",
+            name,
+            "--symbol",
+            symbol,
+            "--timeframe",
+            timeframe,
+            "--exchange",
+            exchange,
+            "--market-type",
+            market_type,
+            "--from",
+            from_date,
+            "--output",
+            str(openpine_out),
+            "--progress-every",
+            str(progress_every),
+        ]
+        if to_date:
+            args.extend(["--to", to_date])
+        if compare_from:
+            args.extend(["--compare-from", compare_from])
+        if compare_to:
+            args.extend(["--compare-to", compare_to])
+        _run_openpine_cli(args)
+        if tv_chart:
+            _run_openpine_cli(
+                [
+                    "pine",
+                    "compare-tv",
+                    name,
+                    "--openpine-plots",
+                    str(openpine_out / "plots.csv"),
+                    "--tv-chart",
+                    tv_chart,
+                    "--output",
+                    str(output / "compare"),
+                ]
+            )
+        return
+
+    create_out = _run_openpine_cli(
+        [
+            "strategy",
+            "create",
+            "--pine",
+            name,
+            "--symbol",
+            symbol,
+            "--timeframe",
+            timeframe,
+            "--exchange",
+            exchange,
+            "--market-type",
+            market_type,
+            "--mode",
+            "backtest",
+        ]
+    )
+    strategy_id = None
+    for line in create_out.splitlines():
+        if "Strategy created:" in line:
+            strategy_id = line.rsplit(":", 1)[-1].strip()
+            break
+    if not strategy_id:
+        raise click.ClickException("Could not parse created strategy id")
+
+    backtest_args = ["strategy", "backtest", strategy_id, "--from", from_date, "--gap-policy", gap_policy]
+    if to_date:
+        backtest_args.extend(["--to", to_date])
+    if history_from:
+        backtest_args.extend(["--history-from", history_from])
+    if capture_plots or tv_chart:
+        backtest_args.append("--capture-plots")
+        if compare_from:
+            backtest_args.extend(["--capture-from", compare_from])
+        if compare_to:
+            backtest_args.extend(["--capture-to", compare_to])
+    _run_openpine_cli(backtest_args)
+    if any((tv_chart, tv_trades, tv_equity)):
+        compare_args = ["strategy", "compare-tv", strategy_id, "--output", str(output / "compare")]
+        if tv_chart:
+            compare_args.extend(["--tv-chart", tv_chart])
+        if tv_trades:
+            compare_args.extend(["--tv-trades", tv_trades])
+        if tv_equity:
+            compare_args.extend(["--tv-equity", tv_equity])
+        if compare_from:
+            compare_args.extend(["--compare-from", compare_from])
+        if compare_to:
+            compare_args.extend(["--compare-to", compare_to])
+        _run_openpine_cli(compare_args)
 
 
 cli.add_command(batch)
