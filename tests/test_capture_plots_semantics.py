@@ -440,6 +440,22 @@ def test_cli_bar_query_helper_normalizes_instrument_identity():
     assert query.timeframe == "parsed:15m"
     assert query.start_ms == 100
     assert query.end_ms == 200
+    assert query.gap_policy == "fail"
+
+    allow_query = _build_cli_bar_query(
+        symbol="btcusdt",
+        exchange="binance",
+        market_type="SPOT",
+        timeframe="15m",
+        start_ms=100,
+        end_ms=200,
+        bar_query_cls=lambda **kwargs: SimpleNamespace(**kwargs),
+        instrument_key_cls=lambda **kwargs: SimpleNamespace(**kwargs),
+        parse_timeframe_func=lambda value: f"parsed:{value}",
+        gap_policy="allow_with_metadata",
+    )
+
+    assert allow_query.gap_policy == "allow_with_metadata"
 
 
 def test_strategy_backtest_data_and_declaration_helpers():

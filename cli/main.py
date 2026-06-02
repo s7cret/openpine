@@ -378,6 +378,7 @@ def _prepare_strategy_backtest_inputs(
     capture_to: str | None,
     history_from: str | None,
     warmup_bars: int,
+    gap_policy: str,
     now_ms: int,
     registry,
     deps,
@@ -430,6 +431,7 @@ def _prepare_strategy_backtest_inputs(
         parse_timeframe_func=deps.parse_timeframe,
         orchestrator_cls=deps.DataOrchestrator,
         provider_factory=deps.create_local_marketdata_provider_adapter,
+        gap_policy=gap_policy,
         console=console,
     )
     _exit_if_no_strategy_bars(
@@ -1090,6 +1092,7 @@ def _load_strategy_backtest_bars(
     parse_timeframe_func,
     orchestrator_cls,
     provider_factory,
+    gap_policy: str = "fail",
     console,
 ):
     import time as _time
@@ -1104,6 +1107,7 @@ def _load_strategy_backtest_bars(
         bar_query_cls=bar_query_cls,
         instrument_key_cls=instrument_key_cls,
         parse_timeframe_func=parse_timeframe_func,
+        gap_policy=gap_policy,
     )
     orch = orchestrator_cls()
     provider = provider_factory()
@@ -1377,6 +1381,7 @@ def _build_cli_bar_query(
     bar_query_cls,
     instrument_key_cls,
     parse_timeframe_func,
+    gap_policy: str = "fail",
 ):
     return bar_query_cls(
         instrument=instrument_key_cls(
@@ -1387,6 +1392,7 @@ def _build_cli_bar_query(
         timeframe=parse_timeframe_func(timeframe),
         start_ms=start_ms,
         end_ms=end_ms,
+        gap_policy=gap_policy,
     )
 
 
@@ -3597,6 +3603,13 @@ def strategy_remove(strategy_id: str) -> None:
 @click.option("--capture-to", default=None, help="Optional plot capture window end")
 @click.option("--history-from", default=None, help="Load calculation history before --from")
 @click.option("--warmup-bars", default=0, type=int, help="Load N bars before --from as prehistory")
+@click.option(
+    "--gap-policy",
+    default="fail",
+    show_default=True,
+    type=click.Choice(["fail", "allow_with_metadata"]),
+    help="Market data coverage policy",
+)
 def strategy_backtest(
     strategy_id: str,
     from_date: str | None,
@@ -3606,6 +3619,7 @@ def strategy_backtest(
     capture_to: str | None,
     history_from: str | None,
     warmup_bars: int,
+    gap_policy: str,
 ) -> None:
     """Run backtest for a strategy."""
     import time as _time
@@ -3649,6 +3663,7 @@ def strategy_backtest(
             capture_to=capture_to,
             history_from=history_from,
             warmup_bars=max(0, warmup_bars),
+            gap_policy=gap_policy,
             now_ms=int(_time_module.time() * 1000),
             registry=registry,
             deps=deps,
