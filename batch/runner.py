@@ -277,7 +277,7 @@ def load_calculation_bars(
             timeframe=parse_timeframe(chart.timeframe),
             start_ms=calculation_from,
             end_ms=calculation_to,
-            gap_policy="allow_with_metadata",
+            gap_policy="fail",
         )
 
         t0 = time.perf_counter()

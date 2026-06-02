@@ -37,6 +37,21 @@ def _bar(time_ms: int) -> Bar:
     )
 
 
+def _open_bar(time_ms: int) -> Bar:
+    return Bar(
+        instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+        timeframe=parse_timeframe("1m"),
+        time=time_ms,
+        time_close=time_ms + 60_000,
+        open=1.0,
+        high=2.0,
+        low=0.5,
+        close=1.5,
+        volume=None,
+        closed=False,
+    )
+
+
 class _Storage:
     def __init__(self, bars: tuple[Bar, ...] = (), *, write_success: bool = True) -> None:
         self.bars = bars
@@ -107,6 +122,14 @@ def test_provider_source_requires_configured_provider() -> None:
     orchestrator = DataOrchestrator(candle_store=_Storage(()))
 
     with pytest.raises(ProviderUnavailableError):
+        orchestrator.load_bars(_query(source="provider"))
+
+
+def test_provider_source_rejects_open_candles() -> None:
+    provider = _Provider((_open_bar(0), _bar(60_000), _bar(120_000)))
+    orchestrator = DataOrchestrator(candle_store=_Storage(()), provider=provider)
+
+    with pytest.raises(IncompleteCoverageError, match="open candle"):
         orchestrator.load_bars(_query(source="provider"))
 
 

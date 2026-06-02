@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import structlog
-from marketdata_provider import create_provider
+from marketdata_provider import create_footprint_provider, create_provider
 from marketdata_provider.config import MarketDataConfig
 from marketdata_provider.contracts import (
     Bar,
@@ -20,7 +20,7 @@ from marketdata_provider.contracts import (
 
 log = structlog.get_logger(__name__)
 
-REQUIRED_MARKETDATA_PROVIDER_VERSION = "2.17.0"
+REQUIRED_MARKETDATA_PROVIDER_VERSION = "2.18.0"
 
 
 def ensure_marketdata_provider_version() -> None:
@@ -143,8 +143,23 @@ def create_local_marketdata_provider_adapter(
     return create_provider(cfg)
 
 
+def create_local_footprint_provider_adapter(
+    config: MarketDataConfig | None = None,
+    *,
+    cache_dir: Path | str | None = None,
+):
+    """Create the canonical marketdata-provider footprint adapter for OpenPine."""
+
+    ensure_marketdata_provider_version()
+    cfg = config or MarketDataConfig()
+    if cache_dir is not None:
+        cfg = replace(cfg, storage=replace(cfg.storage, cache_dir=Path(cache_dir)))
+    return create_footprint_provider(cfg)
+
+
 __all__ = [
     "create_local_marketdata_provider_adapter",
+    "create_local_footprint_provider_adapter",
     "ensure_marketdata_provider_version",
     "normalize_provider_bar",
 ]

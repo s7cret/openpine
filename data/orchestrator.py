@@ -148,7 +148,9 @@ class DataOrchestrator:
     def _load_provider(self, query: BarQuery) -> BarSeries:
         if self._provider is None:
             raise ProviderUnavailableError("market data provider is not configured")
-        return self._provider.fetch_bars(query)
+        series = self._provider.fetch_bars(query)
+        self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
+        return series
 
     def _load_missing_from_provider(self, query: BarQuery, intervals: tuple[tuple[int, int], ...]) -> BarSeries:
         fetched: list[Bar] = []
@@ -183,6 +185,8 @@ class BarSeriesValidator:
             raise IncompleteCoverageError(f"duplicate bar timestamps: {coverage.duplicate_timestamps}")
         if coverage.status == "unordered":
             raise IncompleteCoverageError("bar series is not ordered by timestamp")
+        if any(not bar.closed for bar in series.bars):
+            raise IncompleteCoverageError("open candle is not allowed in historical bar series")
         gaps_allowed = series.query.gap_policy == "allow_with_metadata" if allow_gaps is None else allow_gaps
         if coverage.missing_intervals and not gaps_allowed:
             raise IncompleteCoverageError(f"missing bar intervals: {coverage.missing_intervals}")
