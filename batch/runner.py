@@ -42,6 +42,7 @@ from openpine.batch.tv_corpus import (
     openpine_name,
     strategy_name,
 )
+from openpine.exchange_metadata import default_qty_step
 
 LIBRARY_NAMES: tuple[str, ...] = (
     "openpine",
@@ -617,10 +618,7 @@ def _build_strategy_run_config(
 
 
 def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | None:
-    if exchange.lower() == "binance" and market_type.lower() == "spot":
-        if symbol.upper() in {"BTCUSD", "BTCUSDT"}:
-            return 1e-5
-    return None
+    return default_qty_step(exchange, market_type, symbol)
 
 
 def run_strategy(

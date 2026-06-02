@@ -182,13 +182,21 @@ def test_export_strategy_result_filters_all_outputs_to_visible_window(tmp_path):
 
     assert exported.plots_rows == 1
     assert exported.trades_rows == 2
+    assert exported.all_trades_rows == 4
     assert exported.equity_rows == 1
     assert exported.initial_equity_at_export_start == 9900.0
 
     plots = pd.read_csv(tmp_path / "plots.csv")
     trades = pd.read_csv(tmp_path / "trades.csv")
+    all_trades = pd.read_csv(tmp_path / "all_trades.csv")
     equity = pd.read_csv(tmp_path / "equity_curve.csv")
 
     assert plots["bar_time"].tolist() == [2000]
     assert trades["trade_id"].tolist() == ["visible-close", "visible-open"]
+    assert all_trades["trade_id"].tolist() == [
+        "prehistory-close",
+        "visible-close",
+        "visible-open",
+        "post-open",
+    ]
     assert equity["bar_time_ms"].tolist() == [2000]

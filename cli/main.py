@@ -19,6 +19,10 @@ from openpine.cli.batch import batch
 from openpine.cli.data import data
 from openpine.cli.ops import jobs, queue, service, workers
 from openpine.cli.storage import storage
+from openpine.exchange_metadata import (
+    default_qty_rounding_mode as metadata_default_qty_rounding_mode,
+)
+from openpine.exchange_metadata import default_qty_step
 from openpine.jobs import Job, JobScheduler, JobStatus, JobType
 
 # Global instances — created once at module load
@@ -40,15 +44,11 @@ def _fmt_utc_ms_as(timestamp_ms: int, fmt: str) -> str:
 
 
 def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | None:
-    """Return observed TV quantity precision for common crypto spot symbols."""
-    if exchange.lower() == "binance" and market_type.lower() == "spot":
-        if symbol.upper() in {"BTCUSD", "BTCUSDT"}:
-            return 1e-5
-    return None
+    return default_qty_step(exchange, market_type, symbol)
 
 
 def _default_qty_rounding_mode(exchange: str, market_type: str, symbol: str) -> str:
-    return "truncate" if _default_qty_step(exchange, market_type, symbol) is not None else "none"
+    return metadata_default_qty_rounding_mode(exchange, market_type, symbol)
 
 
 def _parse_cli_date_ms(value: str | None, default: int) -> int:
