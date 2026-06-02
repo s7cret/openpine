@@ -4186,7 +4186,7 @@ def _write_strategy_export_files(
         parse_time_ms,
         write_json,
     )
-    from openpine.storage import ARTIFACT_TYPE_PLOT_OUTPUTS
+    from openpine.storage import ARTIFACT_TYPE_EQUITY_CURVE, ARTIFACT_TYPE_PLOT_OUTPUTS
 
     output_path.mkdir(parents=True, exist_ok=True)
     compare_from_ms = parse_time_ms(compare_from)
@@ -4217,6 +4217,23 @@ def _write_strategy_export_files(
         rows["trades"] = export_trades(trades, trades_path)
         exported["trades"] = str(trades_path)
 
+    equity_artifact = next(
+        (artifact for artifact in artifacts if artifact.artifact_type == ARTIFACT_TYPE_EQUITY_CURVE),
+        None,
+    )
+    if equity_artifact:
+        import pandas as _pd
+
+        equity_path = output_path / "equity_curve.csv"
+        equity_df = _pd.read_parquet(equity_artifact.path)
+        if compare_from_ms is not None and "time" in equity_df.columns:
+            equity_df = equity_df[equity_df["time"] >= compare_from_ms]
+        if compare_to_ms is not None and "time" in equity_df.columns:
+            equity_df = equity_df[equity_df["time"] < compare_to_ms]
+        equity_df.to_csv(equity_path, index=False)
+        rows["equity"] = len(equity_df)
+        exported["equity"] = str(equity_path)
+
     if not no_metrics:
         metrics_path = output_path / "metrics.json"
         run_payload = dict(run.__dict__)
@@ -4240,6 +4257,302 @@ def _write_strategy_export_files(
         exported["run_meta"] = run_meta_export
 
     return exported, rows
+
+
+def _compare_csv_float(value) -> float:
+    import math as _math
+
+    if value is None:
+        return _math.nan
+    text = str(value).strip()
+    if not text or text.lower() in {"na", "nan", "none", "null"}:
+        return _math.nan
+    try:
+        return float(text)
+    except Exception:
+        return _math.nan
+
+
+def _compare_csv_time_ms(value) -> int | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        raw = int(float(text))
+    except Exception:
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except Exception:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return int(parsed.timestamp() * 1000)
+    return raw * 1000 if abs(raw) < 10_000_000_000 else raw
+
+
+def _read_compare_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
+    import csv as _csv
+
+    with path.open(newline="", encoding="utf-8-sig", errors="replace") as f:
+        reader = _csv.DictReader(f)
+        return list(reader.fieldnames or []), list(reader)
+
+
+def _compare_rows_by_time(
+    *,
+    tv_path: Path,
+    op_path: Path,
+    tv_time_column: str,
+    op_time_column: str,
+    exclude_columns: set[str],
+    abs_tol: float,
+    rel_tol: float,
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    import math as _math
+    import statistics as _statistics
+
+    tv_fields, tv_rows = _read_compare_csv(tv_path)
+    op_fields, op_rows = _read_compare_csv(op_path)
+    common_columns = sorted((set(tv_fields) & set(op_fields)) - exclude_columns)
+
+    tv_by_time = {
+        ts: row
+        for row in tv_rows
+        if (ts := _compare_csv_time_ms(row.get(tv_time_column))) is not None
+    }
+    op_by_time = {
+        ts: row
+        for row in op_rows
+        if (ts := _compare_csv_time_ms(row.get(op_time_column))) is not None
+    }
+    common_times = sorted(set(tv_by_time) & set(op_by_time))
+
+    total = 0
+    mismatches = 0
+    nan_mismatches = 0
+    max_abs_delta = 0.0
+    worst: dict[str, object] | None = None
+    column_rows: list[dict[str, object]] = []
+
+    for column in common_columns:
+        col_total = 0
+        col_mismatches = 0
+        col_nan = 0
+        col_max = 0.0
+        deltas: list[float] = []
+        first_bad: dict[str, object] | None = None
+        for ts in common_times:
+            tv_value = _compare_csv_float(tv_by_time[ts].get(column))
+            op_value = _compare_csv_float(op_by_time[ts].get(column))
+            col_total += 1
+            total += 1
+            if _math.isnan(tv_value) != _math.isnan(op_value):
+                col_nan += 1
+                nan_mismatches += 1
+            delta = abs(op_value - tv_value) if not (_math.isnan(tv_value) or _math.isnan(op_value)) else _math.nan
+            if not _math.isnan(delta):
+                deltas.append(delta)
+                col_max = max(col_max, delta)
+                max_abs_delta = max(max_abs_delta, delta)
+            equal = (
+                (_math.isnan(tv_value) and _math.isnan(op_value))
+                or (
+                    not (_math.isnan(tv_value) or _math.isnan(op_value))
+                    and _math.isclose(tv_value, op_value, abs_tol=abs_tol, rel_tol=rel_tol)
+                )
+            )
+            if not equal:
+                col_mismatches += 1
+                mismatches += 1
+                bad = {
+                    "time_ms": ts,
+                    "column": column,
+                    "tv": None if _math.isnan(tv_value) else tv_value,
+                    "openpine": None if _math.isnan(op_value) else op_value,
+                    "abs_delta": None if _math.isnan(delta) else delta,
+                }
+                if first_bad is None:
+                    first_bad = bad
+                if worst is None or (bad["abs_delta"] is not None and bad["abs_delta"] > (worst.get("abs_delta") or -1)):
+                    worst = bad
+        column_rows.append(
+            {
+                "column": column,
+                "total": col_total,
+                "mismatches": col_mismatches,
+                "nan_mismatches": col_nan,
+                "max_abs_delta": col_max,
+                "mean_abs_delta": _statistics.fmean(deltas) if deltas else 0.0,
+                "first_bad": first_bad,
+            }
+        )
+
+    status = "match" if total and mismatches == 0 else "mismatch"
+    classification: list[str] = []
+    if not common_columns:
+        classification.append("no_common_columns")
+    if set(tv_by_time) - set(op_by_time) or set(op_by_time) - set(tv_by_time):
+        classification.append("time_window_mismatch")
+    if total == 0:
+        classification.append("no_comparable_cells")
+    elif mismatches:
+        classification.append("value_mismatch")
+    summary = {
+        "status": status,
+        "classification": "+".join(classification) if classification else "match",
+        "tv_file": str(tv_path),
+        "openpine_file": str(op_path),
+        "tv_rows": len(tv_rows),
+        "openpine_rows": len(op_rows),
+        "common_times": len(common_times),
+        "missing_times_in_openpine": len(set(tv_by_time) - set(op_by_time)),
+        "extra_times_in_openpine": len(set(op_by_time) - set(tv_by_time)),
+        "common_columns": len(common_columns),
+        "missing_columns_in_openpine": len((set(tv_fields) - exclude_columns) - set(op_fields)),
+        "extra_columns_in_openpine": len((set(op_fields) - exclude_columns) - set(tv_fields)),
+        "total_cells": total,
+        "mismatch_cells": mismatches,
+        "mismatch_ratio": (mismatches / total) if total else None,
+        "nan_mismatches": nan_mismatches,
+        "max_abs_delta": max_abs_delta,
+        "worst_column": (worst or {}).get("column"),
+        "worst_time_ms": (worst or {}).get("time_ms"),
+    }
+    top_columns = sorted(
+        [row for row in column_rows if row["mismatches"]],
+        key=lambda row: (row["mismatches"], row["max_abs_delta"]),
+        reverse=True,
+    )[:20]
+    return summary, top_columns
+
+
+def _write_strategy_tv_compare_report(output_path: Path, result: dict[str, object]) -> None:
+    import csv as _csv
+    import json as _json
+
+    output_path.mkdir(parents=True, exist_ok=True)
+    comparisons = result["comparisons"]
+    summary_csv = output_path / "comparison_summary.csv"
+    fields = [
+        "type",
+        "status",
+        "classification",
+        "tv_rows",
+        "openpine_rows",
+        "common_times",
+        "common_columns",
+        "total_cells",
+        "mismatch_cells",
+        "mismatch_ratio",
+        "max_abs_delta",
+        "worst_column",
+        "worst_time_ms",
+        "tv_file",
+        "openpine_file",
+    ]
+    with summary_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = _csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(comparisons)
+
+    (output_path / "comparison_summary.json").write_text(
+        _json.dumps(result, ensure_ascii=False, indent=2, default=str) + "\n",
+        encoding="utf-8",
+    )
+    lines = [
+        "# OpenPine vs TradingView Run Comparison",
+        "",
+        f"- Generated: {datetime.now(timezone.utc).isoformat()}",
+        f"- Strategy: `{result['strategy_id']}`",
+        f"- Run: `{result['run_id']}`",
+        f"- Abs tolerance: `{result['abs_tol']}`",
+        f"- Rel tolerance: `{result['rel_tol']}`",
+        "",
+        "## Summary",
+        "",
+    ]
+    for row in comparisons:
+        lines.append(
+            f"- `{row['type']}` {row['status']} {row['classification']} "
+            f"mismatch={row.get('mismatch_cells')}/{row.get('total_cells')} "
+            f"max_delta={row.get('max_abs_delta')} worst_col=`{row.get('worst_column')}`"
+        )
+    (output_path / "comparison_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _compare_strategy_run_with_tv_exports(
+    *,
+    strategy_id: str,
+    run,
+    exported: dict[str, str],
+    output_path: Path,
+    tv_chart: str | None,
+    tv_trades: str | None,
+    tv_equity: str | None,
+    abs_tol: float,
+    rel_tol: float,
+    include_base_columns: bool,
+) -> dict[str, object]:
+    exclude = set() if include_base_columns else {"time", "bar_time", "bar_index", "open", "high", "low", "close", "volume", "Volume"}
+    comparisons: list[dict[str, object]] = []
+    failures: list[dict[str, object]] = []
+    if tv_chart:
+        summary, top_columns = _compare_rows_by_time(
+            tv_path=Path(tv_chart),
+            op_path=Path(exported["plots"]),
+            tv_time_column="time",
+            op_time_column="bar_time",
+            exclude_columns=exclude,
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+        )
+        summary["type"] = "plots"
+        comparisons.append(summary)
+        if summary["status"] != "match":
+            failures.append({"type": "plots", "summary": summary, "top_columns": top_columns})
+    if tv_equity and "equity" in exported:
+        summary, top_columns = _compare_rows_by_time(
+            tv_path=Path(tv_equity),
+            op_path=Path(exported["equity"]),
+            tv_time_column="time",
+            op_time_column="time",
+            exclude_columns=set(),
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+        )
+        summary["type"] = "equity"
+        comparisons.append(summary)
+        if summary["status"] != "match":
+            failures.append({"type": "equity", "summary": summary, "top_columns": top_columns})
+    if tv_trades and "trades" in exported:
+        # Generic CSV comparison. TradingView localized trade exports often use
+        # different columns; in that case the report explicitly says there is no
+        # common schema instead of pretending the comparison is meaningful.
+        summary, top_columns = _compare_rows_by_time(
+            tv_path=Path(tv_trades),
+            op_path=Path(exported["trades"]),
+            tv_time_column="entry_time_ms",
+            op_time_column="entry_time_ms",
+            exclude_columns=set(),
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+        )
+        summary["type"] = "trades"
+        comparisons.append(summary)
+        if summary["status"] != "match":
+            failures.append({"type": "trades", "summary": summary, "top_columns": top_columns})
+    result = {
+        "strategy_id": strategy_id,
+        "run_id": run.run_id,
+        "abs_tol": abs_tol,
+        "rel_tol": rel_tol,
+        "comparisons": comparisons,
+        "failures": failures,
+    }
+    _write_strategy_tv_compare_report(output_path, result)
+    return result
 
 
 @strategy.command("export-run")
@@ -4302,6 +4615,100 @@ def strategy_export_run(
                 console.print(f"  {key}: {path}")
             for key, count in rows.items():
                 console.print(f"  {key}_rows: {count}")
+        finally:
+            bt_store.close()
+    finally:
+        registry.close()
+
+
+@strategy.command("compare-tv")
+@click.argument("strategy_id")
+@click.option("--run-id", help="Specific run ID (default: latest)")
+@click.option("--tv-chart", type=click.Path(dir_okay=False), help="TradingView chart/export CSV for plot comparison")
+@click.option("--tv-trades", type=click.Path(dir_okay=False), help="Optional TradingView trades CSV")
+@click.option("--tv-equity", type=click.Path(dir_okay=False), help="Optional TradingView equity CSV")
+@click.option("--output", "output_dir", type=click.Path(file_okay=False), required=True)
+@click.option("--compare-from", default=None, help="Optional export/compare window start")
+@click.option("--compare-to", default=None, help="Optional export/compare window end")
+@click.option("--abs-tol", default=1e-6, show_default=True, type=float)
+@click.option("--rel-tol", default=1e-9, show_default=True, type=float)
+@click.option("--include-base-columns", is_flag=True, help="Include OHLCV/time/base columns in plot comparison")
+def strategy_compare_tv(
+    strategy_id: str,
+    run_id: str | None,
+    tv_chart: str | None,
+    tv_trades: str | None,
+    tv_equity: str | None,
+    output_dir: str,
+    compare_from: str | None,
+    compare_to: str | None,
+    abs_tol: float,
+    rel_tol: float,
+    include_base_columns: bool,
+) -> None:
+    """Compare a saved backtest run against TradingView export CSV files."""
+    from openpine.registry import SQLiteStrategyRegistry
+    from openpine.storage import BacktestResultStore
+
+    if not any((tv_chart, tv_trades, tv_equity)):
+        console.print("[red]Pass at least one TV file: --tv-chart, --tv-trades, or --tv-equity[/red]")
+        sys.exit(1)
+
+    registry = SQLiteStrategyRegistry()
+    try:
+        try:
+            s = registry.get_strategy(strategy_id)
+        except KeyError:
+            console.print(f"[red]Strategy not found: {strategy_id}[/red]")
+            sys.exit(1)
+
+        bt_store = BacktestResultStore()
+        try:
+            run = bt_store.get_run(run_id) if run_id else bt_store.get_latest_run(strategy_id)
+            if not run:
+                console.print(f"[yellow]No backtest runs found for {strategy_id}[/yellow]")
+                sys.exit(1)
+
+            output_path = Path(output_dir)
+            openpine_output = output_path / "openpine"
+            artifacts = bt_store.list_artifacts(run.run_id)
+            trades = bt_store.list_trades(run.run_id)
+            exported, rows = _write_strategy_export_files(
+                strategy_id=strategy_id,
+                run=run,
+                artifacts=artifacts,
+                trades=trades,
+                output_path=openpine_output,
+                compare_from=compare_from,
+                compare_to=compare_to,
+                no_plots=tv_chart is None,
+                no_trades=tv_trades is None,
+                no_metrics=False,
+            )
+            result = _compare_strategy_run_with_tv_exports(
+                strategy_id=strategy_id,
+                run=run,
+                exported=exported,
+                output_path=output_path,
+                tv_chart=tv_chart,
+                tv_trades=tv_trades,
+                tv_equity=tv_equity,
+                abs_tol=abs_tol,
+                rel_tol=rel_tol,
+                include_base_columns=include_base_columns,
+            )
+
+            console.print(f"[green]TV comparison complete:[/green] {run.run_id}")
+            console.print(f"  strategy: {s.name}")
+            console.print(f"  output:   {output_path}")
+            for key, count in rows.items():
+                console.print(f"  openpine_{key}_rows: {count}")
+            for row in result["comparisons"]:
+                console.print(
+                    f"  {row['type']}: {row['status']} {row['classification']} "
+                    f"mismatch={row.get('mismatch_cells')}/{row.get('total_cells')} "
+                    f"max_delta={row.get('max_abs_delta')}"
+                )
         finally:
             bt_store.close()
     finally:

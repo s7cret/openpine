@@ -157,6 +157,32 @@ def test_cli_backtest_config_maps_tradingview_cash_commission_names():
     assert config.commission_type == "fixed_per_contract"
 
 
+def test_compare_rows_by_time_reports_value_mismatch(tmp_path):
+    from openpine.cli.main import _compare_rows_by_time
+
+    tv = tmp_path / "tv.csv"
+    op = tmp_path / "op.csv"
+    tv.write_text("time,open,PLOT\n1000,1,10\n2000,2,20\n", encoding="utf-8")
+    op.write_text("bar_time,bar_index,PLOT\n1000,0,10\n2000,1,21\n", encoding="utf-8")
+
+    summary, top_columns = _compare_rows_by_time(
+        tv_path=tv,
+        op_path=op,
+        tv_time_column="time",
+        op_time_column="bar_time",
+        exclude_columns={"time", "bar_time", "bar_index", "open"},
+        abs_tol=1e-6,
+        rel_tol=1e-9,
+    )
+
+    assert summary["status"] == "mismatch"
+    assert summary["classification"] == "value_mismatch"
+    assert summary["common_times"] == 2
+    assert summary["mismatch_cells"] == 1
+    assert summary["worst_column"] == "PLOT"
+    assert top_columns[0]["column"] == "PLOT"
+
+
 def test_cli_backtest_runtime_meta_and_progress_helpers():
     from openpine.cli.main import (
         _build_progress_callback,
