@@ -95,6 +95,7 @@ class StrategyRegistry(Protocol):
         exchange: str = "binance",
         market_type: str = "spot",
         price_type: str = "trade",
+        mode: str = "paper",
     ) -> StrategyInstance:
         """Register a new strategy instance."""
         ...
@@ -201,6 +202,7 @@ class SQLiteStrategyRegistry:
         exchange: str = "binance",
         market_type: str = "spot",
         price_type: str = "trade",
+        mode: str = "paper",
     ) -> StrategyInstance:
         """Register a new strategy instance."""
         now = int(time.time() * 1000)
@@ -221,6 +223,7 @@ class SQLiteStrategyRegistry:
             exchange=exchange,
             market_type=market_type,
             price_type=price_type,
+            mode=mode,
             created_at=now,
             updated_at=now,
         )

@@ -105,6 +105,10 @@ def _build_strategy_backtest_config(
     config_cls,
 ):
     visible_start_ms = requested_start_ms if requested_start_ms is not None else start_ms
+    commission_type = {
+        "cash_per_order": "fixed_per_order",
+        "cash_per_contract": "fixed_per_contract",
+    }.get(str(decl_args.get("commission_type", "none")), decl_args.get("commission_type", "none"))
     kwargs = {
         "symbol": strategy.symbol,
         "timeframe": strategy.timeframe,
@@ -115,10 +119,18 @@ def _build_strategy_backtest_config(
         "initial_capital": decl_args.get("initial_capital", 10000.0),
         "default_qty_type": decl_args.get("default_qty_type", "fixed"),
         "default_qty_value": decl_args.get("default_qty_value", 1.0),
-        "commission_type": decl_args.get("commission_type", "none"),
+        "commission_type": commission_type,
         "commission_value": decl_args.get("commission_value", 0.0),
+        "slippage": decl_args.get("slippage", 0.0),
+        "slippage_type": decl_args.get("slippage_type", "tick"),
         "exit_matching": decl_args.get("close_entries_rule", "fifo").upper(),
         "pyramiding": decl_args.get("pyramiding", 0),
+        "margin_long": decl_args.get("margin_long", 100.0),
+        "margin_short": decl_args.get("margin_short", 100.0),
+        "process_orders_on_close": bool(decl_args.get("process_orders_on_close", False)),
+        "calc_on_order_fills": bool(decl_args.get("calc_on_order_fills", False)),
+        "calc_on_every_tick": bool(decl_args.get("calc_on_every_tick", False)),
+        "use_bar_magnifier": bool(decl_args.get("use_bar_magnifier", False)),
         "qty_step": _default_qty_step(strategy.exchange, strategy.market_type, strategy.symbol),
         "qty_rounding_mode": _default_qty_rounding_mode(
             strategy.exchange,
@@ -575,18 +587,7 @@ def _build_strategy_backtest_run_request(
 
 
 def _prepare_strategy_backtest_runtime(strategy_class, console):
-    backend = None
-    selected_strategy_class = strategy_class
-    generated_ref = vars(strategy_class).get("generated_strategy_class_ref")
-    if generated_ref is not None:
-        selected_strategy_class = generated_ref
-        try:
-            from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
-
-            backend = PineRuntimeBackend()
-        except Exception as exc:
-            console.print(f"[yellow]Warning: cannot set up plot backend: {exc}[/yellow]")
-    return selected_strategy_class, backend
+    return strategy_class, None
 
 
 def _build_progress_callback(*, bars_total: int, console, progress_every: int | None = None):
@@ -3448,6 +3449,7 @@ def strategy_create(
             pine_id=source.id,
             exchange=exchange.lower(),
             market_type=market_type.lower(),
+            mode=mode,
         )
         # Set initial status based on mode
         initial_status = {

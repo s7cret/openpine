@@ -44,3 +44,25 @@ def test_sqlite_strategy_registry_persists_registered_strategy(tmp_path) -> None
     assert loaded.name == "ema-cross"
     assert loaded.market_type == "spot"
     assert loaded.params_json == '{"length": 14}'
+
+
+def test_sqlite_strategy_registry_persists_registered_strategy_mode(tmp_path) -> None:
+    db_path = tmp_path / "openpine.sqlite"
+    registry = SQLiteStrategyRegistry(db_path=db_path)
+    strategy = registry.register_strategy(
+        artifact_id="artifact-1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+        params={},
+        name="backtest-strategy",
+        mode="backtest",
+    )
+    registry.close()
+
+    reloaded = SQLiteStrategyRegistry(db_path=db_path)
+    try:
+        loaded = reloaded.get_strategy(strategy.strategy_id)
+    finally:
+        reloaded.close()
+
+    assert loaded.mode == "backtest"

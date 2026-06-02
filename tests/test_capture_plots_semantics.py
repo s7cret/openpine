@@ -44,8 +44,16 @@ def test_cli_backtest_config_helper_maps_declaration_values():
             ("default_qty_value", float),
             ("commission_type", str),
             ("commission_value", float),
+            ("slippage", float),
+            ("slippage_type", str),
             ("exit_matching", str),
             ("pyramiding", int),
+            ("margin_long", float),
+            ("margin_short", float),
+            ("process_orders_on_close", bool),
+            ("calc_on_order_fills", bool),
+            ("calc_on_every_tick", bool),
+            ("use_bar_magnifier", bool),
             ("qty_step", float | None),
             ("qty_rounding_mode", str),
             ("plot_from_ms", int | None),
@@ -67,8 +75,16 @@ def test_cli_backtest_config_helper_maps_declaration_values():
             "default_qty_value": 50,
             "commission_type": "percent",
             "commission_value": 0.1,
+            "slippage": 2,
+            "slippage_type": "percent",
             "close_entries_rule": "any",
             "pyramiding": 2,
+            "margin_long": 50,
+            "margin_short": 60,
+            "process_orders_on_close": True,
+            "calc_on_order_fills": True,
+            "calc_on_every_tick": True,
+            "use_bar_magnifier": True,
         },
         start_ms=100,
         end_ms=200,
@@ -90,13 +106,55 @@ def test_cli_backtest_config_helper_maps_declaration_values():
         "default_qty_value": 50,
         "commission_type": "percent",
         "commission_value": 0.1,
+        "slippage": 2,
+        "slippage_type": "percent",
         "exit_matching": "ANY",
         "pyramiding": 2,
+        "margin_long": 50,
+        "margin_short": 60,
+        "process_orders_on_close": True,
+        "calc_on_order_fills": True,
+        "calc_on_every_tick": True,
+        "use_bar_magnifier": True,
         "qty_step": 1e-5,
         "qty_rounding_mode": "truncate",
         "plot_from_ms": 120,
         "plot_to_ms": 180,
     }
+
+
+def test_cli_backtest_config_maps_tradingview_cash_commission_names():
+    from openpine.cli.main import _build_strategy_backtest_config
+
+    Config = make_dataclass(
+        "Config",
+        [
+            ("symbol", str),
+            ("timeframe", str),
+            ("start_time", int),
+            ("end_time", int),
+            ("commission_type", str),
+        ],
+    )
+    strategy = SimpleNamespace(
+        symbol="BTCUSDT",
+        timeframe="15m",
+        exchange="binance",
+        market_type="spot",
+    )
+
+    config = _build_strategy_backtest_config(
+        strategy=strategy,
+        decl_args={"commission_type": "cash_per_contract"},
+        start_ms=100,
+        end_ms=200,
+        capture_plots=False,
+        capture_from_ms=None,
+        capture_to_ms=None,
+        config_cls=Config,
+    )
+
+    assert config.commission_type == "fixed_per_contract"
 
 
 def test_cli_backtest_runtime_meta_and_progress_helpers():
@@ -474,9 +532,8 @@ def test_doctor_writable_dir_helper_reports_success_and_failure(tmp_path):
     assert "Blocked dir" in messages[-1][0]
 
 
-def test_capture_plots_does_not_change_execution_backend():
-    """When strategy has generated_strategy_class_ref, same backend is used
-    regardless of --capture-plots flag."""
+def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
+    """CLI backtest must keep the BacktestEngine adapter selected by the loader."""
     
     # Mock strategy class with generated_strategy_class_ref
     mock_generated_class = MagicMock()
@@ -547,11 +604,10 @@ def test_capture_plots_does_not_change_execution_backend():
         backend_b = call_args_b.kwargs.get("execution_backend") if call_args_b else None
         strategy_class_b = call_args_b.args[0] if call_args_b else None
         
-        # Assertions: same backend and same strategy class should be used
-        assert type(backend_a).__name__ == type(backend_b).__name__, \
-            f"Backend changed: {type(backend_a)} vs {type(backend_b)}"
-        assert strategy_class_a is strategy_class_b, \
-            f"Strategy class changed: {strategy_class_a} vs {strategy_class_b}"
+        assert backend_a is None
+        assert backend_b is None
+        assert strategy_class_a is mock_strategy_class
+        assert strategy_class_b is mock_strategy_class
 
 
 def test_no_generated_ref_no_backend():

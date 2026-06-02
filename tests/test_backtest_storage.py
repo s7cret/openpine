@@ -76,6 +76,29 @@ def test_migration_creates_tables(tmp_db):
     assert "backtest_artifacts" in tables
 
 
+def test_result_store_runs_migrations_for_default_storage(tmp_path, monkeypatch):
+    from openpine.config.model import OpenPineConfig
+
+    config = OpenPineConfig(
+        data_dir=tmp_path / "data",
+        sqlite_path=tmp_path / "openpine.sqlite",
+    )
+    monkeypatch.setattr(OpenPineConfig, "load", classmethod(lambda cls: config))
+
+    store = BacktestResultStore()
+    try:
+        tables = {
+            row[0]
+            for row in store._storage.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+    finally:
+        store.close()
+
+    assert "backtest_runs" in tables
+
+
 def test_no_candle_data_table(tmp_db):
     cursor = tmp_db.execute("SELECT name FROM sqlite_master WHERE type='table'")
     tables = {row[0] for row in cursor.fetchall()}

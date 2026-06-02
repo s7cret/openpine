@@ -42,6 +42,9 @@ class BacktestResultStore:
         config = OpenPineConfig.load()
         if storage is None:
             self._storage = SQLiteStorage(config.sqlite_path)
+            from openpine.storage.migrations import MigrationRunner
+
+            MigrationRunner().run_migrations(self._storage)
         else:
             self._storage = storage
         self._data_dir = config.data_dir / "backtests"
