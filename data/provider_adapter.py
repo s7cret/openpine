@@ -37,6 +37,9 @@ class RuntimeDataProviderAdapter:
         prefetch_end_ms: int | None = None,
     ) -> None:
         self._provider = provider
+        from openpine.data.orchestrator import DataOrchestrator
+
+        self._orchestrator = DataOrchestrator(provider=provider)
         self.exchange = exchange.lower()
         self.market = market.lower()
         self.prefetch_end_ms = prefetch_end_ms
@@ -84,7 +87,7 @@ class RuntimeDataProviderAdapter:
             end_ms=int(fetch_end_ms),
             gap_policy="fail",
         )
-        fetched = [from_contract_bar(bar) for bar in self._provider.fetch_bars(query).bars]
+        fetched = [from_contract_bar(bar) for bar in self._orchestrator.load_bars(query).bars]
         fetched_times = [bar.time for bar in fetched]
         self._bars_cache[cache_key] = (start_ms, fetch_end_ms, fetched, fetched_times)
         left = bisect_left(fetched_times, start_ms)
