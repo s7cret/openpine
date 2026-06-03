@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from types import SimpleNamespace
 
-from marketdata_provider.contracts import InstrumentKey, parse_timeframe
+from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
 
 from openpine.streams import provider_adapter
 
@@ -57,3 +57,32 @@ def test_live_adapter_uses_stable_marketdata_factory(monkeypatch) -> None:
     assert created
     assert received[0].time == 60_000
     assert received[0].instrument.symbol == "BTCUSDT"
+
+
+def test_normalize_live_kline_event_with_contract_bar() -> None:
+    instrument = InstrumentKey("binance", "spot", "BTCUSDT")
+    timeframe = parse_timeframe("1m")
+    event = SimpleNamespace(
+        bar=Bar(
+            instrument=instrument,
+            timeframe=timeframe,
+            time=120_000,
+            time_close=179_999,
+            open=1.0,
+            high=2.0,
+            low=0.5,
+            close=1.5,
+            volume=3.0,
+            closed=True,
+        )
+    )
+
+    envelope = provider_adapter.normalize_provider_kline_update(
+        event,
+        instrument_key=instrument,
+        timeframe=timeframe,
+    )
+
+    assert envelope.timestamp == 120_000
+    assert envelope.instrument_key == instrument
+    assert envelope.closed is True

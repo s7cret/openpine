@@ -37,6 +37,28 @@ def normalize_provider_kline_update(
     timeframe: Timeframe,
 ) -> KlineUpdateEnvelope:
     """Normalize supported marketdata-provider kline update shapes."""
+    provider_bar = getattr(update, "bar", None)
+    if provider_bar is not None:
+        return normalize_provider_kline_update(
+            provider_bar,
+            instrument_key=instrument_key,
+            timeframe=timeframe,
+        )
+
+    if hasattr(update, "instrument") and hasattr(update, "time"):
+        provider_instrument = _attr_or_item(update, "instrument")
+        provider_timeframe = _attr_or_item(update, "timeframe") if _has_field(update, "timeframe") else timeframe
+        return KlineUpdateEnvelope(
+            instrument_key=provider_instrument,
+            timeframe=provider_timeframe,
+            timestamp=int(_attr_or_item(update, "time")),
+            open=float(_attr_or_item(update, "open")),
+            high=float(_attr_or_item(update, "high")),
+            low=float(_attr_or_item(update, "low")),
+            close=float(_attr_or_item(update, "close")),
+            volume=float(_attr_or_item(update, "volume")) if _has_field(update, "volume") else 0.0,
+            closed=bool(_attr_or_item(update, "closed")) if _has_field(update, "closed") else False,
+        )
 
     return KlineUpdateEnvelope(
         instrument_key=InstrumentKey(
