@@ -27,27 +27,26 @@ class RefreshConfig:
 
     interval_seconds: float = 60.0
     lookback_bars: int = 2  # fetch last N bars to catch any gaps
+    source_timeframe: str = "1m"
     enabled: bool = True
 
 
 @dataclass(frozen=True)
-class StreamKey:
-    """Unique market-data stream/fetch key shared by enabled strategies."""
+class RawMarketKey:
+    """Unique raw market data key shared by enabled strategies."""
 
     exchange: str
     market_type: str
     symbol: str
     price_type: str
-    timeframe: str
 
     @classmethod
-    def from_strategy(cls, strategy: StrategyInstance) -> "StreamKey":
+    def from_strategy(cls, strategy: StrategyInstance) -> "RawMarketKey":
         return cls(
             exchange=strategy.exchange.lower(),
             market_type=strategy.market_type.lower(),
             symbol=strategy.symbol.upper(),
             price_type=strategy.price_type.lower(),
-            timeframe=parse_timeframe(strategy.timeframe).canonical,
         )
 
     @property
@@ -140,41 +139,42 @@ class PeriodicBarFetcher:
             log.debug("periodic_fetcher.no_active_strategies")
             return
 
-        groups = _group_strategies_by_stream(active)
+        groups = _group_strategies_by_market(active)
         now_ms = int(time.time() * 1000)
 
         log.info(
             "periodic_fetcher.refreshing",
             strategies=len(active),
-            stream_keys=len(groups),
+            market_keys=len(groups),
+            source_timeframe=self.config.source_timeframe,
         )
 
         for key, group in groups.items():
             try:
-                self._refresh_stream_key(key, group, now_ms=now_ms)
+                self._refresh_market_key(key, group, now_ms=now_ms)
             except Exception as exc:
                 log.error(
                     "periodic_fetcher.stream_refresh_failed",
-                    stream_key=str(key),
+                    market_key=str(key),
                     strategies=len(group),
                     error=str(exc),
                 )
 
     def _refresh_strategy(self, strategy: StrategyInstance) -> None:
         """Fetch latest bars for a single strategy."""
-        self._refresh_stream_key(StreamKey.from_strategy(strategy), [strategy], now_ms=int(time.time() * 1000))
+        self._refresh_market_key(RawMarketKey.from_strategy(strategy), [strategy], now_ms=int(time.time() * 1000))
 
-    def _refresh_stream_key(
+    def _refresh_market_key(
         self,
-        key: StreamKey,
+        key: RawMarketKey,
         strategies: list[StrategyInstance],
         *,
         now_ms: int,
     ) -> None:
-        """Fetch latest bars once for a shared stream key."""
-        timeframe = parse_timeframe(key.timeframe)
+        """Fetch source-timeframe bars once for a shared raw market key."""
+        timeframe = parse_timeframe(self.config.source_timeframe)
         if timeframe.duration_ms is None:
-            raise ValueError(f"cannot periodically refresh variable-duration timeframe: {key.timeframe}")
+            raise ValueError(f"cannot periodically refresh variable-duration timeframe: {self.config.source_timeframe}")
         tf_ms = timeframe.duration_ms
         lookback_ms = tf_ms * self.config.lookback_bars
         start_ms = now_ms - lookback_ms
@@ -193,39 +193,48 @@ class PeriodicBarFetcher:
 
         bars = self.orchestrator.get_bars(query)
         if bars:
+            target_timeframes = sorted({parse_timeframe(strategy.timeframe).canonical for strategy in strategies})
             log.info(
-                "periodic_fetcher.stream_refreshed",
-                stream_key=str(key),
+                "periodic_fetcher.market_refreshed",
+                market_key=str(key),
+                source_timeframe=timeframe.canonical,
+                target_timeframes=target_timeframes,
                 strategies=len(strategies),
                 bars_fetched=len(bars),
             )
-            # Persist via orchestrator's on_candle_closed for each bar
+            # Persist raw source candles once. Downstream aggregation/worker
+            # derives strategy timeframes from this source candle stream.
             for bar in bars:
                 self.orchestrator.on_candle_closed(
                     bar,
                     instrument_key=key.instrument_key,
-                    timeframe=key.timeframe,
+                    timeframe=timeframe.canonical,
                     source="live",
                 )
         else:
             log.debug(
                 "periodic_fetcher.no_new_bars",
-                stream_key=str(key),
+                market_key=str(key),
+                source_timeframe=timeframe.canonical,
                 strategies=len(strategies),
             )
 
 
-def _group_strategies_by_stream(strategies: list[StrategyInstance]) -> dict[StreamKey, list[StrategyInstance]]:
-    """Group enabled strategies by the market data they share."""
-    groups: dict[StreamKey, list[StrategyInstance]] = defaultdict(list)
+def _group_strategies_by_market(strategies: list[StrategyInstance]) -> dict[RawMarketKey, list[StrategyInstance]]:
+    """Group enabled strategies by the raw market data they share."""
+    groups: dict[RawMarketKey, list[StrategyInstance]] = defaultdict(list)
     for strategy in strategies:
-        groups[StreamKey.from_strategy(strategy)].append(strategy)
+        groups[RawMarketKey.from_strategy(strategy)].append(strategy)
     return dict(groups)
+
+
+_group_strategies_by_stream = _group_strategies_by_market
 
 
 __all__ = [
     "PeriodicBarFetcher",
+    "RawMarketKey",
     "RefreshConfig",
-    "StreamKey",
+    "_group_strategies_by_market",
     "_group_strategies_by_stream",
 ]

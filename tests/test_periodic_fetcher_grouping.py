@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from marketdata_provider.contracts import Bar
 
-from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig, StreamKey, _group_strategies_by_stream
+from openpine.data.periodic_fetcher import (
+    PeriodicBarFetcher,
+    RawMarketKey,
+    RefreshConfig,
+    _group_strategies_by_market,
+)
 from openpine.registry.strategies import StrategyInstance
 
 
@@ -57,22 +62,22 @@ class _Orchestrator:
         self.closed.append((bar, instrument_key, timeframe, source))
 
 
-def test_group_strategies_by_stream_uses_market_key() -> None:
+def test_group_strategies_by_market_ignores_strategy_timeframe() -> None:
     btc_a = _strategy("btc-a", "BTCUSDT")
-    btc_b = _strategy("btc-b", "btcusdt")
+    btc_b = _strategy("btc-b", "btcusdt", timeframe="1h")
     sol = _strategy("sol", "SOLUSDT")
 
-    groups = _group_strategies_by_stream([btc_a, btc_b, sol])
+    groups = _group_strategies_by_market([btc_a, btc_b, sol])
 
     assert len(groups) == 2
-    assert len(groups[StreamKey("binance", "spot", "BTCUSDT", "trade", "15m")]) == 2
-    assert len(groups[StreamKey("binance", "spot", "SOLUSDT", "trade", "15m")]) == 1
+    assert len(groups[RawMarketKey("binance", "spot", "BTCUSDT", "trade")]) == 2
+    assert len(groups[RawMarketKey("binance", "spot", "SOLUSDT", "trade")]) == 1
 
 
 def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
     registry = _Registry([
         _strategy("btc-a", "BTCUSDT"),
-        _strategy("btc-b", "BTCUSDT"),
+        _strategy("btc-b", "BTCUSDT", timeframe="1h"),
         _strategy("sol", "SOLUSDT"),
     ])
     orchestrator = _Orchestrator()
@@ -87,8 +92,9 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
     fetcher._refresh_all_active()
 
     assert [query.instrument.symbol for query in orchestrator.queries] == ["BTCUSDT", "SOLUSDT"]
+    assert [query.timeframe.canonical for query in orchestrator.queries] == ["1m", "1m"]
     assert {item[1] for item in orchestrator.closed} == {
         "binance:spot:BTCUSDT:trade",
         "binance:spot:SOLUSDT:trade",
     }
-    assert all(item[2] == "15m" and item[3] == "live" for item in orchestrator.closed)
+    assert all(item[2] == "1m" and item[3] == "live" for item in orchestrator.closed)
