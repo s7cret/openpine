@@ -85,7 +85,7 @@ class RuntimeDataProviderAdapter:
             timeframe=timeframe_obj,
             start_ms=int(start_ms),
             end_ms=int(fetch_end_ms),
-            gap_policy="fail",
+            gap_policy="allow_with_metadata",
         )
         fetched = [from_contract_bar(bar) for bar in self._orchestrator.load_bars(query).bars]
         fetched_times = [bar.time for bar in fetched]
