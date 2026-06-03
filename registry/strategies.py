@@ -268,3 +268,89 @@ class SQLiteStrategyRegistry:
     def close(self) -> None:
         """Close the database connection."""
         self._conn.close()
+
+    def create_strategy(
+        self,
+        *,
+        name: str,
+        pine_id: str,
+        artifact_id: str,
+        symbol: str,
+        timeframe: str,
+        exchange: str = "binance",
+        market_type: str = "spot",
+        params_json: str = "{}",
+        params_hash: str | None = None,
+        mode: str = "paper",
+    ) -> StrategyInstance:
+        """Create a new strategy instance (gateway-facing API)."""
+        import hashlib
+        now = int(time.time() * 1000)
+        if params_hash is None:
+            params_hash = hashlib.sha256(params_json.encode()).hexdigest()[:16]
+        strategy_id = f"strat_{hashlib.sha256(f'{artifact_id}{params_hash}{now}'.encode()).hexdigest()[:16]}_{now}"
+        si = StrategyInstance(
+            strategy_id=strategy_id,
+            name=name,
+            pine_id=pine_id,
+            artifact_id=artifact_id,
+            params_json=params_json,
+            params_hash=params_hash,
+            symbol=symbol,
+            timeframe=timeframe,
+            exchange=exchange,
+            market_type=market_type,
+            mode=mode,
+            created_at=now,
+            updated_at=now,
+        )
+        self._conn.execute(
+            """INSERT INTO strategy_instances
+               (id, strategy_id, name, pine_id, artifact_id, params_json, params_hash,
+                symbol, exchange, market_type, price_type, timeframe, data_provider,
+                execution_provider, mode, enabled, status, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (strategy_id, si.strategy_id, si.name, si.pine_id, si.artifact_id, si.params_json,
+             si.params_hash, si.symbol, si.exchange, si.market_type, si.price_type, si.timeframe,
+             "local", "paper", si.mode, int(si.enabled), si.status, si.created_at, si.updated_at),
+        )
+        self._conn.commit()
+        self._mem[si.strategy_id] = si
+        return si
+
+    def set_enabled(self, strategy_id: str, enabled: bool) -> None:
+        """Enable or disable a strategy."""
+        si = self.get_strategy(strategy_id)
+        si.enabled = enabled
+        si.updated_at = int(time.time() * 1000)
+        self._conn.execute(
+            "UPDATE strategy_instances SET enabled = ?, updated_at = ? WHERE strategy_id = ?",
+            (int(enabled), si.updated_at, strategy_id),
+        )
+        self._conn.commit()
+
+    def update_mode(self, strategy_id: str, mode: str) -> None:
+        """Update strategy execution mode (paper/live/observe)."""
+        si = self.get_strategy(strategy_id)
+        si.mode = mode
+        si.updated_at = int(time.time() * 1000)
+        self._conn.execute(
+            "UPDATE strategy_instances SET mode = ?, updated_at = ? WHERE strategy_id = ?",
+            (mode, si.updated_at, strategy_id),
+        )
+        self._conn.commit()
+
+    def delete_strategy(self, strategy_id: str) -> None:
+        """Delete a strategy instance."""
+        self.get_strategy(strategy_id)  # raises if not found
+        self._conn.execute(
+            "DELETE FROM strategy_instances WHERE strategy_id = ?",
+            (strategy_id,),
+        )
+        self._conn.commit()
+        self._mem.pop(strategy_id, None)
+
+    def _storage(self):
+        """Expose internal connection for direct SQL (used by gateway PATCH)."""
+        return self._conn
+

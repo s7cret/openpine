@@ -460,6 +460,50 @@ class BacktestResultStore:
         ).fetchall()
         return [self._row_to_run(row) for row in rows]
 
+    def list_all_runs(self, limit: int = 50) -> list[BacktestRun]:
+        """List backtest runs across all strategies."""
+        rows = self._storage.execute(
+            """
+            SELECT * FROM backtest_runs
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [self._row_to_run(row) for row in rows]
+
+    def get_metrics(self, run_id: str) -> dict[str, Any] | None:
+        """Get metrics summary for a backtest run from the report artifact."""
+        import json as _json
+
+        rows = self._storage.execute(
+            """
+            SELECT artifact_path FROM backtest_artifacts
+            WHERE run_id = ? AND artifact_type = 'report_json'
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            (run_id,),
+        ).fetchall()
+        if not rows:
+            # Fallback: read from run row if metrics_json column exists
+            row = self._storage.execute(
+                "SELECT metrics_json FROM backtest_runs WHERE run_id = ?",
+                (run_id,),
+            ).fetchone()
+            if row and row[0]:
+                try:
+                    return _json.loads(row[0])
+                except Exception:
+                    return None
+            return None
+        path = Path(rows[0][0])
+        if not path.exists():
+            return None
+        try:
+            return _json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+
     def list_trades(self, run_id: str) -> list[BacktestTrade]:
         """List trades for a run."""
         rows = self._storage.execute(
