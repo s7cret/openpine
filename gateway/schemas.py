@@ -165,7 +165,7 @@ class BacktestRunDetail(BacktestRunResponse):
 
 
 class BacktestTradeResponse(BaseModel):
-    trade_id: int
+    trade_id: str
     run_id: str
     bar_index: int
     entry_time: int

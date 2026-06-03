@@ -352,7 +352,7 @@ async def get_run_trades(
             entry_price=t.entry_price,
             exit_price=t.exit_price,
             qty=t.qty,
-            net_profit=t.net_profit,
+            net_profit=t.net_pnl,
             max_runup=t.max_runup,
             max_drawdown=t.max_drawdown,
         )
@@ -397,7 +397,7 @@ def _get_artifact_path(state: GatewayState, run_id: str, artifact_type: str) -> 
     artifacts = state.backtest_store.list_artifacts(run_id)
     for a in artifacts:
         if a.artifact_type == artifact_type:
-            return a.artifact_path
+            return a.path
     return None
 
 
@@ -514,7 +514,7 @@ async def export_run(
             "entry_price": t.entry_price,
             "exit_price": t.exit_price,
             "qty": t.qty,
-            "net_profit": t.net_profit,
+            "net_profit": t.net_pnl,
         }
         for t in trades
     ]
@@ -522,7 +522,7 @@ async def export_run(
     # Artifacts list
     artifacts = state.backtest_store.list_artifacts(run_id)
     result["artifacts"] = [
-        {"type": a.artifact_type, "path": a.artifact_path}
+        {"type": a.artifact_type, "path": a.path}
         for a in artifacts
     ]
 
