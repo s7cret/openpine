@@ -38,6 +38,8 @@ from openpine.batch.tv_corpus import (
     ExportEntry,
     filter_entries,
     load_manifest,
+    load_visible_bars_by_time,
+    merge_visible_bars,
     normalize_tf,
     openpine_name,
     strategy_name,
@@ -232,6 +234,7 @@ def build_progress_callback(label: str, progress_every: int) -> Any | None:
 
 
 def load_calculation_bars(
+    entry: ExportEntry,
     chart: ChartExport,
     args: argparse.Namespace,
     timings: dict[str, float],
@@ -295,7 +298,20 @@ def load_calculation_bars(
             f"{ms_to_utc_iso(calculation_from)}..{ms_to_utc_iso(calculation_to)}"
         )
     bar_source = "provider_only"
+    tv_corpus_meta = None
+    tv_corpus_patched_bars = 0
     if not args.provider_only_bars:
+        tv_corpus_bars, tv_corpus_meta = load_visible_bars_by_time(
+            root=args.root,
+            manifest=args.manifest,
+            source_group=entry.source_group,
+            timeframe=chart.timeframe,
+            symbol=args.symbol,
+        )
+        bars, tv_corpus_patched_bars = merge_visible_bars(
+            provider_bars=bars,
+            visible_bars_by_time=tv_corpus_bars,
+        )
         bars = _merge_tv_visible_bars(
             provider_bars=bars,
             chart=chart,
@@ -320,6 +336,8 @@ def load_calculation_bars(
         "compare_to_iso": ms_to_utc_iso(chart_end_exclusive_ms(chart)),
         "bars_total": len(bars),
         "visible_bars": chart.bars,
+        "tv_corpus_overlay": tv_corpus_meta,
+        "tv_corpus_patched_bars": tv_corpus_patched_bars,
         "cache_hit": cache_hit,
         "data_fetch": data_fetch_info,
         "bar_source": bar_source,
@@ -524,7 +542,7 @@ def run_indicator(
     from openpine.runtime.engine import load_generated_class_from_artifact
 
     timings: dict[str, float] = {}
-    bars, data_meta = load_calculation_bars(chart, args, timings)
+    bars, data_meta = load_calculation_bars(entry, chart, args, timings)
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
     generated_class = timed_call(
         timings,
@@ -658,7 +676,7 @@ def run_strategy(
     from openpine.runtime.engine import BacktestEngineAdapter, BacktestRunConfig, load_strategy_class_from_artifact
 
     timings: dict[str, float] = {}
-    bars, data_meta = load_calculation_bars(chart, args, timings)
+    bars, data_meta = load_calculation_bars(entry, chart, args, timings)
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
     strategy_class = timed_call(
         timings,

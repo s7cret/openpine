@@ -5,8 +5,9 @@ from __future__ import annotations
 import csv
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -151,6 +152,119 @@ def load_manifest(path: Path = MANIFEST, root_dir: Path = CLEAN_ROOT) -> list[Ex
                 )
             )
     return entries
+
+
+def _chart_filename_can_match_symbol(path: Path, symbol: str) -> bool:
+    upper_name = path.name.upper()
+    upper_symbol = symbol.upper()
+    if upper_symbol in upper_name:
+        return True
+    if "BTCUSD" in upper_name and upper_symbol != "BTCUSD":
+        return False
+    return True
+
+
+def load_visible_bars_by_time(
+    *,
+    root: Path,
+    manifest: Path,
+    source_group: str,
+    timeframe: str,
+    symbol: str,
+) -> tuple[dict[int, dict[str, float]], dict[str, Any]]:
+    from openpine.batch.persistent_cache import (
+        default_cache_dir,
+        load_tv_corpus,
+        path_fingerprint,
+        save_tv_corpus,
+    )
+
+    chart_paths: list[Path] = []
+    with manifest.open(encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            if row.get("source_group") != source_group:
+                continue
+            timeframes = {value for value in (row.get("timeframes") or "").split("|") if value}
+            if timeframes and timeframe not in timeframes:
+                continue
+            export_root = root / "exports" / row["folder"]
+            for chart_name in [p for p in (row.get("chart_csv_files") or "").split("|") if p]:
+                chart_path = export_root / chart_name
+                if _chart_filename_can_match_symbol(chart_path, symbol):
+                    chart_paths.append(chart_path)
+
+    key = {
+        "kind": "tv_corpus_visible_bars",
+        "root": str(root.resolve()),
+        "source_group": source_group,
+        "timeframe": timeframe,
+        "symbol": symbol.upper(),
+        "charts": len(chart_paths),
+        "fingerprint": path_fingerprint(chart_paths, root=root),
+    }
+    cached = load_tv_corpus(default_cache_dir(root), key)
+    if cached is not None:
+        return cached
+
+    bars: dict[int, dict[str, float]] = {}
+    conflicts = 0
+    rows_loaded = 0
+    for chart_path in chart_paths:
+        df = read_chart(chart_path)
+        for row in df.itertuples(index=False):
+            bar_time = int(row.bar_time)
+            payload = {
+                "open": float(row.open),
+                "high": float(row.high),
+                "low": float(row.low),
+                "close": float(row.close),
+                "volume": float(getattr(row, "Volume", 0.0) or 0.0),
+            }
+            existing = bars.get(bar_time)
+            if existing is not None and existing != payload:
+                conflicts += 1
+                continue
+            bars[bar_time] = payload
+            rows_loaded += 1
+
+    meta = {
+        "source_group": source_group,
+        "timeframe": timeframe,
+        "charts_scanned": len(chart_paths),
+        "unique_bars": len(bars),
+        "rows_loaded": rows_loaded,
+        "conflicts": conflicts,
+    }
+    return bars, save_tv_corpus(default_cache_dir(root), key, bars, meta)
+
+
+def merge_visible_bars(
+    *,
+    provider_bars: list[Any],
+    visible_bars_by_time: dict[int, dict[str, float]],
+) -> tuple[list[Any], int]:
+    if not visible_bars_by_time:
+        return provider_bars, 0
+
+    patched: list[Any] = []
+    patched_count = 0
+    for bar in provider_bars:
+        payload = visible_bars_by_time.get(int(getattr(bar, "time")))
+        if payload is None:
+            patched.append(bar)
+            continue
+        patched.append(
+            replace(
+                bar,
+                open=payload["open"],
+                high=payload["high"],
+                low=payload["low"],
+                close=payload["close"],
+                volume=payload["volume"],
+            )
+        )
+        patched_count += 1
+    return patched, patched_count
 
 
 def filter_entries(
