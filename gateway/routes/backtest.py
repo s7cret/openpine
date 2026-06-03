@@ -379,3 +379,151 @@ async def get_progress(run_id: str) -> BacktestProgress | None:
 async def get_progress_detail(run_id: str) -> dict[str, object] | None:
     """Get detailed progress including error message."""
     return ws_manager.get_progress(run_id)
+
+
+# ── Backtest output routes ────────────────────────────────────────────────────
+
+
+def _read_parquet_as_csv(path: str) -> str:
+    """Read a parquet file and return as CSV string."""
+    import io
+    import pandas as pd
+    df = pd.read_parquet(path)
+    return df.to_csv(index=False)
+
+
+def _get_artifact_path(state: GatewayState, run_id: str, artifact_type: str) -> str | None:
+    """Find artifact path by type for a run."""
+    artifacts = state.backtest_store.list_artifacts(run_id)
+    for a in artifacts:
+        if a.artifact_type == artifact_type:
+            return a.artifact_path
+    return None
+
+
+@router.get("/runs/{run_id}/equity")
+async def get_run_equity(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Get equity curve data for a backtest run."""
+    run = state.backtest_store.get_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"Run not found: {run_id}")
+
+    path = _get_artifact_path(state, run_id, "equity_curve")
+    if path is None:
+        raise HTTPException(404, "Equity curve not available for this run")
+
+    try:
+        csv_data = _read_parquet_as_csv(path)
+        return {"run_id": run_id, "format": "csv", "data": csv_data}
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to read equity curve: {exc}")
+
+
+@router.get("/runs/{run_id}/plots")
+async def get_run_plots(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Get plot outputs data for a backtest run."""
+    run = state.backtest_store.get_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"Run not found: {run_id}")
+
+    path = _get_artifact_path(state, run_id, "plot_outputs")
+    if path is None:
+        raise HTTPException(404, "Plot outputs not available for this run")
+
+    try:
+        csv_data = _read_parquet_as_csv(path)
+        return {"run_id": run_id, "format": "csv", "data": csv_data}
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to read plot outputs: {exc}")
+
+
+@router.get("/runs/{run_id}/bar-outputs")
+async def get_run_bar_outputs(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Get bar-level outputs for a backtest run."""
+    run = state.backtest_store.get_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"Run not found: {run_id}")
+
+    path = _get_artifact_path(state, run_id, "bar_outputs")
+    if path is None:
+        raise HTTPException(404, "Bar outputs not available for this run")
+
+    try:
+        csv_data = _read_parquet_as_csv(path)
+        return {"run_id": run_id, "format": "csv", "data": csv_data}
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to read bar outputs: {exc}")
+
+
+@router.get("/runs/{run_id}/report")
+async def get_run_report(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Get the markdown report for a backtest run."""
+    run = state.backtest_store.get_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"Run not found: {run_id}")
+
+    path = _get_artifact_path(state, run_id, "report_md")
+    if path is None:
+        raise HTTPException(404, "Report not available for this run")
+
+    from pathlib import Path
+    try:
+        content = Path(path).read_text(encoding="utf-8")
+        return {"run_id": run_id, "format": "markdown", "data": content}
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to read report: {exc}")
+
+
+@router.get("/runs/{run_id}/export")
+async def export_run(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Export all backtest artifacts as a summary (equity + trades + metrics + report)."""
+    run = state.backtest_store.get_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"Run not found: {run_id}")
+
+    result: dict[str, object] = {"run_id": run_id, "strategy_id": run.strategy_id}
+
+    # Metrics
+    metrics = state.backtest_store.get_metrics(run_id)
+    if metrics:
+        result["metrics"] = metrics
+
+    # Trades
+    trades = state.backtest_store.list_trades(run_id)
+    result["trades"] = [
+        {
+            "trade_id": t.trade_id,
+            "entry_time": t.entry_time,
+            "exit_time": t.exit_time,
+            "direction": t.direction,
+            "entry_price": t.entry_price,
+            "exit_price": t.exit_price,
+            "qty": t.qty,
+            "net_profit": t.net_profit,
+        }
+        for t in trades
+    ]
+
+    # Artifacts list
+    artifacts = state.backtest_store.list_artifacts(run_id)
+    result["artifacts"] = [
+        {"type": a.artifact_type, "path": a.artifact_path}
+        for a in artifacts
+    ]
+
+    return result

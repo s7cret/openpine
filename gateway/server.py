@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from openpine.gateway.config import GatewayConfig
 from openpine.gateway.deps import GatewayState
-from openpine.gateway.routes import accounts_data, backtest, dashboard, events, pine_sources, strategies, trading
+from openpine.gateway.routes import accounts_data, backtest, dashboard, events, orders_positions, pine_ops, pine_sources, strategies, trading
 
 log = structlog.get_logger(__name__)
 
@@ -53,9 +53,11 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     api_prefix = cfg.api_prefix
     app.include_router(dashboard.router, prefix=api_prefix)
     app.include_router(pine_sources.router, prefix=api_prefix)
+    app.include_router(pine_ops.router, prefix=api_prefix)
     app.include_router(strategies.router, prefix=api_prefix)
     app.include_router(backtest.router, prefix=api_prefix)
     app.include_router(trading.router, prefix=api_prefix)
+    app.include_router(orders_positions.router, prefix=api_prefix)
     app.include_router(events.router, prefix=api_prefix)
     app.include_router(accounts_data.router, prefix=api_prefix)
 
