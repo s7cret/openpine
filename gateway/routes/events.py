@@ -24,17 +24,31 @@ async def list_events(
     state: GatewayState = Depends(get_state),
 ) -> list[EventResponse]:
     """List persisted events from the EventBus."""
+    # Detect schema version: old events table has payload_json + created_at,
+    # new schema has payload + timestamp_ms.
+    try:
+        cols = {
+            row[1]
+            for row in state.storage.execute("PRAGMA table_info(events)").fetchall()
+        }
+    except Exception:
+        return []
+
+    has_new_schema = "timestamp_ms" in cols
+    payload_col = "payload" if "payload" in cols else "payload_json"
+    ts_col = "timestamp_ms" if has_new_schema else "created_at"
+
     where_clauses = []
     params: list[object] = []
     if event_type:
         where_clauses.append("event_type = ?")
         params.append(event_type)
     if strategy_id:
-        where_clauses.append("json_extract(payload, '$.strategy_id') = ?")
+        where_clauses.append(f"json_extract({payload_col}, '$.strategy_id') = ?")
         params.append(strategy_id)
 
     where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-    sql = f"SELECT event_id, event_type, payload, timestamp_ms FROM events {where_sql} ORDER BY timestamp_ms DESC LIMIT ?"
+    sql = f"SELECT event_id, event_type, {payload_col}, {ts_col} FROM events {where_sql} ORDER BY {ts_col} DESC LIMIT ?"
     params.append(limit)
 
     rows = state.storage.execute(sql, tuple(params)).fetchall()

@@ -345,3 +345,9 @@ async def get_progress(run_id: str) -> BacktestProgress | None:
         total_bars=int(p.get("detail", {}).get("total_bars", 0)),
         pct=p["pct"],
     )
+
+
+@router.get("/progress/{run_id}/detail")
+async def get_progress_detail(run_id: str) -> dict[str, object] | None:
+    """Get detailed progress including error message."""
+    return ws_manager.get_progress(run_id)
