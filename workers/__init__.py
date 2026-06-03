@@ -14,6 +14,11 @@ from openpine.workers.strategy_fanout import (
     StrategyBarFanoutConfig,
     TargetBarResult,
 )
+from openpine.workers.strategy_job_executor import (
+    StrategyJobExecutionResult,
+    StrategyJobExecutor,
+    StrategyJobStatus,
+)
 
 __all__ = [
     "FanoutStatus",
@@ -23,6 +28,9 @@ __all__ = [
     "SourceBarFanoutResult",
     "StrategyBarFanout",
     "StrategyBarFanoutConfig",
+    "StrategyJobExecutionResult",
+    "StrategyJobExecutor",
+    "StrategyJobStatus",
     "TargetBarResult",
     "WorkerState",
     "WorkerStatus",
