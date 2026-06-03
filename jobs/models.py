@@ -49,6 +49,7 @@ class Job:
     started_at: int | None = None
     finished_at: int | None = None
     error: str | None = None
+    input: dict | None = None
     result: dict | None = None
     worker_id: str | None = None
     attempt: int = 1

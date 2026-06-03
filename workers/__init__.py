@@ -7,11 +7,23 @@ from openpine.workers.pool import (
     WorkerState,
     WorkerStatus,
 )
+from openpine.workers.strategy_fanout import (
+    FanoutStatus,
+    SourceBarFanoutResult,
+    StrategyBarFanout,
+    StrategyBarFanoutConfig,
+    TargetBarResult,
+)
 
 __all__ = [
+    "FanoutStatus",
     "WorkerPool",
     "AggregationWorkerPool",
     "FeatureWorkerPool",
+    "SourceBarFanoutResult",
+    "StrategyBarFanout",
+    "StrategyBarFanoutConfig",
+    "TargetBarResult",
     "WorkerState",
     "WorkerStatus",
 ]
