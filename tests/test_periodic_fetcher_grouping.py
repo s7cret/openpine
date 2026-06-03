@@ -93,6 +93,8 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
 
     assert [query.instrument.symbol for query in orchestrator.queries] == ["BTCUSDT", "SOLUSDT"]
     assert [query.timeframe.canonical for query in orchestrator.queries] == ["1m", "1m"]
+    assert [query.start_ms for query in orchestrator.queries] == [1_699_999_860_000, 1_699_999_860_000]
+    assert [query.end_ms for query in orchestrator.queries] == [1_699_999_980_000, 1_699_999_980_000]
     assert {item[1] for item in orchestrator.closed} == {
         "binance:spot:BTCUSDT:trade",
         "binance:spot:SOLUSDT:trade",

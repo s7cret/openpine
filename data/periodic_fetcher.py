@@ -177,7 +177,8 @@ class PeriodicBarFetcher:
             raise ValueError(f"cannot periodically refresh variable-duration timeframe: {self.config.source_timeframe}")
         tf_ms = timeframe.duration_ms
         lookback_ms = tf_ms * self.config.lookback_bars
-        start_ms = now_ms - lookback_ms
+        end_ms = now_ms - (now_ms % tf_ms)
+        start_ms = end_ms - lookback_ms
 
         query = BarQuery(
             instrument=InstrumentKey(
@@ -187,7 +188,7 @@ class PeriodicBarFetcher:
             ),
             timeframe=timeframe,
             start_ms=start_ms,
-            end_ms=now_ms,
+            end_ms=end_ms,
             source="provider",
         )
 
