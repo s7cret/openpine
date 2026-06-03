@@ -4,6 +4,7 @@ from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_ti
 
 from openpine.jobs import JobScheduler, JobType
 from openpine.registry.strategies import StrategyInstance
+from openpine.data.orchestrator import IncompleteCoverageError
 from openpine.workers.strategy_fanout import FanoutStatus, StrategyBarFanout, _job_type_for_strategy_mode
 
 
@@ -78,6 +79,11 @@ class _Orchestrator:
         return out
 
 
+class _GapOrchestrator(_Orchestrator):
+    def get_bars(self, query: BarQuery):
+        raise IncompleteCoverageError("missing source bars")
+
+
 def test_strategy_fanout_persists_source_and_enqueues_target_jobs() -> None:
     registry = _Registry([
         _strategy("btc-1m", timeframe="1m"),
@@ -146,6 +152,17 @@ def test_strategy_fanout_waits_until_target_bar_closed() -> None:
     assert result.targets[0].status == FanoutStatus.TARGET_NOT_CLOSED
     assert not result.jobs
     assert not scheduler.list_jobs()
+
+
+def test_strategy_fanout_treats_incomplete_aggregation_window_as_not_ready() -> None:
+    registry = _Registry([_strategy("btc-15m", timeframe="15m")])
+    scheduler = JobScheduler()
+    fanout = StrategyBarFanout(registry=registry, orchestrator=_GapOrchestrator(), scheduler=scheduler)
+
+    result = fanout.process_source_bar(_bar(14 * 60_000))
+
+    assert result.targets[0].status == FanoutStatus.TARGET_NOT_CLOSED
+    assert not result.jobs
 
 
 def test_strategy_fanout_maps_observe_mode_to_observe_jobs() -> None:

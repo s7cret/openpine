@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import Iterable
 
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
+from openpine.data.orchestrator import IncompleteCoverageError
 from openpine.data.orchestrator import DataOrchestrator
 from openpine.data.periodic_fetcher import RawMarketKey
 from openpine.jobs import Job, JobScheduler, JobType
@@ -152,7 +153,10 @@ class StrategyBarFanout:
             source="storage",
             gap_policy="fail",
         )
-        source_bars = self.orchestrator.get_bars(query)
+        try:
+            source_bars = self.orchestrator.get_bars(query)
+        except IncompleteCoverageError:
+            return None
         expected = target.duration_ms // source_timeframe.duration_ms
         if len(source_bars) != expected:
             return None
