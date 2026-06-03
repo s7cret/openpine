@@ -304,6 +304,7 @@ class BacktestEngineAdapter:
         setattr(strategy_class, "runtime_capture_plots", config.capture_plots)
         setattr(strategy_class, "runtime_plot_from_ms", config.plot_from_ms)
         setattr(strategy_class, "runtime_plot_to_ms", config.plot_to_ms)
+        setattr(strategy_class, "runtime_request_data_end_ms", config.end_time)
 
         result = engine.run(
             strategy_class,
