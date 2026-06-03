@@ -79,10 +79,9 @@ async def _run_backtest_background(
         ws_manager.update_progress(run_id, "backtest", "running", 0.2, "Loading market data...")
         await ws_manager.broadcast_progress(run_id)
 
-        from openpine.data.orchestrator import DataOrchestrator
         from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
-        orchestrator = DataOrchestrator()
+        orchestrator = state.orchestrator
         tf = parse_timeframe(strategy.timeframe)
         query = BarQuery(
             instrument=InstrumentKey(

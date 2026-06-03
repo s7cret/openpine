@@ -64,7 +64,18 @@ class GatewayState:
         self.scheduler = JobScheduler()
         self.artifact_store = ArtifactStore()
         self.state_store = StateStore(self.config.data_dir / "state")
+        # Set up data orchestrator with marketdata provider
+        from openpine.data.orchestrator import DataOrchestrator
+        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
         self.orchestrator = DataOrchestrator()
+        try:
+            provider = create_local_marketdata_provider_adapter()
+            self.orchestrator.set_provider(provider)
+        except Exception as exc:
+            import structlog
+            structlog.get_logger(__name__).warning(
+                "marketdata_provider_init_error", error=str(exc)
+            )
         self._risk_kill_switch = [self.config.kill_switch]
         self.risk_manager = RiskManager(self._risk_kill_switch)
         self._lock = threading.Lock()
