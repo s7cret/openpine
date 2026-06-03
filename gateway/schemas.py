@@ -313,3 +313,58 @@ class ProgressUpdate(BaseModel):
     pct: float = 0.0
     message: str = ""
     detail: dict[str, Any] = Field(default_factory=dict)
+
+
+# ── Optimizer ──────────────────────────────────────────────────────────────────
+
+
+class OptimizerDryRunRequest(BaseModel):
+    strategy_id: str
+    trials: int = Field(ge=1, le=10000)
+
+
+class OptimizerDryRunResponse(BaseModel):
+    strategy_id: str
+    trials_requested: int
+    status: str
+    reason: str | None = None
+
+
+# ── Replay ────────────────────────────────────────────────────────────────────
+
+
+class ReplayRequest(BaseModel):
+    """Replay a strategy over a date range (re-run backtest on historical data)."""
+    from_date: str | None = None  # ISO date or timestamp
+    to_date: str | None = None
+
+
+class ReplayResponse(BaseModel):
+    run_id: str
+    strategy_id: str
+    status: str
+    bars_processed: int
+    message: str = ""
+
+
+# ── Compare TV ────────────────────────────────────────────────────────────────
+
+
+class CompareTvRequest(BaseModel):
+    """Compare OpenPine plots against TradingView chart export."""
+    openpine_plots_path: str  # path to OpenPine plots CSV
+    tv_chart_path: str  # path to TradingView chart CSV
+    abs_tol: float = 1e-6
+    rel_tol: float = 1e-9
+    include_base_columns: bool = False
+
+
+class CompareTvResponse(BaseModel):
+    strategy_id: str
+    status: str  # match, mismatch, error
+    classification: str = ""
+    mismatch_cells: int = 0
+    total_cells: int = 0
+    max_abs_delta: float = 0.0
+    worst_column: str = ""
+    report_path: str | None = None

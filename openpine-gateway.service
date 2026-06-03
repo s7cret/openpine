@@ -1,0 +1,26 @@
+[Unit]
+Description=OpenPine Gateway — REST API + WebSocket for Pine trading system
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=moltbot1
+Group=moltbot1
+WorkingDirectory=[local-home]/[workspace-root]/repo-root
+Environment=OPENPINE_HOME=[local-home]/[workspace-root]/repo-root
+ExecStart=[local-home]/[workspace-root]/repo-root/.venv/bin/python -m openpine.gateway.server
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openpine-gateway
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=[local-home]/[workspace-root]/repo-root
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
