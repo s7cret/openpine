@@ -9,18 +9,12 @@ User=moltbot1
 Group=moltbot1
 WorkingDirectory=[local-home]/[workspace-root]/repo-root
 Environment=OPENPINE_HOME=[local-home]/[workspace-root]/repo-root
-ExecStart=[local-home]/[workspace-root]/repo-root/.venv/bin/python -m openpine.gateway.server
+ExecStart=/usr/bin/python3 -c "from gateway.server import create_app; import uvicorn; uvicorn.run(create_app(), host='0.0.0.0', port=8080, log_level='info')"
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=openpine-gateway
-
-# Security hardening
-NoNewPrivileges=yes
-ProtectSystem=strict
-ReadWritePaths=[local-home]/[workspace-root]/repo-root
-PrivateTmp=yes
 
 [Install]
 WantedBy=multi-user.target
