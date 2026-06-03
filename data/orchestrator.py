@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
 from typing import Protocol
 
 from marketdata_provider import create_candle_store
 from marketdata_provider.config import MarketDataConfig, StorageConfig
 from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CandleStore, CoverageReport, StoreResult
 from openpine.data.models import CandleCommitResult, DataGap
+from openpine.data.persistent_cache import cache_enabled_by_env, default_cache_dir, load_bar_series, save_bar_series
 
 
 class MarketDataProvider(Protocol):
@@ -47,10 +49,15 @@ class DataOrchestrator:
         validator: BarSeriesValidator | None = None,
         *,
         candle_store: CandleStore | None = None,
+        cache_dir: Path | None = None,
+        cache_enabled: bool | None = None,
     ) -> None:
+        custom_store = store is not None or candle_store is not None
         self._provider = provider
         self._store = store or candle_store or _default_candle_store()
         self._validator = validator or BarSeriesValidator()
+        self._cache_dir = cache_dir or default_cache_dir()
+        self._cache_enabled = (not custom_store and cache_enabled_by_env()) if cache_enabled is None else cache_enabled
 
     def set_provider(self, provider: MarketDataProvider) -> None:
         self._provider = provider
@@ -60,21 +67,29 @@ class DataOrchestrator:
 
         if query.source == "storage":
             return self._load_storage(query, require_complete=query.gap_policy == "fail")
+        cached = self._load_cache(query)
+        if cached is not None:
+            return cached
         if query.source == "provider":
             series = self._load_provider(query)
-            return self._require_complete(series, "provider") if query.gap_policy == "fail" else series
+            series = self._require_complete(series, "provider") if query.gap_policy == "fail" else series
+            self._save_cache(series)
+            return series
         if query.source != "auto":
             raise ValueError(f"unsupported data source: {query.source}")
 
         storage_series = self._load_storage(query, require_complete=False)
         if storage_series.coverage.is_complete:
+            self._save_cache(storage_series)
             return storage_series
 
         provider_series = self._load_missing_from_provider(query, storage_series.coverage.missing_intervals)
         if provider_series.bars:
             self._write_provider_series(provider_series)
         merged = _merge_series(query, storage_series, provider_series)
-        return self._require_complete(merged, "auto") if query.gap_policy == "fail" else merged
+        merged = self._require_complete(merged, "auto") if query.gap_policy == "fail" else merged
+        self._save_cache(merged)
+        return merged
 
     def get_bars(self, query: BarQuery) -> list[Bar]:
         """Return loaded bars as a list for callers that need a sequence."""
@@ -144,6 +159,23 @@ class DataOrchestrator:
             raise StorageUnavailableError(str(exc)) from exc
         self._validator.validate(series, allow_gaps=True)
         return self._require_complete(series, "storage") if require_complete else series
+
+    def _load_cache(self, query: BarQuery) -> BarSeries | None:
+        if not self._cache_enabled:
+            return None
+        series = load_bar_series(self._cache_dir, query)
+        if series is None:
+            return None
+        self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
+        return self._require_complete(series, "persistent_cache") if query.gap_policy == "fail" else series
+
+    def _save_cache(self, series: BarSeries) -> None:
+        if not self._cache_enabled:
+            return
+        try:
+            save_bar_series(self._cache_dir, series)
+        except Exception:
+            return
 
     def _load_provider(self, query: BarQuery) -> BarSeries:
         if self._provider is None:
