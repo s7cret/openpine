@@ -178,7 +178,7 @@ class StrategyJobExecutor:
             )
 
     def _validate_job(self, job: Job) -> None:
-        if job.job_type not in {JobType.PAPER_BAR_PROCESS, JobType.LIVE_BAR_PROCESS}:
+        if job.job_type not in {JobType.PAPER_BAR_PROCESS, JobType.LIVE_BAR_PROCESS, JobType.OBSERVE_BAR_PROCESS}:
             raise ValueError(f"unsupported strategy job type: {job.job_type}")
         _job_payload(job)
 
@@ -234,6 +234,8 @@ class StrategyJobExecutor:
         runtime_result: Any,
     ) -> int:
         if self.ledger is None:
+            return 0
+        if job.job_type == JobType.OBSERVE_BAR_PROCESS:
             return 0
         source = LedgerSource.LIVE if job.job_type == JobType.LIVE_BAR_PROCESS else LedgerSource.PAPER
         raw_result = getattr(runtime_result, "raw_result", runtime_result)

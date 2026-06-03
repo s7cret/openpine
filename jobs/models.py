@@ -14,6 +14,7 @@ class JobType(StrEnum):
     BACKFILL = "backfill"
     LIVE_BAR_PROCESS = "live_bar_process"
     PAPER_BAR_PROCESS = "paper_bar_process"
+    OBSERVE_BAR_PROCESS = "observe_bar_process"
     REPORT = "report"
 
 

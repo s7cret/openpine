@@ -4,7 +4,7 @@ from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_ti
 
 from openpine.jobs import JobScheduler, JobType
 from openpine.registry.strategies import StrategyInstance
-from openpine.workers.strategy_fanout import FanoutStatus, StrategyBarFanout
+from openpine.workers.strategy_fanout import FanoutStatus, StrategyBarFanout, _job_type_for_strategy_mode
 
 
 def _strategy(
@@ -146,3 +146,9 @@ def test_strategy_fanout_waits_until_target_bar_closed() -> None:
     assert result.targets[0].status == FanoutStatus.TARGET_NOT_CLOSED
     assert not result.jobs
     assert not scheduler.list_jobs()
+
+
+def test_strategy_fanout_maps_observe_mode_to_observe_jobs() -> None:
+    assert _job_type_for_strategy_mode("observe") == JobType.OBSERVE_BAR_PROCESS
+    assert _job_type_for_strategy_mode("paper") == JobType.PAPER_BAR_PROCESS
+    assert _job_type_for_strategy_mode("live") == JobType.LIVE_BAR_PROCESS

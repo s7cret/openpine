@@ -245,3 +245,40 @@ def test_strategy_job_executor_marks_failed_without_snapshot(tmp_path) -> None:
     assert "boom" in (result.error or "")
     assert scheduler.get_job(job.id).status == JobStatus.FAILED
     assert state_store.list_snapshots("strategy-1") == []
+
+
+def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(tmp_path) -> None:
+    bar = _bar()
+    scheduler = JobScheduler()
+    job = scheduler.enqueue(_job(bar))
+    job.job_type = JobType.OBSERVE_BAR_PROCESS
+    storage = _storage(tmp_path)
+    try:
+        adapter = _RuntimeAdapter(result=_runtime_result(bar))
+        ledger = StrategyLedger(storage)
+        executor = StrategyJobExecutor(
+            registry=_Registry(_strategy()),
+            orchestrator=_Orchestrator(bar),
+            scheduler=scheduler,
+            state_store=StateStore(tmp_path / "state"),
+            ledger=ledger,
+            runtime_adapter=adapter,
+            strategy_loader=lambda strategy: _DummyStrategy,
+            runtime_data_provider="runtime-provider",
+        )
+
+        result = executor.process(job)
+
+        assert result.status == StrategyJobStatus.DONE
+        assert result.snapshot_id
+        assert result.trades_recorded == 0
+        assert ledger.list_trades(strategy_id="strategy-1") == []
+        assert ledger.get_position(
+            strategy_id="strategy-1",
+            exchange="binance",
+            market_type="spot",
+            symbol="BTCUSDT",
+            timeframe="15m",
+        ) is None
+    finally:
+        storage.close()

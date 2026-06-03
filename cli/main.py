@@ -3636,7 +3636,7 @@ def strategy_status(strategy_id: str) -> None:
 @click.option(
     "--mode",
     default="paper",
-    type=click.Choice(["backtest", "replay", "paper", "live"]),
+    type=click.Choice(["backtest", "replay", "observe", "paper", "live"]),
 )
 @click.option("--param", multiple=True, help="key=value params")
 def strategy_create(
@@ -3699,6 +3699,7 @@ def strategy_create(
         initial_status = {
             "backtest": "pending",
             "replay": "pending",
+            "observe": "paused",
             "paper": "paused",
             "live": "disabled",
         }.get(mode, "pending")

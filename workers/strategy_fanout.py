@@ -164,7 +164,7 @@ class StrategyBarFanout:
         bar: Bar,
         market_key: RawMarketKey,
     ) -> Job:
-        job_type = JobType.LIVE_BAR_PROCESS if strategy.mode == "live" else JobType.PAPER_BAR_PROCESS
+        job_type = _job_type_for_strategy_mode(strategy.mode)
         idempotency_key = (
             f"{job_type.value}:{strategy.strategy_id}:"
             f"{market_key.instrument_key}:{bar.timeframe.canonical}:{bar.time}"
@@ -212,6 +212,15 @@ def _group_by_target_timeframe(strategies: Iterable[StrategyInstance]) -> tuple[
     return tuple(_StrategyGroup(timeframe, tuple(group)) for timeframe, group in sorted(groups.items()))
 
 
+def _job_type_for_strategy_mode(mode: str) -> JobType:
+    normalized = mode.lower()
+    if normalized == "live":
+        return JobType.LIVE_BAR_PROCESS
+    if normalized == "observe":
+        return JobType.OBSERVE_BAR_PROCESS
+    return JobType.PAPER_BAR_PROCESS
+
+
 def _aggregate_bars(bars: list[Bar], *, target_timeframe: str) -> Bar:
     if not bars:
         raise ValueError("cannot aggregate empty bar series")
@@ -237,4 +246,5 @@ __all__ = [
     "StrategyBarFanout",
     "StrategyBarFanoutConfig",
     "TargetBarResult",
+    "_job_type_for_strategy_mode",
 ]
