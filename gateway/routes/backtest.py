@@ -117,8 +117,17 @@ async def _run_backtest_background(
         )
         await ws_manager.broadcast_progress(run_id)
 
-        # Build config
+        # Build config — read declaration args from artifact
         from openpine.runtime.engine import BacktestRunConfig
+
+        # Read strategy declaration args (calc_on_order_fills, commission, etc.)
+        try:
+            artifact = state.artifact_store.get_artifact(strategy.artifact_id, strategy.pine_id)
+            compile_meta = artifact.get("compile_meta", {})
+            declaration = compile_meta.get("translation_metadata", {}).get("declaration", {})
+            decl_args = declaration.get("arguments", {})
+        except Exception:
+            decl_args = {}
 
         params = {}
         if params_override:
@@ -127,6 +136,12 @@ async def _run_backtest_background(
             import json
             params = json.loads(strategy.params_json)
 
+        # Map commission_type aliases
+        commission_type = {
+            "cash_per_order": "fixed_per_order",
+            "cash_per_contract": "fixed_per_contract",
+        }.get(str(decl_args.get("commission_type", "none")), decl_args.get("commission_type", "none"))
+
         config = BacktestRunConfig(
             symbol=strategy.symbol,
             timeframe=strategy.timeframe,
@@ -134,6 +149,21 @@ async def _run_backtest_background(
             end_time=to_ms,
             exchange=strategy.exchange,
             market_type=strategy.market_type,
+            initial_capital=decl_args.get("initial_capital", 10000.0),
+            default_qty_type=decl_args.get("default_qty_type", "fixed"),
+            default_qty_value=decl_args.get("default_qty_value", 1.0),
+            commission_type=commission_type or "none",
+            commission_value=decl_args.get("commission_value", 0.0),
+            slippage=decl_args.get("slippage", 0.0),
+            slippage_type=decl_args.get("slippage_type", "tick"),
+            exit_matching=decl_args.get("close_entries_rule", "fifo").upper(),
+            pyramiding=decl_args.get("pyramiding", 0),
+            margin_long=decl_args.get("margin_long", 100.0),
+            margin_short=decl_args.get("margin_short", 100.0),
+            process_orders_on_close=bool(decl_args.get("process_orders_on_close", False)),
+            calc_on_order_fills=bool(decl_args.get("calc_on_order_fills", False)),
+            calc_on_every_tick=bool(decl_args.get("calc_on_every_tick", False)),
+            use_bar_magnifier=bool(decl_args.get("use_bar_magnifier", False)),
             export_resume_state=False,
             content_hash_enabled=True,
             collect_events=True,
