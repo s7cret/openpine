@@ -9,6 +9,7 @@ from typing import Protocol
 from marketdata_provider import create_candle_store
 from marketdata_provider.config import MarketDataConfig, StorageConfig
 from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CandleStore, CoverageReport, StoreResult
+from openpine.config import DEFAULT_CONFIG
 from openpine.data.models import CandleCommitResult, DataGap
 from openpine.data.persistent_cache import cache_enabled_by_env, default_cache_dir, load_bar_series, save_bar_series
 
@@ -36,7 +37,8 @@ class StorageUnavailableError(DataCoverageError):
 
 
 def _default_candle_store() -> CandleStore:
-    return create_candle_store(MarketDataConfig(storage=StorageConfig()))
+    cache_root = DEFAULT_CONFIG.data_cache_root or (DEFAULT_CONFIG.data_dir / "cache")
+    return create_candle_store(MarketDataConfig(storage=StorageConfig(cache_dir=cache_root / "marketdata")))
 
 
 class DataOrchestrator:
