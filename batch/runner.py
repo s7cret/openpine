@@ -631,6 +631,7 @@ def _build_strategy_run_config(
         calc_on_order_fills=bool(decl_args.get("calc_on_order_fills", False)),
         calc_on_every_tick=bool(decl_args.get("calc_on_every_tick", False)),
         use_bar_magnifier=bool(decl_args.get("use_bar_magnifier", False)),
+        max_bars_back=decl_args.get("max_bars_back", 0),
         qty_step=args.qty_step,
         qty_rounding_mode=args.qty_rounding_mode,
         plot_from_ms=compare_from,
