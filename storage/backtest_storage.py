@@ -478,7 +478,7 @@ class BacktestResultStore:
 
         rows = self._storage.execute(
             """
-            SELECT artifact_path FROM backtest_artifacts
+            SELECT path FROM backtest_artifacts
             WHERE run_id = ? AND artifact_type = 'report_json'
             ORDER BY created_at DESC LIMIT 1
             """,
