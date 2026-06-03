@@ -238,6 +238,7 @@ def load_calculation_bars(
 ) -> tuple[list[Any], dict[str, Any]]:
     """Load full calculation/prehistory bars through OpenPine's data boundary."""
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+    from openpine.batch.persistent_cache import default_cache_dir, load_bars as load_persistent_bars, save_bars
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
     from openpine.export import parse_time_ms
@@ -267,14 +268,41 @@ def load_calculation_bars(
         cache_hit = False
         data_fetch_info = None
 
+    instrument = InstrumentKey(
+        exchange=args.exchange,
+        market=args.market_type,
+        symbol=args.symbol,
+    )
+    timeframe = parse_timeframe(chart.timeframe)
+    persistent_key = {
+        "kind": "calculation_bars",
+        "symbol": args.symbol.upper(),
+        "exchange": args.exchange.upper(),
+        "market_type": args.market_type.lower(),
+        "timeframe": chart.timeframe,
+        "calculation_from": calculation_from,
+        "calculation_to": calculation_to,
+        "gap_policy": "fail",
+    }
+
+    if not cache_hit:
+        t0 = time.perf_counter()
+        persistent = load_persistent_bars(
+            default_cache_dir(args.root),
+            persistent_key,
+            instrument=instrument,
+            timeframe=timeframe,
+        )
+        if persistent is not None:
+            bars, data_fetch_info = persistent
+            timings["data_load_sec"] = round(time.perf_counter() - t0, 3)
+            BAR_CACHE[cache_key] = bars
+            cache_hit = True
+
     if not cache_hit:
         query = BarQuery(
-            instrument=InstrumentKey(
-                exchange=args.exchange,
-                market=args.market_type,
-                symbol=args.symbol,
-            ),
-            timeframe=parse_timeframe(chart.timeframe),
+            instrument=instrument,
+            timeframe=timeframe,
             start_ms=calculation_from,
             end_ms=calculation_to,
             gap_policy="fail",
@@ -286,6 +314,7 @@ def load_calculation_bars(
         bars = list(orchestrator.load_bars(query).bars)
         timings["data_load_sec"] = round(time.perf_counter() - t0, 3)
         BAR_CACHE[cache_key] = bars
+        save_bars(default_cache_dir(args.root), persistent_key, bars)
         data_fetch_info = getattr(getattr(provider, "_provider", None), "last_fetch_info", None)
     if not bars:
         raise RuntimeError(
