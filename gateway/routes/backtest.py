@@ -345,7 +345,6 @@ async def get_run_trades(
         BacktestTradeResponse(
             trade_id=t.trade_id,
             run_id=run_id,
-            bar_index=t.bar_index,
             entry_time=t.entry_time,
             exit_time=t.exit_time,
             direction=t.direction,
@@ -353,8 +352,6 @@ async def get_run_trades(
             exit_price=t.exit_price,
             qty=t.qty,
             net_profit=t.net_pnl,
-            max_runup=t.max_runup,
-            max_drawdown=t.max_drawdown,
         )
         for t in trades
     ]

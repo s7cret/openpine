@@ -167,7 +167,6 @@ class BacktestRunDetail(BacktestRunResponse):
 class BacktestTradeResponse(BaseModel):
     trade_id: str
     run_id: str
-    bar_index: int
     entry_time: int
     exit_time: int | None = None
     direction: str
@@ -175,8 +174,8 @@ class BacktestTradeResponse(BaseModel):
     exit_price: float | None = None
     qty: float
     net_profit: float | None = None
-    max_runup: float | None = None
-    max_drawdown: float | None = None
+    bars_held: int | None = None
+    exit_reason: str | None = None
 
 
 class BacktestProgress(BaseModel):
