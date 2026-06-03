@@ -279,7 +279,7 @@ def load_calculation_bars(
             timeframe=timeframe,
             start_ms=calculation_from,
             end_ms=calculation_to,
-            gap_policy="fail",
+            gap_policy="allow_with_metadata",
         )
 
         t0 = time.perf_counter()
@@ -634,6 +634,7 @@ def _build_strategy_run_config(
         max_bars_back=decl_args.get("max_bars_back", 0),
         qty_step=args.qty_step,
         qty_rounding_mode=args.qty_rounding_mode,
+        capture_plots=True,
         plot_from_ms=compare_from,
         plot_to_ms=compare_to,
     )
@@ -694,6 +695,7 @@ def run_strategy(
         params={},
         execution_backend=None,
         progress_callback=progress,
+        runtime_data_provider=runtime_data_provider,
     )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     raw = result.raw_result
