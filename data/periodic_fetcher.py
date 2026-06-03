@@ -13,7 +13,7 @@ import time
 
 import structlog
 
-from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+from marketdata_provider.contracts import BarQuery, BarSeries, InstrumentKey, parse_timeframe
 from openpine.data.orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
@@ -203,15 +203,22 @@ class PeriodicBarFetcher:
                 strategies=len(strategies),
                 bars_fetched=len(bars),
             )
-            # Persist raw source candles once. Downstream aggregation/worker
-            # derives strategy timeframes from this source candle stream.
-            for bar in bars:
-                self.orchestrator.on_candle_closed(
-                    bar,
-                    instrument_key=key.instrument_key,
-                    timeframe=timeframe.canonical,
-                    source="live",
-                )
+            # Persist the refresh batch once. WebSocket paths still use
+            # on_candle_closed for single confirmed candle events.
+            stored_query = BarQuery(
+                instrument=query.instrument,
+                timeframe=query.timeframe,
+                start_ms=query.start_ms,
+                end_ms=query.end_ms,
+                source="storage",
+                gap_policy=query.gap_policy,
+            )
+            series = BarSeries(
+                query=stored_query,
+                bars=tuple(bars),
+                coverage=DataOrchestrator.coverage_for_series(stored_query, tuple(bars), "live"),
+            )
+            self.orchestrator.store_bars(series)
         else:
             log.debug(
                 "periodic_fetcher.no_new_bars",

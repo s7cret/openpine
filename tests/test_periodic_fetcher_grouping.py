@@ -40,6 +40,7 @@ class _Orchestrator:
     def __init__(self) -> None:
         self.queries = []
         self.closed = []
+        self.stored = []
 
     def get_bars(self, query):
         self.queries.append(query)
@@ -60,6 +61,9 @@ class _Orchestrator:
 
     def on_candle_closed(self, bar, *, instrument_key: str, timeframe: str, source: str):
         self.closed.append((bar, instrument_key, timeframe, source))
+
+    def store_bars(self, series):
+        self.stored.append(series)
 
 
 def test_group_strategies_by_market_ignores_strategy_timeframe() -> None:
@@ -95,8 +99,7 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
     assert [query.timeframe.canonical for query in orchestrator.queries] == ["1m", "1m"]
     assert [query.start_ms for query in orchestrator.queries] == [1_699_999_860_000, 1_699_999_860_000]
     assert [query.end_ms for query in orchestrator.queries] == [1_699_999_980_000, 1_699_999_980_000]
-    assert {item[1] for item in orchestrator.closed} == {
-        "binance:spot:BTCUSDT:trade",
-        "binance:spot:SOLUSDT:trade",
-    }
-    assert all(item[2] == "1m" and item[3] == "live" for item in orchestrator.closed)
+    assert len(orchestrator.stored) == 2
+    assert [series.query.instrument.symbol for series in orchestrator.stored] == ["BTCUSDT", "SOLUSDT"]
+    assert [series.query.timeframe.canonical for series in orchestrator.stored] == ["1m", "1m"]
+    assert not orchestrator.closed
