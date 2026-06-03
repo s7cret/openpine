@@ -96,26 +96,24 @@ async def list_positions(
     strategy_id: str | None = None,
     state: GatewayState = Depends(get_state),
 ) -> list[dict[str, object]]:
-    """List positions from the strategy ledger."""
+    """List positions from the strategy ledger (raw SQL)."""
+    where_sql = "WHERE strategy_id = ?" if strategy_id else ""
+    params = (strategy_id,) if strategy_id else ()
     try:
-        from openpine.storage.strategy_ledger import StrategyLedger
-        ledger = StrategyLedger(state.storage)
-        if strategy_id:
-            positions = ledger.get_positions(strategy_id)
-        else:
-            positions = ledger.get_all_positions()
+        rows = state.storage.execute(
+            f"""SELECT strategy_id, symbol, side, qty, avg_price,
+                       realized_pnl, unrealized_pnl, opened_at, updated_at
+                FROM strategy_positions {where_sql} ORDER BY updated_at DESC""",
+            params,
+        ).fetchall()
         return [
             {
-                "strategy_id": p.strategy_id,
-                "symbol": p.symbol,
-                "side": p.side.value if hasattr(p.side, 'value') else p.side,
-                "qty": p.qty,
-                "avg_entry_price": p.avg_entry_price,
-                "unrealized_pnl": getattr(p, 'unrealized_pnl', None),
-                "realized_pnl": getattr(p, 'realized_pnl', None),
-                "updated_at": getattr(p, 'updated_at', None),
+                "strategy_id": r[0], "symbol": r[1], "side": r[2],
+                "qty": r[3], "avg_entry_price": r[4],
+                "realized_pnl": r[5], "unrealized_pnl": r[6],
+                "opened_at": r[7], "updated_at": r[8],
             }
-            for p in positions
+            for r in rows
         ]
     except Exception as exc:
         log.warning("positions_error", error=str(exc))
@@ -131,24 +129,32 @@ async def get_strategy_positions(
     try:
         from openpine.storage.strategy_ledger import StrategyLedger
         ledger = StrategyLedger(state.storage)
-        positions = ledger.get_positions(strategy_id)
-        trades = ledger.get_trades(strategy_id, limit=50)
+        # Positions via raw SQL (ledger has no list-all method)
+        pos_rows = state.storage.execute(
+            """SELECT strategy_id, symbol, side, qty, avg_price,
+                      realized_pnl, unrealized_pnl, opened_at, updated_at
+               FROM strategy_positions WHERE strategy_id = ? ORDER BY updated_at DESC""",
+            (strategy_id,),
+        ).fetchall()
+        positions = [
+            {
+                "strategy_id": r[0], "symbol": r[1], "side": r[2],
+                "qty": r[3], "avg_entry_price": r[4],
+                "realized_pnl": r[5], "unrealized_pnl": r[6],
+                "opened_at": r[7], "updated_at": r[8],
+            }
+            for r in pos_rows
+        ]
+        # Trades via ledger.list_trades (keyword-only)
+        trades = ledger.list_trades(strategy_id=strategy_id)
         return {
             "strategy_id": strategy_id,
-            "positions": [
-                {
-                    "symbol": p.symbol,
-                    "side": p.side.value if hasattr(p.side, 'value') else p.side,
-                    "qty": p.qty,
-                    "avg_entry_price": p.avg_entry_price,
-                }
-                for p in positions
-            ],
+            "positions": positions,
             "recent_trades": [
                 {
                     "trade_id": t.trade_id,
                     "symbol": t.symbol,
-                    "side": t.side.value if hasattr(t.side, 'value') else t.side,
+                    "side": t.side.value if hasattr(t.side, 'value') else str(t.side),
                     "qty": t.qty,
                     "entry_price": t.entry_price,
                     "exit_price": t.exit_price,
