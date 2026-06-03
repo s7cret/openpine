@@ -89,13 +89,12 @@ async def _run_backtest_background(
                 exchange=strategy.exchange.lower(),
                 market=strategy.market_type.lower(),
                 symbol=strategy.symbol.upper(),
-                price_type="trade",
             ),
             timeframe=tf,
             start_ms=from_ms,
             end_ms=to_ms,
             source="auto",
-            gap_policy="fail_closed",
+            gap_policy="fail",
         )
         try:
             series = orchestrator.load_bars(query)
