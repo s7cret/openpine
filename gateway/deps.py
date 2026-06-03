@@ -35,12 +35,32 @@ class GatewayState:
     def __init__(self) -> None:
         self.config = OpenPineConfig.load()
         self.storage = SQLiteStorage(self.config.sqlite_path)
+        # Run migrations before initializing managers that depend on schema.
+        # Wrap in try/except for idempotency: if DB was partially migrated by
+        # a prior run, duplicate-column errors are non-fatal.
+        from openpine.storage.migrations import MigrationRunner
+        try:
+            MigrationRunner().run_migrations(self.storage)
+        except Exception as exc:
+            import structlog
+            structlog.get_logger(__name__).warning(
+                "migration_error_non_fatal", error=str(exc)
+            )
         self.pine_registry = SQLitePineSourceRegistry(self.config.sqlite_path)
         self.strategy_registry = SQLiteStrategyRegistry(self.config.sqlite_path)
         self.backtest_store = BacktestResultStore(self.storage)
         self.account_manager = AccountManager(self.storage)
         self.order_manager = OrderManager(self.storage)
-        self.event_bus = EventBus(self.storage)
+        # EventBus may fail if events table schema is old (pre-gateway).
+        # Non-fatal — gateway can still serve other endpoints.
+        try:
+            self.event_bus = EventBus(self.storage)
+        except Exception as exc:
+            import structlog
+            structlog.get_logger(__name__).warning(
+                "event_bus_init_error_non_fatal", error=str(exc)
+            )
+            self.event_bus = None  # type: ignore[assignment]
         self.scheduler = JobScheduler()
         self.artifact_store = ArtifactStore()
         self.state_store = StateStore(self.config.data_dir / "state")
