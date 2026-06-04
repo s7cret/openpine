@@ -316,7 +316,7 @@ class LiveStrategyRunner:
                     runtime_data_provider=runtime_data_provider,
                 )
             except Exception as exc:
-                if resume_state is None or "resume" not in str(exc).lower():
+                if resume_state is None or not self._is_resume_replay_error(exc):
                     raise
                 log.warning(
                     "live_runner.resume_snapshot_ignored",
@@ -397,6 +397,16 @@ class LiveStrategyRunner:
         except Exception as exc:
             log.error("live_runner.mini_backtest_error", error=str(exc), tb=traceback.format_exc())
             return None
+
+    @staticmethod
+    def _is_resume_replay_error(exc: Exception) -> bool:
+        message = str(exc).lower()
+        return (
+            "resume" in message
+            or "config hash" in message
+            or "content hash" in message
+            or "bar index mismatch" in message
+        )
 
     async def _process_orders(self, strategy, orders: list[dict]) -> None:
         """Process new orders: save to DB and send notifications."""
