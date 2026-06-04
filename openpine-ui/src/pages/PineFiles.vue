@@ -1,0 +1,191 @@
+<script setup lang="ts">
+import { onMounted, ref, computed } from 'vue'
+import { usePineFilesStore } from '@/stores/pineFiles'
+
+const store = usePineFilesStore()
+const showAdd = ref(false)
+const newName = ref('')
+const newContent = ref('')
+const expandedId = ref<string | null>(null)
+const copied = ref(false)
+const createStatus = ref('')
+const createLoading = ref(false)
+
+onMounted(() => store.fetchAll())
+
+// Filter state
+const filterName = ref('')
+const filteredFiles = computed(() => {
+  if (!filterName.value) return store.items
+  const q = filterName.value.toLowerCase()
+  return store.items.filter((f: any) => (f.name ?? '').toLowerCase().includes(q))
+})
+
+function getId(file: any) {
+  return file.id ?? file.source_id ?? ''
+}
+
+async function toggleExpand(file: any) {
+  const id = getId(file)
+  if (expandedId.value === id) {
+    expandedId.value = null
+    return
+  }
+  expandedId.value = id
+  await store.fetchContent(id)
+}
+
+async function addFile() {
+  if (!newName.value.trim()) return
+  createLoading.value = true
+  createStatus.value = 'Creating and compiling...'
+  const result = await store.create(newName.value.trim(), newContent.value)
+  createLoading.value = false
+  if (result.error) {
+    createStatus.value = `❌ ${result.error}`
+    return
+  }
+  createStatus.value = '✅ Created and compiled!'
+  newName.value = ''
+  newContent.value = ''
+  setTimeout(() => { showAdd.value = false; createStatus.value = '' }, 1500)
+}
+
+async function copyContent() {
+  try {
+    await navigator.clipboard.writeText(store.currentContent)
+    copied.value = true
+    setTimeout(() => copied.value = false, 2000)
+  } catch (e) {
+    // fallback
+    const ta = document.createElement('textarea')
+    ta.value = store.currentContent
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    copied.value = true
+    setTimeout(() => copied.value = false, 2000)
+  }
+}
+</script>
+
+<template>
+  <div class="space-y-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <h1 class="text-lg font-semibold text-gray-200">📄 Pine Files</h1>
+      <button
+        @click="showAdd = !showAdd"
+        class="px-3 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg transition-colors"
+      >
+        + Add File
+      </button>
+    </div>
+
+    <!-- Add Form -->
+    <transition name="fade">
+      <div v-if="showAdd" class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
+        <input
+          v-model="newName"
+          placeholder="File name (e.g. my_strategy.pine)"
+          class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
+        />
+        <textarea
+          v-model="newContent"
+          placeholder="Pine Script content..."
+          rows="8"
+          class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 font-mono placeholder-gray-500 focus:outline-none focus:border-accent resize-y"
+        />
+        <div class="flex gap-2 justify-end items-center">
+          <span v-if="createStatus" class="text-xs" :class="createStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ createStatus }}</span>
+          <button @click="showAdd = false; createStatus = ''" class="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200">Cancel</button>
+          <button @click="addFile" :disabled="createLoading" class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:opacity-50">
+            {{ createLoading ? 'Compiling...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Filter Bar -->
+    <div class="bg-dark-800 rounded-xl border border-dark-500 p-3 flex flex-wrap gap-2 items-center">
+      <input
+        v-model="filterName"
+        placeholder="Search by name..."
+        class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent w-64"
+      />
+      <span v-if="filteredFiles.length !== store.items.length" class="text-xs text-gray-500 ml-auto">
+        {{ filteredFiles.length }} / {{ store.items.length }}
+      </span>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-dark-800 rounded-xl border border-dark-500 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
+            <th class="px-4 py-2.5 text-left">Name</th>
+            <th class="px-4 py-2.5 text-left">Type</th>
+            <th class="px-4 py-2.5 text-left">Version</th>
+            <th class="px-4 py-2.5 text-left">Created</th>
+            <th class="px-4 py-2.5 w-10"></th>
+            <th class="px-2 py-2.5 w-10"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="filteredFiles.length === 0">
+            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+              {{ store.loading ? 'Loading...' : (store.items.length === 0 ? 'No pine files yet' : 'No files match search') }}
+            </td>
+          </tr>
+          <template v-for="file in filteredFiles" :key="getId(file)">
+            <tr
+              class="border-b border-dark-600/50 hover:bg-dark-700/50 cursor-pointer transition-colors"
+              @click="toggleExpand(file)"
+            >
+              <td class="px-4 py-2.5 font-medium text-gray-200">
+                <div class="flex items-center gap-2">
+                  {{ file.name ?? '—' }}
+                  <span v-if="store.compiling.has(getId(file))" class="inline-flex items-center gap-1 text-xs text-accent">
+                    <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    compiling...
+                  </span>
+                </div>
+              </td>
+              <td class="px-4 py-2.5 text-gray-400 text-xs">{{ file.source_type ?? '—' }}</td>
+              <td class="px-4 py-2.5 text-gray-400 text-xs">v{{ file.version ?? '—' }}</td>
+              <td class="px-4 py-2.5 text-gray-400 text-xs">{{ file.created_at ? new Date(file.created_at).toLocaleDateString() : '—' }}</td>
+              <td class="px-4 py-2.5 text-center">
+                <span class="text-gray-500 transition-transform inline-block" :class="expandedId === getId(file) ? 'rotate-90' : ''">▶</span>
+              </td>
+              <td class="px-2 py-2.5 text-center">
+                <button
+                  @click.stop="store.remove(getId(file))"
+                  class="p-1 rounded hover:bg-danger/20 text-gray-500 hover:text-danger transition-colors"
+                  title="Delete file"
+                >
+                  🗑
+                </button>
+              </td>
+            </tr>
+            <!-- Expanded content -->
+            <tr v-if="expandedId === getId(file)">
+              <td colspan="6" class="px-4 py-3 bg-dark-900/50">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs text-gray-500">Pine Script Source</span>
+                  <button
+                    @click.stop="copyContent()"
+                    class="px-2 py-1 text-xs rounded bg-dark-600 hover:bg-dark-500 text-gray-300 transition-colors"
+                  >
+                    {{ copied ? '✓ Copied' : '📋 Copy' }}
+                  </button>
+                </div>
+                <pre class="bg-dark-900 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap">{{ store.currentContent || 'Loading...' }}</pre>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>

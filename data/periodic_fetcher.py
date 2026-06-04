@@ -10,11 +10,12 @@ from collections import defaultdict
 from dataclasses import dataclass
 import threading
 import time
+from typing import Any
 
 import structlog
 
-from marketdata_provider.contracts import BarQuery, BarSeries, InstrumentKey, parse_timeframe
-from openpine.data.orchestrator import DataOrchestrator
+from marketdata_provider.contracts import Bar, BarQuery, BarSeries, InstrumentKey, parse_timeframe
+from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
 
@@ -79,6 +80,8 @@ class PeriodicBarFetcher:
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._running = False
+        self.last_fetch_at: int | None = None  # ms timestamp of last successful fetch
+        self.last_fetch_instruments: int = 0
 
     def start(self) -> None:
         """Start the background refresh thread."""
@@ -160,6 +163,9 @@ class PeriodicBarFetcher:
                     error=str(exc),
                 )
 
+        self.last_fetch_at = now_ms
+        self.last_fetch_instruments = len(groups)
+
     def _refresh_strategy(self, strategy: StrategyInstance) -> None:
         """Fetch latest bars for a single strategy."""
         self._refresh_market_key(RawMarketKey.from_strategy(strategy), [strategy], now_ms=int(time.time() * 1000))
@@ -180,19 +186,8 @@ class PeriodicBarFetcher:
         end_ms = now_ms - (now_ms % tf_ms)
         start_ms = end_ms - lookback_ms
 
-        query = BarQuery(
-            instrument=InstrumentKey(
-                symbol=key.symbol,
-                exchange=key.exchange,
-                market=key.market_type,
-            ),
-            timeframe=timeframe,
-            start_ms=start_ms,
-            end_ms=end_ms,
-            source="provider",
-        )
-
-        bars = self.orchestrator.get_bars(query)
+        # Direct HTTP fetch with timeout (bypasses hung orchestrator/provider)
+        bars = self._fetch_bars_direct(key, timeframe, start_ms, end_ms)
         if bars:
             target_timeframes = sorted({parse_timeframe(strategy.timeframe).canonical for strategy in strategies})
             log.info(
@@ -205,20 +200,33 @@ class PeriodicBarFetcher:
             )
             # Persist the refresh batch once. WebSocket paths still use
             # on_candle_closed for single confirmed candle events.
-            stored_query = BarQuery(
-                instrument=query.instrument,
-                timeframe=query.timeframe,
-                start_ms=query.start_ms,
-                end_ms=query.end_ms,
+            query = BarQuery(
+                instrument=InstrumentKey(
+                    symbol=key.symbol,
+                    exchange=key.exchange,
+                    market=key.market_type,
+                ),
+                timeframe=timeframe,
+                start_ms=start_ms,
+                end_ms=end_ms,
                 source="storage",
-                gap_policy=query.gap_policy,
             )
             series = BarSeries(
-                query=stored_query,
+                query=query,
                 bars=tuple(bars),
-                coverage=DataOrchestrator.coverage_for_series(stored_query, tuple(bars), "live"),
+                coverage=DataOrchestrator.coverage_for_series(query, tuple(bars), "live"),
             )
-            self.orchestrator.store_bars(series)
+            try:
+                self.orchestrator.store_bars(series)
+            except StorageUnavailableError as exc:
+                if "conflicting closed candle" not in str(exc):
+                    raise
+                log.info(
+                    "periodic_fetcher.market_refresh_already_stored",
+                    market_key=str(key),
+                    source_timeframe=timeframe.canonical,
+                    error=str(exc),
+                )
         else:
             log.debug(
                 "periodic_fetcher.no_new_bars",
@@ -226,6 +234,51 @@ class PeriodicBarFetcher:
                 source_timeframe=timeframe.canonical,
                 strategies=len(strategies),
             )
+
+    @staticmethod
+    def _fetch_bars_direct(
+        key: RawMarketKey,
+        timeframe: Any,
+        start_ms: int,
+        end_ms: int,
+    ) -> list[Bar]:
+        """Fetch klines directly from Binance REST API with a 10s timeout."""
+        import json as _json
+        import urllib.request
+        import urllib.error
+
+        interval = timeframe.canonical.lower()  # e.g. "1m", "15m"
+        symbol = key.symbol.upper()
+        is_futures = key.market_type in ("futures", "delivery")
+        base = "https://fapi.binance.com/fapi/v1/klines" if is_futures else "https://api.binance.com/api/v3/klines"
+        url = f"{base}?symbol={symbol}&interval={interval}&startTime={start_ms}&endTime={end_ms}&limit=1000"
+
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "OpenPine/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw = _json.loads(resp.read().decode())
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            log.warning("periodic_fetcher.http_error", symbol=symbol, error=str(exc))
+            return []
+
+        bars: list[Bar] = []
+        instrument = InstrumentKey(exchange=key.exchange, market=key.market_type, symbol=symbol)
+        for k in raw:
+            open_time = int(k[0])
+            close_time = open_time + (timeframe.duration_ms or 60000)
+            bars.append(Bar(
+                instrument=instrument,
+                timeframe=timeframe,
+                time=open_time,
+                time_close=close_time,
+                open=float(k[1]),
+                high=float(k[2]),
+                low=float(k[3]),
+                close=float(k[4]),
+                volume=float(k[5]),
+                closed=True,
+            ))
+        return bars
 
 
 def _group_strategies_by_market(strategies: list[StrategyInstance]) -> dict[RawMarketKey, list[StrategyInstance]]:

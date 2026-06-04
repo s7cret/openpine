@@ -162,6 +162,8 @@ class BacktestRunDetail(BacktestRunResponse):
     to_time: int
     bars_processed: int | None = None
     metrics: dict[str, Any] | None = None
+    strategy_name: str | None = None
+    version: int | None = None
 
 
 class BacktestTradeResponse(BaseModel):
@@ -186,6 +188,23 @@ class BacktestProgress(BaseModel):
     bars_processed: int
     total_bars: int
     pct: float
+    message: str = ""
+
+
+class BacktestEstimateResponse(BaseModel):
+    """Estimated market data range and workload for a backtest."""
+
+    strategy_id: str
+    symbol: str
+    timeframe: str
+    requested_from: int
+    requested_to: int
+    effective_from: int
+    effective_to: int
+    earliest_available: int | None = None
+    adjusted: bool = False
+    estimated_bars: int = 0
+    estimated_pages: int = 0
 
 
 # ── Live / Paper ──────────────────────────────────────────────────────────────
@@ -287,6 +306,7 @@ class DashboardResponse(BaseModel):
     kill_switch: bool
     uptime_seconds: float
     last_event_time: int | None = None
+    last_bar_update: int | None = None
 
 
 # ── Risk ──────────────────────────────────────────────────────────────────────

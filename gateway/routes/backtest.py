@@ -11,6 +11,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.schemas import (
+    BacktestEstimateResponse,
     BacktestProgress,
     BacktestRunDetail,
     BacktestRunRequest,
@@ -34,6 +35,43 @@ def _parse_date_ms(value: str) -> int:
     return int(parsed.timestamp() * 1000)
 
 
+def _market_data_query_for_strategy(strategy, from_ms: int, to_ms: int):
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
+    return BarQuery(
+        instrument=InstrumentKey(
+            exchange=strategy.exchange.lower(),
+            market=strategy.market_type.lower(),
+            symbol=strategy.symbol.upper(),
+        ),
+        timeframe=parse_timeframe(strategy.timeframe),
+        start_ms=from_ms,
+        end_ms=to_ms,
+        gap_policy="allow_with_metadata",
+    )
+
+
+def _estimate_backtest_market_data(strategy, from_ms: int, to_ms: int) -> BacktestEstimateResponse:
+    from openpine.data.direct_provider import DirectBinanceProvider
+
+    provider = DirectBinanceProvider()
+    query = _market_data_query_for_strategy(strategy, from_ms, to_ms)
+    effective_query, earliest = provider.effective_query(query)
+    return BacktestEstimateResponse(
+        strategy_id=strategy.strategy_id,
+        symbol=strategy.symbol.upper(),
+        timeframe=strategy.timeframe,
+        requested_from=from_ms,
+        requested_to=to_ms,
+        effective_from=effective_query.start_ms,
+        effective_to=effective_query.end_ms,
+        earliest_available=earliest,
+        adjusted=effective_query.start_ms != from_ms,
+        estimated_bars=provider.estimate_bars(effective_query),
+        estimated_pages=provider.estimate_pages(effective_query),
+    )
+
+
 async def _run_backtest_background(
     state: GatewayState,
     strategy_id: str,
@@ -45,6 +83,7 @@ async def _run_backtest_background(
     capture_plots: bool,
 ) -> None:
     """Execute backtest in background, update progress via WebSocket."""
+    import asyncio
     try:
         ws_manager.update_progress(run_id, "backtest", "running", 0.0, "Loading strategy...")
 
@@ -79,24 +118,48 @@ async def _run_backtest_background(
         ws_manager.update_progress(run_id, "backtest", "running", 0.2, "Loading market data...")
         await ws_manager.broadcast_progress(run_id)
 
-        from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+        from openpine.data.direct_provider import DirectBinanceProvider
 
-        orchestrator = state.orchestrator
-        tf = parse_timeframe(strategy.timeframe)
-        query = BarQuery(
-            instrument=InstrumentKey(
-                exchange=strategy.exchange.lower(),
-                market=strategy.market_type.lower(),
-                symbol=strategy.symbol.upper(),
-            ),
-            timeframe=tf,
-            start_ms=from_ms,
-            end_ms=to_ms,
-            source="auto",
-            gap_policy="fail",
-        )
+        direct_provider = DirectBinanceProvider()
+        query = _market_data_query_for_strategy(strategy, from_ms, to_ms)
+        estimate = _estimate_backtest_market_data(strategy, from_ms, to_ms)
+
+        def bar_load_progress(
+            bars_fetched: int,
+            pages: int,
+            total_bars: int | None = None,
+            total_pages: int | None = None,
+            earliest_open_ms: int | None = None,
+            phase: str = "fetch",
+        ) -> None:
+            expected_bars = total_bars or estimate.estimated_bars
+            expected_pages = total_pages or estimate.estimated_pages
+            page_ratio = pages / max(expected_pages, 1)
+            pct = 0.2 + 0.1 * max(0.0, min(page_ratio, 1.0))
+            source = "cache" if phase.startswith("cache") else "Binance"
+            ws_manager.update_progress(
+                run_id, "backtest", "running", pct,
+                f"Loading bars from {source}: {bars_fetched:,}/{expected_bars:,} bars "
+                f"({pages}/{expected_pages} pages)",
+                detail={
+                    "phase": phase,
+                    "bars_processed": bars_fetched,
+                    "total_bars": expected_bars,
+                    "pages_processed": pages,
+                    "total_pages": expected_pages,
+                    "requested_from": from_ms,
+                    "effective_from": estimate.effective_from,
+                    "earliest_available": earliest_open_ms,
+                    "adjusted": estimate.adjusted,
+                },
+            )
+
         try:
-            series = orchestrator.load_bars(query)
+            loop = asyncio.get_event_loop()
+            series = await loop.run_in_executor(
+                None,
+                lambda: direct_provider.fetch_bars(query, progress_callback=bar_load_progress),
+            )
             bars = list(series.bars)
         except Exception as exc:
             ws_manager.update_progress(run_id, "backtest", "failed", 0.2, f"Data load failed: {exc}")
@@ -114,6 +177,7 @@ async def _run_backtest_background(
         ws_manager.update_progress(
             run_id, "backtest", "running", 0.3,
             f"Running backtest on {total_bars} bars...",
+            detail={"bars_processed": 0, "total_bars": total_bars, "phase": "compute"},
         )
         await ws_manager.broadcast_progress(run_id)
 
@@ -173,22 +237,36 @@ async def _run_backtest_background(
 
         # Run
         from openpine.runtime.engine import BacktestEngineAdapter
+        from openpine.data.direct_data_provider import DirectBinanceDataProvider
 
         adapter = BacktestEngineAdapter()
+        
+        # Create runtime data provider for request.security support
+        runtime_data_provider = None
+        try:
+            runtime_data_provider = DirectBinanceDataProvider(market=config.market_type)
+        except Exception as exc:
+            log.warning("runtime_data_provider_init_failed", error=str(exc))
 
         def progress_callback(done: int, total: int) -> None:
             pct = 0.3 + 0.6 * (done / max(total, 1))
             ws_manager.update_progress(
                 run_id, "backtest", "running", pct,
                 f"Bars: {done}/{total}",
+                detail={"bars_processed": done, "total_bars": total, "phase": "compute"},
             )
 
-        result = adapter.run(
-            strategy_class,
-            bars,
-            config,
-            params=params,
-            progress_callback=progress_callback,
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: adapter.run(
+                strategy_class,
+                bars,
+                config,
+                params=params,
+                progress_callback=progress_callback,
+                runtime_data_provider=runtime_data_provider,
+            ),
         )
 
         # Save results
@@ -205,6 +283,11 @@ async def _run_backtest_background(
         ws_manager.update_progress(
             run_id, "backtest", "completed", 1.0,
             f"Done. {result.bars_processed} bars processed.",
+            detail={
+                "bars_processed": result.bars_processed,
+                "total_bars": result.bars_processed,
+                "phase": "completed",
+            },
         )
         await ws_manager.broadcast_progress(run_id)
         log.info("backtest_completed", run_id=run_id, bars=result.bars_processed)
@@ -240,6 +323,10 @@ async def run_backtest(
     if not strategy.pine_id or not strategy.artifact_id:
         raise HTTPException(400, "Strategy has no pine_id or artifact_id. Compile first.")
 
+    estimate = _estimate_backtest_market_data(strategy, from_ms, to_ms)
+    if estimate.effective_from >= estimate.effective_to:
+        raise HTTPException(400, "No listed market data found in selected range")
+
     from openpine.storage.backtest_dto import BacktestRunRequest as BTRequest
 
     run_id = state.backtest_store.create_run(
@@ -253,16 +340,29 @@ async def run_backtest(
             symbol=strategy.symbol,
             price_type="trade",
             timeframe=strategy.timeframe,
-            from_time=from_ms,
-            to_time=to_ms,
+            from_time=estimate.effective_from,
+            to_time=estimate.effective_to,
             warmup_bars=body.warmup_bars,
         )
     )
 
-    ws_manager.update_progress(run_id, "backtest", "queued", 0.0, "Backtest queued")
+    queued_message = "Backtest queued"
+    if estimate.adjusted:
+        queued_message = (
+            f"Backtest queued. Range adjusted to listed data: "
+            f"{estimate.estimated_bars:,} bars ({estimate.estimated_pages} pages)."
+        )
+    ws_manager.update_progress(
+        run_id,
+        "backtest",
+        "queued",
+        0.0,
+        queued_message,
+        detail=estimate.model_dump(),
+    )
     background_tasks.add_task(
         _run_backtest_background,
-        state, body.strategy_id, run_id, from_ms, to_ms,
+        state, body.strategy_id, run_id, estimate.effective_from, estimate.effective_to,
         body.params_override, body.warmup_bars, body.capture_plots,
     )
 
@@ -275,6 +375,25 @@ async def run_backtest(
     )
 
 
+@router.get("/estimate", response_model=BacktestEstimateResponse)
+async def estimate_backtest(
+    strategy_id: str,
+    from_time: str,
+    to_time: str,
+    state: GatewayState = Depends(get_state),
+) -> BacktestEstimateResponse:
+    """Estimate effective market data range, bars, and Binance pages."""
+    from_ms = _parse_date_ms(from_time)
+    to_ms = _parse_date_ms(to_time)
+    if from_ms >= to_ms:
+        raise HTTPException(400, "from_time must be before to_time")
+    try:
+        strategy = state.strategy_registry.get_strategy(strategy_id)
+    except KeyError:
+        raise HTTPException(404, f"Strategy not found: {strategy_id}")
+    return _estimate_backtest_market_data(strategy, from_ms, to_ms)
+
+
 @router.get("/runs", response_model=list[BacktestRunDetail])
 async def list_runs(
     strategy_id: str | None = None,
@@ -283,12 +402,30 @@ async def list_runs(
 ) -> list[BacktestRunDetail]:
     """List backtest runs."""
     store = state.backtest_store
+    registry = state.strategy_registry
     if strategy_id:
         runs = store.list_runs(strategy_id, limit=limit)
     else:
         runs = store.list_all_runs(limit=limit)
-    return [
-        BacktestRunDetail(
+
+    # Compute version per strategy: count of prior runs + 1
+    version_counter: dict[str, int] = {}
+    run_versions: dict[str, int] = {}
+    for r in sorted(runs, key=lambda x: x.started_at or 0):
+        version_counter[r.strategy_id] = version_counter.get(r.strategy_id, 0) + 1
+        run_versions[r.run_id] = version_counter[r.strategy_id]
+
+    result = []
+    for r in runs:
+        # Look up strategy name
+        strategy_name = None
+        try:
+            strat = registry.get_strategy(r.strategy_id)
+            strategy_name = strat.name
+        except (KeyError, Exception):
+            pass
+
+        result.append(BacktestRunDetail(
             run_id=r.run_id,
             strategy_id=r.strategy_id,
             status=r.status,
@@ -298,9 +435,10 @@ async def list_runs(
             timeframe=r.timeframe,
             from_time=r.from_time,
             to_time=r.to_time,
-        )
-        for r in runs
-    ]
+            strategy_name=strategy_name,
+            version=run_versions.get(r.run_id),
+        ))
+    return result
 
 
 @router.get("/runs/{run_id}", response_model=BacktestRunDetail)
@@ -317,6 +455,22 @@ async def get_run(
         metrics = state.backtest_store.get_metrics(run_id)
     except Exception:
         pass
+
+    strategy_name = None
+    try:
+        strat = state.strategy_registry.get_strategy(run.strategy_id)
+        strategy_name = strat.name
+    except (KeyError, Exception):
+        pass
+
+    # Compute version: count of runs for this strategy up to and including this one
+    all_runs = state.backtest_store.list_runs(run.strategy_id, limit=1000)
+    version = 1
+    for i, r in enumerate(sorted(all_runs, key=lambda x: x.started_at or 0), 1):
+        if r.run_id == run_id:
+            version = i
+            break
+
     return BacktestRunDetail(
         run_id=run.run_id,
         strategy_id=run.strategy_id,
@@ -328,7 +482,20 @@ async def get_run(
         from_time=run.from_time,
         to_time=run.to_time,
         metrics=metrics,
+        strategy_name=strategy_name,
+        version=version,
     )
+
+
+@router.delete("/runs/{run_id}", status_code=204)
+async def delete_run(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> None:
+    """Delete a backtest run and all associated data."""
+    deleted = state.backtest_store.delete_run(run_id)
+    if not deleted:
+        raise HTTPException(404, f"Run not found: {run_id}")
 
 
 @router.get("/runs/{run_id}/trades", response_model=list[BacktestTradeResponse])
@@ -363,12 +530,35 @@ async def get_progress(run_id: str) -> BacktestProgress | None:
     p = ws_manager.get_progress(run_id)
     if p is None:
         return None
+
+    detail = p.get("detail") or {}
+    if isinstance(detail, dict) and "bars_processed" in detail and "total_bars" in detail:
+        return BacktestProgress(
+            run_id=p["operation_id"],
+            status=p["status"],
+            bars_processed=int(detail.get("bars_processed") or 0),
+            total_bars=int(detail.get("total_bars") or 0),
+            pct=p["pct"],
+            message=p.get("message", ""),
+        )
+
+    # Parse bars info from messages like "Bars: 5000/100000"
+    import re
+    message = p.get("message", "")
+    bars_processed = 0
+    total_bars = 0
+    m = re.search(r"Bars:\s*([\d,]+)\s*/\s*([\d,]+)", message)
+    if m:
+        bars_processed = int(m.group(1).replace(",", ""))
+        total_bars = int(m.group(2).replace(",", ""))
+
     return BacktestProgress(
         run_id=p["operation_id"],
         status=p["status"],
-        bars_processed=int(p.get("detail", {}).get("bars_processed", 0)),
-        total_bars=int(p.get("detail", {}).get("total_bars", 0)),
+        bars_processed=bars_processed,
+        total_bars=total_bars,
         pct=p["pct"],
+        message=message,
     )
 
 
