@@ -290,6 +290,7 @@ class LiveStrategyRunner:
                 calc_on_every_tick=bool(decl_args.get("calc_on_every_tick", False)),
                 use_bar_magnifier=bool(decl_args.get("use_bar_magnifier", False)),
                 export_resume_state=True,
+                resume_validation_policy="diagnostic",
                 content_hash_enabled=True,
                 collect_events=True,
                 collect_order_lifecycle=True,
@@ -305,14 +306,48 @@ class LiveStrategyRunner:
             except Exception:
                 pass
 
-            result = adapter.run(
-                strategy_class,
-                bars,
-                config,
-                params={},
-                resume_state=resume_state,
-                runtime_data_provider=runtime_data_provider,
-            )
+            try:
+                result = adapter.run(
+                    strategy_class,
+                    bars,
+                    config,
+                    params={},
+                    resume_state=resume_state,
+                    runtime_data_provider=runtime_data_provider,
+                )
+            except Exception as exc:
+                if resume_state is None or "resume" not in str(exc).lower():
+                    raise
+                log.warning(
+                    "live_runner.resume_snapshot_ignored",
+                    strategy_id=strategy.strategy_id,
+                    bar_time=up_to_bar_time_ms,
+                    error=str(exc),
+                )
+                self._mark_resume_snapshot_invalid(strategy, snapshot_bar_time)
+                start_ms = end_ms - lookback_ms
+                query = BarQuery(
+                    instrument=query.instrument,
+                    timeframe=tf,
+                    start_ms=start_ms,
+                    end_ms=end_ms,
+                    gap_policy="allow_with_metadata",
+                )
+                series = self.orchestrator.load_bars(query) if self.orchestrator is not None else self._fetch_direct(query)
+                bars = list(series.bars)
+                if not bars:
+                    return []
+                config = BacktestRunConfig(
+                    **{**config.__dict__, "start_time": start_ms}
+                )
+                result = adapter.run(
+                    strategy_class,
+                    bars,
+                    config,
+                    params={},
+                    resume_state=None,
+                    runtime_data_provider=runtime_data_provider,
+                )
 
             self._save_resume_snapshot(
                 strategy,
@@ -545,6 +580,14 @@ class LiveStrategyRunner:
             )
         except Exception as exc:
             log.warning("live_runner.resume_snapshot_save_failed", strategy_id=strategy.strategy_id, error=str(exc))
+
+    def _mark_resume_snapshot_invalid(self, strategy, bar_time: int | None) -> None:
+        if self.state_store is None:
+            return
+        try:
+            self.state_store.mark_invalid(strategy.strategy_id, since_bar_time=bar_time)
+        except Exception as exc:
+            log.warning("live_runner.resume_snapshot_invalidate_failed", strategy_id=strategy.strategy_id, error=str(exc))
 
     @staticmethod
     def _fetch_direct(query):
