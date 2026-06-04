@@ -3,7 +3,7 @@ import { onMounted, ref, computed, watch } from 'vue'
 import { useStrategiesStore } from '@/stores/strategies'
 import { usePineFilesStore } from '@/stores/pineFiles'
 import { useRoute } from 'vue-router'
-import { searchBinanceSymbols, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades } from '@/api/client'
+import { searchBinanceSymbols, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, type BinanceSymbolOption } from '@/api/client'
 import CandleChart from '@/components/CandleChart.vue'
 
 const store = useStrategiesStore()
@@ -65,12 +65,63 @@ const form = ref({
 
 const timeframes = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w']
 const marketTypes = ['spot', 'futures', 'margin', 'delivery']
-const symbols = ref<string[]>([])
+const symbols = ref<BinanceSymbolOption[]>([])
 const symbolSearch = ref('')
 const symbolsLoading = ref(false)
 const showSymbolDropdown = ref(false)
 const artifacts = ref<any[]>([])
 const artifactsLoading = ref(false)
+const failedTickerIcons = ref<Set<string>>(new Set())
+const marketTypeMeta: Record<string, { icon: string; label: string; cls: string }> = {
+  spot: { icon: '●', label: 'Spot', cls: 'text-success' },
+  futures: { icon: '⚡', label: 'Futures', cls: 'text-warning' },
+  margin: { icon: '↔', label: 'Margin', cls: 'text-accent-light' },
+  delivery: { icon: '◆', label: 'Delivery', cls: 'text-purple-300' },
+}
+
+function marketTypeLabel(marketType?: string) {
+  const key = (marketType ?? '').toLowerCase()
+  const meta = marketTypeMeta[key]
+  return meta ? `${meta.icon} ${meta.label}` : (marketType ?? '—')
+}
+
+function marketTypeIcon(marketType?: string) {
+  return marketTypeMeta[(marketType ?? '').toLowerCase()]?.icon ?? '•'
+}
+
+function marketTypeClass(marketType?: string) {
+  return marketTypeMeta[(marketType ?? '').toLowerCase()]?.cls ?? 'text-gray-400'
+}
+
+function baseAssetFromSymbol(symbol?: string) {
+  const stableQuotes = ['USDT', 'USDC', 'FDUSD', 'TUSD', 'DAI', 'USDP', 'BUSD']
+  const upper = (symbol ?? '').toUpperCase()
+  const quote = stableQuotes.find((q) => upper.endsWith(q))
+  return quote
+    ? upper.slice(0, -quote.length)
+    : upper
+}
+
+function tickerIconUrl(asset?: string) {
+  const base = (asset ?? '').toLowerCase()
+  if (!base) return ''
+  return `https://assets.coincap.io/assets/icons/${base}@2x.png`
+}
+
+function hasTickerIcon(asset?: string) {
+  const base = (asset ?? '').toUpperCase()
+  return Boolean(base && !failedTickerIcons.value.has(base))
+}
+
+function markTickerIconMissing(asset?: string) {
+  const base = (asset ?? '').toUpperCase()
+  if (!base) return
+  failedTickerIcons.value = new Set([...failedTickerIcons.value, base])
+}
+
+function tickerInitials(asset?: string) {
+  return (asset ?? '?').slice(0, 3).toUpperCase()
+}
 
 onMounted(async () => {
   await store.fetchAll()
@@ -103,7 +154,7 @@ watch(() => form.value.pine_id, async (pineId) => {
 const filteredSymbols = computed(() => {
   if (!symbolSearch.value) return symbols.value.slice(0, 30)
   const q = symbolSearch.value.toLowerCase()
-  return symbols.value.filter(s => s.toLowerCase().includes(q)).slice(0, 30)
+  return symbols.value.filter(s => s.symbol.toLowerCase().includes(q) || s.baseAsset.toLowerCase().includes(q)).slice(0, 30)
 })
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -117,8 +168,13 @@ watch(symbolSearch, (val) => {
   }, 300)
 })
 
-function selectSymbol(s: string) {
-  form.value.symbol = s
+watch(() => form.value.market_type, () => {
+  symbols.value = []
+  symbolSearch.value = ''
+})
+
+function selectSymbol(s: BinanceSymbolOption) {
+  form.value.symbol = s.symbol
   symbolSearch.value = ''
   showSymbolDropdown.value = false
 }
@@ -342,7 +398,7 @@ function tradeStatusBadge(status: string) {
             <option value="binance">Binance</option>
           </select>
           <select v-model="form.market_type" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
-            <option v-for="mt in marketTypes" :key="mt" :value="mt">{{ mt }}</option>
+            <option v-for="mt in marketTypes" :key="mt" :value="mt">{{ marketTypeLabel(mt) }}</option>
           </select>
           <select v-model="form.timeframe" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
             <option v-for="tf in timeframes" :key="tf" :value="tf">{{ tf }}</option>
@@ -353,7 +409,7 @@ function tradeStatusBadge(status: string) {
         <div class="relative">
           <input
             v-model="symbolSearch"
-            :placeholder="form.symbol || 'Search ticker on Binance...'"
+            :placeholder="form.symbol || 'Search stable pair on Binance...'"
             @focus="showSymbolDropdown = true"
             @blur="hideSymbolDropdown"
             class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
@@ -362,11 +418,25 @@ function tradeStatusBadge(status: string) {
             <div v-if="symbolsLoading" class="px-3 py-2 text-xs text-gray-500">Loading from Binance...</div>
             <div
               v-for="s in filteredSymbols"
-              :key="s"
+              :key="s.symbol"
               @mousedown.prevent="selectSymbol(s)"
-              class="px-3 py-1.5 text-sm text-gray-300 hover:bg-dark-600 cursor-pointer"
+              class="flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-dark-600 cursor-pointer"
             >
-              {{ s }}
+              <span class="flex min-w-0 items-center gap-2">
+                <img
+                  v-if="hasTickerIcon(s.baseAsset)"
+                  :src="tickerIconUrl(s.baseAsset)"
+                  :alt="s.baseAsset"
+                  class="h-5 w-5 rounded-full bg-dark-600 object-cover"
+                  loading="lazy"
+                  @error="markTickerIconMissing(s.baseAsset)"
+                />
+                <span v-else class="grid h-5 w-5 place-items-center rounded-full bg-dark-600 text-[9px] font-semibold text-gray-400">
+                  {{ tickerInitials(s.baseAsset) }}
+                </span>
+                <span class="font-mono text-gray-200">{{ s.symbol }}</span>
+              </span>
+              <span class="shrink-0 text-xs text-gray-500">{{ s.baseAsset }}/{{ s.quoteAsset }}</span>
             </div>
           </div>
         </div>
@@ -436,12 +506,30 @@ function tradeStatusBadge(status: string) {
             @click="openDetail(s.strategy_id ?? s.id)"
           >
             <td class="px-4 py-2.5 font-medium text-gray-200 max-w-[120px] sm:max-w-none truncate">{{ s.name ?? '—' }}</td>
-            <td class="px-4 py-2.5 text-gray-400 font-mono">{{ s.symbol ?? '—' }}</td>
+            <td class="px-4 py-2.5 text-gray-400 font-mono">
+              <span class="flex items-center gap-2">
+                <img
+                  v-if="s.symbol && hasTickerIcon(baseAssetFromSymbol(s.symbol))"
+                  :src="tickerIconUrl(baseAssetFromSymbol(s.symbol))"
+                  :alt="baseAssetFromSymbol(s.symbol)"
+                  class="h-5 w-5 rounded-full bg-dark-600 object-cover"
+                  loading="lazy"
+                  @error="markTickerIconMissing(baseAssetFromSymbol(s.symbol))"
+                />
+                <span v-else-if="s.symbol" class="grid h-5 w-5 place-items-center rounded-full bg-dark-600 text-[9px] font-semibold text-gray-400">
+                  {{ tickerInitials(baseAssetFromSymbol(s.symbol)) }}
+                </span>
+                <span>{{ s.symbol ?? '—' }}</span>
+              </span>
+            </td>
             <td class="px-4 py-2.5">
               <span class="px-1.5 py-0.5 rounded text-xs bg-dark-500 text-gray-300">{{ s.timeframe ?? '—' }}</span>
             </td>
             <td class="px-4 py-2.5">
-              <span class="px-1.5 py-0.5 rounded text-xs bg-dark-500 text-gray-300">{{ s.market_type ?? '—' }}</span>
+              <span class="inline-flex items-center gap-1 rounded bg-dark-500 px-1.5 py-0.5 text-xs text-gray-300">
+                <span :class="marketTypeClass(s.market_type)">{{ marketTypeIcon(s.market_type) }}</span>
+                <span>{{ s.market_type ?? '—' }}</span>
+              </span>
             </td>
             <td class="px-4 py-2.5">
               <span :class="[statusBadge(s.status), 'px-2 py-0.5 rounded-full text-xs font-medium']">
@@ -474,7 +562,7 @@ function tradeStatusBadge(status: string) {
             <div class="flex items-center justify-between px-5 py-4 border-b border-dark-500">
               <div>
                 <h2 class="text-lg font-semibold text-gray-200">{{ store.current?.name ?? 'Strategy' }}</h2>
-                <span class="text-xs text-gray-500">{{ store.current?.symbol ?? '' }} · {{ store.current?.timeframe ?? '' }} · {{ store.current?.market_type ?? '' }}</span>
+                <span class="text-xs text-gray-500">{{ store.current?.symbol ?? '' }} · {{ store.current?.timeframe ?? '' }} · {{ marketTypeLabel(store.current?.market_type) }}</span>
               </div>
               <button @click="showDetail = null" class="p-1.5 rounded-lg hover:bg-dark-600 text-gray-400">✕</button>
             </div>
@@ -485,6 +573,7 @@ function tradeStatusBadge(status: string) {
               <div><span class="text-xs text-gray-500">Enabled</span><div class="text-sm font-bold" :class="store.current?.enabled ? 'text-success' : 'text-gray-500'">{{ store.current?.enabled ? 'Yes' : 'No' }}</div></div>
               <div><span class="text-xs text-gray-500">Pine Source</span><div class="text-xs text-gray-400 font-mono truncate">{{ store.current?.pine_id ?? '—' }}</div></div>
               <div><span class="text-xs text-gray-500">Exchange</span><div class="text-sm text-gray-300">{{ store.current?.exchange ?? '—' }}</div></div>
+              <div><span class="text-xs text-gray-500">Market</span><div class="text-sm text-gray-300">{{ marketTypeLabel(store.current?.market_type) }}</div></div>
               <div><span class="text-xs text-gray-500">Created</span><div class="text-xs text-gray-400">{{ store.current?.created_at ? new Date(store.current.created_at).toLocaleString() : '—' }}</div></div>
             </div>
 

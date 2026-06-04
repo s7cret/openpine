@@ -60,17 +60,35 @@ export const getOrders = (strategyId?: string, limit = 100) =>
 export const getPositions = (strategyId: string) =>
   api.get(`/positions/${strategyId}`)
 
+export type BinanceSymbolOption = {
+  symbol: string
+  baseAsset: string
+  quoteAsset: string
+}
+
+const STABLE_QUOTE_ASSETS = new Set(['USDT', 'USDC', 'FDUSD', 'TUSD', 'DAI', 'USDP', 'BUSD'])
+
 // Binance ticker search (direct, no proxy)
-export async function searchBinanceSymbols(query: string, market: string = 'spot'): Promise<string[]> {
+export async function searchBinanceSymbols(query: string, market: string = 'spot'): Promise<BinanceSymbolOption[]> {
   try {
     const endpoint = market === 'futures' || market === 'delivery'
       ? 'https://fapi.binance.com/fapi/v1/exchangeInfo'
       : 'https://api.binance.com/api/v3/exchangeInfo'
+    const normalizedQuery = query.trim().toLowerCase()
     const { data } = await axios.get(endpoint, { timeout: 10000 })
     const symbols = (data.symbols ?? [])
       .filter((s: any) => s.status === 'TRADING')
-      .map((s: any) => s.symbol)
-      .filter((s: string) => s.toLowerCase().includes(query.toLowerCase()))
+      .map((s: any) => ({
+        symbol: String(s.symbol ?? '').toUpperCase(),
+        baseAsset: String(s.baseAsset ?? '').toUpperCase(),
+        quoteAsset: String(s.quoteAsset ?? '').toUpperCase(),
+      }))
+      .filter((s: BinanceSymbolOption) => s.symbol && STABLE_QUOTE_ASSETS.has(s.quoteAsset))
+      .filter((s: BinanceSymbolOption) => {
+        const base = s.baseAsset.toLowerCase()
+        const symbol = s.symbol.toLowerCase()
+        return symbol.includes(normalizedQuery) || base.includes(normalizedQuery)
+      })
     return symbols.slice(0, 50)
   } catch (e) {
     console.error('Binance symbols fetch failed', e)
