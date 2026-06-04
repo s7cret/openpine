@@ -22,10 +22,12 @@ const uptime = computed(() => {
   return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`
 })
 
-const cacheSizeMB = computed(() => {
-  const bytes = store.cacheInfo?.total_size_bytes ?? 0
+const dataSizeMB = computed(() => {
+  const bytes = store.dataInfo?.total_size_bytes ?? store.cacheInfo?.total_size_bytes ?? 0
   return (bytes / 1024 / 1024).toFixed(1)
 })
+const databaseSizeMB = computed(() => ((store.dataInfo?.database_size_bytes ?? 0) / 1024 / 1024).toFixed(1))
+const totalBars = computed(() => (store.dataInfo?.total_bars ?? 0).toLocaleString())
 
 const enabledStrategies = computed(() => strategies.value.filter((s: any) => s.enabled))
 const runningStrategies = computed(() => strategies.value.filter((s: any) => s.status === 'running'))
@@ -157,17 +159,28 @@ const runningStrategies = computed(() => strategies.value.filter((s: any) => s.s
 
     <!-- Cache Info + Recent Jobs -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <!-- Cache -->
-      <div class="bg-dark-800 rounded-xl border border-dark-500 p-4">
-        <h2 class="text-sm font-semibold text-gray-300 mb-3">💾 Data Cache</h2>
+      <!-- Market Data -->
+      <div
+        class="bg-dark-800 rounded-xl border border-dark-500 p-4 cursor-pointer transition-all hover:ring-1 hover:ring-blue-500/50"
+        @click="router.push('/data')"
+      >
+        <h2 class="text-sm font-semibold text-gray-300 mb-3">💾 Market Data</h2>
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-400">Cache size</span>
-            <span class="text-gray-200 font-mono">{{ cacheSizeMB }} MB</span>
+            <span class="text-gray-400">Total size</span>
+            <span class="text-gray-200 font-mono">{{ dataSizeMB }} MB</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400">Instruments</span>
-            <span class="text-gray-200">{{ (store.cacheInfo?.instruments ?? []).length }}</span>
+            <span class="text-gray-400">Database</span>
+            <span class="text-gray-200 font-mono">{{ databaseSizeMB }} MB</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Bars</span>
+            <span class="text-gray-200 font-mono">{{ totalBars }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Series</span>
+            <span class="text-gray-200">{{ store.dataInfo?.series_count ?? 0 }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-400">Kill switch</span>

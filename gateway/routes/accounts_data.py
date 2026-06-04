@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
+import shutil
+import time
 from pathlib import Path
 
 import structlog
@@ -18,6 +21,7 @@ from openpine.gateway.schemas import (
     KillSwitchRequest,
     RiskStatusResponse,
 )
+from openpine.data.persistent_cache import default_cache_dir
 
 log = structlog.get_logger(__name__)
 router = APIRouter(tags=["accounts-data-risk"])
@@ -56,29 +60,119 @@ async def data_cache_status(
     state: GatewayState = Depends(get_state),
 ) -> CacheStatusResponse:
     """Get cache status."""
-    cache_dir = state.config.data_cache_root or (state.config.data_dir / "cache")
-    total_size = 0
-    instruments: set[str] = set()
-    timeframes: set[str] = set()
-
-    marketdata_dir = cache_dir / "marketdata"
-    if marketdata_dir.exists():
-        for f in marketdata_dir.rglob("*"):
-            if f.is_file():
-                total_size += f.stat().st_size
-                # Extract instrument/TF from path conventions
-                parts = f.relative_to(marketdata_dir).parts
-                if len(parts) >= 1:
-                    instruments.add(parts[0])
-                if len(parts) >= 2:
-                    timeframes.add(parts[1])
+    summary = _data_summary(state)
+    instruments = {item["symbol"] for item in summary["series"]}
+    timeframes = {item["timeframe"] for item in summary["series"]}
 
     return CacheStatusResponse(
-        cache_dir=str(cache_dir),
-        total_size_bytes=total_size,
+        cache_dir=str(default_cache_dir()),
+        total_size_bytes=int(summary["cache_size_bytes"]),
         instruments=sorted(instruments),
         timeframes=sorted(timeframes),
     )
+
+
+@router.get("/data/summary")
+async def data_summary(
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Return market-data and order inventory for dashboard/data page."""
+    return _data_summary(state)
+
+
+@router.post("/data/series/{series_id}/refresh")
+async def refresh_data_series(
+    series_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Refresh a market-data series by fetching bars after the newest cached bar."""
+    series = _series_by_id(state).get(series_id)
+    if series is None:
+        raise HTTPException(404, f"Data series not found: {series_id}")
+    if not series.get("latest_ms"):
+        raise HTTPException(400, "Series has no latest bar to refresh from")
+
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
+    tf = parse_timeframe(str(series["timeframe"]))
+    duration_ms = tf.duration_ms or 60_000
+    now_ms = int(time.time() * 1000)
+    start_ms = int(series["latest_ms"]) + duration_ms
+    if start_ms >= now_ms:
+        return {"status": "actual", "bars_fetched": 0, "series": series}
+
+    query = BarQuery(
+        instrument=InstrumentKey(
+            exchange=str(series["exchange"]),
+            market=str(series["market_type"]),
+            symbol=str(series["symbol"]),
+        ),
+        timeframe=tf,
+        start_ms=start_ms,
+        end_ms=now_ms,
+        source="auto",
+        gap_policy="allow_with_metadata",
+    )
+    loaded = state.orchestrator.load_bars(query)
+    return {
+        "status": "refreshed",
+        "bars_fetched": len(loaded.bars),
+        "from_ms": start_ms,
+        "to_ms": now_ms,
+    }
+
+
+@router.delete("/data/series/{series_id}")
+async def delete_data_series(
+    series_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Delete cached candle data for one exchange/market/symbol/timeframe group."""
+    series = _series_by_id(state).get(series_id)
+    if series is None:
+        raise HTTPException(404, f"Data series not found: {series_id}")
+
+    deleted_files = _delete_persistent_cache_series(series)
+    deleted_manifests = _delete_candle_manifest_series(state, series)
+    return {
+        "status": "deleted",
+        "series_id": series_id,
+        "files": deleted_files,
+        "manifests": deleted_manifests,
+    }
+
+
+@router.delete("/data/orders")
+async def delete_data_orders(
+    symbol: str | None = None,
+    strategy_id: str | None = None,
+    status: str | None = None,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Delete execution orders, optionally filtered by symbol/strategy/status."""
+    where: list[str] = []
+    params: list[object] = []
+    if symbol:
+        where.append("symbol = ?")
+        params.append(symbol.upper())
+    if strategy_id:
+        where.append("strategy_id = ?")
+        params.append(strategy_id)
+    if status:
+        where.append("status = ?")
+        params.append(status)
+    where_sql = f"WHERE {' AND '.join(where)}" if where else ""
+    order_ids = [row[0] for row in state.storage.execute(f"SELECT order_id FROM orders {where_sql}", tuple(params)).fetchall()]
+    if not order_ids:
+        return {"status": "deleted", "orders_deleted": 0, "fills_deleted": 0}
+
+    placeholders = ",".join("?" for _ in order_ids)
+    with state.storage.transaction():
+        state.storage.execute(f"DELETE FROM fills WHERE order_id IN ({placeholders})", tuple(order_ids))
+        fills_deleted = state.storage.execute("SELECT changes()").fetchone()[0]
+        state.storage.execute(f"DELETE FROM orders WHERE order_id IN ({placeholders})", tuple(order_ids))
+        orders_deleted = state.storage.execute("SELECT changes()").fetchone()[0]
+    return {"status": "deleted", "orders_deleted": orders_deleted, "fills_deleted": fills_deleted}
 
 
 @router.get("/data/coverage/{symbol}", response_model=list[DataCoverageResponse])
@@ -142,6 +236,279 @@ async def data_backfill(
     state.scheduler.enqueue(job)
     log.info("backfill_enqueued", symbol=body.symbol, timeframe=body.timeframe)
     return {"job_id": job.id, "status": "queued"}
+
+
+def _data_summary(state: GatewayState) -> dict[str, object]:
+    series = _data_series_inventory(state)
+    db_size = _database_size_bytes(state)
+    cache_size = _persistent_cache_size_bytes()
+    candle_store_size = _candle_store_size_bytes(state)
+    orders_summary = _orders_summary(state)
+    return {
+        "database_size_bytes": db_size,
+        "cache_size_bytes": cache_size,
+        "candle_store_size_bytes": candle_store_size,
+        "total_size_bytes": db_size + cache_size + candle_store_size,
+        "total_bars": sum(int(item.get("bar_count") or 0) for item in series),
+        "series_count": len(series),
+        "series": series,
+        "orders": orders_summary,
+    }
+
+
+def _data_series_inventory(state: GatewayState) -> list[dict[str, object]]:
+    groups: dict[tuple[str, str, str, str, str], dict[str, object]] = {}
+    _merge_persistent_cache_groups(groups)
+    _merge_candle_manifest_groups(state, groups)
+    for entry in groups.values():
+        ranges = list(entry.get("ranges") or [])
+        entry["stored_rows"] = int(entry.get("bar_count") or 0)
+        entry["bar_count"] = _estimate_unique_bars(ranges, str(entry["timeframe"]))
+        entry["ranges"] = _compact_ranges(ranges)
+    return sorted(groups.values(), key=lambda item: (str(item["symbol"]), str(item["timeframe"])))
+
+
+def _series_by_id(state: GatewayState) -> dict[str, dict[str, object]]:
+    return {str(item["id"]): item for item in _data_series_inventory(state)}
+
+
+def _merge_persistent_cache_groups(groups: dict[tuple[str, str, str, str, str], dict[str, object]]) -> None:
+    for meta_path in default_cache_dir().glob("*.json"):
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            key = meta.get("key") or {}
+            instrument = key.get("instrument") or {}
+            group_key = (
+                str(instrument.get("exchange", "binance")).lower(),
+                str(instrument.get("market", "spot")).lower(),
+                str(instrument.get("symbol", "")).upper(),
+                "trade",
+                str(key.get("timeframe", "")),
+            )
+            if not group_key[2] or not group_key[4]:
+                continue
+            entry = _series_entry(groups, group_key)
+            rows = int(meta.get("rows") or 0)
+            first = meta.get("first_time")
+            last = meta.get("last_time")
+            csv_path = meta_path.with_suffix(".csv")
+            size = meta_path.stat().st_size + (csv_path.stat().st_size if csv_path.exists() else 0)
+            _extend_series(entry, rows, first, last, size, "persistent_cache", meta_path.stem)
+        except Exception as exc:
+            log.warning("data_cache_inventory_error", path=str(meta_path), error=str(exc))
+
+
+def _merge_candle_manifest_groups(state: GatewayState, groups: dict[tuple[str, str, str, str, str], dict[str, object]]) -> None:
+    try:
+        rows = state.storage.execute(
+            """
+            SELECT exchange, market_type, symbol, price_type, timeframe,
+                   min_open_time, max_open_time, row_count, file_size_bytes, manifest_id
+            FROM candle_manifests
+            WHERE COALESCE(is_active, 1) = 1
+            """
+        ).fetchall()
+    except Exception:
+        return
+    for row in rows:
+        group_key = (
+            str(row[0]).lower(),
+            str(row[1]).lower(),
+            str(row[2]).upper(),
+            str(row[3] or "trade").lower(),
+            str(row[4]),
+        )
+        entry = _series_entry(groups, group_key)
+        _extend_series(entry, int(row[7] or 0), row[5], row[6], int(row[8] or 0), "candle_store", row[9])
+
+
+def _series_entry(groups: dict[tuple[str, str, str, str, str], dict[str, object]], group_key: tuple[str, str, str, str, str]) -> dict[str, object]:
+    if group_key in groups:
+        return groups[group_key]
+    exchange, market_type, symbol, price_type, timeframe = group_key
+    entry: dict[str, object] = {
+        "id": _series_id(group_key),
+        "exchange": exchange,
+        "market_type": market_type,
+        "symbol": symbol,
+        "price_type": price_type,
+        "timeframe": timeframe,
+        "earliest_ms": None,
+        "latest_ms": None,
+        "bar_count": 0,
+        "size_bytes": 0,
+        "entry_count": 0,
+        "sources": [],
+        "ranges": [],
+        "status": "empty",
+    }
+    groups[group_key] = entry
+    return entry
+
+
+def _extend_series(entry: dict[str, object], rows: int, first: object, last: object, size: int, source: str, source_id: str) -> None:
+    first_ms = int(first) if first is not None else None
+    last_ms = int(last) if last is not None else None
+    entry["bar_count"] = int(entry["bar_count"]) + rows
+    entry["size_bytes"] = int(entry["size_bytes"]) + size
+    entry["entry_count"] = int(entry["entry_count"]) + 1
+    sources = set(entry.get("sources") or [])
+    sources.add(source)
+    entry["sources"] = sorted(sources)
+    if first_ms is not None:
+        current = entry.get("earliest_ms")
+        entry["earliest_ms"] = first_ms if current is None else min(int(current), first_ms)
+    if last_ms is not None:
+        current = entry.get("latest_ms")
+        entry["latest_ms"] = last_ms if current is None else max(int(current), last_ms)
+    ranges = list(entry.get("ranges") or [])
+    ranges.append({"from_ms": first_ms, "to_ms": last_ms, "rows": rows, "source": source, "source_id": source_id})
+    entry["ranges"] = ranges
+    entry["status"] = _freshness_status(entry.get("latest_ms"), str(entry["timeframe"]))
+
+
+def _compact_ranges(ranges: list[dict[str, object]], limit: int = 6) -> list[dict[str, object]]:
+    ordered = sorted(ranges, key=lambda item: int(item.get("from_ms") or 0))
+    if len(ordered) <= limit:
+        return ordered
+    return ordered[:3] + [{"collapsed": len(ordered) - 5}] + ordered[-2:]
+
+
+def _estimate_unique_bars(ranges: list[dict[str, object]], timeframe: str) -> int:
+    try:
+        from marketdata_provider.contracts import parse_timeframe
+
+        duration_ms = parse_timeframe(timeframe).duration_ms or 60_000
+    except Exception:
+        duration_ms = 60_000
+
+    intervals: list[tuple[int, int]] = []
+    fallback_rows = 0
+    for item in ranges:
+        rows = int(item.get("rows") or 0)
+        first = item.get("from_ms")
+        last = item.get("to_ms")
+        if first is None or last is None:
+            fallback_rows += rows
+            continue
+        first_ms = int(first)
+        last_ms = int(last)
+        if last_ms < first_ms:
+            fallback_rows += rows
+            continue
+        intervals.append((first_ms, last_ms))
+
+    if not intervals:
+        return fallback_rows
+
+    intervals.sort()
+    merged: list[list[int]] = []
+    for start, end in intervals:
+        if not merged or start > merged[-1][1] + duration_ms:
+            merged.append([start, end])
+        else:
+            merged[-1][1] = max(merged[-1][1], end)
+
+    unique = 0
+    for start, end in merged:
+        unique += ((end - start) // duration_ms) + 1
+    return unique + fallback_rows
+
+
+def _freshness_status(latest_ms: object, timeframe: str) -> str:
+    if latest_ms is None:
+        return "empty"
+    try:
+        from marketdata_provider.contracts import parse_timeframe
+
+        duration_ms = parse_timeframe(timeframe).duration_ms or 60_000
+    except Exception:
+        duration_ms = 60_000
+    now_ms = int(time.time() * 1000)
+    current_bar_start = now_ms - (now_ms % duration_ms)
+    latest_expected = current_bar_start - duration_ms
+    return "actual" if int(latest_ms) >= latest_expected else "stale"
+
+
+def _series_id(group_key: tuple[str, str, str, str, str]) -> str:
+    return hashlib.sha256("|".join(group_key).encode("utf-8")).hexdigest()[:16]
+
+
+def _database_size_bytes(state: GatewayState) -> int:
+    sqlite_path = Path(state.config.sqlite_path)
+    return sum((path.stat().st_size if path.exists() else 0) for path in (sqlite_path, sqlite_path.with_suffix(sqlite_path.suffix + "-wal"), sqlite_path.with_suffix(sqlite_path.suffix + "-shm")))
+
+
+def _persistent_cache_size_bytes() -> int:
+    return _dir_size(default_cache_dir())
+
+
+def _candle_store_size_bytes(state: GatewayState) -> int:
+    cache_dir = state.config.data_cache_root or (state.config.data_dir / "cache")
+    return _dir_size(cache_dir / "marketdata")
+
+
+def _dir_size(path: Path) -> int:
+    if not path.exists():
+        return 0
+    return sum(file.stat().st_size for file in path.rglob("*") if file.is_file())
+
+
+def _orders_summary(state: GatewayState) -> dict[str, object]:
+    total, min_ts, max_ts = state.storage.execute("SELECT COUNT(*), MIN(created_at), MAX(created_at) FROM orders").fetchone()
+    by_symbol = [
+        {"symbol": row[0], "count": row[1], "latest_ms": row[2]}
+        for row in state.storage.execute(
+            "SELECT symbol, COUNT(*), MAX(created_at) FROM orders GROUP BY symbol ORDER BY COUNT(*) DESC"
+        ).fetchall()
+    ]
+    return {"total": total or 0, "earliest_ms": min_ts, "latest_ms": max_ts, "by_symbol": by_symbol}
+
+
+def _delete_persistent_cache_series(series: dict[str, object]) -> int:
+    deleted = 0
+    trash_dir = Path.cwd() / ".openpine" / "trash" / f"data-cache-{int(time.time() * 1000)}"
+    for meta_path in default_cache_dir().glob("*.json"):
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            key = meta.get("key") or {}
+            instrument = key.get("instrument") or {}
+            if (
+                str(instrument.get("exchange", "")).lower() == str(series["exchange"])
+                and str(instrument.get("market", "")).lower() == str(series["market_type"])
+                and str(instrument.get("symbol", "")).upper() == str(series["symbol"])
+                and str(key.get("timeframe", "")) == str(series["timeframe"])
+            ):
+                trash_dir.mkdir(parents=True, exist_ok=True)
+                for path in (meta_path, meta_path.with_suffix(".csv")):
+                    if path.exists():
+                        shutil.move(str(path), str(trash_dir / path.name))
+                        deleted += 1
+        except Exception as exc:
+            log.warning("data_cache_delete_error", path=str(meta_path), error=str(exc))
+    return deleted
+
+
+def _delete_candle_manifest_series(state: GatewayState, series: dict[str, object]) -> int:
+    rows = state.storage.execute(
+        """
+        SELECT manifest_id, partition_path FROM candle_manifests
+        WHERE exchange = ? AND market_type = ? AND symbol = ? AND price_type = ? AND timeframe = ?
+        """,
+        (series["exchange"], series["market_type"], series["symbol"], series["price_type"], series["timeframe"]),
+    ).fetchall()
+    if not rows:
+        return 0
+    trash_dir = Path.cwd() / ".openpine" / "trash" / f"candle-store-{int(time.time() * 1000)}"
+    with state.storage.transaction():
+        for manifest_id, partition_path in rows:
+            if partition_path:
+                path = Path(partition_path)
+                if path.exists():
+                    trash_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(path), str(trash_dir / path.name))
+            state.storage.execute("DELETE FROM candle_manifests WHERE manifest_id = ?", (manifest_id,))
+    return len(rows)
 
 
 # ── Risk ──────────────────────────────────────────────────────────────────────

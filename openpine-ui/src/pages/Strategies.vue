@@ -123,6 +123,12 @@ function selectSymbol(s: string) {
   showSymbolDropdown.value = false
 }
 
+function hideSymbolDropdown() {
+  window.setTimeout(() => {
+    showSymbolDropdown.value = false
+  }, 200)
+}
+
 const createStatus = ref('')
 const createLoading = ref(false)
 
@@ -210,7 +216,7 @@ async function loadTrades(strategyId: string) {
   }
 }
 
-const allTrades = computed(() => {
+const allTrades = computed<any[]>(() => {
   if (tradeMode.value === 'live') {
     return orders.value.map((o: any) => ({
       trade_id: o.order_id,
@@ -349,7 +355,7 @@ function tradeStatusBadge(status: string) {
             v-model="symbolSearch"
             :placeholder="form.symbol || 'Search ticker on Binance...'"
             @focus="showSymbolDropdown = true"
-            @blur="setTimeout(() => showSymbolDropdown = false, 200)"
+            @blur="hideSymbolDropdown"
             class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
           />
           <div v-if="showSymbolDropdown && (filteredSymbols.length || symbolsLoading)" class="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-dark-700 border border-dark-500 rounded-lg shadow-xl">

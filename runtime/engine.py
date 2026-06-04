@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -228,6 +229,55 @@ def _adapt_generated_strategy(
     return make_generated_strategy_adapter(generated_strategy_class, options=options)
 
 
+class _DataBackedRuntime:
+    """Lightweight runtime that provides data_provider for request.security.
+
+    This is used when run_native_strategy() reads engine.config.runtime —
+    without it, the fallback NoopRuntime has no data_provider and
+    request.security raises PineRequestError.
+    """
+
+    def __init__(self, data_provider: Any, *, request_data_end_ms: int | None = None) -> None:
+        self.data_provider = data_provider
+        self.chart_bars: list[Any] = []
+        self.request_data_end_ms = request_data_end_ms
+        self.request_depth: int = 0
+        self.bar_index: int = -1
+        self.config = _MinimalRuntimeConfig()
+
+    def begin_bar(self, bar: Any, bar_index: int) -> None:
+        self.bar_index = bar_index
+        self.chart_bars.append(bar)
+
+    def end_bar(self) -> None:
+        pass
+
+
+class _MinimalRuntimeConfig:
+    """Minimal config shim for request.security."""
+    supports_nested_security: bool = True
+    strict_tv_parity: bool = False
+    reference_history_mode: str = "unsupported"
+    max_recalculations_per_bar: int = 16
+    allow_incomplete_bar_time_close: bool = True
+    diagnostics_as_errors: bool = False
+    diagnostics: list = []
+    extra: dict = {}
+    process_orders_on_close: bool | None = None
+
+    def emit_diagnostic(self, *args: Any, **kwargs: Any) -> None:
+        pass
+
+
+def _make_data_provider_runtime(
+    data_provider: Any,
+    *,
+    request_data_end_ms: int | None = None,
+) -> _DataBackedRuntime:
+    """Create a runtime with data_provider for request.security support."""
+    return _DataBackedRuntime(data_provider, request_data_end_ms=request_data_end_ms)
+
+
 class BacktestEngineAdapter:
     """Narrow OpenPine adapter over the local backtest-engine package."""
 
@@ -293,23 +343,27 @@ class BacktestEngineAdapter:
         runtime_kwargs = {
             "symbol": config.symbol,
             "timeframe": config.timeframe,
-            "capture_plots": config.capture_plots,
             "plot_from_ms": config.plot_from_ms,
             "plot_to_ms": config.plot_to_ms,
         }
-        if runtime_data_provider is not None:
-            runtime_kwargs["data_provider"] = runtime_data_provider
         if progress_callback is not None:
             runtime_kwargs["progress_callback"] = progress_callback
         setattr(strategy_class, "runtime_capture_plots", config.capture_plots)
         setattr(strategy_class, "runtime_plot_from_ms", config.plot_from_ms)
         setattr(strategy_class, "runtime_plot_to_ms", config.plot_to_ms)
         setattr(strategy_class, "runtime_request_data_end_ms", config.end_time)
+        if runtime_data_provider is not None:
+            setattr(strategy_class, "runtime_data_provider", runtime_data_provider)
+
+        callbacks = None
+        if progress_callback is not None and engine_bars:
+            callbacks = self._progress_callbacks(progress_callback, len(engine_bars))
 
         result = engine.run(
             strategy_class,
             params=params or {},
             bars=engine_bars,
+            callbacks=callbacks,
             execution_backend=execution_backend,
             runtime_kwargs=runtime_kwargs,
             resume_state=resume_state,
@@ -322,6 +376,25 @@ class BacktestEngineAdapter:
             process_next_bar_available=self.process_next_bar_available,
             resume_state=getattr(result, "resume_state", None),
         )
+
+    @staticmethod
+    def _progress_callbacks(progress_callback: Any, total: int) -> Any:
+        from backtest_engine.models.callbacks import BacktestCallbacks
+
+        last_emit_at = 0.0
+        last_emit_index = -1
+        step = max(1, total // 1000)
+
+        def on_bar_end(_bar: Any, index: int, _state: Any) -> None:
+            nonlocal last_emit_at, last_emit_index
+            done = index + 1
+            now = time.perf_counter()
+            if done >= total or done - last_emit_index >= step or now - last_emit_at >= 1.0:
+                last_emit_at = now
+                last_emit_index = done
+                progress_callback(done, total)
+
+        return BacktestCallbacks(on_bar_end=on_bar_end)
 
     def _to_engine_bar(self, bar: Bar) -> Any:
         from openpine.adapters.bars import to_engine_bar

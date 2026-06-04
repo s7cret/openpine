@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getDashboard, getPineFiles } from '@/api/client'
-import api from '@/api/client'
+import { getDashboard, getDataSummary, getPineFiles } from '@/api/client'
 
 export const useDashboardStore = defineStore('dashboard', () => {
   const stats = ref<any>(null)
@@ -10,6 +9,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const enabledCount = ref(0)
   const errorCount = ref(0)
   const cacheInfo = ref<any>(null)
+  const dataInfo = ref<any>(null)
   const loading = ref(false)
   const backendOk = ref(false)
 
@@ -36,13 +36,13 @@ export const useDashboardStore = defineStore('dashboard', () => {
     } catch (e) { /* ignore */ }
 
     try {
-      // Cache status (instruments with data)
-      const { data: cacheData } = await api.get('/data/cache')
-      cacheInfo.value = cacheData
+      const { data } = await getDataSummary()
+      dataInfo.value = data
+      cacheInfo.value = data
     } catch (e) { /* ignore */ }
 
     loading.value = false
   }
 
-  return { stats, pineCount, strategiesCount, enabledCount, errorCount, cacheInfo, loading, backendOk, fetchAll }
+  return { stats, pineCount, strategiesCount, enabledCount, errorCount, cacheInfo, dataInfo, loading, backendOk, fetchAll }
 })
