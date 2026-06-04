@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 import uuid
+import hashlib
 from datetime import datetime, timezone
 
 import structlog
@@ -72,6 +73,52 @@ def _estimate_backtest_market_data(strategy, from_ms: int, to_ms: int) -> Backte
     )
 
 
+def _bar_series_fingerprint(series) -> str:
+    digest = hashlib.sha256()
+    digest.update(b"openpine.bar_series.v1\0")
+    query = series.query
+    digest.update(str(query.instrument.exchange).encode())
+    digest.update(b"\0")
+    digest.update(str(query.instrument.market).encode())
+    digest.update(b"\0")
+    digest.update(str(query.instrument.symbol).encode())
+    digest.update(b"\0")
+    digest.update(str(query.timeframe.canonical).encode())
+    digest.update(b"\0")
+    digest.update(str(query.start_ms).encode())
+    digest.update(b"\0")
+    digest.update(str(query.end_ms).encode())
+    for bar in series.bars:
+        digest.update(
+            (
+                f"{bar.time}|{bar.time_close}|{bar.open:.12g}|{bar.high:.12g}|"
+                f"{bar.low:.12g}|{bar.close:.12g}|{bar.volume!r}\n"
+            ).encode()
+        )
+    return digest.hexdigest()
+
+
+def _ensure_backtest_data_fingerprint_column(state: GatewayState) -> None:
+    columns = {row[1] for row in state.storage.execute("PRAGMA table_info(backtest_runs)").fetchall()}
+    if "data_fingerprint" in columns:
+        return
+    state.storage.execute("ALTER TABLE backtest_runs ADD COLUMN data_fingerprint TEXT")
+    state.storage.execute(
+        "CREATE INDEX IF NOT EXISTS idx_backtest_runs_data_fingerprint ON backtest_runs(data_fingerprint)"
+    )
+    state.storage.commit()
+
+
+def _save_backtest_data_fingerprint(state: GatewayState, run_id: str, fingerprint: str) -> None:
+    _ensure_backtest_data_fingerprint_column(state)
+    now = int(time.time() * 1000)
+    state.storage.execute(
+        "UPDATE backtest_runs SET data_fingerprint = ?, updated_at = ? WHERE run_id = ?",
+        (fingerprint, now, run_id),
+    )
+    state.storage.commit()
+
+
 async def _run_backtest_background(
     state: GatewayState,
     strategy_id: str,
@@ -118,9 +165,6 @@ async def _run_backtest_background(
         ws_manager.update_progress(run_id, "backtest", "running", 0.2, "Loading market data...")
         await ws_manager.broadcast_progress(run_id)
 
-        from openpine.data.direct_provider import DirectBinanceProvider
-
-        direct_provider = DirectBinanceProvider()
         query = _market_data_query_for_strategy(strategy, from_ms, to_ms)
         estimate = _estimate_backtest_market_data(strategy, from_ms, to_ms)
 
@@ -158,7 +202,7 @@ async def _run_backtest_background(
             loop = asyncio.get_event_loop()
             series = await loop.run_in_executor(
                 None,
-                lambda: direct_provider.fetch_bars(query, progress_callback=bar_load_progress),
+                lambda: state.orchestrator.load_bars(query, progress_callback=bar_load_progress),
             )
             bars = list(series.bars)
         except Exception as exc:
@@ -173,11 +217,22 @@ async def _run_backtest_background(
             state.backtest_store.mark_failed(run_id, "No bars found in range")
             return
 
+        data_fingerprint = _bar_series_fingerprint(series)
+        try:
+            _save_backtest_data_fingerprint(state, run_id, data_fingerprint)
+        except Exception as exc:
+            log.warning("backtest_data_fingerprint_save_failed", run_id=run_id, error=str(exc))
+
         total_bars = len(bars)
         ws_manager.update_progress(
             run_id, "backtest", "running", 0.3,
             f"Running backtest on {total_bars} bars...",
-            detail={"bars_processed": 0, "total_bars": total_bars, "phase": "compute"},
+            detail={
+                "bars_processed": 0,
+                "total_bars": total_bars,
+                "phase": "compute",
+                "data_fingerprint": data_fingerprint,
+            },
         )
         await ws_manager.broadcast_progress(run_id)
 
@@ -287,6 +342,7 @@ async def _run_backtest_background(
                 "bars_processed": result.bars_processed,
                 "total_bars": result.bars_processed,
                 "phase": "completed",
+                "data_fingerprint": data_fingerprint,
             },
         )
         await ws_manager.broadcast_progress(run_id)

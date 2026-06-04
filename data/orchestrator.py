@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
-from typing import Protocol
+import inspect
+from typing import Callable, Protocol
 
 from marketdata_provider import create_candle_store
 from marketdata_provider.config import MarketDataConfig, StorageConfig
@@ -64,7 +65,7 @@ class DataOrchestrator:
     def set_provider(self, provider: MarketDataProvider) -> None:
         self._provider = provider
 
-    def load_bars(self, query: BarQuery) -> BarSeries:
+    def load_bars(self, query: BarQuery, progress_callback: Callable[..., None] | None = None) -> BarSeries:
         """Load bars according to query.source: storage, provider, or auto."""
 
         if query.source == "storage":
@@ -73,7 +74,7 @@ class DataOrchestrator:
         if cached is not None:
             return cached
         if query.source == "provider":
-            series = self._load_provider(query)
+            series = self._load_provider(query, progress_callback=progress_callback)
             series = self._require_complete(series, "provider") if query.gap_policy == "fail" else series
             self._save_cache(series)
             return series
@@ -85,7 +86,11 @@ class DataOrchestrator:
             self._save_cache(storage_series)
             return storage_series
 
-        provider_series = self._load_missing_from_provider(query, storage_series.coverage.missing_intervals)
+        provider_series = self._load_missing_from_provider(
+            query,
+            storage_series.coverage.missing_intervals,
+            progress_callback=progress_callback,
+        )
         if provider_series.bars:
             self._write_provider_series(provider_series)
         merged = _merge_series(query, storage_series, provider_series)
@@ -179,18 +184,27 @@ class DataOrchestrator:
         except Exception:
             return
 
-    def _load_provider(self, query: BarQuery) -> BarSeries:
+    def _load_provider(self, query: BarQuery, progress_callback: Callable[..., None] | None = None) -> BarSeries:
         if self._provider is None:
             raise ProviderUnavailableError("market data provider is not configured")
-        series = self._provider.fetch_bars(query)
+        fetch_bars = self._provider.fetch_bars
+        if progress_callback is not None and _accepts_progress_callback(fetch_bars):
+            series = fetch_bars(query, progress_callback=progress_callback)  # type: ignore[call-arg]
+        else:
+            series = fetch_bars(query)
         self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
         return series
 
-    def _load_missing_from_provider(self, query: BarQuery, intervals: tuple[tuple[int, int], ...]) -> BarSeries:
+    def _load_missing_from_provider(
+        self,
+        query: BarQuery,
+        intervals: tuple[tuple[int, int], ...],
+        progress_callback: Callable[..., None] | None = None,
+    ) -> BarSeries:
         fetched: list[Bar] = []
         for start_ms, end_ms in _coalesce_intervals(intervals):
             missing_query = replace(query, start_ms=start_ms, end_ms=end_ms, source="provider")
-            missing_series = self._load_provider(missing_query)
+            missing_series = self._load_provider(missing_query, progress_callback=progress_callback)
             self._validator.validate(missing_series, allow_gaps=query.gap_policy != "fail")
             if query.gap_policy == "fail":
                 self._require_complete(missing_series, "provider")
@@ -229,6 +243,14 @@ class BarSeriesValidator:
 
 def _source_name(coverage: CoverageReport) -> str:
     return coverage.source_mix[0] if coverage.source_mix else "unknown"
+
+
+def _accepts_progress_callback(fetch_bars: Callable[..., BarSeries]) -> bool:
+    try:
+        signature = inspect.signature(fetch_bars)
+    except (TypeError, ValueError):
+        return False
+    return "progress_callback" in signature.parameters
 
 
 def _coverage_for(query: BarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:

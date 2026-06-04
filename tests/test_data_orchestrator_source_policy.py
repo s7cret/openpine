@@ -86,6 +86,19 @@ class _Provider:
         )
 
 
+class _ProviderWithProgress(_Provider):
+    def __init__(self, bars: tuple[Bar, ...]) -> None:
+        super().__init__(bars)
+        self.progress_calls: list[tuple[int, int]] = []
+
+    def fetch_bars(self, query: BarQuery, progress_callback=None) -> BarSeries:
+        series = super().fetch_bars(query)
+        if progress_callback is not None:
+            progress_callback(len(series.bars), 1)
+            self.progress_calls.append((len(series.bars), 1))
+        return series
+
+
 def _coverage(query: BarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:
     if not bars:
         return CoverageReport(
@@ -146,6 +159,19 @@ def test_auto_fetches_provider_persists_and_merges_when_storage_incomplete() -> 
         (60_000, 180_000),
     ]
     assert [[bar.time for bar in write] for write in storage.writes] == [[60_000, 120_000]]
+
+
+def test_auto_passes_progress_callback_to_gap_provider_fetch() -> None:
+    storage = _Storage((_bar(0),))
+    provider = _ProviderWithProgress((_bar(60_000), _bar(120_000)))
+    orchestrator = DataOrchestrator(candle_store=storage, provider=provider)
+    progress: list[tuple[int, int]] = []
+
+    series = orchestrator.load_bars(_query(source="auto"), progress_callback=lambda bars, pages: progress.append((bars, pages)))
+
+    assert [bar.time for bar in series.bars] == [0, 60_000, 120_000]
+    assert progress == [(2, 1)]
+    assert provider.progress_calls == [(2, 1)]
 
 
 def test_auto_raises_when_provider_write_through_fails() -> None:
