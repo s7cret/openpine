@@ -78,6 +78,9 @@ const marketTypeMeta: Record<string, { icon: string; label: string; cls: string 
   margin: { icon: '↔', label: 'Margin', cls: 'text-accent-light' },
   delivery: { icon: '◆', label: 'Delivery', cls: 'text-purple-300' },
 }
+const exchangeMeta: Record<string, { icon: string; label: string; cls: string }> = {
+  binance: { icon: '◆', label: 'Binance', cls: 'border-[#F3BA2F]/30 bg-[#F3BA2F]/10 text-[#F3BA2F]' },
+}
 
 function marketTypeLabel(marketType?: string) {
   const key = (marketType ?? '').toLowerCase()
@@ -91,6 +94,18 @@ function marketTypeIcon(marketType?: string) {
 
 function marketTypeClass(marketType?: string) {
   return marketTypeMeta[(marketType ?? '').toLowerCase()]?.cls ?? 'text-gray-400'
+}
+
+function exchangeLabel(exchange?: string) {
+  return exchangeMeta[(exchange ?? '').toLowerCase()]?.label ?? (exchange ?? '—')
+}
+
+function exchangeIcon(exchange?: string) {
+  return exchangeMeta[(exchange ?? '').toLowerCase()]?.icon ?? '•'
+}
+
+function exchangeClass(exchange?: string) {
+  return exchangeMeta[(exchange ?? '').toLowerCase()]?.cls ?? 'border-dark-500 bg-dark-600 text-gray-400'
 }
 
 function baseAssetFromSymbol(symbol?: string) {
@@ -395,7 +410,7 @@ function tradeStatusBadge(status: string) {
         <!-- Row 3: exchange, market, timeframe -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <select v-model="form.exchange" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
-            <option value="binance">Binance</option>
+            <option value="binance">◆ Binance</option>
           </select>
           <select v-model="form.market_type" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
             <option v-for="mt in marketTypes" :key="mt" :value="mt">{{ marketTypeLabel(mt) }}</option>
@@ -442,8 +457,8 @@ function tradeStatusBadge(status: string) {
         </div>
 
         <!-- Actions -->
-        <div class="flex gap-2 justify-end items-center">
-          <span v-if="createStatus" class="text-xs" :class="createStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ createStatus }}</span>
+        <div class="flex flex-wrap gap-2 justify-end items-center">
+          <span v-if="createStatus" class="min-w-0 flex-1 text-xs" :class="createStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ createStatus }}</span>
           <button @click="showAdd = false; createStatus = ''" class="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200">Cancel</button>
           <button @click="addStrategy" :disabled="createLoading" class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:opacity-50">
             {{ createLoading ? 'Creating...' : 'Create' }}
@@ -453,40 +468,116 @@ function tradeStatusBadge(status: string) {
     </transition>
 
     <!-- Filter Bar -->
-    <div class="bg-dark-800 rounded-xl border border-dark-500 p-3 flex flex-wrap gap-2 items-center">
+    <div class="bg-dark-800 rounded-xl border border-dark-500 p-3 grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
       <input
         v-model="filterName"
         placeholder="Search by name..."
-        class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent w-48"
+        class="col-span-2 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent md:w-48"
       />
-      <select v-model="filterTicker" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterTicker" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">All Tickers</option>
         <option v-for="t in uniqueTickers" :key="t" :value="t">{{ t }}</option>
       </select>
-      <select v-model="filterTimeframe" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterTimeframe" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">All TFs</option>
         <option v-for="tf in uniqueTimeframes" :key="tf" :value="tf">{{ tf }}</option>
       </select>
-      <select v-model="filterMarket" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterMarket" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">All Markets</option>
         <option v-for="m in uniqueMarkets" :key="m" :value="m">{{ m }}</option>
       </select>
-      <select v-model="filterStatus" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterStatus" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">All Status</option>
         <option v-for="st in uniqueStatuses" :key="st" :value="st">{{ st }}</option>
       </select>
-      <span v-if="filteredStrategies.length !== store.items.length" class="text-xs text-gray-500 ml-auto">
+      <span v-if="filteredStrategies.length !== store.items.length" class="col-span-2 text-right text-xs text-gray-500 md:ml-auto">
         {{ filteredStrategies.length }} / {{ store.items.length }}
       </span>
     </div>
 
     <!-- Table -->
     <div class="bg-dark-800 rounded-xl border border-dark-500 overflow-hidden">
-      <table class="w-full text-sm">
+      <div class="md:hidden divide-y divide-dark-600/60">
+        <div v-if="filteredStrategies.length === 0" class="px-4 py-8 text-center text-gray-500">
+          {{ store.loading ? 'Loading...' : (store.items.length === 0 ? 'No strategies yet' : 'No strategies match filters') }}
+        </div>
+        <div
+          v-for="s in filteredStrategies"
+          :key="s.strategy_id ?? s.id"
+          class="p-4 space-y-3"
+          @click="openDetail(s.strategy_id ?? s.id)"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="truncate font-medium text-gray-200">{{ s.name ?? '—' }}</div>
+              <div class="mt-1 flex min-w-0 items-center gap-2 font-mono text-xs text-gray-500">
+                <img
+                  v-if="s.symbol && hasTickerIcon(baseAssetFromSymbol(s.symbol))"
+                  :src="tickerIconUrl(baseAssetFromSymbol(s.symbol))"
+                  :alt="baseAssetFromSymbol(s.symbol)"
+                  class="h-5 w-5 rounded-full bg-dark-600 object-cover"
+                  loading="lazy"
+                  @error="markTickerIconMissing(baseAssetFromSymbol(s.symbol))"
+                />
+                <span v-else-if="s.symbol" class="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-dark-600 text-[9px] font-semibold text-gray-400">
+                  {{ tickerInitials(baseAssetFromSymbol(s.symbol)) }}
+                </span>
+                <span class="truncate">{{ s.symbol ?? '—' }}</span>
+              </div>
+            </div>
+            <span :class="[statusBadge(s.status), 'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium']">
+              {{ s.status ?? 'idle' }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-gray-500">Exchange</span>
+              <div class="mt-1">
+                <span :class="[exchangeClass(s.exchange), 'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-medium']">
+                  <span>{{ exchangeIcon(s.exchange) }}</span>
+                  <span>{{ exchangeLabel(s.exchange) }}</span>
+                </span>
+              </div>
+            </div>
+            <div>
+              <span class="text-gray-500">Market</span>
+              <div class="mt-1">
+                <span class="inline-flex items-center gap-1 rounded bg-dark-500 px-1.5 py-0.5 text-gray-300">
+                  <span :class="marketTypeClass(s.market_type)">{{ marketTypeIcon(s.market_type) }}</span>
+                  <span>{{ s.market_type ?? '—' }}</span>
+                </span>
+              </div>
+            </div>
+            <div>
+              <span class="text-gray-500">TF</span>
+              <div class="mt-1 font-mono text-gray-200">{{ s.timeframe ?? '—' }}</div>
+            </div>
+            <div>
+              <span class="text-gray-500">Mode</span>
+              <div class="mt-1 text-gray-200">{{ s.mode ?? '—' }}</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-1" @click.stop>
+            <button
+              v-for="btn in controlButtons"
+              :key="btn.action"
+              @click="store.control(s.strategy_id ?? s.id, btn.action)"
+              :class="[btn.cls, 'min-w-0 rounded px-2 py-2 text-xs transition-colors']"
+              :title="btn.label"
+            >
+              {{ btn.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <table class="hidden md:table w-full text-sm">
         <thead>
           <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
             <th class="px-4 py-2.5 text-left">Strategy</th>
             <th class="px-4 py-2.5 text-left">Ticker</th>
+            <th class="px-4 py-2.5 text-left">Exchange</th>
             <th class="px-4 py-2.5 text-left">TF</th>
             <th class="px-4 py-2.5 text-left">Market</th>
             <th class="px-4 py-2.5 text-left">Status</th>
@@ -495,7 +586,7 @@ function tradeStatusBadge(status: string) {
         </thead>
         <tbody>
           <tr v-if="filteredStrategies.length === 0">
-            <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+            <td colspan="7" class="px-4 py-8 text-center text-gray-500">
               {{ store.loading ? 'Loading...' : (store.items.length === 0 ? 'No strategies yet' : 'No strategies match filters') }}
             </td>
           </tr>
@@ -520,6 +611,12 @@ function tradeStatusBadge(status: string) {
                   {{ tickerInitials(baseAssetFromSymbol(s.symbol)) }}
                 </span>
                 <span>{{ s.symbol ?? '—' }}</span>
+              </span>
+            </td>
+            <td class="px-4 py-2.5">
+              <span :class="[exchangeClass(s.exchange), 'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium']">
+                <span>{{ exchangeIcon(s.exchange) }}</span>
+                <span>{{ exchangeLabel(s.exchange) }}</span>
               </span>
             </td>
             <td class="px-4 py-2.5">
@@ -557,27 +654,35 @@ function tradeStatusBadge(status: string) {
     <!-- Detail Modal -->
     <teleport to="body">
       <transition name="fade">
-        <div v-if="showDetail" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" @click.self="showDetail = null">
-          <div class="bg-dark-800 rounded-2xl border border-dark-500 w-full max-w-5xl max-h-[92vh] overflow-y-auto resize-y flex flex-col" style="min-height: 400px;">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-dark-500">
-              <div>
+        <div v-if="showDetail" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60" @click.self="showDetail = null">
+          <div class="bg-dark-800 rounded-2xl border border-dark-500 w-full max-w-5xl max-h-[94vh] overflow-y-auto resize-y flex flex-col" style="min-height: 400px;">
+            <div class="flex items-start justify-between gap-3 px-4 py-4 sm:px-5 border-b border-dark-500">
+              <div class="min-w-0">
                 <h2 class="text-lg font-semibold text-gray-200">{{ store.current?.name ?? 'Strategy' }}</h2>
-                <span class="text-xs text-gray-500">{{ store.current?.symbol ?? '' }} · {{ store.current?.timeframe ?? '' }} · {{ marketTypeLabel(store.current?.market_type) }}</span>
+                <span class="block truncate text-xs text-gray-500">{{ store.current?.symbol ?? '' }} · {{ store.current?.timeframe ?? '' }} · {{ exchangeLabel(store.current?.exchange) }} · {{ marketTypeLabel(store.current?.market_type) }}</span>
               </div>
-              <button @click="showDetail = null" class="p-1.5 rounded-lg hover:bg-dark-600 text-gray-400">✕</button>
+              <button @click="showDetail = null" class="shrink-0 p-1.5 rounded-lg hover:bg-dark-600 text-gray-400">✕</button>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-5">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 sm:p-5">
               <div><span class="text-xs text-gray-500">Mode</span><div class="text-sm font-bold text-accent-light">{{ store.current?.mode ?? '—' }}</div></div>
               <div><span class="text-xs text-gray-500">Status</span><div><span :class="[statusBadge(store.current?.status), 'px-2 py-0.5 rounded-full text-xs font-medium']">{{ store.current?.status ?? 'idle' }}</span></div></div>
               <div><span class="text-xs text-gray-500">Enabled</span><div class="text-sm font-bold" :class="store.current?.enabled ? 'text-success' : 'text-gray-500'">{{ store.current?.enabled ? 'Yes' : 'No' }}</div></div>
               <div><span class="text-xs text-gray-500">Pine Source</span><div class="text-xs text-gray-400 font-mono truncate">{{ store.current?.pine_id ?? '—' }}</div></div>
-              <div><span class="text-xs text-gray-500">Exchange</span><div class="text-sm text-gray-300">{{ store.current?.exchange ?? '—' }}</div></div>
+              <div>
+                <span class="text-xs text-gray-500">Exchange</span>
+                <div>
+                  <span :class="[exchangeClass(store.current?.exchange), 'inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium']">
+                    <span>{{ exchangeIcon(store.current?.exchange) }}</span>
+                    <span>{{ exchangeLabel(store.current?.exchange) }}</span>
+                  </span>
+                </div>
+              </div>
               <div><span class="text-xs text-gray-500">Market</span><div class="text-sm text-gray-300">{{ marketTypeLabel(store.current?.market_type) }}</div></div>
               <div><span class="text-xs text-gray-500">Created</span><div class="text-xs text-gray-400">{{ store.current?.created_at ? new Date(store.current.created_at).toLocaleString() : '—' }}</div></div>
             </div>
 
-            <div class="px-5 pb-3 flex-1 min-h-[300px]">
+            <div class="px-4 sm:px-5 pb-3 flex-1 min-h-[300px]">
               <CandleChart
                 :symbol="store.current?.symbol ?? 'BTCUSDT'"
                 :timeframe="store.current?.timeframe ?? '15m'"
@@ -590,7 +695,7 @@ function tradeStatusBadge(status: string) {
             </div>
 
             <!-- Trades Section -->
-            <div class="px-5 pb-3">
+            <div class="px-4 sm:px-5 pb-3">
               <!-- Toggle: Paper / Live -->
               <div class="flex items-center gap-2 mb-3">
                 <span class="text-xs text-gray-500">Trades:</span>
@@ -623,7 +728,7 @@ function tradeStatusBadge(status: string) {
               </div>
 
               <!-- Trades Table -->
-              <div class="bg-dark-900 rounded-xl border border-dark-600 overflow-hidden max-h-48 overflow-y-auto">
+              <div class="bg-dark-900 rounded-xl border border-dark-600 overflow-x-auto overflow-y-auto max-h-48">
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="text-gray-500 uppercase tracking-wider border-b border-dark-600">
@@ -660,9 +765,9 @@ function tradeStatusBadge(status: string) {
               </div>
             </div>
 
-            <div class="px-5 pb-5 flex gap-2">
-              <button v-for="btn in controlButtons" :key="btn.action" @click="store.control(showDetail!, btn.action)" :class="[btn.cls, 'px-4 py-2 rounded-lg text-sm font-medium transition-colors']">{{ btn.label }}</button>
-              <button @click="async () => { await store.remove(showDetail!); showDetail = null }" class="ml-auto px-4 py-2 rounded-lg text-sm font-medium bg-dark-600 hover:bg-dark-500 text-gray-400 transition-colors">🗑 Delete</button>
+            <div class="px-4 sm:px-5 pb-5 grid grid-cols-2 gap-2 sm:flex">
+              <button v-for="btn in controlButtons" :key="btn.action" @click="store.control(showDetail!, btn.action)" :class="[btn.cls, 'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors']">{{ btn.label }}</button>
+              <button @click="async () => { await store.remove(showDetail!); showDetail = null }" class="col-span-2 sm:ml-auto px-3 sm:px-4 py-2 rounded-lg text-sm font-medium bg-dark-600 hover:bg-dark-500 text-gray-400 transition-colors">🗑 Delete</button>
             </div>
           </div>
         </div>
