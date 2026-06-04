@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from marketdata_provider.contracts import Bar
+from marketdata_provider.contracts import Bar, InstrumentKey
 
 from openpine.data.periodic_fetcher import (
     PeriodicBarFetcher,
@@ -93,13 +93,37 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
 
     monkeypatch.setattr("openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0)
 
+    def fake_fetch(key, timeframe, start_ms, end_ms):
+        instrument = InstrumentKey(exchange=key.exchange, market=key.market_type, symbol=key.symbol)
+        step = timeframe.duration_ms
+        return [
+            Bar(
+                instrument=instrument,
+                timeframe=timeframe,
+                time=current,
+                time_close=current + step,
+                open=1.0,
+                high=2.0,
+                low=0.5,
+                close=1.5,
+                volume=3.0,
+                closed=True,
+            )
+            for current in range(start_ms, end_ms, step)
+        ]
+
+    monkeypatch.setattr(fetcher, "_fetch_bars_direct", fake_fetch)
+
     fetcher._refresh_all_active()
 
-    assert [query.instrument.symbol for query in orchestrator.queries] == ["BTCUSDT", "SOLUSDT"]
-    assert [query.timeframe.canonical for query in orchestrator.queries] == ["1m", "1m"]
-    assert [query.start_ms for query in orchestrator.queries] == [1_699_999_860_000, 1_699_999_860_000]
-    assert [query.end_ms for query in orchestrator.queries] == [1_699_999_980_000, 1_699_999_980_000]
-    assert len(orchestrator.stored) == 2
-    assert [series.query.instrument.symbol for series in orchestrator.stored] == ["BTCUSDT", "SOLUSDT"]
-    assert [series.query.timeframe.canonical for series in orchestrator.stored] == ["1m", "1m"]
+    assert [series.query.instrument.symbol for series in orchestrator.stored] == [
+        "BTCUSDT",
+        "BTCUSDT",
+        "SOLUSDT",
+    ]
+    assert [series.query.timeframe.canonical for series in orchestrator.stored] == ["1m", "15m", "1m"]
+    assert [series.query.start_ms for series in orchestrator.stored[:2]] == [
+        1_699_996_260_000,
+        1_699_996_500_000,
+    ]
     assert not orchestrator.closed

@@ -182,14 +182,22 @@ class PeriodicBarFetcher:
         if timeframe.duration_ms is None:
             raise ValueError(f"cannot periodically refresh variable-duration timeframe: {self.config.source_timeframe}")
         tf_ms = timeframe.duration_ms
-        lookback_ms = tf_ms * self.config.lookback_bars
+        target_timeframes = sorted({parse_timeframe(strategy.timeframe).canonical for strategy in strategies})
+        max_ratio = max(
+            1,
+            *(
+                (target.duration_ms or tf_ms) // tf_ms
+                for target in (parse_timeframe(value) for value in target_timeframes)
+                if target.duration_ms is not None
+            ),
+        )
+        lookback_ms = tf_ms * max(self.config.lookback_bars, max_ratio + self.config.lookback_bars)
         end_ms = now_ms - (now_ms % tf_ms)
         start_ms = end_ms - lookback_ms
 
         # Direct HTTP fetch with timeout (bypasses hung orchestrator/provider)
         bars = self._fetch_bars_direct(key, timeframe, start_ms, end_ms)
         if bars:
-            target_timeframes = sorted({parse_timeframe(strategy.timeframe).canonical for strategy in strategies})
             log.info(
                 "periodic_fetcher.market_refreshed",
                 market_key=str(key),
@@ -227,6 +235,12 @@ class PeriodicBarFetcher:
                     source_timeframe=timeframe.canonical,
                     error=str(exc),
                 )
+            self._store_target_aggregates(
+                key,
+                bars,
+                source_timeframe=timeframe,
+                target_timeframes=target_timeframes,
+            )
         else:
             log.debug(
                 "periodic_fetcher.no_new_bars",
@@ -234,6 +248,76 @@ class PeriodicBarFetcher:
                 source_timeframe=timeframe.canonical,
                 strategies=len(strategies),
             )
+
+    def _store_target_aggregates(
+        self,
+        key: RawMarketKey,
+        source_bars: list[Bar],
+        *,
+        source_timeframe: Any,
+        target_timeframes: list[str],
+    ) -> None:
+        """Persist target timeframe bars derived from the shared source stream."""
+        source_ms = source_timeframe.duration_ms
+        if source_ms is None:
+            return
+        by_time = {bar.time: bar for bar in source_bars}
+        for target_value in target_timeframes:
+            target = parse_timeframe(target_value)
+            target_ms = target.duration_ms
+            if target_ms is None or target_ms == source_ms:
+                continue
+            if target_ms < source_ms or target_ms % source_ms:
+                continue
+            expected = target_ms // source_ms
+            aggregate_bars: list[Bar] = []
+            for bar in sorted(source_bars, key=lambda item: item.time):
+                close_ms = bar.time + source_ms
+                if close_ms % target_ms:
+                    continue
+                start_ms = close_ms - target_ms
+                window = [by_time[start_ms + (idx * source_ms)] for idx in range(expected) if start_ms + (idx * source_ms) in by_time]
+                if len(window) != expected:
+                    continue
+                from openpine.workers.strategy_fanout import _aggregate_bars
+
+                aggregate_bars.append(_aggregate_bars(window, target_timeframe=target.canonical))
+            if not aggregate_bars:
+                continue
+            query = BarQuery(
+                instrument=InstrumentKey(
+                    symbol=key.symbol,
+                    exchange=key.exchange,
+                    market=key.market_type,
+                ),
+                timeframe=target,
+                start_ms=min(bar.time for bar in aggregate_bars),
+                end_ms=max(bar.time_close for bar in aggregate_bars),
+                source="storage",
+            )
+            series = BarSeries(
+                query=query,
+                bars=tuple(aggregate_bars),
+                coverage=DataOrchestrator.coverage_for_series(query, tuple(aggregate_bars), "aggregate"),
+            )
+            try:
+                self.orchestrator.store_bars(series)
+                log.info(
+                    "periodic_fetcher.target_aggregates_stored",
+                    market_key=str(key),
+                    source_timeframe=source_timeframe.canonical,
+                    target_timeframe=target.canonical,
+                    bars_stored=len(aggregate_bars),
+                )
+            except StorageUnavailableError as exc:
+                if "conflicting closed candle" not in str(exc):
+                    raise
+                log.info(
+                    "periodic_fetcher.target_aggregate_already_stored",
+                    market_key=str(key),
+                    target_timeframe=target.canonical,
+                    error=str(exc),
+                )
 
     @staticmethod
     def _fetch_bars_direct(
