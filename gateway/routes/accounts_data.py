@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
-import hashlib
 import shutil
+import sqlite3
 import time
 from pathlib import Path
 
@@ -133,11 +134,13 @@ async def delete_data_series(
         raise HTTPException(404, f"Data series not found: {series_id}")
 
     deleted_files = _delete_persistent_cache_series(series)
+    deleted_marketdata = _delete_marketdata_segment_series(state, series)
     deleted_manifests = _delete_candle_manifest_series(state, series)
     return {
         "status": "deleted",
         "series_id": series_id,
         "files": deleted_files,
+        "marketdata_files": deleted_marketdata,
         "manifests": deleted_manifests,
     }
 
@@ -259,11 +262,14 @@ def _data_summary(state: GatewayState) -> dict[str, object]:
 def _data_series_inventory(state: GatewayState) -> list[dict[str, object]]:
     groups: dict[tuple[str, str, str, str, str], dict[str, object]] = {}
     _merge_persistent_cache_groups(groups)
+    _merge_marketdata_segment_groups(state, groups)
     _merge_candle_manifest_groups(state, groups)
     for entry in groups.values():
         ranges = list(entry.get("ranges") or [])
-        entry["stored_rows"] = int(entry.get("bar_count") or 0)
-        entry["bar_count"] = _estimate_unique_bars(ranges, str(entry["timeframe"]))
+        stored_rows = int(entry.get("bar_count") or 0)
+        estimated_unique = _estimate_unique_bars(ranges, str(entry["timeframe"]))
+        entry["stored_rows"] = stored_rows
+        entry["bar_count"] = min(estimated_unique, stored_rows) if stored_rows else estimated_unique
         entry["ranges"] = _compact_ranges(ranges)
     return sorted(groups.values(), key=lambda item: (str(item["symbol"]), str(item["timeframe"])))
 
@@ -296,6 +302,60 @@ def _merge_persistent_cache_groups(groups: dict[tuple[str, str, str, str, str], 
             _extend_series(entry, rows, first, last, size, "persistent_cache", meta_path.stem)
         except Exception as exc:
             log.warning("data_cache_inventory_error", path=str(meta_path), error=str(exc))
+
+
+def _merge_marketdata_segment_groups(state: GatewayState, groups: dict[tuple[str, str, str, str, str], dict[str, object]]) -> None:
+    root = _marketdata_store_root(state)
+    index_path = root / "index.sqlite"
+    if not index_path.exists():
+        return
+    touched: set[tuple[str, str, str, str, str]] = set()
+    try:
+        with sqlite3.connect(index_path) as db:
+            rows = db.execute(
+                """
+                SELECT id, exchange, market, symbol, timeframe, start_time, end_time, rows_count, source_kind
+                FROM marketdata_segments
+                """
+            ).fetchall()
+    except Exception as exc:
+        log.warning("marketdata_store_inventory_error", path=str(index_path), error=str(exc))
+        return
+
+    for segment_id, exchange, market, symbol, timeframe, start_time, end_time, rows_count, source_kind in rows:
+        source_kind = str(source_kind or "trade_kline")
+        price_type = "trade" if "trade" in source_kind else source_kind
+        group_key = (
+            str(exchange).lower(),
+            str(market).lower(),
+            str(symbol).upper(),
+            price_type,
+            str(timeframe),
+        )
+        entry = _series_entry(groups, group_key)
+        source_kinds = set(entry.get("source_kinds") or [])
+        source_kinds.add(source_kind)
+        entry["source_kinds"] = sorted(source_kinds)
+        _extend_series(
+            entry,
+            int(rows_count or 0),
+            start_time,
+            end_time,
+            0,
+            "marketdata_store",
+            str(segment_id),
+        )
+        touched.add(group_key)
+
+    for group_key in touched:
+        entry = _series_entry(groups, group_key)
+        exchange, market, symbol, _price_type, timeframe = group_key
+        source_kinds = entry.get("source_kinds") or ["trade_kline"]
+        size = sum(
+            _dir_size(_marketdata_segment_dir(root, exchange, market, symbol, timeframe, str(source_kind)))
+            for source_kind in source_kinds
+        )
+        entry["size_bytes"] = int(entry.get("size_bytes") or 0) + size
 
 
 def _merge_candle_manifest_groups(state: GatewayState, groups: dict[tuple[str, str, str, str, str], dict[str, object]]) -> None:
@@ -444,8 +504,25 @@ def _persistent_cache_size_bytes() -> int:
 
 
 def _candle_store_size_bytes(state: GatewayState) -> int:
+    return _dir_size(_marketdata_store_root(state))
+
+
+def _marketdata_store_root(state: GatewayState) -> Path:
     cache_dir = state.config.data_cache_root or (state.config.data_dir / "cache")
-    return _dir_size(cache_dir / "marketdata")
+    return cache_dir / "marketdata"
+
+
+def _marketdata_segment_dir(root: Path, exchange: str, market: str, symbol: str, timeframe: str, source_kind: str) -> Path:
+    safe_symbol = str(symbol).upper().replace("/", "_").replace(":", "_")
+    return (
+        root
+        / "v1"
+        / f"exchange={str(exchange).lower()}"
+        / f"market={str(market).lower()}"
+        / f"symbol={safe_symbol}"
+        / f"source={source_kind}"
+        / f"timeframe={timeframe}"
+    )
 
 
 def _dir_size(path: Path) -> int:
@@ -486,6 +563,44 @@ def _delete_persistent_cache_series(series: dict[str, object]) -> int:
                         deleted += 1
         except Exception as exc:
             log.warning("data_cache_delete_error", path=str(meta_path), error=str(exc))
+    return deleted
+
+
+def _delete_marketdata_segment_series(state: GatewayState, series: dict[str, object]) -> int:
+    root = _marketdata_store_root(state)
+    index_path = root / "index.sqlite"
+    exchange = str(series["exchange"]).lower()
+    market = str(series["market_type"]).lower()
+    symbol = str(series["symbol"]).upper()
+    timeframe = str(series["timeframe"])
+    source_kinds = series.get("source_kinds") or ["trade_kline"]
+    deleted = 0
+
+    if index_path.exists():
+        try:
+            with sqlite3.connect(index_path) as db:
+                db.execute(
+                    """
+                    DELETE FROM marketdata_segments
+                    WHERE lower(exchange) = ? AND lower(market) = ? AND upper(symbol) = ? AND timeframe = ?
+                    """,
+                    (exchange, market, symbol, timeframe),
+                )
+                deleted += db.total_changes
+        except Exception as exc:
+            log.warning("marketdata_store_delete_index_error", path=str(index_path), error=str(exc))
+
+    trash_dir = Path.cwd() / ".openpine" / "trash" / f"marketdata-store-{int(time.time() * 1000)}"
+    for source_kind in source_kinds:
+        path = _marketdata_segment_dir(root, exchange, market, symbol, timeframe, str(source_kind))
+        if not path.exists():
+            continue
+        trash_dir.mkdir(parents=True, exist_ok=True)
+        target = trash_dir / path.name
+        if target.exists():
+            target = trash_dir / f"{path.name}-{int(time.time() * 1000)}"
+        shutil.move(str(path), str(target))
+        deleted += 1
     return deleted
 
 
