@@ -8,6 +8,11 @@ const actionId = ref<string | null>(null)
 let timer: ReturnType<typeof setInterval>
 
 const series = computed(() => summary.value?.series ?? [])
+const visibleSeries = computed(() => {
+  const source = series.value.filter((row: any) => row.timeframe === '1m')
+  return source.length ? source : series.value
+})
+const visibleTotalBars = computed(() => visibleSeries.value.reduce((total: number, row: any) => total + Number(row.bar_count ?? 0), 0))
 const orders = computed(() => summary.value?.orders ?? { total: 0, by_symbol: [] })
 
 onMounted(() => {
@@ -109,7 +114,7 @@ function statusClass(status: string) {
       </div>
       <div class="bg-dark-800 border border-dark-500 rounded-xl p-4">
         <div class="text-xs text-gray-500 uppercase tracking-wider">Bars</div>
-        <div class="mt-2 text-xl font-bold text-gray-100">{{ (summary?.total_bars ?? 0).toLocaleString() }}</div>
+        <div class="mt-2 text-xl font-bold text-gray-100">{{ visibleTotalBars.toLocaleString() }}</div>
       </div>
       <div class="bg-dark-800 border border-dark-500 rounded-xl p-4">
         <div class="text-xs text-gray-500 uppercase tracking-wider">Orders</div>
@@ -120,9 +125,34 @@ function statusClass(status: string) {
     <div class="bg-dark-800 rounded-xl border border-dark-500">
       <div class="px-4 py-3 border-b border-dark-500 flex items-center justify-between">
         <h2 class="text-sm font-semibold text-gray-300">Candles</h2>
-        <span class="text-xs text-gray-500">{{ series.length }} series</span>
+        <span class="text-xs text-gray-500">{{ visibleSeries.length }} source series</span>
       </div>
-      <div class="overflow-x-auto">
+      <div class="md:hidden divide-y divide-dark-600/60">
+        <div v-if="loading" class="px-4 py-8 text-center text-gray-500">Loading...</div>
+        <div v-else-if="visibleSeries.length === 0" class="px-4 py-8 text-center text-gray-500">No candle data</div>
+        <div v-for="row in visibleSeries" :key="row.id" class="p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-mono text-gray-200 truncate">{{ row.symbol }}</div>
+              <div class="text-xs text-gray-500">{{ row.exchange }} / {{ row.market_type }} / {{ row.timeframe }}</div>
+            </div>
+            <span :class="[statusClass(row.status), 'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium']">{{ row.status }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div><span class="text-gray-500">Bars</span><div class="text-gray-200 font-mono">{{ Number(row.bar_count ?? 0).toLocaleString() }}</div></div>
+            <div><span class="text-gray-500">Size</span><div class="text-gray-200 font-mono">{{ fmtBytes(row.size_bytes) }}</div></div>
+          </div>
+          <div class="text-xs text-gray-400 break-words">{{ fmtDate(row.earliest_ms) }} → {{ fmtDate(row.latest_ms) }}</div>
+          <div class="flex flex-wrap gap-1">
+            <span v-for="(range, idx) in (row.ranges ?? [])" :key="idx" class="px-1.5 py-0.5 rounded bg-dark-600 text-[10px] text-gray-400">{{ fmtRange(range) }}</span>
+          </div>
+          <div class="flex gap-2">
+            <button class="flex-1 px-2 py-2 rounded bg-dark-600 hover:bg-dark-500 text-xs text-gray-200 disabled:opacity-50" :disabled="actionId === row.id" @click="refreshSeries(row.id)">Update</button>
+            <button class="flex-1 px-2 py-2 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger disabled:opacity-50" :disabled="actionId === row.id" @click="removeSeries(row)">Delete</button>
+          </div>
+        </div>
+      </div>
+      <div class="hidden md:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
@@ -140,10 +170,10 @@ function statusClass(status: string) {
             <tr v-if="loading">
               <td colspan="8" class="px-4 py-8 text-center text-gray-500">Loading...</td>
             </tr>
-            <tr v-else-if="series.length === 0">
+            <tr v-else-if="visibleSeries.length === 0">
               <td colspan="8" class="px-4 py-8 text-center text-gray-500">No candle data</td>
             </tr>
-            <tr v-for="row in series" :key="row.id" class="border-b border-dark-600/50 hover:bg-dark-700/40">
+            <tr v-for="row in visibleSeries" :key="row.id" class="border-b border-dark-600/50 hover:bg-dark-700/40">
               <td class="px-4 py-2.5">
                 <div class="font-mono text-gray-200">{{ row.symbol }}</div>
                 <div class="text-xs text-gray-500">{{ row.exchange }} / {{ row.market_type }}</div>

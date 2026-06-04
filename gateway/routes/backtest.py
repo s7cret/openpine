@@ -480,6 +480,11 @@ async def list_runs(
             strategy_name = strat.name
         except (KeyError, Exception):
             pass
+        metrics = None
+        try:
+            metrics = store.get_metrics(r.run_id)
+        except Exception:
+            pass
 
         result.append(BacktestRunDetail(
             run_id=r.run_id,
@@ -491,6 +496,8 @@ async def list_runs(
             timeframe=r.timeframe,
             from_time=r.from_time,
             to_time=r.to_time,
+            bars_processed=getattr(r, "bars_processed", None),
+            metrics=metrics,
             strategy_name=strategy_name,
             version=run_versions.get(r.run_id),
         ))

@@ -343,6 +343,39 @@ class SQLiteStrategyRegistry:
     def delete_strategy(self, strategy_id: str) -> None:
         """Delete a strategy instance."""
         self.get_strategy(strategy_id)  # raises if not found
+        import shutil
+
+        # Cascade: delete backtest runs, trades, artifacts
+        self._conn.execute("DELETE FROM backtest_trades WHERE strategy_id = ?", (strategy_id,))
+        self._conn.execute("DELETE FROM backtest_artifacts WHERE strategy_id = ?", (strategy_id,))
+        self._conn.execute("DELETE FROM backtest_runs WHERE strategy_id = ?", (strategy_id,))
+        # Delete orders
+        try:
+            order_ids = [
+                row[0]
+                for row in self._conn.execute("SELECT order_id FROM orders WHERE strategy_id = ?", (strategy_id,)).fetchall()
+            ]
+            if order_ids:
+                placeholders = ",".join("?" for _ in order_ids)
+                self._conn.execute(f"DELETE FROM fills WHERE order_id IN ({placeholders})", tuple(order_ids))
+            self._conn.execute("DELETE FROM orders WHERE strategy_id = ?", (strategy_id,))
+        except Exception:
+            pass  # orders table might not exist
+        # Delete positions
+        try:
+            self._conn.execute("DELETE FROM strategy_positions WHERE strategy_id = ?", (strategy_id,))
+        except Exception:
+            pass
+        for table in ("strategy_trades", "strategy_state_snapshots", "jobs"):
+            try:
+                self._conn.execute(f"DELETE FROM {table} WHERE strategy_id = ?", (strategy_id,))
+            except Exception:
+                pass
+        # Delete backtest data directory
+        from openpine.config import DEFAULT_CONFIG
+        bt_dir = DEFAULT_CONFIG.data_dir / "backtests" / strategy_id
+        if bt_dir.exists():
+            shutil.rmtree(bt_dir, ignore_errors=True)
         self._conn.execute(
             "DELETE FROM strategy_instances WHERE strategy_id = ?",
             (strategy_id,),
@@ -353,4 +386,3 @@ class SQLiteStrategyRegistry:
     def _storage(self):
         """Expose internal connection for direct SQL (used by gateway PATCH)."""
         return self._conn
-

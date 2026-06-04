@@ -9,7 +9,7 @@ from __future__ import annotations
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from openpine.gateway.deps import get_pine_registry
+from openpine.gateway.deps import GatewayState, get_pine_registry, get_state
 from openpine.gateway.schemas import (
     PineSourceCreate,
     PineSourceDetailResponse,
@@ -137,11 +137,27 @@ async def update_source(
 @router.delete("/{source_id}", status_code=204)
 async def delete_source(
     source_id: str,
-    registry: SQLitePineSourceRegistry = Depends(get_pine_registry),
+    state: GatewayState = Depends(get_state),
 ) -> None:
     """Delete a Pine source."""
     try:
-        registry.remove_source(source_id)
+        source = state.pine_registry.get_source(source_id)
     except KeyError:
         raise HTTPException(404, f"Pine source not found: {source_id}")
+    source_id = source.id
+    state.pine_registry.remove_source(source_id)
+    try:
+        state.storage.execute("DELETE FROM compile_artifacts WHERE pine_id = ?", (source_id,))
+        state.storage.execute("DELETE FROM pine_artifacts WHERE source_id = ?", (source_id,))
+        state.storage.commit()
+    except Exception as exc:
+        log.warning("pine_source_artifact_rows_cleanup_failed", source_id=source_id, error=str(exc))
+    try:
+        import shutil
+
+        source_dir = state.artifact_store._source_dir(source_id)
+        if source_dir.exists():
+            shutil.rmtree(source_dir, ignore_errors=True)
+    except Exception as exc:
+        log.warning("pine_source_artifact_dir_cleanup_failed", source_id=source_id, error=str(exc))
     log.info("pine_source_deleted", source_id=source_id)

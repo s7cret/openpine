@@ -105,6 +105,36 @@ function msToDate(ms?: number | null) {
   return ms ? new Date(ms).toISOString().slice(0, 10) : ''
 }
 
+function fmtDateTime(ms?: number | null) {
+  if (!ms) return '—'
+  return new Date(ms > 1e12 ? ms : ms * 1000).toLocaleString()
+}
+
+function fmtPeriod(run: any) {
+  return `${fmtDateTime(run?.from_time)} → ${fmtDateTime(run?.to_time)}`
+}
+
+function metric(run: any, key: string) {
+  return run?.metrics?.[key] ?? run?.[key] ?? null
+}
+
+function fmtNumber(value: any, digits = 0) {
+  if (value == null || Number.isNaN(Number(value))) return '—'
+  return Number(value).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits })
+}
+
+function fmtPct(value: any) {
+  if (value == null || Number.isNaN(Number(value))) return '—'
+  const pct = Math.abs(Number(value)) <= 1 ? Number(value) * 100 : Number(value)
+  return `${pct.toFixed(1)}%`
+}
+
+function fmtPnl(run: any) {
+  const value = metric(run, 'net_profit')
+  if (value == null || Number.isNaN(Number(value))) return '—'
+  return `${Number(value) >= 0 ? '+' : ''}${Number(value).toFixed(2)}`
+}
+
 function fmtEstimate(e: any) {
   if (!e) return ''
   const adjusted = e.adjusted ? `range ${msToDate(e.requested_from)} -> ${msToDate(e.effective_from)}` : 'range ok'
@@ -157,14 +187,42 @@ function fmtEstimate(e: any) {
 
     <!-- Table -->
     <div class="bg-dark-800 rounded-xl border border-dark-500 overflow-hidden">
-      <table class="w-full text-sm">
+      <div class="md:hidden divide-y divide-dark-600/60">
+        <div v-if="btStore.items.length === 0" class="px-4 py-8 text-center text-gray-500">
+          {{ btStore.loading ? 'Loading...' : 'No backtests yet' }}
+        </div>
+        <div v-for="run in btStore.items" :key="run.run_id ?? run.id" class="p-4 space-y-3" @click="expandRun(run.run_id ?? run.id)">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-medium text-gray-200 truncate">{{ run.strategy_name ?? run.strategy_id ?? '—' }}</div>
+              <div class="text-xs text-gray-500 font-mono">v{{ run.version ?? 1 }} · {{ run.symbol }} {{ run.timeframe }}</div>
+            </div>
+            <span :class="[statusBadge(run.status), 'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium']">{{ run.status ?? '—' }}</span>
+          </div>
+          <div class="text-xs text-gray-400 break-words">{{ fmtPeriod(run) }}</div>
+          <div class="grid grid-cols-3 gap-3 text-xs">
+            <div><span class="text-gray-500">Trades</span><div class="font-mono text-gray-200">{{ fmtNumber(metric(run, 'trades_total')) }}</div></div>
+            <div><span class="text-gray-500">Win</span><div class="font-mono text-gray-200">{{ fmtPct(metric(run, 'win_rate')) }}</div></div>
+            <div><span class="text-gray-500">Net</span><div class="font-mono" :class="Number(metric(run, 'net_profit') ?? 0) >= 0 ? 'text-success' : 'text-danger'">{{ fmtPnl(run) }}</div></div>
+          </div>
+          <div v-if="btStore.getProgress(run.run_id ?? run.id)" class="space-y-1">
+            <div class="h-1.5 bg-dark-600 rounded-full overflow-hidden">
+              <div class="h-full rounded-full bg-accent transition-all duration-500" :style="{ width: ((btStore.getProgress(run.run_id ?? run.id)?.pct ?? 0) * 100) + '%' }" />
+            </div>
+            <div class="text-[10px] text-gray-500 truncate">{{ btStore.getProgress(run.run_id ?? run.id)?.message }}</div>
+          </div>
+        </div>
+      </div>
+      <table class="hidden md:table w-full text-sm">
         <thead>
           <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
             <th class="px-4 py-2.5 text-left">Strategy</th>
             <th class="px-4 py-2.5 text-left">Version</th>
             <th class="px-4 py-2.5 text-left">Date</th>
+            <th class="px-4 py-2.5 text-left">Period</th>
             <th class="px-4 py-2.5 text-left">Status</th>
             <th class="px-4 py-2.5 text-right">Trades</th>
+            <th class="px-4 py-2.5 text-right">Win</th>
             <th class="px-4 py-2.5 text-right">PnL</th>
             <th class="px-4 py-2.5 text-left w-32">Progress</th>
             <th class="px-2 py-2.5 w-10"></th>
@@ -172,7 +230,7 @@ function fmtEstimate(e: any) {
         </thead>
         <tbody>
           <tr v-if="btStore.items.length === 0">
-            <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+            <td colspan="10" class="px-4 py-8 text-center text-gray-500">
               {{ btStore.loading ? 'Loading...' : 'No backtests yet' }}
             </td>
           </tr>
@@ -183,16 +241,16 @@ function fmtEstimate(e: any) {
             >
               <td class="px-4 py-2.5 font-medium text-gray-200 max-w-[140px] truncate">{{ run.strategy_name ?? run.strategy_id ?? '—' }}</td>
               <td class="px-4 py-2.5 text-gray-400 font-mono text-xs">v{{ run.version ?? 1 }}</td>
-              <td class="px-4 py-2.5 text-gray-400 text-xs">{{ run.started_at ? new Date(run.started_at > 1e12 ? run.started_at : run.started_at * 1000).toLocaleString() : '—' }}</td>
+              <td class="px-4 py-2.5 text-gray-400 text-xs">{{ fmtDateTime(run.started_at) }}</td>
+              <td class="px-4 py-2.5 text-gray-400 text-xs max-w-[220px] truncate">{{ fmtPeriod(run) }}</td>
               <td class="px-4 py-2.5">
                 <span :class="[statusBadge(run.status), 'px-2 py-0.5 rounded-full text-xs font-medium']">
                   {{ run.status ?? '—' }}
                 </span>
               </td>
-              <td class="px-4 py-2.5 text-right text-gray-300 font-mono">{{ run.trade_count ?? '—' }}</td>
-              <td class="px-4 py-2.5 text-right font-mono" :class="(run.pnl ?? 0) >= 0 ? 'text-success' : 'text-danger'">
-                {{ run.pnl != null ? (run.pnl >= 0 ? '+' : '') + run.pnl.toFixed(2) : '—' }}
-              </td>
+              <td class="px-4 py-2.5 text-right text-gray-300 font-mono">{{ fmtNumber(metric(run, 'trades_total')) }}</td>
+              <td class="px-4 py-2.5 text-right text-gray-300 font-mono">{{ fmtPct(metric(run, 'win_rate')) }}</td>
+              <td class="px-4 py-2.5 text-right font-mono" :class="Number(metric(run, 'net_profit') ?? 0) >= 0 ? 'text-success' : 'text-danger'">{{ fmtPnl(run) }}</td>
               <td class="px-4 py-2.5">
                 <div v-if="btStore.getProgress(run.run_id ?? run.id)" class="flex items-center gap-2">
                   <div class="flex-1 h-1.5 bg-dark-600 rounded-full overflow-hidden">
@@ -221,23 +279,23 @@ function fmtEstimate(e: any) {
             </tr>
             <!-- Expanded detail -->
             <tr v-if="expandedId === (run.run_id ?? run.id)">
-              <td colspan="8" class="px-4 py-3 bg-dark-900/50">
+              <td colspan="10" class="px-4 py-3 bg-dark-900/50">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                   <div>
                     <span class="text-xs text-gray-500">Win Rate</span>
-                    <div class="text-sm font-bold text-gray-200">{{ btStore.current?.win_rate != null ? (btStore.current.win_rate * 100).toFixed(1) + '%' : '—' }}</div>
+                    <div class="text-sm font-bold text-gray-200">{{ fmtPct(btStore.current?.metrics?.win_rate) }}</div>
                   </div>
                   <div>
-                    <span class="text-xs text-gray-500">Sharpe</span>
-                    <div class="text-sm font-bold text-gray-200">{{ btStore.current?.sharpe?.toFixed(2) ?? '—' }}</div>
+                    <span class="text-xs text-gray-500">Trades</span>
+                    <div class="text-sm font-bold text-gray-200">{{ fmtNumber(btStore.current?.metrics?.trades_total) }}</div>
                   </div>
                   <div>
                     <span class="text-xs text-gray-500">Max Drawdown</span>
-                    <div class="text-sm font-bold text-danger">{{ btStore.current?.max_drawdown != null ? (btStore.current.max_drawdown * 100).toFixed(1) + '%' : '—' }}</div>
+                    <div class="text-sm font-bold text-danger">{{ fmtPct(btStore.current?.metrics?.max_drawdown_pct ?? btStore.current?.metrics?.max_drawdown) }}</div>
                   </div>
                   <div>
-                    <span class="text-xs text-gray-500">Duration</span>
-                    <div class="text-sm font-bold text-gray-200">{{ btStore.current?.duration ?? '—' }}</div>
+                    <span class="text-xs text-gray-500">Period</span>
+                    <div class="text-sm font-bold text-gray-200 truncate">{{ fmtPeriod(btStore.current ?? run) }}</div>
                   </div>
                 </div>
                 <div v-if="(run.status === 'done' || run.status === 'completed')" class="flex gap-2">
