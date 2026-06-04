@@ -98,8 +98,8 @@ async def refresh_data_series(
     tf = parse_timeframe(str(series["timeframe"]))
     duration_ms = tf.duration_ms or 60_000
     now_ms = int(time.time() * 1000)
-    start_ms = int(series["latest_ms"]) + duration_ms
-    if start_ms >= now_ms:
+    start_ms = int(series.get("earliest_ms") or series["latest_ms"])
+    if int(series["latest_ms"]) + duration_ms >= now_ms and series.get("status") == "actual":
         return {"status": "actual", "bars_fetched": 0, "series": series}
 
     query = BarQuery(
@@ -117,7 +117,8 @@ async def refresh_data_series(
     loaded = state.orchestrator.load_bars(query)
     return {
         "status": "refreshed",
-        "bars_fetched": len(loaded.bars),
+        "bars_loaded": len(loaded.bars),
+        "coverage_complete": bool(getattr(loaded.coverage, "is_complete", False)),
         "from_ms": start_ms,
         "to_ms": now_ms,
     }
@@ -267,10 +268,12 @@ def _data_series_inventory(state: GatewayState) -> list[dict[str, object]]:
     for entry in groups.values():
         ranges = list(entry.get("ranges") or [])
         stored_rows = int(entry.get("bar_count") or 0)
-        estimated_unique = _estimate_unique_bars(ranges, str(entry["timeframe"]))
+        coverage_ranges = _coalesce_ranges(ranges, str(entry["timeframe"]))
+        estimated_unique = _estimate_unique_bars(coverage_ranges, str(entry["timeframe"]))
         entry["stored_rows"] = stored_rows
         entry["bar_count"] = min(estimated_unique, stored_rows) if stored_rows else estimated_unique
-        entry["ranges"] = _compact_ranges(ranges)
+        entry["raw_range_count"] = len(ranges)
+        entry["ranges"] = _compact_ranges(coverage_ranges)
     return sorted(groups.values(), key=lambda item: (str(item["symbol"]), str(item["timeframe"])))
 
 
@@ -432,6 +435,52 @@ def _compact_ranges(ranges: list[dict[str, object]], limit: int = 6) -> list[dic
     if len(ordered) <= limit:
         return ordered
     return ordered[:3] + [{"collapsed": len(ordered) - 5}] + ordered[-2:]
+
+
+def _coalesce_ranges(ranges: list[dict[str, object]], timeframe: str) -> list[dict[str, object]]:
+    try:
+        from marketdata_provider.contracts import parse_timeframe
+
+        duration_ms = parse_timeframe(timeframe).duration_ms or 60_000
+    except Exception:
+        duration_ms = 60_000
+
+    intervals: list[dict[str, object]] = []
+    for item in ranges:
+        first = item.get("from_ms")
+        last = item.get("to_ms")
+        if first is None or last is None:
+            continue
+        first_ms = int(first)
+        last_ms = int(last)
+        if last_ms < first_ms:
+            continue
+        intervals.append(
+            {
+                "from_ms": first_ms,
+                "to_ms": last_ms,
+                "rows": int(item.get("rows") or 0),
+                "sources": {str(item.get("source") or "unknown")},
+            }
+        )
+    intervals.sort(key=lambda item: int(item["from_ms"]))
+
+    merged: list[dict[str, object]] = []
+    for item in intervals:
+        if not merged or int(item["from_ms"]) > int(merged[-1]["to_ms"]) + duration_ms:
+            merged.append(item)
+            continue
+        merged[-1]["to_ms"] = max(int(merged[-1]["to_ms"]), int(item["to_ms"]))
+        merged[-1]["rows"] = int(merged[-1].get("rows") or 0) + int(item.get("rows") or 0)
+        merged_sources = set(merged[-1].get("sources") or [])
+        merged_sources.update(set(item.get("sources") or []))
+        merged[-1]["sources"] = merged_sources
+
+    for item in merged:
+        sources = sorted(set(item.get("sources") or []))
+        item["source"] = ",".join(sources)
+        item.pop("sources", None)
+    return merged
 
 
 def _estimate_unique_bars(ranges: list[dict[str, object]], timeframe: str) -> int:
