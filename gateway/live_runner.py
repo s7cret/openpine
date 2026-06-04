@@ -54,6 +54,7 @@ class LiveStrategyRunner:
         storage=None,
         order_store=None,
         artifact_store=None,
+        state_store=None,
     ) -> None:
         self.config = config or RunnerConfig()
         self.registry = registry
@@ -61,6 +62,7 @@ class LiveStrategyRunner:
         self.storage = storage
         self.order_store = order_store
         self.artifact_store = artifact_store
+        self.state_store = state_store or self._default_state_store()
 
         self._running = False
         self._task: asyncio.Task | None = None
@@ -198,7 +200,6 @@ class LiveStrategyRunner:
                 BacktestRunConfig,
                 load_strategy_class_from_artifact,
             )
-            from openpine.data.direct_provider import DirectBinanceProvider
             from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
             # Load strategy class
@@ -211,11 +212,27 @@ class LiveStrategyRunner:
 
             # Load recent bars
             tf = parse_timeframe(strategy.timeframe)
-            lookback_ms = (tf.duration_ms or 60000) * self.config.lookback_bars
+            duration_ms = tf.duration_ms or 60000
+            lookback_ms = duration_ms * self.config.lookback_bars
             end_ms = up_to_bar_time_ms + (tf.duration_ms or 60000)
-            start_ms = end_ms - lookback_ms
+            instrument_key = self._instrument_key(strategy)
+            timeframe_key = self._timeframe_key(strategy)
+            snapshot = self._load_resume_snapshot(
+                strategy,
+                instrument_key=instrument_key,
+                timeframe=timeframe_key,
+                at_or_before_bar_time=up_to_bar_time_ms,
+            )
+            resume_state = snapshot.state_data if snapshot is not None else None
+            snapshot_bar_time = snapshot.bar_time if snapshot is not None else None
+            if snapshot_bar_time is not None and snapshot_bar_time >= up_to_bar_time_ms:
+                return []
+            start_ms = (
+                min(snapshot_bar_time + duration_ms, up_to_bar_time_ms)
+                if snapshot_bar_time is not None
+                else end_ms - lookback_ms
+            )
 
-            provider = DirectBinanceProvider()
             query = BarQuery(
                 instrument=InstrumentKey(
                     exchange=strategy.exchange.lower(),
@@ -227,7 +244,7 @@ class LiveStrategyRunner:
                 end_ms=end_ms,
                 gap_policy="allow_with_metadata",
             )
-            series = provider.fetch_bars(query)
+            series = self.orchestrator.load_bars(query) if self.orchestrator is not None else self._fetch_direct(query)
             bars = list(series.bars)
 
             if not bars:
@@ -272,7 +289,7 @@ class LiveStrategyRunner:
                 calc_on_order_fills=bool(decl_args.get("calc_on_order_fills", False)),
                 calc_on_every_tick=bool(decl_args.get("calc_on_every_tick", False)),
                 use_bar_magnifier=bool(decl_args.get("use_bar_magnifier", False)),
-                export_resume_state=False,
+                export_resume_state=True,
                 content_hash_enabled=True,
                 collect_events=True,
                 collect_order_lifecycle=True,
@@ -293,7 +310,17 @@ class LiveStrategyRunner:
                 bars,
                 config,
                 params={},
+                resume_state=resume_state,
                 runtime_data_provider=runtime_data_provider,
+            )
+
+            self._save_resume_snapshot(
+                strategy,
+                result=result,
+                instrument_key=instrument_key,
+                timeframe=timeframe_key,
+                bar_time=up_to_bar_time_ms,
+                data_fingerprint=self._series_fingerprint(series),
             )
 
             # Extract trades/orders from result
@@ -441,3 +468,107 @@ class LiveStrategyRunner:
         }
         digest = hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()[:24]
         return f"live_{strategy.strategy_id}_{digest}"
+
+    @staticmethod
+    def _default_state_store():
+        try:
+            from openpine.config import OpenPineConfig
+            from openpine.state.store import StateStore
+
+            return StateStore(OpenPineConfig.load().data_dir / "state")
+        except Exception as exc:
+            log.warning("live_runner.state_store_init_failed", error=str(exc))
+            return None
+
+    @staticmethod
+    def _instrument_key(strategy) -> dict:
+        return {
+            "exchange": strategy.exchange.lower(),
+            "market": strategy.market_type.lower(),
+            "symbol": strategy.symbol.upper(),
+            "price_type": "trade",
+        }
+
+    @staticmethod
+    def _timeframe_key(strategy) -> dict:
+        return {"canonical": str(strategy.timeframe)}
+
+    def _load_resume_snapshot(
+        self,
+        strategy,
+        *,
+        instrument_key: dict,
+        timeframe: dict,
+        at_or_before_bar_time: int,
+    ):
+        if self.state_store is None:
+            return None
+        try:
+            return self.state_store.load_latest_compatible(
+                strategy.strategy_id,
+                artifact_id=strategy.artifact_id,
+                params_hash=strategy.params_hash,
+                instrument_key=instrument_key,
+                timeframe=timeframe,
+                at_or_before_bar_time=at_or_before_bar_time,
+            )
+        except Exception as exc:
+            log.warning("live_runner.resume_snapshot_load_failed", strategy_id=strategy.strategy_id, error=str(exc))
+            return None
+
+    def _save_resume_snapshot(
+        self,
+        strategy,
+        *,
+        result,
+        instrument_key: dict,
+        timeframe: dict,
+        bar_time: int,
+        data_fingerprint: str | None,
+    ) -> None:
+        if self.state_store is None:
+            return
+        resume_state = getattr(result, "resume_state", None)
+        if resume_state is None:
+            return
+        try:
+            self.state_store.save_runtime_snapshot(
+                strategy_id=strategy.strategy_id,
+                artifact_id=strategy.artifact_id,
+                params_hash=strategy.params_hash,
+                instrument_key=instrument_key,
+                timeframe=timeframe,
+                runtime_state=resume_state,
+                bar_time=bar_time,
+                reason="live_bar",
+                data_fingerprint=data_fingerprint,
+            )
+        except Exception as exc:
+            log.warning("live_runner.resume_snapshot_save_failed", strategy_id=strategy.strategy_id, error=str(exc))
+
+    @staticmethod
+    def _fetch_direct(query):
+        from openpine.data.direct_provider import DirectBinanceProvider
+
+        return DirectBinanceProvider().fetch_bars(query)
+
+    @staticmethod
+    def _series_fingerprint(series) -> str:
+        digest = hashlib.sha256()
+        digest.update(b"openpine.live.bar_series.v1\0")
+        digest.update(str(series.query.instrument.exchange).encode())
+        digest.update(b"\0")
+        digest.update(str(series.query.instrument.market).encode())
+        digest.update(b"\0")
+        digest.update(str(series.query.instrument.symbol).encode())
+        digest.update(b"\0")
+        digest.update(str(series.query.timeframe.canonical).encode())
+        digest.update(b"\0")
+        for bar in series.bars:
+            digest.update(
+                (
+                    f"{bar.time}|{bar.time_close}|{bar.open:.12g}|{bar.high:.12g}|"
+                    f"{bar.low:.12g}|{bar.close:.12g}|{bar.volume!r}\n"
+                ).encode()
+            )
+        return digest.hexdigest()
