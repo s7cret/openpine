@@ -298,6 +298,12 @@ function fmt24hChange(value: any) {
   return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 }
 
+function fmtPrice(value: any) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return '—'
+  return n.toLocaleString(undefined, { maximumFractionDigits: 8 })
+}
+
 // Trades state
 const tradeMode = ref('paper')
 const tradeFilterSide = ref('')
@@ -384,6 +390,8 @@ const orderTradeRows = computed<any[]>(() => {
       side: normalizeTradeSide(o.side),
       qty: o.filled_quantity || o.qty,
       entry_price: o.avg_fill_price || o.limit_price,
+      stop_price: o.stop_price,
+      take_profit_price: o.take_profit_price,
       pnl: null,
       status: o.status,
       entry_time: o.created_at,
@@ -827,13 +835,15 @@ function tradeStatusBadge(status: string) {
                       <th class="px-3 py-1.5 text-left">Side</th>
                       <th class="px-3 py-1.5 text-right">Qty</th>
                       <th class="px-3 py-1.5 text-right">Price</th>
+                      <th class="px-3 py-1.5 text-right">SL</th>
+                      <th class="px-3 py-1.5 text-right">TP</th>
                       <th class="px-3 py-1.5 text-right">PnL</th>
                       <th class="px-3 py-1.5 text-left">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-if="filteredTrades.length === 0">
-                      <td colspan="6" class="px-3 py-4 text-center text-gray-500">No trades yet</td>
+                      <td colspan="8" class="px-3 py-4 text-center text-gray-500">No trades yet</td>
                     </tr>
                     <tr v-for="t in filteredTrades" :key="t.trade_id ?? t.order_id" class="border-b border-dark-700/50 hover:bg-dark-800">
                       <td class="px-3 py-1.5 text-gray-400">{{ formatTime(t.entry_time ?? t.created_at) }}</td>
@@ -843,7 +853,9 @@ function tradeStatusBadge(status: string) {
                         </span>
                       </td>
                       <td class="px-3 py-1.5 text-right text-gray-300 font-mono">{{ t.qty ?? t.filled_quantity ?? '—' }}</td>
-                      <td class="px-3 py-1.5 text-right text-gray-300 font-mono">{{ t.entry_price ?? t.avg_fill_price ?? t.limit_price ?? '—' }}</td>
+                      <td class="px-3 py-1.5 text-right text-gray-300 font-mono">{{ fmtPrice(t.entry_price ?? t.avg_fill_price ?? t.limit_price) }}</td>
+                      <td class="px-3 py-1.5 text-right text-danger font-mono">{{ fmtPrice(t.stop_price) }}</td>
+                      <td class="px-3 py-1.5 text-right text-success font-mono">{{ fmtPrice(t.take_profit_price) }}</td>
                       <td class="px-3 py-1.5 text-right font-mono" :class="(t.pnl ?? 0) >= 0 ? 'text-success' : 'text-danger'">
                         {{ t.pnl != null ? t.pnl.toFixed(2) : '—' }}
                       </td>

@@ -34,7 +34,7 @@ async def list_orders(
     sql = f"""
         SELECT order_id, strategy_id, account_id, client_order_id,
                symbol, side, order_type, qty, limit_price, stop_price,
-               status, filled_quantity, avg_fill_price, error,
+               take_profit_price, status, filled_quantity, avg_fill_price, error,
                created_at, updated_at
         FROM orders {where_sql}
         ORDER BY created_at DESC LIMIT ?
@@ -54,12 +54,13 @@ async def list_orders(
             "qty": r[7],
             "limit_price": r[8],
             "stop_price": r[9],
-            "status": r[10],
-            "filled_quantity": r[11],
-            "avg_fill_price": r[12],
-            "error": r[13],
-            "created_at": r[14],
-            "updated_at": r[15],
+            "take_profit_price": r[10],
+            "status": r[11],
+            "filled_quantity": r[12],
+            "avg_fill_price": r[13],
+            "error": r[14],
+            "created_at": r[15],
+            "updated_at": r[16],
         }
         for r in rows
     ]
@@ -74,7 +75,7 @@ async def get_order(
     row = state.storage.execute(
         """SELECT order_id, strategy_id, account_id, client_order_id,
                   symbol, side, order_type, qty, limit_price, stop_price,
-                  status, filled_quantity, avg_fill_price, error,
+                  take_profit_price, status, filled_quantity, avg_fill_price, error,
                   created_at, updated_at
            FROM orders WHERE order_id = ?""",
         (order_id,),
@@ -85,9 +86,10 @@ async def get_order(
         "order_id": row[0], "strategy_id": row[1], "account_id": row[2],
         "client_order_id": row[3], "symbol": row[4], "side": row[5],
         "order_type": row[6], "qty": row[7], "limit_price": row[8],
-        "stop_price": row[9], "status": row[10], "filled_quantity": row[11],
-        "avg_fill_price": row[12], "error": row[13],
-        "created_at": row[14], "updated_at": row[15],
+        "stop_price": row[9], "take_profit_price": row[10],
+        "status": row[11], "filled_quantity": row[12],
+        "avg_fill_price": row[13], "error": row[14],
+        "created_at": row[15], "updated_at": row[16],
     }
 
 

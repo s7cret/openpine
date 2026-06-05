@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
 import time
 import traceback
 from dataclasses import dataclass
@@ -405,6 +406,7 @@ class LiveStrategyRunner:
                 )
 
             new_orders = self._extract_new_orders(result.raw_result, up_to_bar_time_ms)
+            self._attach_risk_prices(strategy, new_orders)
             if resume_state is not None and not new_orders:
                 start_ms = end_ms - lookback_ms
                 query = BarQuery(
@@ -427,6 +429,7 @@ class LiveStrategyRunner:
                         runtime_data_provider=runtime_data_provider,
                     )
                     fallback_orders = self._extract_new_orders(fallback_result.raw_result, up_to_bar_time_ms)
+                    self._attach_risk_prices(strategy, fallback_orders)
                     if fallback_orders:
                         log.info(
                             "live_runner.resume_zero_orders_fallback",
@@ -527,13 +530,15 @@ class LiveStrategyRunner:
                     client_order_id = self._client_order_id(strategy, order)
                     created_at = int(order.get("entry_time", order.get("order_time", now_ms)) or now_ms)
                     price = order.get("entry_price", order.get("price", 0))
+                    stop_price = order.get("stop_price")
+                    take_profit_price = order.get("take_profit_price")
                     qty = order.get("qty", 0)
                     self.storage.execute(
                         """INSERT OR IGNORE INTO orders
                            (order_id, strategy_id, client_order_id, symbol, side, order_type, qty,
-                            limit_price, status, filled_quantity, avg_fill_price,
+                            limit_price, stop_price, take_profit_price, status, filled_quantity, avg_fill_price,
                             intent_json, created_at, updated_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                         (
                             client_order_id,
                             sid,
@@ -543,6 +548,8 @@ class LiveStrategyRunner:
                             order.get("order_type", "market"),
                             qty,
                             price,
+                            stop_price,
+                            take_profit_price,
                             "filled",
                             qty,
                             price,
@@ -602,6 +609,61 @@ class LiveStrategyRunner:
             )
 
     @staticmethod
+    def _extract_percent_input(source_text: str, name: str) -> float | None:
+        match = re.search(
+            rf"\b{re.escape(name)}\s*=\s*input\.float\(\s*([-+]?\d+(?:\.\d+)?)",
+            source_text,
+        )
+        if not match:
+            return None
+        try:
+            return float(match.group(1))
+        except ValueError:
+            return None
+
+    def _strategy_risk_percents(self, strategy) -> tuple[float | None, float | None]:
+        if self.storage is None:
+            return None, None
+        try:
+            row = self.storage.execute(
+                "SELECT source_text FROM pine_sources WHERE pine_id = ?",
+                (strategy.pine_id,),
+            ).fetchone()
+        except Exception as exc:
+            log.warning("live_runner.risk_source_load_failed", strategy_id=strategy.strategy_id, error=str(exc))
+            return None, None
+        if not row or not row[0]:
+            return None, None
+        source_text = str(row[0])
+        return (
+            self._extract_percent_input(source_text, "tpPct"),
+            self._extract_percent_input(source_text, "slPct"),
+        )
+
+    def _attach_risk_prices(self, strategy, orders: list[dict]) -> None:
+        if not orders:
+            return
+        tp_pct, sl_pct = self._strategy_risk_percents(strategy)
+        if tp_pct is None and sl_pct is None:
+            return
+
+        for order in orders:
+            entry_price = order.get("entry_price", order.get("price"))
+            try:
+                entry_price = float(entry_price)
+            except (TypeError, ValueError):
+                continue
+
+            side = str(order.get("side", "")).lower()
+            is_short = side in {"sell", "short"}
+            if tp_pct is not None and order.get("take_profit_price") is None:
+                multiplier = 1 - tp_pct / 100 if is_short else 1 + tp_pct / 100
+                order["take_profit_price"] = entry_price * multiplier
+            if sl_pct is not None and order.get("stop_price") is None:
+                multiplier = 1 + sl_pct / 100 if is_short else 1 - sl_pct / 100
+                order["stop_price"] = entry_price * multiplier
+
+    @staticmethod
     def _client_order_id(strategy, order: dict) -> str:
         payload = {
             "strategy_id": strategy.strategy_id,
@@ -610,6 +672,8 @@ class LiveStrategyRunner:
             "order_type": order.get("order_type", "market"),
             "qty": order.get("qty"),
             "price": order.get("entry_price", order.get("price")),
+            "stop_price": order.get("stop_price"),
+            "take_profit_price": order.get("take_profit_price"),
             "entry_time": order.get("entry_time", order.get("order_time")),
             "exit_time": order.get("exit_time"),
         }

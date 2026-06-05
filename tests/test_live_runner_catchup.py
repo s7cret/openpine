@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from openpine.gateway.live_runner import LiveStrategyRunner, StrategyBarState
 
 
@@ -35,3 +37,39 @@ def test_live_runner_requires_runtime_state_for_resume() -> None:
     assert LiveStrategyRunner._resume_has_runtime_state({"runtime_state": {"x": 1}})
     assert not LiveStrategyRunner._resume_has_runtime_state(SimpleNamespace(runtime_state=None))
     assert not LiveStrategyRunner._resume_has_runtime_state({"broker_state": {"position": 0}})
+
+
+def test_live_runner_attaches_risk_prices_from_pine_inputs() -> None:
+    class Storage:
+        def execute(self, sql, params):
+            return self
+
+        def fetchone(self):
+            return ('tpPct = input.float(0.70, "Take Profit %")\nslPct = input.float(0.90, "Stop Loss %")',)
+
+    runner = LiveStrategyRunner(storage=Storage())
+    strategy = SimpleNamespace(strategy_id="strategy-1", pine_id="pine-1")
+    orders = [{"side": "buy", "entry_price": 100.0}]
+
+    runner._attach_risk_prices(strategy, orders)
+
+    assert orders[0]["take_profit_price"] == pytest.approx(100.7)
+    assert orders[0]["stop_price"] == pytest.approx(99.1)
+
+
+def test_live_runner_attaches_short_risk_prices_from_pine_inputs() -> None:
+    class Storage:
+        def execute(self, sql, params):
+            return self
+
+        def fetchone(self):
+            return ('tpPct = input.float(0.70, "Take Profit %")\nslPct = input.float(0.90, "Stop Loss %")',)
+
+    runner = LiveStrategyRunner(storage=Storage())
+    strategy = SimpleNamespace(strategy_id="strategy-1", pine_id="pine-1")
+    orders = [{"side": "sell", "price": 100.0}]
+
+    runner._attach_risk_prices(strategy, orders)
+
+    assert orders[0]["take_profit_price"] == pytest.approx(99.3)
+    assert orders[0]["stop_price"] == pytest.approx(100.9)
