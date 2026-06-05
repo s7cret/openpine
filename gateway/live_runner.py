@@ -370,6 +370,39 @@ class LiveStrategyRunner:
                     runtime_data_provider=runtime_data_provider,
                 )
 
+            new_orders = self._extract_new_orders(result.raw_result, up_to_bar_time_ms)
+            if resume_state is not None and not new_orders:
+                start_ms = end_ms - lookback_ms
+                query = BarQuery(
+                    instrument=query.instrument,
+                    timeframe=tf,
+                    start_ms=start_ms,
+                    end_ms=end_ms,
+                    gap_policy="allow_with_metadata",
+                )
+                series = self.orchestrator.load_bars(query) if self.orchestrator is not None else self._fetch_direct(query)
+                bars = list(series.bars)
+                if bars:
+                    config = BacktestRunConfig(**{**config.__dict__, "start_time": start_ms})
+                    fallback_result = adapter.run(
+                        strategy_class,
+                        bars,
+                        config,
+                        params={},
+                        resume_state=None,
+                        runtime_data_provider=runtime_data_provider,
+                    )
+                    fallback_orders = self._extract_new_orders(fallback_result.raw_result, up_to_bar_time_ms)
+                    if fallback_orders:
+                        log.info(
+                            "live_runner.resume_zero_orders_fallback",
+                            strategy_id=strategy.strategy_id,
+                            bar_time=up_to_bar_time_ms,
+                            orders_count=len(fallback_orders),
+                        )
+                        result = fallback_result
+                        new_orders = fallback_orders
+
             self._save_resume_snapshot(
                 strategy,
                 result=result,
@@ -379,45 +412,42 @@ class LiveStrategyRunner:
                 data_fingerprint=self._series_fingerprint(series),
             )
 
-            # Extract trades/orders from result
-            raw = result.raw_result
-            trades = getattr(raw, "trades", []) or []
-            order_lifecycle = getattr(raw, "order_lifecycle", []) or []
-
-            # Filter to only trades that closed at or after our target bar time
-            new_orders = []
-            for trade in trades:
-                exit_time = getattr(trade, "exit_time", None) or getattr(trade, "exit_bar_time", None)
-                entry_time = getattr(trade, "entry_time", None) or getattr(trade, "entry_bar_time", None)
-                # Only include trades that entered or exited on the latest bar
-                if entry_time and entry_time >= up_to_bar_time_ms:
-                    new_orders.append({
-                        "side": getattr(trade, "direction", "long"),
-                        "entry_price": getattr(trade, "entry_price", 0),
-                        "exit_price": getattr(trade, "exit_price", None),
-                        "qty": getattr(trade, "qty", 0),
-                        "entry_time": entry_time,
-                        "exit_time": exit_time,
-                        "net_pnl": getattr(trade, "net_pnl", None),
-                    })
-
-            # Also check order_lifecycle for orders on the latest bar
-            for order in order_lifecycle:
-                order_time = getattr(order, "created_at", None) or getattr(order, "time", None)
-                if order_time and order_time >= up_to_bar_time_ms:
-                    new_orders.append({
-                        "side": getattr(order, "side", "buy"),
-                        "price": getattr(order, "price", 0),
-                        "qty": getattr(order, "quantity", 0),
-                        "order_time": order_time,
-                        "order_type": getattr(order, "order_type", "market"),
-                    })
-
             return new_orders
 
         except Exception as exc:
             log.error("live_runner.mini_backtest_error", error=str(exc), tb=traceback.format_exc())
             return None
+
+    @staticmethod
+    def _extract_new_orders(raw, up_to_bar_time_ms: int) -> list[dict]:
+        trades = getattr(raw, "trades", []) or []
+        order_lifecycle = getattr(raw, "order_lifecycle", []) or []
+        new_orders = []
+        for trade in trades:
+            exit_time = getattr(trade, "exit_time", None) or getattr(trade, "exit_bar_time", None)
+            entry_time = getattr(trade, "entry_time", None) or getattr(trade, "entry_bar_time", None)
+            if entry_time and entry_time >= up_to_bar_time_ms:
+                new_orders.append({
+                    "side": getattr(trade, "direction", "long"),
+                    "entry_price": getattr(trade, "entry_price", 0),
+                    "exit_price": getattr(trade, "exit_price", None),
+                    "qty": getattr(trade, "qty", 0),
+                    "entry_time": entry_time,
+                    "exit_time": exit_time,
+                    "net_pnl": getattr(trade, "net_pnl", None),
+                })
+
+        for order in order_lifecycle:
+            order_time = getattr(order, "created_at", None) or getattr(order, "time", None)
+            if order_time and order_time >= up_to_bar_time_ms:
+                new_orders.append({
+                    "side": getattr(order, "side", "buy"),
+                    "price": getattr(order, "price", 0),
+                    "qty": getattr(order, "quantity", 0),
+                    "order_time": order_time,
+                    "order_type": getattr(order, "order_type", "market"),
+                })
+        return new_orders
 
     @staticmethod
     def _is_resume_replay_error(exc: Exception) -> bool:
