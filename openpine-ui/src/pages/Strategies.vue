@@ -356,6 +356,26 @@ function dedupeTradeRows(rows: any[]) {
   })
 }
 
+function toTradeTimeMs(value: any): number | null {
+  if (value == null || value === '') return null
+  const n = typeof value === 'number' ? value : Number(value)
+  if (Number.isFinite(n)) return n > 1e12 ? n : n * 1000
+  const parsed = new Date(value).getTime()
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function tradeOverlapsSelectedPeriod(trade: any) {
+  if (chartDateFrom.value == null || chartDateTo.value == null) return true
+
+  const entryMs = toTradeTimeMs(trade.entry_time ?? trade.created_at)
+  const exitMs = toTradeTimeMs(trade.exit_time)
+  const startMs = entryMs ?? exitMs
+  const endMs = exitMs ?? entryMs
+  if (startMs == null || endMs == null) return true
+
+  return endMs >= chartDateFrom.value && startMs <= chartDateTo.value
+}
+
 const orderTradeRows = computed<any[]>(() => {
   return orders.value.map((o: any) => ({
       trade_id: o.order_id,
@@ -409,8 +429,12 @@ const allTrades = computed<any[]>(() => {
   return dedupeTradeRows([...orderTradeRows.value, ...historyRows])
 })
 
+const periodTrades = computed(() => {
+  return allTrades.value.filter(tradeOverlapsSelectedPeriod)
+})
+
 const filteredTrades = computed(() => {
-  return allTrades.value
+  return periodTrades.value
     .filter((t: any) => {
       if (tradeFilterSide.value && normalizeTradeSide(t.side) !== tradeFilterSide.value) return false
       if (tradeFilterStatus.value && (t.status ?? '').toLowerCase() !== tradeFilterStatus.value) return false
@@ -753,7 +777,7 @@ function tradeStatusBadge(status: string) {
                 :symbol="store.current?.symbol ?? 'BTCUSDT'"
                 :timeframe="store.current?.timeframe ?? '15m'"
                 :market="store.current?.market_type ?? 'spot'"
-                :trades="allTrades"
+                :trades="periodTrades"
                 class="h-full"
                 @visibleRange="onChartRangeChange"
                 @dataRange="onDataRangeChange"
@@ -785,6 +809,7 @@ function tradeStatusBadge(status: string) {
                 <select v-model="tradeFilterStatus" class="bg-dark-700 border border-dark-500 rounded px-2 py-1 text-xs text-gray-300">
                   <option value="">All Status</option>
                   <option value="filled">Filled</option>
+                  <option value="closed">Closed</option>
                   <option value="pending">Pending</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
