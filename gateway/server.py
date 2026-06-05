@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -54,22 +55,33 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     state._fetcher = fetcher  # expose to dashboard route
     log.info("periodic_fetcher_started", interval=fetcher_config.interval_seconds)
 
-    # Start live strategy runner for running strategies
-    from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig
-    runner = LiveStrategyRunner(
-        config=RunnerConfig(check_interval_seconds=5.0),
-        registry=state.strategy_registry,
-        orchestrator=state.orchestrator,
-        storage=state.storage,
-        artifact_store=state.artifact_store,
-    )
-    runner.start()
-    state._live_runner = runner
-    log.info("live_runner_started")
+    # Start live strategy runner only when explicitly enabled. It runs
+    # mini-backtests in the gateway process and can starve API responses on
+    # active paper/live strategies.
+    runner = None
+    live_runner_enabled = state.config.live_enabled or os.environ.get(
+        "OPENPINE_ENABLE_LIVE_RUNNER", "0"
+    ).lower() in {"1", "true", "yes", "on"}
+    if live_runner_enabled:
+        from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig
+        runner = LiveStrategyRunner(
+            config=RunnerConfig(check_interval_seconds=5.0),
+            registry=state.strategy_registry,
+            orchestrator=state.orchestrator,
+            storage=state.storage,
+            artifact_store=state.artifact_store,
+        )
+        runner.start()
+        state._live_runner = runner
+        log.info("live_runner_started")
+    else:
+        state._live_runner = None
+        log.info("live_runner_disabled")
 
     yield
 
-    runner.stop()
+    if runner is not None:
+        runner.stop()
     fetcher.stop()
     state.close()
     log.info("gateway_stopped")
