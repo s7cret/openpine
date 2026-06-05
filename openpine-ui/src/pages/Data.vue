@@ -247,7 +247,39 @@ function statusClass(status: string) {
           Delete All
         </button>
       </div>
-      <div class="overflow-x-auto">
+      <div class="md:hidden divide-y divide-dark-600/60">
+        <div v-if="!(orders.by_strategy ?? orders.by_symbol ?? []).length" class="px-4 py-6 text-center text-gray-500 text-sm">
+          No orders stored
+        </div>
+        <div
+          v-for="row in (orders.by_strategy ?? orders.by_symbol)"
+          :key="`${row.symbol}-${row.strategy_id ?? 'all'}-${row.status ?? ''}`"
+          class="p-4 space-y-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-mono text-sm text-gray-200">{{ row.symbol }}</div>
+              <div class="mt-1 break-words text-sm text-gray-300">{{ row.strategy_name ?? 'All strategies' }}</div>
+              <div v-if="row.strategy_id" class="mt-0.5 break-all font-mono text-[10px] leading-snug text-gray-500">{{ row.strategy_id }}</div>
+            </div>
+            <span class="shrink-0 rounded bg-dark-600 px-2 py-0.5 font-mono text-xs text-gray-200">{{ row.count }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-gray-500">Status</span>
+              <div class="mt-1 text-gray-300">{{ row.status ?? '—' }}</div>
+            </div>
+            <div>
+              <span class="text-gray-500">Latest</span>
+              <div class="mt-1 text-gray-300">{{ fmtDate(row.latest_ms) }}</div>
+            </div>
+          </div>
+          <button class="w-full rounded bg-danger/20 px-2 py-2 text-xs text-danger hover:bg-danger/30" @click="removeOrders(row.symbol, row.strategy_id, row.strategy_name, row.status)">
+            Delete
+          </button>
+        </div>
+      </div>
+      <div class="hidden md:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">

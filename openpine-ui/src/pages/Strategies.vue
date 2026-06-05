@@ -827,7 +827,47 @@ function tradeStatusBadge(status: string) {
               </div>
 
               <!-- Trades Table -->
-              <div class="bg-dark-900 rounded-xl border border-dark-600 overflow-x-auto overflow-y-auto max-h-48">
+              <div class="md:hidden bg-dark-900 rounded-xl border border-dark-600 overflow-y-auto max-h-64">
+                <div v-if="filteredTrades.length === 0" class="px-3 py-4 text-center text-xs text-gray-500">No trades yet</div>
+                <div v-else class="divide-y divide-dark-700/60">
+                  <div v-for="t in filteredTrades" :key="t.trade_id ?? t.order_id" class="p-3">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <div class="text-xs text-gray-400">{{ formatTime(t.entry_time ?? t.created_at) }}</div>
+                        <div class="mt-1 flex items-center gap-2">
+                          <span :class="(t.side ?? '').toLowerCase() === 'buy' ? 'text-success' : 'text-danger'" class="text-sm font-medium">
+                            {{ (t.side ?? '').toUpperCase() || '—' }}
+                          </span>
+                          <span class="text-xs text-gray-500">qty</span>
+                          <span class="font-mono text-xs text-gray-300">{{ t.qty ?? t.filled_quantity ?? '—' }}</span>
+                        </div>
+                      </div>
+                      <span class="shrink-0 px-1.5 py-0.5 rounded text-xs" :class="tradeStatusBadge(t.status)">{{ t.status ?? '—' }}</span>
+                    </div>
+                    <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                      <div>
+                        <span class="text-gray-500">Price</span>
+                        <div class="mt-0.5 font-mono text-gray-300">{{ fmtPrice(t.entry_price ?? t.avg_fill_price ?? t.limit_price) }}</div>
+                      </div>
+                      <div>
+                        <span class="text-gray-500">PnL</span>
+                        <div class="mt-0.5 font-mono" :class="(t.pnl ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                          {{ t.pnl != null ? t.pnl.toFixed(2) : '—' }}
+                        </div>
+                      </div>
+                      <div>
+                        <span class="text-gray-500">SL</span>
+                        <div class="mt-0.5 font-mono text-danger">{{ fmtPrice(t.stop_price) }}</div>
+                      </div>
+                      <div>
+                        <span class="text-gray-500">TP</span>
+                        <div class="mt-0.5 font-mono text-success">{{ fmtPrice(t.take_profit_price) }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="hidden md:block bg-dark-900 rounded-xl border border-dark-600 overflow-x-auto overflow-y-auto max-h-48">
                 <table class="w-full text-xs">
                   <thead>
                     <tr class="text-gray-500 uppercase tracking-wider border-b border-dark-600">

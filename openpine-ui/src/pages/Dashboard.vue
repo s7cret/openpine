@@ -128,7 +128,49 @@ function healthClass(status?: string) {
         <h2 class="text-sm font-semibold text-gray-300">⚡ Running Strategies</h2>
         <span class="text-xs text-gray-500">{{ runningStrategies.length }} running</span>
       </div>
-      <div class="overflow-x-auto">
+      <div class="md:hidden divide-y divide-dark-600/60">
+        <div v-if="runningStrategies.length === 0" class="px-4 py-6 text-center text-gray-500 text-sm">No running strategies</div>
+        <button
+          v-for="s in runningStrategies"
+          :key="s.strategy_id"
+          class="w-full p-4 text-left hover:bg-dark-700/40 transition-colors"
+          @click="router.push({ path: '/strategies', query: { open: s.strategy_id } })"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="break-words text-sm font-medium leading-snug text-gray-200">{{ s.name }}</div>
+              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                <span class="font-mono text-gray-300">{{ s.symbol }}</span>
+                <span>{{ s.timeframe }}</span>
+                <span class="text-accent-light">{{ s.mode }}</span>
+              </div>
+            </div>
+            <span
+              :class="[
+                s.status === 'running' ? 'bg-success/20 text-success' :
+                s.status === 'error' ? 'bg-danger/20 text-danger' :
+                'bg-gray-500/20 text-gray-400',
+                'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium'
+              ]"
+            >
+              {{ s.status }}
+            </span>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-gray-500">Health</span>
+              <div :class="[healthClass(s.health?.status), 'mt-1']">{{ s.health?.status ?? '—' }}</div>
+              <div class="mt-0.5 text-[10px] text-gray-500">bar {{ fmtAgo(s.health?.last_bar_time) }}</div>
+            </div>
+            <div>
+              <span class="text-gray-500">Last Order</span>
+              <div class="mt-1 text-gray-300">{{ s.health?.last_order?.side ?? '—' }} {{ s.health?.last_order?.status ?? '' }}</div>
+              <div class="mt-0.5 text-[10px] text-gray-500">{{ fmtAgo(s.health?.last_order?.created_at) }}</div>
+            </div>
+          </div>
+        </button>
+      </div>
+      <div class="hidden md:block overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
@@ -225,10 +267,10 @@ function healthClass(status?: string) {
           <div
             v-for="job in (jobs.recent ?? []).slice(0, 5)"
             :key="job.id"
-            class="flex items-center justify-between text-xs py-1.5 border-b border-dark-600/30 last:border-0"
+            class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)_auto] items-center gap-2 text-xs py-1.5 border-b border-dark-600/30 last:border-0"
           >
             <span class="text-gray-300">{{ job.type }}</span>
-            <span class="text-gray-500 font-mono">{{ job.strategy_id ?? '—' }}</span>
+            <span class="min-w-0 truncate text-gray-500 font-mono">{{ job.strategy_id ?? '—' }}</span>
             <span
               :class="[
                 job.status === 'done' ? 'text-success' :
