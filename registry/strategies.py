@@ -162,34 +162,42 @@ class SQLiteStrategyRegistry:
             ON strategy_instances(status)
         """)
         self._conn.commit()
-        # Load existing rows using explicit column names
-        for row in self._conn.execute("SELECT strategy_id FROM strategy_instances WHERE strategy_id IS NOT NULL"):
-            (sid,) = row
-            row_data = self._conn.execute(
-                """SELECT strategy_id, name, pine_id, artifact_id, params_json, params_hash,
-                          symbol, timeframe, exchange, market_type, price_type, mode, enabled, status,
-                          created_at, updated_at
-                   FROM strategy_instances WHERE strategy_id = ?""", (sid,)
-            ).fetchone()
-            if row_data:
-                self._mem[sid] = StrategyInstance(
-                    strategy_id=row_data[0],
-                    name=row_data[1],
-                    pine_id=row_data[2] or "",
-                    artifact_id=row_data[3],
-                    params_json=row_data[4],
-                    params_hash=row_data[5],
-                    symbol=row_data[6],
-                    timeframe=row_data[7],
-                    exchange=row_data[8],
-                    market_type=row_data[9],
-                    price_type=row_data[10],
-                    mode=row_data[11],
-                    enabled=bool(row_data[12]),
-                    status=row_data[13],
-                    created_at=row_data[14],
-                    updated_at=row_data[15],
-                )
+        self._reload_from_db()
+
+    def _reload_from_db(self) -> None:
+        """Refresh the in-memory view from SQLite.
+
+        The gateway background worker is forked from the API process. Without
+        reloading, it never sees strategies created after worker startup.
+        """
+        rows = self._conn.execute(
+            """SELECT strategy_id, name, pine_id, artifact_id, params_json, params_hash,
+                      symbol, timeframe, exchange, market_type, price_type, mode, enabled, status,
+                      created_at, updated_at
+               FROM strategy_instances
+               WHERE strategy_id IS NOT NULL"""
+        ).fetchall()
+        self._mem = {
+            row[0]: StrategyInstance(
+                strategy_id=row[0],
+                name=row[1],
+                pine_id=row[2] or "",
+                artifact_id=row[3],
+                params_json=row[4],
+                params_hash=row[5],
+                symbol=row[6],
+                timeframe=row[7],
+                exchange=row[8],
+                market_type=row[9],
+                price_type=row[10],
+                mode=row[11],
+                enabled=bool(row[12]),
+                status=row[13],
+                created_at=row[14],
+                updated_at=row[15],
+            )
+            for row in rows
+        }
 
     def register_strategy(
         self,
@@ -244,12 +252,14 @@ class SQLiteStrategyRegistry:
 
     def get_strategy(self, strategy_id: str) -> StrategyInstance:
         """Get a strategy instance by id."""
+        self._reload_from_db()
         if strategy_id in self._mem:
             return self._mem[strategy_id]
         raise KeyError(f"StrategyInstance not found: {strategy_id!r}")
 
     def list_strategies(self, status: str | None = None) -> list[StrategyInstance]:
         """List strategy instances, optionally filtered by status."""
+        self._reload_from_db()
         if status is None:
             return list(self._mem.values())
         return [s for s in self._mem.values() if s.status == status]
