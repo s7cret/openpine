@@ -250,13 +250,43 @@ class LiveStrategyRunner:
             )
             resume_state = snapshot.state_data if snapshot is not None else None
             snapshot_bar_time = snapshot.bar_time if snapshot is not None else None
+            if resume_state is not None and not self._resume_has_runtime_state(resume_state):
+                log.debug(
+                    "live_runner.resume_snapshot_rebased",
+                    strategy_id=strategy.strategy_id,
+                    bar_time=up_to_bar_time_ms,
+                    snapshot_bar_time=snapshot_bar_time,
+                    reason="missing_runtime_state",
+                )
+                resume_state = None
+                snapshot_bar_time = None
             if snapshot_bar_time is not None and snapshot_bar_time >= up_to_bar_time_ms:
                 return []
-            start_ms = (
-                min(snapshot_bar_time + duration_ms, up_to_bar_time_ms)
-                if snapshot_bar_time is not None
-                else end_ms - lookback_ms
-            )
+            start_ms = end_ms - lookback_ms
+            if snapshot_bar_time is not None and resume_state is not None:
+                resume_bar_index = self._resume_bar_index(resume_state)
+                if resume_bar_index is None or resume_bar_index < 0:
+                    log.warning(
+                        "live_runner.resume_snapshot_ignored",
+                        strategy_id=strategy.strategy_id,
+                        bar_time=up_to_bar_time_ms,
+                        error="resume snapshot has no usable bar_index",
+                    )
+                    self._mark_resume_snapshot_invalid(strategy, snapshot_bar_time)
+                    resume_state = None
+                    snapshot_bar_time = None
+                elif resume_bar_index > max(1, self.config.lookback_bars * 2):
+                    log.info(
+                        "live_runner.resume_snapshot_rebased",
+                        strategy_id=strategy.strategy_id,
+                        bar_time=up_to_bar_time_ms,
+                        snapshot_bar_time=snapshot_bar_time,
+                        resume_bar_index=resume_bar_index,
+                    )
+                    resume_state = None
+                    snapshot_bar_time = None
+                else:
+                    start_ms = max(0, snapshot_bar_time - resume_bar_index * duration_ms)
 
             query = BarQuery(
                 instrument=InstrumentKey(
@@ -462,6 +492,23 @@ class LiveStrategyRunner:
             or "content hash" in message
             or "bar index mismatch" in message
         )
+
+    @staticmethod
+    def _resume_bar_index(resume_state) -> int | None:
+        value = getattr(resume_state, "bar_index", None)
+        if value is None and isinstance(resume_state, dict):
+            value = resume_state.get("bar_index")
+        try:
+            return int(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _resume_has_runtime_state(resume_state) -> bool:
+        value = getattr(resume_state, "runtime_state", None)
+        if value is None and isinstance(resume_state, dict):
+            value = resume_state.get("runtime_state")
+        return value is not None
 
     async def _process_orders(self, strategy, orders: list[dict]) -> None:
         """Process new orders: save to DB and send notifications."""
