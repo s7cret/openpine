@@ -14,37 +14,37 @@ interface Toast {
 }
 
 const toasts = ref<Toast[]>([])
-const seenOrderIds = ref<Set<string>>(new Set())
+const notifiedOrderKeys = ref<Set<string>>(new Set())
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let isFirstLoad = true
 const mountedAt = Date.now()
 const RECENT_ORDER_GRACE_MS = 60_000
-const SEEN_STORAGE_KEY = 'openpine.seenTradeNotificationIds.v1'
+const SEEN_STORAGE_KEY = 'openpine.notifiedTradeOrderKeys.v2'
 
-function loadSeenIds() {
+function loadNotifiedKeys() {
   try {
     const raw = localStorage.getItem(SEEN_STORAGE_KEY)
-    const ids = raw ? JSON.parse(raw) : []
-    if (Array.isArray(ids)) {
-      seenOrderIds.value = new Set(ids.filter((id): id is string => typeof id === 'string'))
+    const keys = raw ? JSON.parse(raw) : []
+    if (Array.isArray(keys)) {
+      notifiedOrderKeys.value = new Set(keys.filter((id): id is string => typeof id === 'string'))
     }
   } catch {
-    seenOrderIds.value = new Set()
+    notifiedOrderKeys.value = new Set()
   }
 }
 
-function saveSeenIds() {
+function saveNotifiedKeys() {
   try {
-    const ids = Array.from(seenOrderIds.value).slice(-500)
-    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(ids))
+    const keys = Array.from(notifiedOrderKeys.value).slice(-500)
+    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(keys))
   } catch {
     // Best-effort only: notifications must keep working if storage is unavailable.
   }
 }
 
-function rememberOrderId(orderId: string) {
-  seenOrderIds.value.add(orderId)
-  saveSeenIds()
+function rememberNotification(key: string) {
+  notifiedOrderKeys.value.add(key)
+  saveNotifiedKeys()
 }
 
 function orderTimeMs(order: any): number {
@@ -55,6 +55,11 @@ function orderTimeMs(order: any): number {
 function isNotifiableStatus(statusRaw: unknown) {
   const status = String(statusRaw ?? '').toLowerCase()
   return status === 'filled' || status === 'closed' || status === 'partially_filled'
+}
+
+function notificationKey(order: any) {
+  const status = String(order.status ?? '').toLowerCase()
+  return `${order.order_id}:${status}`
 }
 
 function sideKind(sideRaw: unknown) {
@@ -71,33 +76,33 @@ async function pollOrders() {
       // Mark older existing orders as seen, but do not swallow a fresh order that
       // landed while the page or Vite client was reconnecting.
       orders.forEach((o: any) => {
-        if (!o.order_id || seenOrderIds.value.has(o.order_id)) return
+        if (!o.order_id || !isNotifiableStatus(o.status)) return
+        const key = notificationKey(o)
+        if (notifiedOrderKeys.value.has(key)) return
         const isFresh = orderTimeMs(o) >= mountedAt - RECENT_ORDER_GRACE_MS
-        if (!isFresh) rememberOrderId(o.order_id)
+        if (!isFresh) rememberNotification(key)
       })
       isFirstLoad = false
     }
 
     for (const order of orders) {
       const oid = order.order_id
-      if (!oid || seenOrderIds.value.has(oid)) continue
+      if (!oid || !isNotifiableStatus(order.status)) continue
+      const key = notificationKey(order)
+      if (notifiedOrderKeys.value.has(key)) continue
 
-      rememberOrderId(oid)
-
-      // Only show filled/closed orders as notifications
-      if (isNotifiableStatus(order.status)) {
-        const toast: Toast = {
-          id: `${oid}_${Date.now()}`,
-          side: order.side ?? 'unknown',
-          symbol: order.symbol ?? '???',
-          qty: order.filled_quantity ?? order.qty ?? '?',
-          price: order.avg_fill_price ?? order.limit_price ?? '?',
-          status: order.status ?? 'filled',
-          strategyId: order.strategy_id ?? '',
-          timestamp: Date.now(),
-        }
-        addToast(toast)
+      rememberNotification(key)
+      const toast: Toast = {
+        id: `${oid}_${Date.now()}`,
+        side: order.side ?? 'unknown',
+        symbol: order.symbol ?? '???',
+        qty: order.filled_quantity ?? order.qty ?? '?',
+        price: order.avg_fill_price ?? order.limit_price ?? '?',
+        status: order.status ?? 'filled',
+        strategyId: order.strategy_id ?? '',
+        timestamp: Date.now(),
       }
+      addToast(toast)
     }
   } catch (e) {
     // Silent fail — polling shouldn't spam errors
@@ -106,10 +111,10 @@ async function pollOrders() {
 
 function addToast(toast: Toast) {
   toasts.value.push(toast)
-  // Auto-dismiss after 15 seconds
+  // Keep trade notifications visible long enough to notice while watching charts.
   setTimeout(() => {
     removeToast(toast.id)
-  }, 15000)
+  }, 30000)
 }
 
 function removeToast(id: string) {
@@ -127,7 +132,7 @@ function formatPrice(p: number | string) {
 }
 
 onMounted(() => {
-  loadSeenIds()
+  loadNotifiedKeys()
   pollOrders()
   pollTimer = setInterval(pollOrders, 5000)
 })
@@ -138,7 +143,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm">
+  <div class="fixed bottom-4 right-4 z-[1000] flex flex-col gap-2 pointer-events-none max-w-sm">
     <transition-group name="toast">
       <div
         v-for="toast in toasts"
@@ -163,6 +168,9 @@ onUnmounted(() => {
             >
               {{ (toast.side ?? '').toUpperCase() }}
             </span>
+          </div>
+          <div class="text-[11px] uppercase tracking-wide text-accent-light mt-0.5">
+            New trade
           </div>
           <div class="text-xs text-gray-400 mt-0.5">
             Qty: {{ toast.qty }} · Price: {{ formatPrice(toast.price) }}
@@ -219,6 +227,6 @@ onUnmounted(() => {
 }
 
 .animate-progress {
-  animation: progress 15s linear forwards;
+  animation: progress 30s linear forwards;
 }
 </style>
