@@ -195,11 +195,18 @@ class PeriodicBarFetcher:
         end_ms = now_ms - (now_ms % tf_ms)
         recent_start_ms = end_ms - lookback_ms
         last_stored_ms = self._latest_stored_bar_time(key, timeframe, end_ms)
-        start_ms = (
-            max(0, last_stored_ms + tf_ms)
-            if last_stored_ms is not None and last_stored_ms + tf_ms < end_ms
-            else recent_start_ms
-        )
+        if last_stored_ms is not None:
+            start_ms = max(0, last_stored_ms + tf_ms)
+            if start_ms >= end_ms:
+                log.debug(
+                    "periodic_fetcher.no_new_bars",
+                    market_key=str(key),
+                    source_timeframe=timeframe.canonical,
+                    strategies=len(strategies),
+                )
+                return
+        else:
+            start_ms = recent_start_ms
 
         # Direct HTTP fetch with timeout (bypasses hung orchestrator/provider)
         bars = self._fetch_bars_direct(key, timeframe, start_ms, end_ms)
@@ -267,7 +274,7 @@ class PeriodicBarFetcher:
         source_ms = source_timeframe.duration_ms
         if source_ms is None:
             return
-        by_time = {bar.time: bar for bar in source_bars}
+        incoming_by_time = {bar.time: bar for bar in source_bars}
         for target_value in target_timeframes:
             target = parse_timeframe(target_value)
             target_ms = target.duration_ms
@@ -275,6 +282,20 @@ class PeriodicBarFetcher:
                 continue
             if target_ms < source_ms or target_ms % source_ms:
                 continue
+            target_close_times = [
+                bar.time + source_ms
+                for bar in source_bars
+                if (bar.time + source_ms) % target_ms == 0
+            ]
+            if not target_close_times:
+                continue
+            by_time = self._source_context_for_aggregates(
+                key,
+                source_timeframe=source_timeframe,
+                start_ms=min(target_close_times) - target_ms,
+                end_ms=max(target_close_times),
+            )
+            by_time.update(incoming_by_time)
             expected = target_ms // source_ms
             aggregate_bars: list[Bar] = []
             for bar in sorted(source_bars, key=lambda item: item.time):
@@ -324,6 +345,32 @@ class PeriodicBarFetcher:
                     target_timeframe=target.canonical,
                     error=str(exc),
                 )
+
+    def _source_context_for_aggregates(
+        self,
+        key: RawMarketKey,
+        *,
+        source_timeframe: Any,
+        start_ms: int,
+        end_ms: int,
+    ) -> dict[int, Bar]:
+        """Load stored source bars needed to derive target timeframe closes."""
+        try:
+            query = BarQuery(
+                instrument=InstrumentKey(
+                    symbol=key.symbol,
+                    exchange=key.exchange,
+                    market=key.market_type,
+                ),
+                timeframe=source_timeframe,
+                start_ms=start_ms,
+                end_ms=end_ms,
+                source="storage",
+                gap_policy="allow_with_metadata",
+            )
+            return {bar.time: bar for bar in self.orchestrator.load_bars(query).bars}
+        except Exception:
+            return {}
 
     @staticmethod
     def _fetch_bars_direct(
