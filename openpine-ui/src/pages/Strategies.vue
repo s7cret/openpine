@@ -86,6 +86,7 @@ const showSymbolDropdown = ref(false)
 const artifacts = ref<any[]>([])
 const artifactsLoading = ref(false)
 const failedTickerIcons = ref<Set<string>>(loadMissingTickerIcons())
+const ticker24h = ref<Record<string, any>>({})
 
 function hasTickerIcon(asset?: string) {
   const base = (asset ?? '').toUpperCase()
@@ -101,7 +102,8 @@ function markTickerIconMissing(asset?: string) {
 
 onMounted(async () => {
   await store.fetchAll()
-  pineStore.fetchAll()
+  await pineStore.fetchAll()
+  autoFillPineSource(true)
   // Auto-open strategy if navigated from dashboard with ?open=ID
   const openId = route.query.open as string
   if (openId) {
@@ -110,6 +112,10 @@ onMounted(async () => {
       await openDetail(match.strategy_id)
     }
   }
+})
+
+watch([showAdd, () => form.value.name, () => pineStore.items.length], () => {
+  if (showAdd.value) autoFillPineSource(false)
 })
 
 watch(showDetail, (strategyId) => {
@@ -133,13 +139,29 @@ watch(() => form.value.pine_id, async (pineId) => {
   try {
     const { data } = await getPineArtifacts(pineId)
     artifacts.value = Array.isArray(data) ? data : []
-    // Auto-select first artifact if only one
-    if (artifacts.value.length === 1) {
-      form.value.artifact_id = artifacts.value[0].artifact_id
-    }
+    const active = selectedPineSource.value?.active_artifact_id
+    const preferred = artifacts.value.find((a: any) => a.artifact_id === active)
+    form.value.artifact_id = preferred?.artifact_id ?? artifacts.value[0]?.artifact_id ?? ''
   } catch (e) { artifacts.value = [] }
   artifactsLoading.value = false
 })
+
+const selectedPineSource = computed(() => {
+  return pineStore.items.find((p: any) => (p.id ?? p.source_id) === form.value.pine_id) ?? null
+})
+
+function autoFillPineSource(force: boolean) {
+  const sources = pineStore.items.filter((p: any) => p.active_artifact_id || (p.id ?? p.source_id))
+  if (!sources.length) return
+  const exact = sources.find((p: any) => String(p.name ?? '').toLowerCase() === form.value.name.trim().toLowerCase())
+  const source = exact ?? sources[0]
+  const sourceId = source.id ?? source.source_id
+  if (!sourceId) return
+  if (force || exact || !form.value.pine_id) {
+    form.value.pine_id = sourceId
+    form.value.artifact_id = source.active_artifact_id ?? form.value.artifact_id
+  }
+}
 
 const filteredSymbols = computed(() => {
   if (!symbolSearch.value) return symbols.value.slice(0, 30)
@@ -180,7 +202,10 @@ const createLoading = ref(false)
 
 async function addStrategy() {
   if (!form.value.name || !form.value.symbol || !form.value.pine_id || !form.value.artifact_id) {
-    createStatus.value = '❌ Fill all required fields: name, pine file, artifact, symbol'
+    autoFillPineSource(true)
+  }
+  if (!form.value.name || !form.value.symbol || !form.value.pine_id || !form.value.artifact_id) {
+    createStatus.value = '❌ Fill required fields: name and symbol. No compiled Pine source is available.'
     return
   }
   createLoading.value = true
@@ -200,7 +225,11 @@ async function addStrategy() {
 
 async function openDetail(id: string) {
   showDetail.value = id
-  await Promise.all([store.fetchOne(id), loadTrades(id)])
+  await store.fetchOne(id)
+  await Promise.all([
+    loadTrades(id),
+    loadTicker24h(store.current?.symbol, store.current?.market_type),
+  ])
 }
 
 function statusBadge(status: string) {
@@ -229,6 +258,44 @@ function visibleControlButtons(s: any) {
   return isRunning(s)
     ? controlButtons.filter((btn) => btn.action === 'pause')
     : controlButtons.filter((btn) => btn.action === 'start')
+}
+
+function tickerKey(symbol?: string, market?: string) {
+  return `${String(market ?? 'spot').toLowerCase()}:${String(symbol ?? '').toUpperCase()}`
+}
+
+async function loadTicker24h(symbol?: string, market?: string) {
+  const s = String(symbol ?? '').toUpperCase()
+  if (!s) return
+  const m = String(market ?? 'spot').toLowerCase()
+  const key = tickerKey(s, m)
+  if (ticker24h.value[key]) return
+  const base = m === 'futures' || m === 'delivery'
+    ? 'https://fapi.binance.com/fapi/v1/ticker/24hr'
+    : 'https://api.binance.com/api/v3/ticker/24hr'
+  try {
+    const res = await fetch(`${base}?symbol=${encodeURIComponent(s)}`)
+    if (!res.ok) return
+    ticker24h.value = { ...ticker24h.value, [key]: await res.json() }
+  } catch {
+    // Best-effort market metadata for the strategy card.
+  }
+}
+
+function marketStats(s: any) {
+  return ticker24h.value[tickerKey(s?.symbol, s?.market_type)] ?? null
+}
+
+function fmtCompact(value: any) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return '—'
+  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 2 }).format(n)
+}
+
+function fmt24hChange(value: any) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return '—'
+  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
 }
 
 // Trades state
@@ -347,12 +414,6 @@ const filteredTrades = computed(() => {
     .filter((t: any) => {
       if (tradeFilterSide.value && normalizeTradeSide(t.side) !== tradeFilterSide.value) return false
       if (tradeFilterStatus.value && (t.status ?? '').toLowerCase() !== tradeFilterStatus.value) return false
-      // Filter by chart visible range
-      const tradeTime = t.entry_time ?? t.created_at
-      if (tradeTime && chartDateFrom.value && chartDateTo.value) {
-        const tMs = typeof tradeTime === 'number' ? (tradeTime > 1e12 ? tradeTime : tradeTime * 1000) : new Date(tradeTime).getTime()
-        if (tMs < chartDateFrom.value || tMs > chartDateTo.value) return false
-      }
       return true
     })
     .sort((a: any, b: any) => {
@@ -406,23 +467,7 @@ function tradeStatusBadge(status: string) {
         <!-- Row 1: name -->
         <input v-model="form.name" placeholder="Strategy name" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent" />
 
-        <!-- Row 2: pine file + artifact -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <select v-model="form.pine_id" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
-            <option value="" disabled>Select Pine file</option>
-            <option v-for="p in pineStore.items" :key="p.id ?? p.source_id" :value="p.id ?? p.source_id">
-              {{ p.name ?? p.id }}
-            </option>
-          </select>
-          <select v-model="form.artifact_id" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
-            <option value="" disabled>{{ artifactsLoading ? 'Loading artifacts...' : 'Select artifact' }}</option>
-            <option v-for="a in artifacts" :key="a.artifact_id" :value="a.artifact_id">
-              {{ a.artifact_id }} {{ a.compile_meta?.compile_status === 'OK' ? '✓' : '✗' }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Row 3: exchange, market, timeframe -->
+        <!-- Row 2: exchange, market, timeframe -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <select v-model="form.exchange" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
             <option value="binance">◆ Binance</option>
@@ -435,7 +480,7 @@ function tradeStatusBadge(status: string) {
           </select>
         </div>
 
-        <!-- Row 4: ticker search -->
+        <!-- Row 3: ticker search -->
         <div class="relative">
           <input
             v-model="symbolSearch"
@@ -679,11 +724,10 @@ function tradeStatusBadge(status: string) {
               <button @click="showDetail = null" class="shrink-0 p-1.5 rounded-lg hover:bg-dark-600 text-gray-400">✕</button>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 sm:p-5">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5">
               <div><span class="text-xs text-gray-500">Mode</span><div class="text-sm font-bold text-accent-light">{{ store.current?.mode ?? '—' }}</div></div>
               <div><span class="text-xs text-gray-500">Status</span><div><span :class="[statusBadge(store.current?.status), 'px-2 py-0.5 rounded-full text-xs font-medium']">{{ store.current?.status ?? 'idle' }}</span></div></div>
               <div><span class="text-xs text-gray-500">Enabled</span><div class="text-sm font-bold" :class="store.current?.enabled ? 'text-success' : 'text-gray-500'">{{ store.current?.enabled ? 'Yes' : 'No' }}</div></div>
-              <div><span class="text-xs text-gray-500">Pine Source</span><div class="text-xs text-gray-400 font-mono truncate">{{ store.current?.pine_id ?? '—' }}</div></div>
               <div>
                 <span class="text-xs text-gray-500">Exchange</span>
                 <div>
@@ -694,6 +738,13 @@ function tradeStatusBadge(status: string) {
                 </div>
               </div>
               <div><span class="text-xs text-gray-500">Market</span><div class="text-sm text-gray-300">{{ marketTypeLabel(store.current?.market_type) }}</div></div>
+              <div><span class="text-xs text-gray-500">24h Volume</span><div class="text-sm font-bold text-gray-200">{{ fmtCompact(marketStats(store.current)?.quoteVolume ?? marketStats(store.current)?.volume) }}</div></div>
+              <div>
+                <span class="text-xs text-gray-500">24h Change</span>
+                <div class="text-sm font-bold" :class="Number(marketStats(store.current)?.priceChangePercent ?? 0) >= 0 ? 'text-success' : 'text-danger'">
+                  {{ fmt24hChange(marketStats(store.current)?.priceChangePercent) }}
+                </div>
+              </div>
               <div><span class="text-xs text-gray-500">Created</span><div class="text-xs text-gray-400">{{ formatTime(store.current?.created_at ?? null) }}</div></div>
             </div>
 

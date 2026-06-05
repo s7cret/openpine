@@ -92,7 +92,7 @@ async function fetchKlines(symbol: string, interval: string, market: string) {
 
   const allRaw: any[] = []
   let cursor = startTime
-  const maxPages = 20
+  const maxPages = 200
 
   for (let i = 0; i < maxPages; i++) {
     const url = `${base}?symbol=${symbol}&interval=${interval}&limit=1000&startTime=${cursor}&endTime=${endTime}`
@@ -166,6 +166,7 @@ function buildMarkers(): SeriesMarker<Time>[] {
   for (const trade of props.trades) {
     const isBuy = trade.side === 'buy' || trade.side === 'long'
     const isSell = trade.side === 'sell' || trade.side === 'short'
+    if (!isBuy && !isSell) continue
 
     // Entry marker
     const entryTime = toTimestamp(trade.entry_time)
@@ -213,9 +214,7 @@ async function loadData() {
     if (candleSeries) {
       candleSeries.setData(candles)
       const markers = buildMarkers()
-      if (markers.length) {
-        candleSeries.setMarkers(markers)
-      }
+      candleSeries.setMarkers(markers)
     }
     if (volumeSeries) {
       volumeSeries.setData(volumes)
