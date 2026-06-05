@@ -1,0 +1,32 @@
+services:
+  gateway:
+    build:
+      context: .
+    environment:
+      OPENPINE_ALLOW_PICKLE_STATE: "1"
+      OPENPINE_ENABLE_BACKGROUND_WORKER: "1"
+    ports:
+      - "8080:8080"
+    volumes:
+      - openpine-state:/app/.openpine
+      - openpine-marketdata:/app/.marketdata-cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  ui:
+    image: node:20-slim
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 1888"
+    depends_on:
+      - gateway
+    ports:
+      - "1888:1888"
+    volumes:
+      - ./openpine-ui:/app
+
+volumes:
+  openpine-state:
+  openpine-marketdata:

@@ -107,12 +107,16 @@ dmypy.json
 
 # OpenPine specific
 .openpine/
+.marketdata-cache/
+.runtime/
+openpine
 *.sqlite
 *.db
 *.parquet
 # data/  # commented out — we need data/*.py modules
 logs/
 backups/
+*.tsbuildinfo
 
 # But ignore data subdirectories that are runtime
 !data/*.py

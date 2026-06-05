@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "openpine"
 version = "2.17.0"
 description = "OpenPine product orchestration boundary for the Pine stack"
+readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 dependencies = [
