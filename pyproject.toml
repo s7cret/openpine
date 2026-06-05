@@ -18,12 +18,12 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "websockets>=14.0",
-    "pine2ast==2.17.0",
-    "ast2python==2.17.0",
-    "pinelib==2.17.0",
-    "backtest_engine==2.17.0",
-    "marketdata-provider==2.18.0",
-    "optimizer==2.17.0",
+    "pine2ast @ git+https://github.com/s7cret/pine2ast.git@v2.17.0",
+    "ast2python @ git+https://github.com/s7cret/ast2python.git@v2.17.0",
+    "pinelib @ git+https://github.com/s7cret/pinelib.git@v2.17.0",
+    "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@v2.17.0",
+    "marketdata-provider @ git+https://github.com/s7cret/marketdata-provider.git@v2.18.0",
+    "optimizer @ git+https://github.com/s7cret/optimizer.git@v2.17.0",
 ]
 
 [project.urls]
