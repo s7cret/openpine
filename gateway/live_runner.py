@@ -26,7 +26,7 @@ class RunnerConfig:
     """Configuration for the live strategy runner."""
     check_interval_seconds: float = 5.0  # how often to check for new bars
     lookback_bars: int = 500  # bars to load for mini-backtest
-    recheck_bars: int = 1  # re-run recent closed bars to catch late signals
+    recheck_bars: int = 0  # do not replay already processed bars by default
     max_catchup_bars: int = 12  # cap burst catch-up after stalls/restarts
     order_store: any = None  # set at init
 
@@ -189,7 +189,11 @@ class LiveStrategyRunner:
             return [latest_closed_bar_time]
 
         first_unprocessed = state.last_bar_time_ms + duration_ms
-        recheck_from = max(0, state.last_bar_time_ms - self.config.recheck_bars * duration_ms)
+        recheck_from = (
+            max(0, state.last_bar_time_ms - self.config.recheck_bars * duration_ms)
+            if self.config.recheck_bars > 0
+            else first_unprocessed
+        )
         max_new_bars = max(1, self.config.max_catchup_bars)
         end = min(latest_closed_bar_time, first_unprocessed + (max_new_bars - 1) * duration_ms)
         start = min(first_unprocessed, recheck_from)
