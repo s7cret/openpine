@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useStrategiesStore } from '@/stores/strategies'
 import { usePineFilesStore } from '@/stores/pineFiles'
 import { useRoute } from 'vue-router'
@@ -110,6 +110,20 @@ onMounted(async () => {
       await openDetail(match.strategy_id)
     }
   }
+})
+
+watch(showDetail, (strategyId) => {
+  if (tradesRefreshTimer) {
+    clearInterval(tradesRefreshTimer)
+    tradesRefreshTimer = null
+  }
+  if (strategyId) {
+    tradesRefreshTimer = setInterval(() => loadTrades(strategyId), 15000)
+  }
+})
+
+onUnmounted(() => {
+  if (tradesRefreshTimer) clearInterval(tradesRefreshTimer)
 })
 
 // When pine file selected, fetch its artifacts
@@ -228,6 +242,7 @@ const chartDateFrom = ref<number | null>(null)
 const chartDateTo = ref<number | null>(null)
 const chartVisibleFrom = ref<number | null>(null)
 const chartVisibleTo = ref<number | null>(null)
+let tradesRefreshTimer: ReturnType<typeof setInterval> | null = null
 
 async function loadTrades(strategyId: string) {
   try {
@@ -257,35 +272,57 @@ async function loadTrades(strategyId: string) {
   }
 }
 
-const allTrades = computed<any[]>(() => {
-  if (tradeMode.value === 'live') {
-    return orders.value.map((o: any) => ({
+function normalizeTradeSide(side: any) {
+  const value = String(side ?? '').toLowerCase()
+  if (value === 'long') return 'buy'
+  if (value === 'short') return 'sell'
+  return value
+}
+
+function dedupeTradeRows(rows: any[]) {
+  const seen = new Set<string>()
+  return rows.filter((row) => {
+    const key = String(row.trade_id ?? row.order_id ?? `${row.side}:${row.entry_time ?? row.created_at}:${row.entry_price}`)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+const orderTradeRows = computed<any[]>(() => {
+  return orders.value.map((o: any) => ({
       trade_id: o.order_id,
-      side: o.side,
+      order_id: o.order_id,
+      source: 'order',
+      side: normalizeTradeSide(o.side),
       qty: o.filled_quantity || o.qty,
       entry_price: o.avg_fill_price || o.limit_price,
       pnl: null,
       status: o.status,
+      entry_time: o.created_at,
       created_at: o.created_at,
     }))
-  }
-  // Paper mode: show backtest trades from latest completed run
-  if (backtestTrades.value.length > 0) {
-    return backtestTrades.value.map((t: any) => ({
-      trade_id: t.trade_id,
-      side: t.direction === 'long' ? 'buy' : t.direction === 'short' ? 'sell' : (t.side ?? ''),
-      qty: t.qty,
-      entry_price: t.entry_price,
-      exit_price: t.exit_price,
-      pnl: t.net_profit ?? t.pnl ?? null,
-      status: t.exit_price ? 'closed' : 'open',
-      entry_time: t.entry_time,
-    }))
-  }
-  // Fallback: paper trades from positions
+})
+
+const backtestTradeRows = computed<any[]>(() => {
+  return backtestTrades.value.map((t: any) => ({
+    trade_id: t.trade_id,
+    source: 'backtest',
+    side: normalizeTradeSide(t.direction ?? t.side),
+    qty: t.qty,
+    entry_price: t.entry_price,
+    exit_price: t.exit_price,
+    pnl: t.net_profit ?? t.pnl ?? null,
+    status: t.exit_price ? 'closed' : 'open',
+    entry_time: t.entry_time,
+  }))
+})
+
+const positionTradeRows = computed<any[]>(() => {
   return trades.value.map((t: any) => ({
     trade_id: t.trade_id,
-    side: t.side,
+    source: 'position',
+    side: normalizeTradeSide(t.side),
     qty: t.qty,
     entry_price: t.entry_price,
     exit_price: t.exit_price,
@@ -295,10 +332,20 @@ const allTrades = computed<any[]>(() => {
   }))
 })
 
+const allTrades = computed<any[]>(() => {
+  if (tradeMode.value === 'live') return orderTradeRows.value
+
+  const historyRows = backtestTradeRows.value.length > 0 ? backtestTradeRows.value : positionTradeRows.value
+  // Paper/live mini-backtest executions are stored as orders. Include them in
+  // the strategy detail view so timer-driven paper fills appear on the chart
+  // and in the trade list immediately after the runner writes them.
+  return dedupeTradeRows([...orderTradeRows.value, ...historyRows])
+})
+
 const filteredTrades = computed(() => {
   return allTrades.value
     .filter((t: any) => {
-      if (tradeFilterSide.value && (t.side ?? '').toLowerCase() !== tradeFilterSide.value) return false
+      if (tradeFilterSide.value && normalizeTradeSide(t.side) !== tradeFilterSide.value) return false
       if (tradeFilterStatus.value && (t.status ?? '').toLowerCase() !== tradeFilterStatus.value) return false
       // Filter by chart visible range
       const tradeTime = t.entry_time ?? t.created_at
@@ -734,7 +781,7 @@ function tradeStatusBadge(status: string) {
             </div>
 
             <div class="px-4 sm:px-5 pb-5 grid grid-cols-2 gap-2 sm:flex">
-              <button v-for="btn in controlButtons" :key="btn.action" @click="store.control(showDetail!, btn.action)" :class="[btn.cls, 'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors']">{{ btn.label }}</button>
+              <button v-for="btn in visibleControlButtons(store.current)" :key="btn.action" @click="store.control(showDetail!, btn.action)" :class="[btn.cls, 'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors']">{{ btn.label }}</button>
               <button @click="async () => { await store.remove(showDetail!); showDetail = null }" class="col-span-2 sm:ml-auto px-3 sm:px-4 py-2 rounded-lg text-sm font-medium bg-dark-600 hover:bg-dark-500 text-gray-400 transition-colors">🗑 Delete</button>
             </div>
           </div>
