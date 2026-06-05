@@ -193,7 +193,13 @@ class PeriodicBarFetcher:
         )
         lookback_ms = tf_ms * max(self.config.lookback_bars, max_ratio + self.config.lookback_bars)
         end_ms = now_ms - (now_ms % tf_ms)
-        start_ms = end_ms - lookback_ms
+        recent_start_ms = end_ms - lookback_ms
+        last_stored_ms = self._latest_stored_bar_time(key, timeframe, end_ms)
+        start_ms = (
+            max(0, last_stored_ms + tf_ms)
+            if last_stored_ms is not None and last_stored_ms + tf_ms < end_ms
+            else recent_start_ms
+        )
 
         # Direct HTTP fetch with timeout (bypasses hung orchestrator/provider)
         bars = self._fetch_bars_direct(key, timeframe, start_ms, end_ms)
@@ -363,6 +369,26 @@ class PeriodicBarFetcher:
                 closed=True,
             ))
         return bars
+
+    def _latest_stored_bar_time(self, key: RawMarketKey, timeframe: Any, end_ms: int) -> int | None:
+        """Return last stored source bar open time so restart catch-up does not skip gaps."""
+        try:
+            query = BarQuery(
+                instrument=InstrumentKey(
+                    symbol=key.symbol,
+                    exchange=key.exchange,
+                    market=key.market_type,
+                ),
+                timeframe=timeframe,
+                start_ms=0,
+                end_ms=end_ms,
+                source="storage",
+                gap_policy="allow_with_metadata",
+            )
+            latest = self.orchestrator.latest_bar_time(query)
+            return int(latest) if latest is not None else None
+        except Exception:
+            return None
 
 
 def _group_strategies_by_market(strategies: list[StrategyInstance]) -> dict[RawMarketKey, list[StrategyInstance]]:

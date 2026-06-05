@@ -12,7 +12,7 @@ import hashlib
 import json
 import time
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import structlog
 
@@ -130,15 +130,18 @@ class LiveStrategyRunner:
         if tf.duration_ms is None:
             return
 
-        # Get or create state
-        if sid not in self._strategy_states:
-            self._strategy_states[sid] = StrategyBarState(strategy_id=sid)
-        state = self._strategy_states[sid]
-
-        # Calculate the latest closed bar time
-        # A bar at time T closes at T + duration_ms
+        # Calculate the latest closed bar time. A bar at time T closes at
+        # T + duration_ms.
         current_bar_start = now_ms - (now_ms % tf.duration_ms)
         latest_closed_bar_time = current_bar_start - tf.duration_ms
+
+        # Get or create state
+        if sid not in self._strategy_states:
+            self._strategy_states[sid] = StrategyBarState(
+                strategy_id=sid,
+                last_bar_time_ms=self._latest_processed_bar_time(strategy, latest_closed_bar_time),
+            )
+        state = self._strategy_states[sid]
 
         # Skip until a new closed bar exists. Recent bars are rechecked only
         # when time advances, which catches late signals without running the
@@ -187,10 +190,28 @@ class LiveStrategyRunner:
 
         first_unprocessed = state.last_bar_time_ms + duration_ms
         recheck_from = max(0, state.last_bar_time_ms - self.config.recheck_bars * duration_ms)
-        catchup_floor = latest_closed_bar_time - max(0, self.config.max_catchup_bars - 1) * duration_ms
-        start = max(min(first_unprocessed, recheck_from), catchup_floor)
+        max_new_bars = max(1, self.config.max_catchup_bars)
+        end = min(latest_closed_bar_time, first_unprocessed + (max_new_bars - 1) * duration_ms)
+        start = min(first_unprocessed, recheck_from)
 
-        return list(range(start, latest_closed_bar_time + duration_ms, duration_ms))
+        return list(range(start, end + duration_ms, duration_ms))
+
+    def _latest_processed_bar_time(self, strategy, latest_closed_bar_time: int) -> int:
+        if self.state_store is None:
+            return 0
+        try:
+            meta = self.state_store.latest_snapshot_metadata(
+                strategy.strategy_id,
+                artifact_id=strategy.artifact_id,
+                params_hash=strategy.params_hash,
+                instrument_key=self._instrument_key(strategy),
+                timeframe=self._timeframe_key(strategy),
+                at_or_before_bar_time=latest_closed_bar_time,
+            )
+            return int(meta.bar_time) if meta is not None else 0
+        except Exception as exc:
+            log.warning("live_runner.latest_processed_load_failed", strategy_id=strategy.strategy_id, error=str(exc))
+            return 0
 
     def _run_mini_backtest(self, strategy, up_to_bar_time_ms: int) -> list[dict] | None:
         """Run a mini-backtest on recent bars to detect new order signals."""

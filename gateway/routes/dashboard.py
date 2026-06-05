@@ -181,8 +181,12 @@ def _strategy_health(state: GatewayState, strategy) -> dict[str, object]:
 
     fetcher = getattr(state, "_fetcher", None)
     runner = getattr(state, "_live_runner", None)
+    background_worker = getattr(state, "_background_worker_process", None)
     fetcher_last = getattr(fetcher, "last_fetch_at", None) if fetcher is not None else None
-    runner_alive = bool(runner and getattr(runner, "_running", False))
+    runner_alive = bool(
+        (runner and getattr(runner, "_running", False))
+        or (background_worker and background_worker.is_alive())
+    )
     status = "ok"
     if strategy.status == "error":
         status = "error"

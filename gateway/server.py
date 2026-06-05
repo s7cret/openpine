@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import time
 import os
+import asyncio
+import multiprocessing as mp
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -23,6 +25,41 @@ def _env_flag(name: str, default: bool = False) -> bool:
     if raw is None:
         return default
     return raw.lower() in {"1", "true", "yes", "on"}
+
+
+def _run_background_services(stop_event) -> None:
+    """Run market refresh and paper/live catch-up outside the API process."""
+    async def _main() -> None:
+        from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig
+        from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig
+
+        state = GatewayState()
+        fetcher = PeriodicBarFetcher(
+            config=RefreshConfig(interval_seconds=60.0, lookback_bars=2, source_timeframe="1m"),
+            registry=state.strategy_registry,
+            orchestrator=state.orchestrator,
+        )
+        runner = LiveStrategyRunner(
+            config=RunnerConfig(check_interval_seconds=5.0),
+            registry=state.strategy_registry,
+            orchestrator=state.orchestrator,
+            storage=state.storage,
+            artifact_store=state.artifact_store,
+            state_store=state.state_store,
+        )
+        try:
+            fetcher.start()
+            runner.start()
+            log.info("gateway_background_services_started")
+            while not stop_event.is_set():
+                await asyncio.sleep(1.0)
+        finally:
+            runner.stop()
+            fetcher.stop()
+            state.close()
+            log.info("gateway_background_services_stopped")
+
+    asyncio.run(_main())
 
 
 @asynccontextmanager
@@ -50,8 +87,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as exc:
         log.warning("stuck_backtest_cleanup_error", error=str(exc))
 
-    # Start periodic market refresh only when explicitly enabled. It performs
-    # network/storage work in the gateway process and can stall API responses.
+    # Keep heavy recurring work out of the API process. The worker handles
+    # restart catch-up for bars and mini-backtests without starving gateway.
+    background_process = None
+    background_stop = None
+    state._background_worker_process = None
+    if _env_flag("OPENPINE_ENABLE_BACKGROUND_WORKER", True):
+        ctx = mp.get_context("fork")
+        background_stop = ctx.Event()
+        background_process = ctx.Process(
+            target=_run_background_services,
+            args=(background_stop,),
+            name="openpine-gateway-background",
+            daemon=True,
+        )
+        background_process.start()
+        state._background_worker_process = background_process
+        log.info("gateway_background_worker_started", pid=background_process.pid)
+    else:
+        log.info("gateway_background_worker_disabled")
+
+    # Optional in-process fetcher kept for tests/debugging only.
     fetcher = None
     if _env_flag("OPENPINE_ENABLE_PERIODIC_FETCHER"):
         from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig
@@ -96,6 +152,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         runner.stop()
     if fetcher is not None:
         fetcher.stop()
+    if background_stop is not None:
+        background_stop.set()
+    if background_process is not None:
+        background_process.join(timeout=10)
+        if background_process.is_alive():
+            background_process.terminate()
+            background_process.join(timeout=5)
     state.close()
     log.info("gateway_stopped")
 
