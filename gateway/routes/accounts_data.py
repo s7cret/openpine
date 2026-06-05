@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+import asyncio
 import json
 import os
 import shutil
 import sqlite3
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.schemas import (
@@ -22,6 +24,8 @@ from openpine.gateway.schemas import (
     KillSwitchRequest,
     RiskStatusResponse,
 )
+from openpine.gateway.ws_manager import ws_manager
+from openpine.jobs import JobStatus
 from openpine.data.persistent_cache import default_cache_dir
 
 log = structlog.get_logger(__name__)
@@ -237,25 +241,173 @@ async def data_coverage(
 @router.post("/data/backfill")
 async def data_backfill(
     body: DataBackfillRequest,
+    background_tasks: BackgroundTasks,
     state: GatewayState = Depends(get_state),
 ) -> dict[str, str]:
     """Start a data backfill job."""
     from openpine.jobs import Job, JobType
 
+    from_ms = _parse_date_ms(body.from_time)
+    to_ms = _parse_date_ms(body.to_time)
+    if from_ms >= to_ms:
+        raise HTTPException(400, "from_time must be before to_time")
+
     job = Job(
         job_type=JobType.BACKFILL,
+        idempotency_key=(
+            f"data-backfill:{body.exchange.lower()}:{body.market_type.lower()}:"
+            f"{body.symbol.upper()}:{body.timeframe}:{from_ms}:{to_ms}"
+        ),
         input={
             "symbol": body.symbol,
             "timeframe": body.timeframe,
-            "from_time": body.from_time,
-            "to_time": body.to_time,
+            "from_time": from_ms,
+            "to_time": to_ms,
             "exchange": body.exchange,
             "market_type": body.market_type,
         },
     )
-    state.scheduler.enqueue(job)
+    job = state.scheduler.enqueue(job)
+    background_tasks.add_task(_run_data_backfill_job, job.id, dict(job.input or {}), state)
+    ws_manager.update_progress(
+        job.id,
+        "data_backfill",
+        job.status.value,
+        0.0,
+        f"Queued candle backfill for {body.symbol.upper()} {body.timeframe}",
+        detail=dict(job.input or {}),
+    )
+    await ws_manager.broadcast_progress(job.id)
     log.info("backfill_enqueued", symbol=body.symbol, timeframe=body.timeframe)
-    return {"job_id": job.id, "status": "queued"}
+    return {"job_id": job.id, "status": job.status.value}
+
+
+async def _run_data_backfill_job(job_id: str, payload: dict[str, object], state: GatewayState) -> None:
+    job = state.scheduler.get_job(job_id)
+    if job is None or job.status != JobStatus.PENDING:
+        return
+
+    state.scheduler.mark_running(job_id)
+    ws_manager.update_progress(
+        job_id,
+        "data_backfill",
+        "running",
+        0.02,
+        "Starting candle backfill...",
+        detail=payload,
+    )
+    await ws_manager.broadcast_progress(job_id)
+
+    def _progress(*args: object) -> None:
+        bars_done = int(args[0] or 0) if len(args) > 0 else 0
+        pages_done = int(args[1] or 0) if len(args) > 1 else 0
+        total_bars = int(args[2] or 0) if len(args) > 2 else 0
+        total_pages = int(args[3] or 0) if len(args) > 3 else 0
+        phase = str(args[5] or "fetch") if len(args) > 5 else "fetch"
+        pct = min(0.98, bars_done / total_bars) if total_bars > 0 else 0.2
+        detail = {
+            **payload,
+            "bars_processed": bars_done,
+            "total_bars": total_bars,
+            "pages_processed": pages_done,
+            "total_pages": total_pages,
+            "phase": phase,
+        }
+        ws_manager.update_progress(
+            job_id,
+            "data_backfill",
+            "running",
+            pct,
+            f"Loading candles: {bars_done:,}/{total_bars:,} bars" if total_bars else "Loading candles...",
+            detail=detail,
+        )
+
+    try:
+        result = await asyncio.to_thread(_run_data_backfill_sync, payload, state, _progress)
+        bars_loaded = int(result["bars_loaded"])
+        result = {
+            **payload,
+            **result,
+        }
+        state.scheduler.mark_done(job_id, result)
+        ws_manager.update_progress(
+            job_id,
+            "data_backfill",
+            "done",
+            1.0,
+            f"Loaded {bars_loaded:,} candles, skipped {int(result.get('skipped_existing') or 0):,} existing",
+            detail=result,
+        )
+        await ws_manager.broadcast_progress(job_id)
+    except Exception as exc:
+        state.scheduler.mark_failed(job_id, str(exc))
+        ws_manager.update_progress(job_id, "data_backfill", "failed", 0.0, str(exc), detail=payload)
+        await ws_manager.broadcast_progress(job_id)
+        log.warning("backfill_failed", job_id=job_id, error=str(exc))
+
+
+def _run_data_backfill_sync(payload: dict[str, object], state: GatewayState, progress_callback):
+    from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
+    query = BarQuery(
+        instrument=InstrumentKey(
+            exchange=str(payload["exchange"]).lower(),
+            market=str(payload["market_type"]).lower(),
+            symbol=str(payload["symbol"]).upper(),
+        ),
+        timeframe=parse_timeframe(str(payload["timeframe"])),
+        start_ms=int(payload["from_time"]),
+        end_ms=int(payload["to_time"]),
+        source="provider",
+        gap_policy="allow_with_metadata",
+    )
+    series = state.orchestrator.load_bars(query, progress_callback=progress_callback)
+    bars_loaded, skipped_existing = _store_backfill_series(state, series)
+    return {
+        "bars_loaded": bars_loaded,
+        "skipped_existing": skipped_existing,
+        "coverage_complete": bool(getattr(series.coverage, "is_complete", False)),
+    }
+
+
+def _store_backfill_series(state: GatewayState, series) -> tuple[int, int]:
+    from marketdata_provider.contracts import BarQuery, BarSeries
+    from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
+
+    bars_loaded = 0
+    skipped_existing = 0
+    for bar in series.bars:
+        query = BarQuery(
+            instrument=bar.instrument,
+            timeframe=bar.timeframe,
+            start_ms=bar.time,
+            end_ms=bar.time_close,
+            source="storage",
+            gap_policy="allow_with_metadata",
+        )
+        single = BarSeries(
+            query=query,
+            bars=(bar,),
+            coverage=DataOrchestrator.coverage_for_series(query, (bar,), "provider"),
+        )
+        try:
+            state.orchestrator.store_bars(single)
+            bars_loaded += 1
+        except StorageUnavailableError as exc:
+            if "conflicting closed candle" not in str(exc):
+                raise
+            skipped_existing += 1
+    return bars_loaded, skipped_existing
+
+
+def _parse_date_ms(value: str) -> int:
+    if value.isdigit():
+        raw = int(value)
+        return raw if raw > 10_000_000_000 else raw * 1000
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return int(parsed.timestamp() * 1000)
 
 
 def _data_summary(state: GatewayState) -> dict[str, object]:

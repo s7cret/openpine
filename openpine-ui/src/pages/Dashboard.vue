@@ -9,7 +9,7 @@ let timer: ReturnType<typeof setInterval>
 
 onMounted(() => {
   store.fetchAll()
-  timer = setInterval(() => store.fetchAll(), 30000)
+  timer = setInterval(() => store.fetchAll(), 5000)
 })
 onUnmounted(() => clearInterval(timer))
 
@@ -44,6 +44,29 @@ function healthClass(status?: string) {
   if (status === 'ok') return 'text-success'
   if (status === 'stale' || status === 'runner_off') return 'text-warning'
   return 'text-danger'
+}
+
+function jobTitle(job: any) {
+  if (job.type === 'backfill') {
+    const input = job.input ?? job.progress?.detail ?? job.result ?? {}
+    return `Candles ${input.symbol ?? ''} ${input.timeframe ?? ''}`.trim()
+  }
+  return job.type
+}
+
+function jobSubtitle(job: any) {
+  if (job.type === 'backfill') {
+    const progress = job.progress
+    if (progress?.message) return progress.message
+    const result = job.result
+    if (result?.bars_loaded != null) return `Loaded ${Number(result.bars_loaded).toLocaleString()} candles`
+  }
+  return job.strategy_id ?? '—'
+}
+
+function jobPct(job: any) {
+  const pct = Number(job.progress?.pct ?? (job.status === 'done' ? 1 : 0))
+  return Math.max(0, Math.min(100, Math.round(pct * 100)))
 }
 </script>
 
@@ -267,21 +290,29 @@ function healthClass(status?: string) {
           <div
             v-for="job in (jobs.recent ?? []).slice(0, 5)"
             :key="job.id"
-            class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)_auto] items-center gap-2 text-xs py-1.5 border-b border-dark-600/30 last:border-0"
+            class="py-2 border-b border-dark-600/30 last:border-0"
           >
-            <span class="text-gray-300">{{ job.type }}</span>
-            <span class="min-w-0 truncate text-gray-500 font-mono">{{ job.strategy_id ?? '—' }}</span>
-            <span
-              :class="[
-                job.status === 'done' ? 'text-success' :
-                job.status === 'running' ? 'text-accent-light' :
-                job.status === 'failed' ? 'text-danger' :
-                'text-gray-400',
-                'font-medium'
-              ]"
-            >
-              {{ job.status }}
-            </span>
+            <div class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)_auto] items-center gap-2 text-xs">
+              <span class="text-gray-300">{{ jobTitle(job) }}</span>
+              <span class="min-w-0 truncate text-gray-500 font-mono">{{ jobSubtitle(job) }}</span>
+              <span
+                :class="[
+                  job.status === 'done' ? 'text-success' :
+                  job.status === 'running' ? 'text-accent-light' :
+                  job.status === 'failed' ? 'text-danger' :
+                  'text-gray-400',
+                  'font-medium'
+                ]"
+              >
+                {{ job.status }}
+              </span>
+            </div>
+            <div v-if="job.type === 'backfill' && (job.status === 'running' || job.status === 'pending')" class="mt-2">
+              <div class="h-1.5 overflow-hidden rounded-full bg-dark-600">
+                <div class="h-full rounded-full bg-accent transition-all" :style="{ width: `${jobPct(job)}%` }" />
+              </div>
+              <div class="mt-1 text-right font-mono text-[10px] text-gray-500">{{ jobPct(job) }}%</div>
+            </div>
           </div>
         </div>
       </div>

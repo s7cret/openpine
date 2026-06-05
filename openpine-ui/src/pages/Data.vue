@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { deleteDataOrders, deleteDataSeries, getDataSummary, refreshDataSeries } from '@/api/client'
+import { backfillDataSeries, deleteDataOrders, deleteDataSeries, getDataSummary, refreshDataSeries } from '@/api/client'
 
 const summary = ref<any>(null)
 const loading = ref(false)
 const actionId = ref<string | null>(null)
 const actionStatus = ref<Record<string, any>>({})
+const backfillDialog = ref(false)
+const backfillRow = ref<any>(null)
+const backfillFrom = ref('')
+const backfillTo = ref('')
 let timer: ReturnType<typeof setInterval>
 
 const series = computed(() => summary.value?.series ?? [])
@@ -43,6 +47,37 @@ async function refreshSeries(id: string) {
   }
 }
 
+function openBackfill(row: any) {
+  backfillRow.value = row
+  backfillFrom.value = toDatetimeInput(row.earliest_ms ?? Date.now() - 30 * 24 * 3600 * 1000)
+  backfillTo.value = toDatetimeInput(Date.now())
+  backfillDialog.value = true
+}
+
+async function runBackfill() {
+  const row = backfillRow.value
+  if (!row || !backfillFrom.value || !backfillTo.value) return
+  actionId.value = row.id
+  try {
+    const { data } = await backfillDataSeries({
+      symbol: row.symbol,
+      timeframe: row.timeframe,
+      from_time: new Date(backfillFrom.value).toISOString(),
+      to_time: new Date(backfillTo.value).toISOString(),
+      exchange: row.exchange,
+      market_type: row.market_type,
+    })
+    actionStatus.value = {
+      ...actionStatus.value,
+      [row.id]: { status: data.status, bars_loaded: 0, message: `Backfill job ${String(data.job_id).slice(0, 8)} queued` },
+    }
+    backfillDialog.value = false
+    await load(false)
+  } finally {
+    actionId.value = null
+  }
+}
+
 async function removeSeries(row: any) {
   if (!confirm(`Delete cached bars for ${row.symbol} ${row.timeframe}?`)) return
   actionId.value = row.id
@@ -65,6 +100,7 @@ async function removeOrders(symbol?: string, strategyId?: string, strategyName?:
 function refreshMessage(row: any) {
   const status = actionStatus.value[row.id]
   if (!status) return ''
+  if (status.message) return status.message
   const bars = Number(status.bars_loaded ?? 0).toLocaleString()
   const ranges = status.coverage_ranges_after != null ? `, ${status.coverage_ranges_after} ranges` : ''
   return `${status.status}: ${bars} bars${ranges}`
@@ -81,6 +117,12 @@ function fmtBytes(bytes?: number) {
 function fmtDate(ms?: number | null) {
   if (!ms) return '—'
   return new Date(ms).toLocaleString()
+}
+
+function toDatetimeInput(ms?: number | null) {
+  const d = new Date(Number(ms ?? Date.now()))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 function fmtRange(range: any) {
@@ -160,6 +202,7 @@ function statusClass(status: string) {
           </div>
           <div class="flex gap-2">
             <button class="flex-1 px-2 py-2 rounded bg-dark-600 hover:bg-dark-500 text-xs text-gray-200 disabled:opacity-50" :disabled="actionId === row.id" @click="refreshSeries(row.id)">Update</button>
+            <button class="flex-1 px-2 py-2 rounded bg-accent/20 hover:bg-accent/30 text-xs text-accent-light disabled:opacity-50" :disabled="actionId === row.id" @click="openBackfill(row)">Backfill</button>
             <button class="flex-1 px-2 py-2 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger disabled:opacity-50" :disabled="actionId === row.id" @click="removeSeries(row)">Delete</button>
           </div>
         </div>
@@ -220,6 +263,13 @@ function statusClass(status: string) {
                     @click="refreshSeries(row.id)"
                   >
                     Update
+                  </button>
+                  <button
+                    class="px-2 py-1 rounded bg-accent/20 hover:bg-accent/30 text-xs text-accent-light disabled:opacity-50"
+                    :disabled="actionId === row.id"
+                    @click="openBackfill(row)"
+                  >
+                    Backfill
                   </button>
                   <button
                     class="px-2 py-1 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger disabled:opacity-50"
@@ -312,6 +362,36 @@ function statusClass(status: string) {
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div v-if="backfillDialog" class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 pb-4 sm:items-center sm:pb-0">
+      <div class="w-full max-w-md rounded-xl border border-dark-500 bg-dark-800 p-4 shadow-2xl">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="text-sm font-semibold text-gray-200">Backfill candles</h3>
+            <div class="mt-1 truncate font-mono text-xs text-gray-500">
+              {{ backfillRow?.symbol }} / {{ backfillRow?.market_type }} / {{ backfillRow?.timeframe }}
+            </div>
+          </div>
+          <button class="rounded px-2 py-1 text-sm text-gray-400 hover:bg-dark-600" @click="backfillDialog = false">×</button>
+        </div>
+        <div class="mt-4 grid gap-3">
+          <label class="grid gap-1 text-xs text-gray-500">
+            From
+            <input v-model="backfillFrom" type="datetime-local" class="w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none" />
+          </label>
+          <label class="grid gap-1 text-xs text-gray-500">
+            To
+            <input v-model="backfillTo" type="datetime-local" class="w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none" />
+          </label>
+        </div>
+        <div class="mt-4 flex gap-2">
+          <button class="flex-1 rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-300 hover:bg-dark-500" @click="backfillDialog = false">Cancel</button>
+          <button class="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-light disabled:opacity-50" :disabled="!backfillFrom || !backfillTo || actionId === backfillRow?.id" @click="runBackfill">
+            Start Backfill
+          </button>
+        </div>
       </div>
     </div>
   </div>

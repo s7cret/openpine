@@ -21,6 +21,8 @@ export default api
 export const getDashboard = () => api.get('/dashboard')
 export const getDataSummary = () => api.get('/data/summary')
 export const refreshDataSeries = (id: string) => api.post(`/data/series/${id}/refresh`)
+export const backfillDataSeries = (data: { symbol: string; timeframe: string; from_time: string; to_time: string; exchange?: string; market_type?: string }) =>
+  api.post('/data/backfill', data)
 export const deleteDataSeries = (id: string) => api.delete(`/data/series/${id}`)
 export const deleteDataOrders = (params?: { symbol?: string; strategy_id?: string; status?: string }) =>
   api.delete('/data/orders', { params })

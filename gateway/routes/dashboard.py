@@ -17,6 +17,7 @@ from openpine.gateway.schemas import (
     StrategySummary,
 )
 from openpine.jobs import JobStatus
+from openpine.gateway.ws_manager import ws_manager
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -62,6 +63,9 @@ async def dashboard(
             "started_at": j.started_at,
             "finished_at": j.finished_at,
             "error": j.error,
+            "input": j.input,
+            "result": j.result,
+            "progress": ws_manager.get_progress(j.id),
         }
         for j in all_jobs
     ] + persistent_jobs
