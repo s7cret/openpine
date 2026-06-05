@@ -249,7 +249,7 @@ async function loadTrades(strategyId: string) {
     const [ordersRes, positionsRes, btRunsRes] = await Promise.all([
       getOrders(strategyId),
       getPositions(strategyId),
-      getBacktestRuns(strategyId, 1),
+      getBacktestRuns(strategyId, 20),
     ])
     orders.value = ordersRes.data ?? []
     trades.value = positionsRes.data?.recent_trades ?? []
