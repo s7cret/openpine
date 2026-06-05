@@ -60,15 +60,24 @@ npm ci
 npm run build
 ```
 
-If local stack libraries are being developed from source, install them first in this order:
+The released package installs the published stack versions declared in `pyproject.toml`:
+
+- `pine2ast==2.17.0`
+- `ast2python==2.17.0`
+- `pinelib==2.17.0`
+- `backtest_engine==2.17.0`
+- `marketdata-provider==2.18.0`
+- `optimizer==2.17.0`
+
+If local stack libraries are being developed from source, clone them outside this repository and install them first in dependency order:
 
 ```bash
-python -m pip install -e [local-home]/pine2ast
-python -m pip install -e [local-home]/pinelib
-python -m pip install -e [local-home]/ast2python
-python -m pip install -e [local-home]/backtest_engine
-python -m pip install -e [local-home]/marketdata-provider
-python -m pip install -e [local-home]/optimizer
+python -m pip install -e ../pine2ast
+python -m pip install -e ../marketdata-provider
+python -m pip install -e ../pinelib
+python -m pip install -e ../ast2python
+python -m pip install -e ../backtest_engine
+python -m pip install -e ../optimizer
 ```
 
 ## Run Locally

@@ -16,9 +16,14 @@ from openpine.optimizer import LocalOptimizerAdapter, OptimizerRunConfig, Optimi
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION_EXCLUDES = {
     ".git",
+    ".cache",
     ".pytest_cache",
     ".ruff_cache",
+    ".venv",
+    ".venv-fe",
     "__pycache__",
+    "build",
+    "dist",
     "docs",
     "reports",
     "tests",
@@ -66,6 +71,7 @@ def test_pyproject_includes_all_package_directories() -> None:
         "openpine" if path == ROOT else "openpine." + path.relative_to(ROOT).as_posix().replace("/", ".")
         for path in ROOT.rglob("*")
         if path.is_dir()
+        and not path.is_symlink()
         and (path / "__init__.py").is_file()
         and not set(path.relative_to(ROOT).parts) & PRODUCTION_EXCLUDES
     }

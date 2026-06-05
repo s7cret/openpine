@@ -5,11 +5,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=moltbot1
-Group=moltbot1
-WorkingDirectory=[local-home]/[workspace-root]/repo-root
-Environment=OPENPINE_HOME=[local-home]/[workspace-root]/repo-root
-ExecStart=/usr/bin/python3 -c "from gateway.server import create_app; import uvicorn; uvicorn.run(create_app(), host='0.0.0.0', port=8080, log_level='info')"
+User=openpine
+Group=openpine
+WorkingDirectory=/opt/openpine
+Environment=OPENPINE_HOME=/var/lib/openpine
+Environment=OPENPINE_ALLOW_PICKLE_STATE=1
+ExecStart=/opt/openpine/.venv/bin/python -c "from openpine.gateway.server import create_app; import uvicorn; uvicorn.run(create_app(), host='0.0.0.0', port=8080, log_level='info')"
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

@@ -1,5 +1,7 @@
 #!/bin/bash
-cd [local-home]/[workspace-root]/repo-root/openpine-ui
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
 exec node -e "
 const { createServer } = require('vite');
 (async () => {
