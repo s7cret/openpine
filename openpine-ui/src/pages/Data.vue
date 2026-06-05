@@ -5,11 +5,12 @@ import { deleteDataOrders, deleteDataSeries, getDataSummary, refreshDataSeries }
 const summary = ref<any>(null)
 const loading = ref(false)
 const actionId = ref<string | null>(null)
+const actionStatus = ref<Record<string, any>>({})
 let timer: ReturnType<typeof setInterval>
 
 const series = computed(() => summary.value?.series ?? [])
 const visibleSeries = computed(() => {
-  const source = series.value.filter((row: any) => row.timeframe === '1m')
+  const source = series.value.filter((row: any) => (row.role ?? (row.timeframe === '1m' ? 'source' : 'derived')) === 'source')
   return source.length ? source : series.value
 })
 const visibleTotalBars = computed(() => visibleSeries.value.reduce((total: number, row: any) => total + Number(row.bar_count ?? 0), 0))
@@ -34,7 +35,8 @@ async function load(showSpinner = true) {
 async function refreshSeries(id: string) {
   actionId.value = id
   try {
-    await refreshDataSeries(id)
+    const { data } = await refreshDataSeries(id)
+    actionStatus.value = { ...actionStatus.value, [id]: data }
     await load(false)
   } finally {
     actionId.value = null
@@ -52,11 +54,20 @@ async function removeSeries(row: any) {
   }
 }
 
-async function removeOrders(symbol?: string) {
-  const label = symbol ? `${symbol} orders` : 'all orders'
+async function removeOrders(symbol?: string, strategyId?: string, strategyName?: string, status?: string) {
+  const parts = [symbol, strategyName, status].filter(Boolean)
+  const label = parts.length ? `${parts.join(' / ')} orders` : 'all orders'
   if (!confirm(`Delete ${label}?`)) return
-  await deleteDataOrders(symbol ? { symbol } : undefined)
+  await deleteDataOrders({ symbol, strategy_id: strategyId, status })
   await load(false)
+}
+
+function refreshMessage(row: any) {
+  const status = actionStatus.value[row.id]
+  if (!status) return ''
+  const bars = Number(status.bars_loaded ?? 0).toLocaleString()
+  const ranges = status.coverage_ranges_after != null ? `, ${status.coverage_ranges_after} ranges` : ''
+  return `${status.status}: ${bars} bars${ranges}`
 }
 
 function fmtBytes(bytes?: number) {
@@ -134,7 +145,7 @@ function statusClass(status: string) {
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="font-mono text-gray-200 truncate">{{ row.symbol }}</div>
-              <div class="text-xs text-gray-500">{{ row.exchange }} / {{ row.market_type }} / {{ row.timeframe }}</div>
+              <div class="text-xs text-gray-500">{{ row.exchange }} / {{ row.market_type }} / {{ row.timeframe }} / {{ row.role ?? 'source' }}</div>
             </div>
             <span :class="[statusClass(row.status), 'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium']">{{ row.status }}</span>
           </div>
@@ -143,6 +154,7 @@ function statusClass(status: string) {
             <div><span class="text-gray-500">Size</span><div class="text-gray-200 font-mono">{{ fmtBytes(row.size_bytes) }}</div></div>
           </div>
           <div class="text-xs text-gray-400 break-words">{{ fmtDate(row.earliest_ms) }} → {{ fmtDate(row.latest_ms) }}</div>
+          <div v-if="refreshMessage(row)" class="text-xs text-accent-light">{{ refreshMessage(row) }}</div>
           <div class="flex flex-wrap gap-1">
             <span v-for="(range, idx) in (row.ranges ?? [])" :key="idx" class="px-1.5 py-0.5 rounded bg-dark-600 text-[10px] text-gray-400">{{ fmtRange(range) }}</span>
           </div>
@@ -176,7 +188,7 @@ function statusClass(status: string) {
             <tr v-for="row in visibleSeries" :key="row.id" class="border-b border-dark-600/50 hover:bg-dark-700/40">
               <td class="px-4 py-2.5">
                 <div class="font-mono text-gray-200">{{ row.symbol }}</div>
-                <div class="text-xs text-gray-500">{{ row.exchange }} / {{ row.market_type }}</div>
+                <div class="text-xs text-gray-500">{{ row.exchange }} / {{ row.market_type }} / {{ row.role ?? 'source' }}</div>
               </td>
               <td class="px-4 py-2.5 text-gray-300 font-mono">{{ row.timeframe }}</td>
               <td class="px-4 py-2.5 min-w-[260px]">
@@ -190,6 +202,7 @@ function statusClass(status: string) {
                     {{ fmtRange(range) }}
                   </span>
                 </div>
+                <div v-if="refreshMessage(row)" class="mt-1 text-[10px] text-accent-light">{{ refreshMessage(row) }}</div>
               </td>
               <td class="px-4 py-2.5 text-right text-gray-200 font-mono">{{ Number(row.bar_count ?? 0).toLocaleString() }}</td>
               <td class="px-4 py-2.5 text-right text-gray-300 font-mono">{{ fmtBytes(row.size_bytes) }}</td>
@@ -239,21 +252,28 @@ function statusClass(status: string) {
           <thead>
             <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
               <th class="px-4 py-2.5 text-left">Symbol</th>
+              <th class="px-4 py-2.5 text-left">Strategy</th>
+              <th class="px-4 py-2.5 text-left">Status</th>
               <th class="px-4 py-2.5 text-right">Orders</th>
               <th class="px-4 py-2.5 text-left">Latest</th>
               <th class="px-4 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="!(orders.by_symbol ?? []).length">
-              <td colspan="4" class="px-4 py-6 text-center text-gray-500">No orders stored</td>
+            <tr v-if="!(orders.by_strategy ?? orders.by_symbol ?? []).length">
+              <td colspan="6" class="px-4 py-6 text-center text-gray-500">No orders stored</td>
             </tr>
-            <tr v-for="row in orders.by_symbol" :key="row.symbol" class="border-b border-dark-600/50">
+            <tr v-for="row in (orders.by_strategy ?? orders.by_symbol)" :key="`${row.symbol}-${row.strategy_id ?? 'all'}-${row.status ?? ''}`" class="border-b border-dark-600/50">
               <td class="px-4 py-2.5 text-gray-200 font-mono">{{ row.symbol }}</td>
+              <td class="px-4 py-2.5">
+                <div class="max-w-[220px] truncate text-gray-200">{{ row.strategy_name ?? 'All strategies' }}</div>
+                <div v-if="row.strategy_id" class="font-mono text-[10px] text-gray-500 truncate">{{ row.strategy_id }}</div>
+              </td>
+              <td class="px-4 py-2.5 text-gray-400">{{ row.status ?? '—' }}</td>
               <td class="px-4 py-2.5 text-right text-gray-200 font-mono">{{ row.count }}</td>
               <td class="px-4 py-2.5 text-gray-400">{{ fmtDate(row.latest_ms) }}</td>
               <td class="px-4 py-2.5 text-right">
-                <button class="px-2 py-1 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger" @click="removeOrders(row.symbol)">
+                <button class="px-2 py-1 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger" @click="removeOrders(row.symbol, row.strategy_id, row.strategy_name, row.status)">
                   Delete
                 </button>
               </td>

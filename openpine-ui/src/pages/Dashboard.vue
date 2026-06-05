@@ -31,6 +31,20 @@ const totalBars = computed(() => (store.dataInfo?.total_bars ?? 0).toLocaleStrin
 
 const enabledStrategies = computed(() => strategies.value.filter((s: any) => s.enabled))
 const runningStrategies = computed(() => strategies.value.filter((s: any) => s.status === 'running'))
+
+function fmtAgo(ms?: number | null) {
+  if (!ms) return '—'
+  const sec = Math.max(0, Math.floor((Date.now() - ms) / 1000))
+  if (sec < 60) return `${sec}s ago`
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`
+  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m ago`
+}
+
+function healthClass(status?: string) {
+  if (status === 'ok') return 'text-success'
+  if (status === 'stale' || status === 'runner_off') return 'text-warning'
+  return 'text-danger'
+}
 </script>
 
 <template>
@@ -122,12 +136,14 @@ const runningStrategies = computed(() => strategies.value.filter((s: any) => s.s
               <th class="px-4 py-2.5 text-left">Symbol</th>
               <th class="px-4 py-2.5 text-left">TF</th>
               <th class="px-4 py-2.5 text-left">Mode</th>
+              <th class="px-4 py-2.5 text-left">Health</th>
+              <th class="px-4 py-2.5 text-left">Last Order</th>
               <th class="px-4 py-2.5 text-left">Status</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="runningStrategies.length === 0">
-              <td colspan="5" class="px-4 py-6 text-center text-gray-500">No running strategies</td>
+              <td colspan="7" class="px-4 py-6 text-center text-gray-500">No running strategies</td>
             </tr>
             <tr
               v-for="s in runningStrategies"
@@ -139,6 +155,16 @@ const runningStrategies = computed(() => strategies.value.filter((s: any) => s.s
               <td class="px-4 py-2 text-gray-400 font-mono text-xs">{{ s.symbol }}</td>
               <td class="px-4 py-2 text-gray-400 text-xs">{{ s.timeframe }}</td>
               <td class="px-4 py-2 text-accent-light text-xs">{{ s.mode }}</td>
+              <td class="px-4 py-2 text-xs">
+                <div :class="healthClass(s.health?.status)">{{ s.health?.status ?? '—' }}</div>
+                <div class="text-[10px] text-gray-500">
+                  bar {{ fmtAgo(s.health?.last_bar_time) }} · runner {{ s.health?.runner_alive ? 'on' : 'off' }}
+                </div>
+              </td>
+              <td class="px-4 py-2 text-xs">
+                <div class="text-gray-300">{{ s.health?.last_order?.side ?? '—' }} {{ s.health?.last_order?.status ?? '' }}</div>
+                <div class="text-[10px] text-gray-500">{{ fmtAgo(s.health?.last_order?.created_at) }}</div>
+              </td>
               <td class="px-4 py-2">
                 <span
                   :class="[

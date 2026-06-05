@@ -55,6 +55,17 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
 
   async function remove(id: string) {
     try {
+      const preview = await api.previewDeletePineFile(id).then((r) => r.data).catch(() => null)
+      if (preview) {
+        const resources = Object.entries(preview.resources ?? {})
+          .filter(([, value]) => Number(value) > 0)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n')
+        const ok = confirm(`Delete Pine file "${preview.name ?? id}"?\n\nWill delete:\n${resources || 'source row only'}\n\nStrategies deleted: 0\nMarket bars deleted: 0`)
+        if (!ok) return
+      } else if (!confirm(`Delete Pine file ${id}? Strategies and market bars will not be deleted.`)) {
+        return
+      }
       await api.deletePineFile(id)
       items.value = items.value.filter((f: any) => (f.id ?? f.source_id) !== id)
     } catch (e) { console.error(e) }

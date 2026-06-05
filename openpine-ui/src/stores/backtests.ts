@@ -64,5 +64,14 @@ export const useBacktestsStore = defineStore('backtests', () => {
     } catch (e) { console.error(e) }
   }
 
-  return { items, current, progress, progressMap, loading, fetchAll, fetchOne, fetchProgress, getProgress, run, estimate, deleteRun }
+  async function controlRun(id: string, action: string) {
+    try {
+      const res = await api.controlBacktest(id, action)
+      await fetchProgress(id)
+      await fetchAll()
+      return res.data
+    } catch (e) { console.error(e); return null }
+  }
+
+  return { items, current, progress, progressMap, loading, fetchAll, fetchOne, fetchProgress, getProgress, run, estimate, deleteRun, controlRun }
 })

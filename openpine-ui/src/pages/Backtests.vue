@@ -76,7 +76,7 @@ function pollProgress(id: string) {
   progressTimer.value = setInterval(async () => {
     await btStore.fetchProgress(id)
     const p = btStore.progress
-    if (p?.status === 'completed' || p?.status === 'failed') {
+    if (p?.status === 'completed' || p?.status === 'failed' || p?.status === 'cancelled') {
       if (progressTimer.value) clearInterval(progressTimer.value)
       activePollId.value = null
       btStore.fetchAll()
@@ -96,9 +96,23 @@ function statusBadge(status: string) {
     completed: 'bg-success/20 text-success',
     running: 'bg-accent/20 text-accent-light',
     failed: 'bg-danger/20 text-danger',
+    cancelled: 'bg-warning/20 text-warning',
+    cancelling: 'bg-warning/20 text-warning',
     queued: 'bg-gray-500/20 text-gray-400',
   }
   return map[(status ?? '').toLowerCase()] ?? 'bg-gray-500/20 text-gray-400'
+}
+
+function isControllable(run: any) {
+  const status = (btStore.getProgress(run.run_id ?? run.id)?.status ?? run.status ?? '').toLowerCase()
+  return status === 'queued' || status === 'running' || status === 'cancelling'
+}
+
+async function cancelRun(run: any) {
+  const id = run.run_id ?? run.id
+  if (!id || !confirm(`Cancel backtest ${id}?`)) return
+  await btStore.controlRun(id, 'cancel')
+  pollProgress(id)
 }
 
 function msToDate(ms?: number | null) {
@@ -211,6 +225,21 @@ function fmtEstimate(e: any) {
             </div>
             <div class="text-[10px] text-gray-500 truncate">{{ btStore.getProgress(run.run_id ?? run.id)?.message }}</div>
           </div>
+          <div class="flex gap-2" @click.stop>
+            <button
+              v-if="isControllable(run)"
+              class="flex-1 px-2 py-2 rounded bg-warning/20 hover:bg-warning/30 text-xs text-warning"
+              @click="cancelRun(run)"
+            >
+              Cancel
+            </button>
+            <button
+              class="flex-1 px-2 py-2 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger"
+              @click="btStore.deleteRun(run.run_id ?? run.id)"
+            >
+              Delete
+            </button>
+          </div>
         </div>
       </div>
       <table class="hidden md:table w-full text-sm">
@@ -269,6 +298,14 @@ function fmtEstimate(e: any) {
               </td>
               <td class="px-2 py-2.5 text-center">
                 <button
+                  v-if="isControllable(run)"
+                  @click.stop="cancelRun(run)"
+                  class="mr-1 p-1 rounded hover:bg-warning/20 text-gray-500 hover:text-warning transition-colors"
+                  title="Cancel run"
+                >
+                  ⏹
+                </button>
+                <button
                   @click.stop="btStore.deleteRun(run.run_id ?? run.id)"
                   class="p-1 rounded hover:bg-danger/20 text-gray-500 hover:text-danger transition-colors"
                   title="Delete run"
@@ -304,7 +341,7 @@ function fmtEstimate(e: any) {
                   <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/export'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">📥 Export</a>
                 </div>
                 <div v-else class="text-xs text-gray-500">
-                  {{ run.status === 'failed' ? '❌ Backtest failed — no artifacts' : '⏳ Backtest still running...' }}
+                  {{ run.status === 'failed' ? '❌ Backtest failed — no artifacts' : (run.status === 'cancelled' ? 'Cancelled — no final artifacts' : '⏳ Backtest still running...') }}
                 </div>
               </td>
             </tr>

@@ -24,7 +24,53 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     state._startup_time = time.time()
     app.state.gateway = state
     log.info("gateway_started", sqlite=str(state.config.sqlite_path))
+
+    # Mark stuck "running" backtests as failed (gateway was restarted)
+    try:
+        stuck_runs = state.storage.execute(
+            "SELECT run_id FROM backtest_runs WHERE status = 'running'"
+        ).fetchall()
+        if stuck_runs:
+            now = int(time.time() * 1000)
+            for (run_id,) in stuck_runs:
+                state.storage.execute(
+                    "UPDATE backtest_runs SET status = 'failed', error_message = ?, finished_at = ?, updated_at = ? WHERE run_id = ?",
+                    ("Gateway restarted while backtest was running", now, now, run_id),
+                )
+            state.storage.commit()
+            log.info("marked_stuck_backtests_failed", count=len(stuck_runs))
+    except Exception as exc:
+        log.warning("stuck_backtest_cleanup_error", error=str(exc))
+
+    # Start periodic bar fetcher for enabled strategies
+    from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig
+    fetcher_config = RefreshConfig(interval_seconds=60.0, lookback_bars=2, source_timeframe="1m")
+    fetcher = PeriodicBarFetcher(
+        config=fetcher_config,
+        registry=state.strategy_registry,
+        orchestrator=state.orchestrator,
+    )
+    fetcher.start()
+    state._fetcher = fetcher  # expose to dashboard route
+    log.info("periodic_fetcher_started", interval=fetcher_config.interval_seconds)
+
+    # Start live strategy runner for running strategies
+    from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig
+    runner = LiveStrategyRunner(
+        config=RunnerConfig(check_interval_seconds=5.0),
+        registry=state.strategy_registry,
+        orchestrator=state.orchestrator,
+        storage=state.storage,
+        artifact_store=state.artifact_store,
+    )
+    runner.start()
+    state._live_runner = runner
+    log.info("live_runner_started")
+
     yield
+
+    runner.stop()
+    fetcher.stop()
     state.close()
     log.info("gateway_stopped")
 

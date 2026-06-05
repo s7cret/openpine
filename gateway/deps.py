@@ -64,13 +64,12 @@ class GatewayState:
         self.scheduler = JobScheduler()
         self.artifact_store = ArtifactStore()
         self.state_store = StateStore(self.config.data_dir / "state")
-        # Set up data orchestrator with marketdata provider
+        # Set up data orchestrator with direct HTTP provider (no timeout hangs)
         from openpine.data.orchestrator import DataOrchestrator
-        from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
+        from openpine.data.direct_provider import DirectBinanceProvider
         self.orchestrator = DataOrchestrator()
         try:
-            provider = create_local_marketdata_provider_adapter()
-            self.orchestrator.set_provider(provider)
+            self.orchestrator.set_provider(DirectBinanceProvider())
         except Exception as exc:
             import structlog
             structlog.get_logger(__name__).warning(
@@ -78,6 +77,7 @@ class GatewayState:
             )
         self._risk_kill_switch = [self.config.kill_switch]
         self.risk_manager = RiskManager(self._risk_kill_switch)
+        self.backtest_cancel_requests: set[str] = set()
         self._lock = threading.Lock()
 
     def close(self) -> None:

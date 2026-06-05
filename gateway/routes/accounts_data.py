@@ -99,8 +99,19 @@ async def refresh_data_series(
     duration_ms = tf.duration_ms or 60_000
     now_ms = int(time.time() * 1000)
     start_ms = int(series.get("earliest_ms") or series["latest_ms"])
+    before_ranges = len(series.get("ranges") or [])
     if int(series["latest_ms"]) + duration_ms >= now_ms and series.get("status") == "actual":
-        return {"status": "actual", "bars_fetched": 0, "series": series}
+        return {
+            "status": "actual",
+            "bars_loaded": 0,
+            "from_ms": start_ms,
+            "to_ms": now_ms,
+            "latest_ms": series.get("latest_ms"),
+            "coverage_ranges_before": before_ranges,
+            "coverage_ranges_after": before_ranges,
+            "message": "Series already actual",
+            "series": series,
+        }
 
     query = BarQuery(
         instrument=InstrumentKey(
@@ -115,12 +126,17 @@ async def refresh_data_series(
         gap_policy="allow_with_metadata",
     )
     loaded = state.orchestrator.load_bars(query)
+    refreshed = _series_by_id(state).get(series_id) or series
     return {
         "status": "refreshed",
         "bars_loaded": len(loaded.bars),
         "coverage_complete": bool(getattr(loaded.coverage, "is_complete", False)),
         "from_ms": start_ms,
         "to_ms": now_ms,
+        "latest_ms": refreshed.get("latest_ms"),
+        "coverage_ranges_before": before_ranges,
+        "coverage_ranges_after": len(refreshed.get("ranges") or []),
+        "message": f"Loaded {len(loaded.bars):,} bars",
     }
 
 
@@ -274,7 +290,20 @@ def _data_series_inventory(state: GatewayState) -> list[dict[str, object]]:
         entry["bar_count"] = min(estimated_unique, stored_rows) if stored_rows else estimated_unique
         entry["raw_range_count"] = len(ranges)
         entry["ranges"] = _compact_ranges(coverage_ranges)
+        entry["role"] = _series_role(entry)
     return sorted(groups.values(), key=lambda item: (str(item["symbol"]), str(item["timeframe"])))
+
+
+def _series_role(entry: dict[str, object]) -> str:
+    """Classify visible data as source exchange pulls or locally derived aggregates."""
+    timeframe = str(entry.get("timeframe") or "")
+    source_kinds = {str(item).lower() for item in (entry.get("source_kinds") or [])}
+    sources = {str(item).lower() for item in (entry.get("sources") or [])}
+    if timeframe == "1m":
+        return "source"
+    if any("aggregate" in item or "derived" in item for item in source_kinds | sources):
+        return "derived"
+    return "derived"
 
 
 def _series_by_id(state: GatewayState) -> dict[str, dict[str, object]]:
@@ -588,7 +617,26 @@ def _orders_summary(state: GatewayState) -> dict[str, object]:
             "SELECT symbol, COUNT(*), MAX(created_at) FROM orders GROUP BY symbol ORDER BY COUNT(*) DESC"
         ).fetchall()
     ]
-    return {"total": total or 0, "earliest_ms": min_ts, "latest_ms": max_ts, "by_symbol": by_symbol}
+    by_strategy = [
+        {
+            "symbol": row[0],
+            "strategy_id": row[1],
+            "strategy_name": row[2] or row[1] or "Unknown strategy",
+            "status": row[3],
+            "count": row[4],
+            "latest_ms": row[5],
+        }
+        for row in state.storage.execute(
+            """
+            SELECT o.symbol, o.strategy_id, s.name, o.status, COUNT(*), MAX(o.created_at)
+            FROM orders o
+            LEFT JOIN strategy_instances s ON s.strategy_id = o.strategy_id
+            GROUP BY o.symbol, o.strategy_id, s.name, o.status
+            ORDER BY MAX(o.created_at) DESC
+            """
+        ).fetchall()
+    ]
+    return {"total": total or 0, "earliest_ms": min_ts, "latest_ms": max_ts, "by_symbol": by_symbol, "by_strategy": by_strategy}
 
 
 def _delete_persistent_cache_series(series: dict[str, object]) -> int:

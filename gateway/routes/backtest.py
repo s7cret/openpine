@@ -131,6 +131,16 @@ async def _run_backtest_background(
 ) -> None:
     """Execute backtest in background, update progress via WebSocket."""
     import asyncio
+
+    async def cancel_if_requested(phase: str) -> bool:
+        if run_id not in state.backtest_cancel_requests:
+            return False
+        state.backtest_cancel_requests.discard(run_id)
+        state.backtest_store.mark_cancelled(run_id, f"Cancelled during {phase}")
+        ws_manager.update_progress(run_id, "backtest", "cancelled", 0.0, f"Cancelled during {phase}")
+        await ws_manager.broadcast_progress(run_id)
+        return True
+
     try:
         ws_manager.update_progress(run_id, "backtest", "running", 0.0, "Loading strategy...")
 
@@ -143,6 +153,8 @@ async def _run_backtest_background(
             return
 
         # Load artifact
+        if await cancel_if_requested("strategy load"):
+            return
         ws_manager.update_progress(run_id, "backtest", "running", 0.1, "Loading artifact...")
         await ws_manager.broadcast_progress(run_id)
 
@@ -162,6 +174,8 @@ async def _run_backtest_background(
             return
 
         # Load bars
+        if await cancel_if_requested("artifact load"):
+            return
         ws_manager.update_progress(run_id, "backtest", "running", 0.2, "Loading market data...")
         await ws_manager.broadcast_progress(run_id)
 
@@ -217,6 +231,9 @@ async def _run_backtest_background(
             state.backtest_store.mark_failed(run_id, "No bars found in range")
             return
 
+        if await cancel_if_requested("market data load"):
+            return
+
         data_fingerprint = _bar_series_fingerprint(series)
         try:
             _save_backtest_data_fingerprint(state, run_id, data_fingerprint)
@@ -237,6 +254,8 @@ async def _run_backtest_background(
         await ws_manager.broadcast_progress(run_id)
 
         # Build config — read declaration args from artifact
+        if await cancel_if_requested("backtest setup"):
+            return
         from openpine.runtime.engine import BacktestRunConfig
 
         # Read strategy declaration args (calc_on_order_fills, commission, etc.)
@@ -324,6 +343,9 @@ async def _run_backtest_background(
             ),
         )
 
+        if await cancel_if_requested("compute"):
+            return
+
         # Save results
         ws_manager.update_progress(run_id, "backtest", "running", 0.9, "Saving results...")
         await ws_manager.broadcast_progress(run_id)
@@ -347,6 +369,7 @@ async def _run_backtest_background(
         )
         await ws_manager.broadcast_progress(run_id)
         log.info("backtest_completed", run_id=run_id, bars=result.bars_processed)
+        state.backtest_cancel_requests.discard(run_id)
 
     except Exception as exc:
         log.error("backtest_failed", run_id=run_id, error=str(exc))
@@ -356,6 +379,7 @@ async def _run_backtest_background(
             state.backtest_store.mark_failed(run_id, str(exc))
         except Exception:
             pass
+        state.backtest_cancel_requests.discard(run_id)
 
 
 @router.post("/run", response_model=BacktestRunResponse)
@@ -559,6 +583,26 @@ async def delete_run(
     deleted = state.backtest_store.delete_run(run_id)
     if not deleted:
         raise HTTPException(404, f"Run not found: {run_id}")
+
+
+@router.post("/runs/{run_id}/action")
+async def run_action(
+    run_id: str,
+    action: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Control a backtest run. Cancel is cooperative and checked between heavy phases."""
+    run = state.backtest_store.get_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"Run not found: {run_id}")
+    if action != "cancel":
+        raise HTTPException(400, f"Unsupported backtest action: {action}")
+    if run.status not in {"queued", "running"}:
+        return {"run_id": run_id, "action": action, "status": run.status, "accepted": False}
+    state.backtest_cancel_requests.add(run_id)
+    ws_manager.update_progress(run_id, "backtest", "cancelling", 0.0, "Cancel requested")
+    await ws_manager.broadcast_progress(run_id)
+    return {"run_id": run_id, "action": action, "status": "cancelling", "accepted": True}
 
 
 @router.get("/runs/{run_id}/trades", response_model=list[BacktestTradeResponse])

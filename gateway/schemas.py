@@ -125,6 +125,7 @@ class StrategyResponse(BaseModel):
     status: str
     created_at: int
     updated_at: int
+    health: dict[str, Any] | None = None
 
 
 class StrategyAction(BaseModel):
@@ -290,6 +291,7 @@ class StrategySummary(BaseModel):
     status: str
     enabled: bool
     last_job_status: str | None = None
+    health: dict[str, Any] | None = None
 
 
 class JobSummary(BaseModel):

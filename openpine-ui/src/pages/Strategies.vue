@@ -5,6 +5,19 @@ import { usePineFilesStore } from '@/stores/pineFiles'
 import { useRoute } from 'vue-router'
 import { searchBinanceSymbols, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, type BinanceSymbolOption } from '@/api/client'
 import CandleChart from '@/components/CandleChart.vue'
+import {
+  baseAssetFromSymbol,
+  exchangeClass,
+  exchangeIcon,
+  exchangeLabel,
+  loadMissingTickerIcons,
+  marketTypeClass,
+  marketTypeIcon,
+  marketTypeLabel,
+  storeMissingTickerIcons,
+  tickerIconUrl,
+  tickerInitials,
+} from '@/lib/marketMeta'
 
 const store = useStrategiesStore()
 const pineStore = usePineFilesStore()
@@ -71,57 +84,7 @@ const symbolsLoading = ref(false)
 const showSymbolDropdown = ref(false)
 const artifacts = ref<any[]>([])
 const artifactsLoading = ref(false)
-const failedTickerIcons = ref<Set<string>>(new Set())
-const marketTypeMeta: Record<string, { icon: string; label: string; cls: string }> = {
-  spot: { icon: '●', label: 'Spot', cls: 'text-success' },
-  futures: { icon: '⚡', label: 'Futures', cls: 'text-warning' },
-  margin: { icon: '↔', label: 'Margin', cls: 'text-accent-light' },
-  delivery: { icon: '◆', label: 'Delivery', cls: 'text-purple-300' },
-}
-const exchangeMeta: Record<string, { icon: string; label: string; cls: string }> = {
-  binance: { icon: '◆', label: 'Binance', cls: 'border-[#F3BA2F]/30 bg-[#F3BA2F]/10 text-[#F3BA2F]' },
-}
-
-function marketTypeLabel(marketType?: string) {
-  const key = (marketType ?? '').toLowerCase()
-  const meta = marketTypeMeta[key]
-  return meta ? `${meta.icon} ${meta.label}` : (marketType ?? '—')
-}
-
-function marketTypeIcon(marketType?: string) {
-  return marketTypeMeta[(marketType ?? '').toLowerCase()]?.icon ?? '•'
-}
-
-function marketTypeClass(marketType?: string) {
-  return marketTypeMeta[(marketType ?? '').toLowerCase()]?.cls ?? 'text-gray-400'
-}
-
-function exchangeLabel(exchange?: string) {
-  return exchangeMeta[(exchange ?? '').toLowerCase()]?.label ?? (exchange ?? '—')
-}
-
-function exchangeIcon(exchange?: string) {
-  return exchangeMeta[(exchange ?? '').toLowerCase()]?.icon ?? '•'
-}
-
-function exchangeClass(exchange?: string) {
-  return exchangeMeta[(exchange ?? '').toLowerCase()]?.cls ?? 'border-dark-500 bg-dark-600 text-gray-400'
-}
-
-function baseAssetFromSymbol(symbol?: string) {
-  const stableQuotes = ['USDT', 'USDC', 'FDUSD', 'TUSD', 'DAI', 'USDP', 'BUSD']
-  const upper = (symbol ?? '').toUpperCase()
-  const quote = stableQuotes.find((q) => upper.endsWith(q))
-  return quote
-    ? upper.slice(0, -quote.length)
-    : upper
-}
-
-function tickerIconUrl(asset?: string) {
-  const base = (asset ?? '').toLowerCase()
-  if (!base) return ''
-  return `https://assets.coincap.io/assets/icons/${base}@2x.png`
-}
+const failedTickerIcons = ref<Set<string>>(loadMissingTickerIcons())
 
 function hasTickerIcon(asset?: string) {
   const base = (asset ?? '').toUpperCase()
@@ -132,10 +95,7 @@ function markTickerIconMissing(asset?: string) {
   const base = (asset ?? '').toUpperCase()
   if (!base) return
   failedTickerIcons.value = new Set([...failedTickerIcons.value, base])
-}
-
-function tickerInitials(asset?: string) {
-  return (asset ?? '?').slice(0, 3).toUpperCase()
+  storeMissingTickerIcons(failedTickerIcons.value)
 }
 
 onMounted(async () => {

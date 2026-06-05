@@ -161,3 +161,43 @@ async def delete_source(
     except Exception as exc:
         log.warning("pine_source_artifact_dir_cleanup_failed", source_id=source_id, error=str(exc))
     log.info("pine_source_deleted", source_id=source_id)
+
+
+@router.get("/{source_id}/delete-preview")
+async def delete_source_preview(
+    source_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Preview Pine source deletion. Strategy instances and market bars are not deleted here."""
+    try:
+        source = state.pine_registry.get_source(source_id)
+    except KeyError:
+        raise HTTPException(404, f"Pine source not found: {source_id}")
+
+    def count(sql: str, params: tuple[object, ...]) -> int:
+        try:
+            return int(state.storage.execute(sql, params).fetchone()[0] or 0)
+        except Exception:
+            return 0
+
+    artifact_files = 0
+    try:
+        source_dir = state.artifact_store._source_dir(source.id)
+        if source_dir.exists():
+            artifact_files = sum(1 for path in source_dir.rglob("*") if path.is_file())
+    except Exception:
+        artifact_files = 0
+
+    return {
+        "source_id": source.id,
+        "name": source.name,
+        "market_bars_deleted": 0,
+        "strategies_deleted": 0,
+        "resources": {
+            "source_rows": 1,
+            "compile_artifacts": count("SELECT COUNT(*) FROM compile_artifacts WHERE pine_id = ?", (source.id,)),
+            "pine_artifacts": count("SELECT COUNT(*) FROM pine_artifacts WHERE source_id = ?", (source.id,)),
+            "artifact_files": artifact_files,
+            "strategies_referencing": count("SELECT COUNT(*) FROM strategy_instances WHERE pine_id = ?", (source.id,)),
+        },
+    }

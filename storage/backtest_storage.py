@@ -423,6 +423,22 @@ class BacktestResultStore:
         )
         self._storage.commit()
 
+    def mark_cancelled(self, run_id: str, message: str = "Cancelled by user") -> None:
+        """Mark a run as cancelled without deleting partial metadata."""
+        now = int(time.time() * 1000)
+        self._storage.execute(
+            """
+            UPDATE backtest_runs SET
+                status = ?,
+                finished_at = ?,
+                error_message = ?,
+                updated_at = ?
+            WHERE run_id = ?
+            """,
+            ("cancelled", now, message, now, run_id),
+        )
+        self._storage.commit()
+
     def get_run(self, run_id: str) -> BacktestRun | None:
         """Get a backtest run by ID."""
         row = self._storage.execute(
@@ -471,6 +487,22 @@ class BacktestResultStore:
             (limit,),
         ).fetchall()
         return [self._row_to_run(row) for row in rows]
+
+    def delete_run(self, run_id: str) -> bool:
+        """Delete a backtest run and all associated data (trades, artifacts, files)."""
+        run = self.get_run(run_id)
+        if run is None:
+            return False
+        strategy_id = run.strategy_id
+        with self._storage.transaction():
+            self._storage.execute("DELETE FROM backtest_trades WHERE run_id = ?", (run_id,))
+            self._storage.execute("DELETE FROM backtest_artifacts WHERE run_id = ?", (run_id,))
+            self._storage.execute("DELETE FROM backtest_runs WHERE run_id = ?", (run_id,))
+        # Remove file artifacts
+        run_dir = self._run_dir(strategy_id, run_id)
+        if run_dir.exists():
+            shutil.rmtree(run_dir)
+        return True
 
     def get_metrics(self, run_id: str) -> dict[str, Any] | None:
         """Get metrics summary for a backtest run from the report artifact."""

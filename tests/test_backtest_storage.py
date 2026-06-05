@@ -123,6 +123,25 @@ def test_create_run_inserts_running(store):
     assert run.strategy_id == "strat_1"
 
 
+def test_mark_cancelled_updates_run_status(store):
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+
+    store.mark_cancelled(run_id, "user cancelled")
+
+    run = store.get_run(run_id)
+    assert run is not None
+    assert run.status == "cancelled"
+    assert run.finished_at is not None
+
+
 def test_save_result_updates_status_and_metrics(store):
     req = BacktestRunRequest(
         strategy_id="strat_1",

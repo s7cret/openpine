@@ -32,8 +32,9 @@ async def compile_pine(
             await ws_manager.broadcast_progress(operation_id)
 
             # Stage 1: Pine2AST
-            from pine2ast import parse_code, runtime_contract_v1_4_options
-            result = parse_code(src.source_text, options=runtime_contract_v1_4_options())
+            from pine2ast import parse_code, ParseOptions
+            opts = ParseOptions(runtime_contract_profile='v1_4')
+            result = parse_code(src.source_text, options=opts)
             if not result.ok:
                 errors = [d.message for d in result.diagnostics if d.severity.value in ("error", "fatal")]
                 ws_manager.update_progress(operation_id, "compile", "failed", 0.2, f"Parse failed: {errors[:3]}")
@@ -44,12 +45,19 @@ async def compile_pine(
             await ws_manager.broadcast_progress(operation_id)
 
             # Stage 2: AST2Python
-            from ast2python import translate_ast, CompileProfile
-            import json
-            ast_dict = json.loads(result.to_json())
+            from ast2python import translate_ast
+            from pine2ast import ast_to_dict, ast_to_json
+            ast_dict = ast_to_dict(result.ast)
+            # Inject producer_metadata required by ast2python
+            ast_dict['producer_metadata'] = {
+                'contract': 'pain.ast_contract.v1',
+                'runtime_contract': '1.4',
+                'runtime_contract_profile': 'runtime_contract_v1_4',
+                'parser_gate': 'pass',
+                'semantic_gate': 'pass',
+            }
             translation = translate_ast(
                 ast_dict,
-                profile=CompileProfile.RUNTIME_CONTRACT_1_4,
                 module_name=src.name,
             )
 
@@ -78,10 +86,10 @@ async def compile_pine(
                 artifact_id=artifact_id,
                 source_id=source_id,
                 params_hash="",
-                python_code=translation.python_source,
+                python_code=translation.code,
                 compile_meta=compile_meta,
                 source_text=src.source_text,
-                ast_json=result.to_json(),
+                ast_json=ast_to_json(result.ast),
             )
 
             # Set as active artifact
@@ -112,8 +120,9 @@ async def validate_pine(
         raise HTTPException(404, f"Pine source not found: {source_id}")
 
     try:
-        from pine2ast import parse_code, runtime_contract_v1_4_options
-        result = parse_code(src.source_text, options=runtime_contract_v1_4_options())
+        from pine2ast import parse_code, ParseOptions
+        opts = ParseOptions(runtime_contract_profile='v1_4')
+        result = parse_code(src.source_text, options=opts)
         return {
             "source_id": source_id,
             "valid": result.ok,

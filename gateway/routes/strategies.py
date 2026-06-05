@@ -212,6 +212,50 @@ async def delete_strategy(
     log.info("strategy_deleted", strategy_id=strategy_id)
 
 
+@router.get("/{strategy_id}/delete-preview")
+async def delete_strategy_preview(
+    strategy_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Preview resources deleted with a strategy. Market bars are intentionally excluded."""
+    try:
+        strategy = state.strategy_registry.get_strategy(strategy_id)
+    except KeyError:
+        raise HTTPException(404, f"Strategy not found: {strategy_id}")
+
+    def count(table: str, column: str = "strategy_id") -> int:
+        try:
+            return int(state.storage.execute(f"SELECT COUNT(*) FROM {table} WHERE {column} = ?", (strategy_id,)).fetchone()[0] or 0)
+        except Exception:
+            return 0
+
+    run_ids = [row[0] for row in state.storage.execute("SELECT run_id FROM backtest_runs WHERE strategy_id = ?", (strategy_id,)).fetchall()]
+    backtest_trades = 0
+    backtest_artifacts = 0
+    if run_ids:
+        placeholders = ",".join("?" for _ in run_ids)
+        backtest_trades = int(state.storage.execute(f"SELECT COUNT(*) FROM backtest_trades WHERE run_id IN ({placeholders})", tuple(run_ids)).fetchone()[0] or 0)
+        backtest_artifacts = int(state.storage.execute(f"SELECT COUNT(*) FROM backtest_artifacts WHERE run_id IN ({placeholders})", tuple(run_ids)).fetchone()[0] or 0)
+
+    return {
+        "strategy_id": strategy_id,
+        "name": strategy.name,
+        "market_bars_deleted": 0,
+        "resources": {
+            "strategy_rows": 1,
+            "orders": count("orders"),
+            "fills": count("fills"),
+            "strategy_trades": count("strategy_trades"),
+            "strategy_positions": count("strategy_positions"),
+            "state_snapshots": count("strategy_state_snapshots"),
+            "jobs": count("jobs"),
+            "backtest_runs": len(run_ids),
+            "backtest_trades": backtest_trades,
+            "backtest_artifacts": backtest_artifacts,
+        },
+    }
+
+
 # ── Replay ────────────────────────────────────────────────────────────────────
 
 

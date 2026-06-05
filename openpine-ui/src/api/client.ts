@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { stableQuoteAssets } from '@/lib/marketMeta'
 
 const api = axios.create({
   baseURL: '/api',
@@ -30,6 +31,7 @@ export const getPineFile = (id: string) => api.get(`/pine-sources/${id}`)
 export const createPineFile = (data: { name: string; source_text: string; source_type?: string }) => api.post('/pine-sources', data)
 export const compilePineFile = (sourceId: string) => api.post(`/pine/${sourceId}/compile`)
 export const getPineArtifacts = (sourceId: string) => api.get(`/pine/${sourceId}/artifacts`)
+export const previewDeletePineFile = (id: string) => api.get(`/pine-sources/${id}/delete-preview`)
 export const deletePineFile = (id: string) => api.delete(`/pine-sources/${id}`)
 
 // Strategies
@@ -37,6 +39,7 @@ export const getStrategies = () => api.get('/strategies')
 export const getStrategy = (id: string) => api.get(`/strategies/${id}`)
 export const createStrategy = (data: any) => api.post('/strategies', data)
 export const updateStrategy = (id: string, data: any) => api.patch(`/strategies/${id}`, data)
+export const previewDeleteStrategy = (id: string) => api.get(`/strategies/${id}/delete-preview`)
 export const deleteStrategy = (id: string) => api.delete(`/strategies/${id}`)
 export const controlStrategy = (id: string, action: string) => api.post(`/strategies/${id}/action?action=${action}`)
 
@@ -53,6 +56,8 @@ export const getBacktestTrades = (runId: string) =>
   api.get(`/backtest/runs/${runId}/trades`)
 export const deleteBacktest = (runId: string) =>
   api.delete(`/backtest/runs/${runId}`)
+export const controlBacktest = (runId: string, action: string) =>
+  api.post(`/backtest/runs/${runId}/action`, null, { params: { action } })
 
 // Orders & Positions
 export const getOrders = (strategyId?: string, limit = 100) =>
@@ -66,7 +71,7 @@ export type BinanceSymbolOption = {
   quoteAsset: string
 }
 
-const STABLE_QUOTE_ASSETS = new Set(['USDT', 'USDC', 'FDUSD', 'TUSD', 'DAI', 'USDP', 'BUSD'])
+const STABLE_QUOTE_ASSETS = new Set(stableQuoteAssets)
 
 // Binance ticker search (direct, no proxy)
 export async function searchBinanceSymbols(query: string, market: string = 'spot'): Promise<BinanceSymbolOption[]> {

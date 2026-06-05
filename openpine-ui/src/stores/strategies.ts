@@ -51,6 +51,17 @@ export const useStrategiesStore = defineStore('strategies', () => {
 
   async function remove(id: string) {
     try {
+      const preview = await api.previewDeleteStrategy(id).then((r) => r.data).catch(() => null)
+      if (preview) {
+        const resources = Object.entries(preview.resources ?? {})
+          .filter(([, value]) => Number(value) > 0)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n')
+        const ok = confirm(`Delete strategy "${preview.name ?? id}"?\n\nWill delete:\n${resources || 'strategy row only'}\n\nMarket bars deleted: 0`)
+        if (!ok) return
+      } else if (!confirm(`Delete strategy ${id}? Market bars will not be deleted.`)) {
+        return
+      }
       await api.deleteStrategy(id)
       // Optimistic: remove from local list immediately
       items.value = items.value.filter(s => getId(s) !== id)
