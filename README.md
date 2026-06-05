@@ -1,8 +1,43 @@
 # OpenPine
 
-OpenPine is the product gateway and web UI for the Pine research stack. It ties together Pine source management, Pine2AST compilation, AST2Python generation, PineLib runtime helpers, Backtest Engine execution, MarketData Provider candles, Optimizer runs, paper/live strategy scheduling, persistent orders, and a Vue dashboard.
+OpenPine is a ready-to-run Pine Script v6 interpreter and trading automation gateway for turning TradingView-style strategies into executable, inspectable, and approvable trades.
+
+It brings the full Pine research stack into one product surface: Pine source management, Pine2AST compilation, AST2Python generation, PineLib runtime helpers, Backtest Engine execution, MarketData Provider candles, Optimizer runs, paper/live strategy scheduling, persistent orders, Telegram approval flows, and a Vue dashboard.
+
+OpenPine is built for traders and builders who want the Pine workflow without being locked inside a chart tab. You can import a Pine strategy, compile it, run deterministic backtests, keep it running on fresh market data, inspect generated orders, and approve execution from chat before anything reaches an exchange.
 
 The package is intentionally an orchestration boundary. The parser, generator, runtime, backtest engine, market data provider, and optimizer remain independently publishable libraries with their own public contracts.
+
+<p align="center">
+  <img src="docs/assets/openpine-telegram-trade-signal.jpg" alt="OpenPine Telegram trade approval signal" width="420">
+</p>
+
+## Why OpenPine
+
+OpenPine turns Pine strategies into a practical execution pipeline:
+
+- Write or import Pine Script v6 strategy code.
+- Compile Pine into an AST and generate executable Python.
+- Run backtests against local or exchange-sourced candle data.
+- Schedule paper, testnet, or live strategy runs.
+- Persist strategies, orders, positions, events, and runtime state.
+- Review every generated trade before execution.
+- Approve a default order size with one Telegram button, or override amount directly from chat.
+- Keep the web dashboard focused on strategy state, backtest progress, orders, and market-data health.
+
+The goal is not just parsing Pine. OpenPine is the bridge from Pine source code to a controlled trading workflow.
+
+## Pine v6 Interpreter
+
+OpenPine provides a ready interpreter pipeline for Pine Script v6-style strategies:
+
+- Pine source is stored, versioned, and compiled through Pine2AST.
+- The AST is converted into Python through AST2Python.
+- PineLib supplies TradingView-like runtime semantics for common Pine helpers and strategy calls.
+- Backtest Engine executes generated strategy code on historical candles.
+- The gateway stores artifacts and exposes compile/backtest/runtime status through the API and UI.
+
+That means a Pine strategy can move from source text to a runnable local artifact, then into paper/live scheduling with the same product layer.
 
 ## What Is Included
 
@@ -11,6 +46,7 @@ The package is intentionally an orchestration boundary. The parser, generator, r
 - SQLite-backed local storage for strategies, Pine sources, compiled artifacts, backtest runs, orders, and runtime state.
 - Background worker process for market-data catch-up and live/paper mini-backtests without starving the API process.
 - Backtest execution in a separate process so long CPU-bound runs do not block UI polling.
+- Telegram-ready order approval flow through the OpenPine trading skill.
 - MSK/UTC+3 display formatting in the UI while persisted timestamps stay UTC milliseconds.
 
 ## Repository Layout
