@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import time
-import uuid
 import hashlib
+import multiprocessing as mp
+import queue
+import traceback
 from datetime import datetime, timezone
 
 import structlog
@@ -96,6 +98,45 @@ def _bar_series_fingerprint(series) -> str:
             ).encode()
         )
     return digest.hexdigest()
+
+
+def _backtest_process_entry(out, adapter, strategy_class, bars, config, params, runtime_data_provider):
+    try:
+        result = adapter.run(
+            strategy_class,
+            bars,
+            config,
+            params=params,
+            progress_callback=None,
+            runtime_data_provider=runtime_data_provider,
+        )
+        out.put(("ok", result))
+    except BaseException as exc:
+        out.put(("err", exc.__class__.__name__, str(exc), traceback.format_exc()))
+
+
+def _run_backtest_in_process(adapter, strategy_class, bars, config, params, runtime_data_provider):
+    ctx = mp.get_context("fork")
+    out = ctx.Queue(maxsize=1)
+    proc = ctx.Process(
+        target=_backtest_process_entry,
+        args=(out, adapter, strategy_class, bars, config, params, runtime_data_provider),
+    )
+    proc.start()
+    proc.join()
+    try:
+        status, *parts = out.get_nowait()
+    except queue.Empty as exc:
+        if proc.exitcode == 0:
+            raise RuntimeError("backtest worker exited without a result") from exc
+        raise RuntimeError(f"backtest worker exited with code {proc.exitcode}") from exc
+    finally:
+        out.close()
+        out.cancel_join_thread()
+    if status == "ok":
+        return parts[0]
+    exc_name, message, tb = parts
+    raise RuntimeError(f"{exc_name}: {message}\n{tb}")
 
 
 def _ensure_backtest_data_fingerprint_column(state: GatewayState) -> None:
@@ -333,13 +374,13 @@ async def _run_backtest_background(
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: adapter.run(
+            lambda: _run_backtest_in_process(
+                adapter,
                 strategy_class,
                 bars,
                 config,
-                params=params,
-                progress_callback=progress_callback,
-                runtime_data_provider=runtime_data_provider,
+                params,
+                runtime_data_provider,
             ),
         )
 
@@ -680,7 +721,6 @@ async def get_progress_detail(run_id: str) -> dict[str, object] | None:
 
 def _read_parquet_as_csv(path: str) -> str:
     """Read a parquet file and return as CSV string."""
-    import io
     import pandas as pd
     df = pd.read_parquet(path)
     return df.to_csv(index=False)
