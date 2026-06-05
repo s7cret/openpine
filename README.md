@@ -130,10 +130,6 @@ python -m ruff check .
 cd openpine-ui && npm run build
 ```
 
-## GitHub Publication Checklist
-
-See `docs/GITHUB_PUBLICATION.md`.
-
 ## License
 
 MIT. See `LICENSE`.
