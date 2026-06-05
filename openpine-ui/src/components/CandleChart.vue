@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { createChart, ColorType, CrosshairMode } from 'lightweight-charts'
 import DateRangePicker from './DateRangePicker.vue'
 import type { IChartApi, ISeriesApi, CandlestickData, HistogramData, Time, SeriesMarker } from 'lightweight-charts'
+import { formatChartTime } from '@/utils/time'
 
 interface Trade {
   side: string
@@ -58,16 +59,7 @@ function toTimestampMs(val: any): number | null {
 }
 
 function formatDate(val: any): string {
-  const ms = toTimestampMs(val)
-  if (!ms) return '?'
-  const d = new Date(ms)
-  const day = d.getDate()
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const month = months[d.getMonth()]
-  const year = d.getFullYear()
-  const h = d.getHours().toString().padStart(2, '0')
-  const m = d.getMinutes().toString().padStart(2, '0')
-  return `${day} ${month} ${year} ${h}:${m}`
+  return formatChartTime(val)
 }
 
 function updateVisibleRange() {
@@ -268,6 +260,9 @@ function initChart() {
       borderColor: 'rgba(255,255,255,0.1)',
       timeVisible: true,
       secondsVisible: false,
+    },
+    localization: {
+      timeFormatter: (time: Time) => formatChartTime(time as number),
     },
     autoSize: true,
   })

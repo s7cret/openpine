@@ -101,13 +101,19 @@ def _bar_series_fingerprint(series) -> str:
 
 
 def _backtest_process_entry(out, adapter, strategy_class, bars, config, params, runtime_data_provider):
+    def progress(done: int, total: int) -> None:
+        try:
+            out.put_nowait(("progress", int(done), int(total)))
+        except Exception:
+            pass
+
     try:
         result = adapter.run(
             strategy_class,
             bars,
             config,
             params=params,
-            progress_callback=None,
+            progress_callback=progress,
             runtime_data_provider=runtime_data_provider,
         )
         out.put(("ok", result))
@@ -115,17 +121,45 @@ def _backtest_process_entry(out, adapter, strategy_class, bars, config, params, 
         out.put(("err", exc.__class__.__name__, str(exc), traceback.format_exc()))
 
 
-def _run_backtest_in_process(adapter, strategy_class, bars, config, params, runtime_data_provider):
+def _run_backtest_in_process(adapter, strategy_class, bars, config, params, runtime_data_provider, progress_callback=None):
     ctx = mp.get_context("fork")
-    out = ctx.Queue(maxsize=1)
+    out = ctx.Queue()
     proc = ctx.Process(
         target=_backtest_process_entry,
         args=(out, adapter, strategy_class, bars, config, params, runtime_data_provider),
     )
     proc.start()
+    final: tuple | None = None
+    while proc.is_alive() or final is None:
+        try:
+            status, *parts = out.get(timeout=0.5)
+        except queue.Empty:
+            if not proc.is_alive():
+                break
+            continue
+        if status == "progress":
+            if progress_callback is not None:
+                progress_callback(int(parts[0]), int(parts[1]))
+            continue
+        final = (status, *parts)
+        break
     proc.join()
+    if final is None:
+        while True:
+            try:
+                status, *parts = out.get_nowait()
+            except queue.Empty:
+                break
+            if status == "progress":
+                if progress_callback is not None:
+                    progress_callback(int(parts[0]), int(parts[1]))
+                continue
+            final = (status, *parts)
+            break
     try:
-        status, *parts = out.get_nowait()
+        if final is None:
+            raise queue.Empty
+        status, *parts = final
     except queue.Empty as exc:
         if proc.exitcode == 0:
             raise RuntimeError("backtest worker exited without a result") from exc
@@ -381,6 +415,7 @@ async def _run_backtest_background(
                 config,
                 params,
                 runtime_data_provider,
+                progress_callback,
             ),
         )
 

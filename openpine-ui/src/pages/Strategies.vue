@@ -5,6 +5,7 @@ import { usePineFilesStore } from '@/stores/pineFiles'
 import { useRoute } from 'vue-router'
 import { searchBinanceSymbols, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, type BinanceSymbolOption } from '@/api/client'
 import CandleChart from '@/components/CandleChart.vue'
+import { formatDateTime } from '@/utils/time'
 import {
   baseAssetFromSymbol,
   exchangeClass,
@@ -327,9 +328,7 @@ function onDataRangeChange(range: { fromMs: number; toMs: number }) {
 }
 
 function formatTime(ts: number | string | null) {
-  if (!ts) return '—'
-  const d = typeof ts === 'number' ? new Date(ts > 1e12 ? ts : ts * 1000) : new Date(ts)
-  return d.toLocaleString()
+  return formatDateTime(ts).replace('-', '—')
 }
 
 function tradeStatusBadge(status: string) {
@@ -648,7 +647,7 @@ function tradeStatusBadge(status: string) {
                 </div>
               </div>
               <div><span class="text-xs text-gray-500">Market</span><div class="text-sm text-gray-300">{{ marketTypeLabel(store.current?.market_type) }}</div></div>
-              <div><span class="text-xs text-gray-500">Created</span><div class="text-xs text-gray-400">{{ store.current?.created_at ? new Date(store.current.created_at).toLocaleString() : '—' }}</div></div>
+              <div><span class="text-xs text-gray-500">Created</span><div class="text-xs text-gray-400">{{ formatTime(store.current?.created_at ?? null) }}</div></div>
             </div>
 
             <div class="px-4 sm:px-5 pb-3 flex-1 min-h-[300px]">

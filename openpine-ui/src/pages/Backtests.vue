@@ -3,6 +3,7 @@ import { computed, onMounted, ref, onUnmounted, watch } from 'vue'
 import { useBacktestsStore } from '@/stores/backtests'
 import { useStrategiesStore } from '@/stores/strategies'
 import DateRangePicker from '@/components/DateRangePicker.vue'
+import { formatDateTime } from '@/utils/time'
 
 const btStore = useBacktestsStore()
 const stStore = useStrategiesStore()
@@ -120,8 +121,7 @@ function msToDate(ms?: number | null) {
 }
 
 function fmtDateTime(ms?: number | null) {
-  if (!ms) return '—'
-  return new Date(ms > 1e12 ? ms : ms * 1000).toLocaleString()
+  return formatDateTime(ms).replace('-', '—')
 }
 
 function fmtPeriod(run: any) {
