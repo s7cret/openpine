@@ -194,6 +194,18 @@ def _save_backtest_data_fingerprint(state: GatewayState, run_id: str, fingerprin
     state.storage.commit()
 
 
+def _normalize_metrics_payload(metrics: dict | None) -> dict | None:
+    if not isinstance(metrics, dict):
+        return metrics
+    payload = metrics.get("metrics") if isinstance(metrics.get("metrics"), dict) else metrics
+    normalized = dict(payload)
+    if "trades_total" not in normalized and "total_trades" in normalized:
+        normalized["trades_total"] = normalized["total_trades"]
+    if "total_trades" not in normalized and "trades_total" in normalized:
+        normalized["total_trades"] = normalized["trades_total"]
+    return normalized
+
+
 async def _run_backtest_background(
     state: GatewayState,
     strategy_id: str,
@@ -582,7 +594,7 @@ async def list_runs(
             pass
         metrics = None
         try:
-            metrics = store.get_metrics(r.run_id)
+            metrics = _normalize_metrics_payload(store.get_metrics(r.run_id))
         except Exception:
             pass
 
@@ -615,7 +627,7 @@ async def get_run(
         raise HTTPException(404, f"Run not found: {run_id}")
     metrics = None
     try:
-        metrics = state.backtest_store.get_metrics(run_id)
+        metrics = _normalize_metrics_payload(state.backtest_store.get_metrics(run_id))
     except Exception:
         pass
 

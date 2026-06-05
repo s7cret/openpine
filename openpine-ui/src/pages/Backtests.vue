@@ -129,7 +129,10 @@ function fmtPeriod(run: any) {
 }
 
 function metric(run: any, key: string) {
-  return run?.metrics?.[key] ?? run?.[key] ?? null
+  const metrics = run?.metrics?.metrics ?? run?.metrics ?? {}
+  if (key === 'trades_total') return metrics.trades_total ?? metrics.total_trades ?? run?.trades_total ?? run?.total_trades ?? null
+  if (key === 'total_trades') return metrics.total_trades ?? metrics.trades_total ?? run?.total_trades ?? run?.trades_total ?? null
+  return metrics?.[key] ?? run?.[key] ?? null
 }
 
 function fmtNumber(value: any, digits = 0) {
@@ -320,15 +323,15 @@ function fmtEstimate(e: any) {
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                   <div>
                     <span class="text-xs text-gray-500">Win Rate</span>
-                    <div class="text-sm font-bold text-gray-200">{{ fmtPct(btStore.current?.metrics?.win_rate) }}</div>
+                    <div class="text-sm font-bold text-gray-200">{{ fmtPct(metric(btStore.current, 'win_rate')) }}</div>
                   </div>
                   <div>
                     <span class="text-xs text-gray-500">Trades</span>
-                    <div class="text-sm font-bold text-gray-200">{{ fmtNumber(btStore.current?.metrics?.trades_total) }}</div>
+                    <div class="text-sm font-bold text-gray-200">{{ fmtNumber(metric(btStore.current, 'trades_total')) }}</div>
                   </div>
                   <div>
                     <span class="text-xs text-gray-500">Max Drawdown</span>
-                    <div class="text-sm font-bold text-danger">{{ fmtPct(btStore.current?.metrics?.max_drawdown_pct ?? btStore.current?.metrics?.max_drawdown) }}</div>
+                    <div class="text-sm font-bold text-danger">{{ fmtPct(metric(btStore.current, 'max_drawdown_pct') ?? metric(btStore.current, 'max_drawdown')) }}</div>
                   </div>
                   <div>
                     <span class="text-xs text-gray-500">Period</span>
