@@ -67,7 +67,9 @@ class GatewayState:
         # Set up data orchestrator with direct HTTP provider (no timeout hangs)
         from openpine.data.orchestrator import DataOrchestrator
         from openpine.data.direct_provider import DirectBinanceProvider
-        self.orchestrator = DataOrchestrator()
+        # Gateway background runners must read current storage/provider state.
+        # Persistent CLI cache can turn live polling into stale/cache-heavy work.
+        self.orchestrator = DataOrchestrator(cache_enabled=False)
         try:
             self.orchestrator.set_provider(DirectBinanceProvider())
         except Exception as exc:
