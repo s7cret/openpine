@@ -17,6 +17,50 @@ const toasts = ref<Toast[]>([])
 const seenOrderIds = ref<Set<string>>(new Set())
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let isFirstLoad = true
+const mountedAt = Date.now()
+const RECENT_ORDER_GRACE_MS = 60_000
+const SEEN_STORAGE_KEY = 'openpine.seenTradeNotificationIds.v1'
+
+function loadSeenIds() {
+  try {
+    const raw = localStorage.getItem(SEEN_STORAGE_KEY)
+    const ids = raw ? JSON.parse(raw) : []
+    if (Array.isArray(ids)) {
+      seenOrderIds.value = new Set(ids.filter((id): id is string => typeof id === 'string'))
+    }
+  } catch {
+    seenOrderIds.value = new Set()
+  }
+}
+
+function saveSeenIds() {
+  try {
+    const ids = Array.from(seenOrderIds.value).slice(-500)
+    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(ids))
+  } catch {
+    // Best-effort only: notifications must keep working if storage is unavailable.
+  }
+}
+
+function rememberOrderId(orderId: string) {
+  seenOrderIds.value.add(orderId)
+  saveSeenIds()
+}
+
+function orderTimeMs(order: any): number {
+  const raw = Number(order.updated_at ?? order.created_at ?? 0)
+  return Number.isFinite(raw) ? raw : 0
+}
+
+function isNotifiableStatus(statusRaw: unknown) {
+  const status = String(statusRaw ?? '').toLowerCase()
+  return status === 'filled' || status === 'closed' || status === 'partially_filled'
+}
+
+function sideKind(sideRaw: unknown) {
+  const side = String(sideRaw ?? '').toLowerCase()
+  return side === 'buy' || side === 'long' ? 'buy' : 'sell'
+}
 
 async function pollOrders() {
   try {
@@ -24,23 +68,24 @@ async function pollOrders() {
     const orders = Array.isArray(data) ? data : []
 
     if (isFirstLoad) {
-      // Mark all existing orders as seen on first load — don't spam old orders
+      // Mark older existing orders as seen, but do not swallow a fresh order that
+      // landed while the page or Vite client was reconnecting.
       orders.forEach((o: any) => {
-        if (o.order_id) seenOrderIds.value.add(o.order_id)
+        if (!o.order_id || seenOrderIds.value.has(o.order_id)) return
+        const isFresh = orderTimeMs(o) >= mountedAt - RECENT_ORDER_GRACE_MS
+        if (!isFresh) rememberOrderId(o.order_id)
       })
       isFirstLoad = false
-      return
     }
 
     for (const order of orders) {
       const oid = order.order_id
       if (!oid || seenOrderIds.value.has(oid)) continue
 
-      seenOrderIds.value.add(oid)
+      rememberOrderId(oid)
 
       // Only show filled/closed orders as notifications
-      const status = (order.status ?? '').toLowerCase()
-      if (status === 'filled' || status === 'closed' || status === 'partially_filled') {
+      if (isNotifiableStatus(order.status)) {
         const toast: Toast = {
           id: `${oid}_${Date.now()}`,
           side: order.side ?? 'unknown',
@@ -75,12 +120,16 @@ function removeToast(id: string) {
 function formatPrice(p: number | string) {
   const n = typeof p === 'string' ? parseFloat(p) : p
   if (isNaN(n)) return String(p)
+  const abs = Math.abs(n)
+  if (abs > 0 && abs < 1) return n.toPrecision(6)
+  if (abs < 100) return n.toFixed(4)
   return n.toFixed(2)
 }
 
 onMounted(() => {
+  loadSeenIds()
   pollOrders()
-  pollTimer = setInterval(pollOrders, 15000)
+  pollTimer = setInterval(pollOrders, 5000)
 })
 
 onUnmounted(() => {
@@ -99,9 +148,9 @@ onUnmounted(() => {
         <!-- Icon -->
         <div
           class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold"
-          :class="(toast.side ?? '').toLowerCase() === 'buy' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'"
+          :class="sideKind(toast.side) === 'buy' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'"
         >
-          {{ (toast.side ?? '').toLowerCase() === 'buy' ? '↑' : '↓' }}
+          {{ sideKind(toast.side) === 'buy' ? '↑' : '↓' }}
         </div>
 
         <!-- Content -->
@@ -110,7 +159,7 @@ onUnmounted(() => {
             <span class="text-sm font-semibold text-gray-200">{{ toast.symbol }}</span>
             <span
               class="text-xs px-1.5 py-0.5 rounded font-medium"
-              :class="(toast.side ?? '').toLowerCase() === 'buy' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'"
+              :class="sideKind(toast.side) === 'buy' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'"
             >
               {{ (toast.side ?? '').toUpperCase() }}
             </span>
