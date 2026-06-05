@@ -18,6 +18,13 @@ from openpine.gateway.routes import accounts_data, backtest, dashboard, events, 
 log = structlog.get_logger(__name__)
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.lower() in {"1", "true", "yes", "on"}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize shared state on startup, close on shutdown."""
@@ -43,25 +50,30 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as exc:
         log.warning("stuck_backtest_cleanup_error", error=str(exc))
 
-    # Start periodic bar fetcher for enabled strategies
-    from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig
-    fetcher_config = RefreshConfig(interval_seconds=60.0, lookback_bars=2, source_timeframe="1m")
-    fetcher = PeriodicBarFetcher(
-        config=fetcher_config,
-        registry=state.strategy_registry,
-        orchestrator=state.orchestrator,
-    )
-    fetcher.start()
-    state._fetcher = fetcher  # expose to dashboard route
-    log.info("periodic_fetcher_started", interval=fetcher_config.interval_seconds)
+    # Start periodic market refresh only when explicitly enabled. It performs
+    # network/storage work in the gateway process and can stall API responses.
+    fetcher = None
+    if _env_flag("OPENPINE_ENABLE_PERIODIC_FETCHER"):
+        from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig
+
+        fetcher_config = RefreshConfig(interval_seconds=60.0, lookback_bars=2, source_timeframe="1m")
+        fetcher = PeriodicBarFetcher(
+            config=fetcher_config,
+            registry=state.strategy_registry,
+            orchestrator=state.orchestrator,
+        )
+        fetcher.start()
+        state._fetcher = fetcher  # expose to dashboard route
+        log.info("periodic_fetcher_started", interval=fetcher_config.interval_seconds)
+    else:
+        state._fetcher = None
+        log.info("periodic_fetcher_disabled")
 
     # Start live strategy runner only when explicitly enabled. It runs
     # mini-backtests in the gateway process and can starve API responses on
     # active paper/live strategies.
     runner = None
-    live_runner_enabled = state.config.live_enabled or os.environ.get(
-        "OPENPINE_ENABLE_LIVE_RUNNER", "0"
-    ).lower() in {"1", "true", "yes", "on"}
+    live_runner_enabled = state.config.live_enabled or _env_flag("OPENPINE_ENABLE_LIVE_RUNNER")
     if live_runner_enabled:
         from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig
         runner = LiveStrategyRunner(
@@ -82,7 +94,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     if runner is not None:
         runner.stop()
-    fetcher.stop()
+    if fetcher is not None:
+        fetcher.stop()
     state.close()
     log.info("gateway_stopped")
 
