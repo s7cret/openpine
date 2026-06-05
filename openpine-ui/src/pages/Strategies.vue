@@ -204,8 +204,17 @@ function statusBadge(status: string) {
 const controlButtons = [
   { action: 'start', label: '▶ Start', cls: 'bg-success/20 hover:bg-success/30 text-success' },
   { action: 'pause', label: '⏸ Pause', cls: 'bg-warning/20 hover:bg-warning/30 text-warning' },
-  { action: 'stop', label: '⏹ Stop', cls: 'bg-danger/20 hover:bg-danger/30 text-danger' },
 ]
+
+function isRunning(s: any) {
+  return String(s?.status ?? '').toLowerCase() === 'running' || s?.enabled === true
+}
+
+function visibleControlButtons(s: any) {
+  return isRunning(s)
+    ? controlButtons.filter((btn) => btn.action === 'pause')
+    : controlButtons.filter((btn) => btn.action === 'start')
+}
 
 // Trades state
 const tradeMode = ref('paper')
@@ -519,9 +528,9 @@ function tradeStatusBadge(status: string) {
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-2 pt-1" @click.stop>
+          <div class="grid grid-cols-1 gap-2 pt-1" @click.stop>
             <button
-              v-for="btn in controlButtons"
+              v-for="btn in visibleControlButtons(s)"
               :key="btn.action"
               @click="store.control(s.strategy_id ?? s.id, btn.action)"
               :class="[btn.cls, 'min-w-0 rounded px-2 py-2 text-xs transition-colors']"
@@ -596,7 +605,7 @@ function tradeStatusBadge(status: string) {
             <td class="px-4 py-2.5" @click.stop>
               <div class="flex items-center justify-center gap-1">
                 <button
-                  v-for="btn in controlButtons"
+                  v-for="btn in visibleControlButtons(s)"
                   :key="btn.action"
                   @click="store.control(s.strategy_id ?? s.id, btn.action)"
                   :class="[btn.cls, 'px-2 py-1 rounded text-xs transition-colors']"
