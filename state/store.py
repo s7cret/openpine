@@ -6,11 +6,10 @@ import hashlib
 import json
 import os
 import pickle
-import shutil
 import tempfile
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
@@ -188,6 +187,11 @@ class StateStore:
     @staticmethod
     def _decode_payload(packed: bytes, encoding: str) -> dict[str, Any]:
         if encoding == "pickle":
+            if os.environ.get("OPENPINE_ALLOW_PICKLE_STATE") != "1":
+                raise InvalidSnapshotError(
+                    "pickle snapshot loading is disabled; set "
+                    "OPENPINE_ALLOW_PICKLE_STATE=1 only for trusted local snapshots"
+                )
             return pickle.loads(packed)
         return msgpack.unpackb(packed, raw=False)
 

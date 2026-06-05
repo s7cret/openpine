@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import os
 import shutil
+import sqlite3
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -256,7 +257,7 @@ class CandleStorage:
         self.data_root = Path(os.path.expanduser(str(data_root)))
         self.sqlite_path = Path(os.path.expanduser(str(sqlite_path)))
         self.provider = provider
-        self._conn: Optional[object] = None  # sqlite3.Connection set lazily
+        self._conn: Optional[sqlite3.Connection] = None
         self._schema_hash = _compute_schema_hash()
 
     @property
@@ -264,17 +265,15 @@ class CandleStorage:
         """Root directory for candle parquet files."""
         return self.data_root / "candles"
 
-    def _get_conn(self) -> "sqlite3.Connection":
+    def _get_conn(self) -> sqlite3.Connection:
         """Lazy-open SQLite connection."""
-        import sqlite3
-
         if self._conn is None:
             self._conn = sqlite3.connect(str(self.sqlite_path), check_same_thread=False)
             self._conn.execute("PRAGMA busy_timeout=30000")
             self._ensure_schema(self._conn)
         return self._conn  # type: ignore[return-value]
 
-    def _ensure_schema(self, conn: "sqlite3.Connection") -> None:
+    def _ensure_schema(self, conn: sqlite3.Connection) -> None:
         """Create the legacy manifest table for fresh configured stores."""
 
         conn.execute(
@@ -386,7 +385,7 @@ class CandleStorage:
         manifests: list[CandleManifest] = []
         total_rows = 0
 
-        for (exchange, market_type, symbol, price_type, timeframe, (year, month)), bars in partitions.items():
+        for (exchange, market_type, symbol, price_type, timeframe, (_year, _month)), bars in partitions.items():
             manifest = self._write_partition(
                 bars=bars,
                 mode=mode,
@@ -555,7 +554,6 @@ class CandleStorage:
         Returns:
             List of CandleManifest objects
         """
-        import sqlite3
 
         exchange, market_type, symbol, price_type, timeframe, start_ms, end_ms = _storage_identity(query)
 

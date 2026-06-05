@@ -103,6 +103,15 @@ class DataOrchestrator:
 
         return list(self.load_bars(query).bars)
 
+    def latest_bar_time(self, query: BarQuery) -> int | None:
+        """Return the latest stored bar timestamp without materializing bars when supported."""
+
+        latest = getattr(self._store, "latest_bar_time", None)
+        if callable(latest):
+            return latest(query)
+        coverage = self._store.coverage(query)
+        return coverage.delivered_end_ms
+
     @staticmethod
     def coverage_for_series(query: BarQuery, bars: tuple[Bar, ...], source: str) -> CoverageReport:
         """Build canonical coverage for an already-normalized bar tuple."""

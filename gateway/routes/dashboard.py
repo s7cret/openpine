@@ -9,10 +9,7 @@ from fastapi import APIRouter, Depends
 
 from openpine.gateway.deps import (
     GatewayState,
-    get_event_bus,
-    get_scheduler,
     get_state,
-    get_strategy_registry,
 )
 from openpine.gateway.schemas import (
     DashboardResponse,
@@ -23,11 +20,12 @@ from openpine.jobs import JobStatus
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+STATE_DEP = Depends(get_state)
 
 
 @router.get("", response_model=DashboardResponse)
 async def dashboard(
-    state: GatewayState = Depends(get_state),
+    state: GatewayState = STATE_DEP,
 ) -> DashboardResponse:
     """Aggregated system overview."""
     registry = state.strategy_registry
@@ -109,10 +107,9 @@ async def dashboard(
                         now_ms = int(time.time() * 1000)
                         start_ms = now_ms - 3600000 * 24
                         query = BarQuery(instrument=key, timeframe=tf, start_ms=start_ms, end_ms=now_ms, source='storage', gap_policy='allow_with_metadata')
-                        series = state.orchestrator.load_bars(query)
-                        for bar in series.bars:
-                            if bar.time > latest_ts:
-                                latest_ts = bar.time
+                        bar_time = state.orchestrator.latest_bar_time(query)
+                        if bar_time is not None:
+                            latest_ts = max(latest_ts, bar_time)
                     except Exception:
                         continue
                 if latest_ts > 0:

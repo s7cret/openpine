@@ -89,7 +89,8 @@ def test_state_store_hydrates_metadata_for_new_process(tmp_path) -> None:
     assert loaded_state.state_data["position"] == 1
 
 
-def test_runtime_snapshot_round_trips_pickle_payload(tmp_path) -> None:
+def test_runtime_snapshot_round_trips_pickle_payload(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENPINE_ALLOW_PICKLE_STATE", "1")
     store = StateStore(tmp_path)
     payload = SimpleNamespace(bar_index=42, runtime_state={"x": 1})
 
@@ -112,3 +113,23 @@ def test_runtime_snapshot_round_trips_pickle_payload(tmp_path) -> None:
     )
     assert loaded.bar_index == 42
     assert loaded.runtime_state == {"x": 1}
+
+
+def test_pickle_runtime_snapshot_requires_trusted_opt_in(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENPINE_ALLOW_PICKLE_STATE", "1")
+    store = StateStore(tmp_path)
+    payload = SimpleNamespace(bar_index=42, runtime_state={"x": 1})
+    store.save_runtime_snapshot(
+        strategy_id="strategy-1",
+        artifact_id="artifact-1",
+        params_hash="params-1",
+        instrument_key={"exchange": "binance", "market": "spot", "symbol": "BTCUSDT"},
+        timeframe={"canonical": "1h"},
+        runtime_state=payload,
+        bar_time=1704067200000,
+        data_fingerprint="bars-sha",
+    )
+
+    monkeypatch.delenv("OPENPINE_ALLOW_PICKLE_STATE")
+    with pytest.raises(Exception, match="trusted local snapshots"):
+        StateStore(tmp_path).load_runtime_snapshot("strategy-1", data_fingerprint="bars-sha")

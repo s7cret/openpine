@@ -23,7 +23,7 @@ from openpine.exchange_metadata import (
     default_qty_rounding_mode as metadata_default_qty_rounding_mode,
 )
 from openpine.exchange_metadata import default_qty_step
-from openpine.jobs import Job, JobScheduler, JobStatus, JobType
+from openpine.jobs import JobScheduler
 
 # Global instances — created once at module load
 console = Console()
@@ -695,7 +695,20 @@ def _strategy_backtest_dependencies():
     )
     from openpine.storage import BacktestResultStore, BacktestRunRequest
 
-    return SimpleNamespace(**locals())
+    return SimpleNamespace(
+        ArtifactStore=ArtifactStore,
+        BacktestArtifactError=BacktestArtifactError,
+        BacktestEngineAdapter=BacktestEngineAdapter,
+        BacktestResultStore=BacktestResultStore,
+        BacktestRunConfig=BacktestRunConfig,
+        BacktestRunRequest=BacktestRunRequest,
+        BarQuery=BarQuery,
+        DataOrchestrator=DataOrchestrator,
+        InstrumentKey=InstrumentKey,
+        create_local_marketdata_provider_adapter=create_local_marketdata_provider_adapter,
+        load_strategy_class_from_artifact=load_strategy_class_from_artifact,
+        parse_timeframe=parse_timeframe,
+    )
 
 
 def _indicator_plot_dependencies():
@@ -706,7 +719,19 @@ def _indicator_plot_dependencies():
     from openpine.pine.registry import SQLitePineSourceRegistry
     from openpine.runtime.engine import BacktestArtifactError, load_generated_class_from_artifact
 
-    return SimpleNamespace(**locals())
+    return SimpleNamespace(
+        BacktestArtifactError=BacktestArtifactError,
+        BarQuery=BarQuery,
+        DataOrchestrator=DataOrchestrator,
+        InstrumentKey=InstrumentKey,
+        SQLitePineSourceRegistry=SQLitePineSourceRegistry,
+        create_local_marketdata_provider_adapter=create_local_marketdata_provider_adapter,
+        export_plot_records=export_plot_records,
+        load_generated_class_from_artifact=load_generated_class_from_artifact,
+        parse_time_ms=parse_time_ms,
+        parse_timeframe=parse_timeframe,
+        write_json=write_json,
+    )
 
 
 def _load_indicator_plot_bars(
@@ -1837,9 +1862,9 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
     # Provider connectivity smoke test
     try:
         from openpine.data.orchestrator import DataOrchestrator
-        orch = DataOrchestrator()
+        DataOrchestrator()
         # Smoke test: try to get bars (will return empty if no provider)
-        console.print(f"  [green]✓[/green] DataOrchestrator smoke test passed")
+        console.print("  [green]✓[/green] DataOrchestrator smoke test passed")
     except Exception as e:
         console.print(f"  [red]✗[/red] DataOrchestrator: {e}")
         all_ok = False
@@ -1866,7 +1891,7 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
         feat_pool = FeatureWorkerPool(scheduler)
         agg_status = agg_pool.get_status()
         feat_status = feat_pool.get_status()
-        console.print(f"  [green]✓[/green] Worker pools initialized")
+        console.print("  [green]✓[/green] Worker pools initialized")
         console.print(f"    Aggregation: {agg_status['active_workers']} workers")
         console.print(f"    Feature: {feat_status['active_workers']} workers")
     except Exception as e:
@@ -2090,7 +2115,7 @@ def pine_compile(name: str, force: bool) -> None:
             registry.set_active_artifact(source.id, result["artifact_id"])
             console.print(f"  Active artifact set: {result['artifact_id']}")
         else:
-            console.print(f"[red]Compile failed:[/red]")
+            console.print("[red]Compile failed:[/red]")
             for err in result["errors"]:
                 console.print(f"  [red]- {err}[/red]")
     finally:
@@ -2652,11 +2677,9 @@ def state_list(strategy_id: str | None) -> None:
 def state_invalid() -> None:
     """List invalid state snapshots (section 30.8)."""
     from openpine.config import OpenPineConfig
-    from openpine.state.store import StateStore
 
     config = OpenPineConfig.load()
     state_dir = config.data_dir / "state"
-    store = StateStore(state_dir)
 
     # Collect all snapshots and check status
     all_invalid: list[dict] = []
@@ -2742,7 +2765,7 @@ def state_rebuild(strategy_id: str, from_bar_time: int | None) -> None:
         console.print(f"  last_bar_time: {result.bar_time}")
     except StateInconsistencyError as e:
         console.print(f"[red]Rebuild failed: {e}[/red]")
-        raise SystemExit(1)
+        raise SystemExit(1) from e
 
 
 @cli.group()
@@ -2801,7 +2824,6 @@ def accounts_add(
 ) -> None:
     """Add an exchange account."""
     import hashlib
-    import secrets
 
     from openpine.accounts import AccountManager
     from openpine.accounts.models import AccountType
@@ -2836,12 +2858,12 @@ def accounts_add(
         console.print(f"  market_type: {market_type}")
         console.print(f"  mode:        {mode}")
         console.print(f"  api_key:     {masked_key}")
-        console.print(f"  secret:      **** (stored as reference)")
+        console.print("  secret:      **** (stored as reference)")
         console.print(f"  live_enabled:{live_enabled}")
     except Exception as e:
         console.print(f"[red]Failed to add account: {e}[/red]")
         storage.rollback()
-        raise SystemExit(1)
+        raise SystemExit(1) from e
     finally:
         storage.close()
 
@@ -3006,7 +3028,7 @@ def providers_test(provider: str) -> None:
         if adapter is None:
             console.print("[red]✗ marketdata-provider not installed or not importable[/red]")
             raise SystemExit(1)
-        console.print(f"[green]✓ marketdata-provider is available[/green]")
+        console.print("[green]✓ marketdata-provider is available[/green]")
         console.print(f"  path: {getattr(adapter, '_installation', 'N/A')}")
         return
 
@@ -3031,7 +3053,7 @@ def providers_test(provider: str) -> None:
         console.print(f"[yellow]! requests not available — cannot test {provider}[/yellow]")
     except Exception as e:
         console.print(f"[red]✗ Connection failed: {e}[/red]")
-        raise SystemExit(1)
+        raise SystemExit(1) from e
 
 
 @cli.group(invoke_without_command=True)
@@ -3051,7 +3073,7 @@ def _print_risk_status(show_violations: bool = False) -> None:
     console.print("[bold]Risk configuration[/bold]")
     console.print(f"Kill switch:      {config.kill_switch}")
     console.print(f"Live enabled:     {config.live_enabled}")
-    console.print(f"Global kill switch blocks all orders when active (section 30.7)")
+    console.print("Global kill switch blocks all orders when active (section 30.7)")
 
     if show_violations:
         console.print("[bold]Recent violations:[/bold]")
@@ -3196,9 +3218,9 @@ def plugins_list() -> None:
             plugin_type = info["plugin_type"]
             enabled = info["enabled"]
         else:
-            name = getattr(info, "name")
-            plugin_type = getattr(info, "plugin_type")
-            enabled = getattr(info, "enabled")
+            name = info.name
+            plugin_type = info.plugin_type
+            enabled = info.enabled
         status = "[green]enabled[/green]" if enabled else "[dim]disabled[/dim]"
         console.print(f"  {name}  type={plugin_type}  {status}")
 
@@ -3239,11 +3261,11 @@ def plugins_enable(plugin_name: str, chat_id: str | None) -> None:
             console.print(f"[dim]Chat_id {chat_id} already in allowlist[/dim]")
         config.save()
 
-    console.print(f"\n[bold]Current telegram config:[/bold]")
+    console.print("\n[bold]Current telegram config:[/bold]")
     console.print(f"  enabled:       {cfg.enabled}")
     console.print(f"  token_ref:     {cfg.token_ref}")
     console.print(f"  allowlist:     {cfg.chat_allowlist}")
-    console.print(f"\nNote: Set the token with: export OPENPINE_TELEGRAM_TOKEN=***")
+    console.print("\nNote: Set the token with: export OPENPINE_TELEGRAM_TOKEN=***")
 
 
 @plugins.command("disable")
@@ -3273,7 +3295,7 @@ def plugins_disable(plugin_name: str) -> None:
         config.save()
         console.print("[green]Telegram plugin disabled and saved[/green]")
 
-    console.print(f"\n[bold]Current telegram config:[/bold]")
+    console.print("\n[bold]Current telegram config:[/bold]")
     console.print(f"  enabled:   {cfg.enabled}")
     console.print(f"  allowlist: {cfg.chat_allowlist}")
 
@@ -3303,13 +3325,13 @@ def plugins_test(plugin_name: str, chat_id: str) -> None:
     result = notifier.test(chat_id=chat_id)
 
     if result.ok:
-        console.print(f"[green]✓ Telegram plugin smoke test PASSED[/green]")
+        console.print("[green]✓ Telegram plugin smoke test PASSED[/green]")
         console.print(f"  chat_id:      {chat_id}")
-        console.print(f"  dry_run:     True (no network call)")
+        console.print("  dry_run:     True (no network call)")
         console.print(f"  token_ref:   {config.plugins.telegram.token_ref}")
         console.print(f"  allowlist:   {config.plugins.telegram.chat_allowlist}")
     else:
-        console.print(f"[red]✗ Telegram plugin smoke test FAILED[/red]")
+        console.print("[red]✗ Telegram plugin smoke test FAILED[/red]")
         console.print(f"  reason: {result.error_message}")
         sys.exit(1)
 
@@ -4141,7 +4163,8 @@ def strategy_metrics(strategy_id: str, run_id: str | None, as_json: bool) -> Non
                 console.print(f"[bold]Trades:[/bold] {len(trades)} total")
                 for t in trades[:10]:
                     dir_emoji = "🟢" if t.net_pnl and t.net_pnl > 0 else "🔴"
-                    console.print(f"  {dir_emoji} {t.direction} {t.entry_price} -> {t.exit_price or "..."} | P&L: {t.net_pnl}")
+                    exit_price = t.exit_price or "..."
+                    console.print(f"  {dir_emoji} {t.direction} {t.entry_price} -> {exit_price} | P&L: {t.net_pnl}")
                 if len(trades) > 10:
                     console.print(f"  ... and {len(trades) - 10} more")
         finally:
@@ -4302,7 +4325,7 @@ def strategy_equity(strategy_id: str, run_id: str | None, tail: int) -> None:
     registry = SQLiteStrategyRegistry()
     try:
         try:
-            s = registry.get_strategy(strategy_id)
+            registry.get_strategy(strategy_id)
         except KeyError:
             console.print(f"[red]Strategy not found: {strategy_id}[/red]")
             sys.exit(1)
@@ -4352,7 +4375,7 @@ def strategy_plots(strategy_id: str, run_id: str | None, latest: bool) -> None:
     registry = SQLiteStrategyRegistry()
     try:
         try:
-            s = registry.get_strategy(strategy_id)
+            registry.get_strategy(strategy_id)
         except KeyError:
             console.print(f"[red]Strategy not found: {strategy_id}[/red]")
             sys.exit(1)
@@ -4372,7 +4395,7 @@ def strategy_plots(strategy_id: str, run_id: str | None, latest: bool) -> None:
             plot_artifact = next((a for a in artifacts if a.artifact_type == ARTIFACT_TYPE_PLOT_OUTPUTS), None)
             if not plot_artifact:
                 console.print(f"[yellow]No plot outputs artifact for run {run.run_id}[/yellow]")
-                console.print(f"[dim]Tip: run with --capture-plots to save plot outputs[/dim]")
+                console.print("[dim]Tip: run with --capture-plots to save plot outputs[/dim]")
                 sys.exit(1)
 
             console.print(f"[bold]Plot Outputs: {run.run_id}[/bold]")
@@ -5245,8 +5268,8 @@ def strategy_paper(strategy_id: str, action: str) -> None:
         if action == "start":
             if s.status == "error":
                 console.print(
-                    f"[red]Cannot start paper: strategy is in error state. "
-                    f"Clear error first.[/red]"
+                    "[red]Cannot start paper: strategy is in error state. "
+                    "Clear error first.[/red]"
                 )
                 sys.exit(1)
             registry.update_status(strategy_id, "running")
@@ -5279,7 +5302,7 @@ def strategy_live(strategy_id: str, action: str) -> None:
         if action == "enable":
             if s.status == "error":
                 console.print(
-                    f"[red]Cannot enable live: strategy is in error state.[/red]"
+                    "[red]Cannot enable live: strategy is in error state.[/red]"
                 )
                 sys.exit(1)
             registry.update_status(strategy_id, "disabled")
@@ -5288,13 +5311,13 @@ def strategy_live(strategy_id: str, action: str) -> None:
             # live start requires global live_enabled
             if not config.live_enabled:
                 console.print(
-                    f"[red]Live trading is disabled globally. "
-                    f"Enable in config before starting live.[/red]"
+                    "[red]Live trading is disabled globally. "
+                    "Enable in config before starting live.[/red]"
                 )
                 sys.exit(1)
             if s.status == "error":
                 console.print(
-                    f"[red]Cannot start live: strategy is in error state.[/red]"
+                    "[red]Cannot start live: strategy is in error state.[/red]"
                 )
                 sys.exit(1)
             registry.update_status(strategy_id, "running")
@@ -5392,8 +5415,6 @@ def daemon_run(telegram: bool) -> None:
 
         console.print(f"[green]Daemon running with {len(services)} service(s). Press Ctrl+C to stop.[/green]")
 
-        # Wait for shutdown signal
-        shutdown_event = asyncio.Event()
         loop = asyncio.get_event_loop()
 
         def handle_signal(sig: signal.Signals) -> None:
