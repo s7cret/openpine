@@ -28,11 +28,19 @@ const emit = defineEmits<{
   (e: 'dataRange', range: { fromMs: number; toMs: number }): void
 }>()
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+function localDateInputValue(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
 // Default: 1 month ago to now
 const now = new Date()
 const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-const dateFrom = ref(monthAgo.toISOString().slice(0, 10))
-const dateTo = ref(now.toISOString().slice(0, 10))
+const dateFrom = ref(localDateInputValue(monthAgo))
+const dateTo = ref(localDateInputValue(now))
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const visibleRange = ref('')

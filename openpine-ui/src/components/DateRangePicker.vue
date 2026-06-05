@@ -45,20 +45,30 @@ const presets = [
   { label: 'All', days: 3650, all: true },
 ]
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
 function fmt(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
+function parseDateOnly(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  if (!year || !month || !day) return new Date()
+  return new Date(year, month - 1, day)
 }
 
 function fmtDisplay(d: string): string {
   if (!d) return ''
-  const dt = new Date(d + 'T00:00:00Z')
-  return `${dt.getUTCDate()} ${monthShort[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`
+  const dt = parseDateOnly(d)
+  return `${dt.getDate()} ${monthShort[dt.getMonth()]} ${dt.getFullYear()}`
 }
 
 function applyPreset(p: { label: string; days: number; all?: boolean }) {
   activePreset.value = p.label
   const now = new Date()
-  const from = p.all && props.allFrom ? new Date(props.allFrom + 'T00:00:00Z') : new Date(now.getTime() - p.days * 86400000)
+  const from = p.all && props.allFrom ? parseDateOnly(props.allFrom) : new Date(now.getTime() - p.days * 86400000)
   localFrom.value = fmt(from)
   localTo.value = fmt(now)
   emit('update:from', localFrom.value)
