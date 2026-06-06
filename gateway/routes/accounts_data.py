@@ -353,6 +353,15 @@ async def _run_data_backfill_job(job_id: str, payload: dict[str, object], state:
 def _run_data_backfill_sync(payload: dict[str, object], state: GatewayState, progress_callback):
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
+    covered, skipped_existing = _stored_ranges_cover_request(payload, state)
+    if covered:
+        return {
+            "bars_loaded": 0,
+            "skipped_existing": skipped_existing,
+            "coverage_complete": True,
+            "fast_skipped": True,
+        }
+
     query = BarQuery(
         instrument=InstrumentKey(
             exchange=str(payload["exchange"]).lower(),
@@ -373,6 +382,48 @@ def _run_data_backfill_sync(payload: dict[str, object], state: GatewayState, pro
         "skipped_existing": skipped_existing,
         "coverage_complete": bool(getattr(series.coverage, "is_complete", False)),
     }
+
+
+def _stored_ranges_cover_request(payload: dict[str, object], state: GatewayState) -> tuple[bool, int]:
+    exchange = str(payload["exchange"]).lower()
+    market_type = str(payload["market_type"]).lower()
+    symbol = str(payload["symbol"]).upper()
+    timeframe = str(payload["timeframe"])
+    start_ms = int(payload["from_time"])
+    end_ms = int(payload["to_time"])
+
+    groups: dict[tuple[str, str, str, str, str], dict[str, object]] = {}
+    _merge_persistent_cache_groups(groups)
+    _merge_marketdata_segment_groups(state, groups)
+    _merge_candle_manifest_groups(state, groups)
+    entry = groups.get((exchange, market_type, symbol, "trade", timeframe))
+    if not entry:
+        return False, 0
+
+    ranges = _coalesce_ranges(list(entry.get("ranges") or []), timeframe)
+    covered = _ranges_cover_request(ranges, timeframe, start_ms, end_ms)
+    skipped_existing = _estimate_bars_for_window(start_ms, end_ms, timeframe) if covered else 0
+    return covered, skipped_existing
+
+
+def _ranges_cover_request(ranges: list[dict[str, object]], timeframe: str, start_ms: int, end_ms: int) -> bool:
+    if start_ms >= end_ms:
+        return False
+    duration_ms = _timeframe_duration_ms(timeframe)
+    cursor = start_ms
+    for item in sorted(ranges, key=lambda range_item: int(range_item.get("from_ms") or 0)):
+        first = item.get("from_ms")
+        last = item.get("to_ms")
+        if first is None or last is None:
+            continue
+        first_ms = int(first)
+        last_ms = int(last)
+        if first_ms > cursor:
+            return False
+        if last_ms + duration_ms >= end_ms:
+            return True
+        cursor = max(cursor, last_ms + duration_ms)
+    return False
 
 
 def _store_backfill_series(state: GatewayState, series) -> tuple[int, int]:
@@ -622,12 +673,7 @@ def _compact_ranges(ranges: list[dict[str, object]], limit: int = 6) -> list[dic
 
 
 def _coalesce_ranges(ranges: list[dict[str, object]], timeframe: str) -> list[dict[str, object]]:
-    try:
-        from marketdata_provider.contracts import parse_timeframe
-
-        duration_ms = parse_timeframe(timeframe).duration_ms or 60_000
-    except Exception:
-        duration_ms = 60_000
+    duration_ms = _timeframe_duration_ms(timeframe)
 
     intervals: list[dict[str, object]] = []
     for item in ranges:
@@ -668,12 +714,7 @@ def _coalesce_ranges(ranges: list[dict[str, object]], timeframe: str) -> list[di
 
 
 def _estimate_unique_bars(ranges: list[dict[str, object]], timeframe: str) -> int:
-    try:
-        from marketdata_provider.contracts import parse_timeframe
-
-        duration_ms = parse_timeframe(timeframe).duration_ms or 60_000
-    except Exception:
-        duration_ms = 60_000
+    duration_ms = _timeframe_duration_ms(timeframe)
 
     intervals: list[tuple[int, int]] = []
     fallback_rows = 0
@@ -706,6 +747,21 @@ def _estimate_unique_bars(ranges: list[dict[str, object]], timeframe: str) -> in
     for start, end in merged:
         unique += ((end - start) // duration_ms) + 1
     return unique + fallback_rows
+
+
+def _estimate_bars_for_window(start_ms: int, end_ms: int, timeframe: str) -> int:
+    if end_ms <= start_ms:
+        return 0
+    return ((end_ms - 1 - start_ms) // _timeframe_duration_ms(timeframe)) + 1
+
+
+def _timeframe_duration_ms(timeframe: str) -> int:
+    try:
+        from marketdata_provider.contracts import parse_timeframe
+
+        return int(parse_timeframe(timeframe).duration_ms or 60_000)
+    except Exception:
+        return 60_000
 
 
 def _freshness_status(latest_ms: object, timeframe: str) -> str:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from openpine.gateway.routes import accounts_data as data_routes
 from openpine.gateway.routes.accounts_data import _orders_summary, _series_role, _store_backfill_series
 from openpine.storage import MigrationRunner, SQLiteStorage
 
@@ -134,3 +135,37 @@ def test_backfill_stores_series_in_one_bulk_write() -> None:
     assert [bar.time for bar in calls[0].bars] == [0, 120_000]
     assert loaded == 2
     assert skipped == 1
+
+
+def test_backfill_fast_skips_when_inventory_covers_request(monkeypatch) -> None:
+    payload = {
+        "exchange": "binance",
+        "market_type": "spot",
+        "symbol": "PEPEUSDT",
+        "timeframe": "1m",
+        "from_time": 0,
+        "to_time": 180_000,
+    }
+
+    def merge_cache(groups):
+        entry = data_routes._series_entry(groups, ("binance", "spot", "PEPEUSDT", "trade", "1m"))
+        entry["ranges"] = [{"from_ms": 0, "to_ms": 120_000, "rows": 3, "source": "persistent_cache"}]
+
+    monkeypatch.setattr(data_routes, "_merge_persistent_cache_groups", merge_cache)
+    monkeypatch.setattr(data_routes, "_merge_marketdata_segment_groups", lambda state, groups: None)
+    monkeypatch.setattr(data_routes, "_merge_candle_manifest_groups", lambda state, groups: None)
+
+    class FakeOrchestrator:
+        def load_bars(self, query, progress_callback=None):
+            raise AssertionError("covered backfill should not fetch provider bars")
+
+    result = data_routes._run_data_backfill_sync(
+        payload,
+        SimpleNamespace(orchestrator=FakeOrchestrator()),
+        lambda *args: None,
+    )
+
+    assert result["fast_skipped"] is True
+    assert result["bars_loaded"] == 0
+    assert result["skipped_existing"] == 3
+    assert result["coverage_complete"] is True

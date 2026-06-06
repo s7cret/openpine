@@ -131,6 +131,7 @@ function dateOnlyToIso(value: string, edge: 'start' | 'end') {
   const d = new Date(year, month - 1, day)
   if (edge === 'end') d.setHours(23, 59, 59, 999)
   else d.setHours(0, 0, 0, 0)
+  if (edge === 'end' && d.getTime() > Date.now()) return new Date().toISOString()
   return d.toISOString()
 }
 
