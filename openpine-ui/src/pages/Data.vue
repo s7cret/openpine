@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { backfillDataSeries, deleteDataOrders, deleteDataSeries, getDataSummary, refreshDataSeries } from '@/api/client'
+import DateRangePicker from '@/components/DateRangePicker.vue'
 
 const summary = ref<any>(null)
 const loading = ref(false)
@@ -49,8 +50,8 @@ async function refreshSeries(id: string) {
 
 function openBackfill(row: any) {
   backfillRow.value = row
-  backfillFrom.value = toDatetimeInput(row.earliest_ms ?? Date.now() - 30 * 24 * 3600 * 1000)
-  backfillTo.value = toDatetimeInput(Date.now())
+  backfillFrom.value = toDateInput(row.earliest_ms ?? Date.now() - 30 * 24 * 3600 * 1000)
+  backfillTo.value = toDateInput(Date.now())
   backfillDialog.value = true
 }
 
@@ -62,8 +63,8 @@ async function runBackfill() {
     const { data } = await backfillDataSeries({
       symbol: row.symbol,
       timeframe: row.timeframe,
-      from_time: new Date(backfillFrom.value).toISOString(),
-      to_time: new Date(backfillTo.value).toISOString(),
+      from_time: dateOnlyToIso(backfillFrom.value, 'start'),
+      to_time: dateOnlyToIso(backfillTo.value, 'end'),
       exchange: row.exchange,
       market_type: row.market_type,
     })
@@ -119,10 +120,18 @@ function fmtDate(ms?: number | null) {
   return new Date(ms).toLocaleString()
 }
 
-function toDatetimeInput(ms?: number | null) {
+function toDateInput(ms?: number | null) {
   const d = new Date(Number(ms ?? Date.now()))
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function dateOnlyToIso(value: string, edge: 'start' | 'end') {
+  const [year, month, day] = value.split('-').map(Number)
+  const d = new Date(year, month - 1, day)
+  if (edge === 'end') d.setHours(23, 59, 59, 999)
+  else d.setHours(0, 0, 0, 0)
+  return d.toISOString()
 }
 
 function fmtRange(range: any) {
@@ -376,15 +385,15 @@ function statusClass(status: string) {
           </div>
           <button class="rounded px-2 py-1 text-sm text-gray-400 hover:bg-dark-600" @click="backfillDialog = false">×</button>
         </div>
-        <div class="mt-4 grid gap-3">
-          <label class="grid gap-1 text-xs text-gray-500">
-            From
-            <input v-model="backfillFrom" type="datetime-local" class="w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none" />
-          </label>
-          <label class="grid gap-1 text-xs text-gray-500">
-            To
-            <input v-model="backfillTo" type="datetime-local" class="w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none" />
-          </label>
+        <div class="mt-4 grid gap-2">
+          <div class="text-xs text-gray-500">Period</div>
+          <DateRangePicker
+            :from="backfillFrom"
+            :to="backfillTo"
+            :all-from="toDateInput(backfillRow?.earliest_ms)"
+            @update:from="backfillFrom = $event"
+            @update:to="backfillTo = $event"
+          />
         </div>
         <div class="mt-4 flex gap-2">
           <button class="flex-1 rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-300 hover:bg-dark-500" @click="backfillDialog = false">Cancel</button>
