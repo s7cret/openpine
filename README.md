@@ -4,6 +4,10 @@ OpenPine is the product gateway and web UI for the Pine research stack. It ties 
 
 The package is intentionally an orchestration boundary. The parser, generator, runtime, backtest engine, market data provider, and optimizer remain independently publishable libraries with their own public contracts.
 
+OpenPine interaction map:
+
+![OpenPine full interaction block diagram](docs/architecture/openpine-full-interaction-block-diagram.jpg)
+
 ## What Is Included
 
 - FastAPI gateway under `openpine.gateway` with routes for dashboard, Pine sources, strategies, data, backtests, orders, positions, events, and optimizer operations.
