@@ -198,12 +198,12 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
     <!-- Trigger button -->
     <button
       @click.stop="toggle"
-      class="flex items-center gap-2 px-3 py-1.5 bg-dark-700 border border-dark-500 rounded-lg text-sm text-gray-200 hover:border-accent transition-colors focus:outline-none"
+      class="flex max-w-full items-center gap-2 px-3 py-1.5 bg-dark-700 border border-dark-500 rounded-lg text-sm text-gray-200 hover:border-accent transition-colors focus:outline-none"
     >
       <span class="text-accent">📅</span>
-      <span>{{ fmtDisplay(localFrom) }}</span>
+      <span class="truncate">{{ fmtDisplay(localFrom) }}</span>
       <span class="text-gray-500">→</span>
-      <span>{{ fmtDisplay(localTo) }}</span>
+      <span class="truncate">{{ fmtDisplay(localTo) }}</span>
       <svg class="w-3.5 h-3.5 text-gray-500 ml-1 transition-transform" :class="{ 'rotate-180': isOpen }" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
       </svg>
@@ -214,16 +214,16 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
       <div
         v-if="isOpen"
         @click.stop
-        class="absolute top-full left-0 mt-2 bg-dark-800 border border-dark-500 rounded-xl shadow-2xl z-50 p-4 min-w-[640px]"
+        class="fixed left-4 right-4 top-36 z-50 max-h-[calc(100vh-10rem)] overflow-y-auto rounded-xl border border-dark-500 bg-dark-800 p-3 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:max-h-none sm:w-auto sm:min-w-[640px] sm:overflow-visible sm:p-4"
       >
         <!-- Presets row -->
-        <div class="flex gap-1.5 mb-4">
+        <div class="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:mb-4 sm:overflow-visible sm:px-0 sm:pb-0">
           <button
 	            v-for="p in presets"
 	            :key="p.label"
 	            @click="applyPreset(p)"
             :class="[
-              'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+              'shrink-0 px-2.5 py-1.5 sm:px-3 rounded-lg text-xs font-medium transition-all',
               activePreset === p.label
                 ? 'bg-accent text-white shadow-lg shadow-accent/20'
                 : 'bg-dark-700 text-gray-400 hover:bg-dark-600 hover:text-gray-200'
@@ -234,7 +234,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
         </div>
 
         <!-- Dual calendar -->
-        <div class="flex gap-6">
+        <div class="flex gap-0 sm:gap-6">
           <!-- Left calendar -->
           <div class="flex-1">
             <div class="flex items-center justify-between mb-3">
@@ -254,7 +254,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
                 @click="onDayClick(day.date)"
                 :disabled="!day.isCurrent"
                 :class="[
-                  'w-8 h-8 rounded-lg text-xs flex items-center justify-center transition-all relative',
+                  'mx-auto h-8 w-8 rounded-lg text-xs flex items-center justify-center transition-all relative',
                   !day.isCurrent ? 'text-gray-600 cursor-default' : 'text-gray-300 hover:bg-accent/20 cursor-pointer',
                   day.isStart ? 'bg-accent text-white rounded-r-none' : '',
                   day.isEnd ? 'bg-accent text-white rounded-l-none' : '',
@@ -268,10 +268,10 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
           </div>
 
           <!-- Divider -->
-          <div class="w-px bg-dark-600 self-stretch" />
+          <div class="hidden w-px bg-dark-600 self-stretch sm:block" />
 
           <!-- Right calendar -->
-          <div class="flex-1">
+          <div class="hidden flex-1 sm:block">
             <div class="flex items-center justify-between mb-3">
               <button @click="navigateMonth('right', -1)" class="p-1 rounded hover:bg-dark-600 text-gray-400 hover:text-gray-200 transition-colors">
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
@@ -304,14 +304,14 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
         </div>
 
         <!-- Selected range display -->
-        <div class="mt-4 pt-3 border-t border-dark-600 flex items-center justify-between">
-          <div class="flex items-center gap-2 text-sm">
+        <div class="mt-3 flex flex-col gap-3 border-t border-dark-600 pt-3 sm:mt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
             <span class="text-gray-500">Selected:</span>
             <span class="text-accent font-medium">{{ fmtDisplay(localFrom) }}</span>
             <span class="text-gray-500">→</span>
             <span class="text-accent font-medium">{{ fmtDisplay(localTo) }}</span>
           </div>
-          <button @click="isOpen = false" class="px-3 py-1.5 bg-accent hover:bg-accent-dark text-white text-xs rounded-lg transition-colors">
+          <button @click="isOpen = false" class="w-full px-3 py-1.5 bg-accent hover:bg-accent-dark text-white text-xs rounded-lg transition-colors sm:w-auto">
             Done
           </button>
         </div>
