@@ -73,11 +73,11 @@ async function copyContent() {
 <template>
   <div class="space-y-4">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <h1 class="text-lg font-semibold text-gray-200">📄 Pine Files</h1>
+    <div class="flex items-center justify-between gap-3">
+      <h1 class="min-w-0 truncate text-lg font-semibold text-gray-200">📄 Pine Files</h1>
       <button
         @click="showAdd = !showAdd"
-        class="px-3 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg transition-colors"
+        class="shrink-0 px-3 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg transition-colors"
       >
         + Add File
       </button>
@@ -112,7 +112,7 @@ async function copyContent() {
       <input
         v-model="filterName"
         placeholder="Search by name..."
-        class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent w-64"
+        class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent sm:w-64"
       />
       <span v-if="filteredFiles.length !== store.items.length" class="text-xs text-gray-500 ml-auto">
         {{ filteredFiles.length }} / {{ store.items.length }}
@@ -120,16 +120,16 @@ async function copyContent() {
     </div>
 
     <!-- Table -->
-    <div class="bg-dark-800 rounded-xl border border-dark-500 overflow-hidden">
-      <table class="w-full text-sm">
+    <div class="max-w-full overflow-hidden rounded-xl border border-dark-500 bg-dark-800">
+      <table class="w-full table-fixed text-sm">
         <thead>
           <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
-            <th class="px-4 py-2.5 text-left">Name</th>
-            <th class="px-4 py-2.5 text-left">Type</th>
-            <th class="px-4 py-2.5 text-left">Version</th>
-            <th class="px-4 py-2.5 text-left">Created</th>
-            <th class="px-4 py-2.5 w-10"></th>
-            <th class="px-2 py-2.5 w-10"></th>
+            <th class="px-3 py-2.5 text-left sm:px-4">Name</th>
+            <th class="hidden px-4 py-2.5 text-left sm:table-cell sm:w-24">Type</th>
+            <th class="hidden px-4 py-2.5 text-left sm:table-cell sm:w-20">Version</th>
+            <th class="hidden px-4 py-2.5 text-left md:table-cell md:w-28">Created</th>
+            <th class="w-9 px-2 py-2.5 sm:w-10 sm:px-4"></th>
+            <th class="w-9 px-2 py-2.5 sm:w-10"></th>
           </tr>
         </thead>
         <tbody>
@@ -143,19 +143,19 @@ async function copyContent() {
               class="border-b border-dark-600/50 hover:bg-dark-700/50 cursor-pointer transition-colors"
               @click="toggleExpand(file)"
             >
-              <td class="px-4 py-2.5 font-medium text-gray-200">
-                <div class="flex items-center gap-2">
-                  {{ file.name ?? '—' }}
-                  <span v-if="store.compiling.has(getId(file))" class="inline-flex items-center gap-1 text-xs text-accent">
+              <td class="min-w-0 px-3 py-2.5 font-medium text-gray-200 sm:px-4">
+                <div class="flex min-w-0 items-center gap-2">
+                  <span class="min-w-0 break-words leading-snug">{{ file.name ?? '—' }}</span>
+                  <span v-if="store.compiling.has(getId(file))" class="inline-flex shrink-0 items-center gap-1 text-xs text-accent">
                     <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                     compiling...
                   </span>
                 </div>
               </td>
-              <td class="px-4 py-2.5 text-gray-400 text-xs">{{ file.source_type ?? '—' }}</td>
-              <td class="px-4 py-2.5 text-gray-400 text-xs">v{{ file.version ?? '—' }}</td>
-              <td class="px-4 py-2.5 text-gray-400 text-xs">{{ file.created_at ? new Date(file.created_at).toLocaleDateString() : '—' }}</td>
-              <td class="px-4 py-2.5 text-center">
+              <td class="hidden px-4 py-2.5 text-gray-400 text-xs sm:table-cell">{{ file.source_type ?? '—' }}</td>
+              <td class="hidden px-4 py-2.5 text-gray-400 text-xs sm:table-cell">v{{ file.version ?? '—' }}</td>
+              <td class="hidden px-4 py-2.5 text-gray-400 text-xs md:table-cell">{{ file.created_at ? new Date(file.created_at).toLocaleDateString() : '—' }}</td>
+              <td class="px-2 py-2.5 text-center sm:px-4">
                 <span class="text-gray-500 transition-transform inline-block" :class="expandedId === getId(file) ? 'rotate-90' : ''">▶</span>
               </td>
               <td class="px-2 py-2.5 text-center">
@@ -170,17 +170,19 @@ async function copyContent() {
             </tr>
             <!-- Expanded content -->
             <tr v-if="expandedId === getId(file)">
-              <td colspan="6" class="px-4 py-3 bg-dark-900/50">
-                <div class="flex items-center justify-between mb-2">
+              <td colspan="6" class="min-w-0 px-3 py-3 bg-dark-900/50 sm:px-4">
+                <div class="mb-2 flex min-w-0 items-center justify-between gap-2">
                   <span class="text-xs text-gray-500">Pine Script Source</span>
                   <button
                     @click.stop="copyContent()"
-                    class="px-2 py-1 text-xs rounded bg-dark-600 hover:bg-dark-500 text-gray-300 transition-colors"
+                    class="shrink-0 px-2 py-1 text-xs rounded bg-dark-600 hover:bg-dark-500 text-gray-300 transition-colors"
                   >
                     {{ copied ? '✓ Copied' : '📋 Copy' }}
                   </button>
                 </div>
-                <pre class="bg-dark-900 rounded-lg p-3 text-xs text-gray-300 font-mono overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap">{{ store.currentContent || 'Loading...' }}</pre>
+                <div class="max-w-full min-w-0 overflow-hidden">
+                  <pre class="block max-h-64 max-w-full overflow-auto rounded-lg bg-dark-900 p-3 text-xs text-gray-300 font-mono whitespace-pre">{{ store.currentContent || 'Loading...' }}</pre>
+                </div>
               </td>
             </tr>
           </template>
