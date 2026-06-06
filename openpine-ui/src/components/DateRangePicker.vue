@@ -214,16 +214,16 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
       <div
         v-if="isOpen"
         @click.stop
-        class="fixed left-4 right-4 top-36 z-50 max-h-[calc(100vh-10rem)] overflow-y-auto rounded-xl border border-dark-500 bg-dark-800 p-3 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:max-h-none sm:w-auto sm:min-w-[640px] sm:overflow-visible sm:p-4"
+        class="fixed left-4 right-4 top-32 z-50 max-h-[calc(100vh-9rem)] overflow-y-auto rounded-xl border border-dark-500 bg-dark-800 p-2.5 shadow-2xl sm:absolute sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:max-h-none sm:w-auto sm:min-w-[640px] sm:overflow-visible sm:p-4"
       >
         <!-- Presets row -->
-        <div class="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:mb-4 sm:overflow-visible sm:px-0 sm:pb-0">
+        <div class="-mx-1 mb-2 flex gap-1 overflow-x-auto px-1 pb-1 sm:mx-0 sm:mb-4 sm:gap-1.5 sm:overflow-visible sm:px-0 sm:pb-0">
           <button
 	            v-for="p in presets"
 	            :key="p.label"
 	            @click="applyPreset(p)"
             :class="[
-              'shrink-0 px-2.5 py-1.5 sm:px-3 rounded-lg text-xs font-medium transition-all',
+              'shrink-0 rounded-md px-2 py-1 text-[11px] font-medium transition-all sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs',
               activePreset === p.label
                 ? 'bg-accent text-white shadow-lg shadow-accent/20'
                 : 'bg-dark-700 text-gray-400 hover:bg-dark-600 hover:text-gray-200'
@@ -237,24 +237,24 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
         <div class="flex gap-0 sm:gap-6">
           <!-- Left calendar -->
           <div class="flex-1">
-            <div class="flex items-center justify-between mb-3">
-              <button @click="navigateMonth('left', -1)" class="p-1 rounded hover:bg-dark-600 text-gray-400 hover:text-gray-200 transition-colors">
-                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
+            <div class="mb-2 flex items-center justify-between sm:mb-3">
+              <button @click="navigateMonth('left', -1)" class="rounded p-0.5 text-gray-400 transition-colors hover:bg-dark-600 hover:text-gray-200 sm:p-1">
+                <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
               </button>
-              <span class="text-sm font-medium text-gray-200">{{ leftMonthLabel }}</span>
-              <button @click="navigateMonth('left', 1)" class="p-1 rounded hover:bg-dark-600 text-gray-400 hover:text-gray-200 transition-colors">
-                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
+              <span class="text-xs font-medium text-gray-200 sm:text-sm">{{ leftMonthLabel }}</span>
+              <button @click="navigateMonth('left', 1)" class="rounded p-0.5 text-gray-400 transition-colors hover:bg-dark-600 hover:text-gray-200 sm:p-1">
+                <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
               </button>
             </div>
             <div class="grid grid-cols-7 gap-0.5">
-              <div v-for="d in dayNames" :key="d" class="text-center text-[10px] text-gray-500 py-1 font-medium">{{ d }}</div>
+              <div v-for="d in dayNames" :key="d" class="py-0.5 text-center text-[9px] font-medium text-gray-500 sm:py-1 sm:text-[10px]">{{ d }}</div>
               <button
                 v-for="(day, i) in leftDays"
                 :key="'l'+i"
                 @click="onDayClick(day.date)"
                 :disabled="!day.isCurrent"
                 :class="[
-                  'mx-auto h-8 w-8 rounded-lg text-xs flex items-center justify-center transition-all relative',
+                  'relative mx-auto flex h-7 w-7 items-center justify-center rounded-md text-[11px] transition-all sm:h-8 sm:w-8 sm:rounded-lg sm:text-xs',
                   !day.isCurrent ? 'text-gray-600 cursor-default' : 'text-gray-300 hover:bg-accent/20 cursor-pointer',
                   day.isStart ? 'bg-accent text-white rounded-r-none' : '',
                   day.isEnd ? 'bg-accent text-white rounded-l-none' : '',
@@ -304,14 +304,14 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
         </div>
 
         <!-- Selected range display -->
-        <div class="mt-3 flex flex-col gap-3 border-t border-dark-600 pt-3 sm:mt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+        <div class="mt-2 flex flex-col gap-2 border-t border-dark-600 pt-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pt-3">
+          <div class="flex min-w-0 flex-wrap items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
             <span class="text-gray-500">Selected:</span>
             <span class="text-accent font-medium">{{ fmtDisplay(localFrom) }}</span>
             <span class="text-gray-500">→</span>
             <span class="text-accent font-medium">{{ fmtDisplay(localTo) }}</span>
           </div>
-          <button @click="isOpen = false" class="w-full px-3 py-1.5 bg-accent hover:bg-accent-dark text-white text-xs rounded-lg transition-colors sm:w-auto">
+          <button @click="isOpen = false" class="w-full rounded-md bg-accent px-3 py-1.5 text-xs text-white transition-colors hover:bg-accent-dark sm:w-auto sm:rounded-lg">
             Done
           </button>
         </div>
