@@ -304,7 +304,7 @@ async def _run_data_backfill_job(job_id: str, payload: dict[str, object], state:
         total_bars = int(args[2] or 0) if len(args) > 2 else 0
         total_pages = int(args[3] or 0) if len(args) > 3 else 0
         phase = str(args[5] or "fetch") if len(args) > 5 else "fetch"
-        pct = min(0.98, bars_done / total_bars) if total_bars > 0 else 0.2
+        pct = 0.99 if phase == "write" else min(0.98, bars_done / total_bars) if total_bars > 0 else 0.2
         detail = {
             **payload,
             "bars_processed": bars_done,
@@ -318,7 +318,11 @@ async def _run_data_backfill_job(job_id: str, payload: dict[str, object], state:
             "data_backfill",
             "running",
             pct,
-            f"Loading candles: {bars_done:,}/{total_bars:,} bars" if total_bars else "Loading candles...",
+            f"Writing candles: {bars_done:,} bars"
+            if phase == "write"
+            else f"Loading candles: {bars_done:,}/{total_bars:,} bars"
+            if total_bars
+            else "Loading candles...",
             detail=detail,
         )
 
@@ -362,6 +366,7 @@ def _run_data_backfill_sync(payload: dict[str, object], state: GatewayState, pro
         gap_policy="allow_with_metadata",
     )
     series = state.orchestrator.load_bars(query, progress_callback=progress_callback)
+    progress_callback(len(series.bars), 0, len(series.bars), 0, None, "write")
     bars_loaded, skipped_existing = _store_backfill_series(state, series)
     return {
         "bars_loaded": bars_loaded,
@@ -371,32 +376,30 @@ def _run_data_backfill_sync(payload: dict[str, object], state: GatewayState, pro
 
 
 def _store_backfill_series(state: GatewayState, series) -> tuple[int, int]:
-    from marketdata_provider.contracts import BarQuery, BarSeries
-    from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
+    from dataclasses import replace
 
-    bars_loaded = 0
-    skipped_existing = 0
-    for bar in series.bars:
-        query = BarQuery(
-            instrument=bar.instrument,
-            timeframe=bar.timeframe,
-            start_ms=bar.time,
-            end_ms=bar.time_close,
-            source="storage",
-            gap_policy="allow_with_metadata",
-        )
-        single = BarSeries(
-            query=query,
-            bars=(bar,),
-            coverage=DataOrchestrator.coverage_for_series(query, (bar,), "provider"),
-        )
-        try:
-            state.orchestrator.store_bars(single)
-            bars_loaded += 1
-        except StorageUnavailableError as exc:
-            if "conflicting closed candle" not in str(exc):
-                raise
-            skipped_existing += 1
+    from marketdata_provider.contracts import BarSeries
+    from openpine.data.orchestrator import DataOrchestrator
+
+    if not series.bars:
+        return 0, 0
+
+    storage_query = replace(series.query, source="storage", gap_policy="allow_with_metadata")
+    existing = state.orchestrator.load_bars(storage_query)
+    existing_times = {bar.time for bar in existing.bars}
+    new_bars = tuple(bar for bar in series.bars if bar.time not in existing_times)
+    skipped_existing = len(series.bars) - len(new_bars)
+    if not new_bars:
+        return 0, skipped_existing
+
+    write_series = BarSeries(
+        query=series.query,
+        bars=new_bars,
+        coverage=DataOrchestrator.coverage_for_series(series.query, new_bars, "provider"),
+    )
+    result = state.orchestrator.store_bars(write_series)
+    bars_loaded = int(getattr(result, "rows_written", 0) or 0)
+    skipped_existing += max(0, len(new_bars) - bars_loaded)
     return bars_loaded, skipped_existing
 
 

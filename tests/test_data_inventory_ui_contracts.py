@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from openpine.gateway.routes.accounts_data import _orders_summary, _series_role
+from openpine.gateway.routes.accounts_data import _orders_summary, _series_role, _store_backfill_series
 from openpine.storage import MigrationRunner, SQLiteStorage
 
 
@@ -59,3 +59,78 @@ def test_orders_summary_groups_by_strategy_name(tmp_path) -> None:
     assert summary["by_strategy"][0]["strategy_id"] == "strat-1"
     assert summary["by_strategy"][0]["strategy_name"] == "EMA Live"
     assert summary["by_strategy"][0]["status"] == "filled"
+
+
+def test_backfill_stores_series_in_one_bulk_write() -> None:
+    from marketdata_provider.contracts import (
+        Bar,
+        BarQuery,
+        BarSeries,
+        CoverageReport,
+        InstrumentKey,
+        StoreResult,
+        parse_timeframe,
+    )
+
+    instrument = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
+    timeframe = parse_timeframe("1m")
+    bars = tuple(
+        Bar(
+            instrument=instrument,
+            timeframe=timeframe,
+            time=index * 60_000,
+            time_close=(index + 1) * 60_000,
+            open=1.0,
+            high=1.0,
+            low=1.0,
+            close=1.0,
+            volume=1.0,
+            closed=True,
+        )
+        for index in range(3)
+    )
+    query = BarQuery(
+        instrument=instrument,
+        timeframe=timeframe,
+        start_ms=0,
+        end_ms=180_000,
+        source="provider",
+        gap_policy="allow_with_metadata",
+    )
+    series = BarSeries(
+        query=query,
+        bars=bars,
+        coverage=CoverageReport(0, 180_000, 0, 180_000, source_mix=("provider",)),
+    )
+    existing = Bar(
+        instrument=instrument,
+        timeframe=timeframe,
+        time=60_000,
+        time_close=120_000,
+        open=9.0,
+        high=9.0,
+        low=9.0,
+        close=9.0,
+        volume=9.0,
+        closed=True,
+    )
+    calls = []
+
+    class FakeOrchestrator:
+        def load_bars(self, storage_query):
+            return BarSeries(
+                query=storage_query,
+                bars=(existing,),
+                coverage=CoverageReport(0, 180_000, 60_000, 120_000, source_mix=("storage",)),
+            )
+
+        def store_bars(self, stored_series):
+            calls.append(stored_series)
+            return StoreResult(success=True, rows_written=2)
+
+    loaded, skipped = _store_backfill_series(SimpleNamespace(orchestrator=FakeOrchestrator()), series)
+
+    assert len(calls) == 1
+    assert [bar.time for bar in calls[0].bars] == [0, 120_000]
+    assert loaded == 2
+    assert skipped == 1
