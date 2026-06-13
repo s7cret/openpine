@@ -27,7 +27,9 @@ def _intent() -> OrderIntent:
         (BybitLiveExecutionAdapter(), "Bybit adapter: no client injected"),
     ],
 )
-async def test_live_submit_without_client_rejects_without_network(adapter, error_text: str) -> None:
+async def test_live_submit_without_client_rejects_without_network(
+    adapter, error_text: str
+) -> None:
     order = await adapter.submit_order(_intent())
 
     assert order.status == OrderStatus.REJECTED

@@ -3,7 +3,9 @@ from __future__ import annotations
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
 
 
-def test_strategy_instance_from_dict_defaults_match_registered_strategy_defaults() -> None:
+def test_strategy_instance_from_dict_defaults_match_registered_strategy_defaults() -> (
+    None
+):
     strategy = StrategyInstance.from_dict(
         {
             "strategy_id": "strategy-1",

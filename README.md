@@ -1,79 +1,66 @@
-# OpenPine
+# OpenPine 4.0.0
 
-OpenPine is the product gateway and web UI for the Pine research stack. It ties together Pine source management, Pine2AST compilation, AST2Python generation, PineLib runtime helpers, Backtest Engine execution, MarketData Provider candles, Optimizer runs, paper/live strategy scheduling, persistent orders, and a Vue dashboard.
+![OpenPine 4.0.0 architecture](docs/assets/openpine-architecture.png)
 
-The package is intentionally an orchestration boundary. The parser, generator, runtime, backtest engine, market data provider, and optimizer remain independently publishable libraries with their own public contracts.
+**GitHub description:** OpenPine orchestrates the Pine research stack: Pine source registry, Pine2AST, AST2Python, PineLib runtime, deterministic backtests, market data, optimization, paper/live adapters, FastAPI gateway, and local product storage.
 
-OpenPine interaction map:
+**Suggested topics:** `pine-script`, `tradingview`, `backtesting`, `algorithmic-trading`, `market-data`, `strategy-optimization`, `fastapi`, `sqlite`, `python`.
 
-![OpenPine full interaction block diagram](docs/architecture/openpine-full-interaction-block-diagram.jpg)
+OpenPine is the backend/product orchestration layer for the Pine research stack. It connects Pine source management, `pine2ast`, `ast2python`, `pinelib`, `backtest-engine`, `marketdata-provider`, `optimizer`, local SQLite state, FastAPI gateway routes, workers, paper/live execution adapters, and operational CLIs.
 
-## What Is Included
+The Vue/Vite dashboard lives in `openpine-ui/`. This backend release intentionally keeps the UI surface unchanged and focuses on the Python package, database boundary, compile/runtime integration, storage, release hygiene, and documentation.
 
-- FastAPI gateway under `openpine.gateway` with routes for dashboard, Pine sources, strategies, data, backtests, orders, positions, events, and optimizer operations.
-- Vue/Vite UI under `openpine-ui`.
-- SQLite-backed local storage for strategies, Pine sources, compiled artifacts, backtest runs, orders, and runtime state.
-- Background worker process for market-data catch-up and live/paper mini-backtests without starving the API process.
-- Backtest execution in a separate process so long CPU-bound runs do not block UI polling.
-- MSK/UTC+3 display formatting in the UI while persisted timestamps stay UTC milliseconds.
+## Stack Boundary
+
+OpenPine does not reimplement parser/runtime/backtest/data/optimizer internals. Those stay in independently versioned packages:
+
+- `pine2ast @ v4.0.0`
+- `ast2python @ v4.0.0`
+- `pinelib @ v4.0.0`
+- `backtest-engine @ v4.0.0`
+- `marketdata-provider @ v4.0.0`
+- `optimizer @ v4.0.0`
+
+OpenPine is responsible for orchestration: registering Pine sources, compiling strategies, attaching market data, scheduling backtests/jobs, storing results, exposing gateway APIs, and coordinating paper/live execution.
 
 ## Repository Layout
 
 ```text
-accounts/          account and API key models
-artifacts/         compiled artifact storage
-cli/               command-line entry points
-compile/           Pine2AST -> AST2Python pipeline adapters
-data/              candle storage, providers, refresh orchestration
-execution/         paper/live order adapters
-gateway/           FastAPI app and API routes
-jobs/              local job scheduler models
-openpine-ui/       Vue dashboard
-orders/            order persistence and models
-registry/          strategy registry
-state/             trusted runtime snapshot storage policy
-storage/           SQLite helpers and migrations
+openpine/                 Python backend package
+  accounts/               account and API-key models
+  artifacts/              compiled artifact storage
+  batch/                  TradingView corpus/batch runner utilities
+  cli/                    Click command groups
+  compile/                pine2ast -> ast2python adapter boundary
+  config/                 workspace-relative configuration
+  data/                   marketdata-provider orchestration
+  execution/              paper/live execution adapters
+  gateway/                FastAPI gateway and route modules
+  jobs/                   local job scheduling
+  orders/                 order persistence and models
+  pine/                   Pine source registry
+  registry/               strategy registry
+  runtime/                backtest-engine adapter boundary
+  state/                  trusted runtime snapshot state
+  storage/                SQLite storage and migrations
+  streams/                live market-data subscriptions
+  workers/                background fanout/job executors
+openpine-ui/              Vue/Vite dashboard; not changed by backend gates
+docs/                     backend architecture/release documentation
+scripts/                  backend release and smoke scripts
+tests/                    backend test suite
 ```
-
-## Requirements
-
-- Python 3.11 or newer. The live machine currently uses Python 3.13 successfully.
-- Node.js 20 or newer for the UI.
-- SQLite, included with Python on normal Linux/macOS installs.
-- Network access to exchange APIs when using live market data.
-
-Python runtime dependencies are declared in `pyproject.toml`. UI dependencies are locked in `openpine-ui/package-lock.json`.
 
 ## Install
-
-Use the verbose installer to see exactly what is being installed:
-
-```bash
-./scripts/install.sh --dev
-```
-
-Manual install:
 
 ```bash
 python -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-cd openpine-ui
-npm ci
-npm run build
+python -m pip install -e '.[dev]'
 ```
 
-The released package installs the published stack versions declared in `pyproject.toml`:
-
-- `pine2ast==2.17.0`
-- `ast2python==2.17.0`
-- `pinelib==2.17.0`
-- `backtest_engine==2.17.0`
-- `marketdata-provider==2.18.0`
-- `optimizer==2.17.0`
-
-If local stack libraries are being developed from source, clone them outside this repository and install them first in dependency order:
+For source-stack development, install sibling libraries first in dependency order:
 
 ```bash
 python -m pip install -e ../pine2ast
@@ -82,68 +69,56 @@ python -m pip install -e ../pinelib
 python -m pip install -e ../ast2python
 python -m pip install -e ../backtest_engine
 python -m pip install -e ../optimizer
+python -m pip install -e .
 ```
 
-## Run Locally
-
-Backend:
+## Run Backend
 
 ```bash
-OPENPINE_ALLOW_PICKLE_STATE=1 \
 python -c "from openpine.gateway.server import create_app; import uvicorn; uvicorn.run(create_app(), host='0.0.0.0', port=8080)"
 ```
 
-UI:
+Pickle snapshots are disabled by default. Set `OPENPINE_ALLOW_PICKLE_STATE=1` only when reading trusted local legacy snapshots.
+
+CLI:
 
 ```bash
-cd openpine-ui
-npm run dev -- --host 0.0.0.0 --port 1888
+openpine --help
+python -m openpine --help
 ```
 
-Open `http://localhost:1888`. The UI proxies `/api` to the gateway on port `8080`.
+## Database
 
-## Docker Compose
+SQLite is the local product database. Migrations live under `openpine/storage/migrations/`. Release 4.0 adds `openpine_schema_metadata` with the schema contract marker `openpine.sqlite.v4`. See `docs/DATABASE.md`.
 
-Docker Compose is provided as a publication-ready deployment smoke target:
+## Release Gate
 
 ```bash
-docker compose up --build
+bash scripts/release_gate.sh
 ```
 
-Services:
-
-- `gateway`: OpenPine API on `8080`.
-- `ui`: Vite UI on `1888`, proxying to `gateway`.
-
-Runtime state is mounted in named volumes. Source code is copied into images; local caches and SQLite files are not committed.
-
-## Operational Notes
-
-- Persistent timestamps are UTC milliseconds. UI rendering applies display timezone only.
-- Pickle resume state is trusted-local only. Set `OPENPINE_ALLOW_PICKLE_STATE=1` only for state you created locally.
-- `OPENPINE_ENABLE_BACKGROUND_WORKER=1` is the default. It runs periodic data catch-up and paper mini-backtests in a process outside the API.
-- Backtest progress is persisted and exposed via `/api/backtest/progress/{run_id}`.
-- Trade notifications are UI-polling based; WebSocket order events from worker processes are not assumed to cross process boundaries.
-
-## Development Gates
-
-```bash
-python -m compileall accounts adapters artifacts batch cli compile config data execution gateway jobs orders optimizer registry state storage tests
-python -m pytest
-python -m ruff check .
-cd openpine-ui && npm run build
-```
+The backend gate runs compileall, `ruff --select F,E9`, pytest+coverage, duplicate/architecture checks, distribution manifest, release manifest, and import smoke. UI audit/test/build is intentionally separate and should be run from `openpine-ui/`.
 
 ## License
 
 MIT. See `LICENSE`.
 
-## Support / Donations
+## 4.0 Coverage Baseline
 
-OpenPine development is independent and MIT-licensed. Donations are optional and help keep the public tooling maintained.
+The backend gate now enforces a 90% package coverage floor after the large CLI strategy/data lifecycle, marketdata provider-adapter, exchange-metadata, stream-adapter, TV-corpus, compare-helper, gateway/storage/execution, Telegram, runtime-adapter, optimizer-route, and gateway-lifespan, state CLI, Telegram polling, storage-adapter, and strategy lifecycle hardening pass. This is still a backend-only baseline for the product repository; later passes should continue raising it while decomposing the remaining legacy CLI, batch, live-runner, and Telegram surfaces.
 
-- Telegram: https://t.me/OpenPine
-- TON: `UQAyIr2sQ4-_Q5L-4VINcU18khDas5GPbAlYEkQN6S_qzui2`
-- SOL: `EbxMUK2W4RGeQZCTRFrdgpEJvnqtyczPZvBrQa1cYJnQ`
 
-Support does not affect license terms, feature access, or project guarantees.
+## Timezone configuration
+
+OpenPine stores all timestamps as UTC milliseconds. User-facing date-only CLI/API inputs are interpreted in the configured default timezone. The default keeps the historical product behavior: `UTC+03:00` labelled `MSK`. Configure it in `.openpine/config.yaml` or with `OPENPINE_TIMEZONE`:
+
+```yaml
+timezone: UTC+03:00
+```
+
+Supported values include `UTC`, `MSK`, fixed offsets such as `UTC+03:00`, and IANA names such as `Europe/Moscow`. Use explicit ISO offsets, for example `2024-01-01T00:00:00Z`, when an API caller needs timezone-independent boundaries.
+
+
+### SQLite storage health
+
+Run `openpine storage migrate` and `openpine storage health` before deployment. The health command verifies the `openpine.sqlite.v4` contract, pending migrations, required indexes, and durable-event compatibility.

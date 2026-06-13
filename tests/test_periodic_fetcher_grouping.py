@@ -11,7 +11,9 @@ from openpine.data.periodic_fetcher import (
 from openpine.registry.strategies import StrategyInstance
 
 
-def _strategy(strategy_id: str, symbol: str, timeframe: str = "15m") -> StrategyInstance:
+def _strategy(
+    strategy_id: str, symbol: str, timeframe: str = "15m"
+) -> StrategyInstance:
     return StrategyInstance(
         strategy_id=strategy_id,
         name=strategy_id,
@@ -69,7 +71,9 @@ class _Orchestrator:
     def latest_bar_time(self, query):
         return self.latest_time
 
-    def on_candle_closed(self, bar, *, instrument_key: str, timeframe: str, source: str):
+    def on_candle_closed(
+        self, bar, *, instrument_key: str, timeframe: str, source: str
+    ):
         self.closed.append((bar, instrument_key, timeframe, source))
 
     def store_bars(self, series):
@@ -89,11 +93,13 @@ def test_group_strategies_by_market_ignores_strategy_timeframe() -> None:
 
 
 def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
-    registry = _Registry([
-        _strategy("btc-a", "BTCUSDT"),
-        _strategy("btc-b", "BTCUSDT", timeframe="1h"),
-        _strategy("sol", "SOLUSDT"),
-    ])
+    registry = _Registry(
+        [
+            _strategy("btc-a", "BTCUSDT"),
+            _strategy("btc-b", "BTCUSDT", timeframe="1h"),
+            _strategy("sol", "SOLUSDT"),
+        ]
+    )
     orchestrator = _Orchestrator()
     fetcher = PeriodicBarFetcher(
         config=RefreshConfig(lookback_bars=2),
@@ -101,10 +107,14 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
         orchestrator=orchestrator,
     )
 
-    monkeypatch.setattr("openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0)
+    monkeypatch.setattr(
+        "openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0
+    )
 
     def fake_fetch(key, timeframe, start_ms, end_ms):
-        instrument = InstrumentKey(exchange=key.exchange, market=key.market_type, symbol=key.symbol)
+        instrument = InstrumentKey(
+            exchange=key.exchange, market=key.market_type, symbol=key.symbol
+        )
         step = timeframe.duration_ms
         return [
             Bar(
@@ -131,7 +141,11 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
         "BTCUSDT",
         "SOLUSDT",
     ]
-    assert [series.query.timeframe.canonical for series in orchestrator.stored] == ["1m", "15m", "1m"]
+    assert [series.query.timeframe.canonical for series in orchestrator.stored] == [
+        "1m",
+        "15m",
+        "1m",
+    ]
     assert [series.query.start_ms for series in orchestrator.stored[:2]] == [
         1_699_996_260_000,
         1_699_996_500_000,
@@ -149,7 +163,9 @@ def test_periodic_fetcher_resumes_after_last_stored_bar(monkeypatch) -> None:
         orchestrator=orchestrator,
     )
 
-    monkeypatch.setattr("openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0)
+    monkeypatch.setattr(
+        "openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0
+    )
     calls = []
 
     def fake_fetch(key, timeframe, start_ms, end_ms):
@@ -173,9 +189,13 @@ def test_periodic_fetcher_skips_fetch_when_storage_is_current(monkeypatch) -> No
         orchestrator=orchestrator,
     )
 
-    monkeypatch.setattr("openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0)
+    monkeypatch.setattr(
+        "openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0
+    )
     calls = []
-    monkeypatch.setattr(fetcher, "_fetch_bars_direct", lambda *args: calls.append(args) or [])
+    monkeypatch.setattr(
+        fetcher, "_fetch_bars_direct", lambda *args: calls.append(args) or []
+    )
 
     fetcher._refresh_all_active()
 

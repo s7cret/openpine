@@ -29,10 +29,19 @@ def test_stream_manager_lifecycle_status_transitions() -> None:
     )
 
     manager.pause(sub.subscription_id)
-    assert manager.get_subscription(sub.subscription_id).status == SubscriptionStatus.PAUSED
+    assert (
+        manager.get_subscription(sub.subscription_id).status
+        == SubscriptionStatus.PAUSED
+    )
 
     manager.resume(sub.subscription_id)
-    assert manager.get_subscription(sub.subscription_id).status == SubscriptionStatus.ACTIVE
+    assert (
+        manager.get_subscription(sub.subscription_id).status
+        == SubscriptionStatus.ACTIVE
+    )
 
     manager.unsubscribe(sub.subscription_id)
-    assert manager.get_subscription(sub.subscription_id).status == SubscriptionStatus.STOPPED
+    assert (
+        manager.get_subscription(sub.subscription_id).status
+        == SubscriptionStatus.STOPPED
+    )

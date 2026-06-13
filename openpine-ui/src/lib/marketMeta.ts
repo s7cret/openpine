@@ -4,7 +4,7 @@ export type MarketMeta = {
   cls: string
 }
 
-export const stableQuoteAssets = ['USDT', 'USDC', 'FDUSD', 'TUSD', 'DAI', 'USDP', 'BUSD']
+export const stableQuoteAssets = ['USDT', 'USDC', 'FDUSD', 'TUSD', 'DAI', 'USDP', 'BUSD', 'USD']
 
 export const exchangeMeta: Record<string, MarketMeta & { markets: string[] }> = {
   binance: {
@@ -61,8 +61,9 @@ export function exchangeClass(exchange?: string) {
 
 export function baseAssetFromSymbol(symbol?: string) {
   const upper = (symbol ?? '').toUpperCase()
-  const quote = stableQuoteAssets.find((q) => upper.endsWith(q))
-  return quote ? upper.slice(0, -quote.length) : upper
+  const contractRoot = upper.split('_', 1)[0]
+  const quote = stableQuoteAssets.find((q) => contractRoot.endsWith(q))
+  return quote ? contractRoot.slice(0, -quote.length) : contractRoot
 }
 
 export function tickerIconUrl(asset?: string) {

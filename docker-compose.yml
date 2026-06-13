@@ -3,7 +3,6 @@ services:
     build:
       context: .
     environment:
-      OPENPINE_ALLOW_PICKLE_STATE: "1"
       OPENPINE_ENABLE_BACKGROUND_WORKER: "1"
     ports:
       - "8080:8080"

@@ -15,14 +15,21 @@ def test_binance_spot_default_qty_step_uses_lot_size(monkeypatch) -> None:
             }
         ]
     }
-    monkeypatch.setattr(exchange_metadata, "_load_binance_spot_exchange_info", lambda: payload)
+    monkeypatch.setattr(
+        exchange_metadata, "_load_binance_spot_exchange_info", lambda: payload
+    )
 
     assert exchange_metadata.default_qty_step("binance", "spot", "xlmusdt") == 1.0
-    assert exchange_metadata.default_qty_rounding_mode("binance", "spot", "XLMUSDT") == "truncate"
+    assert (
+        exchange_metadata.default_qty_rounding_mode("binance", "spot", "XLMUSDT")
+        == "truncate"
+    )
 
 
 def test_default_qty_step_ignores_non_binance_spot(monkeypatch) -> None:
-    monkeypatch.setattr(exchange_metadata, "_load_binance_spot_exchange_info", lambda: None)
+    monkeypatch.setattr(
+        exchange_metadata, "_load_binance_spot_exchange_info", lambda: None
+    )
 
     assert exchange_metadata.default_qty_step("coinbase", "spot", "BTCUSD") is None
     assert exchange_metadata.default_qty_step("binance", "futures", "BTCUSDT") is None

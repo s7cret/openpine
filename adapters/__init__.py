@@ -1,2 +1,0 @@
-"""OpenPine adapter boundaries."""
-

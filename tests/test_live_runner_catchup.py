@@ -11,7 +11,9 @@ def test_live_runner_processes_strictly_after_last_processed_bar() -> None:
     runner = LiveStrategyRunner()
     state = StrategyBarState(strategy_id="strategy-1", last_bar_time_ms=1_000)
 
-    bars = runner._bars_to_process(state, latest_closed_bar_time=4_000, duration_ms=1_000)
+    bars = runner._bars_to_process(
+        state, latest_closed_bar_time=4_000, duration_ms=1_000
+    )
 
     assert bars == [2_000, 3_000, 4_000]
 
@@ -21,7 +23,9 @@ def test_live_runner_legacy_recheck_is_explicit_opt_in() -> None:
     runner.config.recheck_bars = 1
     state = StrategyBarState(strategy_id="strategy-1", last_bar_time_ms=3_000)
 
-    bars = runner._bars_to_process(state, latest_closed_bar_time=4_000, duration_ms=1_000)
+    bars = runner._bars_to_process(
+        state, latest_closed_bar_time=4_000, duration_ms=1_000
+    )
 
     assert bars == [2_000, 3_000, 4_000]
 
@@ -33,10 +37,16 @@ def test_live_runner_reads_resume_bar_index_from_object_or_mapping() -> None:
 
 
 def test_live_runner_requires_runtime_state_for_resume() -> None:
-    assert LiveStrategyRunner._resume_has_runtime_state(SimpleNamespace(runtime_state={"x": 1}))
+    assert LiveStrategyRunner._resume_has_runtime_state(
+        SimpleNamespace(runtime_state={"x": 1})
+    )
     assert LiveStrategyRunner._resume_has_runtime_state({"runtime_state": {"x": 1}})
-    assert not LiveStrategyRunner._resume_has_runtime_state(SimpleNamespace(runtime_state=None))
-    assert not LiveStrategyRunner._resume_has_runtime_state({"broker_state": {"position": 0}})
+    assert not LiveStrategyRunner._resume_has_runtime_state(
+        SimpleNamespace(runtime_state=None)
+    )
+    assert not LiveStrategyRunner._resume_has_runtime_state(
+        {"broker_state": {"position": 0}}
+    )
 
 
 def test_live_runner_attaches_risk_prices_from_pine_inputs() -> None:
@@ -45,7 +55,9 @@ def test_live_runner_attaches_risk_prices_from_pine_inputs() -> None:
             return self
 
         def fetchone(self):
-            return ('tpPct = input.float(0.70, "Take Profit %")\nslPct = input.float(0.90, "Stop Loss %")',)
+            return (
+                'tpPct = input.float(0.70, "Take Profit %")\nslPct = input.float(0.90, "Stop Loss %")',
+            )
 
     runner = LiveStrategyRunner(storage=Storage())
     strategy = SimpleNamespace(strategy_id="strategy-1", pine_id="pine-1")
@@ -63,7 +75,9 @@ def test_live_runner_attaches_short_risk_prices_from_pine_inputs() -> None:
             return self
 
         def fetchone(self):
-            return ('tpPct = input.float(0.70, "Take Profit %")\nslPct = input.float(0.90, "Stop Loss %")',)
+            return (
+                'tpPct = input.float(0.70, "Take Profit %")\nslPct = input.float(0.90, "Stop Loss %")',
+            )
 
     runner = LiveStrategyRunner(storage=Storage())
     strategy = SimpleNamespace(strategy_id="strategy-1", pine_id="pine-1")

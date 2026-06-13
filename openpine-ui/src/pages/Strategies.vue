@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useStrategiesStore } from '@/stores/strategies'
 import { usePineFilesStore } from '@/stores/pineFiles'
 import { useRoute } from 'vue-router'
-import { searchBinanceSymbols, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, type BinanceSymbolOption } from '@/api/client'
+import { searchMarketSymbols, getDataMetadata, getDataTicker24h, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, type MarketSymbolOption } from '@/api/client'
 import CandleChart from '@/components/CandleChart.vue'
 import { formatDateTime } from '@/utils/time'
 import {
@@ -19,6 +19,21 @@ import {
   tickerIconUrl,
   tickerInitials,
 } from '@/lib/marketMeta'
+import {
+  clearStrategySymbolForMarketChange,
+  selectStrategySymbol,
+  strategyValidationMessage,
+} from '@/lib/strategyForm'
+import {
+  canSearchSymbols as canSearchExchangeSymbols,
+  defaultMarketTypeForExchange,
+  exchangeOptionLabel,
+  exchangeSelectOptions,
+  marketTypeOptionsForExchange,
+  symbolLoadingLabel,
+  symbolSearchPlaceholder,
+  type MarketMetadataPayload,
+} from '@/lib/marketMetadata'
 
 const store = useStrategiesStore()
 const pineStore = usePineFilesStore()
@@ -78,8 +93,34 @@ const form = ref({
 })
 
 const timeframes = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w']
-const marketTypes = ['spot', 'futures', 'margin', 'delivery']
-const symbols = ref<BinanceSymbolOption[]>([])
+const fallbackMarketMetadata: MarketMetadataPayload = {
+  source: 'fallback',
+  market_types: [],
+  exchanges: [
+    {
+      id: 'binance',
+      name: 'Binance',
+      rank: 1,
+      status: 'native',
+      native_adapter: true,
+      openpine_enabled: true,
+      symbol_search_supported: true,
+      disabled_reason: null,
+      market_types: [
+        { id: 'spot', label: 'Spot', aliases: ['spot'], description: '', enabled_for_strategy_create: true },
+        { id: 'margin', label: 'Margin', aliases: ['margin'], description: '', enabled_for_strategy_create: true },
+        { id: 'futures', label: 'USDT/USDC-margined futures/perpetuals', aliases: ['futures'], description: '', enabled_for_strategy_create: true },
+        { id: 'delivery', label: 'Coin-margined/delivery futures', aliases: ['delivery'], description: '', enabled_for_strategy_create: true },
+      ],
+    },
+  ],
+}
+const marketMetadata = ref<MarketMetadataPayload>(fallbackMarketMetadata)
+const exchangeOptions = computed(() => exchangeSelectOptions(marketMetadata.value))
+const marketTypeOptions = computed(() => marketTypeOptionsForExchange(marketMetadata.value, form.value.exchange))
+const symbolSearchEnabled = computed(() => canSearchExchangeSymbols(marketMetadata.value, form.value.exchange))
+const symbolPlaceholder = computed(() => symbolSearchPlaceholder(marketMetadata.value, form.value.exchange))
+const symbols = ref<MarketSymbolOption[]>([])
 const symbolSearch = ref('')
 const symbolsLoading = ref(false)
 const showSymbolDropdown = ref(false)
@@ -100,7 +141,20 @@ function markTickerIconMissing(asset?: string) {
   storeMissingTickerIcons(failedTickerIcons.value)
 }
 
+async function loadMarketMetadata() {
+  try {
+    const { data } = await getDataMetadata()
+    if (data?.exchanges?.length) {
+      marketMetadata.value = data
+      form.value.market_type = defaultMarketTypeForExchange(marketMetadata.value, form.value.exchange, form.value.market_type)
+    }
+  } catch (e) {
+    console.error('Market metadata fetch failed', e)
+  }
+}
+
 onMounted(async () => {
+  await loadMarketMetadata()
   await store.fetchAll()
   await pineStore.fetchAll()
   autoFillPineSource(true)
@@ -171,24 +225,37 @@ const filteredSymbols = computed(() => {
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 watch(symbolSearch, (val) => {
+  if (val !== form.value.symbol) {
+    form.value.symbol = ''
+    createStatus.value = ''
+  }
   if (searchTimeout) clearTimeout(searchTimeout)
+  if (!symbolSearchEnabled.value) { symbols.value = []; return }
   if (val.length < 1) { symbols.value = []; return }
   searchTimeout = setTimeout(async () => {
     symbolsLoading.value = true
-    symbols.value = await searchBinanceSymbols(val, form.value.market_type)
+    symbols.value = await searchMarketSymbols(val, form.value.exchange, form.value.market_type)
     symbolsLoading.value = false
   }, 300)
 })
 
-watch(() => form.value.market_type, () => {
+watch(() => form.value.exchange, () => {
+  form.value.market_type = defaultMarketTypeForExchange(marketMetadata.value, form.value.exchange, form.value.market_type)
   symbols.value = []
-  symbolSearch.value = ''
+  symbolSearch.value = clearStrategySymbolForMarketChange(form.value)
+  createStatus.value = ''
 })
 
-function selectSymbol(s: BinanceSymbolOption) {
-  form.value.symbol = s.symbol
-  symbolSearch.value = ''
+watch(() => form.value.market_type, () => {
+  symbols.value = []
+  symbolSearch.value = clearStrategySymbolForMarketChange(form.value)
+  createStatus.value = ''
+})
+
+function selectSymbol(s: MarketSymbolOption) {
+  symbolSearch.value = selectStrategySymbol(form.value, s)
   showSymbolDropdown.value = false
+  createStatus.value = ''
 }
 
 function hideSymbolDropdown() {
@@ -204,8 +271,9 @@ async function addStrategy() {
   if (!form.value.name || !form.value.symbol || !form.value.pine_id || !form.value.artifact_id) {
     autoFillPineSource(true)
   }
-  if (!form.value.name || !form.value.symbol || !form.value.pine_id || !form.value.artifact_id) {
-    createStatus.value = '❌ Fill required fields: name and symbol. No compiled Pine source is available.'
+  const validationMessage = strategyValidationMessage(form.value)
+  if (validationMessage) {
+    createStatus.value = validationMessage
     return
   }
   createLoading.value = true
@@ -228,7 +296,7 @@ async function openDetail(id: string) {
   await store.fetchOne(id)
   await Promise.all([
     loadTrades(id),
-    loadTicker24h(store.current?.symbol, store.current?.market_type),
+    loadTicker24h(store.current?.exchange, store.current?.symbol, store.current?.market_type),
   ])
 }
 
@@ -260,30 +328,27 @@ function visibleControlButtons(s: any) {
     : controlButtons.filter((btn) => btn.action === 'start')
 }
 
-function tickerKey(symbol?: string, market?: string) {
-  return `${String(market ?? 'spot').toLowerCase()}:${String(symbol ?? '').toUpperCase()}`
+function tickerKey(exchange?: string, symbol?: string, market?: string) {
+  return `${String(exchange ?? 'binance').toLowerCase()}:${String(market ?? 'spot').toLowerCase()}:${String(symbol ?? '').toUpperCase()}`
 }
 
-async function loadTicker24h(symbol?: string, market?: string) {
+async function loadTicker24h(exchange?: string, symbol?: string, market?: string) {
   const s = String(symbol ?? '').toUpperCase()
   if (!s) return
+  const ex = String(exchange ?? 'binance').toLowerCase()
   const m = String(market ?? 'spot').toLowerCase()
-  const key = tickerKey(s, m)
+  const key = tickerKey(ex, s, m)
   if (ticker24h.value[key]) return
-  const base = m === 'futures' || m === 'delivery'
-    ? 'https://fapi.binance.com/fapi/v1/ticker/24hr'
-    : 'https://api.binance.com/api/v3/ticker/24hr'
   try {
-    const res = await fetch(`${base}?symbol=${encodeURIComponent(s)}`)
-    if (!res.ok) return
-    ticker24h.value = { ...ticker24h.value, [key]: await res.json() }
+    const { data } = await getDataTicker24h({ exchange: ex, market_type: m, symbol: s })
+    ticker24h.value = { ...ticker24h.value, [key]: data }
   } catch {
     // Best-effort market metadata for the strategy card.
   }
 }
 
 function marketStats(s: any) {
-  return ticker24h.value[tickerKey(s?.symbol, s?.market_type)] ?? null
+  return ticker24h.value[tickerKey(s?.exchange, s?.symbol, s?.market_type)] ?? null
 }
 
 function fmtCompact(value: any) {
@@ -502,10 +567,24 @@ function tradeStatusBadge(status: string) {
         <!-- Row 2: exchange, market, timeframe -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <select v-model="form.exchange" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
-            <option value="binance">◆ Binance</option>
+            <option
+              v-for="exchange in exchangeOptions"
+              :key="exchange.id"
+              :value="exchange.id"
+              :disabled="exchange.disabled"
+            >
+              {{ exchangeOptionLabel(exchange) }}
+            </option>
           </select>
           <select v-model="form.market_type" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
-            <option v-for="mt in marketTypes" :key="mt" :value="mt">{{ marketTypeLabel(mt) }}</option>
+            <option
+              v-for="mt in marketTypeOptions"
+              :key="mt.id"
+              :value="mt.id"
+              :disabled="mt.disabled"
+            >
+              {{ mt.label }}{{ mt.disabled ? ' — data only' : '' }}
+            </option>
           </select>
           <select v-model="form.timeframe" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
             <option v-for="tf in timeframes" :key="tf" :value="tf">{{ tf }}</option>
@@ -516,13 +595,14 @@ function tradeStatusBadge(status: string) {
         <div class="relative">
           <input
             v-model="symbolSearch"
-            :placeholder="form.symbol || 'Search stable pair on Binance...'"
+            :placeholder="form.symbol || symbolPlaceholder"
+            :disabled="!symbolSearchEnabled"
             @focus="showSymbolDropdown = true"
             @blur="hideSymbolDropdown"
-            class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
+            class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
           />
           <div v-if="showSymbolDropdown && (filteredSymbols.length || symbolsLoading)" class="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-dark-700 border border-dark-500 rounded-lg shadow-xl">
-            <div v-if="symbolsLoading" class="px-3 py-2 text-xs text-gray-500">Loading from Binance...</div>
+            <div v-if="symbolsLoading" class="px-3 py-2 text-xs text-gray-500">{{ symbolLoadingLabel(marketMetadata, form.exchange) }}</div>
             <div
               v-for="s in filteredSymbols"
               :key="s.symbol"
@@ -782,6 +862,7 @@ function tradeStatusBadge(status: string) {
 
             <div class="px-4 sm:px-5 pb-3 flex-1 min-h-[300px]">
               <CandleChart
+                :exchange="store.current?.exchange ?? 'binance'"
                 :symbol="store.current?.symbol ?? 'BTCUSDT'"
                 :timeframe="store.current?.timeframe ?? '15m'"
                 :market="store.current?.market_type ?? 'spot'"

@@ -1,8 +1,7 @@
 """Test candle deduplication, compaction, and idempotent backfill."""
+
 from __future__ import annotations
 
-from datetime import datetime
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -14,7 +13,9 @@ def test_read_candles_without_manifests_fails_closed():
 
     storage = CandleStorage()
     query = BarQuery(
-        instrument=InstrumentKey(exchange="binance", market="spot", symbol="NO_MANIFEST_TEST"),
+        instrument=InstrumentKey(
+            exchange="binance", market="spot", symbol="NO_MANIFEST_TEST"
+        ),
         timeframe=parse_timeframe("1h"),
         start_ms=1704067200000,
         end_ms=1704070800000,
@@ -34,7 +35,9 @@ def test_write_candles_rejects_invalid_instrument_key(tmp_path):
     result = storage.write_candles(
         [
             Bar(
-                instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+                instrument=InstrumentKey(
+                    exchange="binance", market="spot", symbol="BTCUSDT"
+                ),
                 timeframe=timeframe,
                 time=1704067200000,
                 time_close=1704070800000,
@@ -55,7 +58,12 @@ def test_write_candles_rejects_invalid_instrument_key(tmp_path):
 
 
 def test_write_candles_persists_rows_with_explicit_instrument_key(tmp_path):
-    from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
+    from marketdata_provider.contracts import (
+        Bar,
+        BarQuery,
+        InstrumentKey,
+        parse_timeframe,
+    )
     from openpine.data.candle_storage import CandleStorage
 
     instrument = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
@@ -137,8 +145,12 @@ def test_partition_candles_by_month_groups_utc_buckets():
     )
 
     assert sorted(key[-1] for key in partitions) == [(2024, 1), (2024, 2)]
-    assert partitions[("binance", "spot", "BTCUSDT", "trade", "1h", (2024, 1))] == [jan_bar]
-    assert partitions[("binance", "spot", "BTCUSDT", "trade", "1h", (2024, 2))] == [feb_bar]
+    assert partitions[("binance", "spot", "BTCUSDT", "trade", "1h", (2024, 1))] == [
+        jan_bar
+    ]
+    assert partitions[("binance", "spot", "BTCUSDT", "trade", "1h", (2024, 2))] == [
+        feb_bar
+    ]
 
 
 def test_read_candles_defaults_missing_close_time_and_volume(tmp_path):
@@ -147,8 +159,7 @@ def test_read_candles_defaults_missing_close_time_and_volume(tmp_path):
     from openpine.data.models import CandleManifest
 
     import pandas as pd
-    import pyarrow as pa
-    import pyarrow.parquet as pq
+    from openpine._compat import parquet
 
     parquet_path = tmp_path / "missing_optional.parquet"
     open_time = 1704067200000
@@ -174,7 +185,7 @@ def test_read_candles_defaults_missing_close_time_and_volume(tmp_path):
             "ingested_at": [0],
         }
     )
-    pq.write_table(pa.Table.from_pandas(df, schema=PARQUET_SCHEMA, preserve_index=False), parquet_path)
+    parquet.write_dataframe(df, parquet_path, schema=PARQUET_SCHEMA)
 
     storage = CandleStorage(data_root=tmp_path, sqlite_path=tmp_path / "test.sqlite")
     storage._insert_manifest(
@@ -201,7 +212,9 @@ def test_read_candles_defaults_missing_close_time_and_volume(tmp_path):
 
     bars = storage.read_candles(
         BarQuery(
-            instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
+            instrument=InstrumentKey(
+                exchange="binance", market="spot", symbol="BTCUSDT"
+            ),
             timeframe=parse_timeframe("1h"),
             start_ms=open_time,
             end_ms=open_time + 60_000,
@@ -264,34 +277,36 @@ def test_read_candles_deduplicates_identical_rows():
 
     # Write two parquet files with identical overlapping data
     import pandas as pd
-    import pyarrow as pa
-    import pyarrow.parquet as pq
+    from openpine._compat import parquet
 
-    df_a = pd.DataFrame({
-        "exchange": ["binance", "binance"],
-        "market_type": ["spot", "spot"],
-        "symbol": ["BTCUSDT", "BTCUSDT"],
-        "price_type": ["trade", "trade"],
-        "timeframe": ["1h", "1h"],
-        "open_time": [1704067200000, 1704153600000],
-        "close_time": [1704070800000, 1704157200000],
-        "open": [100.0, 101.0],
-        "high": [101.0, 102.0],
-        "low": [99.0, 100.0],
-        "close": [100.5, 101.5],
-        "volume": [10.0, 11.0],
-        "quote_volume": [None, None],
-        "trades_count": [None, None],
-        "is_closed": [True, True],
-        "source": ["test", "test"],
-        "provider": ["binance", "binance"],
-        "ingested_at": [0, 0],
-    })
+    df_a = pd.DataFrame(
+        {
+            "exchange": ["binance", "binance"],
+            "market_type": ["spot", "spot"],
+            "symbol": ["BTCUSDT", "BTCUSDT"],
+            "price_type": ["trade", "trade"],
+            "timeframe": ["1h", "1h"],
+            "open_time": [1704067200000, 1704153600000],
+            "close_time": [1704070800000, 1704157200000],
+            "open": [100.0, 101.0],
+            "high": [101.0, 102.0],
+            "low": [99.0, 100.0],
+            "close": [100.5, 101.5],
+            "volume": [10.0, 11.0],
+            "quote_volume": [None, None],
+            "trades_count": [None, None],
+            "is_closed": [True, True],
+            "source": ["test", "test"],
+            "provider": ["binance", "binance"],
+            "ingested_at": [0, 0],
+        }
+    )
     df_b = df_a.copy()  # identical data
 
     from openpine.data.candle_storage import PARQUET_SCHEMA
-    pq.write_table(pa.Table.from_pandas(df_a, schema=PARQUET_SCHEMA, preserve_index=False), "/tmp/test_dedup_a.parquet")
-    pq.write_table(pa.Table.from_pandas(df_b, schema=PARQUET_SCHEMA, preserve_index=False), "/tmp/test_dedup_b.parquet")
+
+    parquet.write_dataframe(df_a, "/tmp/test_dedup_a.parquet", schema=PARQUET_SCHEMA)
+    parquet.write_dataframe(df_b, "/tmp/test_dedup_b.parquet", schema=PARQUET_SCHEMA)
 
     # Insert manifests
     storage._insert_manifest(manifest_a)
@@ -313,6 +328,7 @@ def test_read_candles_deduplicates_identical_rows():
 
     # Cleanup
     import os
+
     os.unlink("/tmp/test_dedup_a.parquet")
     os.unlink("/tmp/test_dedup_b.parquet")
     conn = storage._get_conn()
@@ -330,35 +346,36 @@ def test_conflicting_duplicate_detection():
     storage = CandleStorage()
 
     import pandas as pd
-    import pyarrow as pa
-    import pyarrow.parquet as pq
+    from openpine._compat import parquet
     from openpine.data.candle_storage import PARQUET_SCHEMA
 
-    df_a = pd.DataFrame({
-        "exchange": ["binance"],
-        "market_type": ["spot"],
-        "symbol": ["BTCUSDT"],
-        "price_type": ["trade"],
-        "timeframe": ["1h"],
-        "open_time": [1704067200000],
-        "close_time": [1704070800000],
-        "open": [100.0],
-        "high": [101.0],
-        "low": [99.0],
-        "close": [100.5],
-        "volume": [10.0],
-        "quote_volume": [None],
-        "trades_count": [None],
-        "is_closed": [True],
-        "source": ["test"],
-        "provider": ["binance"],
-        "ingested_at": [0],
-    })
+    df_a = pd.DataFrame(
+        {
+            "exchange": ["binance"],
+            "market_type": ["spot"],
+            "symbol": ["BTCUSDT"],
+            "price_type": ["trade"],
+            "timeframe": ["1h"],
+            "open_time": [1704067200000],
+            "close_time": [1704070800000],
+            "open": [100.0],
+            "high": [101.0],
+            "low": [99.0],
+            "close": [100.5],
+            "volume": [10.0],
+            "quote_volume": [None],
+            "trades_count": [None],
+            "is_closed": [True],
+            "source": ["test"],
+            "provider": ["binance"],
+            "ingested_at": [0],
+        }
+    )
     df_b = df_a.copy()
     df_b["close"] = [200.0]  # conflicting value
 
-    pq.write_table(pa.Table.from_pandas(df_a, schema=PARQUET_SCHEMA, preserve_index=False), "/tmp/test_conflict_a.parquet")
-    pq.write_table(pa.Table.from_pandas(df_b, schema=PARQUET_SCHEMA, preserve_index=False), "/tmp/test_conflict_b.parquet")
+    parquet.write_dataframe(df_a, "/tmp/test_conflict_a.parquet", schema=PARQUET_SCHEMA)
+    parquet.write_dataframe(df_b, "/tmp/test_conflict_b.parquet", schema=PARQUET_SCHEMA)
 
     manifest_a = CandleManifest(
         manifest_id="m_conflict_a",
@@ -416,6 +433,7 @@ def test_conflicting_duplicate_detection():
 
     # Cleanup
     import os
+
     os.unlink("/tmp/test_conflict_a.parquet")
     os.unlink("/tmp/test_conflict_b.parquet")
     conn = storage._get_conn()
@@ -475,7 +493,9 @@ def test_list_manifests_filters_inactive():
 
     # Mark one as inactive
     conn = storage._get_conn()
-    conn.execute("UPDATE candle_manifests SET is_active = 0 WHERE manifest_id = 'm_inactive'")
+    conn.execute(
+        "UPDATE candle_manifests SET is_active = 0 WHERE manifest_id = 'm_inactive'"
+    )
     conn.commit()
 
     query = BarQuery(
@@ -492,5 +512,7 @@ def test_list_manifests_filters_inactive():
     assert "m_inactive" not in ids
 
     # Cleanup
-    conn.execute("DELETE FROM candle_manifests WHERE manifest_id IN ('m_active', 'm_inactive')")
+    conn.execute(
+        "DELETE FROM candle_manifests WHERE manifest_id IN ('m_active', 'm_inactive')"
+    )
     conn.commit()

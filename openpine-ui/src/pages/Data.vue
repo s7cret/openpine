@@ -2,8 +2,11 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { backfillDataSeries, deleteDataOrders, deleteDataSeries, getDataSummary, refreshDataSeries } from '@/api/client'
 import DateRangePicker from '@/components/DateRangePicker.vue'
+import { coverageRangeLabels } from '@/lib/coverageRanges'
+import { loadDataSummaryState } from '@/lib/dataSummaryState'
 
 const summary = ref<any>(null)
+const loadError = ref('')
 const loading = ref(false)
 const actionId = ref<string | null>(null)
 const actionStatus = ref<Record<string, any>>({})
@@ -18,7 +21,10 @@ const visibleSeries = computed(() => {
   const source = series.value.filter((row: any) => (row.role ?? (row.timeframe === '1m' ? 'source' : 'derived')) === 'source')
   return source.length ? source : series.value
 })
-const visibleTotalBars = computed(() => visibleSeries.value.reduce((total: number, row: any) => total + Number(row.bar_count ?? 0), 0))
+const visibleTotalBars = computed(() => visibleSeries.value.reduce((total: number, row: any) => {
+  const count = Number(row.bar_count ?? 0)
+  return total + (Number.isFinite(count) ? count : 0)
+}, 0))
 const orders = computed(() => summary.value?.orders ?? { total: 0, by_symbol: [] })
 
 onMounted(() => {
@@ -30,8 +36,12 @@ onUnmounted(() => clearInterval(timer))
 async function load(showSpinner = true) {
   if (showSpinner) loading.value = true
   try {
-    const { data } = await getDataSummary()
-    summary.value = data
+    const state = await loadDataSummaryState(summary.value, async () => {
+      const { data } = await getDataSummary()
+      return data
+    })
+    summary.value = state.summary
+    loadError.value = state.error
   } finally {
     loading.value = false
   }
@@ -135,9 +145,8 @@ function dateOnlyToIso(value: string, edge: 'start' | 'end') {
   return d.toISOString()
 }
 
-function fmtRange(range: any) {
-  if (range.collapsed) return `+${range.collapsed} ranges`
-  return `${fmtDate(range.from_ms)} → ${fmtDate(range.to_ms)}`
+function dataRangeLabels(ranges: any[] = []) {
+  return coverageRangeLabels(ranges, fmtDate)
 }
 
 function statusClass(status: string) {
@@ -160,6 +169,13 @@ function statusClass(status: string) {
       >
         Refresh
       </button>
+    </div>
+
+    <div
+      v-if="loadError"
+      class="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger"
+    >
+      Market data refresh failed: {{ loadError }}
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -208,7 +224,7 @@ function statusClass(status: string) {
           <div class="text-xs text-gray-400 break-words">{{ fmtDate(row.earliest_ms) }} → {{ fmtDate(row.latest_ms) }}</div>
           <div v-if="refreshMessage(row)" class="text-xs text-accent-light">{{ refreshMessage(row) }}</div>
           <div class="flex flex-wrap gap-1">
-            <span v-for="(range, idx) in (row.ranges ?? [])" :key="idx" class="px-1.5 py-0.5 rounded bg-dark-600 text-[10px] text-gray-400">{{ fmtRange(range) }}</span>
+            <span v-for="(label, idx) in dataRangeLabels(row.ranges ?? [])" :key="idx" class="px-1.5 py-0.5 rounded bg-dark-600 text-[10px] text-gray-400">{{ label }}</span>
           </div>
           <div class="flex gap-2">
             <button class="flex-1 px-2 py-2 rounded bg-dark-600 hover:bg-dark-500 text-xs text-gray-200 disabled:opacity-50" :disabled="actionId === row.id" @click="refreshSeries(row.id)">Update</button>
@@ -248,11 +264,11 @@ function statusClass(status: string) {
                 <div class="text-gray-300 text-xs">{{ fmtDate(row.earliest_ms) }} → {{ fmtDate(row.latest_ms) }}</div>
                 <div class="mt-1 flex flex-wrap gap-1">
                   <span
-                    v-for="(range, idx) in (row.ranges ?? [])"
+                    v-for="(label, idx) in dataRangeLabels(row.ranges ?? [])"
                     :key="idx"
                     class="px-1.5 py-0.5 rounded bg-dark-600 text-[10px] text-gray-400"
                   >
-                    {{ fmtRange(range) }}
+                    {{ label }}
                   </span>
                 </div>
                 <div v-if="refreshMessage(row)" class="mt-1 text-[10px] text-accent-light">{{ refreshMessage(row) }}</div>

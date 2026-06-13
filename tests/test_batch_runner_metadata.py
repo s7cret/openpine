@@ -94,13 +94,18 @@ def _write_completed_run(entry: ExportEntry) -> None:
         library_revisions=_revisions(),
     )
     write_json(out_dir / "run_meta.json", meta)
-    write_json(out_dir / "summary.json", _build_run_summary(entry=entry, chart=chart, run_meta=meta, run_info=run_info))
+    write_json(
+        out_dir / "summary.json",
+        _build_run_summary(entry=entry, chart=chart, run_meta=meta, run_info=run_info),
+    )
     for name in ("plots.csv", "trades.csv", "equity_curve.csv"):
         (out_dir / name).write_text("header\n", encoding="utf-8")
     write_json(entry.root / "openpine_outputs" / "openpine_batch_status.json", status)
 
 
-def test_run_meta_schema_v2_requires_production_profile_and_revisions(tmp_path: Path) -> None:
+def test_run_meta_schema_v2_requires_production_profile_and_revisions(
+    tmp_path: Path,
+) -> None:
     entry = _entry(tmp_path)
     _write_completed_run(entry)
     meta_path = entry.root / "openpine_outputs" / "15m" / "run_meta.json"
@@ -124,7 +129,9 @@ def test_skip_completed_accepts_only_complete_schema_v2_outputs(tmp_path: Path) 
 def test_skip_completed_rejects_empty_expected_output(tmp_path: Path) -> None:
     entry = _entry(tmp_path)
     _write_completed_run(entry)
-    (entry.root / "openpine_outputs" / "15m" / "trades.csv").write_text("", encoding="utf-8")
+    (entry.root / "openpine_outputs" / "15m" / "trades.csv").write_text(
+        "", encoding="utf-8"
+    )
 
     assert not completed_for_selection(entry, _args())
 
@@ -210,7 +217,9 @@ def test_current_progress_can_publish_timeframe_summary(tmp_path: Path) -> None:
         summary_by_timeframe=summary,
     )
 
-    payload = json.loads((tmp_path / "current_progress.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / "current_progress.json").read_text(encoding="utf-8")
+    )
 
     assert payload["selected_count"] == 3
     assert payload["processed_count"] == 1
@@ -330,13 +339,12 @@ def test_infer_tv_bar_index_offset_from_periodic_artificial_na(tmp_path: Path) -
     first_visible_local_index = 18
     bars = [
         *[
-            argparse.Namespace(time=chart.start_ms - (first_visible_local_index - idx) * 900_000)
+            argparse.Namespace(
+                time=chart.start_ms - (first_visible_local_index - idx) * 900_000
+            )
             for idx in range(first_visible_local_index)
         ],
-        *[
-            argparse.Namespace(time=chart.start_ms + idx * 900_000)
-            for idx in range(40)
-        ],
+        *[argparse.Namespace(time=chart.start_ms + idx * 900_000) for idx in range(40)],
     ]
 
     offset, meta = _infer_tv_bar_index_offset(chart, bars)
@@ -352,7 +360,9 @@ def test_finish_entry_status_adds_elapsed_seconds(monkeypatch) -> None:
     ticks = iter([10.0, 12.3456])
     monkeypatch.setattr(batch_runner.time, "perf_counter", lambda: next(ticks))
 
-    status = _finish_entry_status({"status": "planned"}, batch_runner.time.perf_counter())
+    status = _finish_entry_status(
+        {"status": "planned"}, batch_runner.time.perf_counter()
+    )
 
     assert status == {"status": "planned", "elapsed_sec": 2.346}
 
@@ -399,7 +409,9 @@ def test_write_timeframe_summary_csv_writes_run_rows(tmp_path: Path) -> None:
     assert "batch-1,1,strategy,15m,ok,10" in text
 
 
-def test_build_batch_summary_payload_serializes_timeframe_bounds(tmp_path: Path) -> None:
+def test_build_batch_summary_payload_serializes_timeframe_bounds(
+    tmp_path: Path,
+) -> None:
     entry = _entry(tmp_path)
     args = argparse.Namespace(
         phase="run",

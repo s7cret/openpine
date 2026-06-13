@@ -18,12 +18,16 @@ class _AccountManager:
 
 
 class _RiskManager:
-    def check_order(self, order: OrderIntent, account: Account) -> tuple[bool, str | None]:
+    def check_order(
+        self, order: OrderIntent, account: Account
+    ) -> tuple[bool, str | None]:
         return True, None
 
 
 class _BlockingRiskManager:
-    def check_order(self, order: OrderIntent, account: Account) -> tuple[bool, str | None]:
+    def check_order(
+        self, order: OrderIntent, account: Account
+    ) -> tuple[bool, str | None]:
         return False, "blocked by risk"
 
 

@@ -4,6 +4,7 @@ import { createChart, ColorType, CrosshairMode } from 'lightweight-charts'
 import DateRangePicker from './DateRangePicker.vue'
 import type { IChartApi, ISeriesApi, CandlestickData, HistogramData, Time, SeriesMarker } from 'lightweight-charts'
 import { formatChartTime } from '@/utils/time'
+import { getDataKlines } from '@/api/client'
 
 interface Trade {
   side: string
@@ -15,6 +16,7 @@ interface Trade {
 }
 
 const props = defineProps<{
+  exchange?: string
   symbol: string
   timeframe: string
   market: 'spot' | 'futures' | string
@@ -90,51 +92,51 @@ function updateVisibleRange() {
   }
 }
 
-async function fetchKlines(symbol: string, interval: string, market: string) {
-  const base = market === 'futures' || market === 'delivery'
-    ? 'https://fapi.binance.com/fapi/v1/klines'
-    : 'https://api.binance.com/api/v3/klines'
-
-  const startTime = new Date(dateFrom.value + 'T00:00:00Z').getTime()
-  const endTime = new Date(dateTo.value + 'T23:59:59Z').getTime()
-
-  const allRaw: any[] = []
-  let cursor = startTime
-  const maxPages = 200
-
-  for (let i = 0; i < maxPages; i++) {
-    const url = `${base}?symbol=${symbol}&interval=${interval}&limit=1000&startTime=${cursor}&endTime=${endTime}`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`Binance API ${res.status}`)
-    const batch = await res.json()
-    if (!batch.length) break
-    allRaw.push(...batch)
-    cursor = parseInt(batch[batch.length - 1][0]) + 1
-    if (cursor >= endTime || batch.length < 1000) break
-  }
-
-  return allRaw
+type ChartBarPayload = {
+  time: number
+  time_close: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number | null
 }
 
-function mapKlines(raw: any[]): { candles: CandlestickData<Time>[]; volumes: HistogramData<Time>[] } {
+async function fetchKlines(symbol: string, interval: string, market: string, exchange?: string) {
+  const startTime = new Date(dateFrom.value + 'T00:00:00Z').getTime()
+  const endTime = new Date(dateTo.value + 'T23:59:59Z').getTime()
+  const { data } = await getDataKlines({
+    exchange: exchange || 'binance',
+    market_type: market,
+    symbol,
+    interval,
+    start_time: startTime,
+    end_time: endTime,
+    limit: 200000,
+  })
+  return (data?.bars ?? []) as ChartBarPayload[]
+}
+
+function mapKlines(raw: ChartBarPayload[]): { candles: CandlestickData<Time>[]; volumes: HistogramData<Time>[] } {
   const candles: CandlestickData<Time>[] = []
   const volumes: HistogramData<Time>[] = []
   candleTimes = []
   for (const k of raw) {
-    const time = (Math.floor(k[0] / 1000)) as Time
-    candleTimes.push(Math.floor(k[0] / 1000))
+    const openTime = Number(k.time)
+    const time = Math.floor(openTime / 1000) as Time
+    candleTimes.push(Math.floor(openTime / 1000))
     candles.push({
       time,
-      open: parseFloat(k[1]),
-      high: parseFloat(k[2]),
-      low: parseFloat(k[3]),
-      close: parseFloat(k[4]),
+      open: Number(k.open),
+      high: Number(k.high),
+      low: Number(k.low),
+      close: Number(k.close),
     })
-    const close = parseFloat(k[4])
-    const open = parseFloat(k[1])
+    const close = Number(k.close)
+    const open = Number(k.open)
     volumes.push({
       time,
-      value: parseFloat(k[5]),
+      value: Number(k.volume ?? 0),
       color: close >= open ? 'rgba(38,166,154,0.4)' : 'rgba(239,83,80,0.4)',
     })
   }
@@ -217,7 +219,7 @@ function buildMarkers(): SeriesMarker<Time>[] {
 async function loadData() {
   if (!chart || !props.symbol) return
   try {
-    const raw = await fetchKlines(props.symbol, props.timeframe, props.market)
+    const raw = await fetchKlines(props.symbol, props.timeframe, props.market, props.exchange)
     const { candles, volumes } = mapKlines(raw)
     if (candleSeries) {
       candleSeries.setData(candles)
@@ -311,7 +313,7 @@ onMounted(() => {
   }
 })
 
-watch(() => [props.symbol, props.timeframe, props.market], () => {
+watch(() => [props.exchange, props.symbol, props.timeframe, props.market], () => {
   loadData()
 })
 

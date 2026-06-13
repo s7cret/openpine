@@ -5,7 +5,11 @@ from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_ti
 from openpine.jobs import JobScheduler, JobType
 from openpine.registry.strategies import StrategyInstance
 from openpine.data.orchestrator import IncompleteCoverageError
-from openpine.workers.strategy_fanout import FanoutStatus, StrategyBarFanout, _job_type_for_strategy_mode
+from openpine.workers.strategy_fanout import (
+    FanoutStatus,
+    StrategyBarFanout,
+    _job_type_for_strategy_mode,
+)
 
 
 def _strategy(
@@ -33,7 +37,13 @@ def _strategy(
     )
 
 
-def _bar(open_time: int, *, symbol: str = "BTCUSDT", timeframe: str = "1m", close: float | None = None) -> Bar:
+def _bar(
+    open_time: int,
+    *,
+    symbol: str = "BTCUSDT",
+    timeframe: str = "1m",
+    close: float | None = None,
+) -> Bar:
     tf = parse_timeframe(timeframe)
     value = close if close is not None else 100.5 + open_time / 60_000
     return Bar(
@@ -63,7 +73,9 @@ class _Orchestrator:
         self.closed = []
         self.bars: dict[tuple[str, str, int], Bar] = {}
 
-    def on_candle_closed(self, bar: Bar, *, instrument_key: str, timeframe: str, source: str):
+    def on_candle_closed(
+        self, bar: Bar, *, instrument_key: str, timeframe: str, source: str
+    ):
         self.closed.append((bar, instrument_key, timeframe, source))
         self.bars[(bar.instrument.symbol, timeframe, bar.time)] = bar
 
@@ -72,7 +84,9 @@ class _Orchestrator:
         out = []
         step = query.timeframe.duration_ms or 0
         while current < query.end_ms:
-            bar = self.bars.get((query.instrument.symbol, query.timeframe.canonical, current))
+            bar = self.bars.get(
+                (query.instrument.symbol, query.timeframe.canonical, current)
+            )
             if bar is not None:
                 out.append(bar)
             current += step
@@ -85,15 +99,19 @@ class _GapOrchestrator(_Orchestrator):
 
 
 def test_strategy_fanout_persists_source_and_enqueues_target_jobs() -> None:
-    registry = _Registry([
-        _strategy("btc-1m", timeframe="1m"),
-        _strategy("btc-15m-a", timeframe="15m"),
-        _strategy("btc-15m-b", timeframe="15m"),
-        _strategy("sol-15m", symbol="SOLUSDT", timeframe="15m"),
-    ])
+    registry = _Registry(
+        [
+            _strategy("btc-1m", timeframe="1m"),
+            _strategy("btc-15m-a", timeframe="15m"),
+            _strategy("btc-15m-b", timeframe="15m"),
+            _strategy("sol-15m", symbol="SOLUSDT", timeframe="15m"),
+        ]
+    )
     orchestrator = _Orchestrator()
     scheduler = JobScheduler()
-    fanout = StrategyBarFanout(registry=registry, orchestrator=orchestrator, scheduler=scheduler)
+    fanout = StrategyBarFanout(
+        registry=registry, orchestrator=orchestrator, scheduler=scheduler
+    )
 
     for minute in range(14):
         orchestrator.on_candle_closed(
@@ -117,8 +135,15 @@ def test_strategy_fanout_persists_source_and_enqueues_target_jobs() -> None:
         JobType.PAPER_BAR_PROCESS,
         JobType.PAPER_BAR_PROCESS,
     ]
-    assert {job.serialization_key for job in scheduler.list_jobs()} == {"btc-1m", "btc-15m-a", "btc-15m-b"}
-    assert {job.input["timeframe"] for job in scheduler.list_jobs() if job.input} == {"1m", "15m"}
+    assert {job.serialization_key for job in scheduler.list_jobs()} == {
+        "btc-1m",
+        "btc-15m-a",
+        "btc-15m-b",
+    }
+    assert {job.input["timeframe"] for job in scheduler.list_jobs() if job.input} == {
+        "1m",
+        "15m",
+    }
 
     persisted = {(item[2], item[3]) for item in orchestrator.closed}
     assert ("1m", "live") in persisted
@@ -129,7 +154,9 @@ def test_strategy_fanout_dedupes_repeated_bar_jobs() -> None:
     registry = _Registry([_strategy("btc-1m", timeframe="1m")])
     orchestrator = _Orchestrator()
     scheduler = JobScheduler()
-    fanout = StrategyBarFanout(registry=registry, orchestrator=orchestrator, scheduler=scheduler)
+    fanout = StrategyBarFanout(
+        registry=registry, orchestrator=orchestrator, scheduler=scheduler
+    )
     bar = _bar(0)
 
     first = fanout.process_source_bar(bar)
@@ -145,7 +172,9 @@ def test_strategy_fanout_waits_until_target_bar_closed() -> None:
     registry = _Registry([_strategy("btc-15m", timeframe="15m")])
     orchestrator = _Orchestrator()
     scheduler = JobScheduler()
-    fanout = StrategyBarFanout(registry=registry, orchestrator=orchestrator, scheduler=scheduler)
+    fanout = StrategyBarFanout(
+        registry=registry, orchestrator=orchestrator, scheduler=scheduler
+    )
 
     result = fanout.process_source_bar(_bar(60_000))
 
@@ -157,7 +186,9 @@ def test_strategy_fanout_waits_until_target_bar_closed() -> None:
 def test_strategy_fanout_treats_incomplete_aggregation_window_as_not_ready() -> None:
     registry = _Registry([_strategy("btc-15m", timeframe="15m")])
     scheduler = JobScheduler()
-    fanout = StrategyBarFanout(registry=registry, orchestrator=_GapOrchestrator(), scheduler=scheduler)
+    fanout = StrategyBarFanout(
+        registry=registry, orchestrator=_GapOrchestrator(), scheduler=scheduler
+    )
 
     result = fanout.process_source_bar(_bar(14 * 60_000))
 

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 
 import pandas as pd
+from openpine._compat import parquet
 
 from openpine.export import (
     ExportWindow,
@@ -17,14 +18,17 @@ from openpine.export import (
 def test_export_plot_outputs_wide_and_filters_window(tmp_path):
     source = tmp_path / "plots.parquet"
     output = tmp_path / "plots.csv"
-    pd.DataFrame(
-        [
-            {"bar_time": 1000, "bar_index": -1, "title": "A", "value": 1.0},
-            {"bar_time": 1000, "bar_index": -1, "title": "B", "value": 2.0},
-            {"bar_time": 2000, "bar_index": 0, "title": "A", "value": 3.0},
-            {"bar_time": 2000, "bar_index": 0, "title": "B", "value": 4.0},
-        ]
-    ).to_parquet(source)
+    parquet.write_dataframe(
+        pd.DataFrame(
+            [
+                {"bar_time": 1000, "bar_index": -1, "title": "A", "value": 1.0},
+                {"bar_time": 1000, "bar_index": -1, "title": "B", "value": 2.0},
+                {"bar_time": 2000, "bar_index": 0, "title": "A", "value": 3.0},
+                {"bar_time": 2000, "bar_index": 0, "title": "B", "value": 4.0},
+            ]
+        ),
+        source,
+    )
 
     rows = export_plot_outputs(source, output, from_ms=2000, to_ms=3000)
 

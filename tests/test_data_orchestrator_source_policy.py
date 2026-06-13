@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import pytest
 
-from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageReport, InstrumentKey, StoreResult, parse_timeframe
+from marketdata_provider.contracts import (
+    Bar,
+    BarQuery,
+    BarSeries,
+    CoverageReport,
+    InstrumentKey,
+    StoreResult,
+    parse_timeframe,
+)
 from openpine.data.orchestrator import (
     DataOrchestrator,
     IncompleteCoverageError,
@@ -53,13 +61,17 @@ def _open_bar(time_ms: int) -> Bar:
 
 
 class _Storage:
-    def __init__(self, bars: tuple[Bar, ...] = (), *, write_success: bool = True) -> None:
+    def __init__(
+        self, bars: tuple[Bar, ...] = (), *, write_success: bool = True
+    ) -> None:
         self.bars = bars
         self.write_success = write_success
         self.writes: list[list[Bar]] = []
 
     def read(self, query: BarQuery) -> BarSeries:
-        return BarSeries(query=query, bars=self.bars, coverage=_coverage(query, self.bars, "storage"))
+        return BarSeries(
+            query=query, bars=self.bars, coverage=_coverage(query, self.bars, "storage")
+        )
 
     def write(self, series: BarSeries) -> StoreResult:
         self.writes.append(list(series.bars))
@@ -78,7 +90,9 @@ class _Provider:
 
     def fetch_bars(self, query: BarQuery) -> BarSeries:
         self.calls.append(query)
-        bars = tuple(bar for bar in self.bars if query.start_ms <= bar.time < query.end_ms)
+        bars = tuple(
+            bar for bar in self.bars if query.start_ms <= bar.time < query.end_ms
+        )
         return BarSeries(
             query=query,
             bars=bars,
@@ -111,8 +125,14 @@ def _coverage(query: BarQuery, bars: tuple[Bar, ...], source: str) -> CoverageRe
             status="empty",
         )
     delivered = {bar.time for bar in bars}
-    expected = range(query.start_ms, query.end_ms, query.timeframe.duration_ms or query.end_ms)
-    missing = tuple((start, start + (query.timeframe.duration_ms or 0)) for start in expected if start not in delivered)
+    expected = range(
+        query.start_ms, query.end_ms, query.timeframe.duration_ms or query.end_ms
+    )
+    missing = tuple(
+        (start, start + (query.timeframe.duration_ms or 0))
+        for start in expected
+        if start not in delivered
+    )
     return CoverageReport(
         requested_start_ms=query.start_ms,
         requested_end_ms=query.end_ms,
@@ -158,7 +178,9 @@ def test_auto_fetches_provider_persists_and_merges_when_storage_incomplete() -> 
     assert [(call.start_ms, call.end_ms) for call in provider.calls] == [
         (60_000, 180_000),
     ]
-    assert [[bar.time for bar in write] for write in storage.writes] == [[60_000, 120_000]]
+    assert [[bar.time for bar in write] for write in storage.writes] == [
+        [60_000, 120_000]
+    ]
 
 
 def test_auto_passes_progress_callback_to_gap_provider_fetch() -> None:
@@ -167,7 +189,10 @@ def test_auto_passes_progress_callback_to_gap_provider_fetch() -> None:
     orchestrator = DataOrchestrator(candle_store=storage, provider=provider)
     progress: list[tuple[int, int]] = []
 
-    series = orchestrator.load_bars(_query(source="auto"), progress_callback=lambda bars, pages: progress.append((bars, pages)))
+    series = orchestrator.load_bars(
+        _query(source="auto"),
+        progress_callback=lambda bars, pages: progress.append((bars, pages)),
+    )
 
     assert [bar.time for bar in series.bars] == [0, 60_000, 120_000]
     assert progress == [(2, 1)]

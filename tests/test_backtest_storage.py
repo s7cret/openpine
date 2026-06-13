@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 import tempfile
 from pathlib import Path
 
@@ -50,7 +49,18 @@ class FakeTrade:
 
 
 class FakeEquityPoint:
-    def __init__(self, time, equity, cash=0, position_size=0, position_avg_price=None, open_profit=0, realized_profit=0, drawdown=0, drawdown_percent=0):
+    def __init__(
+        self,
+        time,
+        equity,
+        cash=0,
+        position_size=0,
+        position_avg_price=None,
+        open_profit=0,
+        realized_profit=0,
+        drawdown=0,
+        drawdown_percent=0,
+    ):
         self.time = time
         self.equity = equity
         self.cash = cash
@@ -169,8 +179,26 @@ def test_save_result_updates_status_and_metrics(store):
         losing_trades=5,
     )
     trades = [
-        FakeTrade("T1", "long", 1000, 100.0, 1.0, exit_time=2000, exit_price=110.0, profit=10.0),
-        FakeTrade("T2", "short", 3000, 110.0, 1.0, exit_time=4000, exit_price=105.0, profit=5.0),
+        FakeTrade(
+            "T1",
+            "long",
+            1000,
+            100.0,
+            1.0,
+            exit_time=2000,
+            exit_price=110.0,
+            profit=10.0,
+        ),
+        FakeTrade(
+            "T2",
+            "short",
+            3000,
+            110.0,
+            1.0,
+            exit_time=4000,
+            exit_price=105.0,
+            profit=5.0,
+        ),
     ]
     equity = [
         FakeEquityPoint(1000, 10000.0),
@@ -355,7 +383,9 @@ def test_plot_records_support_tuple_records_and_na_values():
     FakeNA.__name__ = "PineNASentinel"
     records = BacktestResultStore._plot_records([(1000, 7, FakeNA(), "plot A")])
 
-    assert records == [{"bar_time": 1000, "bar_index": 7, "value": None, "title": "plot A"}]
+    assert records == [
+        {"bar_time": 1000, "bar_index": 7, "value": None, "title": "plot A"}
+    ]
 
 
 def test_save_result_inserts_trades(store):
@@ -411,6 +441,37 @@ def test_save_result_creates_artifacts(store):
     assert ARTIFACT_TYPE_REPORT_JSON in types
 
 
+def test_save_result_does_not_publish_corrupt_parquet_artifacts(store, monkeypatch, tmp_path):
+    store._data_dir = tmp_path / "backtests"
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+
+    def fail_count(path: Path):
+        if path.name == "trades.parquet":
+            raise ValueError("corrupt parquet")
+        return 0
+
+    monkeypatch.setattr("openpine.storage.backtest_storage.parquet.row_count", fail_count)
+
+    with pytest.raises(RuntimeError, match="corrupt parquet"):
+        store.save_result(
+            run_id,
+            FakeResult(initial_capital=10000.0, net_profit=10.0),
+            [FakeTrade("T1", "long", 1000, 100.0, 1.0, profit=10.0)],
+        )
+
+    run_dir = store._run_dir("strat_1", run_id)
+    assert not run_dir.exists()
+    assert not run_dir.with_suffix(".tmp").exists()
+
+
 def test_mark_failed(store):
     req = BacktestRunRequest(
         strategy_id="strat_1",
@@ -439,8 +500,9 @@ def test_get_latest_run(store):
         symbol="BTCUSDT",
         timeframe="15m",
     )
-    run_id_1 = store.create_run(req)
+    store.create_run(req)
     import time
+
     time.sleep(0.01)  # Ensure different timestamps
     run_id_2 = store.create_run(req)
 
@@ -497,8 +559,11 @@ def test_save_result_atomic_cleanup_on_failure(store, tmp_db):
     # Force failure by passing invalid equity_curve (object without required attrs)
     class BadPoint:
         pass
+
     with pytest.raises(Exception):
-        store.save_result(run_id, FakeResult(initial_capital=10000), [], equity_curve=[BadPoint()])
+        store.save_result(
+            run_id, FakeResult(initial_capital=10000), [], equity_curve=[BadPoint()]
+        )
 
     # Run should still be in running status (not done or failed)
     run = store.get_run(run_id)

@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from marketdata_provider.contracts import Bar, BarQuery, BarSeries, InstrumentKey, parse_timeframe
+from marketdata_provider.contracts import (
+    Bar,
+    BarQuery,
+    BarSeries,
+    InstrumentKey,
+    parse_timeframe,
+)
 
 from openpine.adapters.bars import from_provider_bars, to_engine_bars, to_pinelib_bars
 from openpine.runtime.engine import (
@@ -33,7 +39,9 @@ def test_bar_adapters_preserve_canonical_window_semantics() -> None:
         volume=None,
         closed=True,
     )
-    series = BarSeries(query=query, bars=(bar,), coverage=from_provider_bars((bar,), query).coverage)
+    series = BarSeries(
+        query=query, bars=(bar,), coverage=from_provider_bars((bar,), query).coverage
+    )
 
     engine_bar = BacktestEngineAdapter()._to_engine_bar(bar)
     engine_series = to_engine_bars(series)
@@ -53,7 +61,9 @@ def test_bar_adapters_preserve_canonical_window_semantics() -> None:
 def test_runtime_rejects_failed_compile_artifact(monkeypatch, tmp_path) -> None:
     artifact_dir = tmp_path / "art_failed"
     artifact_dir.mkdir()
-    (artifact_dir / "generated_strategy.py").write_text("class GeneratedStrategy: pass\n")
+    (artifact_dir / "generated_strategy.py").write_text(
+        "class GeneratedStrategy: pass\n"
+    )
 
     class Store:
         def get_artifact(self, artifact_id: str, source_id: str) -> dict:
@@ -66,14 +76,18 @@ def test_runtime_rejects_failed_compile_artifact(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(openpine.artifacts, "ArtifactStore", Store)
 
-    with pytest.raises(BacktestArtifactError, match="not a successful production compile"):
+    with pytest.raises(
+        BacktestArtifactError, match="not a successful production compile"
+    ):
         load_generated_class_from_artifact("pine_test", "art_failed")
 
 
 def test_runtime_rejects_unsafe_compile_artifact(monkeypatch, tmp_path) -> None:
     artifact_dir = tmp_path / "art_unsafe"
     artifact_dir.mkdir()
-    (artifact_dir / "generated_strategy.py").write_text("class GeneratedStrategy: pass\n")
+    (artifact_dir / "generated_strategy.py").write_text(
+        "class GeneratedStrategy: pass\n"
+    )
 
     class Store:
         def get_artifact(self, artifact_id: str, source_id: str) -> dict:

@@ -24,9 +24,15 @@ class _FailingClient:
 @pytest.mark.parametrize(
     "adapter,error_text",
     [
-        (BinanceLiveExecutionAdapter(), "Binance reconcile requires an injected client"),
+        (
+            BinanceLiveExecutionAdapter(),
+            "Binance reconcile requires an injected client",
+        ),
         (BybitLiveExecutionAdapter(), "Bybit reconcile requires an injected client"),
-        (BinanceLiveExecutionAdapter(client=_FailingClient()), "Binance reconcile failed"),
+        (
+            BinanceLiveExecutionAdapter(client=_FailingClient()),
+            "Binance reconcile failed",
+        ),
         (BybitLiveExecutionAdapter(client=_FailingClient()), "Bybit reconcile failed"),
     ],
 )
@@ -82,10 +88,19 @@ async def test_live_protocol_cancel_fails_closed_without_tracked_symbol(
 @pytest.mark.parametrize(
     "adapter,error_text",
     [
-        (BinanceLiveExecutionAdapter(), "Binance order status requires an injected client"),
+        (
+            BinanceLiveExecutionAdapter(),
+            "Binance order status requires an injected client",
+        ),
         (BybitLiveExecutionAdapter(), "Bybit order status requires an injected client"),
-        (BinanceLiveExecutionAdapter(client=_FailingClient()), "Binance order status failed"),
-        (BybitLiveExecutionAdapter(client=_FailingClient()), "Bybit order status failed"),
+        (
+            BinanceLiveExecutionAdapter(client=_FailingClient()),
+            "Binance order status failed",
+        ),
+        (
+            BybitLiveExecutionAdapter(client=_FailingClient()),
+            "Bybit order status failed",
+        ),
     ],
 )
 async def test_live_status_fails_closed_without_synthetic_none(

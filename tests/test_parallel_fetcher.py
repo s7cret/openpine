@@ -39,7 +39,9 @@ def test_parallel_fetcher_fails_closed_on_job_error() -> None:
         fetcher.fetch_many([FetchJob("BTCUSDT", "1m", 1, 2)])
 
 
-def test_default_workers_falls_back_when_cpu_count_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_default_workers_falls_back_when_cpu_count_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr("openpine.data.parallel_fetcher.os.cpu_count", lambda: None)
 
     assert _default_workers() == 1

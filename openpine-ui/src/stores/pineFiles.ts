@@ -13,6 +13,15 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
     try {
       const { data } = await api.getPineFiles()
       items.value = data ?? []
+      const compiledIds = new Set(
+        items.value
+          .filter((file: any) => file.active_artifact_id)
+          .map((file: any) => file.id ?? file.source_id)
+          .filter(Boolean),
+      )
+      if (compiledIds.size) {
+        compiling.value = new Set([...compiling.value].filter(id => !compiledIds.has(id)))
+      }
     } catch (e) { console.error(e) }
     loading.value = false
   }
@@ -26,7 +35,7 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
     }
   }
 
-  async function create(name: string, sourceText: string): Promise<{ sourceId?: string; error?: string }> {
+  async function create(name: string, sourceText: string): Promise<{ sourceId?: string; error?: string; compileQueued?: boolean; operationId?: string }> {
     try {
       const { data } = await api.createPineFile({ name, source_text: sourceText, source_type: 'unknown' })
       const sourceId = data?.id
@@ -36,7 +45,12 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
       if (sourceId) {
         compiling.value = new Set([...compiling.value, sourceId])
         try {
-          await api.compilePineFile(sourceId)
+          const compileResult = await api.compilePineFile(sourceId)
+          const compileData = compileResult?.data ?? {}
+          if (compileData.status === 'queued') {
+            await fetchAll()
+            return { sourceId, compileQueued: true, operationId: compileData.operation_id }
+          }
           compiling.value = new Set([...compiling.value].filter(id => id !== sourceId))
           await fetchAll() // Refresh to get artifact info
         } catch (compileErr: any) {

@@ -6,6 +6,7 @@ This is a regression test for the bug where:
 
 The flag should be read-only/export-only and never affect execution.
 """
+
 from __future__ import annotations
 
 from dataclasses import fields, make_dataclass
@@ -289,7 +290,9 @@ def test_strategy_backtest_readiness_window_and_load_helpers():
 
     assert _strategy_backtest_readiness_error(ready) is None
     assert "no pine_id" in _strategy_backtest_readiness_error(missing_pine)
-    assert "no compiled artifact" in _strategy_backtest_readiness_error(missing_artifact)
+    assert "no compiled artifact" in _strategy_backtest_readiness_error(
+        missing_artifact
+    )
 
     window = _parse_strategy_backtest_window(
         from_date="1700000000",
@@ -605,21 +608,28 @@ def test_doctor_writable_dir_helper_reports_success_and_failure(tmp_path):
 
 def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
     """CLI backtest must keep the BacktestEngine adapter selected by the loader."""
-    
+
     # Mock strategy class with generated_strategy_class_ref
     mock_generated_class = MagicMock()
     mock_strategy_class = MagicMock()
     mock_strategy_class.generated_strategy_class_ref = mock_generated_class
-    
+
     # Patch at the source modules where imports come from
-    with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, \
-         patch("openpine.registry.SQLiteStrategyRegistry") as MockRegistry, \
-         patch("openpine.data.orchestrator.DataOrchestrator") as MockOrch, \
-         patch("openpine.data.provider_adapter.create_local_marketdata_provider_adapter") as MockProvider, \
-         patch("openpine.artifacts.ArtifactStore") as MockArtifactStore, \
-         patch("openpine.storage.BacktestResultStore") as MockStore, \
-         patch("openpine.runtime.engine.load_strategy_class_from_artifact", return_value=mock_strategy_class):
-        
+    with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, patch(
+        "openpine.registry.SQLiteStrategyRegistry"
+    ) as MockRegistry, patch(
+        "openpine.data.orchestrator.DataOrchestrator"
+    ) as MockOrch, patch(
+        "openpine.data.provider_adapter.create_local_marketdata_provider_adapter"
+    ), patch(
+        "openpine.artifacts.ArtifactStore"
+    ) as MockArtifactStore, patch(
+        "openpine.storage.BacktestResultStore"
+    ), patch(
+        "openpine.runtime.engine.load_strategy_class_from_artifact",
+        return_value=mock_strategy_class,
+    ):
+
         # Set up mocks
         mock_registry = MockRegistry.return_value
         mock_registry.get_strategy.return_value = MagicMock(
@@ -631,17 +641,15 @@ def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
             timeframe="1h",
             exchange="binance",
             market_type="spot",
-            params_json='{}',
+            params_json="{}",
         )
-        
+
         mock_orch = MockOrch.return_value
         mock_orch.get_bars.return_value = [MagicMock()]
-        
+
         mock_artifact = MockArtifactStore.return_value
         mock_artifact.get_artifact.return_value = {"compile_meta": {}}
-        
-        mock_store = MockStore.return_value
-        
+
         mock_instance = MockAdapter.return_value
         mock_result = MagicMock()
         mock_result.raw_result = MagicMock()
@@ -651,30 +659,35 @@ def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
         mock_result.bars_processed = 1
         mock_result.uses_backtest_engine = True
         mock_instance.run.return_value = mock_result
-        
+
         # Test A: without capture_plots
         from openpine.cli import strategy_backtest
         from click.testing import CliRunner
-        
+
         runner = CliRunner()
-        
-        result_a = runner.invoke(strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02"])
-        
+
+        runner.invoke(
+            strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02"]
+        )
+
         # Get the call args for run A
         call_args_a = mock_instance.run.call_args
         backend_a = call_args_a.kwargs.get("execution_backend") if call_args_a else None
         strategy_class_a = call_args_a.args[0] if call_args_a else None
-        
+
         # Reset mock
         mock_instance.run.reset_mock()
-        
+
         # Test B: with capture_plots
-        result_b = runner.invoke(strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02", "--capture-plots"])
-        
+        runner.invoke(
+            strategy_backtest,
+            ["test", "--from", "2024-01-01", "--to", "2024-01-02", "--capture-plots"],
+        )
+
         call_args_b = mock_instance.run.call_args
         backend_b = call_args_b.kwargs.get("execution_backend") if call_args_b else None
         strategy_class_b = call_args_b.args[0] if call_args_b else None
-        
+
         assert backend_a is None
         assert backend_b is None
         assert strategy_class_a is mock_strategy_class
@@ -684,18 +697,25 @@ def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
 def test_no_generated_ref_no_backend():
     """When strategy has NO generated_strategy_class_ref, no backend is used
     regardless of --capture-plots flag."""
-    
+
     mock_strategy_class = MagicMock()
     # No generated_strategy_class_ref attribute
-    
-    with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, \
-         patch("openpine.registry.SQLiteStrategyRegistry") as MockRegistry, \
-         patch("openpine.data.orchestrator.DataOrchestrator") as MockOrch, \
-         patch("openpine.data.provider_adapter.create_local_marketdata_provider_adapter") as MockProvider, \
-         patch("openpine.artifacts.ArtifactStore") as MockArtifactStore, \
-         patch("openpine.storage.BacktestResultStore") as MockStore, \
-         patch("openpine.runtime.engine.load_strategy_class_from_artifact", return_value=mock_strategy_class):
-        
+
+    with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, patch(
+        "openpine.registry.SQLiteStrategyRegistry"
+    ) as MockRegistry, patch(
+        "openpine.data.orchestrator.DataOrchestrator"
+    ) as MockOrch, patch(
+        "openpine.data.provider_adapter.create_local_marketdata_provider_adapter"
+    ), patch(
+        "openpine.artifacts.ArtifactStore"
+    ) as MockArtifactStore, patch(
+        "openpine.storage.BacktestResultStore"
+    ), patch(
+        "openpine.runtime.engine.load_strategy_class_from_artifact",
+        return_value=mock_strategy_class,
+    ):
+
         mock_registry = MockRegistry.return_value
         mock_registry.get_strategy.return_value = MagicMock(
             strategy_id="test",
@@ -706,17 +726,15 @@ def test_no_generated_ref_no_backend():
             timeframe="1h",
             exchange="binance",
             market_type="spot",
-            params_json='{}',
+            params_json="{}",
         )
-        
+
         mock_orch = MockOrch.return_value
         mock_orch.get_bars.return_value = [MagicMock()]
-        
+
         mock_artifact = MockArtifactStore.return_value
         mock_artifact.get_artifact.return_value = {"compile_meta": {}}
-        
-        mock_store = MockStore.return_value
-        
+
         mock_instance = MockAdapter.return_value
         mock_result = MagicMock()
         mock_result.raw_result = MagicMock()
@@ -726,26 +744,35 @@ def test_no_generated_ref_no_backend():
         mock_result.bars_processed = 1
         mock_result.uses_backtest_engine = True
         mock_instance.run.return_value = mock_result
-        
+
         from openpine.cli import strategy_backtest
         from click.testing import CliRunner
-        
+
         runner = CliRunner()
-        
+
         # Test A: without capture_plots
-        result_a = runner.invoke(strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02"])
-        
+        runner.invoke(
+            strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02"]
+        )
+
         call_args_a = mock_instance.run.call_args
         backend_a = call_args_a.kwargs.get("execution_backend") if call_args_a else None
-        
+
         mock_instance.run.reset_mock()
-        
+
         # Test B: with capture_plots
-        result_b = runner.invoke(strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02", "--capture-plots"])
-        
+        runner.invoke(
+            strategy_backtest,
+            ["test", "--from", "2024-01-01", "--to", "2024-01-02", "--capture-plots"],
+        )
+
         call_args_b = mock_instance.run.call_args
         backend_b = call_args_b.kwargs.get("execution_backend") if call_args_b else None
-        
+
         # Assertions: no backend in either case
-        assert backend_a is None, f"Expected no backend without capture_plots, got {backend_a}"
-        assert backend_b is None, f"Expected no backend with capture_plots, got {backend_b}"
+        assert (
+            backend_a is None
+        ), f"Expected no backend without capture_plots, got {backend_a}"
+        assert (
+            backend_b is None
+        ), f"Expected no backend with capture_plots, got {backend_b}"

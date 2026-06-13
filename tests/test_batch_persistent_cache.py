@@ -46,7 +46,15 @@ def test_bar_cache_round_trips_exact_query(tmp_path: Path) -> None:
     loaded, meta = cached
     assert meta["cache_hit"] is True
     assert loaded == bars
-    assert load_bars(tmp_path, {**key, "calculation_to": 3}, instrument=instrument, timeframe=timeframe) is None
+    assert (
+        load_bars(
+            tmp_path,
+            {**key, "calculation_to": 3},
+            instrument=instrument,
+            timeframe=timeframe,
+        )
+        is None
+    )
 
 
 def test_tv_corpus_cache_round_trips_with_fingerprint(tmp_path: Path) -> None:

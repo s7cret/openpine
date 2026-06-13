@@ -62,9 +62,15 @@ def test_strategy_ledger_separates_history_and_paper_trades(tmp_path) -> None:
             )
         )
 
-        assert [trade.trade_id for trade in ledger.list_trades(source=LedgerSource.HISTORY)] == ["trade-history"]
-        assert [trade.trade_id for trade in ledger.list_trades(source=LedgerSource.PAPER)] == ["trade-paper"]
-        assert storage.execute("SELECT count(*) FROM backtest_trades").fetchone()[0] == 0
+        assert [
+            trade.trade_id for trade in ledger.list_trades(source=LedgerSource.HISTORY)
+        ] == ["trade-history"]
+        assert [
+            trade.trade_id for trade in ledger.list_trades(source=LedgerSource.PAPER)
+        ] == ["trade-paper"]
+        assert (
+            storage.execute("SELECT count(*) FROM backtest_trades").fetchone()[0] == 0
+        )
         assert storage.execute("SELECT count(*) FROM orders").fetchone()[0] == 0
     finally:
         storage.close()
@@ -119,6 +125,9 @@ def test_strategy_ledger_upserts_current_position(tmp_path) -> None:
         assert loaded.source == LedgerSource.PAPER
         assert loaded.realized_pnl == 1.5
         assert loaded.last_bar_time == 20
-        assert storage.execute("SELECT count(*) FROM strategy_positions").fetchone()[0] == 1
+        assert (
+            storage.execute("SELECT count(*) FROM strategy_positions").fetchone()[0]
+            == 1
+        )
     finally:
         storage.close()

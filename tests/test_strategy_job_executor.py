@@ -9,7 +9,10 @@ from openpine.registry.strategies import StrategyInstance
 from openpine.state.store import StateStore
 from openpine.storage import MigrationRunner, SQLiteStorage
 from openpine.storage.strategy_ledger import LedgerSource, StrategyLedger
-from openpine.workers.strategy_job_executor import StrategyJobExecutor, StrategyJobStatus
+from openpine.workers.strategy_job_executor import (
+    StrategyJobExecutor,
+    StrategyJobStatus,
+)
 
 
 class _DummyStrategy:
@@ -136,7 +139,9 @@ def _runtime_result(bar: Bar):
         open_trades=[],
         net_profit=3.0,
     )
-    return SimpleNamespace(status="completed", resume_state=resume_state, raw_result=raw_result)
+    return SimpleNamespace(
+        status="completed", resume_state=resume_state, raw_result=raw_result
+    )
 
 
 def _storage(tmp_path):
@@ -145,7 +150,9 @@ def _storage(tmp_path):
     return storage
 
 
-def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(tmp_path) -> None:
+def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(
+    tmp_path,
+) -> None:
     bar = _bar()
     scheduler = JobScheduler()
     job = scheduler.enqueue(_job(bar))
@@ -181,7 +188,9 @@ def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(tmp_p
         )
         assert position is not None
         assert position.qty == 0.2
-        assert [trade.source for trade in ledger.list_trades(strategy_id="strategy-1")] == [LedgerSource.PAPER]
+        assert [
+            trade.source for trade in ledger.list_trades(strategy_id="strategy-1")
+        ] == [LedgerSource.PAPER]
     finally:
         storage.close()
 
@@ -247,7 +256,9 @@ def test_strategy_job_executor_marks_failed_without_snapshot(tmp_path) -> None:
     assert state_store.list_snapshots("strategy-1") == []
 
 
-def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(tmp_path) -> None:
+def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(
+    tmp_path,
+) -> None:
     bar = _bar()
     scheduler = JobScheduler()
     job = scheduler.enqueue(_job(bar))
@@ -273,12 +284,15 @@ def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(tmp_pa
         assert result.snapshot_id
         assert result.trades_recorded == 0
         assert ledger.list_trades(strategy_id="strategy-1") == []
-        assert ledger.get_position(
-            strategy_id="strategy-1",
-            exchange="binance",
-            market_type="spot",
-            symbol="BTCUSDT",
-            timeframe="15m",
-        ) is None
+        assert (
+            ledger.get_position(
+                strategy_id="strategy-1",
+                exchange="binance",
+                market_type="spot",
+                symbol="BTCUSDT",
+                timeframe="15m",
+            )
+            is None
+        )
     finally:
         storage.close()

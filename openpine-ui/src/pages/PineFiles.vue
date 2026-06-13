@@ -45,6 +45,13 @@ async function addFile() {
     createStatus.value = `❌ ${result.error}`
     return
   }
+  if (result.compileQueued) {
+    createStatus.value = `✅ Created. Compile queued${result.operationId ? ` (${result.operationId.slice(0, 12)}…)` : ''}. Refresh shortly for the active artifact.`
+    newName.value = ''
+    newContent.value = ''
+    setTimeout(() => { showAdd.value = false; createStatus.value = '' }, 2500)
+    return
+  }
   createStatus.value = '✅ Created and compiled!'
   newName.value = ''
   newContent.value = ''

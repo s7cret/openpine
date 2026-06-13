@@ -10,10 +10,14 @@ import tomllib
 import pytest
 
 from openpine.compile import CompileProfile, SubprocessCompilerAdapter
-from openpine.optimizer import LocalOptimizerAdapter, OptimizerRunConfig, OptimizerService
-
+from openpine.optimizer import (
+    LocalOptimizerAdapter,
+    OptimizerRunConfig,
+    OptimizerService,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
+PKG_ROOT = ROOT / "openpine"
 PRODUCTION_EXCLUDES = {
     ".git",
     ".cache",
@@ -41,8 +45,8 @@ FORBIDDEN_MARKETDATA_IMPORTS = (
 def _production_python_files() -> list[Path]:
     return sorted(
         path
-        for path in ROOT.rglob("*.py")
-        if not set(path.relative_to(ROOT).parts) & PRODUCTION_EXCLUDES
+        for path in PKG_ROOT.rglob("*.py")
+        if not set(path.relative_to(PKG_ROOT).parts) & PRODUCTION_EXCLUDES
     )
 
 
@@ -54,8 +58,8 @@ def test_cli_is_package_entrypoint_not_root_module() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert not (ROOT / "cli.py").exists()
-    assert (ROOT / "cli" / "__init__.py").is_file()
-    assert (ROOT / "cli" / "main.py").is_file()
+    assert (PKG_ROOT / "cli" / "__init__.py").is_file()
+    assert (PKG_ROOT / "cli" / "main.py").is_file()
     assert pyproject["project"]["scripts"]["openpine"] == "openpine.cli.main:main"
 
     import openpine.cli as cli_pkg
@@ -66,17 +70,23 @@ def test_cli_is_package_entrypoint_not_root_module() -> None:
 
 def test_pyproject_includes_all_package_directories() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    declared_packages = set(pyproject["tool"]["setuptools"]["packages"])
+    find_cfg = pyproject["tool"]["setuptools"]["packages"]["find"]
+    assert "openpine*" in find_cfg["include"]
     package_dirs = {
-        "openpine" if path == ROOT else "openpine." + path.relative_to(ROOT).as_posix().replace("/", ".")
-        for path in ROOT.rglob("*")
+        (
+            "openpine"
+            if path == PKG_ROOT
+            else "openpine." + path.relative_to(PKG_ROOT).as_posix().replace("/", ".")
+        )
+        for path in [PKG_ROOT, *PKG_ROOT.rglob("*")]
         if path.is_dir()
         and not path.is_symlink()
         and (path / "__init__.py").is_file()
-        and not set(path.relative_to(ROOT).parts) & PRODUCTION_EXCLUDES
+        and not set(path.relative_to(PKG_ROOT).parts) & PRODUCTION_EXCLUDES
     }
 
-    assert package_dirs <= declared_packages
+    assert "openpine" in package_dirs
+    assert "openpine.gateway.routes" in package_dirs
 
 
 def test_no_executable_legacy_scripts_remain() -> None:
@@ -95,7 +105,7 @@ def test_no_executable_legacy_scripts_remain() -> None:
 
 
 def test_batch_runner_is_not_a_legacy_executable_surface() -> None:
-    source = (ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
 
     assert not source.startswith("#!")
@@ -103,7 +113,10 @@ def test_batch_runner_is_not_a_legacy_executable_surface() -> None:
         isinstance(node, ast.Compare)
         and isinstance(node.left, ast.Name)
         and node.left.id == "__name__"
-        and any(isinstance(comparator, ast.Constant) and comparator.value == "__main__" for comparator in node.comparators)
+        and any(
+            isinstance(comparator, ast.Constant) and comparator.value == "__main__"
+            for comparator in node.comparators
+        )
         for node in ast.walk(tree)
     )
 
@@ -114,7 +127,7 @@ def test_production_source_does_not_mutate_sys_path_or_hardcode_home_paths() -> 
 
     for path in _production_python_files():
         module = _parse(path)
-        relative_path = path.relative_to(ROOT).as_posix()
+        relative_path = path.relative_to(PKG_ROOT).as_posix()
 
         for node in ast.walk(module):
             if (
@@ -143,11 +156,14 @@ def test_production_source_does_not_use_notimplemented_control_flow() -> None:
     offenders: list[str] = []
     for path in _production_python_files():
         module = _parse(path)
-        relative_path = path.relative_to(ROOT).as_posix()
+        relative_path = path.relative_to(PKG_ROOT).as_posix()
         for node in ast.walk(module):
             if isinstance(node, ast.ExceptHandler):
                 handled = node.type
-                if isinstance(handled, ast.Name) and handled.id == "NotImplementedError":
+                if (
+                    isinstance(handled, ast.Name)
+                    and handled.id == "NotImplementedError"
+                ):
                     offenders.append(f"{relative_path}:{node.lineno}")
 
     assert offenders == []
@@ -157,7 +173,7 @@ def test_production_source_does_not_use_deprecated_utcfromtimestamp() -> None:
     offenders: list[str] = []
     for path in _production_python_files():
         module = _parse(path)
-        relative_path = path.relative_to(ROOT).as_posix()
+        relative_path = path.relative_to(PKG_ROOT).as_posix()
 
         for node in ast.walk(module):
             if isinstance(node, ast.Attribute) and node.attr == "utcfromtimestamp":
@@ -171,11 +187,16 @@ def test_openpine_production_does_not_define_duplicate_marketdata_contracts() ->
 
     for path in _production_python_files():
         module = _parse(path)
-        relative_path = path.relative_to(ROOT).as_posix()
+        relative_path = path.relative_to(PKG_ROOT).as_posix()
 
         for node in ast.walk(module):
-            if isinstance(node, ast.ClassDef) and node.name in CANONICAL_MARKETDATA_CONTRACTS:
-                duplicate_definitions.append(f"{relative_path}:{node.lineno}:{node.name}")
+            if (
+                isinstance(node, ast.ClassDef)
+                and node.name in CANONICAL_MARKETDATA_CONTRACTS
+            ):
+                duplicate_definitions.append(
+                    f"{relative_path}:{node.lineno}:{node.name}"
+                )
 
     assert duplicate_definitions == []
 
@@ -185,7 +206,7 @@ def test_openpine_uses_marketdata_provider_stable_api_only() -> None:
 
     for path in _production_python_files():
         module = _parse(path)
-        relative_path = path.relative_to(ROOT).as_posix()
+        relative_path = path.relative_to(PKG_ROOT).as_posix()
 
         for node in ast.walk(module):
             if isinstance(node, ast.ImportFrom) and node.module:
@@ -200,7 +221,7 @@ def test_openpine_uses_marketdata_provider_stable_api_only() -> None:
 
 
 def test_data_orchestrator_has_no_legacy_candle_storage_boundary() -> None:
-    source = (ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
 
     assert "CandleStorage" not in source
     assert "read_candles" not in source
@@ -209,7 +230,7 @@ def test_data_orchestrator_has_no_legacy_candle_storage_boundary() -> None:
 
 
 def test_data_inspect_cli_uses_orchestrator_boundary() -> None:
-    source = (ROOT / "cli" / "data.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "cli" / "data.py").read_text(encoding="utf-8")
     inspect_start = source.index('@data.command("inspect")')
     doctor_start = source.index('@data.command("doctor")')
     inspect_source = source[inspect_start:doctor_start]
@@ -221,7 +242,7 @@ def test_data_inspect_cli_uses_orchestrator_boundary() -> None:
 
 
 def test_data_doctor_cli_uses_orchestrator_boundary() -> None:
-    source = (ROOT / "cli" / "data.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "cli" / "data.py").read_text(encoding="utf-8")
     doctor_start = source.index('@data.command("doctor")')
     providers_start = source.index('@data.command("providers")')
     doctor_source = source[doctor_start:providers_start]
@@ -234,12 +255,14 @@ def test_data_doctor_cli_uses_orchestrator_boundary() -> None:
 
 
 def test_data_backfill_wait_uses_orchestrator_provider_boundary() -> None:
-    source = (ROOT / "cli" / "data.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "cli" / "data.py").read_text(encoding="utf-8")
     backfill_start = source.index('@data.command("backfill")')
     parallel_start = source.index('@data.command("parallel-backfill")')
     helper_start = source.index("def _run_sync_marketdata_backfill")
     helper_end = source.index("@click.group()")
-    backfill_source = source[backfill_start:parallel_start] + source[helper_start:helper_end]
+    backfill_source = (
+        source[backfill_start:parallel_start] + source[helper_start:helper_end]
+    )
 
     assert "DataOrchestrator" in backfill_source
     assert "create_local_marketdata_provider_adapter" in backfill_source
@@ -253,7 +276,7 @@ def test_data_backfill_wait_uses_orchestrator_provider_boundary() -> None:
 
 
 def test_data_gaps_cli_uses_orchestrator_boundary() -> None:
-    source = (ROOT / "cli" / "data.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "cli" / "data.py").read_text(encoding="utf-8")
     gaps_start = source.index('@data.command("gaps")')
     repair_start = source.index('@data.command("repair")')
     gaps_source = source[gaps_start:repair_start]
@@ -266,7 +289,7 @@ def test_data_gaps_cli_uses_orchestrator_boundary() -> None:
 
 
 def test_data_cli_does_not_expose_legacy_compaction_command() -> None:
-    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "cli" / "main.py").read_text(encoding="utf-8")
 
     assert '@data.command("compact")' not in source
     assert "openpine-compacted" not in source
@@ -288,8 +311,8 @@ def test_data_package_does_not_export_legacy_planner_models() -> None:
 
 
 def test_cli_does_not_expose_placeholder_planning_commands() -> None:
-    cli_source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
-    telegram_source = (ROOT / "telegram_commands.py").read_text(encoding="utf-8")
+    cli_source = (PKG_ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    telegram_source = (PKG_ROOT / "telegram_commands.py").read_text(encoding="utf-8")
 
     for source in (cli_source, telegram_source):
         assert "DataPlanner" not in source
@@ -302,7 +325,7 @@ def test_cli_does_not_expose_placeholder_planning_commands() -> None:
 
 
 def test_telegram_cli_uses_single_command_catalog() -> None:
-    cli_source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    cli_source = (PKG_ROOT / "cli" / "main.py").read_text(encoding="utf-8")
 
     assert "_fallback_telegram_command_catalog" not in cli_source
     assert "openpine.plugins.telegram.command_catalog" not in cli_source
@@ -311,7 +334,7 @@ def test_telegram_cli_uses_single_command_catalog() -> None:
 
 
 def test_data_orchestrator_has_no_placeholder_planning_api() -> None:
-    source = (ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "data" / "orchestrator.py").read_text(encoding="utf-8")
 
     assert "Placeholder" not in source
     assert "build_data_plan" not in source
@@ -322,7 +345,7 @@ def test_data_orchestrator_has_no_placeholder_planning_api() -> None:
 
 
 def test_parquet_storage_has_no_jsonl_fallback() -> None:
-    source = (ROOT / "storage" / "adapters.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "storage" / "adapters.py").read_text(encoding="utf-8")
 
     assert "JSONL_SUFFIX" not in source
     assert "_write_ohlcv_jsonl" not in source
@@ -349,7 +372,10 @@ def test_parquet_storage_reads_end_timestamp_exclusive(tmp_path) -> None:
         ],
     )
 
-    assert [bar["timestamp"] for bar in adapter.read_ohlcv("BTC/USDT", "1m", 1, 3)] == [1, 2]
+    assert [bar["timestamp"] for bar in adapter.read_ohlcv("BTC/USDT", "1m", 1, 3)] == [
+        1,
+        2,
+    ]
 
 
 def test_parquet_health_check_reports_corrupt_latest_schema(tmp_path) -> None:
@@ -368,7 +394,7 @@ def test_parquet_health_check_reports_corrupt_latest_schema(tmp_path) -> None:
 
 
 def test_artifact_store_default_root_is_config_driven() -> None:
-    source = (ROOT / "artifacts" / "store.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "artifacts" / "store.py").read_text(encoding="utf-8")
 
     assert "OpenPineConfig.load()" in source
     assert 'Path("~/.openpine/artifacts")' not in source
@@ -376,7 +402,7 @@ def test_artifact_store_default_root_is_config_driven() -> None:
 
 
 def test_backtest_result_store_default_paths_are_config_driven() -> None:
-    source = (ROOT / "storage" / "backtest_storage.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "storage" / "backtest_storage.py").read_text(encoding="utf-8")
 
     assert "OpenPineConfig.load()" in source
     assert 'Path("~/.openpine/openpine.sqlite")' not in source
@@ -384,14 +410,14 @@ def test_backtest_result_store_default_paths_are_config_driven() -> None:
 
 
 def test_manifest_store_default_path_is_config_driven() -> None:
-    source = (ROOT / "storage" / "manifests.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "storage" / "manifests.py").read_text(encoding="utf-8")
 
     assert "OpenPineConfig.load()" in source
     assert 'Path("~/.openpine/manifests")' not in source
 
 
 def test_cli_backtest_artifact_paths_are_config_driven() -> None:
-    source = (ROOT / "cli" / "main.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "cli" / "main.py").read_text(encoding="utf-8")
 
     assert 'Path("~/.openpine/data/backtests")' not in source
     assert "~/.openpine/data/backtests" not in source
@@ -399,14 +425,14 @@ def test_cli_backtest_artifact_paths_are_config_driven() -> None:
 
 def test_config_defaults_are_workspace_relative() -> None:
     for relative in ("config/model.py", "config/loader.py", "config/env.py"):
-        source = (ROOT / relative).read_text(encoding="utf-8")
+        source = (PKG_ROOT / relative).read_text(encoding="utf-8")
         assert "~/.openpine" not in source
 
 
 def test_openpine_has_single_data_planning_model_family() -> None:
     production_files = [
-        ROOT / "contracts" / "__init__.py",
-        ROOT / "data" / "models.py",
+        PKG_ROOT / "contracts" / "__init__.py",
+        PKG_ROOT / "data" / "models.py",
     ]
     definitions: list[str] = []
     for path in production_files:
@@ -419,12 +445,12 @@ def test_openpine_has_single_data_planning_model_family() -> None:
         )
 
     assert definitions == []
-    assert not (ROOT / "data" / "planner.py").exists()
+    assert not (PKG_ROOT / "data" / "planner.py").exists()
     assert not (ROOT / "universe" / "active_universe.py").exists()
 
 
 def test_batch_runner_does_not_parse_tv_corpus_csv_directly() -> None:
-    source = (ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
 
     assert "import csv" not in source
     assert "DictReader" not in source
@@ -434,7 +460,7 @@ def test_batch_runner_does_not_parse_tv_corpus_csv_directly() -> None:
 
 
 def test_batch_runner_uses_single_strategy_export_boundary() -> None:
-    source = (ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "batch" / "runner.py").read_text(encoding="utf-8")
 
     assert "export_strategy_result" in source
     assert "export_trades(" not in source
@@ -442,7 +468,7 @@ def test_batch_runner_uses_single_strategy_export_boundary() -> None:
 
 
 def test_export_package_has_separate_writer_modules() -> None:
-    export_root = ROOT / "export"
+    export_root = PKG_ROOT / "export"
     expected_modules = {
         "__init__.py",
         "batch.py",
@@ -471,7 +497,7 @@ def test_backtest_run_config_does_not_carry_engine_data_provider() -> None:
     from openpine.runtime.engine import BacktestRunConfig
 
     names = {field.name for field in fields(BacktestRunConfig)}
-    source = (ROOT / "runtime" / "engine.py").read_text(encoding="utf-8")
+    source = (PKG_ROOT / "runtime" / "engine.py").read_text(encoding="utf-8")
 
     assert "data_provider" not in names
     assert 'setattr(engine_config, "data_provider"' not in source
@@ -506,7 +532,9 @@ def test_optimizer_dry_run_validation_is_not_production_result() -> None:
 
 def test_optimizer_production_without_real_runner_fails_closed() -> None:
     service = OptimizerService()
-    ref = service.adapter.start_optimization(OptimizerRunConfig(strategy_id="s1", trials=1))
+    ref = service.adapter.start_optimization(
+        OptimizerRunConfig(strategy_id="s1", trials=1)
+    )
     result = service.adapter.get_result(ref.optimization_id)
 
     assert result.status == "failed"
@@ -514,11 +542,15 @@ def test_optimizer_production_without_real_runner_fails_closed() -> None:
     assert result.metrics["failure_reason"]
 
 
-def test_optimizer_production_rejects_non_positive_trials_before_detection(monkeypatch) -> None:
+def test_optimizer_production_rejects_non_positive_trials_before_detection(
+    monkeypatch,
+) -> None:
     adapter = LocalOptimizerAdapter()
 
     def fail_if_called():
-        raise AssertionError("optimizer detection should not run for invalid trial counts")
+        raise AssertionError(
+            "optimizer detection should not run for invalid trial counts"
+        )
 
     monkeypatch.setattr(adapter, "detect", fail_if_called)
 
@@ -560,9 +592,7 @@ def _external_optimizer_module():
     original_module = sys.modules.pop("optimizer", None)
     try:
         sys.path = [
-            entry
-            for entry in sys.path
-            if Path(entry or ".").resolve() != openpine_root
+            entry for entry in sys.path if Path(entry or ".").resolve() != openpine_root
         ]
         return import_module("optimizer")
     finally:
@@ -572,7 +602,9 @@ def _external_optimizer_module():
 
 
 def test_optimizer_production_uses_real_backtest_runner(tmp_path) -> None:
-    service = OptimizerService(adapter=LocalOptimizerAdapter(_external_optimizer_module()))
+    service = OptimizerService(
+        adapter=LocalOptimizerAdapter(_external_optimizer_module())
+    )
     ref = service.adapter.start_optimization(
         OptimizerRunConfig(
             strategy_id="s1",
@@ -631,7 +663,9 @@ class _FakeFailingEngine:
 
 
 def test_optimizer_failed_trials_are_not_reported_completed(tmp_path) -> None:
-    service = OptimizerService(adapter=LocalOptimizerAdapter(_external_optimizer_module()))
+    service = OptimizerService(
+        adapter=LocalOptimizerAdapter(_external_optimizer_module())
+    )
     ref = service.adapter.start_optimization(
         OptimizerRunConfig(
             strategy_id="s1",

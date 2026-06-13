@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageReport, InstrumentKey, parse_timeframe
+from marketdata_provider.contracts import (
+    Bar,
+    BarQuery,
+    BarSeries,
+    CoverageReport,
+    InstrumentKey,
+    parse_timeframe,
+)
 
 from openpine.data.orchestrator import DataOrchestrator
 
@@ -55,7 +62,9 @@ class _Provider:
         )
 
 
-def test_data_orchestrator_reuses_persistent_cache_between_instances(tmp_path: Path) -> None:
+def test_data_orchestrator_reuses_persistent_cache_between_instances(
+    tmp_path: Path,
+) -> None:
     provider = _Provider()
     first = DataOrchestrator(provider=provider, cache_dir=tmp_path, cache_enabled=True)
     second = DataOrchestrator(provider=provider, cache_dir=tmp_path, cache_enabled=True)
@@ -71,7 +80,9 @@ def test_data_orchestrator_reuses_persistent_cache_between_instances(tmp_path: P
 def test_data_orchestrator_can_disable_persistent_cache(tmp_path: Path) -> None:
     provider = _Provider()
     first = DataOrchestrator(provider=provider, cache_dir=tmp_path, cache_enabled=False)
-    second = DataOrchestrator(provider=provider, cache_dir=tmp_path, cache_enabled=False)
+    second = DataOrchestrator(
+        provider=provider, cache_dir=tmp_path, cache_enabled=False
+    )
 
     first.load_bars(_query())
     second.load_bars(_query())

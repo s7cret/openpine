@@ -3,13 +3,21 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from openpine.gateway.routes import accounts_data as data_routes
-from openpine.gateway.routes.accounts_data import _orders_summary, _series_role, _store_backfill_series
+from openpine.gateway.routes.accounts_data import (
+    _orders_summary,
+    _series_role,
+    _store_backfill_series,
+)
 from openpine.storage import MigrationRunner, SQLiteStorage
 
 
 def test_series_role_marks_one_minute_as_source() -> None:
-    assert _series_role({"timeframe": "1m", "sources": ["marketdata_store"]}) == "source"
-    assert _series_role({"timeframe": "15m", "sources": ["marketdata_store"]}) == "derived"
+    assert (
+        _series_role({"timeframe": "1m", "sources": ["marketdata_store"]}) == "source"
+    )
+    assert (
+        _series_role({"timeframe": "15m", "sources": ["marketdata_store"]}) == "derived"
+    )
 
 
 def test_orders_summary_groups_by_strategy_name(tmp_path) -> None:
@@ -39,7 +47,24 @@ def test_orders_summary_groups_by_strategy_name(tmp_path) -> None:
              params_json, params_hash, mode, enabled, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            ("strat-1", "strat-1", "EMA Live", "pine-1", "artifact-1", "BTCUSDT", "1m", "binance", "spot", "{}", "h", "paper", 1, "running", 1, 1),
+            (
+                "strat-1",
+                "strat-1",
+                "EMA Live",
+                "pine-1",
+                "artifact-1",
+                "BTCUSDT",
+                "1m",
+                "binance",
+                "spot",
+                "{}",
+                "h",
+                "paper",
+                1,
+                "running",
+                1,
+                1,
+            ),
         )
         storage.execute(
             """
@@ -48,7 +73,20 @@ def test_orders_summary_groups_by_strategy_name(tmp_path) -> None:
              status, intent_json, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            ("ord-1", "strat-1", "default", "client-1", "BTCUSDT", "buy", "market", 1.0, "filled", "{}", 1000, 1000),
+            (
+                "ord-1",
+                "strat-1",
+                "default",
+                "client-1",
+                "BTCUSDT",
+                "buy",
+                "market",
+                1.0,
+                "filled",
+                "{}",
+                1000,
+                1000,
+            ),
         )
         storage.commit()
 
@@ -122,14 +160,18 @@ def test_backfill_stores_series_in_one_bulk_write() -> None:
             return BarSeries(
                 query=storage_query,
                 bars=(existing,),
-                coverage=CoverageReport(0, 180_000, 60_000, 120_000, source_mix=("storage",)),
+                coverage=CoverageReport(
+                    0, 180_000, 60_000, 120_000, source_mix=("storage",)
+                ),
             )
 
         def store_bars(self, stored_series):
             calls.append(stored_series)
             return StoreResult(success=True, rows_written=2)
 
-    loaded, skipped = _store_backfill_series(SimpleNamespace(orchestrator=FakeOrchestrator()), series)
+    loaded, skipped = _store_backfill_series(
+        SimpleNamespace(orchestrator=FakeOrchestrator()), series
+    )
 
     assert len(calls) == 1
     assert [bar.time for bar in calls[0].bars] == [0, 120_000]
@@ -148,12 +190,20 @@ def test_backfill_fast_skips_when_inventory_covers_request(monkeypatch) -> None:
     }
 
     def merge_cache(groups):
-        entry = data_routes._series_entry(groups, ("binance", "spot", "PEPEUSDT", "trade", "1m"))
-        entry["ranges"] = [{"from_ms": 0, "to_ms": 120_000, "rows": 3, "source": "persistent_cache"}]
+        entry = data_routes._series_entry(
+            groups, ("binance", "spot", "PEPEUSDT", "trade", "1m")
+        )
+        entry["ranges"] = [
+            {"from_ms": 0, "to_ms": 120_000, "rows": 3, "source": "persistent_cache"}
+        ]
 
     monkeypatch.setattr(data_routes, "_merge_persistent_cache_groups", merge_cache)
-    monkeypatch.setattr(data_routes, "_merge_marketdata_segment_groups", lambda state, groups: None)
-    monkeypatch.setattr(data_routes, "_merge_candle_manifest_groups", lambda state, groups: None)
+    monkeypatch.setattr(
+        data_routes, "_merge_marketdata_segment_groups", lambda state, groups: None
+    )
+    monkeypatch.setattr(
+        data_routes, "_merge_candle_manifest_groups", lambda state, groups: None
+    )
 
     class FakeOrchestrator:
         def load_bars(self, query, progress_callback=None):

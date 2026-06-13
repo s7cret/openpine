@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openpine"
-version = "2.17.0"
+version = "4.0.0"
 description = "OpenPine product orchestration boundary for the Pine stack"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,12 +18,14 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "websockets>=14.0",
-    "pine2ast @ git+https://github.com/s7cret/pine2ast.git@v2.17.0",
-    "ast2python @ git+https://github.com/s7cret/ast2python.git@v2.17.0",
-    "pinelib @ git+https://github.com/s7cret/pinelib.git@v2.17.0",
-    "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@v2.17.0",
-    "marketdata-provider @ git+https://github.com/s7cret/marketdata-provider.git@v2.18.0",
-    "optimizer @ git+https://github.com/s7cret/optimizer.git@v2.17.0",
+    "pandas>=2.0.0",
+    "pyarrow>=15.0.0",
+    "pine2ast @ git+https://github.com/s7cret/pine2ast.git@v4.0.0",
+    "ast2python @ git+https://github.com/s7cret/ast2python.git@v4.0.0",
+    "pinelib @ git+https://github.com/s7cret/pinelib.git@v4.0.0",
+    "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@v4.0.0",
+    "marketdata-provider @ git+https://github.com/s7cret/marketdata-provider.git@v4.0.0",
+    "optimizer @ git+https://github.com/s7cret/optimizer.git@v4.0.0",
 ]
 
 [project.urls]
@@ -39,45 +41,18 @@ dev = [
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "httpx>=0.28.0",
+    "pytest-asyncio>=0.23.0",
 ]
 
 [project.scripts]
 openpine = "openpine.cli.main:main"
 
-[tool.setuptools]
-package-dir = {"openpine" = "."}
-packages = [
-    "openpine",
-    "openpine.accounts",
-    "openpine.adapters",
-    "openpine.artifacts",
-    "openpine.batch",
-    "openpine.cli",
-    "openpine.compile",
-    "openpine.config",
-    "openpine.contracts",
-    "openpine.daemon",
-    "openpine.data",
-    "openpine.domain",
-    "openpine.events",
-    "openpine.execution",
-    "openpine.export",
-    "openpine.jobs",
-    "openpine.notifications",
-    "openpine.optimizer",
-    "openpine.orders",
-    "openpine.pine",
-    "openpine.recovery",
-    "openpine.registry",
-    "openpine.risk",
-    "openpine.runtime",
-    "openpine.state",
-    "openpine.storage",
-    "openpine.streams",
-    "openpine.workers",
-    "openpine.gateway",
-    "openpine.gateway.routes",
-]
+[tool.setuptools.packages.find]
+include = ["openpine*"]
+exclude = ["openpine-ui*"]
+
+[tool.setuptools.package-data]
+openpine = ["py.typed", "storage/migrations/*.sql"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -95,3 +70,15 @@ python_version = "3.11"
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = false
+
+[tool.ruff.lint.per-file-ignores]
+"openpine/cli/main.py" = ["E402", "F401"]
+"openpine/notifications/telegram.py" = ["E402"]
+
+[tool.coverage.run]
+source = ["openpine"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true

@@ -37,7 +37,9 @@ def test_order_manager_rejects_duplicate_client_order_id(tmp_path) -> None:
         assert first is not None
         assert duplicate is None
         assert len(manager.list_orders()) == 1
-        row = storage.execute("SELECT intent_json FROM orders WHERE order_id = ?", (first.order_id,)).fetchone()
+        row = storage.execute(
+            "SELECT intent_json FROM orders WHERE order_id = ?", (first.order_id,)
+        ).fetchone()
         payload = json.loads(row[0])
         assert payload["client_order_id"] == "client-1"
         assert payload["order_type"] == "limit"
@@ -64,6 +66,8 @@ def test_order_manager_updates_and_filters_status(tmp_path) -> None:
         assert loaded.status == OrderStatus.FILLED
         assert loaded.filled_quantity == 2.0
         assert loaded.avg_fill_price == 101.5
-        assert [o.order_id for o in manager.list_orders(status=OrderStatus.FILLED)] == [order.order_id]
+        assert [o.order_id for o in manager.list_orders(status=OrderStatus.FILLED)] == [
+            order.order_id
+        ]
     finally:
         storage.close()

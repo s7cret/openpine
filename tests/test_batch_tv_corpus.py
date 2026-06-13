@@ -70,14 +70,17 @@ def test_filter_entries_normalizes_timeframe(tmp_path: Path) -> None:
     entries = load_manifest(manifest, root)
 
     assert normalize_tf("15") == "15m"
-    assert filter_entries(
-        entries,
-        kind="indicator",
-        timeframe="15",
-        limit=None,
-        start_id=None,
-        only_id=None,
-    ) == entries
+    assert (
+        filter_entries(
+            entries,
+            kind="indicator",
+            timeframe="15",
+            limit=None,
+            start_id=None,
+            only_id=None,
+        )
+        == entries
+    )
 
 
 def test_load_manifest_fails_without_chart_csv(tmp_path: Path) -> None:

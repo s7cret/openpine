@@ -4,6 +4,7 @@ import { useBacktestsStore } from '@/stores/backtests'
 import { useStrategiesStore } from '@/stores/strategies'
 import DateRangePicker from '@/components/DateRangePicker.vue'
 import { formatDateTime } from '@/utils/time'
+import { confirmBacktestDelete, shouldStopBacktestPolling } from '@/lib/backtestUi'
 
 const btStore = useBacktestsStore()
 const stStore = useStrategiesStore()
@@ -26,7 +27,10 @@ onMounted(() => {
   stStore.fetchAll()
 })
 
-onUnmounted(() => { if (progressTimer.value) clearInterval(progressTimer.value) })
+onUnmounted(() => {
+  if (progressTimer.value) clearInterval(progressTimer.value)
+  if (estimateTimer) clearTimeout(estimateTimer)
+})
 
 watch(() => form.value.strategy_id, async (id) => {
   availability.value = null
@@ -69,18 +73,31 @@ async function refreshEstimate() {
   estimateLoading.value = false
 }
 
+function stopProgressPolling(refresh = false) {
+  if (progressTimer.value) clearInterval(progressTimer.value)
+  progressTimer.value = null
+  activePollId.value = null
+  if (refresh) btStore.fetchAll()
+}
+
+function runById(id: string) {
+  return btStore.items.find((run: any) => (run.run_id ?? run.id) === id) ?? btStore.current
+}
+
 function pollProgress(id: string) {
   if (progressTimer.value) clearInterval(progressTimer.value)
+  if (shouldStopBacktestPolling(null, runById(id))) {
+    stopProgressPolling(false)
+    return
+  }
   activePollId.value = id
   // Immediate first poll
   btStore.fetchProgress(id)
   progressTimer.value = setInterval(async () => {
     await btStore.fetchProgress(id)
     const p = btStore.progress
-    if (p?.status === 'completed' || p?.status === 'failed' || p?.status === 'cancelled') {
-      if (progressTimer.value) clearInterval(progressTimer.value)
-      activePollId.value = null
-      btStore.fetchAll()
+    if (shouldStopBacktestPolling(p, runById(id))) {
+      stopProgressPolling(true)
     }
   }, 3000)
 }
@@ -114,6 +131,12 @@ async function cancelRun(run: any) {
   if (!id || !confirm(`Cancel backtest ${id}?`)) return
   await btStore.controlRun(id, 'cancel')
   pollProgress(id)
+}
+
+async function deleteRun(run: any) {
+  const id = confirmBacktestDelete(run)
+  if (!id) return
+  await btStore.deleteRun(id)
 }
 
 function msToDate(ms?: number | null) {
@@ -238,7 +261,7 @@ function fmtEstimate(e: any) {
             </button>
             <button
               class="flex-1 px-2 py-2 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger"
-              @click="btStore.deleteRun(run.run_id ?? run.id)"
+              @click="deleteRun(run)"
             >
               Delete
             </button>
@@ -309,7 +332,7 @@ function fmtEstimate(e: any) {
                   ⏹
                 </button>
                 <button
-                  @click.stop="btStore.deleteRun(run.run_id ?? run.id)"
+                  @click.stop="deleteRun(run)"
                   class="p-1 rounded hover:bg-danger/20 text-gray-500 hover:text-danger transition-colors"
                   title="Delete run"
                 >
