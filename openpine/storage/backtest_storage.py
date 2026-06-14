@@ -142,6 +142,21 @@ class BacktestResultStore:
         """Save backtest result, trades, and artifacts atomically."""
         now = int(time.time() * 1000)
         strategy_id = self._get_strategy_id(run_id)
+        # Speed metrics: prefer bar_outputs row count, fallback to equity_curve length.
+        # Use the longer of the two so we don't undercount when only equity is streamed.
+        bars_processed = max(
+            len(bar_outputs) if bar_outputs else 0,
+            len(equity_curve) if equity_curve else 0,
+        )
+        # Elapsed wall-clock time for the backtest, used to compute bars/sec.
+        started_at_ms = self._get_started_at_ms(run_id)
+        elapsed_ms = max(1, now - started_at_ms) if started_at_ms else 0
+        if bars_processed > 0 and elapsed_ms > 0:
+            bars_per_sec = round(bars_processed * 1000.0 / elapsed_ms, 2)
+            bars_per_min = round(bars_processed * 60_000.0 / elapsed_ms, 2)
+        else:
+            bars_per_sec = 0.0
+            bars_per_min = 0.0
         run_dir = self._run_dir(strategy_id, run_id)
         tmp_dir = self._tmp_run_dir(strategy_id, run_id)
         tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -191,6 +206,9 @@ class BacktestResultStore:
                 artifact_paths=artifact_paths,
                 has_equity_curve=equity_curve is not None,
                 has_bar_outputs=bar_outputs is not None,
+                bars_processed=bars_processed,
+                bars_per_sec=bars_per_sec,
+                bars_per_min=bars_per_min,
                 now=now,
             )
             if backup_dir is not None and backup_dir.exists():
@@ -206,6 +224,17 @@ class BacktestResultStore:
             elif published and run_dir.exists():
                 shutil.rmtree(run_dir)
             raise
+
+    def _get_started_at_ms(self, run_id: str) -> int | None:
+        """Read ``created_at`` (ms) for a run, used as wall-clock start."""
+        cur = self._storage.execute(
+            "SELECT created_at FROM backtest_runs WHERE run_id = ?",
+            (run_id,),
+        )
+        row = cur.fetchone() if cur else None
+        if row and row[0] is not None:
+            return int(row[0])
+        return None
 
     def _validate_artifact_db_rows(
         self,
@@ -258,6 +287,9 @@ class BacktestResultStore:
         artifact_paths: dict[str, Path],
         has_equity_curve: bool,
         has_bar_outputs: bool,
+        bars_processed: int,
+        bars_per_sec: float,
+        bars_per_min: float,
         now: int,
     ) -> None:
         with self._storage.transaction():
@@ -269,6 +301,9 @@ class BacktestResultStore:
                 has_equity_curve=has_equity_curve,
                 has_bar_outputs=has_bar_outputs,
                 has_plot_outputs=ARTIFACT_TYPE_PLOT_OUTPUTS in artifact_paths,
+                bars_processed=bars_processed,
+                bars_per_sec=bars_per_sec,
+                bars_per_min=bars_per_min,
                 now=now,
             )
             self._insert_trade_db_rows(
@@ -348,6 +383,9 @@ class BacktestResultStore:
         has_equity_curve: bool,
         has_bar_outputs: bool,
         has_plot_outputs: bool,
+        bars_processed: int,
+        bars_per_sec: float,
+        bars_per_min: float,
         now: int,
     ) -> None:
         self._storage.execute(
@@ -379,6 +417,9 @@ class BacktestResultStore:
                 avg_bars_in_trade = ?,
                 commission_total = ?,
                 expectancy = ?,
+                bars_processed = ?,
+                bars_per_sec = ?,
+                bars_per_min = ?,
                 result_json = ?,
                 report_path = ?,
                 equity_curve_path = ?,
@@ -414,6 +455,9 @@ class BacktestResultStore:
                 metrics.avg_bars_in_trade,
                 metrics.commission_total,
                 metrics.expectancy,
+                bars_processed,
+                bars_per_sec,
+                bars_per_min,
                 result_json,
                 str(run_dir / "report.json"),
                 str(run_dir / "equity_curve.parquet") if has_equity_curve else None,

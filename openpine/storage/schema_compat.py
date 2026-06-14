@@ -80,10 +80,61 @@ ACHIEVEMENTS_COMPAT_COLUMNS: dict[str, tuple[ColumnSpec, ...]] = {
     "strategy_instances": (
         ColumnSpec("uses_udt", "INTEGER NOT NULL DEFAULT 0"),
     ),
+    # achievements: inverted flag for "smaller-is-better" metrics like
+    # drawdown. 0 = default (value >= target), 1 = inverted (value <= target).
+    "achievements": (
+        ColumnSpec("inverted", "INTEGER NOT NULL DEFAULT 0"),
+    ),
     # orders: side direction tracking. We don't add a new column —
     # the achievement engine derives ``both_sides`` from
-    # COUNT(DISTINCT side) WHERE side IN ('buy','sell').
+    # `backtest_trades.direction`.
 }
+
+
+# Views used by the achievement engine. They live in their own
+# migration (`014_strategy_udt_view.sql`) but we also ensure them here
+# so the engine is fully self-healing if the migration runner hasn't
+# applied 014 yet.
+_UDT_VIEWS: tuple[str, ...] = (
+    # v_strategy_udt: flags `uses_udt=1` when a strategy's Pine source
+    # declares `type <Name>` (v6 UDT syntax). Idempotent CREATE VIEW.
+    """
+    CREATE VIEW IF NOT EXISTS v_strategy_udt AS
+    SELECT
+        s.id AS strategy_instance_id,
+        s.strategy_id AS strategy_key,
+        s.pine_id,
+        CASE
+            WHEN p.source_text IS NULL THEN 0
+            WHEN p.source_text LIKE 'type %'
+                OR p.source_text LIKE ('%' || x'0a' || 'type %')
+                OR p.source_text LIKE ('%' || x'0d' || x'0a' || 'type %')
+            THEN 1
+            ELSE 0
+        END AS uses_udt
+    FROM strategy_instances s
+    LEFT JOIN pine_sources p ON p.id = s.pine_id
+    """,
+    # v_strategy_timeframes: distinct timeframe count per strategy.
+    """
+    CREATE VIEW IF NOT EXISTS v_strategy_timeframes AS
+    SELECT id AS strategy_instance_id, COUNT(DISTINCT timeframe) AS tf_count
+    FROM strategy_instances
+    WHERE timeframe IS NOT NULL AND timeframe <> ''
+    GROUP BY id
+    """,
+    # v_strategy_directions: long/short trade counts per strategy.
+    """
+    CREATE VIEW IF NOT EXISTS v_strategy_directions AS
+    SELECT
+        strategy_id AS strategy_instance_id,
+        SUM(CASE WHEN direction IN ('long','buy','LONG','BUY') THEN 1 ELSE 0 END) AS long_count,
+        SUM(CASE WHEN direction IN ('short','sell','SHORT','SELL') THEN 1 ELSE 0 END) AS short_count
+    FROM backtest_trades
+    WHERE direction IS NOT NULL
+    GROUP BY strategy_id
+    """,
+)
 
 
 def ensure_achievements_compat_schema(storage: SQLiteStorage) -> None:
@@ -100,6 +151,17 @@ def ensure_achievements_compat_schema(storage: SQLiteStorage) -> None:
             # If the table itself doesn't exist yet (early install
             # state), the migration runner will create it on next
             # boot. Nothing to do here.
+            continue
+    storage.commit()
+    # Idempotent view creation: matches migration 014
+    # (`014_strategy_udt_view.sql`). If the migration hasn't run yet
+    # (e.g. partial install), this brings the engine up to par.
+    for ddl in _UDT_VIEWS:
+        try:
+            storage.execute(ddl)
+        except Exception:
+            # If the underlying tables don't exist yet, skip.
+            # The migration runner will recreate on next boot.
             continue
     storage.commit()
 
