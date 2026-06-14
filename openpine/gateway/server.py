@@ -30,6 +30,7 @@ from openpine.gateway.routes import (
     strategies,
     trading,
     tv_parity,
+    version,
 )
 
 log = structlog.get_logger(__name__)
@@ -244,6 +245,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(optimizer.router, prefix=api_prefix)
     app.include_router(tv_parity.router, prefix=api_prefix)
     app.include_router(achievements.router, prefix=api_prefix)
+    app.include_router(version.router, prefix=api_prefix)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
