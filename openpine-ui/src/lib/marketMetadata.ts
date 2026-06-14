@@ -1,3 +1,5 @@
+import { useI18n } from 'vue-i18n'
+
 export type MarketTypeMetadata = {
   id: string
   label: string
@@ -58,14 +60,25 @@ export function exchangeById(metadata: MarketMetadataPayload | null, exchangeId:
   return metadata?.exchanges.find((exchange) => exchange.id === exchangeId) ?? null
 }
 
-export function exchangeDisabledReasonLabel(reason: string | null): string | null {
-  if (!reason) return null
+/**
+ * Map backend `disabled_reason` enum (e.g. "data_only", "not_wired") to a
+ * locale-aware label. Falls back to a humanised version of the raw token
+ * when no mapping is known.
+ */
+export function exchangeDisabledReasonLabel(t: (key: string) => string, reason: string | null): string {
+  if (!reason) return ''
+  const key = `marketMeta.${reason}`
+  const known = t(key)
+  if (known !== key) return known
   return reason.replace(/[_-]+/g, ' ')
 }
 
-export function exchangeOptionLabel(option: ExchangeSelectOption): string {
-  const reason = exchangeDisabledReasonLabel(option.reason)
-  return `◆ ${option.label}${option.disabled ? ` — ${reason ?? 'not wired'}` : ''}`
+export function exchangeOptionLabel(t: (key: string) => string, option: ExchangeSelectOption): string {
+  if (option.disabled) {
+    const reason = exchangeDisabledReasonLabel(t, option.reason) || t('marketMeta.notWired')
+    return t('marketMeta.exchangeBadgeDisabled', { name: option.label, reason })
+  }
+  return t('marketMeta.exchangeBadge', { name: option.label })
 }
 
 export function marketTypeOptionsForExchange(
@@ -101,12 +114,48 @@ export function exchangeLabel(metadata: MarketMetadataPayload | null, exchangeId
   return exchangeById(metadata, exchangeId)?.name ?? exchangeId
 }
 
-export function symbolSearchPlaceholder(metadata: MarketMetadataPayload | null, exchangeId: string): string {
+export function symbolSearchPlaceholder(
+  t: (key: string) => string,
+  metadata: MarketMetadataPayload | null,
+  exchangeId: string,
+): string {
   const label = exchangeLabel(metadata, exchangeId)
-  if (!canSearchSymbols(metadata, exchangeId)) return `Ticker search unavailable for ${label}`
-  return `Search stable pair on ${label}...`
+  if (!canSearchSymbols(metadata, exchangeId)) {
+    return t('marketMeta.symbolSearchUnavailable', { exchange: label })
+  }
+  return t('marketMeta.symbolSearchPlaceholder', { exchange: label })
 }
 
-export function symbolLoadingLabel(metadata: MarketMetadataPayload | null, exchangeId: string): string {
-  return `Loading from ${exchangeLabel(metadata, exchangeId)}...`
+export function symbolLoadingLabel(
+  t: (key: string) => string,
+  metadata: MarketMetadataPayload | null,
+  exchangeId: string,
+): string {
+  return t('marketMeta.symbolLoading', { exchange: exchangeLabel(metadata, exchangeId) })
+}
+
+/**
+ * Convenience helper for callers that already have an `useI18n()` instance.
+ * Returns a bound version of {@link exchangeOptionLabel} so call sites stay
+ * short.
+ */
+export function makeExchangeOptionLabel(t: (key: string) => string) {
+  return (option: ExchangeSelectOption) => exchangeOptionLabel(t, option)
+}
+
+/**
+ * Convenience helper — `useI18n()` returns `{ t, ... }`; pass it through.
+ * Use it in <script setup> for typed access without retyping the binding.
+ */
+export function useMarketMetaI18n() {
+  const { t } = useI18n()
+  return {
+    t,
+    exchangeOptionLabel: makeExchangeOptionLabel(t),
+    symbolSearchPlaceholder: (metadata: MarketMetadataPayload | null, exchangeId: string) =>
+      symbolSearchPlaceholder(t, metadata, exchangeId),
+    symbolLoadingLabel: (metadata: MarketMetadataPayload | null, exchangeId: string) =>
+      symbolLoadingLabel(t, metadata, exchangeId),
+    exchangeDisabledReasonLabel: (reason: string | null) => exchangeDisabledReasonLabel(t, reason),
+  }
 }

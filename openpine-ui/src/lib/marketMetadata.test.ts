@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   canSearchSymbols,
   defaultMarketTypeForExchange,
+  exchangeDisabledReasonLabel,
   exchangeOptionLabel,
   exchangeSelectOptions,
   marketTypeOptionsForExchange,
@@ -10,6 +11,29 @@ import {
   symbolSearchPlaceholder,
   type MarketMetadataPayload,
 } from './marketMetadata'
+
+// Stand-in for `t()` from vue-i18n. We only need to verify the
+// key→string mapping. When the key is unknown we fall back to the
+// supplied `fallback`, mirroring vue-i18n's behaviour in tests.
+const t = (key: string, params: Record<string, unknown> = {}) => {
+  const dict: Record<string, string> = {
+    'marketMeta.exchangeBadge': '◆ {name}',
+    'marketMeta.exchangeBadgeDisabled': '◆ {name} — {reason}',
+    'marketMeta.notWired': 'not wired',
+    'marketMeta.symbolSearchUnavailable': 'Ticker search unavailable for {exchange}',
+    'marketMeta.symbolSearchPlaceholder': 'Search stable pair on {exchange}...',
+    'marketMeta.symbolLoading': 'Loading from {exchange}...',
+  }
+  let template = dict[key]
+  if (!template) {
+    // vue-i18n prints the key itself on miss; tests here just return key
+    template = key
+  }
+  return Object.entries(params).reduce(
+    (acc, [k, v]) => acc.replace(`{${k}}`, String(v)),
+    template,
+  )
+}
 
 const metadata: MarketMetadataPayload = {
   source: 'test',
@@ -86,16 +110,22 @@ describe('market metadata UI helpers', () => {
   it('only enables symbol search for exchange metadata marked searchable', () => {
     expect(canSearchSymbols(metadata, 'binance')).toBe(true)
     expect(canSearchSymbols(metadata, 'bybit')).toBe(true)
-    expect(symbolSearchPlaceholder(metadata, 'binance')).toBe('Search stable pair on Binance...')
-    expect(symbolSearchPlaceholder(metadata, 'bybit')).toBe('Search stable pair on Bybit...')
-    expect(symbolLoadingLabel(metadata, 'bybit')).toBe('Loading from Bybit...')
-    expect(symbolLoadingLabel(metadata, 'binance')).toBe('Loading from Binance...')
+    expect(symbolSearchPlaceholder(t, metadata, 'binance')).toBe('Search stable pair on Binance...')
+    expect(symbolSearchPlaceholder(t, metadata, 'bybit')).toBe('Search stable pair on Bybit...')
+    expect(symbolLoadingLabel(t, metadata, 'bybit')).toBe('Loading from Bybit...')
+    expect(symbolLoadingLabel(t, metadata, 'binance')).toBe('Loading from Binance...')
   })
 
   it('renders disabled exchange labels from backend metadata reasons instead of hardcoded not-wired copy', () => {
     const okx = exchangeSelectOptions(metadata).find((option) => option.id === 'okx')
 
-    expect(exchangeOptionLabel(okx!)).toBe('◆ OKX — planned provider')
-    expect(exchangeOptionLabel(exchangeSelectOptions(metadata)[1])).toBe('◆ Bybit')
+    // Unknown reason tokens fall back to a humanised version of the raw
+    // backend string (snake_case → "snake case"). This is the only path
+    // for custom enum values the UI doesn't know yet.
+    expect(exchangeDisabledReasonLabel(t, 'planned_provider')).toBe('planned provider')
+
+    // exchangeOptionLabel(t, ...) returns the i18n template
+    expect(exchangeOptionLabel(t, okx!)).toBe('◆ OKX — planned provider')
+    expect(exchangeOptionLabel(t, exchangeSelectOptions(metadata)[1])).toBe('◆ Bybit')
   })
 })
