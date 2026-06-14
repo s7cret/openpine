@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getSettings, updateSettings } from '@/api/client'
+import { getSettings, getVersionManifest, updateSettings, type VersionManifest, type VersionModule } from '@/api/client'
 import {
   addStableQuoteAsset,
   COMMON_TIMEZONE_OPTIONS,
@@ -28,6 +28,11 @@ const error = ref('')
 const stableQuoteInput = ref('')
 const form = ref<SettingsFormState | null>(null)
 
+const manifest = ref<VersionManifest | null>(null)
+const manifestError = ref('')
+const manifestLoading = ref(false)
+const copiedRunId = ref<string | null>(null)
+
 const enabledTimeframes = computed(() => form.value?.timeframes ?? [])
 const defaultTimeframeOptions = computed(() => enabledTimeframes.value.length ? enabledTimeframes.value : form.value?.supportedTimeframes ?? [])
 const stableQuotes = computed(() => form.value?.stableQuoteAssets ?? [])
@@ -50,6 +55,33 @@ async function load() {
     error.value = e?.response?.data?.detail ?? e?.message ?? 'Failed to load settings'
   } finally {
     loading.value = false
+  }
+}
+
+async function loadManifest() {
+  manifestLoading.value = true
+  manifestError.value = ''
+  try {
+    const { data } = await getVersionManifest()
+    manifest.value = data
+  } catch (e: any) {
+    manifestError.value = e?.response?.data?.detail ?? e?.message ?? ''
+    manifest.value = null
+  } finally {
+    manifestLoading.value = false
+  }
+}
+
+async function copyModulePath(entry: VersionModule) {
+  if (!entry.path) return
+  try {
+    await navigator.clipboard.writeText(entry.path)
+    copiedRunId.value = entry.name
+    setTimeout(() => {
+      if (copiedRunId.value === entry.name) copiedRunId.value = null
+    }, 1500)
+  } catch {
+    // Clipboard may be unavailable in some browsers; silent fallback.
   }
 }
 
@@ -107,7 +139,10 @@ async function save() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadManifest()
+})
 </script>
 
 <template>
@@ -135,6 +170,105 @@ onMounted(load)
     <div v-if="loading && !form" class="rounded-xl border border-dark-500 bg-dark-800 px-4 py-8 text-center text-sm text-gray-500">
       {{ t('common.loading') }}
     </div>
+
+    <!-- Modules (read-only version manifest) -->
+    <section class="rounded-xl border border-dark-500 bg-dark-800 p-4">
+      <div class="flex flex-col gap-1 border-b border-dark-600 pb-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-gray-200">{{ t('settings.modules.title') }}</h2>
+          <p class="mt-1 text-xs text-gray-500">{{ t('settings.modules.subtitle') }}</p>
+        </div>
+        <button
+          type="button"
+          class="self-start rounded-lg bg-dark-700 px-3 py-1.5 text-xs text-gray-300 hover:bg-dark-600 disabled:opacity-50"
+          :disabled="manifestLoading"
+          @click="loadManifest"
+        >
+          {{ t('common.refresh') }}
+        </button>
+      </div>
+
+      <div v-if="manifestError" class="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
+        {{ t('settings.modules.loadFailed', { error: manifestError }) }}
+      </div>
+
+      <div v-if="manifestLoading && !manifest" class="mt-3 text-xs text-gray-500">…</div>
+
+      <div v-else-if="manifest" class="mt-4 overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-left text-gray-500 border-b border-dark-500">
+              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerModule') }}</th>
+              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerVersion') }}</th>
+              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerPath') }}</th>
+              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerStatus') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="entry in manifest.modules"
+              :key="entry.name"
+              class="border-b border-dark-500/60 align-top"
+            >
+              <td class="py-2.5 pr-3">
+                <div class="font-mono text-gray-200">{{ entry.name }}</div>
+                <div v-if="entry.summary" class="mt-0.5 text-[10px] text-gray-500">{{ entry.summary }}</div>
+              </td>
+              <td class="py-2.5 pr-3 font-mono text-gray-300 whitespace-nowrap">
+                {{ entry.version ?? t('settings.modules.summaryNone') }}
+              </td>
+              <td class="py-2.5 pr-3 font-mono text-gray-400">
+                <div v-if="entry.path" class="flex items-start gap-2">
+                  <span class="min-w-0 break-all">{{ entry.path }}</span>
+                  <button
+                    type="button"
+                    class="shrink-0 rounded border border-dark-500 px-1.5 py-0.5 text-[10px] text-gray-300 hover:border-accent"
+                    :title="t('settings.modules.copyPath')"
+                    @click="copyModulePath(entry)"
+                  >
+                    {{ copiedRunId === entry.name ? t('settings.modules.copied') : t('settings.modules.copyPath') }}
+                  </button>
+                </div>
+                <span v-else class="text-gray-600">—</span>
+              </td>
+              <td class="py-2.5 pr-3 whitespace-nowrap">
+                <span
+                  v-if="entry.installed"
+                  class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-success/20 text-success"
+                >
+                  {{ t('settings.modules.installed') }}
+                </span>
+                <span
+                  v-else
+                  class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-error/20 text-error"
+                >
+                  {{ t('settings.modules.notInstalled') }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-lg border border-dark-500 bg-dark-700/40 px-3 py-2">
+            <div class="text-[10px] uppercase tracking-wide text-gray-500">{{ t('settings.modules.runtimePython') }}</div>
+            <div class="font-mono text-sm text-gray-200">{{ manifest.runtime.python ?? '—' }}</div>
+          </div>
+          <div class="rounded-lg border border-dark-500 bg-dark-700/40 px-3 py-2">
+            <div class="text-[10px] uppercase tracking-wide text-gray-500">{{ t('settings.modules.runtimePlatform') }}</div>
+            <div class="font-mono text-sm text-gray-200 break-all">{{ manifest.runtime.platform ?? '—' }}</div>
+          </div>
+          <div class="rounded-lg border border-dark-500 bg-dark-700/40 px-3 py-2">
+            <div class="text-[10px] uppercase tracking-wide text-gray-500">{{ t('settings.modules.runtimeMachine') }}</div>
+            <div class="font-mono text-sm text-gray-200">{{ manifest.runtime.machine ?? '—' }}</div>
+          </div>
+          <div class="rounded-lg border border-dark-500 bg-dark-700/40 px-3 py-2">
+            <div class="text-[10px] uppercase tracking-wide text-gray-500">{{ t('settings.modules.runtimeNode') }}</div>
+            <div class="font-mono text-sm text-gray-200">{{ manifest.runtime.node ?? '—' }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <form v-if="form" class="space-y-4" @submit.prevent="save">
       <!-- Language & locale -->
