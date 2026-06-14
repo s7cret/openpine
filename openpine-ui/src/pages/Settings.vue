@@ -194,32 +194,38 @@ onMounted(() => {
 
       <div v-if="manifestLoading && !manifest" class="mt-3 text-xs text-gray-500">…</div>
 
-      <div v-else-if="manifest" class="mt-4 overflow-x-auto">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-dark-500">
-              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerModule') }}</th>
-              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerVersion') }}</th>
-              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerPath') }}</th>
-              <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerStatus') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="entry in manifest.modules"
-              :key="entry.name"
-              class="border-b border-dark-500/60 align-top"
-            >
-              <td class="py-2.5 pr-3">
-                <div class="font-mono text-gray-200">{{ entry.name }}</div>
-                <div v-if="entry.summary" class="mt-0.5 text-[10px] text-gray-500">{{ entry.summary }}</div>
-              </td>
-              <td class="py-2.5 pr-3 font-mono text-gray-300 whitespace-nowrap">
-                {{ entry.version ?? t('settings.modules.summaryNone') }}
-              </td>
-              <td class="py-2.5 pr-3 font-mono text-gray-400">
-                <div v-if="entry.path" class="flex items-start gap-2">
-                  <span class="min-w-0 break-all">{{ entry.path }}</span>
+      <div v-else-if="manifest" class="mt-4">
+        <div class="grid gap-2 md:hidden">
+          <article
+            v-for="entry in manifest.modules"
+            :key="entry.name"
+            class="rounded-lg border border-dark-500 bg-dark-700/40 p-3"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="truncate font-mono text-sm text-gray-200">{{ entry.name }}</div>
+                <div v-if="entry.summary" class="mt-0.5 line-clamp-2 text-[10px] leading-snug text-gray-500">{{ entry.summary }}</div>
+              </div>
+              <span
+                v-if="entry.installed"
+                class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-success/20 text-success"
+              >
+                {{ t('settings.modules.installed') }}
+              </span>
+              <span
+                v-else
+                class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-error/20 text-error"
+              >
+                {{ t('settings.modules.notInstalled') }}
+              </span>
+            </div>
+            <div class="mt-3 grid grid-cols-[auto,minmax(0,1fr)] gap-x-3 gap-y-2 text-xs">
+              <div class="text-gray-500">{{ t('settings.modules.headerVersion') }}</div>
+              <div class="font-mono text-gray-300">{{ entry.version ?? t('settings.modules.summaryNone') }}</div>
+              <div class="text-gray-500">{{ t('settings.modules.headerPath') }}</div>
+              <div class="min-w-0">
+                <div v-if="entry.path" class="flex min-w-0 items-center gap-2">
+                  <span class="min-w-0 truncate font-mono text-gray-400" :title="entry.path">{{ entry.path }}</span>
                   <button
                     type="button"
                     class="shrink-0 rounded border border-dark-500 px-1.5 py-0.5 text-[10px] text-gray-300 hover:border-accent"
@@ -230,24 +236,66 @@ onMounted(() => {
                   </button>
                 </div>
                 <span v-else class="text-gray-600">—</span>
-              </td>
-              <td class="py-2.5 pr-3 whitespace-nowrap">
-                <span
-                  v-if="entry.installed"
-                  class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-success/20 text-success"
-                >
-                  {{ t('settings.modules.installed') }}
-                </span>
-                <span
-                  v-else
-                  class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-error/20 text-error"
-                >
-                  {{ t('settings.modules.notInstalled') }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="hidden overflow-x-auto md:block">
+          <table class="w-full min-w-[720px] text-xs">
+            <thead>
+              <tr class="text-left text-gray-500 border-b border-dark-500">
+                <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerModule') }}</th>
+                <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerVersion') }}</th>
+                <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerPath') }}</th>
+                <th class="py-2 pr-3 font-medium">{{ t('settings.modules.headerStatus') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="entry in manifest.modules"
+                :key="entry.name"
+                class="border-b border-dark-500/60 align-top"
+              >
+                <td class="py-2.5 pr-3">
+                  <div class="font-mono text-gray-200">{{ entry.name }}</div>
+                  <div v-if="entry.summary" class="mt-0.5 text-[10px] text-gray-500">{{ entry.summary }}</div>
+                </td>
+                <td class="py-2.5 pr-3 font-mono text-gray-300 whitespace-nowrap">
+                  {{ entry.version ?? t('settings.modules.summaryNone') }}
+                </td>
+                <td class="max-w-[360px] py-2.5 pr-3 font-mono text-gray-400">
+                  <div v-if="entry.path" class="flex min-w-0 items-center gap-2">
+                    <span class="min-w-0 truncate" :title="entry.path">{{ entry.path }}</span>
+                    <button
+                      type="button"
+                      class="shrink-0 rounded border border-dark-500 px-1.5 py-0.5 text-[10px] text-gray-300 hover:border-accent"
+                      :title="t('settings.modules.copyPath')"
+                      @click="copyModulePath(entry)"
+                    >
+                      {{ copiedRunId === entry.name ? t('settings.modules.copied') : t('settings.modules.copyPath') }}
+                    </button>
+                  </div>
+                  <span v-else class="text-gray-600">—</span>
+                </td>
+                <td class="py-2.5 pr-3 whitespace-nowrap">
+                  <span
+                    v-if="entry.installed"
+                    class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-success/20 text-success"
+                  >
+                    {{ t('settings.modules.installed') }}
+                  </span>
+                  <span
+                    v-else
+                    class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium bg-error/20 text-error"
+                  >
+                    {{ t('settings.modules.notInstalled') }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div class="rounded-lg border border-dark-500 bg-dark-700/40 px-3 py-2">

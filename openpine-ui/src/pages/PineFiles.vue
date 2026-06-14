@@ -27,6 +27,33 @@ function getId(file: any) {
   return file.id ?? file.source_id ?? ''
 }
 
+function rawFileName(file: any) {
+  return String(file.name ?? '').trim()
+}
+
+function fileLeafName(file: any) {
+  const raw = rawFileName(file)
+  if (!raw) return '—'
+  const parts = raw.replace(/\\/g, '/').split('/').filter(Boolean)
+  return parts[parts.length - 1] ?? raw
+}
+
+function fileStem(file: any) {
+  return fileLeafName(file).replace(/\.[^.]+$/, '') || fileLeafName(file)
+}
+
+function fileExt(file: any) {
+  const match = fileLeafName(file).match(/(\.[^.]+)$/)
+  return match?.[1]?.toLowerCase() ?? ''
+}
+
+function fileParentPath(file: any) {
+  const raw = rawFileName(file).replace(/\\/g, '/')
+  const leaf = fileLeafName(file)
+  if (!raw || raw === leaf) return ''
+  return raw.slice(0, Math.max(0, raw.length - leaf.length)).replace(/\/$/, '')
+}
+
 async function toggleExpand(file: any) {
   const id = getId(file)
   if (expandedId.value === id) {
@@ -154,12 +181,20 @@ async function copyContent() {
               @click="toggleExpand(file)"
             >
               <td class="min-w-0 px-3 py-2.5 font-medium text-gray-200 sm:px-4">
-                <div class="flex min-w-0 items-center gap-2">
-                  <span class="min-w-0 break-words leading-snug">{{ file.name ?? '—' }}</span>
-                  <span v-if="store.compiling.has(getId(file))" class="inline-flex shrink-0 items-center gap-1 text-xs text-accent">
-                    <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                    {{ t('pineFiles.compiling') }}
-                  </span>
+                <div class="min-w-0">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <span class="min-w-0 truncate leading-snug" :title="rawFileName(file)">{{ fileStem(file) }}</span>
+                    <span v-if="fileExt(file)" class="shrink-0 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] text-accent-light">
+                      {{ fileExt(file) }}
+                    </span>
+                    <span v-if="store.compiling.has(getId(file))" class="inline-flex shrink-0 items-center gap-1 text-xs text-accent">
+                      <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      {{ t('pineFiles.compiling') }}
+                    </span>
+                  </div>
+                  <div v-if="fileParentPath(file)" class="mt-0.5 truncate font-mono text-[10px] font-normal text-gray-500" :title="rawFileName(file)">
+                    {{ fileParentPath(file) }}
+                  </div>
                 </div>
               </td>
               <td class="hidden px-4 py-2.5 text-gray-400 text-xs sm:table-cell">{{ file.source_type ?? '—' }}</td>
@@ -182,7 +217,15 @@ async function copyContent() {
             <tr v-if="expandedId === getId(file)">
               <td colspan="6" class="min-w-0 px-3 py-3 bg-dark-900/50 sm:px-4">
                 <div class="mb-2 flex min-w-0 items-center justify-between gap-2">
-                  <span class="text-xs text-gray-500">{{ t('pineFiles.sourceLabel') }}</span>
+                  <div class="min-w-0">
+                    <span class="text-xs text-gray-500">{{ t('pineFiles.sourceLabel') }}</span>
+                    <div class="mt-1 flex min-w-0 items-center gap-2 text-sm font-medium text-gray-200">
+                      <span class="min-w-0 truncate" :title="rawFileName(file)">{{ fileStem(file) }}</span>
+                      <span v-if="fileExt(file)" class="shrink-0 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] text-accent-light">
+                        {{ fileExt(file) }}
+                      </span>
+                    </div>
+                  </div>
                   <button
                     @click.stop="copyContent()"
                     class="shrink-0 px-2 py-1 text-xs rounded bg-dark-600 hover:bg-dark-500 text-gray-300 transition-colors"

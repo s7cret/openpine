@@ -362,6 +362,16 @@ function artifactHref(artifact: any) {
     <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
       <div class="xl:col-span-2 bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-4">
         <h2 class="text-sm font-semibold text-gray-200">{{ t('tvParity.sectionInputs') }}</h2>
+        <div class="sticky top-0 z-20 -mx-4 -mt-2 border-y border-dark-600 bg-dark-800/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:mt-0 sm:border-0 sm:bg-transparent sm:p-0">
+          <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <button :disabled="loading || isExchangeDataSource" @click="previewCandles" class="rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500 disabled:opacity-50">
+              {{ loading ? t('tvParity.previewing') : t('tvParity.previewCandles') }}
+            </button>
+            <button :disabled="runLoading" @click="queueRun" class="rounded-lg bg-accent px-3 py-2 text-sm text-white hover:bg-accent-dark disabled:opacity-50">
+              {{ runLoading ? t('tvParity.queueing') : t('tvParity.runTvParity') }}
+            </button>
+          </div>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label class="space-y-1 text-xs text-gray-400">
@@ -447,14 +457,6 @@ function artifactHref(artifact: any) {
           </label>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-          <button :disabled="loading || isExchangeDataSource" @click="previewCandles" class="px-3 py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-sm text-gray-200 disabled:opacity-50">
-            {{ loading ? t('tvParity.previewing') : t('tvParity.previewCandles') }}
-          </button>
-          <button :disabled="runLoading" @click="queueRun" class="px-3 py-2 rounded-lg bg-accent hover:bg-accent-dark text-sm text-white disabled:opacity-50">
-            {{ runLoading ? t('tvParity.queueing') : t('tvParity.runTvParity') }}
-          </button>
-        </div>
       </div>
 
       <aside class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
@@ -552,78 +554,149 @@ function artifactHref(artifact: any) {
       <div v-else-if="!filteredHistory.length" class="text-xs text-gray-500">
         {{ t('tvParity.history.empty') }}
       </div>
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="text-left text-gray-500 border-b border-dark-500">
-              <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerSymbol') }}</th>
-              <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerSource') }}</th>
-              <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerTimeframe') }}</th>
-              <th class="py-2 pr-2 font-medium text-right">{{ t('tvParity.history.headerBars') }}</th>
-              <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerStatus') }}</th>
-              <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerWhen') }}</th>
-              <th class="py-2 pr-2 font-medium text-right">{{ t('tvParity.history.headerActions') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="row in visibleHistory"
-              :key="row.run_id"
-              class="border-b border-dark-500/60 hover:bg-dark-700/40"
-            >
-              <td class="py-2 pr-2 font-mono text-gray-200">
-                {{ row.symbol ?? '—' }}
-                <span class="block text-[10px] text-gray-500">
+      <div v-else class="space-y-3">
+        <div class="grid gap-2 md:hidden">
+          <article
+            v-for="row in visibleHistory"
+            :key="row.run_id"
+            class="rounded-lg border border-dark-500 bg-dark-700/40 p-3"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex min-w-0 items-center gap-2">
+                  <span class="truncate font-mono text-sm text-gray-200">{{ row.symbol ?? '—' }}</span>
+                  <span class="shrink-0 font-mono text-xs text-gray-500">{{ row.timeframe ?? '—' }}</span>
+                </div>
+                <div class="mt-0.5 font-mono text-[10px] text-gray-500">
                   {{ t('tvParity.history.runIdShort') }}: {{ row.run_id.slice(0, 8) }}
-                </span>
-              </td>
-              <td class="py-2 pr-2">
+                </div>
+              </div>
+              <span
+                class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                :class="{
+                  'bg-success/20 text-success': row.status === 'completed',
+                  'bg-info/20 text-info': row.status === 'running',
+                  'bg-warning/20 text-warning': row.status === 'queued',
+                  'bg-error/20 text-error': row.status === 'failed',
+                }"
+              >
+                {{ statusBadgeLabel(row.status) }}
+              </span>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-400">
+              <div>
+                <div class="text-gray-500">{{ t('tvParity.history.headerSource') }}</div>
                 <span
-                  class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium"
+                  class="mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium"
                   :class="row.source === 'exchange_data' ? 'bg-info/20 text-info' : 'bg-accent/20 text-accent-light'"
                 >
                   {{ sourceBadgeLabel(row.source) }}
                 </span>
-              </td>
-              <td class="py-2 pr-2 font-mono text-gray-300">{{ row.timeframe ?? '—' }}</td>
-              <td class="py-2 pr-2 font-mono text-gray-300 text-right">
-                {{ row.valid_bars?.toLocaleString?.() ?? row.valid_bars ?? '—' }}
-              </td>
-              <td class="py-2 pr-2">
-                <span
-                  class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium"
-                  :class="{
-                    'bg-success/20 text-success': row.status === 'completed',
-                    'bg-info/20 text-info': row.status === 'running',
-                    'bg-warning/20 text-warning': row.status === 'queued',
-                    'bg-error/20 text-error': row.status === 'failed',
-                  }"
-                >
-                  {{ statusBadgeLabel(row.status) }}
-                </span>
-              </td>
-              <td class="py-2 pr-2 font-mono text-gray-400">{{ fmtMs(row.queued_at) }}</td>
-              <td class="py-2 pr-2 text-right whitespace-nowrap">
-                <button
-                  type="button"
-                  :title="t('tvParity.history.openHint')"
-                  @click="loadHistoryEntry(row)"
-                  class="mr-2 px-2 py-1 rounded text-xs border border-dark-500 text-gray-300 hover:border-accent"
-                >
-                  {{ t('tvParity.history.open') }}
-                </button>
-                <button
-                  type="button"
-                  :title="t('tvParity.history.delete')"
-                  @click="deleteHistoryEntry(row)"
-                  class="px-2 py-1 rounded text-xs border border-dark-500 text-error/80 hover:border-error"
-                >
-                  {{ t('tvParity.history.delete') }}
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+              <div>
+                <div class="text-gray-500">{{ t('tvParity.history.headerBars') }}</div>
+                <div class="mt-1 font-mono text-gray-300">{{ row.valid_bars?.toLocaleString?.() ?? row.valid_bars ?? '—' }}</div>
+              </div>
+              <div class="col-span-2">
+                <div class="text-gray-500">{{ t('tvParity.history.headerWhen') }}</div>
+                <div class="mt-1 truncate font-mono text-gray-400">{{ fmtMs(row.queued_at) }}</div>
+              </div>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                :title="t('tvParity.history.openHint')"
+                @click="loadHistoryEntry(row)"
+                class="rounded-lg border border-accent/50 bg-accent/10 px-3 py-2 text-sm font-medium text-accent-light hover:border-accent"
+              >
+                {{ t('tvParity.history.open') }}
+              </button>
+              <button
+                type="button"
+                :title="t('tvParity.history.delete')"
+                @click="deleteHistoryEntry(row)"
+                class="rounded-lg border border-dark-500 px-3 py-2 text-sm text-error/80 hover:border-error"
+              >
+                {{ t('tvParity.history.delete') }}
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div class="hidden overflow-x-auto md:block">
+          <table class="w-full min-w-[760px] text-xs">
+            <thead>
+              <tr class="text-left text-gray-500 border-b border-dark-500">
+                <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerActions') }}</th>
+                <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerSymbol') }}</th>
+                <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerSource') }}</th>
+                <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerTimeframe') }}</th>
+                <th class="py-2 pr-2 font-medium text-right">{{ t('tvParity.history.headerBars') }}</th>
+                <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerStatus') }}</th>
+                <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerWhen') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in visibleHistory"
+                :key="row.run_id"
+                class="border-b border-dark-500/60 hover:bg-dark-700/40"
+              >
+                <td class="py-2 pr-2 whitespace-nowrap">
+                  <button
+                    type="button"
+                    :title="t('tvParity.history.openHint')"
+                    @click="loadHistoryEntry(row)"
+                    class="mr-2 px-2 py-1 rounded text-xs border border-accent/50 bg-accent/10 text-accent-light hover:border-accent"
+                  >
+                    {{ t('tvParity.history.open') }}
+                  </button>
+                  <button
+                    type="button"
+                    :title="t('tvParity.history.delete')"
+                    @click="deleteHistoryEntry(row)"
+                    class="px-2 py-1 rounded text-xs border border-dark-500 text-error/80 hover:border-error"
+                  >
+                    {{ t('tvParity.history.delete') }}
+                  </button>
+                </td>
+                <td class="py-2 pr-2 font-mono text-gray-200">
+                  {{ row.symbol ?? '—' }}
+                  <span class="block text-[10px] text-gray-500">
+                    {{ t('tvParity.history.runIdShort') }}: {{ row.run_id.slice(0, 8) }}
+                  </span>
+                </td>
+                <td class="py-2 pr-2">
+                  <span
+                    class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium"
+                    :class="row.source === 'exchange_data' ? 'bg-info/20 text-info' : 'bg-accent/20 text-accent-light'"
+                  >
+                    {{ sourceBadgeLabel(row.source) }}
+                  </span>
+                </td>
+                <td class="py-2 pr-2 font-mono text-gray-300">{{ row.timeframe ?? '—' }}</td>
+                <td class="py-2 pr-2 font-mono text-gray-300 text-right">
+                  {{ row.valid_bars?.toLocaleString?.() ?? row.valid_bars ?? '—' }}
+                </td>
+                <td class="py-2 pr-2">
+                  <span
+                    class="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium"
+                    :class="{
+                      'bg-success/20 text-success': row.status === 'completed',
+                      'bg-info/20 text-info': row.status === 'running',
+                      'bg-warning/20 text-warning': row.status === 'queued',
+                      'bg-error/20 text-error': row.status === 'failed',
+                    }"
+                  >
+                    {{ statusBadgeLabel(row.status) }}
+                  </span>
+                </td>
+                <td class="py-2 pr-2 font-mono text-gray-400">{{ fmtMs(row.queued_at) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div v-if="historyTruncated" class="mt-2 text-center">
           <button
             type="button"
@@ -685,7 +758,9 @@ function artifactHref(artifact: any) {
           rel="noopener"
         >
           {{ artifact.name }}
-          <span class="block text-xs text-gray-500">{{ artifact.filename }} · {{ t('tvParity.artifactSize', { bytes: artifact.size_bytes }) }} · {{ artifact.download_url }}</span>
+          <span class="block min-w-0 truncate text-xs text-gray-500" :title="artifact.filename">
+            {{ artifact.filename }} · {{ t('tvParity.artifactSize', { bytes: artifact.size_bytes }) }}
+          </span>
         </a>
       </div>
       <div v-else class="text-sm text-gray-500">{{ t('tvParity.artifactsEmpty') }}</div>
