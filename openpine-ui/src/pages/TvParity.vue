@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   getDataMetadata,
   getStrategies,
@@ -10,6 +11,7 @@ import {
 } from '@/api/client'
 import { EMPTY_MARKET_METADATA, exchangeLabel } from '@/lib/marketMetadata'
 
+const { t } = useI18n()
 const strategies = ref<any[]>([])
 const selectedStrategyId = ref('')
 const candlesFile = ref<File | null>(null)
@@ -82,11 +84,11 @@ async function fetchMarketMetadata() {
       marketMetadata.value = data
     } else {
       marketMetadata.value = EMPTY_MARKET_METADATA
-      marketMetadataError.value = 'Market metadata unavailable: backend returned no exchanges.'
+      marketMetadataError.value = t('tvParity.metadataUnavailable')
     }
   } catch (err: any) {
     marketMetadata.value = EMPTY_MARKET_METADATA
-    marketMetadataError.value = `Market metadata unavailable: ${apiErrorMessage(err, 'metadata request failed')}`
+    marketMetadataError.value = t('tvParity.metadataUnavailableDetail', { error: apiErrorMessage(err, 'metadata request failed') })
   }
 }
 
@@ -130,20 +132,20 @@ function setTvEquityFile(target: EventTarget | null) {
 
 async function previewCandles() {
   if (!candlesFile.value) {
-    status.value = '❌ Upload TradingView candles CSV first'
+    status.value = t('tvParity.uploadTvCsv')
     return
   }
   const context = selectedStrategyMarketContext.value
   if (!context) {
-    status.value = '❌ Select compiled strategy to lock exchange, symbol, and timeframe'
+    status.value = t('tvParity.selectCompiled')
     return
   }
   if (!context.symbol || !context.timeframe || !context.exchange || !context.marketType) {
-    status.value = '❌ Selected strategy is missing exchange, market type, symbol, or timeframe'
+    status.value = t('tvParity.missingMarket')
     return
   }
   loading.value = true
-  status.value = 'Previewing TradingView candles…'
+  status.value = t('tvParity.previewingStatus')
   try {
     const { data } = await previewTvParityCandles({
       candlesFile: candlesFile.value,
@@ -156,9 +158,9 @@ async function previewCandles() {
     lockedPeriod.value = data.locked_period ?? { from_time: data.from_time, to_time: data.to_time }
     form.value.compareFromTime = String(lockedPeriod.value?.from_time ?? '')
     form.value.compareToTime = String(lockedPeriod.value?.to_time ?? '')
-    status.value = `✅ ${data.valid_bars?.toLocaleString?.() ?? data.valid_bars} candles locked`
+    status.value = t('tvParity.previewedLocked', { count: data.valid_bars?.toLocaleString?.() ?? data.valid_bars })
   } catch (err: any) {
-    status.value = `❌ Preview failed: ${err.response?.data?.detail ?? err.message}`
+    status.value = t('tvParity.previewFailed', { error: err.response?.data?.detail ?? err.message })
   } finally {
     loading.value = false
   }
@@ -166,24 +168,24 @@ async function previewCandles() {
 
 async function queueRun() {
   if (!selectedStrategyId.value) {
-    status.value = '❌ Select compiled strategy'
+    status.value = t('tvParity.selectCompiled2')
     return
   }
   const context = selectedStrategyMarketContext.value
   if (!context?.exchange || !context.marketType || !context.symbol || !context.timeframe) {
-    status.value = '❌ Selected strategy is missing exchange, market type, symbol, or timeframe'
+    status.value = t('tvParity.missingMarket')
     return
   }
   if (!candlesFile.value && !isExchangeDataSource.value) {
-    status.value = '❌ Upload TradingView candles CSV first'
+    status.value = t('tvParity.uploadTvCsv')
     return
   }
   if (isExchangeDataSource.value && (!form.value.compareFromTime || !form.value.compareToTime)) {
-    status.value = '❌ Exchange-data mode requires Compare from/to window'
+    status.value = t('tvParity.exchangeDataRequiresRange')
     return
   }
   runLoading.value = true
-  status.value = 'Queueing TV Parity replay…'
+  status.value = t('tvParity.queueingMessage')
   try {
     const { data } = await runTvParity({
       strategyId: selectedStrategyId.value,
@@ -204,10 +206,10 @@ async function queueRun() {
     })
     result.value = data
     lockedPeriod.value = data.locked_period ?? lockedPeriod.value
-    status.value = `✅ TV Parity run queued: ${data.run_id}`
+    status.value = t('tvParity.queued', { id: data.run_id })
     setTimeout(() => refreshResult(data.run_id), 1500)
   } catch (err: any) {
-    status.value = `❌ Run failed: ${err.response?.data?.detail ?? err.message}`
+    status.value = t('tvParity.runFailed', { error: err.response?.data?.detail ?? err.message })
   } finally {
     runLoading.value = false
   }
@@ -234,9 +236,9 @@ function artifactHref(artifact: any) {
   <div class="space-y-4">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h1 class="text-lg font-semibold text-gray-200">📺 TV Parity Lab</h1>
+        <h1 class="text-lg font-semibold text-gray-200">{{ t('tvParity.title') }}</h1>
         <p class="mt-1 text-sm text-gray-400">
-          Replay Pine strategy on uploaded TradingView candles or exchange data, then compare OpenPine plots/trades/equity exports.
+          {{ t('tvParity.subtitle') }}
         </p>
       </div>
       <button
@@ -244,7 +246,7 @@ function artifactHref(artifact: any) {
         @click="refreshResult()"
         class="px-3 py-1.5 rounded-lg text-sm border border-dark-500 text-gray-300 disabled:opacity-40 hover:border-accent"
       >
-        Refresh result
+        {{ t('tvParity.refreshResult') }}
       </button>
     </div>
 
@@ -257,85 +259,85 @@ function artifactHref(artifact: any) {
 
     <section class="grid grid-cols-1 xl:grid-cols-3 gap-4">
       <div class="xl:col-span-2 bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-4">
-        <h2 class="text-sm font-semibold text-gray-200">1. Inputs</h2>
+        <h2 class="text-sm font-semibold text-gray-200">{{ t('tvParity.sectionInputs') }}</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label class="space-y-1 text-xs text-gray-400">
-            Data source
+            {{ t('tvParity.dataSource') }}
             <select v-model="form.source" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200">
-              <option value="tradingview_csv">TradingView candles CSV</option>
-              <option value="exchange_data">Exchange data</option>
+              <option value="tradingview_csv">{{ t('tvParity.tradingviewCsv') }}</option>
+              <option value="exchange_data">{{ t('tvParity.exchangeData') }}</option>
             </select>
           </label>
           <label class="space-y-1 text-xs text-gray-400">
-            Strategy
+            {{ t('tvParity.strategy') }}
             <select v-model="selectedStrategyId" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200">
-              <option value="">Select compiled strategy</option>
+              <option value="">{{ t('tvParity.selectStrategy') }}</option>
               <option v-for="strategy in strategies" :key="strategy.strategy_id ?? strategy.id" :value="strategy.strategy_id ?? strategy.id">
                 {{ strategy.name ?? strategy.strategy_id ?? strategy.id }} · {{ strategy.symbol }} {{ strategy.timeframe }}
               </option>
             </select>
           </label>
           <label v-if="!isExchangeDataSource" class="space-y-1 text-xs text-gray-400">
-            TradingView candles CSV
+            {{ t('tvParity.tradingviewCsv') }}
             <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(candlesInput)">
-                Choose file
+                {{ t('tvParity.chooseFile') }}
               </button>
               <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(candlesFile) }}</span>
               <input ref="candlesInput" type="file" accept=".csv,text/csv" class="hidden" @change="setCandlesFile($event.target)" />
             </span>
           </label>
           <div class="md:col-span-2 rounded-lg border border-dark-500 bg-dark-700/40 p-3 text-xs text-gray-300">
-            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Strategy market context</div>
+            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('tvParity.strategyContext') }}</div>
             <div v-if="selectedStrategyMarketContext" class="grid grid-cols-2 lg:grid-cols-4 gap-2">
               <div>
-                <div class="text-gray-500">Exchange</div>
+                <div class="text-gray-500">{{ t('tvParity.exchange') }}</div>
                 <div class="font-mono text-gray-200">{{ selectedStrategyMarketContext.exchangeLabel }}</div>
               </div>
               <div>
-                <div class="text-gray-500">Market type</div>
+                <div class="text-gray-500">{{ t('tvParity.marketType') }}</div>
                 <div class="font-mono text-gray-200">{{ selectedStrategyMarketContext.marketTypeLabel }}</div>
               </div>
               <div>
-                <div class="text-gray-500">Symbol</div>
+                <div class="text-gray-500">{{ t('tvParity.symbol') }}</div>
                 <div class="font-mono text-gray-200">{{ selectedStrategyMarketContext.symbol || '—' }}</div>
               </div>
               <div>
-                <div class="text-gray-500">Timeframe</div>
+                <div class="text-gray-500">{{ t('tvParity.timeframe') }}</div>
                 <div class="font-mono text-gray-200">{{ selectedStrategyMarketContext.timeframe || '—' }}</div>
               </div>
             </div>
-            <div v-else class="text-gray-500">Select a compiled strategy; exchange, market type, symbol, and timeframe are locked from it.</div>
+            <div v-else class="text-gray-500">{{ t('tvParity.selectCompiledHint') }}</div>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <label class="space-y-1 text-xs text-gray-400">
-            TV chart/plots CSV
+            {{ t('tvParity.tvChartCsv') }}
             <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(tvChartInput)">
-                Choose file
+                {{ t('tvParity.chooseFile') }}
               </button>
               <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(tvChartFile) }}</span>
               <input ref="tvChartInput" type="file" accept=".csv,text/csv" class="hidden" @change="setTvChartFile($event.target)" />
             </span>
           </label>
           <label class="space-y-1 text-xs text-gray-400">
-            TV trades CSV
+            {{ t('tvParity.tvTradesCsv') }}
             <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(tvTradesInput)">
-                Choose file
+                {{ t('tvParity.chooseFile') }}
               </button>
               <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(tvTradesFile) }}</span>
               <input ref="tvTradesInput" type="file" accept=".csv,text/csv" class="hidden" @change="setTvTradesFile($event.target)" />
             </span>
           </label>
           <label class="space-y-1 text-xs text-gray-400">
-            TV equity CSV
+            {{ t('tvParity.tvEquityCsv') }}
             <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(tvEquityInput)">
-                Choose file
+                {{ t('tvParity.chooseFile') }}
               </button>
               <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(tvEquityFile) }}</span>
               <input ref="tvEquityInput" type="file" accept=".csv,text/csv" class="hidden" @change="setTvEquityFile($event.target)" />
@@ -345,52 +347,52 @@ function artifactHref(artifact: any) {
 
         <div class="flex flex-wrap gap-2">
           <button :disabled="loading || isExchangeDataSource" @click="previewCandles" class="px-3 py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-sm text-gray-200 disabled:opacity-50">
-            {{ loading ? 'Previewing…' : 'Preview candles' }}
+            {{ loading ? t('tvParity.previewing') : t('tvParity.previewCandles') }}
           </button>
           <button :disabled="runLoading" @click="queueRun" class="px-3 py-2 rounded-lg bg-accent hover:bg-accent-dark text-sm text-white disabled:opacity-50">
-            {{ runLoading ? 'Queueing…' : 'Run TV Parity' }}
+            {{ runLoading ? t('tvParity.queueing') : t('tvParity.runTvParity') }}
           </button>
         </div>
       </div>
 
       <aside class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
-        <h2 class="text-sm font-semibold text-gray-200">2. Locked period</h2>
+        <h2 class="text-sm font-semibold text-gray-200">{{ t('tvParity.sectionLocked') }}</h2>
         <div class="rounded-lg bg-dark-700/60 border border-dark-500 p-3 text-xs text-gray-300">
-          <div class="uppercase tracking-wide text-gray-500">From</div>
+          <div class="uppercase tracking-wide text-gray-500">{{ t('tvParity.from') }}</div>
           <div class="font-mono">{{ fmtMs(lockedPeriod?.from_time) }}</div>
-          <div class="mt-3 uppercase tracking-wide text-gray-500">To</div>
+          <div class="mt-3 uppercase tracking-wide text-gray-500">{{ t('tvParity.to') }}</div>
           <div class="font-mono">{{ fmtMs(lockedPeriod?.to_time) }}</div>
         </div>
         <div v-if="isExchangeDataSource" class="rounded-lg border border-dark-500 bg-dark-700/40 p-3 text-xs text-gray-300">
           <label class="flex items-center gap-2">
-            <input v-model="form.fullPrehistory" type="checkbox" /> Full pre-history
+            <input v-model="form.fullPrehistory" type="checkbox" /> {{ t('tvParity.fullPrehistory') }}
           </label>
           <p class="mt-1 text-gray-500">
-            Off: load only compare window plus Warmup bars. On: load exchange data from Pre-history from, but score/compare only the locked window.
+            {{ t('tvParity.preHistoryHint') }}
           </p>
         </div>
         <div class="grid grid-cols-1 gap-2">
           <label v-if="isExchangeDataSource && form.fullPrehistory" class="space-y-1 text-xs text-gray-400">
-            Pre-history from
-            <input v-model="form.fromTime" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200" placeholder="2024-01-01T00:00:00Z or ms" />
+            {{ t('tvParity.preHistoryFrom') }}
+            <input v-model="form.fromTime" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200" :placeholder="t('tvParity.preHistoryPlaceholder')" />
           </label>
           <label class="space-y-1 text-xs text-gray-400">
-            Compare from
+            {{ t('tvParity.compareFrom') }}
             <input v-model="form.compareFromTime" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200" />
           </label>
           <label class="space-y-1 text-xs text-gray-400">
-            Compare to
+            {{ t('tvParity.compareTo') }}
             <input v-model="form.compareToTime" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200" />
           </label>
           <label class="space-y-1 text-xs text-gray-400">
-            Warmup bars
+            {{ t('tvParity.warmupBars') }}
             <input v-model.number="form.warmupBars" type="number" min="0" class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200" />
           </label>
           <label class="flex items-center gap-2 text-xs text-gray-300">
-            <input v-model="form.capturePlots" type="checkbox" /> Capture plot outputs
+            <input v-model="form.capturePlots" type="checkbox" /> {{ t('tvParity.capturePlots') }}
           </label>
           <label class="flex items-center gap-2 text-xs text-gray-300">
-            <input v-model="form.includeBaseColumns" type="checkbox" /> Compare base OHLC columns
+            <input v-model="form.includeBaseColumns" type="checkbox" /> {{ t('tvParity.includeBase') }}
           </label>
         </div>
       </aside>
@@ -398,32 +400,32 @@ function artifactHref(artifact: any) {
 
     <section class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-gray-200">3. Result & artifacts</h2>
-        <span class="text-xs text-gray-500">{{ result?.status ?? 'No run yet' }}</span>
+        <h2 class="text-sm font-semibold text-gray-200">{{ t('tvParity.sectionResult') }}</h2>
+        <span class="text-xs text-gray-500">{{ result?.status ?? t('tvParity.noRunYet') }}</span>
       </div>
 
       <div v-if="preview" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         <div class="rounded-lg bg-dark-700/60 p-3">
-          <div class="text-gray-500">Valid bars</div>
+          <div class="text-gray-500">{{ t('tvParity.validBars') }}</div>
           <div class="font-mono text-gray-200">{{ preview.valid_bars }}</div>
         </div>
         <div class="rounded-lg bg-dark-700/60 p-3">
-          <div class="text-gray-500">Invalid rows</div>
+          <div class="text-gray-500">{{ t('tvParity.invalidRows') }}</div>
           <div class="font-mono text-gray-200">{{ preview.invalid_rows }}</div>
         </div>
         <div class="rounded-lg bg-dark-700/60 p-3">
-          <div class="text-gray-500">Duplicates</div>
+          <div class="text-gray-500">{{ t('tvParity.duplicates') }}</div>
           <div class="font-mono text-gray-200">{{ preview.duplicate_timestamps }}</div>
         </div>
         <div class="rounded-lg bg-dark-700/60 p-3">
-          <div class="text-gray-500">Source</div>
+          <div class="text-gray-500">{{ t('tvParity.source') }}</div>
           <div class="font-mono text-gray-200">{{ preview.source }}</div>
         </div>
       </div>
 
       <div v-if="result?.comparison" class="rounded-lg border border-dark-500 bg-dark-700/40 p-3 text-xs text-gray-300">
-        <div class="font-medium text-gray-200">Comparison</div>
-        <div class="mt-1">Failures: {{ result.comparison.failures?.length ?? 0 }}</div>
+        <div class="font-medium text-gray-200">{{ t('tvParity.comparison') }}</div>
+        <div class="mt-1">{{ t('tvParity.failuresCount', { count: result.comparison.failures?.length ?? 0 }) }}</div>
       </div>
 
       <div v-if="artifacts.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -436,10 +438,10 @@ function artifactHref(artifact: any) {
           rel="noopener"
         >
           {{ artifact.name }}
-          <span class="block text-xs text-gray-500">{{ artifact.filename }} · {{ artifact.size_bytes }} bytes · {{ artifact.download_url }}</span>
+          <span class="block text-xs text-gray-500">{{ artifact.filename }} · {{ t('tvParity.artifactSize', { bytes: artifact.size_bytes }) }} · {{ artifact.download_url }}</span>
         </a>
       </div>
-      <div v-else class="text-sm text-gray-500">Artifacts appear here after the parity run writes exports.</div>
+      <div v-else class="text-sm text-gray-500">{{ t('tvParity.artifactsEmpty') }}</div>
     </section>
   </div>
 </template>

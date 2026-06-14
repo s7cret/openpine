@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useBacktestsStore } from '@/stores/backtests'
 import { useStrategiesStore } from '@/stores/strategies'
 import DateRangePicker from '@/components/DateRangePicker.vue'
 import { formatDateTime } from '@/utils/time'
 import { confirmBacktestDelete, shouldStopBacktestPolling } from '@/lib/backtestUi'
 
+const { t } = useI18n()
 const btStore = useBacktestsStore()
 const stStore = useStrategiesStore()
 const showRun = ref(false)
@@ -50,20 +52,20 @@ watch(
 )
 
 async function runBacktest() {
-  if (!form.value.strategy_id) { runStatus.value = '❌ Select a strategy'; return }
-  if (!form.value.from_time || !form.value.to_time) { runStatus.value = '❌ Select date range'; return }
+  if (!form.value.strategy_id) { runStatus.value = t('backtests.selectStrategyFirst'); return }
+  if (!form.value.from_time || !form.value.to_time) { runStatus.value = t('backtests.selectDateRange'); return }
   runLoading.value = true
-  runStatus.value = 'Starting backtest...'
+  runStatus.value = t('backtests.startingMessage')
   const result = await btStore.run(form.value)
   runLoading.value = false
   if (result?.run_id) {
-    runStatus.value = '✅ Backtest started!'
+    runStatus.value = t('backtests.backtestStarted')
     showRun.value = false
     btStore.fetchAll()
     pollProgress(result.run_id)
     setTimeout(() => runStatus.value = '', 2000)
   } else {
-    runStatus.value = '❌ Failed to start backtest'
+    runStatus.value = t('backtests.startFailed')
   }
 }
 
@@ -129,7 +131,7 @@ function isControllable(run: any) {
 
 async function cancelRun(run: any) {
   const id = run.run_id ?? run.id
-  if (!id || !confirm(`Cancel backtest ${id}?`)) return
+  if (!id || !confirm(t('backtests.cancelBacktestTitle', { id: id.slice(0, 8) }))) return
   await btStore.controlRun(id, 'cancel')
   pollProgress(id)
 }
@@ -178,8 +180,14 @@ function fmtPnl(run: any) {
 
 function fmtEstimate(e: any) {
   if (!e) return ''
-  const adjusted = e.adjusted ? `range ${msToDate(e.requested_from)} -> ${msToDate(e.effective_from)}` : 'range ok'
-  return `${e.symbol} ${e.timeframe}: ${e.estimated_bars?.toLocaleString?.() ?? e.estimated_bars} bars, ${e.estimated_pages} pages, ${adjusted}`
+  const adjusted = e.adjusted ? t('backtests.rangeAdjustedDetail', { from: msToDate(e.requested_from), to: msToDate(e.effective_from) }) : t('backtests.rangeOkDetail')
+  return t('backtests.estimateFormat', {
+    symbol: e.symbol,
+    timeframe: e.timeframe,
+    bars: e.estimated_bars?.toLocaleString?.() ?? e.estimated_bars,
+    pages: e.estimated_pages,
+    adjusted,
+  })
 }
 
 function marketDataContext(e: any) {
@@ -200,11 +208,11 @@ function availabilityTone(e: any) {
 }
 
 function availabilityLabel(e: any) {
-  if (!form.value.strategy_id) return 'Select strategy first'
-  if (estimateLoading.value) return 'Checking market data…'
-  if (!e) return 'Select date range to estimate data'
-  if (e.adjusted) return 'Range auto-adjusted to listed data'
-  return 'Selected range is available'
+  if (!form.value.strategy_id) return t('backtests.selectStrategyForRange')
+  if (estimateLoading.value) return t('backtests.checkingData')
+  if (!e) return t('backtests.selectDateRangeForEstimate')
+  if (e.adjusted) return t('backtests.rangeAdjusted')
+  return t('backtests.rangeOk')
 }
 
 function effectiveRange(e: any) {
@@ -217,9 +225,9 @@ function effectiveRange(e: any) {
   <div class="space-y-4">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <h1 class="text-lg font-semibold text-gray-200">🧪 Backtests</h1>
+      <h1 class="text-lg font-semibold text-gray-200">{{ t('backtests.title') }}</h1>
       <button @click="showRun = !showRun" class="px-3 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg transition-colors">
-        + Run Backtest
+        {{ t('backtests.runBacktest') }}
       </button>
     </div>
 
@@ -228,7 +236,7 @@ function effectiveRange(e: any) {
       <div v-if="showRun" class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <select v-model="form.strategy_id" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
-            <option value="" disabled>Select strategy</option>
+            <option value="" disabled>{{ t('backtests.selectStrategy') }}</option>
             <option v-for="s in stStore.items" :key="s.strategy_id ?? s.id" :value="s.strategy_id ?? s.id">
               {{ s.name ?? s.strategy_id }}
             </option>
@@ -250,19 +258,19 @@ function effectiveRange(e: any) {
               <div class="mt-1 font-mono text-[11px] opacity-90">{{ marketDataContext(estimate ?? availability) }}</div>
             </div>
             <div class="text-left sm:text-right">
-              <div class="text-[11px] uppercase tracking-wide opacity-70">Effective range</div>
+              <div class="text-[11px] uppercase tracking-wide opacity-70">{{ t('backtests.effectiveRange') }}</div>
               <div class="font-mono text-[11px]">{{ effectiveRange(estimate ?? availability) }}</div>
             </div>
           </div>
           <div v-if="estimate || availability || estimateLoading" class="mt-2 text-[11px] opacity-85">
-            {{ estimateLoading ? 'Estimating bars/pages…' : fmtEstimate(estimate ?? availability) }}
+            {{ estimateLoading ? t('backtests.estimating') : fmtEstimate(estimate ?? availability) }}
           </div>
         </div>
         <div class="flex gap-2 justify-end items-center">
           <span v-if="runStatus" class="text-xs" :class="runStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ runStatus }}</span>
-          <button @click="showRun = false; runStatus = ''" class="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200">Cancel</button>
+          <button @click="showRun = false; runStatus = ''" class="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200">{{ t('common.cancel') }}</button>
           <button @click="runBacktest" :disabled="runLoading" class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:opacity-50">
-            {{ runLoading ? 'Starting...' : '🧪 Run' }}
+            {{ runLoading ? t('backtests.starting') : t('backtests.startRun') }}
           </button>
         </div>
       </div>
@@ -272,7 +280,7 @@ function effectiveRange(e: any) {
     <div class="bg-dark-800 rounded-xl border border-dark-500 overflow-hidden">
       <div class="md:hidden divide-y divide-dark-600/60">
         <div v-if="btStore.items.length === 0" class="px-4 py-8 text-center text-gray-500">
-          {{ btStore.loading ? 'Loading...' : 'No backtests yet' }}
+          {{ btStore.loading ? t('common.loading') : t('backtests.noBacktests') }}
         </div>
         <div v-for="run in btStore.items" :key="run.run_id ?? run.id" class="p-4 space-y-3" @click="expandRun(run.run_id ?? run.id)">
           <div class="flex items-start justify-between gap-3">
@@ -284,9 +292,9 @@ function effectiveRange(e: any) {
           </div>
           <div class="text-xs text-gray-400 break-words">{{ fmtPeriod(run) }}</div>
           <div class="grid grid-cols-3 gap-3 text-xs">
-            <div><span class="text-gray-500">Trades</span><div class="font-mono text-gray-200">{{ fmtNumber(metric(run, 'trades_total')) }}</div></div>
-            <div><span class="text-gray-500">Win</span><div class="font-mono text-gray-200">{{ fmtPct(metric(run, 'win_rate')) }}</div></div>
-            <div><span class="text-gray-500">Net</span><div class="font-mono" :class="Number(metric(run, 'net_profit') ?? 0) >= 0 ? 'text-success' : 'text-danger'">{{ fmtPnl(run) }}</div></div>
+            <div><span class="text-gray-500">{{ t('backtests.thTrades') }}</span><div class="font-mono text-gray-200">{{ fmtNumber(metric(run, 'trades_total')) }}</div></div>
+            <div><span class="text-gray-500">{{ t('backtests.thWin') }}</span><div class="font-mono text-gray-200">{{ fmtPct(metric(run, 'win_rate')) }}</div></div>
+            <div><span class="text-gray-500">{{ t('backtests.thPnl') }}</span><div class="font-mono" :class="Number(metric(run, 'net_profit') ?? 0) >= 0 ? 'text-success' : 'text-danger'">{{ fmtPnl(run) }}</div></div>
           </div>
           <div v-if="btStore.getProgress(run.run_id ?? run.id)" class="space-y-1">
             <div class="h-1.5 bg-dark-600 rounded-full overflow-hidden">
@@ -300,13 +308,13 @@ function effectiveRange(e: any) {
               class="flex-1 px-2 py-2 rounded bg-warning/20 hover:bg-warning/30 text-xs text-warning"
               @click="cancelRun(run)"
             >
-              Cancel
+              {{ t('backtests.cancel') }}
             </button>
             <button
               class="flex-1 px-2 py-2 rounded bg-danger/20 hover:bg-danger/30 text-xs text-danger"
               @click="deleteRun(run)"
             >
-              Delete
+              {{ t('backtests.delete') }}
             </button>
           </div>
         </div>
@@ -314,22 +322,22 @@ function effectiveRange(e: any) {
       <table class="hidden md:table w-full text-sm">
         <thead>
           <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
-            <th class="px-4 py-2.5 text-left">Strategy</th>
-            <th class="px-4 py-2.5 text-left">Version</th>
-            <th class="px-4 py-2.5 text-left">Date</th>
-            <th class="px-4 py-2.5 text-left">Period</th>
-            <th class="px-4 py-2.5 text-left">Status</th>
-            <th class="px-4 py-2.5 text-right">Trades</th>
-            <th class="px-4 py-2.5 text-right">Win</th>
-            <th class="px-4 py-2.5 text-right">PnL</th>
-            <th class="px-4 py-2.5 text-left w-32">Progress</th>
+            <th class="px-4 py-2.5 text-left">{{ t('backtests.thStrategy') }}</th>
+            <th class="px-4 py-2.5 text-left">{{ t('backtests.thVersion') }}</th>
+            <th class="px-4 py-2.5 text-left">{{ t('backtests.thDate') }}</th>
+            <th class="px-4 py-2.5 text-left">{{ t('backtests.thPeriod') }}</th>
+            <th class="px-4 py-2.5 text-left">{{ t('backtests.thStatus') }}</th>
+            <th class="px-4 py-2.5 text-right">{{ t('backtests.thTrades') }}</th>
+            <th class="px-4 py-2.5 text-right">{{ t('backtests.thWin') }}</th>
+            <th class="px-4 py-2.5 text-right">{{ t('backtests.thPnl') }}</th>
+            <th class="px-4 py-2.5 text-left w-32">{{ t('backtests.thProgress') }}</th>
             <th class="px-2 py-2.5 w-10"></th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="btStore.items.length === 0">
             <td colspan="10" class="px-4 py-8 text-center text-gray-500">
-              {{ btStore.loading ? 'Loading...' : 'No backtests yet' }}
+              {{ btStore.loading ? t('common.loading') : t('backtests.noBacktests') }}
             </td>
           </tr>
           <template v-for="run in btStore.items" :key="run.run_id ?? run.id">
@@ -370,14 +378,14 @@ function effectiveRange(e: any) {
                   v-if="isControllable(run)"
                   @click.stop="cancelRun(run)"
                   class="mr-1 p-1 rounded hover:bg-warning/20 text-gray-500 hover:text-warning transition-colors"
-                  title="Cancel run"
+                  :title="t('backtests.cancelRun')"
                 >
                   ⏹
                 </button>
                 <button
                   @click.stop="deleteRun(run)"
                   class="p-1 rounded hover:bg-danger/20 text-gray-500 hover:text-danger transition-colors"
-                  title="Delete run"
+                  :title="t('backtests.deleteRun')"
                 >
                   🗑
                 </button>
@@ -388,29 +396,29 @@ function effectiveRange(e: any) {
               <td colspan="10" class="px-4 py-3 bg-dark-900/50">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                   <div>
-                    <span class="text-xs text-gray-500">Win Rate</span>
+                    <span class="text-xs text-gray-500">{{ t('backtests.winRate') }}</span>
                     <div class="text-sm font-bold text-gray-200">{{ fmtPct(metric(btStore.current, 'win_rate')) }}</div>
                   </div>
                   <div>
-                    <span class="text-xs text-gray-500">Trades</span>
+                    <span class="text-xs text-gray-500">{{ t('backtests.trades') }}</span>
                     <div class="text-sm font-bold text-gray-200">{{ fmtNumber(metric(btStore.current, 'trades_total')) }}</div>
                   </div>
                   <div>
-                    <span class="text-xs text-gray-500">Max Drawdown</span>
+                    <span class="text-xs text-gray-500">{{ t('backtests.maxDrawdown') }}</span>
                     <div class="text-sm font-bold text-danger">{{ fmtPct(metric(btStore.current, 'max_drawdown_pct') ?? metric(btStore.current, 'max_drawdown')) }}</div>
                   </div>
                   <div>
-                    <span class="text-xs text-gray-500">Period</span>
+                    <span class="text-xs text-gray-500">{{ t('backtests.period') }}</span>
                     <div class="text-sm font-bold text-gray-200 truncate">{{ fmtPeriod(btStore.current ?? run) }}</div>
                   </div>
                 </div>
                 <div v-if="(run.status === 'done' || run.status === 'completed')" class="flex gap-2">
-                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/equity'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">📥 Equity CSV</a>
-                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/report'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">📥 Report</a>
-                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/export'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">📥 Export</a>
+                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/equity'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">{{ t('backtests.exportEquity') }}</a>
+                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/report'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">{{ t('backtests.exportReport') }}</a>
+                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/export'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">{{ t('backtests.export') }}</a>
                 </div>
                 <div v-else class="text-xs text-gray-500">
-                  {{ run.status === 'failed' ? '❌ Backtest failed — no artifacts' : (run.status === 'cancelled' ? 'Cancelled — no final artifacts' : '⏳ Backtest still running...') }}
+                  {{ run.status === 'failed' ? t('backtests.failedNoArtifacts') : (run.status === 'cancelled' ? t('backtests.cancelledNoArtifacts') : t('backtests.stillRunning')) }}
                 </div>
               </td>
             </tr>
