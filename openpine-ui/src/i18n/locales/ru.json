@@ -445,6 +445,9 @@
   "marketMeta": {
     "dataOnly": "только данные",
     "notWired": "не подключено",
+    "planned_provider": "Провайдер планируется в следующих релизах",
+    "data_only": "Только данные — доступ в режиме чтения",
+    "not_wired": "Провайдер не подключён в этой сборке",
     "symbolSearchUnavailable": "Поиск тикера недоступен для {exchange}",
     "symbolSearchPlaceholder": "Поиск стейбл-пары на {exchange}...",
     "symbolLoading": "Загрузка с {exchange}...",

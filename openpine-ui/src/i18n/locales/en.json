@@ -445,6 +445,9 @@
   "marketMeta": {
     "dataOnly": "data only",
     "notWired": "not wired",
+    "planned_provider": "Provider planned for a future release",
+    "data_only": "Data only — read-only access",
+    "not_wired": "Provider not wired in this build",
     "symbolSearchUnavailable": "Ticker search unavailable for {exchange}",
     "symbolSearchPlaceholder": "Search stable pair on {exchange}...",
     "symbolLoading": "Loading from {exchange}...",
