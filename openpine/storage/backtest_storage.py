@@ -227,7 +227,10 @@ class BacktestResultStore:
 
     def _get_started_at_ms(self, run_id: str) -> int | None:
         """Read ``created_at`` (ms) for a run, used as wall-clock start."""
-        cur = self._storage.execute(
+        storage = getattr(self, "_storage", None)
+        if storage is None:
+            return None
+        cur = storage.execute(
             "SELECT created_at FROM backtest_runs WHERE run_id = ?",
             (run_id,),
         )

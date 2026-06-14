@@ -396,12 +396,37 @@ def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch):
         value = "error"
 
     diag = SimpleNamespace(message="bad", code="P", severity=Severity())
+    visual_diag = SimpleNamespace(
+        message="Builtin plot has no runtime-equivalent visual output under runtime_contract v1.4",
+        code="P2A1507",
+        severity=Severity(),
+    )
     result_ok = SimpleNamespace(ok=True, diagnostics=[], ast=SimpleNamespace(kind="Program"))
+    result_visual = SimpleNamespace(
+        ok=False,
+        diagnostics=[visual_diag],
+        ast=SimpleNamespace(kind="Program"),
+    )
     result_bad = SimpleNamespace(ok=False, diagnostics=[diag], ast=None)
-    monkeypatch.setattr(pine2ast, "parse_code", lambda *a, **k: result_ok)
+    parse_options = []
+    translate_kwargs = []
+
+    def fake_parse_code(*args, **kwargs):
+        parse_options.append(kwargs.get("options"))
+        return result_ok
+
+    def fake_translate_ast(ast, **kwargs):
+        translate_kwargs.append(kwargs)
+        return SimpleNamespace(
+            code="# generated",
+            diagnostics=[],
+            metadata={"declaration": {}, "visual_policy": kwargs.get("visual_policy")},
+        )
+
+    monkeypatch.setattr(pine2ast, "parse_code", fake_parse_code)
     monkeypatch.setattr(pine2ast, "ast_to_dict", lambda ast: {"type": "Program", "body": []})
     monkeypatch.setattr(pine2ast, "ast_to_json", lambda ast: "{}")
-    monkeypatch.setattr(ast2python, "translate_ast", lambda ast, module_name=None: SimpleNamespace(code="# generated", diagnostics=[], metadata={"declaration": {}}))
+    monkeypatch.setattr(ast2python, "translate_ast", fake_translate_ast)
     state = _pine_state(tmp_path)
     tasks = BackgroundTasks()
     queued = asyncio.run(pine_ops.compile_pine("src1", tasks, state))
@@ -416,6 +441,34 @@ def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch):
     assert inspected["generated_python_lines"] == 1
     assert asyncio.run(pine_ops.compile_progress(queued["operation_id"])) is not None
     assert asyncio.run(pine_ops.validate_pine("src1", state))["valid"] is True
+    assert translate_kwargs[0]["visual_policy"] == "record"
+    assert [getattr(opts, "runtime_contract_profile", None) for opts in parse_options] == [
+        "v1.4",
+        "v1.4",
+    ]
+    assert all(
+        getattr(opts, "strict_builtin_namespaces", False) is True
+        for opts in parse_options
+    )
+
+    monkeypatch.setattr(pine2ast, "parse_code", lambda *a, **k: result_visual)
+    visual_tasks = BackgroundTasks()
+    asyncio.run(
+        pine_ops.compile_pine("src1", visual_tasks, state)  # type: ignore[arg-type]
+    )
+    asyncio.run(
+        visual_tasks.tasks[0].func(
+            *visual_tasks.tasks[0].args,
+            **visual_tasks.tasks[0].kwargs,
+        )
+    )
+    compile_meta = state.artifact_store.saved[-1]["compile_meta"]
+    assert compile_meta["filtered_visual_diagnostics"] == [
+        "P2A1507: Builtin plot has no runtime-equivalent visual output under runtime_contract v1.4"
+    ]
+    assert asyncio.run(
+        pine_ops.validate_pine("src1", state)  # type: ignore[arg-type]
+    )["valid"] is True
 
     monkeypatch.setattr(pine2ast, "parse_code", lambda *a, **k: result_bad)
     assert asyncio.run(pine_ops.validate_pine("src1", state))["valid"] is False

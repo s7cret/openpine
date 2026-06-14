@@ -33,7 +33,21 @@ _EXCLUDED_DIRS = {
     "openpine.egg-info",
     "venv",
 }
-_EXCLUDED_SUFFIXES = {".db", ".duckdb", ".log", ".parquet", ".pyc", ".pyo", ".sqlite", ".tsbuildinfo", ".zip"}
+_EXCLUDED_SUFFIXES = {
+    ".db",
+    ".duckdb",
+    ".log",
+    ".parquet",
+    ".pyc",
+    ".pyo",
+    ".sqlite",
+    ".tsbuildinfo",
+    ".zip",
+}
+
+
+_FRONTEND_RUNTIME_ROOTS = {"openpine-ui"}
+_FRONTEND_RUNTIME_DIRS = {"dist", "node_modules"}
 
 
 @dataclass(frozen=True)
@@ -53,6 +67,15 @@ def _is_excluded(path: Path, root: Path) -> bool:
     return any(part in _EXCLUDED_DIRS for part in rel.parts)
 
 
+def _is_frontend_runtime_artifact(path: Path, root: Path) -> bool:
+    rel = path.relative_to(root)
+    return (
+        len(rel.parts) >= 2
+        and rel.parts[0] in _FRONTEND_RUNTIME_ROOTS
+        and rel.parts[1] in _FRONTEND_RUNTIME_DIRS
+    )
+
+
 def source_files(root: Path) -> list[Path]:
     files = [
         path
@@ -70,11 +93,9 @@ def distribution_manifest(root: Path) -> DistributionManifest:
             continue
         rel = path.relative_to(root)
         parts = rel.parts
-        if (
-            "dist" in parts
-            or "build" in parts
-            or path.suffix == ".zip"
-        ):
+        if _is_frontend_runtime_artifact(path, root):
+            continue
+        if "dist" in parts or "build" in parts or path.suffix == ".zip":
             hygiene_errors.append(rel.as_posix())
     return DistributionManifest(
         root=root.name,

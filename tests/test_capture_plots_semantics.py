@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import fields, make_dataclass
 from types import SimpleNamespace
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 
@@ -182,6 +183,49 @@ def test_compare_rows_by_time_reports_value_mismatch(tmp_path):
     assert summary["mismatch_cells"] == 1
     assert summary["worst_column"] == "PLOT"
     assert top_columns[0]["column"] == "PLOT"
+
+
+def test_strategy_tv_chart_compare_filters_to_compare_window(tmp_path):
+    from openpine.cli.main import _compare_strategy_run_with_tv_exports
+
+    tv = tmp_path / "tv_chart.csv"
+    op = tmp_path / "openpine_plots.csv"
+    t0 = 1_704_067_200_000
+    t1 = 1_704_153_600_000
+    t2 = 1_704_240_000_000
+    tv.write_text(
+        f"time,open,PLOT\n{t0},1,10\n{t1},2,20\n{t2},3,30\n",
+        encoding="utf-8",
+    )
+    op.write_text(f"bar_time,bar_index,PLOT\n{t1},0,20\n", encoding="utf-8")
+
+    comparison = cast(
+        dict[str, Any],
+        _compare_strategy_run_with_tv_exports(
+            strategy_id="strategy-1",
+            run=SimpleNamespace(run_id="run-1"),
+            exported={"plots": str(op)},
+            output_path=tmp_path / "comparison",
+            tv_chart=str(tv),
+            tv_trades=None,
+            tv_equity=None,
+            abs_tol=1e-6,
+            rel_tol=1e-9,
+            include_base_columns=False,
+            compare_from_ms=t1,
+            compare_to_ms=t2,
+        ),
+    )
+
+    comparisons = cast(list[dict[str, Any]], comparison["comparisons"])
+    summary = comparisons[0]
+    assert summary["type"] == "plots"
+    assert summary["status"] == "match"
+    assert summary["classification"] == "match"
+    assert summary["tv_rows"] == 1
+    assert summary["openpine_rows"] == 1
+    assert summary["common_times"] == 1
+    assert summary["missing_times_in_openpine"] == 0
 
 
 def test_normalized_tv_trades_supports_localized_headers(tmp_path):

@@ -41,6 +41,21 @@ def test_distribution_manifest_excludes_local_runtime_artifacts(tmp_path: Path) 
     (tmp_path / "data.parquet").write_text("parquet\n", encoding="utf-8")
     (tmp_path / "openpine.egg-info").mkdir()
     (tmp_path / "openpine.egg-info" / "PKG-INFO").write_text("metadata\n", encoding="utf-8")
+    (tmp_path / "openpine-ui" / "dist" / "assets").mkdir(parents=True)
+    (tmp_path / "openpine-ui" / "dist" / "assets" / "app.js").write_text(
+        "bundle\n", encoding="utf-8"
+    )
+    (
+        tmp_path / "openpine-ui" / "node_modules" / "vue" / "dist"
+    ).mkdir(parents=True)
+    (
+        tmp_path
+        / "openpine-ui"
+        / "node_modules"
+        / "vue"
+        / "dist"
+        / "vue.js"
+    ).write_text("vue bundle\n", encoding="utf-8")
     (tmp_path / "keep.py").write_text("print('ok')\n", encoding="utf-8")
 
     manifest = distribution_manifest(tmp_path)

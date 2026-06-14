@@ -23,6 +23,65 @@ def _path_is_under(path: Path, root: Path) -> bool:
     return True
 
 
+def _diagnostic_message(diagnostic: object) -> str:
+    code = getattr(diagnostic, "code", None)
+    message = getattr(diagnostic, "message", None)
+    parts = [str(part) for part in (code, message) if part]
+    return ": ".join(parts) if parts else str(diagnostic)
+
+
+def _is_error_diagnostic(diagnostic: object) -> bool:
+    severity = getattr(getattr(diagnostic, "severity", None), "value", "")
+    return str(severity).lower() in {"error", "fatal"}
+
+
+def _is_visual_contract_diagnostic(diagnostic: object) -> bool:
+    from openpine.compile.adapter import _is_visual_contract_diagnostic as is_visual
+
+    return is_visual(_diagnostic_message(diagnostic))
+
+
+def _blocking_parse_errors(diagnostics: list[object]) -> list[str]:
+    return [
+        _diagnostic_message(diagnostic)
+        for diagnostic in diagnostics
+        if _is_error_diagnostic(diagnostic)
+        and not _is_visual_contract_diagnostic(diagnostic)
+    ]
+
+
+def _runtime_contract_v1_4_options():
+    try:
+        from pine2ast.api import runtime_contract_v1_4_options
+
+        return runtime_contract_v1_4_options()
+    except (ImportError, ModuleNotFoundError):
+        from pine2ast import ParseOptions
+
+        return ParseOptions(
+            runtime_contract_profile="v1.4",
+            strict_builtin_namespaces=True,
+        )
+
+
+def _translate_ast_recording_visuals(ast_dict: dict[str, object], *, module_name: str):
+    from inspect import Parameter, signature
+
+    from ast2python import translate_ast
+
+    try:
+        params = signature(translate_ast).parameters.values()
+    except (TypeError, ValueError):
+        return translate_ast(ast_dict, module_name=module_name, visual_policy="record")
+    supports_visual_policy = any(
+        param.name == "visual_policy" or param.kind is Parameter.VAR_KEYWORD
+        for param in params
+    )
+    if supports_visual_policy:
+        return translate_ast(ast_dict, module_name=module_name, visual_policy="record")
+    return translate_ast(ast_dict, module_name=module_name)
+
+
 def _artifact_dir_for_inspect(
     state: GatewayState,
     source_id: str,
@@ -77,25 +136,31 @@ async def compile_pine(
             await ws_manager.broadcast_progress(operation_id)
 
             # Stage 1: Pine2AST
-            from pine2ast import parse_code, ParseOptions
+            from pine2ast import parse_code
 
-            opts = ParseOptions(runtime_contract_profile="v1_4")
+            opts = _runtime_contract_v1_4_options()
             result = parse_code(src.source_text, options=opts)
-            if not result.ok:
-                errors = [
-                    d.message
-                    for d in result.diagnostics
-                    if d.severity.value in ("error", "fatal")
-                ]
+            diagnostics = list(getattr(result, "diagnostics", []) or [])
+            blocking_errors = _blocking_parse_errors(diagnostics)
+            if getattr(result, "ast", None) is None or blocking_errors:
                 ws_manager.update_progress(
                     operation_id,
                     "compile",
                     "failed",
                     0.2,
-                    f"Parse failed: {errors[:3]}",
+                    f"Parse failed: {blocking_errors[:3]}",
                 )
                 await ws_manager.broadcast_progress(operation_id)
                 return
+
+            filtered_visual_diagnostics = []
+            if not result.ok:
+                filtered_visual_diagnostics = [
+                    _diagnostic_message(diagnostic)
+                    for diagnostic in diagnostics
+                    if _is_error_diagnostic(diagnostic)
+                    and _is_visual_contract_diagnostic(diagnostic)
+                ]
 
             ws_manager.update_progress(
                 operation_id, "compile", "running", 0.4, "Generating Python..."
@@ -103,7 +168,6 @@ async def compile_pine(
             await ws_manager.broadcast_progress(operation_id)
 
             # Stage 2: AST2Python
-            from ast2python import translate_ast
             from pine2ast import ast_to_dict, ast_to_json
 
             ast_dict = ast_to_dict(result.ast)
@@ -115,7 +179,7 @@ async def compile_pine(
                 "parser_gate": "pass",
                 "semantic_gate": "pass",
             }
-            translation = translate_ast(
+            translation = _translate_ast_recording_visuals(
                 ast_dict,
                 module_name=src.name,
             )
@@ -153,6 +217,8 @@ async def compile_pine(
                 "artifact_id": artifact_id,
                 "translation_metadata": getattr(translation, "metadata", {}),
             }
+            if filtered_visual_diagnostics:
+                compile_meta["filtered_visual_diagnostics"] = filtered_visual_diagnostics
 
             state.artifact_store.save_artifact(
                 artifact_id=artifact_id,
@@ -194,16 +260,20 @@ async def validate_pine(
         raise HTTPException(404, f"Pine source not found: {source_id}")
 
     try:
-        from pine2ast import parse_code, ParseOptions
+        from pine2ast import parse_code
 
-        opts = ParseOptions(runtime_contract_profile="v1_4")
+        opts = _runtime_contract_v1_4_options()
         result = parse_code(src.source_text, options=opts)
+        diagnostics = list(getattr(result, "diagnostics", []) or [])
+        valid = getattr(result, "ast", None) is not None and not _blocking_parse_errors(
+            diagnostics
+        )
         return {
             "source_id": source_id,
-            "valid": result.ok,
+            "valid": valid,
             "diagnostics": [
                 {"code": d.code, "severity": d.severity.value, "message": d.message}
-                for d in result.diagnostics
+                for d in diagnostics
             ],
         }
     except Exception as exc:

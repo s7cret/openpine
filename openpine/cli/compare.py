@@ -258,6 +258,18 @@ def _write_normalized_tv_trades(
     return output_path
 
 
+def _time_in_compare_window(
+    ts: int,
+    compare_from_ms: int | None,
+    compare_to_ms: int | None,
+) -> bool:
+    if compare_from_ms is not None and ts < compare_from_ms:
+        return False
+    if compare_to_ms is not None and ts >= compare_to_ms:
+        return False
+    return True
+
+
 def _compare_rows_by_time(
     *,
     tv_path: Path,
@@ -267,6 +279,8 @@ def _compare_rows_by_time(
     exclude_columns: set[str],
     abs_tol: float,
     rel_tol: float,
+    compare_from_ms: int | None = None,
+    compare_to_ms: int | None = None,
 ) -> tuple[dict[str, object], list[dict[str, object]]]:
     import math as _math
     import statistics as _statistics
@@ -275,16 +289,22 @@ def _compare_rows_by_time(
     op_fields, op_rows = _read_compare_csv(op_path)
     common_columns = sorted((set(tv_fields) & set(op_fields)) - exclude_columns)
 
-    tv_by_time = {
-        ts: row
-        for row in tv_rows
-        if (ts := _compare_csv_time_ms(row.get(tv_time_column))) is not None
-    }
-    op_by_time = {
-        ts: row
-        for row in op_rows
-        if (ts := _compare_csv_time_ms(row.get(op_time_column))) is not None
-    }
+    def rows_by_time(
+        rows: list[dict[str, str]],
+        time_column: str,
+    ) -> dict[int, dict[str, str]]:
+        indexed: dict[int, dict[str, str]] = {}
+        for row in rows:
+            ts = _compare_csv_time_ms(row.get(time_column))
+            if ts is None or not _time_in_compare_window(
+                ts, compare_from_ms, compare_to_ms
+            ):
+                continue
+            indexed[ts] = row
+        return indexed
+
+    tv_by_time = rows_by_time(tv_rows, tv_time_column)
+    op_by_time = rows_by_time(op_rows, op_time_column)
     common_times = sorted(set(tv_by_time) & set(op_by_time))
 
     total = 0
@@ -366,8 +386,8 @@ def _compare_rows_by_time(
         "classification": "+".join(classification) if classification else "match",
         "tv_file": str(tv_path),
         "openpine_file": str(op_path),
-        "tv_rows": len(tv_rows),
-        "openpine_rows": len(op_rows),
+        "tv_rows": len(tv_by_time),
+        "openpine_rows": len(op_by_time),
         "common_times": len(common_times),
         "missing_times_in_openpine": len(set(tv_by_time) - set(op_by_time)),
         "extra_times_in_openpine": len(set(op_by_time) - set(tv_by_time)),
@@ -615,6 +635,8 @@ def _compare_strategy_run_with_tv_exports(
             exclude_columns=exclude,
             abs_tol=abs_tol,
             rel_tol=rel_tol,
+            compare_from_ms=compare_from_ms,
+            compare_to_ms=compare_to_ms,
         )
         summary["type"] = "plots"
         comparisons.append(summary)
@@ -632,6 +654,8 @@ def _compare_strategy_run_with_tv_exports(
             exclude_columns=set(),
             abs_tol=abs_tol,
             rel_tol=rel_tol,
+            compare_from_ms=compare_from_ms,
+            compare_to_ms=compare_to_ms,
         )
         summary["type"] = "equity"
         comparisons.append(summary)
