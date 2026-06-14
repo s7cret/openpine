@@ -258,6 +258,146 @@ def _write_normalized_tv_trades(
     return output_path
 
 
+def _chart_diagnostic_prefix(fields: list[str]) -> str | None:
+    suffix = "_DIAG_NEW_CLOSED_TRADE"
+    required = (
+        "_LOCAL_BAR",
+        "_CLOSED_TRADES",
+        "_DIAG_LAST_CLOSED_PROFIT",
+        "_DIAG_LAST_CLOSED_SIZE",
+        "_DIAG_LAST_CLOSED_ENTRY_PRICE",
+        "_DIAG_LAST_CLOSED_EXIT_PRICE",
+        "_DIAG_LAST_CLOSED_ENTRY_BAR",
+        "_DIAG_LAST_CLOSED_EXIT_BAR",
+    )
+    field_set = set(fields)
+    for field in fields:
+        if not field.endswith(suffix):
+            continue
+        prefix = field[: -len(suffix)]
+        if all(prefix + item in field_set for item in required):
+            return prefix
+    return None
+
+
+def _trade_direction_from_prices(
+    *, entry_price: float, exit_price: float, qty: float, profit: float
+) -> str | None:
+    import math as _math
+
+    if any(_math.isnan(value) for value in (entry_price, exit_price, qty, profit)):
+        return None
+    move = (exit_price - entry_price) * abs(qty)
+    if abs(move) <= 1e-12 or abs(profit) <= 1e-12:
+        return None
+    return "long" if move * profit > 0 else "short"
+
+
+def _write_chart_diagnostic_tv_trades(
+    *,
+    tv_chart_path: Path,
+    output_path: Path,
+    compare_from_ms: int | None,
+    compare_to_ms: int | None,
+) -> Path | None:
+    import csv as _csv
+    import math as _math
+
+    fields, rows = _read_compare_csv(tv_chart_path)
+    prefix = _chart_diagnostic_prefix(fields)
+    if prefix is None:
+        return None
+    time_col = "time" if "time" in fields else _find_compare_column(fields, "time")
+    if time_col is None:
+        return None
+
+    local_bar_col = prefix + "_LOCAL_BAR"
+    closed_trades_col = prefix + "_CLOSED_TRADES"
+    new_closed_col = prefix + "_DIAG_NEW_CLOSED_TRADE"
+    profit_col = prefix + "_DIAG_LAST_CLOSED_PROFIT"
+    size_col = prefix + "_DIAG_LAST_CLOSED_SIZE"
+    entry_price_col = prefix + "_DIAG_LAST_CLOSED_ENTRY_PRICE"
+    exit_price_col = prefix + "_DIAG_LAST_CLOSED_EXIT_PRICE"
+    entry_bar_col = prefix + "_DIAG_LAST_CLOSED_ENTRY_BAR"
+    exit_bar_col = prefix + "_DIAG_LAST_CLOSED_EXIT_BAR"
+
+    time_by_bar: dict[int, int] = {}
+    for row in rows:
+        bar_number = _compare_csv_float(row.get(local_bar_col))
+        time_ms = _compare_csv_time_ms(row.get(time_col))
+        if not _math.isnan(bar_number) and time_ms is not None:
+            time_by_bar[int(round(bar_number))] = time_ms
+
+    normalized_rows: list[dict[str, object]] = []
+    sequence = 0
+    for row in rows:
+        new_closed = _compare_csv_float(row.get(new_closed_col))
+        if _math.isnan(new_closed) or abs(new_closed) <= 1e-12:
+            continue
+        exit_time = _compare_csv_time_ms(row.get(time_col))
+        if exit_time is None:
+            exit_bar = _compare_csv_float(row.get(exit_bar_col))
+            if not _math.isnan(exit_bar):
+                exit_time = time_by_bar.get(int(round(exit_bar)))
+        if exit_time is None:
+            continue
+        if not _time_in_compare_window(exit_time, compare_from_ms, compare_to_ms):
+            continue
+
+        entry_bar = _compare_csv_float(row.get(entry_bar_col))
+        entry_time = None if _math.isnan(entry_bar) else time_by_bar.get(int(round(entry_bar)))
+        entry_price = _compare_csv_float(row.get(entry_price_col))
+        exit_price = _compare_csv_float(row.get(exit_price_col))
+        qty = _compare_csv_float(row.get(size_col))
+        profit = _compare_csv_float(row.get(profit_col))
+        closed_count = _compare_csv_float(row.get(closed_trades_col))
+        qty_text = None if _math.isnan(qty) else f"{abs(qty):.12g}"
+        sequence += 1
+        trade_id = (
+            str(int(round(closed_count)))
+            if not _math.isnan(closed_count)
+            else str(sequence)
+        )
+        normalized_rows.append(
+            {
+                "trade_id": trade_id,
+                "status": "closed",
+                "direction": _trade_direction_from_prices(
+                    entry_price=entry_price,
+                    exit_price=exit_price,
+                    qty=qty,
+                    profit=profit,
+                ),
+                "entry_time_ms": entry_time,
+                "exit_time_ms": exit_time,
+                "entry_price": row.get(entry_price_col),
+                "exit_price": row.get(exit_price_col),
+                "qty": qty_text,
+                "net_profit": row.get(profit_col),
+            }
+        )
+
+    if not normalized_rows:
+        return None
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = [
+        "trade_id",
+        "status",
+        "direction",
+        "entry_time_ms",
+        "exit_time_ms",
+        "entry_price",
+        "exit_price",
+        "qty",
+        "net_profit",
+    ]
+    with output_path.open("w", newline="", encoding="utf-8") as f:
+        writer = _csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(normalized_rows)
+    return output_path
+
+
 def _time_in_compare_window(
     ts: int,
     compare_from_ms: int | None,
@@ -281,6 +421,7 @@ def _compare_rows_by_time(
     rel_tol: float,
     compare_from_ms: int | None = None,
     compare_to_ms: int | None = None,
+    drop_blank_tv_rows: bool = False,
 ) -> tuple[dict[str, object], list[dict[str, object]]]:
     import math as _math
     import statistics as _statistics
@@ -288,10 +429,19 @@ def _compare_rows_by_time(
     tv_fields, tv_rows = _read_compare_csv(tv_path)
     op_fields, op_rows = _read_compare_csv(op_path)
     common_columns = sorted((set(tv_fields) & set(op_fields)) - exclude_columns)
+    blank_tv_times: set[int] = set()
+
+    def has_comparable_values(row: dict[str, str]) -> bool:
+        return any(
+            not _math.isnan(_compare_csv_float(row.get(column)))
+            for column in common_columns
+        )
 
     def rows_by_time(
         rows: list[dict[str, str]],
         time_column: str,
+        *,
+        drop_blank_rows: bool = False,
     ) -> dict[int, dict[str, str]]:
         indexed: dict[int, dict[str, str]] = {}
         for row in rows:
@@ -300,11 +450,18 @@ def _compare_rows_by_time(
                 ts, compare_from_ms, compare_to_ms
             ):
                 continue
+            if drop_blank_rows and not has_comparable_values(row):
+                blank_tv_times.add(ts)
+                continue
             indexed[ts] = row
         return indexed
 
-    tv_by_time = rows_by_time(tv_rows, tv_time_column)
+    tv_by_time = rows_by_time(
+        tv_rows, tv_time_column, drop_blank_rows=drop_blank_tv_rows
+    )
     op_by_time = rows_by_time(op_rows, op_time_column)
+    for ts in blank_tv_times:
+        op_by_time.pop(ts, None)
     common_times = sorted(set(tv_by_time) & set(op_by_time))
 
     total = 0
@@ -388,6 +545,7 @@ def _compare_rows_by_time(
         "openpine_file": str(op_path),
         "tv_rows": len(tv_by_time),
         "openpine_rows": len(op_by_time),
+        "ignored_blank_tv_rows": len(blank_tv_times),
         "common_times": len(common_times),
         "missing_times_in_openpine": len(set(tv_by_time) - set(op_by_time)),
         "extra_times_in_openpine": len(set(op_by_time) - set(tv_by_time)),
@@ -637,6 +795,7 @@ def _compare_strategy_run_with_tv_exports(
             rel_tol=rel_tol,
             compare_from_ms=compare_from_ms,
             compare_to_ms=compare_to_ms,
+            drop_blank_tv_rows=True,
         )
         summary["type"] = "plots"
         comparisons.append(summary)
@@ -663,32 +822,42 @@ def _compare_strategy_run_with_tv_exports(
             failures.append(
                 {"type": "equity", "summary": summary, "top_columns": top_columns}
             )
-    if tv_trades and "trades" in exported:
-        normalized_tv_trades = _write_normalized_tv_trades(
-            tv_path=Path(tv_trades),
-            output_path=output_path / "tradingview_trades_normalized.csv",
-            compare_from_ms=compare_from_ms,
-            compare_to_ms=compare_to_ms,
-        )
-        summary, top_columns = _compare_rows_by_order(
-            tv_path=normalized_tv_trades,
-            op_path=Path(exported["trades"]),
-            exclude_columns={
-                "trade_id",
-                "entry_signal",
-                "exit_signal",
-                "gross_profit",
-                "commission",
-            },
-            abs_tol=abs_tol,
-            rel_tol=rel_tol,
-        )
-        summary["type"] = "trades"
-        comparisons.append(summary)
-        if summary["status"] != "match":
-            failures.append(
-                {"type": "trades", "summary": summary, "top_columns": top_columns}
+    if "trades" in exported and (tv_chart or tv_trades):
+        normalized_tv_trades = None
+        if tv_chart and Path(tv_chart).exists():
+            normalized_tv_trades = _write_chart_diagnostic_tv_trades(
+                tv_chart_path=Path(tv_chart),
+                output_path=output_path / "tradingview_trades_normalized.csv",
+                compare_from_ms=compare_from_ms,
+                compare_to_ms=compare_to_ms,
             )
+        if normalized_tv_trades is None and tv_trades:
+            normalized_tv_trades = _write_normalized_tv_trades(
+                tv_path=Path(tv_trades),
+                output_path=output_path / "tradingview_trades_normalized.csv",
+                compare_from_ms=compare_from_ms,
+                compare_to_ms=compare_to_ms,
+            )
+        if normalized_tv_trades is not None:
+            summary, top_columns = _compare_rows_by_order(
+                tv_path=normalized_tv_trades,
+                op_path=Path(exported["trades"]),
+                exclude_columns={
+                    "trade_id",
+                    "entry_signal",
+                    "exit_signal",
+                    "gross_profit",
+                    "commission",
+                },
+                abs_tol=abs_tol,
+                rel_tol=rel_tol,
+            )
+            summary["type"] = "trades"
+            comparisons.append(summary)
+            if summary["status"] != "match":
+                failures.append(
+                    {"type": "trades", "summary": summary, "top_columns": top_columns}
+                )
     result = {
         "strategy_id": strategy_id,
         "run_id": run.run_id,

@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
+from openpine import exchange_metadata
 from openpine.gateway.routes import accounts_data
 
 
@@ -152,3 +153,28 @@ def test_data_klines_returns_gateway_timeout_for_stuck_provider_thread(monkeypat
 
 def test_data_metadata_keeps_planned_reason_for_non_native_catalog_entries():
     assert accounts_data._exchange_disabled_reason({'native_adapter': False}) == 'planned_provider'
+
+
+def test_exchange_metadata_has_bybit_delivery_btcusd_qty_step_for_tv_parity():
+    assert exchange_metadata.default_qty_step('bybit', 'delivery', 'BTCUSD') == 0.000001
+    assert exchange_metadata.default_qty_rounding_mode('bybit', 'delivery', 'BTCUSD') == 'truncate'
+
+
+def test_exchange_metadata_prefers_tv_btcusd_contract_precision_over_binance_spot_cache(monkeypatch):
+    monkeypatch.setattr(
+        exchange_metadata,
+        '_load_binance_spot_exchange_info',
+        lambda **_: {
+            'symbols': [
+                {
+                    'symbol': 'BTCUSD',
+                    'filters': [
+                        {'filterType': 'LOT_SIZE', 'stepSize': '0.00001000'},
+                    ],
+                },
+            ],
+        },
+    )
+
+    assert exchange_metadata.default_qty_step('binance', 'spot', 'BTCUSD') == 0.000001
+    assert exchange_metadata.default_qty_rounding_mode('binance', 'spot', 'BTCUSD') == 'truncate'

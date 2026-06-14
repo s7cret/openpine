@@ -87,6 +87,32 @@ def test_export_trades_writes_stable_header(tmp_path):
     assert "t1,closed,long,1000,2000" in text
 
 
+def test_export_trades_falls_back_net_profit_to_gross_when_engine_has_no_net_field(tmp_path):
+    output = tmp_path / "trades.csv"
+
+    export_trades(
+        [
+            {
+                "trade_id": "t1",
+                "status": "closed",
+                "direction": "short",
+                "entry_time_ms": 1000,
+                "exit_time_ms": 2000,
+                "entry_price": 113135.75,
+                "exit_price": 90809.0,
+                "qty": 0.012772,
+                "gross_profit": 283.72,
+            }
+        ],
+        output,
+        window=ExportWindow(1500, 2500),
+    )
+
+    exported = pd.read_csv(output)
+    assert exported.loc[0, "gross_profit"] == 283.72
+    assert exported.loc[0, "net_profit"] == 283.72
+
+
 def test_export_trades_filters_closed_by_exit_time(tmp_path):
     output = tmp_path / "trades.csv"
 

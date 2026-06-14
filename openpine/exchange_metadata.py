@@ -27,6 +27,20 @@ _BINANCE_SPOT_STEP_FALLBACKS: dict[str, float] = {
     "LTCUSDT": 0.001,
     "XLMUSDT": 1.0,
 }
+_TV_SYMBOL_STEP_FALLBACKS: dict[str, float] = {
+    # TradingView BTCUSD strategy exports use six-decimal contract sizing. The
+    # symbol is commonly uploaded into TV Parity without an exchange-qualified
+    # market type, so it can arrive through the strategy registry's default
+    # BINANCE/spot metadata path. Do not let Binance spot cache/network metadata
+    # downshift it to BTCUSDT-like five-decimal sizing.
+    "BTCUSD": 0.000001,
+}
+_BYBIT_QTY_STEP_FALLBACKS: dict[tuple[str, str], float] = {
+    # Bybit inverse delivery BTCUSD contracts are displayed by TradingView with
+    # six decimal places in strategy size diagnostics. Keeping replay on the
+    # same step prevents percent-of-equity daily runs from drifting by cents.
+    ("delivery", "BTCUSD"): 0.000001,
+}
 
 
 def marketdata_exchange_payloads() -> list[dict[str, object]]:
@@ -35,9 +49,15 @@ def marketdata_exchange_payloads() -> list[dict[str, object]]:
 
 
 def default_qty_step(exchange: str, market_type: str, symbol: str) -> float | None:
-    if exchange.lower() != "binance" or market_type.lower() != "spot":
-        return None
+    exchange_id = exchange.lower()
+    market_id = market_type.lower()
     normalized_symbol = symbol.upper()
+    if exchange_id == "bybit":
+        return _BYBIT_QTY_STEP_FALLBACKS.get((market_id, normalized_symbol))
+    if exchange_id != "binance" or market_id != "spot":
+        return None
+    if normalized_symbol in _TV_SYMBOL_STEP_FALLBACKS:
+        return _TV_SYMBOL_STEP_FALLBACKS[normalized_symbol]
     fallback = _BINANCE_SPOT_STEP_FALLBACKS.get(normalized_symbol)
     try:
         info = _load_binance_spot_exchange_info(fetch_network=fallback is None)

@@ -617,6 +617,7 @@ def _backtest_config_for_tv_replay(
     effective_pre_bars: int = 0,
 ) -> Any:
     from openpine.runtime.engine import BacktestRunConfig
+    from openpine.exchange_metadata import default_qty_rounding_mode, default_qty_step
 
     commission_type = {
         "cash_per_order": "fixed_per_order",
@@ -647,6 +648,11 @@ def _backtest_config_for_tv_replay(
         calc_on_order_fills=bool(decl_args.get("calc_on_order_fills", False)),
         calc_on_every_tick=bool(decl_args.get("calc_on_every_tick", False)),
         use_bar_magnifier=bool(decl_args.get("use_bar_magnifier", False)),
+        qty_step=default_qty_step(strategy.exchange, strategy.market_type, strategy.symbol),
+        qty_rounding_mode=default_qty_rounding_mode(
+            strategy.exchange, strategy.market_type, strategy.symbol
+        ),
+        mintick=0.01,
         export_resume_state=False,
         content_hash_enabled=True,
         collect_events=True,

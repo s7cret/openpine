@@ -41,6 +41,10 @@ def trade_row(trade: Any) -> dict[str, Any]:
     status = first(data, "status")
     if status is None:
         status = "closed" if exit_time not in (None, "") else "open"
+    gross_profit = first(data, "gross_profit", "gross_pnl", "profit")
+    net_profit = first(data, "net_profit", "net_pnl")
+    if net_profit in (None, ""):
+        net_profit = gross_profit
     return {
         "trade_id": first(data, "trade_id", "id"),
         "status": status,
@@ -50,9 +54,9 @@ def trade_row(trade: Any) -> dict[str, Any]:
         "entry_price": first(data, "entry_price"),
         "exit_price": first(data, "exit_price"),
         "qty": first(data, "qty", "quantity", "size"),
-        "gross_profit": first(data, "gross_profit", "gross_pnl", "profit"),
+        "gross_profit": gross_profit,
         "commission": first(data, "commission", "fee"),
-        "net_profit": first(data, "net_profit", "net_pnl"),
+        "net_profit": net_profit,
         "max_runup": first(data, "max_runup", "mfe"),
         "max_drawdown": first(data, "max_drawdown", "mae"),
     }

@@ -539,7 +539,108 @@ def test_strategy_decl_args_and_backtest_config_map_defaults_and_commission():
     assert config.commission_type == "fixed_per_order"
     assert config.exit_matching == "ANY"
     assert config.capture_plots is True
+    assert config.qty_step == 0.00001
+    assert config.qty_rounding_mode == "truncate"
+    assert config.mintick == 0.01
     assert tv_parity._strategy_decl_args(SimpleNamespace(artifact_store=SimpleNamespace(get_artifact=lambda *_: (_ for _ in ()).throw(RuntimeError("x")))), strategy) == {}
+
+
+def test_tv_compare_prefers_chart_diagnostic_trades_over_stale_trade_report(tmp_path: Path):
+    from openpine.cli.compare import _compare_strategy_run_with_tv_exports
+
+    tv_chart = tmp_path / "chart.csv"
+    tv_chart.write_text(
+        "time,P092_LOCAL_BAR,P092_CLOSED_TRADES,P092_DIAG_NEW_CLOSED_TRADE,"
+        "P092_DIAG_LAST_CLOSED_PROFIT,P092_DIAG_LAST_CLOSED_SIZE,"
+        "P092_DIAG_LAST_CLOSED_ENTRY_PRICE,P092_DIAG_LAST_CLOSED_EXIT_PRICE,"
+        "P092_DIAG_LAST_CLOSED_ENTRY_BAR,P092_DIAG_LAST_CLOSED_EXIT_BAR\n"
+        "1704067200000,10,0,0,,,,,10,10\n"
+        "1704153600000,11,1,1,283.72,-0.012772,113135.75,90809.0,10,11\n",
+        encoding="utf-8",
+    )
+    stale_tv_trades = tmp_path / "trades_report.csv"
+    stale_tv_trades.write_text(
+        "Trade #,Type,Date/Time,Price,Qty,Net Profit\n"
+        "1,Entry Short,2024-01-01 00:00,113135.75,0.012401,\n"
+        "1,Exit Short,2024-01-02 00:00,90809.0,0.012401,275.48\n",
+        encoding="utf-8",
+    )
+    op_plots = tmp_path / "openpine_plots.csv"
+    op_plots.write_text(
+        "bar_time,P092_LOCAL_BAR,P092_CLOSED_TRADES,P092_DIAG_NEW_CLOSED_TRADE,"
+        "P092_DIAG_LAST_CLOSED_PROFIT,P092_DIAG_LAST_CLOSED_SIZE,"
+        "P092_DIAG_LAST_CLOSED_ENTRY_PRICE,P092_DIAG_LAST_CLOSED_EXIT_PRICE,"
+        "P092_DIAG_LAST_CLOSED_ENTRY_BAR,P092_DIAG_LAST_CLOSED_EXIT_BAR\n"
+        "1704067200000,10,0,0,,,,,10,10\n"
+        "1704153600000,11,1,1,283.72,0.012772,113135.75,90809.0,10,11\n",
+        encoding="utf-8",
+    )
+    op_trades = tmp_path / "openpine_trades.csv"
+    op_trades.write_text(
+        "trade_id,status,direction,entry_time_ms,exit_time_ms,entry_price,exit_price,qty,gross_profit,commission,net_profit\n"
+        "S,closed,short,1704067200000,1704153600000,113135.75,90809.0,0.012772,283.72,,283.72\n",
+        encoding="utf-8",
+    )
+
+    result = _compare_strategy_run_with_tv_exports(
+        strategy_id="strat_daily",
+        run=SimpleNamespace(run_id="run_daily"),
+        exported={"plots": str(op_plots), "trades": str(op_trades)},
+        output_path=tmp_path / "comparison",
+        tv_chart=str(tv_chart),
+        tv_trades=str(stale_tv_trades),
+        tv_equity=None,
+        abs_tol=0.000001,
+        rel_tol=0.000000001,
+        include_base_columns=False,
+        compare_from_ms=1704067200000,
+        compare_to_ms=1704240000000,
+    )
+
+    trades = next(row for row in result["comparisons"] if row["type"] == "trades")
+    assert trades["status"] == "match"
+    normalized = tmp_path / "comparison" / "tradingview_trades_normalized.csv"
+    assert "0.012772" in normalized.read_text(encoding="utf-8")
+    assert "0.012401" not in normalized.read_text(encoding="utf-8")
+
+
+def test_tv_compare_ignores_chart_rows_with_blank_strategy_plot_values(tmp_path: Path):
+    from openpine.cli.compare import _compare_strategy_run_with_tv_exports
+
+    tv_chart = tmp_path / "chart.csv"
+    tv_chart.write_text(
+        "time,open,high,low,close,P092_NETPROFIT,P092_EQUITY\n"
+        "1704067200000,1,2,0.5,1.5,10,10010\n"
+        "1704153600000,1.5,2.5,1,2,,\n",
+        encoding="utf-8",
+    )
+    op_plots = tmp_path / "plots.csv"
+    op_plots.write_text(
+        "bar_time,bar_index,open,high,low,close,P092_NETPROFIT,P092_EQUITY\n"
+        "1704067200000,0,1,2,0.5,1.5,10,10010\n"
+        "1704153600000,1,1.5,2.5,1,2,20,10020\n",
+        encoding="utf-8",
+    )
+
+    result = _compare_strategy_run_with_tv_exports(
+        strategy_id="strat_daily",
+        run=SimpleNamespace(run_id="run_daily"),
+        exported={"plots": str(op_plots)},
+        output_path=tmp_path / "comparison",
+        tv_chart=str(tv_chart),
+        tv_trades=None,
+        tv_equity=None,
+        abs_tol=0.000001,
+        rel_tol=0.000000001,
+        include_base_columns=False,
+        compare_from_ms=1704067200000,
+        compare_to_ms=1704240000000,
+    )
+
+    plots = next(row for row in result["comparisons"] if row["type"] == "plots")
+    assert plots["status"] == "match"
+    assert plots["tv_rows"] == 1
+    assert plots["openpine_rows"] == 1
 
 
 @pytest.mark.asyncio

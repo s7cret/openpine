@@ -40,6 +40,7 @@ class BacktestRunConfig:
     use_bar_magnifier: bool = False
     qty_step: float | None = None
     qty_rounding_mode: str = "none"
+    mintick: float | None = None
     max_bars_back: int = 0
     score_start_time: int | None = None
     score_end_time: int | None = None
@@ -346,6 +347,7 @@ class BacktestEngineAdapter:
             use_bar_magnifier=config.use_bar_magnifier,
             qty_step=config.qty_step,
             qty_rounding=qty_rounding,
+            mintick=config.mintick,
             max_bars_back=config.max_bars_back,
             score_start_time=config.score_start_time,
             score_end_time=config.score_end_time,
