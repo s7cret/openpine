@@ -61,11 +61,18 @@ export function exchangeById(metadata: MarketMetadataPayload | null, exchangeId:
 }
 
 /**
+ * Minimal signature compatible with vue-i18n's `t` (we only use the
+ * single-argument form and the `t(key, params)` form). Keeps callers
+ * independent of the full Composer type.
+ */
+export type TranslateFn = (key: string, params?: Record<string, unknown>) => string
+
+/**
  * Map backend `disabled_reason` enum (e.g. "data_only", "not_wired") to a
  * locale-aware label. Falls back to a humanised version of the raw token
  * when no mapping is known.
  */
-export function exchangeDisabledReasonLabel(t: (key: string) => string, reason: string | null): string {
+export function exchangeDisabledReasonLabel(t: TranslateFn, reason: string | null): string {
   if (!reason) return ''
   const key = `marketMeta.${reason}`
   const known = t(key)
@@ -73,7 +80,7 @@ export function exchangeDisabledReasonLabel(t: (key: string) => string, reason: 
   return reason.replace(/[_-]+/g, ' ')
 }
 
-export function exchangeOptionLabel(t: (key: string) => string, option: ExchangeSelectOption): string {
+export function exchangeOptionLabel(t: TranslateFn, option: ExchangeSelectOption): string {
   if (option.disabled) {
     const reason = exchangeDisabledReasonLabel(t, option.reason) || t('marketMeta.notWired')
     return t('marketMeta.exchangeBadgeDisabled', { name: option.label, reason })
@@ -115,7 +122,7 @@ export function exchangeLabel(metadata: MarketMetadataPayload | null, exchangeId
 }
 
 export function symbolSearchPlaceholder(
-  t: (key: string) => string,
+  t: TranslateFn,
   metadata: MarketMetadataPayload | null,
   exchangeId: string,
 ): string {
@@ -127,7 +134,7 @@ export function symbolSearchPlaceholder(
 }
 
 export function symbolLoadingLabel(
-  t: (key: string) => string,
+  t: TranslateFn,
   metadata: MarketMetadataPayload | null,
   exchangeId: string,
 ): string {
@@ -139,7 +146,7 @@ export function symbolLoadingLabel(
  * Returns a bound version of {@link exchangeOptionLabel} so call sites stay
  * short.
  */
-export function makeExchangeOptionLabel(t: (key: string) => string) {
+export function makeExchangeOptionLabel(t: TranslateFn) {
   return (option: ExchangeSelectOption) => exchangeOptionLabel(t, option)
 }
 

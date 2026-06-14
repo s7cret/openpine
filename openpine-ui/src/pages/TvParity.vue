@@ -102,8 +102,8 @@ function fileFromTarget(target: EventTarget | null) {
   return input?.files?.[0] ?? null
 }
 
-function fileName(file: File | null) {
-  return file?.name ?? 'No file selected'
+function fileName(file?: File | null): string {
+  return file?.name ?? t('tvParity.noFileSelected')
 }
 
 function apiErrorMessage(error: any, fallback: string) {
