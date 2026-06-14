@@ -29,10 +29,18 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     # Stable response shape
     assert set(payload.keys()) == {"modules", "runtime"}
     assert isinstance(payload["modules"], list)
-    assert len(payload["modules"]) == 5
+    assert len(payload["modules"]) == 7
 
     names = [m["name"] for m in payload["modules"]]
-    assert names == ["openpine", "pine2ast", "ast2python", "pinelib", "marketdata_provider"]
+    assert names == [
+        "openpine",
+        "pine2ast",
+        "ast2python",
+        "pinelib",
+        "marketdata_provider",
+        "backtest_engine",
+        "optimizer",
+    ]
 
     # Every entry has the full schema, even when not installed
     for entry in payload["modules"]:

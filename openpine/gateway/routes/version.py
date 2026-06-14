@@ -39,6 +39,8 @@ _TRACKED_MODULES: tuple[str, ...] = (
     "ast2python",
     "pinelib",
     "marketdata_provider",
+    "backtest_engine",
+    "optimizer",
 )
 
 
