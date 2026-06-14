@@ -18,6 +18,7 @@ from openpine.gateway.config import GatewayConfig
 from openpine.gateway.deps import GatewayState
 from openpine.gateway.routes import (
     accounts_data,
+    achievements,
     backtest,
     dashboard,
     events,
@@ -64,6 +65,23 @@ def _run_background_services(stop_event) -> None:
             artifact_store=state.artifact_store,
             state_store=state.state_store,
         )
+
+        async def _achievement_tick(stop_event: asyncio.Event) -> None:
+            """Recompute achievements every 5 min. Self-heal path that
+            catches any event-hook misses."""
+            interval = 300.0
+            while not stop_event.is_set():
+                try:
+                    state.achievement_engine.recompute_stats()
+                except Exception as exc:  # noqa: BLE001
+                    log.warning("achievement_tick_error", error=str(exc))
+                try:
+                    await asyncio.wait_for(stop_event.wait(), timeout=interval)
+                except asyncio.TimeoutError:
+                    continue
+
+        ach_stop = asyncio.Event()
+        ach_task = asyncio.create_task(_achievement_tick(ach_stop))
         try:
             fetcher.start()
             runner.start()
@@ -71,6 +89,12 @@ def _run_background_services(stop_event) -> None:
             while not stop_event.is_set():
                 await asyncio.sleep(1.0)
         finally:
+            ach_stop.set()
+            ach_task.cancel()
+            try:
+                await ach_task
+            except (asyncio.CancelledError, Exception):
+                pass
             runner.stop()
             fetcher.stop()
             state.close()
@@ -219,6 +243,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(accounts_data.router, prefix=api_prefix)
     app.include_router(optimizer.router, prefix=api_prefix)
     app.include_router(tv_parity.router, prefix=api_prefix)
+    app.include_router(achievements.router, prefix=api_prefix)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

@@ -395,3 +395,34 @@ class CompareTvResponse(BaseModel):
     max_abs_delta: float = 0.0
     worst_column: str = ""
     report_path: str | None = None
+
+
+# ── Achievements ─────────────────────────────────────────────────────────────
+
+
+class AchievementItem(BaseModel):
+    """One achievement row for the UI."""
+    id: str
+    tier: str
+    icon: str
+    title: str
+    description: str
+    metric: str
+    target: float
+    current: float
+    reward: str
+    hidden: bool
+    unlocked: bool
+    unlocked_at: int | None = None
+    progress_pct: float = 0.0
+
+
+class AchievementSummary(BaseModel):
+    total: int
+    unlocked: int
+    by_tier: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+
+class AchievementsResponse(BaseModel):
+    summary: AchievementSummary
+    items: list[AchievementItem]

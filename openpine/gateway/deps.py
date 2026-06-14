@@ -92,6 +92,28 @@ class GatewayState:
         self.backtest_cancel_requests: set[str] = set()
         self._lock = threading.Lock()
 
+        # Achievement engine: depends on storage. Seed the catalog on every
+        # start (idempotent INSERT OR REPLACE) and run an initial recompute
+        # so the UI shows real numbers on first paint.
+        from openpine.achievements.engine import AchievementEngine
+        from openpine.achievements.seed import seed_achievements
+
+        try:
+            seed_achievements(self.storage)
+        except Exception as exc:
+            from openpine._compat import structlog
+            structlog.get_logger(__name__).warning(
+                "achievement_seed_error_non_fatal", error=str(exc)
+            )
+        self.achievement_engine = AchievementEngine(self.storage)
+        try:
+            self.achievement_engine.recompute_stats()
+        except Exception as exc:
+            from openpine._compat import structlog
+            structlog.get_logger(__name__).warning(
+                "achievement_recompute_error_non_fatal", error=str(exc)
+            )
+
     def close(self) -> None:
         """Release resources."""
         self.storage.close()
