@@ -1383,3 +1383,180 @@ def test_get_tv_parity_run_and_artifact_download_paths(tmp_path: Path):
     with pytest.raises(HTTPException) as unknown_artifact:
         __import__("asyncio").run(tv_parity.download_tv_parity_artifact("run_1", "unknown", state))
     assert unknown_artifact.value.status_code == 404
+
+
+def test_list_tv_parity_runs_returns_disk_history_newest_first(tmp_path: Path) -> None:
+    from fastapi import FastAPI
+    from openpine.gateway.deps import get_state
+
+    state = SimpleNamespace(config=SimpleNamespace(data_dir=tmp_path))
+    base = tmp_path / "tv-parity"
+
+    def _seed(run_id: str, queued_at: int, source: str, strategy_id: str, status: str) -> None:
+        rd = base / run_id
+        rd.mkdir(parents=True)
+        payload = {
+            "run_id": run_id,
+            "strategy_id": strategy_id,
+            "source": source,
+            "status": status,
+            "queued_at": queued_at,
+            "compare_from": 1_700_000_000_000,
+            "compare_to": 1_700_003_600_000,
+            "candle_summary": {
+                "symbol": "BTCUSDT",
+                "exchange": "binance",
+                "market_type": "spot",
+                "timeframe": "1h",
+                "valid_bars": 24,
+                "from_time": 1_700_000_000_000,
+                "to_time": 1_700_003_600_000,
+            },
+        }
+        (rd / "tv_parity_result.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    _seed("older", 1_000, "tradingview_csv", "strat_a", "completed")
+    _seed("newer", 9_000, "exchange_data", "strat_b", "running")
+    _seed("newest", 5_000, "tradingview_csv", "strat_a", "failed")
+
+    app = FastAPI()
+    app.include_router(tv_parity.router, prefix="/api")
+    app.dependency_overrides[get_state] = lambda: state
+    client = TestClient(app)
+
+    response = client.get("/api/tv-parity/runs")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 3
+    assert payload["limit"] == 50
+    run_ids = [e["run_id"] for e in payload["items"]]
+    assert run_ids == ["newer", "newest", "older"]
+    first = payload["items"][0]
+    assert first["symbol"] == "BTCUSDT"
+    assert first["source"] == "exchange_data"
+    assert first["status"] == "running"
+
+
+def test_list_tv_parity_runs_filters_by_strategy_and_source(tmp_path: Path) -> None:
+    from fastapi import FastAPI
+    from openpine.gateway.deps import get_state
+
+    state = SimpleNamespace(config=SimpleNamespace(data_dir=tmp_path))
+    base = tmp_path / "tv-parity"
+
+    def _seed(run_id: str, queued_at: int, source: str, strategy_id: str) -> None:
+        rd = base / run_id
+        rd.mkdir(parents=True)
+        payload = {
+            "run_id": run_id,
+            "strategy_id": strategy_id,
+            "source": source,
+            "status": "completed",
+            "queued_at": queued_at,
+            "compare_from": 1,
+            "compare_to": 2,
+            "candle_summary": {
+                "symbol": "ETHUSDT",
+                "exchange": "bybit",
+                "market_type": "perp",
+                "timeframe": "15m",
+                "valid_bars": 100,
+                "from_time": 1,
+                "to_time": 2,
+            },
+        }
+        (rd / "tv_parity_result.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    _seed("a", 1, "tradingview_csv", "strat_a")
+    _seed("b", 2, "exchange_data", "strat_a")
+    _seed("c", 3, "tradingview_csv", "strat_b")
+
+    app = FastAPI()
+    app.include_router(tv_parity.router, prefix="/api")
+    app.dependency_overrides[get_state] = lambda: state
+    client = TestClient(app)
+
+    by_strategy = client.get("/api/tv-parity/runs", params={"strategy_id": "strat_a"}).json()
+    assert [e["run_id"] for e in by_strategy["items"]] == ["b", "a"]
+    assert by_strategy["total"] == 2
+
+    by_source = client.get("/api/tv-parity/runs", params={"source": "tradingview_csv"}).json()
+    assert [e["run_id"] for e in by_source["items"]] == ["c", "a"]
+    assert by_source["total"] == 2
+
+    limited = client.get("/api/tv-parity/runs", params={"limit": 1}).json()
+    assert len(limited["items"]) == 1
+    assert limited["total"] == 3
+    assert limited["limit"] == 1
+
+
+def test_list_tv_parity_runs_skips_corrupt_and_orphan_dirs(tmp_path: Path) -> None:
+    from fastapi import FastAPI
+    from openpine.gateway.deps import get_state
+
+    state = SimpleNamespace(config=SimpleNamespace(data_dir=tmp_path))
+    base = tmp_path / "tv-parity"
+
+    (base / "good").mkdir(parents=True)
+    (base / "good" / "tv_parity_result.json").write_text(
+        json.dumps({
+            "run_id": "good",
+            "strategy_id": "s1",
+            "source": "tradingview_csv",
+            "status": "completed",
+            "queued_at": 100,
+            "compare_from": 1,
+            "compare_to": 2,
+            "candle_summary": {
+                "symbol": "BTCUSDT",
+                "exchange": "binance",
+                "market_type": "spot",
+                "timeframe": "1h",
+                "valid_bars": 1,
+                "from_time": 1,
+                "to_time": 2,
+            },
+        }),
+        encoding="utf-8",
+    )
+    (base / "orphan").mkdir(parents=True)
+    (base / "corrupt").mkdir(parents=True)
+    (base / "corrupt" / "tv_parity_result.json").write_text("{not json", encoding="utf-8")
+    (base / "stray.txt").write_text("ignore me", encoding="utf-8")
+
+    app = FastAPI()
+    app.include_router(tv_parity.router, prefix="/api")
+    app.dependency_overrides[get_state] = lambda: state
+    client = TestClient(app)
+
+    response = client.get("/api/tv-parity/runs")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["run_id"] == "good"
+
+
+def test_delete_tv_parity_run_removes_directory_and_404s_after(tmp_path: Path) -> None:
+    from fastapi import FastAPI
+    from openpine.gateway.deps import get_state
+
+    state = SimpleNamespace(config=SimpleNamespace(data_dir=tmp_path))
+    run_root = tmp_path / "tv-parity" / "run_42"
+    (run_root / "openpine_outputs").mkdir(parents=True)
+    (run_root / "openpine_outputs" / "plots.csv").write_text("time,value\n", encoding="utf-8")
+    (run_root / "tv_parity_result.json").write_text(json.dumps({"run_id": "run_42"}), encoding="utf-8")
+
+    app = FastAPI()
+    app.include_router(tv_parity.router, prefix="/api")
+    app.dependency_overrides[get_state] = lambda: state
+    client = TestClient(app)
+
+    response = client.delete("/api/tv-parity/runs/run_42")
+    assert response.status_code == 204
+    assert not run_root.exists()
+
+    response = client.delete("/api/tv-parity/runs/run_42")
+    assert response.status_code == 404
+
+    response = client.delete("/api/tv-parity/runs/ghost")
+    assert response.status_code == 404

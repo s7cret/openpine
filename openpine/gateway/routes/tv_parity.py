@@ -26,9 +26,10 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Query,
     UploadFile,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from openpine._compat import structlog
 from openpine.cli.compare import _compare_csv_float, _compare_csv_time_ms
@@ -380,6 +381,52 @@ def _tv_parity_root(state: GatewayState) -> Path:
 def _run_root(state: GatewayState, run_id: str) -> Path:
     safe = _safe_upload_filename(run_id, "run")
     return _tv_parity_root(state) / safe
+
+
+def _list_tv_parity_history(state: GatewayState) -> list[dict[str, Any]]:
+    """Scan data_dir/tv-parity/ for run directories and read their summary JSON.
+
+    Returns one entry per run, newest first. Reads only ``tv_parity_result.json``
+    (the same file the ``GET /runs/{id}`` endpoint returns), so this stays in
+    sync with the per-run payload contract automatically.
+    """
+    root = _tv_parity_root(state)
+    entries: list[dict[str, Any]] = []
+    for child in root.iterdir():
+        if not child.is_dir():
+            continue
+        result_path = child / "tv_parity_result.json"
+        if not result_path.exists() or not result_path.is_file():
+            continue
+        try:
+            payload = json.loads(result_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        candle_summary = payload.get("candle_summary") or {}
+        entries.append(
+            {
+                "run_id": payload.get("run_id") or child.name,
+                "strategy_id": payload.get("strategy_id"),
+                "source": payload.get("source"),
+                "status": payload.get("status"),
+                "queued_at": payload.get("queued_at"),
+                "compare_from": payload.get("compare_from"),
+                "compare_to": payload.get("compare_to"),
+                "symbol": candle_summary.get("symbol"),
+                "exchange": candle_summary.get("exchange"),
+                "market_type": candle_summary.get("market_type"),
+                "timeframe": candle_summary.get("timeframe"),
+                "valid_bars": candle_summary.get("valid_bars"),
+                "from_time": candle_summary.get("from_time"),
+                "to_time": candle_summary.get("to_time"),
+                "result_path": result_path.as_posix(),
+            }
+        )
+    entries.sort(
+        key=lambda entry: entry.get("queued_at") or 0,
+        reverse=True,
+    )
+    return entries
 
 
 def _path_is_under(path: Path, root: Path) -> bool:
@@ -818,6 +865,37 @@ async def _run_tv_parity_background(
         await ws_manager.broadcast_progress(run_id)
 
 
+@router.get("/runs")
+async def list_tv_parity_runs(
+    state: GatewayState = Depends(get_state),
+    strategy_id: str | None = Query(None, description="Filter by strategy_id"),
+    source: str | None = Query(None, description="Filter by source (tradingview_csv | exchange_data)"),
+    limit: int = Query(50, ge=1, le=500, description="Maximum number of runs to return"),
+) -> dict[str, Any]:
+    """List TV parity runs discovered on disk, newest first.
+
+    The history is reconstructed from ``data_dir/tv-parity/{run_id}/tv_parity_result.json``
+    files written by ``POST /run``. Each entry includes the same fields surfaced
+    by the per-run detail endpoint so the UI can render a list without making
+    one request per row.
+    """
+    entries = _list_tv_parity_history(state)
+    if strategy_id is not None and strategy_id != "":
+        entries = [e for e in entries if e.get("strategy_id") == strategy_id]
+    if source is not None and source != "":
+        normalized = _normalize_tv_parity_source(source)
+        entries = [e for e in entries if e.get("source") == normalized]
+    total = len(entries)
+    entries = entries[:limit]
+    return {
+        "items": entries,
+        "total": total,
+        "limit": limit,
+        "strategy_id": strategy_id,
+        "source": source,
+    }
+
+
 @router.post("/preview-candles")
 async def preview_candles(
     candles_file: UploadFile = File(...),
@@ -1060,6 +1138,27 @@ async def get_tv_parity_run(
         raise HTTPException(500, f"TV parity result is corrupt: {exc}") from exc
     payload["artifacts"] = _artifact_catalog(run_id, run_root)
     return payload
+
+
+@router.delete("/runs/{run_id}", status_code=204)
+async def delete_tv_parity_run(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> Response:
+    """Delete a TV parity run directory and all of its artifacts from disk."""
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    # Safety: ensure resolved path is under the tv-parity root.
+    tv_root = _tv_parity_root(state)
+    try:
+        run_root.resolve(strict=False).relative_to(tv_root.resolve(strict=False))
+    except ValueError as exc:  # pragma: no cover - defensive, _run_root always roots here
+        raise HTTPException(400, f"Refusing to delete path outside tv-parity root: {run_id}") from exc
+    shutil.rmtree(run_root)
+    log.info("tv_parity_run_deleted", run_id=run_id, path=str(run_root))
+    return Response(status_code=204)
 
 
 @router.get("/runs/{run_id}/artifacts/{artifact_name}")
