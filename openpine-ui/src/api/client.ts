@@ -194,8 +194,8 @@ export interface AchievementsResponse {
   items: AchievementItem[]
 }
 
-export const getAchievements = (includeHidden = false) =>
-  api.get<AchievementsResponse>('/achievements', { params: { include_hidden: includeHidden } })
+export const getAchievements = (locale: string = 'en', includeHidden = false) =>
+  api.get<AchievementsResponse>('/achievements', { params: { locale, include_hidden: includeHidden } })
 
 export const refreshAchievements = () =>
   api.post<AchievementsResponse>('/achievements/refresh')

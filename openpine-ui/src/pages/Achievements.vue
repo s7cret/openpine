@@ -11,15 +11,13 @@ const { t } = useI18n()
 const activeTier = ref<TierId>('all')
 
 const store = useAchievementsStore()
-let timer: ReturnType<typeof setInterval> | null = null
-
 onMounted(() => {
-  store.fetchAll()
-  // 5s polling — same cadence as Dashboard / Data pages
-  timer = setInterval(() => store.fetchAll(), 5000)
+  // startPolling handles the initial fetch, the 5s interval, AND
+  // re-fetches automatically when the user switches language.
+  store.startPolling(5000)
 })
 onUnmounted(() => {
-  if (timer) clearInterval(timer)
+  store.stopPolling()
 })
 
 const TIER_META = computed<Record<Exclude<TierId, 'all'>, { label: string; color: string; ring: string; pill: string; hint: string }>>(() => ({
