@@ -60,6 +60,57 @@ def add_missing_columns(
     return tuple(added)
 
 
+ACHIEVEMENTS_COMPAT_COLUMNS: dict[str, tuple[ColumnSpec, ...]] = {
+    # pine_artifacts: ast_node_count is written by the pine2ast compile
+    # pipeline on every successful parse. The default 0 is fine for old
+    # rows — the achievement engine's SUM just skips them.
+    "pine_artifacts": (
+        ColumnSpec("ast_node_count", "INTEGER NOT NULL DEFAULT 0"),
+    ),
+    # backtest_runs: throughput metrics. The compile pipeline measures
+    # bars/sec and bars/min over the run window; if absent we fall back
+    # to MAX(0) in the achievement engine.
+    "backtest_runs": (
+        ColumnSpec("bars_per_sec", "REAL NOT NULL DEFAULT 0"),
+        ColumnSpec("bars_per_min", "REAL NOT NULL DEFAULT 0"),
+        ColumnSpec("bars_processed", "INTEGER NOT NULL DEFAULT 0"),
+    ),
+    # strategy_instances: UDT detection. The compile pipeline flags
+    # whether the strategy used user-defined types. Default 0.
+    "strategy_instances": (
+        ColumnSpec("uses_udt", "INTEGER NOT NULL DEFAULT 0"),
+    ),
+    # orders: side direction tracking. We don't add a new column —
+    # the achievement engine derives ``both_sides`` from
+    # COUNT(DISTINCT side) WHERE side IN ('buy','sell').
+}
+
+
+def ensure_achievements_compat_schema(storage: SQLiteStorage) -> None:
+    """Add the columns the achievement engine reads but the
+    core schema migrations don't yet ship with.
+
+    Idempotent: add_missing_columns is a no-op for already-present
+    columns. Safe to call on every gateway startup.
+    """
+    for table, specs in ACHIEVEMENTS_COMPAT_COLUMNS.items():
+        try:
+            add_missing_columns(storage, table, specs)
+        except Exception:
+            # If the table itself doesn't exist yet (early install
+            # state), the migration runner will create it on next
+            # boot. Nothing to do here.
+            continue
+    storage.commit()
+
+
+def ensure_schema_compatibility(storage: SQLiteStorage) -> None:
+    """Apply idempotent schema compatibility normalizers."""
+
+    ensure_events_compat_schema(storage)
+    ensure_achievements_compat_schema(storage)
+
+
 def ensure_events_compat_schema(storage: SQLiteStorage) -> None:
     """Normalize legacy and EventBus-created ``events`` tables.
 
@@ -69,7 +120,6 @@ def ensure_events_compat_schema(storage: SQLiteStorage) -> None:
     other.  The normalizer keeps both shapes available and backfills values in
     both directions without overwriting existing data.
     """
-
     storage.execute(
         """
         CREATE TABLE IF NOT EXISTS events (
@@ -106,12 +156,6 @@ def ensure_events_compat_schema(storage: SQLiteStorage) -> None:
     storage.execute("CREATE INDEX IF NOT EXISTS idx_events_status_time ON events(status, created_at DESC)")
     storage.execute("CREATE INDEX IF NOT EXISTS idx_events_aggregate ON events(aggregate_type, aggregate_id, created_at DESC)")
     storage.commit()
-
-
-def ensure_schema_compatibility(storage: SQLiteStorage) -> None:
-    """Apply idempotent schema compatibility normalizers."""
-
-    ensure_events_compat_schema(storage)
 
 
 def row_dict(row: tuple[Any, ...], columns: tuple[str, ...]) -> dict[str, Any]:

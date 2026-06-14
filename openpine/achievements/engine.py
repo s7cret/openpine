@@ -29,9 +29,8 @@ log = structlog.get_logger(__name__)
 
 # SQL fragments that compute a metric from the source-of-truth tables.
 # Each returns a single scalar value (or NULL → treated as 0). Missing
-# source columns (e.g. bars_per_sec on backtest_runs) are kept out of
-# the dict below and the engine's recompute_stats() will simply skip
-# them via try/except — graceful degradation by design.
+# source columns are guarded by the achievements compat schema layer
+# (storage/schema_compat.py), which adds them on first run.
 _METRIC_SQL: dict[str, str] = {
     # Data lake
     "bars_loaded":  "SELECT COALESCE(SUM(row_count), 0) FROM candle_manifests",
@@ -42,7 +41,7 @@ _METRIC_SQL: dict[str, str] = {
     "exchanges":    "SELECT COUNT(DISTINCT COALESCE(account_id, symbol)) FROM orders",
     # Strategies
     "strategies":   "SELECT COUNT(*) FROM strategy_instances",
-    "udt_strategies": "SELECT COUNT(*) FROM strategy_instances",
+    "udt_strategies": "SELECT COUNT(*) FROM strategy_instances WHERE uses_udt = 1",
     # Backtest outcomes — pnl_peak is the best-ever pct return across
     # all completed runs. max_drawdown_pct is stored as a positive
     # number (the drawdown), so the achievement target is the *lowest*
@@ -53,6 +52,10 @@ _METRIC_SQL: dict[str, str] = {
     "max_drawdown_pct": "SELECT COALESCE(MIN(max_drawdown_pct), 100) FROM backtest_runs WHERE status='done' AND max_drawdown_pct IS NOT NULL",
     "sharpe":        "SELECT COALESCE(MAX(sharpe), 0) FROM backtest_runs WHERE status='done' AND sharpe IS NOT NULL",
     "winrate_pct":   "SELECT COALESCE(MAX(win_rate), 0) * 100 FROM backtest_runs WHERE status='done' AND win_rate IS NOT NULL",
+    # Throughput — bars_per_sec and bars_per_min are added by the
+    # compat schema to backtest_runs. We use the best run.
+    "speed_bars_sec": "SELECT COALESCE(MAX(bars_per_sec), 0) FROM backtest_runs WHERE status='done'",
+    "speed_bars_min": "SELECT COALESCE(MAX(bars_per_min), 0) FROM backtest_runs WHERE status='done'",
     # Live uptime: longest single-session uptime (in hours) for any
     # strategy that has been enabled and was running. We approximate
     # by (updated_at - created_at) for any non-pending instance.
@@ -60,11 +63,48 @@ _METRIC_SQL: dict[str, str] = {
         "SELECT COALESCE(MAX((updated_at - created_at) / 3600.0), 0) "
         "FROM strategy_instances WHERE status NOT IN ('pending','disabled')"
     ),
-    # AST node count: source column does not exist yet. We expose a
-    # 0-valued entry so the achievement engine wiring is in place;
-    # the migration that adds ast_node_count to pine_artifacts can
-    # update this SQL without touching the engine.
-    "ast_nodes":     "SELECT 0",
+    # AST node count: pine_artifacts.ast_node_count is added by the
+    # compat schema. The compile pipeline writes the per-artifact
+    # node count on every successful parse.
+    "ast_nodes":     "SELECT COALESCE(SUM(ast_node_count), 0) FROM pine_artifacts",
+    # Multi-TF: MAX number of distinct timeframes per single strategy
+    # instance. We group by strategy and take the max. Strategies
+    # with no timeframe data return 0.
+    "multi_tf_max": (
+        "SELECT COALESCE(MAX(c), 0) FROM ("
+        "  SELECT COUNT(DISTINCT timeframe) AS c "
+        "  FROM strategy_instances GROUP BY strategy_id"
+        ") sub"
+    ),
+    # Has 1m / 1d timeframe — boolean (1 / 0) per existing strategy.
+    "has_tf_1m":     "SELECT COUNT(*) FROM strategy_instances WHERE timeframe='1m'",
+    "has_tf_1d":     "SELECT COUNT(*) FROM strategy_instances WHERE timeframe='1d'",
+    # Both sides: 1 if any order exists with side='buy' AND any with
+    # side='sell'. 0 otherwise. We surface a count-of-true-conditions
+    # (0 or 1) and the catalog has a single target of 1.
+    "both_sides": (
+        "SELECT CASE WHEN "
+        "  EXISTS(SELECT 1 FROM orders WHERE side='buy') AND "
+        "  EXISTS(SELECT 1 FROM orders WHERE side='sell') "
+        "THEN 1 ELSE 0 END"
+    ),
+    # Top-10 by market cap — how many of the top 10 spot pairs
+    # (BTCUSDT, ETHUSDT, SOLUSDT, BNBUSDT, XRPUSDT, DOGEUSDT,
+    # ADAUSDT, AVAXUSDT, TRXUSDT, DOTUSDT) the user has traded at
+    # least once. Source-of-truth = orders table.
+    "mcap_top10_count": (
+        "SELECT COUNT(DISTINCT symbol) FROM orders WHERE symbol IN ("
+        "'BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT',"
+        "'ADAUSDT','AVAXUSDT','TRXUSDT','DOTUSDT'"
+        ")"
+    ),
+    # Event-style metrics without a source-of-truth column yet.
+    # These are placeholders that wire up the engine today so a
+    # future emission point can just write to achievement_stats.
+    "ruin_recovery":  "SELECT 0",
+    "shipped_lib":    "SELECT 0",
+    "secret_buy_zero": "SELECT 0",
+    "secret_nuclear":  "SELECT 0",
 }
 
 
@@ -179,30 +219,45 @@ class AchievementEngine:
         "ELSE 4 END"
     )
 
-    def get_state(self, include_hidden_locked: bool = False) -> list[AchievementState]:
+    def get_state(
+        self,
+        locale: str = "en",
+        include_hidden_locked: bool = False,
+    ) -> list[AchievementState]:
         """Snapshot for the API. Hidden achievements that are still locked
         are dropped unless ``include_hidden_locked`` is True (the UI uses
-        the default; tests use the override)."""
+        the default; tests use the override).
+
+        ``locale`` selects the row from ``achievement_i18n``. If a given
+        achievement has no row for that locale, the engine falls back
+        to the canonical (English) copy from the ``achievements`` table.
+        """
         rows = self.storage.execute(
             f"""
             SELECT
-                a.id, a.tier, a.icon, a.title, a.description, a.metric,
-                a.target_value, a.reward, a.hidden, a.sort_order,
+                a.id, a.tier, a.icon,
+                COALESCE(i18n.title,       a.title)       AS title,
+                COALESCE(i18n.description, a.description) AS description,
+                COALESCE(i18n.reward,      a.reward)      AS reward,
+                a.metric, a.target_value, a.hidden, a.sort_order,
                 COALESCE(s.value, 0) AS current_value,
                 u.unlocked_at
             FROM achievements a
+            LEFT JOIN achievement_i18n i18n
+                ON i18n.achievement_id = a.id AND i18n.locale = ?
             LEFT JOIN achievement_stats s ON s.metric = a.metric
             LEFT JOIN achievement_unlocks u
                 ON u.achievement_id = a.id AND u.user_id IS NULL
             ORDER BY {self._TIER_ORDER_SQL}, a.sort_order, a.id
-            """
+            """,
+            (locale,),
         ).fetchall()
 
         out: list[AchievementState] = []
         for r in rows:
             (
-                ach_id, tier, icon, title, descr, metric,
-                target, reward, hidden, sort, current, unlocked_at,
+                ach_id, tier, icon, title, descr, reward,
+                metric, target, hidden, sort, current, unlocked_at,
             ) = r
             is_locked_secret = bool(hidden) and unlocked_at is None
             if is_locked_secret and not include_hidden_locked:
