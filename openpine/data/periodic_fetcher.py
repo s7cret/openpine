@@ -224,9 +224,10 @@ class PeriodicBarFetcher:
         else:
             start_ms = recent_start_ms
 
-        # Fetch through the canonical marketdata provider so exchange/market
-        # routing (Binance/Bybit/etc.) stays centralized in marketdata-provider.
-        bars = self._fetch_bars_direct(key, timeframe, start_ms, end_ms)
+        # Load source bars through DataOrchestrator using source="provider" so
+        # exchange/market routing, retries, validation, and future adapters stay
+        # centralized in marketdata-provider instead of this scheduler.
+        bars = self._load_source_bars(key, timeframe, start_ms, end_ms)
         if bars:
             log.info(
                 "periodic_fetcher.market_refreshed",
@@ -399,20 +400,14 @@ class PeriodicBarFetcher:
         except Exception:
             return {}
 
-    @staticmethod
-    def _fetch_bars_direct(
+    def _load_source_bars(
+        self,
         key: RawMarketKey,
         timeframe: Any,
         start_ms: int,
         end_ms: int,
     ) -> list[Bar]:
-        """Fetch klines through the canonical marketdata provider.
-
-        The periodic refresh path receives an exchange-aware RawMarketKey from
-        strategy metadata. Keep the exchange routing in marketdata-provider
-        instead of embedding REST endpoints here; otherwise non-Binance
-        strategies silently request the wrong exchange.
-        """
+        """Load source-timeframe bars through the configured DataOrchestrator."""
         query = BarQuery(
             instrument=InstrumentKey(
                 exchange=key.exchange,
@@ -426,8 +421,7 @@ class PeriodicBarFetcher:
             gap_policy="allow_with_metadata",
         )
         try:
-            provider = create_local_marketdata_provider_adapter()
-            series = provider.fetch_bars(query)
+            series = self.orchestrator.load_bars(query)
         except Exception as exc:
             log.warning(
                 "periodic_fetcher.provider_error",

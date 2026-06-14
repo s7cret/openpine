@@ -494,7 +494,7 @@ def test_periodic_fetcher_and_strategy_executor_remaining_branches(monkeypatch):
 
     key = pf.RawMarketKey.from_strategy(strategy)
     orch.raise_conflict = True
-    monkeypatch.setattr(pf.PeriodicBarFetcher, "_fetch_bars_direct", staticmethod(lambda *a, **k: [_bar(0), _bar(60_000), _bar(120_000), _bar(180_000), _bar(240_000)]))
+    monkeypatch.setattr(pf.PeriodicBarFetcher, "_load_source_bars", staticmethod(lambda *a, **k: [_bar(0), _bar(60_000), _bar(120_000), _bar(180_000), _bar(240_000)]))
     fetcher._refresh_market_key(key, [strategy], now_ms=600_000)
     fetcher._store_target_aggregates(key, [_bar(0)], source_timeframe=parse_timeframe("1m"), target_timeframes=["1M", "1m", "5m"])
     assert orch.store_calls >= 1

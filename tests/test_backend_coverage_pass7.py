@@ -218,6 +218,7 @@ def test_backtest_and_accounts_helper_edges(tmp_path, monkeypatch):
     backtest_routes._save_backtest_data_fingerprint(state, "r1", "fp")
     assert accounts_data._ranges_cover_request([{"from_ms": 0, "to_ms": 10}], "1m", 0, 10) is True
     assert accounts_data._ranges_cover_request([{"from_ms": 0, "to_ms": 5}], "1m", 0, 120000) is False
+    monkeypatch.setattr(accounts_data, "default_cache_dir", lambda: tmp_path / "empty-cache")
     assert accounts_data._stored_ranges_cover_request({"exchange":"binance","market_type":"spot","symbol":"BTCUSDT","timeframe":"1m","from_time":0,"to_time":10}, SimpleNamespace(config=SimpleNamespace(data_cache_root=None, data_dir=tmp_path))) == (False, 0)
     assert len(accounts_data._compact_ranges([{"start_ms": 0, "end_ms": 1}, {"start_ms": 1, "end_ms": 2}])) == 2
     merged = accounts_data._coalesce_ranges([{"from_ms": 2, "to_ms": 3}, {"from_ms": 0, "to_ms": 2}], "1m")

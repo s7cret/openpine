@@ -72,7 +72,7 @@ def test_periodic_fetcher_grouping_refresh_and_aggregates(monkeypatch):
         registry=SimpleNamespace(list_strategies=lambda: []),
         orchestrator=orch,
     )
-    monkeypatch.setattr(fetcher, "_fetch_bars_direct", lambda key, timeframe, start_ms, end_ms: list(bars))
+    monkeypatch.setattr(fetcher, "_load_source_bars", lambda key, timeframe, start_ms, end_ms: list(bars))
     fetcher._refresh_market_key(
         periodic_fetcher.RawMarketKey("binance", "spot", "BTCUSDT", "trade"),
         [_strategy(timeframe="15m"), _strategy(timeframe="1m")],
@@ -82,11 +82,11 @@ def test_periodic_fetcher_grouping_refresh_and_aggregates(monkeypatch):
     assert fetcher._latest_stored_bar_time(periodic_fetcher.RawMarketKey("binance", "spot", "BTCUSDT", "trade"), parse_timeframe("1m"), 900_000) is None
     # No new bars when latest is already at/after the current close boundary.
     fetcher.orchestrator = Orchestrator(latest=900_000)
-    monkeypatch.setattr(fetcher, "_fetch_bars_direct", lambda *a, **k: pytest.fail("should not fetch"))
+    monkeypatch.setattr(fetcher, "_load_source_bars", lambda *a, **k: pytest.fail("should not fetch"))
     fetcher._refresh_market_key(periodic_fetcher.RawMarketKey("binance", "spot", "BTCUSDT", "trade"), [_strategy()], now_ms=900_000)
 
 
-def test_periodic_fetcher_error_paths_and_direct_http(monkeypatch):
+def test_periodic_fetcher_error_paths_and_provider_load(monkeypatch):
     fetcher = periodic_fetcher.PeriodicBarFetcher(
         config=periodic_fetcher.RefreshConfig(enabled=True, source_timeframe="1M"),
         registry=SimpleNamespace(list_strategies=lambda: []),
@@ -95,27 +95,23 @@ def test_periodic_fetcher_error_paths_and_direct_http(monkeypatch):
     with pytest.raises(ValueError):
         fetcher._refresh_market_key(periodic_fetcher.RawMarketKey("binance", "spot", "BTCUSDT", "trade"), [_strategy()], now_ms=900_000)
 
-    class FailingProvider:
-        def fetch_bars(self, query):
+    class FailingLoadOrchestrator(Orchestrator):
+        def load_bars(self, query):
             raise RuntimeError("offline")
 
-    monkeypatch.setattr(
-        periodic_fetcher,
-        "create_local_marketdata_provider_adapter",
-        lambda: FailingProvider(),
+    failing_fetcher = periodic_fetcher.PeriodicBarFetcher(
+        registry=SimpleNamespace(list_strategies=lambda: []),
+        orchestrator=FailingLoadOrchestrator(),
     )
-    assert periodic_fetcher.PeriodicBarFetcher._fetch_bars_direct(
+    assert failing_fetcher._load_source_bars(
         periodic_fetcher.RawMarketKey("binance", "spot", "BTCUSDT", "trade"), parse_timeframe("1m"), 0, 1
     ) == []
 
-    captured = {}
-
-    class Provider:
-        def fetch_bars(self, query):
-            captured["query"] = query
-            bar = Bar(
-                instrument=query.instrument,
-                timeframe=query.timeframe,
+    bybit_orch = Orchestrator(
+        load_bars=(
+            Bar(
+                instrument=InstrumentKey("bybit", "delivery", "BTCUSD"),
+                timeframe=parse_timeframe("1m"),
                 time=0,
                 time_close=60_000,
                 open=1.0,
@@ -124,21 +120,22 @@ def test_periodic_fetcher_error_paths_and_direct_http(monkeypatch):
                 close=1.5,
                 volume=9.0,
                 closed=True,
-            )
-            return SimpleNamespace(bars=(bar,))
-
-    monkeypatch.setattr(
-        periodic_fetcher,
-        "create_local_marketdata_provider_adapter",
-        lambda: Provider(),
+            ),
+        )
     )
-    out = periodic_fetcher.PeriodicBarFetcher._fetch_bars_direct(
+    bybit_fetcher = periodic_fetcher.PeriodicBarFetcher(
+        registry=SimpleNamespace(list_strategies=lambda: []),
+        orchestrator=bybit_orch,
+    )
+    out = bybit_fetcher._load_source_bars(
         periodic_fetcher.RawMarketKey("bybit", "delivery", "BTCUSD", "trade"), parse_timeframe("1m"), 0, 60_000
     )
     assert len(out) == 1 and out[0].close == 1.5
-    assert captured["query"].instrument.exchange == "bybit"
-    assert captured["query"].instrument.market == "delivery"
-    assert captured["query"].instrument.symbol == "BTCUSD"
+    assert bybit_orch.last_load_query.source == "provider"
+    assert bybit_orch.last_load_query.gap_policy == "allow_with_metadata"
+    assert bybit_orch.last_load_query.instrument.exchange == "bybit"
+    assert bybit_orch.last_load_query.instrument.market == "delivery"
+    assert bybit_orch.last_load_query.instrument.symbol == "BTCUSD"
 
     calls = {"n": 0}
     def refresh():

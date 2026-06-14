@@ -97,8 +97,8 @@ def test_periodic_fetcher_lifecycle_variable_tf_conflicts_and_http(monkeypatch):
     fetcher.start(); fetcher.start(); fetcher.stop(timeout=0.01); fetcher.stop()
 
     key = RawMarketKey.from_strategy(_strategy(timeframe="5m"))
-    original_fetch_bars_direct = PeriodicBarFetcher._fetch_bars_direct
-    monkeypatch.setattr(PeriodicBarFetcher, "_fetch_bars_direct", staticmethod(lambda *a, **k: [_bar(0), _bar(60_000), _bar(120_000), _bar(180_000), _bar(240_000)]))
+    original_load_source_bars = PeriodicBarFetcher._load_source_bars
+    monkeypatch.setattr(PeriodicBarFetcher, "_load_source_bars", staticmethod(lambda *a, **k: [_bar(0), _bar(60_000), _bar(120_000), _bar(180_000), _bar(240_000)]))
     fetcher._refresh_market_key(key, [_strategy(timeframe="5m")], now_ms=360_000)
     assert orch.stored
     orch.raise_conflict = True
@@ -110,12 +110,12 @@ def test_periodic_fetcher_lifecycle_variable_tf_conflicts_and_http(monkeypatch):
     with pytest.raises(ValueError):
         PeriodicBarFetcher(RefreshConfig(source_timeframe="1M"), Registry([_strategy()]), orch)._refresh_market_key(key, [_strategy()], now_ms=1_000_000)
 
-    monkeypatch.setattr(PeriodicBarFetcher, "_fetch_bars_direct", original_fetch_bars_direct)
+    monkeypatch.setattr(PeriodicBarFetcher, "_load_source_bars", original_load_source_bars)
 
     captured = {}
 
-    class Provider:
-        def fetch_bars(self, query):
+    class CaptureOrchestrator(Orchestrator):
+        def load_bars(self, query):
             captured["query"] = query
             bars = (
                 Bar(
@@ -137,24 +137,24 @@ def test_periodic_fetcher_lifecycle_variable_tf_conflicts_and_http(monkeypatch):
                 coverage=DataOrchestrator.coverage_for_series(query, bars, "test"),
             )
 
-    monkeypatch.setattr(
-        "openpine.data.periodic_fetcher.create_local_marketdata_provider_adapter",
-        lambda: Provider(),
+    capture_fetcher = PeriodicBarFetcher(
+        RefreshConfig(), Registry([]), CaptureOrchestrator()
     )
-    bars = PeriodicBarFetcher._fetch_bars_direct(RawMarketKey("bybit", "delivery", "btcusd", "trade"), parse_timeframe("1m"), 0, 60_000)
+    bars = capture_fetcher._load_source_bars(RawMarketKey("bybit", "delivery", "btcusd", "trade"), parse_timeframe("1m"), 0, 60_000)
     assert len(bars) == 1 and bars[0].instrument.market == "delivery"
+    assert captured["query"].source == "provider"
+    assert captured["query"].gap_policy == "allow_with_metadata"
     assert captured["query"].instrument.exchange == "bybit"
     assert captured["query"].instrument.symbol == "BTCUSD"
 
-    class FailingProvider:
-        def fetch_bars(self, query):
+    class FailingLoadOrchestrator(Orchestrator):
+        def load_bars(self, query):
             raise OSError("offline")
 
-    monkeypatch.setattr(
-        "openpine.data.periodic_fetcher.create_local_marketdata_provider_adapter",
-        lambda: FailingProvider(),
+    failing_fetcher = PeriodicBarFetcher(
+        RefreshConfig(), Registry([]), FailingLoadOrchestrator()
     )
-    assert PeriodicBarFetcher._fetch_bars_direct(key, parse_timeframe("1m"), 0, 60_000) == []
+    assert failing_fetcher._load_source_bars(key, parse_timeframe("1m"), 0, 60_000) == []
 
 
 def test_cli_data_commands_cover_success_and_error_paths(monkeypatch, tmp_path):

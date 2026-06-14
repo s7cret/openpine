@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from marketdata_provider.contracts import Bar, InstrumentKey
+from marketdata_provider.contracts import Bar, BarSeries, InstrumentKey
+from openpine.data.orchestrator import DataOrchestrator
 
 from openpine.data.periodic_fetcher import (
     PeriodicBarFetcher,
@@ -47,12 +48,13 @@ class _Orchestrator:
 
     def get_bars(self, query):
         self.queries.append(query)
+        step = query.timeframe.duration_ms or 60_000
         return [
             Bar(
                 instrument=query.instrument,
                 timeframe=query.timeframe,
-                time=query.start_ms,
-                time_close=query.start_ms + query.timeframe.duration_ms,
+                time=current,
+                time_close=current + step,
                 open=1.0,
                 high=2.0,
                 low=0.5,
@@ -60,13 +62,16 @@ class _Orchestrator:
                 volume=3.0,
                 closed=True,
             )
+            for current in range(query.start_ms, query.end_ms, step)
         ]
 
     def load_bars(self, query):
-        from marketdata_provider.contracts import BarSeries
-
         bars = tuple(self.get_bars(query))
-        return BarSeries(query=query, bars=bars)
+        return BarSeries(
+            query=query,
+            bars=bars,
+            coverage=DataOrchestrator.coverage_for_series(query, bars, "test"),
+        )
 
     def latest_bar_time(self, query):
         return self.latest_time
@@ -132,25 +137,65 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
             for current in range(start_ms, end_ms, step)
         ]
 
-    monkeypatch.setattr(fetcher, "_fetch_bars_direct", fake_fetch)
+    monkeypatch.setattr(fetcher, "_load_source_bars", fake_fetch)
 
     fetcher._refresh_all_active()
 
-    assert [series.query.instrument.symbol for series in orchestrator.stored] == [
-        "BTCUSDT",
-        "BTCUSDT",
-        "SOLUSDT",
-    ]
-    assert [series.query.timeframe.canonical for series in orchestrator.stored] == [
-        "1m",
-        "15m",
-        "1m",
+    assert [
+        (series.query.instrument.symbol, series.query.timeframe.canonical)
+        for series in orchestrator.stored
+    ] == [
+        ("BTCUSDT", "1m"),
+        ("BTCUSDT", "15m"),
+        ("BTCUSDT", "1h"),
+        ("SOLUSDT", "1m"),
+        ("SOLUSDT", "15m"),
     ]
     assert [series.query.start_ms for series in orchestrator.stored[:2]] == [
         1_699_996_260_000,
-        1_699_996_500_000,
+        1_699_995_600_000,
     ]
     assert not orchestrator.closed
+
+
+def test_periodic_fetcher_uses_injected_orchestrator_provider(monkeypatch) -> None:
+    registry = _Registry([_strategy("bybit-btc", "BTCUSD", timeframe="1h")])
+    strategy = registry.list_strategies()[0]
+    strategy.exchange = "bybit"
+    strategy.market_type = "delivery"
+    orchestrator = _Orchestrator()
+    fetcher = PeriodicBarFetcher(
+        config=RefreshConfig(lookback_bars=2),
+        registry=registry,
+        orchestrator=orchestrator,
+    )
+
+    monkeypatch.setattr(
+        "openpine.data.periodic_fetcher.time.time", lambda: 1_700_000_000.0
+    )
+
+    def fail_factory():
+        raise AssertionError("periodic fetch must use the injected orchestrator")
+
+    monkeypatch.setattr(
+        "openpine.data.periodic_fetcher.create_local_marketdata_provider_adapter",
+        fail_factory,
+    )
+
+    fetcher._refresh_all_active()
+
+    assert len(orchestrator.queries) == 2
+    provider_query = orchestrator.queries[0]
+    assert provider_query.source == "provider"
+    assert provider_query.gap_policy == "allow_with_metadata"
+    assert provider_query.instrument.exchange == "bybit"
+    assert provider_query.instrument.market == "delivery"
+    assert provider_query.instrument.symbol == "BTCUSD"
+    assert provider_query.timeframe.canonical == "1m"
+    assert [series.query.timeframe.canonical for series in orchestrator.stored] == [
+        "1m",
+        "1h",
+    ]
 
 
 def test_periodic_fetcher_resumes_after_last_stored_bar(monkeypatch) -> None:
@@ -172,7 +217,7 @@ def test_periodic_fetcher_resumes_after_last_stored_bar(monkeypatch) -> None:
         calls.append((start_ms, end_ms))
         return []
 
-    monkeypatch.setattr(fetcher, "_fetch_bars_direct", fake_fetch)
+    monkeypatch.setattr(fetcher, "_load_source_bars", fake_fetch)
 
     fetcher._refresh_all_active()
 
@@ -194,7 +239,7 @@ def test_periodic_fetcher_skips_fetch_when_storage_is_current(monkeypatch) -> No
     )
     calls = []
     monkeypatch.setattr(
-        fetcher, "_fetch_bars_direct", lambda *args: calls.append(args) or []
+        fetcher, "_load_source_bars", lambda *args: calls.append(args) or []
     )
 
     fetcher._refresh_all_active()

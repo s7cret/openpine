@@ -864,9 +864,11 @@ class LiveStrategyRunner:
 
     @staticmethod
     def _fetch_direct(query):
+        from openpine.data.orchestrator import DataOrchestrator
         from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 
-        return create_local_marketdata_provider_adapter().fetch_bars(query)
+        provider = create_local_marketdata_provider_adapter()
+        return DataOrchestrator(provider=provider).load_bars(query)
 
     @staticmethod
     def _series_fingerprint(series) -> str:

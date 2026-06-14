@@ -141,7 +141,7 @@ def test_periodic_refresh_market_key_reraises_non_conflicting_store_errors(
             raise StorageUnavailableError("database down")
 
     fetcher = _fetcher(FailingStoreOrchestrator())
-    monkeypatch.setattr(fetcher, "_fetch_bars_direct", lambda *args: [_bar(0)])
+    monkeypatch.setattr(fetcher, "_load_source_bars", lambda *args: [_bar(0)])
 
     with pytest.raises(StorageUnavailableError, match="database down"):
         fetcher._refresh_market_key(
