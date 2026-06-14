@@ -180,7 +180,7 @@
     "title": "⚡ Strategies",
     "addStrategy": "+ Add Strategy",
     "creating": "Creating...",
-    "created": "✅ Strategy created!",
+    "created": "Created",
     "symbolSearchFailed": "❌ Symbol search failed: {error}",
     "noMatch": "No strategies match filters",
     "noStrategies": "No strategies yet",
@@ -208,7 +208,6 @@
     "market": "Market",
     "volume24h": "24h Volume",
     "change24h": "24h Change",
-    "created": "Created",
     "tradesLabel": "Trades:",
     "paper": "📄 Paper",
     "live": "🔴 Live",
@@ -351,7 +350,38 @@
     "lockedFromTo": "From {from} to {to}",
     "preHistoryPlaceholder": "2024-01-01T00:00:00Z or ms",
     "metadataUnavailable": "Market metadata unavailable: backend returned no exchanges.",
-    "metadataUnavailableDetail": "Market metadata unavailable: {error}"
+    "metadataUnavailableDetail": "Market metadata unavailable: {error}",
+    "history": {
+      "title": "📜 Past comparisons",
+      "subtitle": "{count} runs discovered on disk · newest first",
+      "subtitleEmpty": "No past TV Parity runs yet — your first run will appear here",
+      "refresh": "Refresh history",
+      "open": "Open",
+      "openHint": "Load this run into the result panel",
+      "delete": "Delete run",
+      "deleteConfirm": "Delete run {id} and all its artifacts? This cannot be undone.",
+      "deleteFailed": "❌ Delete failed: {error}",
+      "loadFailed": "❌ Load failed: {error}",
+      "headerSymbol": "Symbol",
+      "headerSource": "Source",
+      "headerTimeframe": "TF",
+      "headerBars": "Bars",
+      "headerStatus": "Status",
+      "headerWhen": "When",
+      "headerActions": "Actions",
+      "statusQueued": "Queued",
+      "statusRunning": "Running",
+      "statusCompleted": "Completed",
+      "statusFailed": "Failed",
+      "sourceTradingview": "TradingView CSV",
+      "sourceExchange": "Exchange data",
+      "filterAll": "All sources",
+      "filterAllStrategies": "All strategies",
+      "runIdShort": "id",
+      "less": "Show less",
+      "more": "Show all {count}",
+      "empty": "No past runs"
+    }
   },
   "data": {
     "title": "Market Data",
@@ -434,9 +464,43 @@
     "loadFailed": "Chart data load failed"
   },
   "dateRange": {
-    "monthsFull": ["January","February","March","April","May","June","July","August","September","October","November","December"],
-    "monthsShort": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-    "dayNamesShort": ["Mo","Tu","We","Th","Fr","Sa","Su"]
+    "monthsFull": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "dayNamesShort": [
+      "Mo",
+      "Tu",
+      "We",
+      "Th",
+      "Fr",
+      "Sa",
+      "Su"
+    ]
   },
   "dateRangePicker": {
     "selected": "Selected:",
