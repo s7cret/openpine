@@ -160,6 +160,37 @@ export const getTvParityRun = (runId: string) => api.get(apiPath('/tv-parity/run
 export const tvParityArtifactUrl = (runId: string, artifactName: string) =>
   `/api${apiPath('/tv-parity/runs', runId, 'artifacts', artifactName)}`
 
+export type TvParityHistoryEntry = {
+  run_id: string
+  strategy_id: string | null
+  source: string | null
+  status: string | null
+  queued_at: number | null
+  compare_from: number | null
+  compare_to: number | null
+  symbol: string | null
+  exchange: string | null
+  market_type: string | null
+  timeframe: string | null
+  valid_bars: number | null
+  from_time: number | null
+  to_time: number | null
+}
+
+export type TvParityHistoryResponse = {
+  items: TvParityHistoryEntry[]
+  total: number
+  limit: number
+  strategy_id: string | null
+  source: string | null
+}
+
+export const listTvParityRuns = (params?: {
+  strategy_id?: string
+  source?: 'tradingview_csv' | 'exchange_data'
+  limit?: number
+}) => api.get('/tv-parity/runs', { params })
+
 // Orders & Positions
 export const getOrders = (strategyId?: string, limit = 100) =>
   api.get('/orders', { params: { strategy_id: strategyId, limit } })
