@@ -269,3 +269,237 @@ def test_engine_recomputes_26_metrics(storage):
     for k, v in stats.items():
         assert isinstance(v, float)
         assert v >= 0
+
+
+def _insert_pine_source(storage, pine_id="p_test", name="p_test") -> str:
+    """Helper: stage a minimal pine_sources row so FK references pass.
+
+    Returns the pine_id used (caller may need a compile artifact too)."""
+    now = int(time.time() * 1000)
+    storage.execute(
+        "INSERT OR IGNORE INTO pine_sources("
+        "id, pine_id, name, source_text, created_at, updated_at"
+        ") VALUES (?, ?, ?, ?, ?, ?)",
+        (pine_id, pine_id, name, "//@source test", now, now),
+    )
+    storage.commit()
+    return pine_id
+
+
+def _insert_compile_artifact(storage, artifact_id="a_test",
+                             pine_id="p_test") -> str:
+    """Helper: stage a minimal compile_artifacts row so backtest_runs
+    FK passes. Returns the artifact_id used."""
+    now = int(time.time() * 1000)
+    storage.execute(
+        "INSERT OR IGNORE INTO compile_artifacts("
+        "id, source_id, params_hash, artifact_path, compile_meta, created_at"
+        ") VALUES (?, ?, ?, ?, ?, ?)",
+        (artifact_id, pine_id, "p1", "/tmp/artifact.json",
+         "{}", now),
+    )
+    storage.commit()
+    return artifact_id
+
+
+def test_backtest_throughput_metrics_persisted(storage):
+    """save_result() must populate bars_processed + bars_per_sec/min
+    on backtest_runs, sourced from equity_curve length and
+    (now - created_at) wall-clock."""
+    from openpine.storage.backtest_storage import BacktestResultStore
+    from openpine.storage.backtest_dto import (
+        BacktestMetricsSummary,
+        BacktestRunRequest,
+    )
+    seed_achievements(storage)
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    _insert_pine_source(storage, pine_id="pine_speed", name="pine_speed")
+    _insert_compile_artifact(storage, artifact_id="a_speed", pine_id="pine_speed")
+    store = BacktestResultStore(storage)
+    # Use the public create_run() so all NOT NULL columns are set
+    now_ms = int(time.time() * 1000)
+    request = BacktestRunRequest(
+        strategy_id="strat_speed",
+        pine_id="pine_speed",
+        artifact_id="a_speed",
+        params_hash="p1",
+        exchange="binance",
+        market_type="spot",
+        symbol="BTCUSDT",
+        price_type="trade",
+        timeframe="1h",
+    )
+    run_id = store.create_run(request)
+    # Backdate created_at by 5 seconds so we get a non-zero elapsed_ms
+    storage.execute(
+        "UPDATE backtest_runs SET created_at = ? WHERE run_id = ?",
+        (now_ms - 5000, run_id),
+    )
+    storage.commit()
+    # Simulate a save_result with 1000 equity points over 5s → 200 bars/sec
+    metrics = BacktestMetricsSummary(initial_capital=10000.0)
+    store._save_result_db_records(
+        run_id=run_id,
+        strategy_id="strat_speed",
+        run_dir=__import__("pathlib").Path("/tmp/ignore"),
+        metrics=metrics,
+        result_json="{}",
+        trades=[],
+        artifact_paths={},
+        has_equity_curve=False,
+        has_bar_outputs=False,
+        bars_processed=1000,
+        bars_per_sec=200.0,
+        bars_per_min=12000.0,
+        now=now_ms,
+    )
+    row = storage.execute(
+        "SELECT bars_processed, bars_per_sec, bars_per_min FROM backtest_runs "
+        "WHERE run_id = ?",
+        (run_id,),
+    ).fetchone()
+    assert row[0] == 1000
+    assert abs(row[1] - 200.0) < 0.01
+    assert abs(row[2] - 12000.0) < 0.01
+
+
+def test_achievement_views_present(storage):
+    """ensure_schema_compatibility must create v_strategy_udt,
+    v_strategy_timeframes, v_strategy_directions."""
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    views = {r[0] for r in storage.execute(
+        "SELECT name FROM sqlite_master WHERE type='view'"
+    ).fetchall()}
+    assert "v_strategy_udt" in views
+    assert "v_strategy_timeframes" in views
+    assert "v_strategy_directions" in views
+
+
+def test_record_event_appends_and_unlocks(storage):
+    """record_event() must append to achievement_events and trigger
+    unlocks for any achievement whose target is met by the new value."""
+    seed_achievements(storage)
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    eng = AchievementEngine(storage)
+    # First event: count=1 → unlock any ruin_recovery with target<=1
+    unlocked = eng.record_event(
+        event_type="ruin_recovery", source_id="session-1", value=1.0
+    )
+    assert isinstance(unlocked, list)
+    # The events table must have the new row
+    n = storage.execute(
+        "SELECT COUNT(*) FROM achievement_events WHERE event_type = 'ruin_recovery'"
+    ).fetchone()[0]
+    assert n == 1
+    # The matching metric stat must be 1
+    v = storage.execute(
+        "SELECT value FROM achievement_stats WHERE metric = 'ruin_recovery'"
+    ).fetchone()
+    assert v is not None and v[0] >= 1.0
+
+
+def test_record_event_distinct_source_id_for_shipped_lib(storage):
+    """shipped_lib counts DISTINCT source_id, not raw event count."""
+    seed_achievements(storage)
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    eng = AchievementEngine(storage)
+    # 3 events for lib_a, 2 for lib_b → 2 distinct source_ids
+    for _ in range(3):
+        eng.record_event("shipped_lib", source_id="lib_a")
+    for _ in range(2):
+        eng.record_event("shipped_lib", source_id="lib_b")
+    v = storage.execute(
+        "SELECT value FROM achievement_stats WHERE metric = 'shipped_lib'"
+    ).fetchone()
+    assert v is not None and v[0] == 2.0
+
+
+def test_live_uptime_metric_uses_hours(storage):
+    """live_uptime_h must divide ms-diff by 3,600,000 (not 3,600)."""
+    seed_achievements(storage)
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    _insert_pine_source(storage, pine_id="pine_ut", name="pine_ut")
+    _insert_compile_artifact(storage, artifact_id="a_ut", pine_id="pine_ut")
+    # 1 hour = 3,600,000 ms
+    now_ms = int(time.time() * 1000)
+    one_hour_ago = now_ms - 3_600_000
+    storage.execute(
+        "INSERT INTO strategy_instances("
+        "id, strategy_id, name, pine_id, artifact_id, params_hash, symbol, "
+        "timeframe, status, created_at, updated_at"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("s1", "s1", "uptime-1h", "pine_ut", "a_ut", "p1", "BTCUSDT", "1h",
+         "active", one_hour_ago, now_ms),
+    )
+    storage.commit()
+    eng = AchievementEngine(storage)
+    stats = eng.recompute_stats()
+    assert 0.99 <= stats["live_uptime_h"] <= 1.01, (
+        f"expected ~1.0h, got {stats['live_uptime_h']}"
+    )
+
+
+def test_winrate_metric_is_percent_not_ratio(storage):
+    """winrate_pct must surface backtest_runs.win_rate as a percent
+    (0..100), without an extra *100."""
+    seed_achievements(storage)
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    _insert_pine_source(storage, pine_id="pine_wr", name="pine_wr")
+    _insert_compile_artifact(storage, artifact_id="a_wr", pine_id="pine_wr")
+    now_ms = int(time.time() * 1000)
+    storage.execute(
+        "INSERT INTO backtest_runs("
+        "run_id, strategy_id, pine_id, artifact_id, params_hash, exchange, "
+        "market_type, symbol, price_type, timeframe, status, win_rate, "
+        "created_at, started_at, finished_at, updated_at"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("r_wr_60", "s_wr", "pine_wr", "a_wr", "p1", "binance", "spot",
+         "BTCUSDT", "trade", "1h", "done", 60.0,
+         now_ms, now_ms, now_ms, now_ms),
+    )
+    storage.commit()
+    eng = AchievementEngine(storage)
+    stats = eng.recompute_stats()
+    assert 59.0 <= stats["winrate_pct"] <= 61.0, (
+        f"expected ~60 (percent), got {stats['winrate_pct']}"
+    )
+
+
+def test_symbols_count_joins_backtest_runs(storage):
+    """symbols/exchanges/mcap_top10 must JOIN backtest_trades →
+    backtest_runs to get the symbol (denormalized at run time)."""
+    seed_achievements(storage)
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    _insert_pine_source(storage, pine_id="pine_btc", name="pine_btc")
+    _insert_compile_artifact(storage, artifact_id="a_btc", pine_id="pine_btc")
+    now_ms = int(time.time() * 1000)
+    storage.execute(
+        "INSERT INTO backtest_runs("
+        "run_id, strategy_id, pine_id, artifact_id, params_hash, exchange, "
+        "market_type, symbol, price_type, timeframe, status, "
+        "created_at, started_at, finished_at, updated_at"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("r_btc", "s_btc", "pine_btc", "a_btc", "p1", "binance", "spot",
+         "BTCUSDT", "trade", "1h", "done",
+         now_ms, now_ms, now_ms, now_ms),
+    )
+    storage.execute(
+        "INSERT INTO backtest_trades("
+        "trade_id, run_id, strategy_id, direction, "
+        "entry_time, entry_price, qty, created_at"
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ("t1", "r_btc", "s_btc", "long", now_ms, 100.0, 1.0, now_ms),
+    )
+    storage.commit()
+    eng = AchievementEngine(storage)
+    stats = eng.recompute_stats()
+    assert stats["symbols"] == 1.0
+    assert stats["exchanges"] == 1.0
+    assert stats["mcap_top10_count"] == 1.0  # BTCUSDT is in the top-10 list
