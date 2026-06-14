@@ -224,7 +224,8 @@ class PeriodicBarFetcher:
         else:
             start_ms = recent_start_ms
 
-        # Direct HTTP fetch with timeout (bypasses hung orchestrator/provider)
+        # Fetch through the canonical marketdata provider so exchange/market
+        # routing (Binance/Bybit/etc.) stays centralized in marketdata-provider.
         bars = self._fetch_bars_direct(key, timeframe, start_ms, end_ms)
         if bars:
             log.info(
@@ -405,51 +406,37 @@ class PeriodicBarFetcher:
         start_ms: int,
         end_ms: int,
     ) -> list[Bar]:
-        """Fetch klines directly from Binance REST API with a 10s timeout."""
-        import json as _json
-        import urllib.request
-        import urllib.error
+        """Fetch klines through the canonical marketdata provider.
 
-        interval = timeframe.canonical.lower()  # e.g. "1m", "15m"
-        symbol = key.symbol.upper()
-        is_futures = key.market_type in ("futures", "delivery")
-        base = (
-            "https://fapi.binance.com/fapi/v1/klines"
-            if is_futures
-            else "https://api.binance.com/api/v3/klines"
+        The periodic refresh path receives an exchange-aware RawMarketKey from
+        strategy metadata. Keep the exchange routing in marketdata-provider
+        instead of embedding REST endpoints here; otherwise non-Binance
+        strategies silently request the wrong exchange.
+        """
+        query = BarQuery(
+            instrument=InstrumentKey(
+                exchange=key.exchange,
+                market=key.market_type,
+                symbol=key.symbol.upper(),
+            ),
+            timeframe=timeframe,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            source="provider",
+            gap_policy="allow_with_metadata",
         )
-        url = f"{base}?symbol={symbol}&interval={interval}&startTime={start_ms}&endTime={end_ms}&limit=1000"
-
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "OpenPine/1.0"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                raw = _json.loads(resp.read().decode())
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            log.warning("periodic_fetcher.http_error", symbol=symbol, error=str(exc))
-            return []
-
-        bars: list[Bar] = []
-        instrument = InstrumentKey(
-            exchange=key.exchange, market=key.market_type, symbol=symbol
-        )
-        for k in raw:
-            open_time = int(k[0])
-            close_time = open_time + (timeframe.duration_ms or 60000)
-            bars.append(
-                Bar(
-                    instrument=instrument,
-                    timeframe=timeframe,
-                    time=open_time,
-                    time_close=close_time,
-                    open=float(k[1]),
-                    high=float(k[2]),
-                    low=float(k[3]),
-                    close=float(k[4]),
-                    volume=float(k[5]),
-                    closed=True,
-                )
+            provider = create_local_marketdata_provider_adapter()
+            series = provider.fetch_bars(query)
+        except Exception as exc:
+            log.warning(
+                "periodic_fetcher.provider_error",
+                market_key=str(key),
+                source_timeframe=timeframe.canonical,
+                error=str(exc),
             )
-        return bars
+            return []
+        return list(series.bars)
 
     def _latest_stored_bar_time(
         self, key: RawMarketKey, timeframe: Any, end_ms: int

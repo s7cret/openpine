@@ -95,20 +95,50 @@ def test_periodic_fetcher_error_paths_and_direct_http(monkeypatch):
     with pytest.raises(ValueError):
         fetcher._refresh_market_key(periodic_fetcher.RawMarketKey("binance", "spot", "BTCUSDT", "trade"), [_strategy()], now_ms=900_000)
 
+    class FailingProvider:
+        def fetch_bars(self, query):
+            raise RuntimeError("offline")
+
+    monkeypatch.setattr(
+        periodic_fetcher,
+        "create_local_marketdata_provider_adapter",
+        lambda: FailingProvider(),
+    )
     assert periodic_fetcher.PeriodicBarFetcher._fetch_bars_direct(
         periodic_fetcher.RawMarketKey("binance", "spot", "BTCUSDT", "trade"), parse_timeframe("1m"), 0, 1
     ) == []
 
-    class Resp:
-        def __enter__(self): return self
-        def __exit__(self, *args): return False
-        def read(self): return json.dumps([[0, "1", "2", "0.5", "1.5", "9"]]).encode()
-    import urllib.request
-    monkeypatch.setattr(urllib.request, "urlopen", lambda req, timeout=10: Resp())
+    captured = {}
+
+    class Provider:
+        def fetch_bars(self, query):
+            captured["query"] = query
+            bar = Bar(
+                instrument=query.instrument,
+                timeframe=query.timeframe,
+                time=0,
+                time_close=60_000,
+                open=1.0,
+                high=2.0,
+                low=0.5,
+                close=1.5,
+                volume=9.0,
+                closed=True,
+            )
+            return SimpleNamespace(bars=(bar,))
+
+    monkeypatch.setattr(
+        periodic_fetcher,
+        "create_local_marketdata_provider_adapter",
+        lambda: Provider(),
+    )
     out = periodic_fetcher.PeriodicBarFetcher._fetch_bars_direct(
-        periodic_fetcher.RawMarketKey("binance", "delivery", "BTCUSDT", "trade"), parse_timeframe("1m"), 0, 60_000
+        periodic_fetcher.RawMarketKey("bybit", "delivery", "BTCUSD", "trade"), parse_timeframe("1m"), 0, 60_000
     )
     assert len(out) == 1 and out[0].close == 1.5
+    assert captured["query"].instrument.exchange == "bybit"
+    assert captured["query"].instrument.market == "delivery"
+    assert captured["query"].instrument.symbol == "BTCUSD"
 
     calls = {"n": 0}
     def refresh():

@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import json
-import urllib.request
-
 import pytest
 from click.testing import CliRunner
 
@@ -115,15 +112,48 @@ def test_periodic_fetcher_lifecycle_variable_tf_conflicts_and_http(monkeypatch):
 
     monkeypatch.setattr(PeriodicBarFetcher, "_fetch_bars_direct", original_fetch_bars_direct)
 
-    class Response:
-        def __enter__(self): return self
-        def __exit__(self, *exc): return None
-        def read(self): return json.dumps([[0, "1", "2", "0.5", "1.5", "10"]]).encode()
+    captured = {}
 
-    monkeypatch.setattr(urllib.request, "urlopen", lambda req, timeout=10: Response())
-    bars = PeriodicBarFetcher._fetch_bars_direct(RawMarketKey("binance", "futures", "btcusdt", "trade"), parse_timeframe("1m"), 0, 60_000)
-    assert len(bars) == 1 and bars[0].instrument.market == "futures"
-    monkeypatch.setattr(urllib.request, "urlopen", lambda req, timeout=10: (_ for _ in ()).throw(OSError("offline")))
+    class Provider:
+        def fetch_bars(self, query):
+            captured["query"] = query
+            bars = (
+                Bar(
+                    instrument=query.instrument,
+                    timeframe=query.timeframe,
+                    time=0,
+                    time_close=60_000,
+                    open=1.0,
+                    high=2.0,
+                    low=0.5,
+                    close=1.5,
+                    volume=10.0,
+                    closed=True,
+                ),
+            )
+            return BarSeries(
+                query=query,
+                bars=bars,
+                coverage=DataOrchestrator.coverage_for_series(query, bars, "test"),
+            )
+
+    monkeypatch.setattr(
+        "openpine.data.periodic_fetcher.create_local_marketdata_provider_adapter",
+        lambda: Provider(),
+    )
+    bars = PeriodicBarFetcher._fetch_bars_direct(RawMarketKey("bybit", "delivery", "btcusd", "trade"), parse_timeframe("1m"), 0, 60_000)
+    assert len(bars) == 1 and bars[0].instrument.market == "delivery"
+    assert captured["query"].instrument.exchange == "bybit"
+    assert captured["query"].instrument.symbol == "BTCUSD"
+
+    class FailingProvider:
+        def fetch_bars(self, query):
+            raise OSError("offline")
+
+    monkeypatch.setattr(
+        "openpine.data.periodic_fetcher.create_local_marketdata_provider_adapter",
+        lambda: FailingProvider(),
+    )
     assert PeriodicBarFetcher._fetch_bars_direct(key, parse_timeframe("1m"), 0, 60_000) == []
 
 
