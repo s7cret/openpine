@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "OpenPine",
-    "version": "OpenPine Gateway v1.0",
+    "version": "OpenPine Gateway v4.0",
     "connected": "Подключено",
     "gatewayOnline": "Шлюз онлайн"
   },
@@ -148,7 +148,26 @@
     "include3m": "Включает 3m. Бэкенд валидирует список перед сохранением.",
     "selectedCount": "выбрано: {count}",
     "settingsLoadFailed": "Не удалось загрузить настройки",
-    "settingsSaveFailed": "Не удалось сохранить настройки"
+    "settingsSaveFailed": "Не удалось сохранить настройки",
+    "modules": {
+      "title": "🧩 Модули",
+      "subtitle": "Установленные Python-пакеты OpenPine стека. Только для чтения — версии и пути отражают текущий рантайм.",
+      "loadFailed": "❌ Не удалось загрузить манифест модулей: {error}",
+      "headerModule": "Модуль",
+      "headerVersion": "Версия",
+      "headerPath": "Путь",
+      "headerStatus": "Статус",
+      "installed": "Установлен",
+      "notInstalled": "Не установлен",
+      "copyPath": "Копировать путь",
+      "copied": "Скопировано",
+      "summaryNone": "—",
+      "runtimeTitle": "Рантайм",
+      "runtimePython": "Python",
+      "runtimePlatform": "Платформа",
+      "runtimeMachine": "Архитектура",
+      "runtimeNode": "Хост"
+    }
   },
   "pineFiles": {
     "title": "📄 Pine-файлы",

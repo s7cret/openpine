@@ -230,3 +230,26 @@ export const getAchievements = (locale: string = 'en', includeHidden = false) =>
 
 export const refreshAchievements = () =>
   api.post<AchievementsResponse>('/achievements/refresh')
+
+// Version manifest
+export type VersionModule = {
+  name: string
+  version: string | null
+  installed: boolean
+  path: string | null
+  summary: string | null
+}
+
+export type VersionRuntime = {
+  python: string | null
+  platform: string | null
+  machine: string | null
+  node: string | null
+}
+
+export type VersionManifest = {
+  modules: VersionModule[]
+  runtime: VersionRuntime
+}
+
+export const getVersionManifest = () => api.get<VersionManifest>('/version')

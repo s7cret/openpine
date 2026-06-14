@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "OpenPine",
-    "version": "OpenPine Gateway v1.0",
+    "version": "OpenPine Gateway v4.0",
     "connected": "Connected",
     "gatewayOnline": "Gateway online"
   },
@@ -148,7 +148,26 @@
     "include3m": "Includes 3m. Backend validates the list before saving.",
     "selectedCount": "{count} selected",
     "settingsLoadFailed": "Failed to load settings",
-    "settingsSaveFailed": "Failed to save settings"
+    "settingsSaveFailed": "Failed to save settings",
+    "modules": {
+      "title": "🧩 Modules",
+      "subtitle": "Installed Python packages backing the OpenPine stack. Read-only — versions and paths reflect the current runtime.",
+      "loadFailed": "❌ Failed to load module manifest: {error}",
+      "headerModule": "Module",
+      "headerVersion": "Version",
+      "headerPath": "Path",
+      "headerStatus": "Status",
+      "installed": "Installed",
+      "notInstalled": "Not installed",
+      "copyPath": "Copy path",
+      "copied": "Copied",
+      "summaryNone": "—",
+      "runtimeTitle": "Runtime",
+      "runtimePython": "Python",
+      "runtimePlatform": "Platform",
+      "runtimeMachine": "Machine",
+      "runtimeNode": "Host"
+    }
   },
   "pineFiles": {
     "title": "📄 Pine Files",
