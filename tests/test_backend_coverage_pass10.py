@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from types import SimpleNamespace
 
-import pytest
 
 from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageReport, InstrumentKey, parse_timeframe
 

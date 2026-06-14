@@ -18,7 +18,7 @@ def test_openpine_config_defaults_to_stable_quote_symbol_filter():
     cfg = OpenPineConfig()
 
     assert cfg.marketdata_stable_quotes_only is True
-    assert cfg.marketdata_stable_quote_assets == ('USDT', 'USDC', 'FDUSD', 'BUSD', 'TUSD', 'USDP', 'DAI', 'USD')
+    assert cfg.marketdata_stable_quote_assets == ('USDT', 'USDC', 'USD', 'FDUSD', 'BUSD', 'TUSD', 'USDP', 'DAI')
     assert cfg.marketdata_symbol_search_limit == 50
 
 

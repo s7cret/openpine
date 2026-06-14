@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import json
-import sqlite3
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
-import pandas as pd
 import pytest
 
 from marketdata_provider.contracts import (
     Bar,
-    BarQuery,
     CoverageReport,
     FootprintQuery,
     FootprintSeries,

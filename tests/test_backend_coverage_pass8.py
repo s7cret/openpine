@@ -6,7 +6,6 @@ import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
-import pandas as pd
 import pytest
 from fastapi import BackgroundTasks, HTTPException
 
@@ -22,7 +21,7 @@ from marketdata_provider.contracts import (
 from openpine.gateway.routes import accounts_data
 from openpine.gateway.routes import backtest as backtest_routes
 from openpine.gateway.routes import pine_ops
-from openpine.gateway.schemas import BacktestRunRequest, DataBackfillRequest, KillSwitchRequest
+from openpine.gateway.schemas import DataBackfillRequest, KillSwitchRequest
 
 
 class SqliteWrapper:

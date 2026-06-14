@@ -4,7 +4,6 @@ import importlib
 import sqlite3
 import tarfile
 from pathlib import Path
-from types import SimpleNamespace
 
 from click.testing import CliRunner
 

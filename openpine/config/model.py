@@ -11,6 +11,26 @@ from openpine.timezones import DEFAULT_TIMEZONE, resolve_timezone
 from openpine.notifications import TelegramPluginConfig
 
 
+SUPPORTED_MARKETDATA_TIMEFRAMES: tuple[str, ...] = (
+    "1m",
+    "3m",
+    "5m",
+    "15m",
+    "30m",
+    "45m",
+    "1h",
+    "2h",
+    "4h",
+    "6h",
+    "8h",
+    "12h",
+    "1d",
+    "1w",
+    "1M",
+)
+MARKETDATA_SYMBOL_SEARCH_LIMIT_MAX = 500
+
+
 class PluginsConfig(pydantic.BaseModel):
     """Plugin configuration container."""
 
@@ -36,14 +56,25 @@ class OpenPineConfig(pydantic.BaseModel):
     marketdata_stable_quote_assets: tuple[str, ...] = (
         "USDT",
         "USDC",
+        "USD",
         "FDUSD",
         "BUSD",
         "TUSD",
         "USDP",
         "DAI",
-        "USD",
     )
     marketdata_symbol_search_limit: int = 50
+    marketdata_timeframes: tuple[str, ...] = (
+        "1m",
+        "3m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "4h",
+        "1d",
+    )
+    marketdata_default_timeframe: str = "1h"
     plugins: PluginsConfig = PluginsConfig()
 
     @pydantic.field_validator("timezone")
@@ -61,7 +92,47 @@ class OpenPineConfig(pydantic.BaseModel):
     def _validate_symbol_search_limit(cls, v: int) -> int:
         if v < 1:
             raise ValueError("marketdata_symbol_search_limit must be positive")
+        if v > MARKETDATA_SYMBOL_SEARCH_LIMIT_MAX:
+            raise ValueError(
+                f"marketdata_symbol_search_limit must be <= {MARKETDATA_SYMBOL_SEARCH_LIMIT_MAX}"
+            )
         return v
+
+    @pydantic.field_validator("marketdata_timeframes", mode="before")
+    @classmethod
+    def _normalize_marketdata_timeframes(cls, v: tuple[str, ...] | list[str] | str) -> tuple[str, ...]:
+        if isinstance(v, str):
+            raw_items = [item.strip() for item in v.split(",")]
+        else:
+            raw_items = [str(item).strip() for item in v]
+        supported = set(SUPPORTED_MARKETDATA_TIMEFRAMES)
+        normalized: list[str] = []
+        for item in raw_items:
+            if not item:
+                continue
+            candidate = "1M" if item in {"M", "1M", "1mo", "1MO"} else item.lower()
+            if candidate not in supported:
+                raise ValueError(f"unsupported marketdata timeframe: {item}")
+            if candidate not in normalized:
+                normalized.append(candidate)
+        if not normalized:
+            raise ValueError("marketdata_timeframes must not be empty")
+        return tuple(normalized)
+
+    @pydantic.field_validator("marketdata_default_timeframe")
+    @classmethod
+    def _normalize_default_timeframe(cls, v: str) -> str:
+        item = str(v).strip()
+        candidate = "1M" if item in {"M", "1M", "1mo", "1MO"} else item.lower()
+        if candidate not in set(SUPPORTED_MARKETDATA_TIMEFRAMES):
+            raise ValueError(f"unsupported marketdata default timeframe: {v}")
+        return candidate
+
+    @pydantic.model_validator(mode="after")
+    def _validate_default_timeframe_in_list(self) -> OpenPineConfig:
+        if self.marketdata_default_timeframe not in self.marketdata_timeframes:
+            raise ValueError("marketdata_default_timeframe must be listed in marketdata_timeframes")
+        return self
 
     @pydantic.field_validator(
         "workspace_root",
@@ -113,12 +184,22 @@ class OpenPineConfig(pydantic.BaseModel):
 
         Creates the config directory and all parent directories if needed.
         """
+        import os
+        import tempfile
+
         import yaml
 
         self.config_dir.mkdir(parents=True, exist_ok=True)
         resolved = self.config_path()
-        with open(resolved, "w") as f:
-            yaml.safe_dump(self.model_dump(mode="json"), f, default_flow_style=False)
+        fd, tmp_name = tempfile.mkstemp(dir=self.config_dir, prefix="config.", suffix=".tmp")
+        tmp_path = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "w") as f:
+                yaml.safe_dump(self.model_dump(mode="json"), f, default_flow_style=False)
+            tmp_path.replace(resolved)
+        except Exception:
+            tmp_path.unlink(missing_ok=True)
+            raise
 
     @classmethod
     def load(cls, config_path: Path | None = None) -> OpenPineConfig:

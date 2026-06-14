@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import queue
-import sqlite3
-import sys
-import types
 from types import SimpleNamespace
 
 import pytest

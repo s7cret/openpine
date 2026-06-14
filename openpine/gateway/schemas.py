@@ -199,6 +199,8 @@ class BacktestEstimateResponse(BaseModel):
     strategy_id: str
     symbol: str
     timeframe: str
+    exchange: str = "binance"
+    market_type: str = "spot"
     requested_from: int
     requested_to: int
     effective_from: int

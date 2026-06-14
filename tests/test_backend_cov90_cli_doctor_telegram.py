@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import subprocess
-import types
 import urllib.error
 from types import SimpleNamespace
 

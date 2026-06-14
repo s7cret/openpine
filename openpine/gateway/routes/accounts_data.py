@@ -385,6 +385,124 @@ async def data_ticker24h(
     }
 
 
+def _series_status(rows: list[dict[str, object]], enabled: bool) -> str:
+    if not enabled:
+        return 'disabled'
+    if not rows:
+        return 'available'
+    statuses = {str(row.get('status') or 'unknown') for row in rows}
+    if statuses <= {'actual'}:
+        return 'actual'
+    if 'stale' in statuses or 'actual' in statuses:
+        return 'stale'
+    return 'cached'
+
+
+def _series_market_key(row: dict[str, object]) -> tuple[str, str] | None:
+    exchange = str(row.get('exchange') or '').strip().lower()
+    market = str(row.get('market_type') or '').strip().lower()
+    if not exchange or not market:
+        return None
+    return exchange, market
+
+
+def _config_marketdata_settings(config: object) -> dict[str, object]:
+    return {
+        'timeframes': list(getattr(config, 'marketdata_timeframes', ('1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'))),
+        'default_timeframe': str(getattr(config, 'marketdata_default_timeframe', '1h')),
+        'stable_quotes_only': bool(getattr(config, 'marketdata_stable_quotes_only', True)),
+        'stable_quote_assets': list(getattr(config, 'marketdata_stable_quote_assets', ('USDT', 'USDC'))),
+    }
+
+
+def _data_health_payload(state: GatewayState, *, summary: dict[str, object] | None = None) -> dict[str, object]:
+    metadata = _market_metadata_payload()
+    summary = summary if summary is not None else _data_summary(state)
+    series = [dict(item) for item in cast(list[dict[str, object]], summary.get('series') or [])]
+
+    by_market: dict[tuple[str, str], list[dict[str, object]]] = {}
+    unknown_series = 0
+    for row in series:
+        key = _series_market_key(row)
+        if key is None:
+            unknown_series += 1
+            continue
+        by_market.setdefault(key, []).append(row)
+
+    exchange_payloads: list[dict[str, object]] = []
+    market_total = 0
+    enabled_total = 0
+    for exchange in cast(list[dict[str, object]], metadata['exchanges']):
+        exchange_id = str(exchange['id'])
+        enabled = bool(exchange.get('openpine_enabled'))
+        if enabled:
+            enabled_total += 1
+        markets: list[dict[str, object]] = []
+        cached_series = 0
+        actual_series = 0
+        stale_series = 0
+        for market in cast(list[dict[str, object]], exchange.get('market_types') or []):
+            market_id = str(market['id'])
+            rows = by_market.get((exchange_id, market_id), [])
+            market_total += 1
+            market_cached = len(rows)
+            market_actual = sum(1 for row in rows if str(row.get('status')) == 'actual')
+            market_stale = sum(1 for row in rows if str(row.get('status')) == 'stale')
+            cached_series += market_cached
+            actual_series += market_actual
+            stale_series += market_stale
+            markets.append({
+                'id': market_id,
+                'label': market.get('label') or market_id,
+                'enabled': enabled and bool(market.get('enabled_for_strategy_create', True)),
+                'status': _series_status(rows, enabled),
+                'cached_series': market_cached,
+                'actual_series': market_actual,
+                'stale_series': market_stale,
+                'symbols': sorted({str(row.get('symbol')) for row in rows if row.get('symbol')}),
+                'timeframes': sorted({str(row.get('timeframe')) for row in rows if row.get('timeframe')}),
+            })
+        exchange_payloads.append({
+            'id': exchange_id,
+            'name': exchange.get('name') or exchange_id,
+            'rank': exchange.get('rank') or 999,
+            'enabled': enabled,
+            'status': _series_status(
+                [row for (row_exchange, _row_market), rows in by_market.items() for row in rows if row_exchange == exchange_id],
+                enabled,
+            ),
+            'cached_series': cached_series,
+            'actual_series': actual_series,
+            'stale_series': stale_series,
+            'markets': markets,
+        })
+
+    actual_total = sum(1 for row in series if str(row.get('status')) == 'actual')
+    stale_total = sum(1 for row in series if str(row.get('status')) == 'stale')
+    return {
+        'source': 'marketdata_provider.exchanges.registry + openpine.cache',
+        'generated_at': int(time.time() * 1000),
+        'settings': _config_marketdata_settings(state.config),
+        'totals': {
+            'exchanges': len(exchange_payloads),
+            'enabled_exchanges': enabled_total,
+            'market_types': market_total,
+            'cached_series': len(series),
+            'cached_exchanges': len({key[0] for key in by_market}),
+            'cached_markets': len(by_market),
+            'actual_series': actual_total,
+            'stale_series': stale_total,
+            'unknown_series': unknown_series,
+        },
+        'exchanges': exchange_payloads,
+    }
+
+
+@router.get('/data/health')
+def data_health(state: GatewayState = Depends(get_state)) -> dict[str, object]:
+    return _data_health_payload(state)
+
+
 @router.get("/data/cache", response_model=CacheStatusResponse)
 async def data_cache_status(
     state: GatewayState = Depends(get_state),

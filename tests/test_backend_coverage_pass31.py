@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from types import SimpleNamespace
 
-import pytest
 
 from openpine.gateway.routes import backtest as bt
 
@@ -124,7 +123,6 @@ def test_backtest_background_success_and_helpers(monkeypatch):
     monkeypatch.setattr(ddp, "DirectBinanceDataProvider", lambda market="spot": SimpleNamespace(market=market))
     monkeypatch.setattr(bt, "_run_backtest_in_process", lambda *args, **kwargs: SimpleNamespace(raw_result=SimpleNamespace(trades=[1], equity_curve=[1]), bars_processed=1))
     bar = SimpleNamespace(time=1, time_close=2, open=1.0, high=2.0, low=0.5, close=1.5, volume=10)
-    query = SimpleNamespace(instrument=SimpleNamespace(exchange="binance", market="spot", symbol="BTCUSDT"), timeframe=SimpleNamespace(canonical="1m"), start_ms=1, end_ms=2)
     state = _state(orchestrator=SimpleNamespace(load_bars=lambda query, progress_callback=None: SimpleNamespace(query=query, bars=[bar])), storage=FakeStorage())
     asyncio.run(bt._run_backtest_background(state, "s1", "run6", 1, 2, {"override": 1}, 0, True))
     assert state.backtest_store.saved

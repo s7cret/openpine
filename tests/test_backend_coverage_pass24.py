@@ -2,16 +2,14 @@ from __future__ import annotations
 
 import inspect
 import json
-import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from marketdata_provider.contracts import Bar, BarQuery, BarSeries, InstrumentKey, parse_timeframe
+from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
 
 from openpine.cli import runtime_helpers as rh
-from openpine.data.orchestrator import DataOrchestrator
 from openpine.registry.strategies import StrategyInstance
 
 

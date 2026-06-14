@@ -7,7 +7,6 @@ import types
 from pathlib import Path
 from types import SimpleNamespace
 
-import pandas as pd
 
 from openpine.batch import runner
 from openpine.batch.tv_corpus import ChartExport, ExportEntry

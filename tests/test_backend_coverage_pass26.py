@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
 
 from openpine.batch import runner as br
 from openpine.batch.tv_corpus import ChartExport, ExportEntry

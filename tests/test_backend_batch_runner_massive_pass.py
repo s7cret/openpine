@@ -26,7 +26,7 @@ def _entry(tmp_path: Path, kind: str = "strategy") -> ExportEntry:
 
 
 def test_batch_runner_core_helpers_and_registries(monkeypatch, tmp_path):
-    entry = _entry(tmp_path); chart = entry.charts[0]
+    entry = _entry(tmp_path)
     out_root = tmp_path / "out"
     runner._write_progress(out_root, "batch", entry.export_id, "run", "active", selected_count=1, processed_count=0, summary_by_timeframe={"15m": {"ok": 1}})
     progress = json.loads((out_root / "current_progress.json").read_text())

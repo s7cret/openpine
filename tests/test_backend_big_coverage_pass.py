@@ -9,7 +9,6 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
-from click.testing import CliRunner
 
 from openpine.accounts.models import Account, AccountType
 from openpine.execution.binance import BinanceLiveExecutionAdapter, _map_binance_status
@@ -25,8 +24,6 @@ from openpine.gateway.routes.pine_sources import list_sources as list_pine_sourc
 from openpine.gateway.ws_manager import ConnectionManager
 from openpine.orders.models import OrderIntent, OrderSide, OrderStatus, OrderType
 from openpine.risk.manager import RiskManager
-from openpine.storage import SQLiteStorage
-from openpine.storage.migrations import MigrationRunner
 
 
 class FakeCursor:

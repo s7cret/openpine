@@ -85,7 +85,7 @@ def test_strategy_replay_success_and_failure(monkeypatch):
 
     reg = Registry()
     async def _call(strategy_id, registry):
-        response = await sr.strategy_replay(strategy_id, state=SimpleNamespace(), registry=registry)
+        response = await sr.strategy_replay(strategy_id, state=SimpleNamespace(orchestrator=DataOrchestrator()), registry=registry)
         await asyncio.sleep(0)
         await asyncio.sleep(0)
         return response

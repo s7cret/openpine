@@ -15,6 +15,7 @@ from openpine.storage import (
 )
 from openpine.storage.backtest_dto import (
     ARTIFACT_TYPE_EQUITY_CURVE,
+    ARTIFACT_TYPE_PLOT_OUTPUTS,
     ARTIFACT_TYPE_REPORT_JSON,
     ARTIFACT_TYPE_TRADES,
 )
@@ -386,6 +387,33 @@ def test_plot_records_support_tuple_records_and_na_values():
     assert records == [
         {"bar_time": 1000, "bar_index": 7, "value": None, "title": "plot A"}
     ]
+
+
+def test_save_result_persists_plot_outputs_artifact(store):
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+
+    store.save_result(
+        run_id,
+        FakeResult(initial_capital=10000.0, net_profit=10.0),
+        [],
+        plots=[(1000, 0, 42.0, "plot A")],
+    )
+
+    artifacts = store.list_artifacts(run_id)
+    types = {a.artifact_type for a in artifacts}
+    run = store.get_run(run_id)
+    assert ARTIFACT_TYPE_PLOT_OUTPUTS in types
+    assert run is not None
+    assert run.plot_outputs_path is not None
+    assert Path(run.plot_outputs_path).exists()
 
 
 def test_save_result_inserts_trades(store):

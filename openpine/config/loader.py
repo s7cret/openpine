@@ -12,6 +12,8 @@ _TIMEZONE_ENV = "OPENPINE_TIMEZONE"
 _STABLE_QUOTES_ONLY_ENV = "OPENPINE_MARKETDATA_STABLE_QUOTES_ONLY"
 _STABLE_QUOTE_ASSETS_ENV = "OPENPINE_MARKETDATA_STABLE_QUOTE_ASSETS"
 _SYMBOL_SEARCH_LIMIT_ENV = "OPENPINE_MARKETDATA_SYMBOL_SEARCH_LIMIT"
+_TIMEFRAMES_ENV = "OPENPINE_MARKETDATA_TIMEFRAMES"
+_DEFAULT_TIMEFRAME_ENV = "OPENPINE_MARKETDATA_DEFAULT_TIMEFRAME"
 
 
 def _apply_env_overrides(data: dict) -> dict:
@@ -28,6 +30,14 @@ def _apply_env_overrides(data: dict) -> dict:
         )
     if _SYMBOL_SEARCH_LIMIT_ENV in os.environ:
         merged["marketdata_symbol_search_limit"] = int(os.environ[_SYMBOL_SEARCH_LIMIT_ENV])
+    if _TIMEFRAMES_ENV in os.environ:
+        merged["marketdata_timeframes"] = tuple(
+            item.strip()
+            for item in os.environ[_TIMEFRAMES_ENV].split(",")
+            if item.strip()
+        )
+    if _DEFAULT_TIMEFRAME_ENV in os.environ:
+        merged["marketdata_default_timeframe"] = os.environ[_DEFAULT_TIMEFRAME_ENV]
     return merged
 
 
@@ -49,10 +59,9 @@ def load_config(config_path: Path | None = None) -> OpenPineConfig:
         import yaml
 
         data = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
-        loaded = OpenPineConfig(**_apply_env_overrides(data))
-        if "config_dir" in data:
-            loaded.config_dir = Path(data["config_dir"]).expanduser()
-        return loaded
+        if "config_dir" not in data:
+            data["config_dir"] = config_path.parent
+        return OpenPineConfig(**_apply_env_overrides(data))
 
     if explicit_config_dir is not None:
         return OpenPineConfig(**_apply_env_overrides({"config_dir": explicit_config_dir}))

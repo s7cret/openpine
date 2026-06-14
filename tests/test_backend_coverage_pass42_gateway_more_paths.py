@@ -291,6 +291,8 @@ def _backtest_state(*, store=None, cancel=None, registry=None, orchestrator=None
 def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
     estimate = bt._estimate_backtest_market_data(_strategy(), 0, 180_000)
     assert estimate.effective_from == 0
+    assert estimate.exchange == "binance"
+    assert estimate.market_type == "spot"
     assert estimate.adjusted is False
     assert estimate.estimated_bars == 4
     assert estimate.estimated_pages == 1
@@ -396,6 +398,32 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
     )
     with pytest.raises(RuntimeError, match="code 9"):
         bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None)
+
+
+def test_backtest_progress_source_label_uses_strategy_exchange_market():
+    strategy = SimpleNamespace(
+        strategy_id="s1",
+        symbol="BTCUSDT",
+        timeframe="1h",
+        exchange="bybit",
+        market_type="futures",
+    )
+    query = bt._market_data_query_for_strategy(strategy, 0, 60_000)
+
+    assert bt._backtest_progress_source_label("fetch", query) == "bybit futures"
+    assert bt._backtest_progress_source_label("cache-hit", query) == "cache"
+
+
+def test_strategy_replay_uses_strategy_market_contract_not_binance_stub():
+    from openpine.gateway.routes import strategies
+    import inspect
+
+    source = inspect.getsource(strategies.strategy_replay)
+
+    assert 'exchange="binance"' not in source
+    assert 'market_type="futures"' not in source
+    assert "price_type" not in source
+    assert "DataOrchestrator()" not in source
 
 
 def test_backtest_background_cancel_progress_and_failure_mark_failed(monkeypatch):

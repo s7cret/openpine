@@ -60,6 +60,8 @@ def _estimate_backtest_market_data(
         strategy_id=strategy.strategy_id,
         symbol=strategy.symbol.upper(),
         timeframe=strategy.timeframe,
+        exchange=strategy.exchange.lower(),
+        market_type=strategy.market_type.lower(),
         requested_from=from_ms,
         requested_to=to_ms,
         effective_from=query.start_ms,
@@ -69,6 +71,12 @@ def _estimate_backtest_market_data(
         estimated_bars=estimated_bars,
         estimated_pages=estimated_pages,
     )
+
+
+def _backtest_progress_source_label(phase: str, query) -> str:
+    if phase.startswith("cache"):
+        return "cache"
+    return f"{query.instrument.exchange} {query.instrument.market}"
 
 
 def _bar_series_fingerprint(series) -> str:
@@ -97,7 +105,7 @@ def _bar_series_fingerprint(series) -> str:
 
 
 def _backtest_process_entry(
-    out, adapter, strategy_class, bars, config, params, runtime_data_provider
+    out, adapter, strategy_class, bars, config, params, runtime_data_provider, effective_pre_bars=None
 ):
     def progress(done: int, total: int) -> None:
         try:
@@ -106,13 +114,18 @@ def _backtest_process_entry(
             pass
 
     try:
+        run_kwargs = {
+            "params": params,
+            "progress_callback": progress,
+            "runtime_data_provider": runtime_data_provider,
+        }
+        if effective_pre_bars is not None:
+            run_kwargs["effective_pre_bars"] = effective_pre_bars
         result = adapter.run(
             strategy_class,
             bars,
             config,
-            params=params,
-            progress_callback=progress,
-            runtime_data_provider=runtime_data_provider,
+            **run_kwargs,
         )
         out.put(("ok", result))
     except BaseException as exc:
@@ -127,6 +140,7 @@ def _run_backtest_in_process(
     params,
     runtime_data_provider,
     progress_callback=None,
+    effective_pre_bars=None,
 ):
     ctx = mp.get_context("fork")
     out = ctx.Queue()
@@ -140,6 +154,7 @@ def _run_backtest_in_process(
             config,
             params,
             runtime_data_provider,
+            effective_pre_bars,
         ),
     )
     proc.start()
@@ -315,7 +330,7 @@ async def _run_backtest_background(
             expected_pages = total_pages or estimate.estimated_pages
             page_ratio = pages / max(expected_pages, 1)
             pct = 0.2 + 0.1 * max(0.0, min(page_ratio, 1.0))
-            source = "cache" if phase.startswith("cache") else "Binance"
+            source = _backtest_progress_source_label(phase, query)
             ws_manager.update_progress(
                 run_id,
                 "backtest",
@@ -515,6 +530,7 @@ async def _run_backtest_background(
             result=result.raw_result,
             trades=getattr(result.raw_result, "trades", []) or [],
             equity_curve=getattr(result.raw_result, "equity_curve", None),
+            plots=getattr(result.raw_result, "plots", None) if capture_plots else None,
         )
 
         ws_manager.update_progress(
@@ -633,7 +649,7 @@ async def estimate_backtest(
     to_time: str,
     state: GatewayState = Depends(get_state),
 ) -> BacktestEstimateResponse:
-    """Estimate effective market data range, bars, and Binance pages."""
+    """Estimate effective market data range, bars, and provider fetch pages."""
     from_ms = _parse_date_ms(from_time)
     to_ms = _parse_date_ms(to_time)
     if from_ms >= to_ms:

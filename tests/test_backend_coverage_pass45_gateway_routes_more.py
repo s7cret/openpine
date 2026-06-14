@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -10,7 +9,7 @@ import pytest
 from fastapi import HTTPException
 
 from openpine.gateway.routes import dashboard, events, orders_positions, pine_ops, strategies, trading
-from openpine.gateway.schemas import CompareTvRequest, LiveStartRequest, PaperStartRequest, StrategyCreate, StrategyMode, StrategyUpdate
+from openpine.gateway.schemas import CompareTvRequest, LiveStartRequest, PaperStartRequest, StrategyCreate, StrategyMode
 from openpine.registry.strategies import StrategyInstance
 
 

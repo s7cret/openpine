@@ -622,12 +622,13 @@ def _compare_strategy_run_with_tv_exports(
             failures.append(
                 {"type": "plots", "summary": summary, "top_columns": top_columns}
             )
-    if tv_equity and "equity" in exported:
+    op_equity_path = exported.get("equity") or exported.get("equity_curve")
+    if tv_equity and op_equity_path:
         summary, top_columns = _compare_rows_by_time(
             tv_path=Path(tv_equity),
-            op_path=Path(exported["equity"]),
+            op_path=Path(op_equity_path),
             tv_time_column="time",
-            op_time_column="time",
+            op_time_column="bar_time_ms",
             exclude_columns=set(),
             abs_tol=abs_tol,
             rel_tol=rel_tol,

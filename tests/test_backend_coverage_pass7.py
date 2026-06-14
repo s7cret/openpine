@@ -3,16 +3,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
 import pytest
-from click.testing import CliRunner
 from fastapi import HTTPException
 
-from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageReport, InstrumentKey, StoreResult, parse_timeframe
+from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageReport, InstrumentKey, parse_timeframe
 
 from openpine.batch import runner as br
 from openpine.batch.tv_corpus import ChartExport, ExportEntry
@@ -22,10 +20,7 @@ from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig, Strat
 from openpine.gateway.routes import accounts_data
 from openpine.gateway.routes import backtest as backtest_routes
 from openpine.gateway.routes import dashboard, strategies
-from openpine.gateway.ws_manager import ConnectionManager
 from openpine.notifications import telegram
-from openpine.storage import SQLiteStorage
-from openpine.storage.migrations import MigrationRunner
 
 
 def _entry(tmp_path: Path, *, kind: str = "indicator") -> ExportEntry:

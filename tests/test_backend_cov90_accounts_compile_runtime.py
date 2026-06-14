@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import importlib
 import json
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
 
 from ast2python.profiles import CompileProfile
 from openpine.compile import adapter as ca
@@ -162,7 +160,6 @@ def test_compile_adapter_library_api_error_paths(monkeypatch):
         ok = False
         diagnostics = [SimpleNamespace(severity=SimpleNamespace(value="error"), code="P2A1507", message="Builtin plot has no runtime-equivalent visual output under runtime_contract v1.4")]
 
-    calls = []
     apis = ca._LibraryApis(
         parse_code=lambda src, opts: ParseResult(),
         parse_options=lambda **kw: SimpleNamespace(),

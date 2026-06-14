@@ -359,7 +359,6 @@ async def strategy_replay(
                 InstrumentKey,
                 parse_timeframe,
             )
-            from openpine.data.orchestrator import DataOrchestrator
             from openpine.runtime.engine import (
                 BacktestEngineAdapter,
                 BacktestRunConfig,
@@ -369,21 +368,19 @@ async def strategy_replay(
             strategy_class, artifact = load_strategy_class_from_artifact(strategy_id)
 
             tf = parse_timeframe(s.timeframe)
-            symbol = s.symbol or "BTCUSDT"
+            symbol = str(s.symbol).upper()
             account_id = getattr(s, "account_id", "default") or "default"
             key = InstrumentKey(
-                exchange="binance",
-                market_type="futures",
+                exchange=str(s.exchange).lower(),
+                market=str(s.market_type).lower(),
                 symbol=symbol,
-                price_type="last",
             )
 
             now_ms = int(_time_module.time() * 1000)
             start_ms = now_ms - 90 * 24 * 3600 * 1000
             end_ms = now_ms
 
-            orchestrator = DataOrchestrator()
-            bars = orchestrator.get_bars(
+            bars = state.orchestrator.get_bars(
                 BarQuery(
                     instrument=key,
                     timeframe=tf,
