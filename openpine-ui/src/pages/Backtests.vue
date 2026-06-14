@@ -21,6 +21,7 @@ let estimateTimer: ReturnType<typeof setTimeout> | null = null
 
 const form = ref({ strategy_id: '', from_time: '', to_time: '' })
 const allAvailableFrom = computed(() => msToDate(availability.value?.earliest_available ?? availability.value?.effective_from))
+const selectedStrategy = computed(() => stStore.items.find((item: any) => (item.strategy_id ?? item.id) === form.value.strategy_id) ?? null)
 
 onMounted(() => {
   btStore.fetchAll()
@@ -180,6 +181,36 @@ function fmtEstimate(e: any) {
   const adjusted = e.adjusted ? `range ${msToDate(e.requested_from)} -> ${msToDate(e.effective_from)}` : 'range ok'
   return `${e.symbol} ${e.timeframe}: ${e.estimated_bars?.toLocaleString?.() ?? e.estimated_bars} bars, ${e.estimated_pages} pages, ${adjusted}`
 }
+
+function marketDataContext(e: any) {
+  const source = e ?? selectedStrategy.value ?? {}
+  const exchange = source.exchange ?? selectedStrategy.value?.exchange ?? '—'
+  const market = source.market_type ?? selectedStrategy.value?.market_type ?? '—'
+  const symbol = source.symbol ?? selectedStrategy.value?.symbol ?? '—'
+  const timeframe = source.timeframe ?? selectedStrategy.value?.timeframe ?? '—'
+  return `${exchange} / ${market} / ${symbol} / ${timeframe}`
+}
+
+function availabilityTone(e: any) {
+  if (!form.value.strategy_id) return 'border-dark-500 bg-dark-700/40 text-gray-400'
+  if (estimateLoading.value) return 'border-accent/30 bg-accent/10 text-accent-light'
+  if (!e) return 'border-warning/40 bg-warning/10 text-warning'
+  if (e.adjusted) return 'border-warning/40 bg-warning/10 text-warning'
+  return 'border-success/40 bg-success/10 text-success'
+}
+
+function availabilityLabel(e: any) {
+  if (!form.value.strategy_id) return 'Select strategy first'
+  if (estimateLoading.value) return 'Checking market data…'
+  if (!e) return 'Select date range to estimate data'
+  if (e.adjusted) return 'Range auto-adjusted to listed data'
+  return 'Selected range is available'
+}
+
+function effectiveRange(e: any) {
+  if (!e) return '—'
+  return `${msToDate(e.effective_from)} → ${msToDate(e.effective_to)}`
+}
 </script>
 
 <template>
@@ -212,8 +243,20 @@ function fmtEstimate(e: any) {
             />
           </div>
         </div>
-        <div v-if="estimate || availability || estimateLoading" class="text-xs text-gray-400">
-          {{ estimateLoading ? 'Estimating...' : fmtEstimate(estimate ?? availability) }}
+        <div class="rounded-lg border px-3 py-3 text-xs" :class="availabilityTone(estimate ?? availability)">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div class="font-medium">{{ availabilityLabel(estimate ?? availability) }}</div>
+              <div class="mt-1 font-mono text-[11px] opacity-90">{{ marketDataContext(estimate ?? availability) }}</div>
+            </div>
+            <div class="text-left sm:text-right">
+              <div class="text-[11px] uppercase tracking-wide opacity-70">Effective range</div>
+              <div class="font-mono text-[11px]">{{ effectiveRange(estimate ?? availability) }}</div>
+            </div>
+          </div>
+          <div v-if="estimate || availability || estimateLoading" class="mt-2 text-[11px] opacity-85">
+            {{ estimateLoading ? 'Estimating bars/pages…' : fmtEstimate(estimate ?? availability) }}
+          </div>
         </div>
         <div class="flex gap-2 justify-end items-center">
           <span v-if="runStatus" class="text-xs" :class="runStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ runStatus }}</span>

@@ -24,6 +24,12 @@ export type MarketMetadataPayload = {
   exchanges: ExchangeMetadata[]
 }
 
+export const EMPTY_MARKET_METADATA: MarketMetadataPayload = {
+  source: 'unloaded',
+  market_types: [],
+  exchanges: [],
+}
+
 export type ExchangeSelectOption = {
   id: string
   label: string

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   clearStrategySymbolForMarketChange,
+  loadStrategySymbolOptions,
+  newStrategyForm,
   selectStrategySymbol,
   strategyValidationMessage,
   type StrategyFormDraft,
@@ -44,5 +46,30 @@ describe('strategy form helpers', () => {
   it('reports missing compiled source separately from name and symbol', () => {
     expect(strategyValidationMessage(form({ name: 'Demo', symbol: 'BTCUSDT' }))).toBe('❌ Select a compiled Pine source before creating the strategy.')
     expect(strategyValidationMessage(form({ pine_id: 'src-1', artifact_id: 'art-1' }))).toBe('❌ Fill required fields: name and symbol.')
+  })
+
+  it('resets a created strategy form to the configured default timeframe', () => {
+    expect(newStrategyForm('3m', 'bybit', 'futures')).toEqual({
+      name: '',
+      pine_id: '',
+      artifact_id: '',
+      symbol: '',
+      timeframe: '3m',
+      exchange: 'bybit',
+      market_type: 'futures',
+      params_json: '{}',
+      mode: 'paper',
+    })
+  })
+
+  it('returns a safe empty symbol result when backend search fails', async () => {
+    const result = await loadStrategySymbolOptions(
+      'BTC',
+      'coinbase',
+      'spot',
+      async () => { throw new Error('backend down') },
+    )
+
+    expect(result).toEqual({ symbols: [], error: 'backend down' })
   })
 })

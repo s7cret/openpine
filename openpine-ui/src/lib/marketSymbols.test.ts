@@ -7,11 +7,11 @@ describe('market symbol options', () => {
     expect(normalizeMarketSymbolOptions({
       symbols: [
         { symbol: 'BTCUSDC', base_asset: 'BTC', quote_asset: 'USDC', exchange: 'bybit', market: 'spot' },
-        { symbol: 'ETHBTC', base_asset: 'ETH', quote_asset: 'BTC', exchange: 'bybit', market: 'spot' },
+        { symbol: 'BTC-USDT-SWAP', base_asset: 'BTC', quote_asset: 'USDT', exchange: 'okx', market: 'futures', contract_type: 'linear' },
       ],
     })).toEqual([
-      { symbol: 'BTCUSDC', baseAsset: 'BTC', quoteAsset: 'USDC', exchange: 'bybit', market: 'spot' },
-      { symbol: 'ETHBTC', baseAsset: 'ETH', quoteAsset: 'BTC', exchange: 'bybit', market: 'spot' },
+      { symbol: 'BTCUSDC', baseAsset: 'BTC', quoteAsset: 'USDC', exchange: 'bybit', market: 'spot', contractType: null, label: 'BTCUSDC · BTC/USDC' },
+      { symbol: 'BTC-USDT-SWAP', baseAsset: 'BTC', quoteAsset: 'USDT', exchange: 'okx', market: 'futures', contractType: 'linear', label: 'BTC-USDT-SWAP · BTC/USDT · linear' },
     ])
   })
 })

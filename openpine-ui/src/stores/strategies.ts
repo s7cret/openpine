@@ -6,16 +6,19 @@ export const useStrategiesStore = defineStore('strategies', () => {
   const items = ref<any[]>([])
   const current = ref<any>(null)
   const loading = ref(false)
+  const error = ref('')
 
   function getId(s: any) { return s?.strategy_id ?? s?.id ?? '' }
+  function errorMessage(e: any, fallback: string) { return e?.response?.data?.detail ?? e?.message ?? fallback }
 
   async function fetchAll() {
     loading.value = true
+    error.value = ''
     try {
       const { data } = await api.getStrategies()
       items.value = Array.isArray(data) ? data : data?.strategies ?? []
-    } catch (e) {
-      console.error('Strategies fetch failed', e)
+    } catch (e: any) {
+      error.value = errorMessage(e, 'Strategies fetch failed')
     } finally {
       loading.value = false
     }
@@ -25,7 +28,12 @@ export const useStrategiesStore = defineStore('strategies', () => {
     try {
       const { data } = await api.getStrategy(id)
       current.value = data
-    } catch (e) { console.error(e) }
+      return data
+    } catch (e: any) {
+      current.value = null
+      error.value = errorMessage(e, 'Strategy detail load failed')
+      throw e
+    }
   }
 
   async function control(id: string, action: string) {
@@ -40,10 +48,10 @@ export const useStrategiesStore = defineStore('strategies', () => {
       }
       // Then sync with server
       await fetchAll()
-    } catch (e) { console.error(e) }
+    } catch (e: any) { error.value = errorMessage(e, `Strategy ${action} failed`) }
   }
-
   async function create(data: any) {
+    error.value = ''
     const { data: result } = await api.createStrategy(data)
     await fetchAll()
     return result
@@ -67,8 +75,8 @@ export const useStrategiesStore = defineStore('strategies', () => {
       items.value = items.value.filter(s => getId(s) !== id)
       // Then sync with server
       await fetchAll()
-    } catch (e) { console.error(e) }
+    } catch (e: any) { error.value = errorMessage(e, 'Strategy delete failed') }
   }
 
-  return { items, current, loading, fetchAll, fetchOne, control, create, remove }
+  return { items, current, loading, error, fetchAll, fetchOne, control, create, remove }
 })

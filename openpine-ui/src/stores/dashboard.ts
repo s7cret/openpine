@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getDashboard, getDataSummary, getPineFiles } from '@/api/client'
+import { getDashboard, getDataHealth, getDataSummary, getPineFiles } from '@/api/client'
 
 export const useDashboardStore = defineStore('dashboard', () => {
   const stats = ref<any>(null)
@@ -10,11 +10,16 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const errorCount = ref(0)
   const cacheInfo = ref<any>(null)
   const dataInfo = ref<any>(null)
+  const dataHealth = ref<any>(null)
   const loading = ref(false)
   const backendOk = ref(false)
+  const error = ref('')
+
+  function errorMessage(e: any, fallback: string) { return e?.response?.data?.detail ?? e?.message ?? fallback }
 
   async function fetchAll() {
     loading.value = true
+    error.value = ''
     try {
       // Dashboard (strategies, jobs, uptime)
       const { data } = await getDashboard()
@@ -23,9 +28,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
       enabledCount.value = (data.strategies ?? []).filter((s: any) => s.enabled).length
       errorCount.value = (data.jobs?.failed ?? 0)
       backendOk.value = true
-    } catch (e) {
+    } catch (e: any) {
       backendOk.value = false
-      console.error('Dashboard fetch failed', e)
+      error.value = errorMessage(e, 'Dashboard fetch failed')
     }
 
     try {
@@ -41,8 +46,13 @@ export const useDashboardStore = defineStore('dashboard', () => {
       cacheInfo.value = data
     } catch (e) { /* ignore */ }
 
+    try {
+      const { data } = await getDataHealth()
+      dataHealth.value = data
+    } catch (e) { /* ignore */ }
+
     loading.value = false
   }
 
-  return { stats, pineCount, strategiesCount, enabledCount, errorCount, cacheInfo, dataInfo, loading, backendOk, fetchAll }
+  return { stats, pineCount, strategiesCount, enabledCount, errorCount, cacheInfo, dataInfo, dataHealth, loading, backendOk, error, fetchAll }
 })

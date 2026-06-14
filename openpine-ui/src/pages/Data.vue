@@ -1,25 +1,81 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { backfillDataSeries, deleteDataOrders, deleteDataSeries, getDataSummary, refreshDataSeries } from '@/api/client'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { backfillDataSeries, deleteDataOrders, deleteDataSeries, getDataHealth, getDataSummary, refreshDataSeries, searchMarketSymbols, type MarketSymbolOption } from '@/api/client'
 import DateRangePicker from '@/components/DateRangePicker.vue'
 import { coverageRangeLabels } from '@/lib/coverageRanges'
+import { healthStatusClass, type DataHealthPayload } from '@/lib/dataHealth'
 import { loadDataSummaryState } from '@/lib/dataSummaryState'
 
 const summary = ref<any>(null)
+const health = ref<DataHealthPayload | null>(null)
 const loadError = ref('')
 const loading = ref(false)
+const filterExchange = ref('')
+const filterMarket = ref('')
+const filterTimeframe = ref('')
+const filterStatus = ref('')
 const actionId = ref<string | null>(null)
 const actionStatus = ref<Record<string, any>>({})
+const discoverExchange = ref('binance')
+const discoverMarket = ref('spot')
+const discoverQuery = ref('BTC')
+const discoverResults = ref<MarketSymbolOption[]>([])
+const discoverLoading = ref(false)
+const discoverError = ref('')
 const backfillDialog = ref(false)
 const backfillRow = ref<any>(null)
+
+function apiErrorMessage(e: any, fallback: string) {
+  const detail = e?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map((item: any) => item?.msg ?? JSON.stringify(item)).join('; ')
+  if (detail) return JSON.stringify(detail)
+  return e?.message ?? fallback
+}
+
+function markActionError(id: string, e: any, fallback: string) {
+  const message = apiErrorMessage(e, fallback)
+  actionStatus.value = { ...actionStatus.value, [id]: { status: 'failed', message } }
+  loadError.value = message
+}
+
 const backfillFrom = ref('')
 const backfillTo = ref('')
 let timer: ReturnType<typeof setInterval>
 
 const series = computed(() => summary.value?.series ?? [])
-const visibleSeries = computed(() => {
+const sourceSeries = computed(() => {
   const source = series.value.filter((row: any) => (row.role ?? (row.timeframe === '1m' ? 'source' : 'derived')) === 'source')
   return source.length ? source : series.value
+})
+const visibleSeries = computed(() => sourceSeries.value.filter((row: any) => {
+  if (filterExchange.value && row.exchange !== filterExchange.value) return false
+  if (filterMarket.value && row.market_type !== filterMarket.value) return false
+  if (filterTimeframe.value && row.timeframe !== filterTimeframe.value) return false
+  if (filterStatus.value && row.status !== filterStatus.value) return false
+  return true
+}))
+const exchangeOptions = computed(() => health.value?.exchanges ?? [])
+const marketOptions = computed(() => {
+  const markets = new Map<string, string>()
+  for (const exchange of health.value?.exchanges ?? []) {
+    for (const market of exchange.markets ?? []) markets.set(market.id, market.label)
+  }
+  return Array.from(markets, ([id, label]) => ({ id, label })).sort((a, b) => a.id.localeCompare(b.id))
+})
+const discoverMarketOptions = computed(() => {
+  const exchange = exchangeOptions.value.find((item) => item.id === discoverExchange.value)
+  return exchange?.markets.filter((market) => market.enabled) ?? []
+})
+const timeframeOptions = computed<string[]>(() => {
+  const configured = health.value?.settings.timeframes as string[] | undefined
+  if (configured?.length) return configured
+  const values = sourceSeries.value.map((row: any) => String(row.timeframe ?? '')).filter((item: string) => item.length > 0)
+  return Array.from(new Set<string>(values)).sort()
+})
+const statusOptions = computed<string[]>(() => {
+  const values = sourceSeries.value.map((row: any) => String(row.status ?? '')).filter((item: string) => item.length > 0)
+  return Array.from(new Set<string>(values)).sort()
 })
 const visibleTotalBars = computed(() => visibleSeries.value.reduce((total: number, row: any) => {
   const count = Number(row.bar_count ?? 0)
@@ -33,6 +89,37 @@ onMounted(() => {
 })
 onUnmounted(() => clearInterval(timer))
 
+watch(discoverExchange, () => {
+  const firstMarket = discoverMarketOptions.value[0]?.id
+  if (firstMarket && !discoverMarketOptions.value.some((market) => market.id === discoverMarket.value)) {
+    discoverMarket.value = firstMarket
+  }
+  discoverResults.value = []
+})
+
+watch(health, () => {
+  if (!exchangeOptions.value.some((exchange) => exchange.id === discoverExchange.value)) {
+    discoverExchange.value = exchangeOptions.value[0]?.id ?? 'binance'
+  }
+  const firstMarket = discoverMarketOptions.value[0]?.id
+  if (firstMarket && !discoverMarketOptions.value.some((market) => market.id === discoverMarket.value)) {
+    discoverMarket.value = firstMarket
+  }
+})
+
+async function discoverSymbols() {
+  discoverLoading.value = true
+  discoverError.value = ''
+  try {
+    discoverResults.value = await searchMarketSymbols(discoverQuery.value, discoverExchange.value, discoverMarket.value)
+  } catch (e: any) {
+    discoverResults.value = []
+    discoverError.value = apiErrorMessage(e, 'Symbol discovery failed')
+  } finally {
+    discoverLoading.value = false
+  }
+}
+
 async function load(showSpinner = true) {
   if (showSpinner) loading.value = true
   try {
@@ -42,6 +129,13 @@ async function load(showSpinner = true) {
     })
     summary.value = state.summary
     loadError.value = state.error
+    try {
+      const { data: healthData } = await getDataHealth()
+      health.value = healthData
+    } catch (e: any) {
+      const message = apiErrorMessage(e, 'Market data health failed')
+      loadError.value = state.error ? `${state.error}; ${message}` : message
+    }
   } finally {
     loading.value = false
   }
@@ -53,6 +147,8 @@ async function refreshSeries(id: string) {
     const { data } = await refreshDataSeries(id)
     actionStatus.value = { ...actionStatus.value, [id]: data }
     await load(false)
+  } catch (e: any) {
+    markActionError(id, e, 'Refresh failed')
   } finally {
     actionId.value = null
   }
@@ -84,6 +180,8 @@ async function runBackfill() {
     }
     backfillDialog.value = false
     await load(false)
+  } catch (e: any) {
+    markActionError(row.id, e, 'Backfill failed')
   } finally {
     actionId.value = null
   }
@@ -95,6 +193,8 @@ async function removeSeries(row: any) {
   try {
     await deleteDataSeries(row.id)
     await load(false)
+  } catch (e: any) {
+    markActionError(row.id, e, 'Delete series failed')
   } finally {
     actionId.value = null
   }
@@ -104,8 +204,12 @@ async function removeOrders(symbol?: string, strategyId?: string, strategyName?:
   const parts = [symbol, strategyName, status].filter(Boolean)
   const label = parts.length ? `${parts.join(' / ')} orders` : 'all orders'
   if (!confirm(`Delete ${label}?`)) return
-  await deleteDataOrders({ symbol, strategy_id: strategyId, status })
-  await load(false)
+  try {
+    await deleteDataOrders({ symbol, strategy_id: strategyId, status })
+    await load(false)
+  } catch (e: any) {
+    loadError.value = apiErrorMessage(e, 'Delete orders failed')
+  }
 }
 
 function refreshMessage(row: any) {
@@ -198,6 +302,128 @@ function statusClass(status: string) {
       <div class="bg-dark-800 border border-dark-500 rounded-xl p-4">
         <div class="text-xs text-gray-500 uppercase tracking-wider">Orders</div>
         <div class="mt-2 text-xl font-bold text-gray-100">{{ orders.total ?? 0 }}</div>
+      </div>
+    </div>
+
+    <div class="bg-dark-800 rounded-xl border border-dark-500">
+      <div class="px-4 py-3 border-b border-dark-500 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-gray-300">Exchange Catalog</h2>
+          <p class="text-xs text-gray-500">Native marketdata adapters, configured timeframes, stable-pair policy, and local cache status.</p>
+        </div>
+        <RouterLink to="/settings" class="text-xs text-accent hover:text-accent-light">Settings →</RouterLink>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+          <div class="rounded-lg bg-dark-700/60 p-3">
+            <div class="text-gray-500">Native exchanges</div>
+            <div class="mt-1 text-lg font-semibold text-gray-100">{{ health?.totals.enabled_exchanges ?? '—' }}</div>
+          </div>
+          <div class="rounded-lg bg-dark-700/60 p-3">
+            <div class="text-gray-500">Market types</div>
+            <div class="mt-1 text-lg font-semibold text-gray-100">{{ health?.totals.market_types ?? '—' }}</div>
+          </div>
+          <div class="rounded-lg bg-dark-700/60 p-3">
+            <div class="text-gray-500">Cached exchanges</div>
+            <div class="mt-1 text-lg font-semibold text-gray-100">{{ health?.totals.cached_exchanges ?? 0 }}</div>
+          </div>
+          <div class="rounded-lg bg-dark-700/60 p-3">
+            <div class="text-gray-500">Timeframes</div>
+            <div class="mt-1 truncate text-sm font-mono text-gray-200">{{ health?.settings.timeframes.join(', ') ?? '—' }}</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div
+            v-for="exchange in exchangeOptions"
+            :key="exchange.id"
+            class="rounded-xl border border-dark-600 bg-dark-700/40 p-3"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="truncate text-sm font-semibold text-gray-200">{{ exchange.name }}</div>
+                <div class="text-[11px] text-gray-500">{{ exchange.cached_series }} cached series</div>
+              </div>
+              <span :class="[healthStatusClass(exchange.status), 'shrink-0 rounded-full border px-2 py-0.5 text-[10px]']">{{ exchange.status }}</span>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-1.5">
+              <span
+                v-for="market in exchange.markets"
+                :key="market.id"
+                :class="[healthStatusClass(market.status), 'rounded border px-1.5 py-0.5 text-[10px]']"
+              >
+                {{ market.id }} · {{ market.cached_series }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-dark-800 rounded-xl border border-dark-500 p-4">
+      <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-gray-300">Discover Symbols</h2>
+          <p class="text-xs text-gray-500">Live symbol search through the selected marketdata adapter. Results respect stable-pair settings by default.</p>
+        </div>
+        <span class="text-xs text-gray-500">/api/data/symbols</span>
+      </div>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1.4fr_auto]">
+        <select v-model="discoverExchange" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+          <option v-for="exchange in exchangeOptions" :key="exchange.id" :value="exchange.id">{{ exchange.name }}</option>
+        </select>
+        <select v-model="discoverMarket" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+          <option v-for="market in discoverMarketOptions" :key="market.id" :value="market.id">{{ market.label }}</option>
+        </select>
+        <input
+          v-model.trim="discoverQuery"
+          class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 placeholder-gray-500"
+          placeholder="BTC, ETH, SOL..."
+          @keydown.enter.prevent="discoverSymbols"
+        />
+        <button class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-light disabled:opacity-50" :disabled="discoverLoading || !discoverQuery" @click="discoverSymbols">
+          {{ discoverLoading ? 'Searching...' : 'Search' }}
+        </button>
+      </div>
+      <div v-if="discoverError" class="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{{ discoverError }}</div>
+      <div v-if="discoverResults.length" class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <div v-for="symbol in discoverResults" :key="`${symbol.exchange}-${symbol.market}-${symbol.symbol}`" class="rounded-lg border border-dark-600 bg-dark-700/50 p-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="truncate font-mono text-sm text-gray-200">{{ symbol.symbol }}</div>
+              <div class="mt-1 text-xs text-gray-500">{{ symbol.exchange }} / {{ symbol.market }} · {{ symbol.baseAsset }}/{{ symbol.quoteAsset }}</div>
+            </div>
+            <span v-if="symbol.contractType" class="shrink-0 rounded bg-dark-600 px-2 py-0.5 text-[10px] uppercase text-gray-300">{{ symbol.contractType }}</span>
+          </div>
+          <div class="mt-2 text-xs text-gray-500">Use this symbol in Strategies or Backfill after cache creation.</div>
+        </div>
+      </div>
+      <div v-else-if="!discoverLoading" class="mt-4 rounded-lg border border-dashed border-dark-600 px-3 py-3 text-sm text-gray-500">
+        Search a pair to verify ticker availability before creating strategy/backfill jobs.
+      </div>
+    </div>
+
+    <div class="bg-dark-800 rounded-xl border border-dark-500 p-4">
+      <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <h2 class="text-sm font-semibold text-gray-300">Candle filters</h2>
+        <button class="self-start rounded bg-dark-600 px-2 py-1 text-xs text-gray-300 hover:bg-dark-500" @click="filterExchange = ''; filterMarket = ''; filterTimeframe = ''; filterStatus = ''">Reset</button>
+      </div>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <select v-model="filterExchange" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+          <option value="">All exchanges</option>
+          <option v-for="exchange in exchangeOptions" :key="exchange.id" :value="exchange.id">{{ exchange.name }}</option>
+        </select>
+        <select v-model="filterMarket" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+          <option value="">All markets</option>
+          <option v-for="market in marketOptions" :key="market.id" :value="market.id">{{ market.id }}</option>
+        </select>
+        <select v-model="filterTimeframe" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+          <option value="">All timeframes</option>
+          <option v-for="tf in timeframeOptions" :key="tf" :value="tf">{{ tf }}</option>
+        </select>
+        <select v-model="filterStatus" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+          <option value="">All statuses</option>
+          <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
+        </select>
       </div>
     </div>
 
@@ -397,7 +623,7 @@ function statusClass(status: string) {
           <div class="min-w-0">
             <h3 class="text-sm font-semibold text-gray-200">Backfill candles</h3>
             <div class="mt-1 truncate font-mono text-xs text-gray-500">
-              {{ backfillRow?.symbol }} / {{ backfillRow?.market_type }} / {{ backfillRow?.timeframe }}
+              {{ backfillRow?.exchange }} / {{ backfillRow?.market_type }} / {{ backfillRow?.symbol }} / {{ backfillRow?.timeframe }}
             </div>
           </div>
           <button class="rounded px-2 py-1 text-sm text-gray-400 hover:bg-dark-600" @click="backfillDialog = false">×</button>

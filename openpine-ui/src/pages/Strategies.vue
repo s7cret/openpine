@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useStrategiesStore } from '@/stores/strategies'
 import { usePineFilesStore } from '@/stores/pineFiles'
 import { useRoute } from 'vue-router'
-import { searchMarketSymbols, getDataMetadata, getDataTicker24h, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, type MarketSymbolOption } from '@/api/client'
+import { searchMarketSymbols, getDataMetadata, getDataTicker24h, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, getSettings, type MarketSymbolOption } from '@/api/client'
 import CandleChart from '@/components/CandleChart.vue'
 import { formatDateTime } from '@/utils/time'
 import {
@@ -21,18 +21,20 @@ import {
 } from '@/lib/marketMeta'
 import {
   clearStrategySymbolForMarketChange,
+  loadStrategySymbolOptions,
+  newStrategyForm,
   selectStrategySymbol,
   strategyValidationMessage,
 } from '@/lib/strategyForm'
 import {
   canSearchSymbols as canSearchExchangeSymbols,
   defaultMarketTypeForExchange,
+  EMPTY_MARKET_METADATA,
   exchangeOptionLabel,
   exchangeSelectOptions,
   marketTypeOptionsForExchange,
   symbolLoadingLabel,
   symbolSearchPlaceholder,
-  type MarketMetadataPayload,
 } from '@/lib/marketMetadata'
 
 const store = useStrategiesStore()
@@ -44,6 +46,7 @@ const showDetail = ref<string | null>(null)
 // Filter state
 const filterName = ref('')
 const filterTicker = ref('')
+const filterExchange = ref('')
 const filterTimeframe = ref('')
 const filterMarket = ref('')
 const filterStatus = ref('')
@@ -56,6 +59,11 @@ const uniqueTickers = computed(() => {
 const uniqueTimeframes = computed(() => {
   const set = new Set<string>()
   store.items.forEach((s: any) => { if (s.timeframe) set.add(s.timeframe) })
+  return Array.from(set).sort()
+})
+const uniqueExchanges = computed(() => {
+  const set = new Set<string>()
+  store.items.forEach((s: any) => { if (s.exchange) set.add(s.exchange) })
   return Array.from(set).sort()
 })
 const uniqueMarkets = computed(() => {
@@ -72,6 +80,7 @@ const filteredStrategies = computed(() => {
   return store.items.filter((s: any) => {
     if (filterName.value && !(s.name ?? '').toLowerCase().includes(filterName.value.toLowerCase())) return false
     if (filterTicker.value && s.symbol !== filterTicker.value) return false
+    if (filterExchange.value && (s.exchange ?? 'binance') !== filterExchange.value) return false
     if (filterTimeframe.value && s.timeframe !== filterTimeframe.value) return false
     if (filterMarket.value && s.market_type !== filterMarket.value) return false
     if (filterStatus.value && (s.status ?? 'idle') !== filterStatus.value) return false
@@ -92,30 +101,11 @@ const form = ref({
   mode: 'paper',
 })
 
-const timeframes = ['1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w']
-const fallbackMarketMetadata: MarketMetadataPayload = {
-  source: 'fallback',
-  market_types: [],
-  exchanges: [
-    {
-      id: 'binance',
-      name: 'Binance',
-      rank: 1,
-      status: 'native',
-      native_adapter: true,
-      openpine_enabled: true,
-      symbol_search_supported: true,
-      disabled_reason: null,
-      market_types: [
-        { id: 'spot', label: 'Spot', aliases: ['spot'], description: '', enabled_for_strategy_create: true },
-        { id: 'margin', label: 'Margin', aliases: ['margin'], description: '', enabled_for_strategy_create: true },
-        { id: 'futures', label: 'USDT/USDC-margined futures/perpetuals', aliases: ['futures'], description: '', enabled_for_strategy_create: true },
-        { id: 'delivery', label: 'Coin-margined/delivery futures', aliases: ['delivery'], description: '', enabled_for_strategy_create: true },
-      ],
-    },
-  ],
-}
-const marketMetadata = ref<MarketMetadataPayload>(fallbackMarketMetadata)
+const timeframes = ref(['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'])
+const defaultTimeframe = ref('1h')
+const marketMetadata = ref(EMPTY_MARKET_METADATA)
+const marketMetadataError = ref('')
+const settingsError = ref('')
 const exchangeOptions = computed(() => exchangeSelectOptions(marketMetadata.value))
 const marketTypeOptions = computed(() => marketTypeOptionsForExchange(marketMetadata.value, form.value.exchange))
 const symbolSearchEnabled = computed(() => canSearchExchangeSymbols(marketMetadata.value, form.value.exchange))
@@ -142,19 +132,38 @@ function markTickerIconMissing(asset?: string) {
 }
 
 async function loadMarketMetadata() {
+  marketMetadataError.value = ''
   try {
     const { data } = await getDataMetadata()
     if (data?.exchanges?.length) {
       marketMetadata.value = data
       form.value.market_type = defaultMarketTypeForExchange(marketMetadata.value, form.value.exchange, form.value.market_type)
+    } else {
+      marketMetadata.value = EMPTY_MARKET_METADATA
+      marketMetadataError.value = 'Market metadata unavailable: backend returned no exchanges.'
     }
-  } catch (e) {
-    console.error('Market metadata fetch failed', e)
+  } catch (e: any) {
+    marketMetadata.value = EMPTY_MARKET_METADATA
+    marketMetadataError.value = `Market metadata unavailable: ${apiErrorMessage(e, 'metadata request failed')}`
+  }
+}
+
+async function loadSettings() {
+  settingsError.value = ''
+  try {
+    const { data } = await getSettings()
+    if (data?.marketdata?.timeframes?.length) {
+      timeframes.value = data.marketdata.timeframes
+      defaultTimeframe.value = data.marketdata.default_timeframe || data.marketdata.timeframes[0] || '1h'
+      form.value.timeframe = defaultTimeframe.value
+    }
+  } catch (e: any) {
+    settingsError.value = `Settings unavailable: ${apiErrorMessage(e, 'settings request failed')}`
   }
 }
 
 onMounted(async () => {
-  await loadMarketMetadata()
+  await Promise.all([loadMarketMetadata(), loadSettings()])
   await store.fetchAll()
   await pineStore.fetchAll()
   autoFillPineSource(true)
@@ -233,8 +242,18 @@ watch(symbolSearch, (val) => {
   if (!symbolSearchEnabled.value) { symbols.value = []; return }
   if (val.length < 1) { symbols.value = []; return }
   searchTimeout = setTimeout(async () => {
+    const requested = val
     symbolsLoading.value = true
-    symbols.value = await searchMarketSymbols(val, form.value.exchange, form.value.market_type)
+    const result = await loadStrategySymbolOptions<MarketSymbolOption>(
+      requested,
+      form.value.exchange,
+      form.value.market_type,
+      searchMarketSymbols,
+    )
+    if (symbolSearch.value === requested) {
+      symbols.value = result.symbols
+      if (result.error) createStatus.value = `❌ Symbol search failed: ${result.error}`
+    }
     symbolsLoading.value = false
   }, 300)
 })
@@ -266,6 +285,15 @@ function hideSymbolDropdown() {
 
 const createStatus = ref('')
 const createLoading = ref(false)
+const detailError = ref('')
+
+function apiErrorMessage(e: any, fallback: string) {
+  const detail = e?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map((item: any) => item?.msg ?? JSON.stringify(item)).join('; ')
+  if (detail) return JSON.stringify(detail)
+  return e?.message ?? fallback
+}
 
 async function addStrategy() {
   if (!form.value.name || !form.value.symbol || !form.value.pine_id || !form.value.artifact_id) {
@@ -282,22 +310,29 @@ async function addStrategy() {
     await store.create(form.value)
     createStatus.value = '✅ Strategy created!'
     showAdd.value = false
-    form.value = { name: '', pine_id: '', artifact_id: '', symbol: '', timeframe: '1h', exchange: 'binance', market_type: 'spot', params_json: '{}', mode: 'paper' }
+    form.value = newStrategyForm(defaultTimeframe.value, form.value.exchange, form.value.market_type)
+    symbolSearch.value = ''
+    symbols.value = []
   } catch (e: any) {
-    const msg = e?.response?.data?.detail ?? e?.message ?? 'Unknown error'
-    createStatus.value = `❌ ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`
+    createStatus.value = `❌ ${apiErrorMessage(e, 'Unknown error')}`
   } finally {
     createLoading.value = false
   }
 }
 
 async function openDetail(id: string) {
+  detailError.value = ''
   showDetail.value = id
-  await store.fetchOne(id)
-  await Promise.all([
-    loadTrades(id),
-    loadTicker24h(store.current?.exchange, store.current?.symbol, store.current?.market_type),
-  ])
+  try {
+    await store.fetchOne(id)
+    await Promise.all([
+      loadTrades(id),
+      loadTicker24h(store.current?.exchange, store.current?.symbol, store.current?.market_type),
+    ])
+  } catch (e: any) {
+    showDetail.value = null
+    detailError.value = apiErrorMessage(e, 'Strategy detail load failed')
+  }
 }
 
 function statusBadge(status: string) {
@@ -402,8 +437,8 @@ async function loadTrades(strategyId: string) {
     } else {
       backtestTrades.value = []
     }
-  } catch (e) {
-    console.error('Trades load failed', e)
+  } catch (e: any) {
+    detailError.value = apiErrorMessage(e, 'Trades load failed')
     trades.value = []
     orders.value = []
     backtestTrades.value = []
@@ -558,6 +593,14 @@ function tradeStatusBadge(status: string) {
       </button>
     </div>
 
+    <div v-if="detailError" class="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+      {{ detailError }}
+    </div>
+    <div v-if="marketMetadataError || settingsError" class="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+      <div v-if="marketMetadataError">{{ marketMetadataError }}</div>
+      <div v-if="settingsError">{{ settingsError }}</div>
+    </div>
+
     <!-- Add Form -->
     <transition name="fade">
       <div v-if="showAdd" class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
@@ -623,7 +666,10 @@ function tradeStatusBadge(status: string) {
                 </span>
                 <span class="font-mono text-gray-200">{{ s.symbol }}</span>
               </span>
-              <span class="shrink-0 text-xs text-gray-500">{{ s.baseAsset }}/{{ s.quoteAsset }}</span>
+              <span class="shrink-0 text-right text-xs text-gray-500">
+                {{ s.baseAsset }}/{{ s.quoteAsset }}
+                <span v-if="s.contractType" class="ml-1 rounded bg-dark-500 px-1 py-0.5 text-[10px] uppercase text-gray-400">{{ s.contractType }}</span>
+              </span>
             </div>
           </div>
         </div>
@@ -649,6 +695,10 @@ function tradeStatusBadge(status: string) {
       <select v-model="filterTicker" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">All Tickers</option>
         <option v-for="t in uniqueTickers" :key="t" :value="t">{{ t }}</option>
+      </select>
+      <select v-model="filterExchange" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+        <option value="">All Exchanges</option>
+        <option v-for="ex in uniqueExchanges" :key="ex" :value="ex">{{ exchangeLabel(ex) }}</option>
       </select>
       <select v-model="filterTimeframe" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">All TFs</option>

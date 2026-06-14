@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, computed } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
+import { summarizeDataHealth } from '@/lib/dataHealth'
 import { useRouter } from 'vue-router'
 
 const store = useDashboardStore()
@@ -28,6 +29,10 @@ const dataSizeMB = computed(() => {
 })
 const databaseSizeMB = computed(() => ((store.dataInfo?.database_size_bytes ?? 0) / 1024 / 1024).toFixed(1))
 const totalBars = computed(() => (store.dataInfo?.total_bars ?? 0).toLocaleString())
+const dataHealthSummary = computed(() => store.dataHealth ? summarizeDataHealth(store.dataHealth) : null)
+const staleMarketCount = computed(() => store.dataHealth?.exchanges?.reduce((total: number, ex: any) => {
+  return total + (ex.markets ?? []).filter((m: any) => m.status === 'stale').length
+}, 0) ?? 0)
 
 const enabledStrategies = computed(() => strategies.value.filter((s: any) => s.enabled))
 const runningStrategies = computed(() => strategies.value.filter((s: any) => s.status === 'running'))
@@ -122,14 +127,19 @@ function jobPct(job: any) {
         </div>
         <div class="mt-3 space-y-2">
           <div class="flex items-center gap-2 text-sm">
-            <span class="w-2 h-2 rounded-full bg-success" />
-            <span class="text-gray-400">Network</span>
-            <span class="ml-auto text-gray-300 text-xs">Online</span>
+            <span class="w-2 h-2 rounded-full bg-accent" />
+            <span class="text-gray-400">Market data</span>
+            <span class="ml-auto text-right text-gray-300 text-xs">{{ dataHealthSummary?.exchangeLabel ?? 'loading' }}</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <span :class="[staleMarketCount ? 'bg-warning' : 'bg-success', 'w-2 h-2 rounded-full']" />
+            <span class="text-gray-400">Cache</span>
+            <span class="ml-auto text-right text-gray-300 text-xs">{{ dataHealthSummary?.cacheLabel ?? '—' }}</span>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <span class="w-2 h-2 rounded-full bg-success" />
-            <span class="text-gray-400">Binance API</span>
-            <span class="ml-auto text-gray-300 text-xs">OK</span>
+            <span class="text-gray-400">Stable pairs</span>
+            <span class="ml-auto text-right text-gray-300 text-xs">{{ dataHealthSummary?.stableQuotesLabel ?? '—' }}</span>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <span :class="[store.backendOk ? 'bg-success' : 'bg-danger', 'w-2 h-2 rounded-full']" />

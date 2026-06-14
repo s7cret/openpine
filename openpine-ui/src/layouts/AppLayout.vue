@@ -12,7 +12,10 @@ const navItems = [
   { path: '/pine-files', label: 'Pine Files', icon: '📄' },
   { path: '/strategies', label: 'Strategies', icon: '⚡' },
   { path: '/backtests', label: 'Backtests', icon: '🧪' },
+  { path: '/tv-parity', label: 'TV Parity', icon: '📺' },
   { path: '/data', label: 'Data', icon: '💾' },
+  { path: '/achievements', label: 'Achievements', icon: '🏆' },
+  { path: '/settings', label: 'Settings', icon: '⚙️' },
 ]
 
 function navigate(path: string) {

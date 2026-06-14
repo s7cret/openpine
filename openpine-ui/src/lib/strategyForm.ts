@@ -12,6 +12,42 @@ export type StrategyFormDraft = {
 
 export type SymbolOption = { symbol: string; baseAsset?: string; quoteAsset?: string }
 
+export type SymbolSearchResult<T extends SymbolOption = SymbolOption> = {
+  symbols: T[]
+  error: string
+}
+
+export function newStrategyForm(
+  defaultTimeframe = '1h',
+  exchange = 'binance',
+  marketType = 'spot',
+): StrategyFormDraft {
+  return {
+    name: '',
+    pine_id: '',
+    artifact_id: '',
+    symbol: '',
+    timeframe: defaultTimeframe || '1h',
+    exchange: exchange || 'binance',
+    market_type: marketType || 'spot',
+    params_json: '{}',
+    mode: 'paper',
+  }
+}
+
+export async function loadStrategySymbolOptions<T extends SymbolOption>(
+  query: string,
+  exchange: string,
+  marketType: string,
+  search: (query: string, exchange: string, marketType: string) => Promise<T[]>,
+): Promise<SymbolSearchResult<T>> {
+  try {
+    return { symbols: await search(query, exchange, marketType), error: '' }
+  } catch (error: any) {
+    return { symbols: [], error: error?.response?.data?.detail ?? error?.message ?? 'Symbol search failed' }
+  }
+}
+
 export function selectStrategySymbol(form: StrategyFormDraft, option: SymbolOption): string {
   form.symbol = option.symbol
   return option.symbol
