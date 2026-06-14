@@ -165,3 +165,37 @@ export const getOrders = (strategyId?: string, limit = 100) =>
   api.get('/orders', { params: { strategy_id: strategyId, limit } })
 export const getPositions = (strategyId: string) =>
   api.get(apiPath('/positions', strategyId))
+
+// Achievements
+export interface AchievementItem {
+  id: string
+  tier: 'pro' | 'ultra' | 'hyper' | 'apex'
+  icon: string
+  title: string
+  description: string
+  metric: string
+  target: number
+  current: number
+  reward: string
+  hidden: boolean
+  unlocked: boolean
+  unlocked_at: number | null
+  progress_pct: number
+}
+
+export interface AchievementSummary {
+  total: number
+  unlocked: number
+  by_tier: Record<string, { done: number; of: number }>
+}
+
+export interface AchievementsResponse {
+  summary: AchievementSummary
+  items: AchievementItem[]
+}
+
+export const getAchievements = (includeHidden = false) =>
+  api.get<AchievementsResponse>('/achievements', { params: { include_hidden: includeHidden } })
+
+export const refreshAchievements = () =>
+  api.post<AchievementsResponse>('/achievements/refresh')
