@@ -26,6 +26,12 @@ class AchievementDef:
     target: float
     reward: str
     hidden: bool = False
+    # ``inverted=True`` flips the unlock comparison: the achievement
+    # unlocks when current_value <= target. Use this for metrics where
+    # smaller-is-better (e.g. drawdown, latency). Default is "value
+    # meets or exceeds target" (the natural direction for counters,
+    # rates, percentages, etc.).
+    inverted: bool = False
 
 
 # ── Pro (25) ──────────────────────────────────────────────
@@ -69,8 +75,8 @@ ULTRA: list[AchievementDef] = [
     AchievementDef("pnl-100",       "ultra", "🗻", "100% Month",         "Double your equity in 30 days",                     "pnl_peak_pct",  100,        'Title "Everest"'),
     AchievementDef("speed-10k",     "ultra", "⚡", "10K Bars/min",       "Backtest 10,000 bars per minute",                  "speed_bars_min", 10_000,    'Engine priority +2'),
     AchievementDef("speed-100k",    "ultra", "🌊", "100K Bars/min",      "Backtest 100,000 bars per minute",                 "speed_bars_min", 100_000,   'Frame "Wave"'),
-    AchievementDef("dd-10",         "ultra", "🛡️", "DD < 10%",           "Max drawdown under 10% on 1K+ bars",               "max_drawdown_pct", 10,     'Title "Cautious"'),
-    AchievementDef("dd-5",          "ultra", "🛡️", "DD < 5%",            "Max drawdown under 5% on 1K+ bars",                "max_drawdown_pct", 5,      'Title "Guardian"'),
+    AchievementDef("dd-10",         "ultra", "🛡️", "DD < 10%",           "Max drawdown under 10% on 1K+ bars",               "max_drawdown_pct", 10,     'Title "Cautious"', inverted=True),
+    AchievementDef("dd-5",          "ultra", "🛡️", "DD < 5%",            "Max drawdown under 5% on 1K+ bars",                "max_drawdown_pct", 5,      'Title "Guardian"', inverted=True),
     AchievementDef("sharpe-1",      "ultra", "📐", "Sharpe ≥ 1.0",       "Sharpe ratio ≥ 1.0 on 100+ trades",                "sharpe",        1,         'Title "Quant"'),
     AchievementDef("udt-1",         "ultra", "🧬", "UDT Pioneer",        "First UDT (user-defined type) strategy",           "udt_strategies", 1,        'Type-safe slot'),
     AchievementDef("udt-5",         "ultra", "🧬", "UDT Master",         "5 UDT strategies with Pine types",                 "udt_strategies", 5,        'Theme: Type-Safe'),
@@ -102,7 +108,7 @@ HYPER: list[AchievementDef] = [
     AchievementDef("winrate-60",    "hyper", "🎯", "60% Winrate",        "60% winrate over 500+ trades",                     "winrate_pct",   60,          'Title "Streak"'),
     AchievementDef("winrate-70",    "hyper", "🎯", "70% Winrate",        "70% winrate over 500+ trades",                     "winrate_pct",   70,          'Frame "Bullseye"'),
     AchievementDef("winrate-80",    "hyper", "🎯", "80% Winrate",        "80% winrate over 500+ trades",                     "winrate_pct",   80,          'Title "Sniper"'),
-    AchievementDef("dd-1",          "hyper", "🛡️", "DD < 1%",            "Max drawdown under 1% on 10K+ bars",               "max_drawdown_pct", 1,        'Title "Ironclad"'),
+    AchievementDef("dd-1",          "hyper", "🛡️", "DD < 1%",            "Max drawdown under 1% on 10K+ bars",               "max_drawdown_pct", 1,        'Title "Ironclad"', inverted=True),
     AchievementDef("sharpe-2",      "hyper", "📐", "Sharpe ≥ 2.0",       "Sharpe ratio ≥ 2.0 on 1K+ trades",                 "sharpe",        2,           'Title "Quant++"'),
     AchievementDef("speed-1m",      "hyper", "🚀", "1M Bars/min",        "Backtest 1M bars per minute",                      "speed_bars_min", 1_000_000,  'Title "Hypersonic"'),
     AchievementDef("speed-10m",     "hyper", "🛩️", "10M Bars/min",       "Backtest 10M bars per minute",                     "speed_bars_min", 10_000_000, 'Frame "Jet"'),
@@ -130,7 +136,7 @@ APEX: list[AchievementDef] = [
     AchievementDef("trades-100m",   "apex", "🌌", "100M Trades",        "100,000,000 closed orders",                        "trades",        100_000_000,     'Frame "Horizon"'),
     AchievementDef("pnl-10000",     "apex", "🪙", "+10000% Peak",       "+10000% all-time P&L",                             "pnl_peak_pct",  10_000,          'Title "Whale"'),
     AchievementDef("winrate-95",    "apex", "🎯", "95% Winrate",        "95% winrate over 1,000+ trades",                   "winrate_pct",   95,              'Frame "Crown"'),
-    AchievementDef("dd-zero",       "apex", "🛡️", "Zero Drawdown",      "Zero drawdown over 10K+ bars",                     "max_drawdown_pct", 0,           'Title "Untouched"'),
+    AchievementDef("dd-zero",       "apex", "🛡️", "Sub-0.5% Drawdown",  "Best backtest drawdown under 0.5% over 10K+ bars",  "max_drawdown_pct", 0.5,         'Title "Untouched"', inverted=True),
     AchievementDef("sharpe-3",      "apex", "📐", "Sharpe ≥ 3.0",       "Sharpe ratio ≥ 3.0 on 10K+ trades",                "sharpe",        3,               'Title "Sigma"'),
     AchievementDef("live-365d",     "apex", "🦄", "Uptime 99.99% (1 year)", "Live strategy without restart 365 days",       "live_uptime_h", 8_760,           'Title "Immortal"'),
     AchievementDef("live-3y",       "apex", "⏰", "3 Years Uptime",     "Live strategy without restart 3 years",           "live_uptime_h", 26_280,          'Frame "Eternal"'),
