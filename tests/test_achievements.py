@@ -190,3 +190,82 @@ def test_refresh_runs_recompute_and_unlock(storage):
     assert "newly_unlocked" in result
     # backtest-first achievement should be in unlocks
     assert "bt-first" in result["newly_unlocked"]
+
+
+def test_i18n_seeds_en_and_ru(storage):
+    from openpine.achievements.seed import seed_achievement_i18n
+    seed_achievements(storage)
+    seed_achievement_i18n(storage)
+    rows = storage.execute(
+        "SELECT locale, COUNT(*) FROM achievement_i18n GROUP BY locale"
+    ).fetchall()
+    by_locale = {r[0]: r[1] for r in rows}
+    assert by_locale.get("en") == 102
+    assert by_locale.get("ru", 0) >= 90  # most catalog entries are translated
+
+
+def test_i18n_falls_back_to_english_for_unknown_locale(storage):
+    from openpine.achievements.seed import seed_achievement_i18n
+    seed_achievements(storage)
+    seed_achievement_i18n(storage)
+    eng = AchievementEngine(storage)
+    # Request an unknown locale — engine should fall back to EN copy
+    items = eng.get_state(locale="zz")
+    en_items = eng.get_state(locale="en")
+    assert items and en_items
+    # Title for the same id must match the EN canonical
+    sample = items[0]
+    en_sample = next(x for x in en_items if x.id == sample.id)
+    assert sample.title == en_sample.title
+
+
+def test_i18n_returns_translated_titles(storage):
+    from openpine.achievements.seed import seed_achievement_i18n
+    seed_achievements(storage)
+    seed_achievement_i18n(storage)
+    eng = AchievementEngine(storage)
+    ru_items = eng.get_state(locale="ru")
+    en_items = eng.get_state(locale="en")
+    by_en = {x.id: x for x in en_items}
+    by_ru = {x.id: x for x in ru_items}
+    # Every achievement with a known RU override must have a different
+    # title from the EN row. (i18n_overrides.py ships ~100 RU rows.)
+    translated = 0
+    for ach_id, ru in by_ru.items():
+        en = by_en[ach_id]
+        if ru.title != en.title:
+            translated += 1
+    assert translated >= 90, f"expected >= 90 translated titles, got {translated}"
+
+
+def test_compat_schema_adds_columns(storage):
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    pa_cols = {r[1] for r in storage.execute("PRAGMA table_info(pine_artifacts)").fetchall()}
+    br_cols = {r[1] for r in storage.execute("PRAGMA table_info(backtest_runs)").fetchall()}
+    si_cols = {r[1] for r in storage.execute("PRAGMA table_info(strategy_instances)").fetchall()}
+    assert "ast_node_count" in pa_cols
+    assert "bars_per_sec" in br_cols
+    assert "bars_per_min" in br_cols
+    assert "bars_processed" in br_cols
+    assert "uses_udt" in si_cols
+
+
+def test_compat_schema_is_idempotent(storage):
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    # Run twice — second call must be a no-op without raising.
+    ensure_schema_compatibility(storage)
+    ensure_schema_compatibility(storage)
+
+
+def test_engine_recomputes_26_metrics(storage):
+    seed_achievements(storage)
+    from openpine.storage.schema_compat import ensure_schema_compatibility
+    ensure_schema_compatibility(storage)
+    eng = AchievementEngine(storage)
+    stats = eng.recompute_stats()
+    assert len(stats) >= 26, f"expected >= 26 metrics, got {len(stats)}"
+    # Sanity: all values are numeric and non-negative
+    for k, v in stats.items():
+        assert isinstance(v, float)
+        assert v >= 0

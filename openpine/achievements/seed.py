@@ -12,6 +12,7 @@ from typing import Any, cast
 
 from openpine._compat import structlog
 from openpine.achievements.catalog import ALL
+from openpine.achievements.i18n_overrides import ACHIEVEMENT_I18N
 from openpine.storage.sqlite_storage import SQLiteStorage
 
 log = structlog.get_logger(__name__)
@@ -53,3 +54,47 @@ def seed_achievements(storage: SQLiteStorage) -> int:
     storage.commit()
     log.info("achievements_seeded", count=len(rows))
     return len(rows)
+
+
+def seed_achievement_i18n(storage: SQLiteStorage) -> int:
+    """Insert or refresh per-locale copy overrides.
+
+    Behavior:
+    - First, ensure every (achievement_id, locale='en') row exists with
+      the canonical EN copy from the catalog. This way the engine can
+      always JOIN against the i18n table for EN without falling back.
+    - Then, apply the per-locale overrides from i18n_overrides.py via
+      INSERT OR REPLACE. Missing keys keep the canonical EN copy.
+    """
+    # 1) EN rows for every achievement
+    en_rows: list[tuple[Any, ...]] = []
+    for a in ALL:
+        en_rows.append((a.id, "en", a.title, a.description, a.reward))
+    storage.execute_many(
+        """
+        INSERT OR REPLACE INTO achievement_i18n(
+            achievement_id, locale, title, description, reward
+        ) VALUES (?, ?, ?, ?, ?)
+        """,
+        cast(Any, en_rows),
+    )
+    # 2) Locale overrides
+    if ACHIEVEMENT_I18N:
+        override_rows: list[tuple[Any, ...]] = []
+        for ach_id, locale, title, descr, reward in ACHIEVEMENT_I18N:
+            override_rows.append((ach_id, locale, title, descr, reward))
+        storage.execute_many(
+            """
+            INSERT OR REPLACE INTO achievement_i18n(
+                achievement_id, locale, title, description, reward
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            cast(Any, override_rows),
+        )
+    storage.commit()
+    log.info(
+        "achievement_i18n_seeded",
+        en_rows=len(en_rows),
+        overrides=len(ACHIEVEMENT_I18N),
+    )
+    return len(en_rows) + len(ACHIEVEMENT_I18N)

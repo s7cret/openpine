@@ -96,10 +96,11 @@ class GatewayState:
         # start (idempotent INSERT OR REPLACE) and run an initial recompute
         # so the UI shows real numbers on first paint.
         from openpine.achievements.engine import AchievementEngine
-        from openpine.achievements.seed import seed_achievements
+        from openpine.achievements.seed import seed_achievements, seed_achievement_i18n
 
         try:
             seed_achievements(self.storage)
+            seed_achievement_i18n(self.storage)
         except Exception as exc:
             from openpine._compat import structlog
             structlog.get_logger(__name__).warning(

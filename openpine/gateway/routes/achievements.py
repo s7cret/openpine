@@ -45,11 +45,17 @@ def _to_item(state_row) -> AchievementItem:
 @router.get("", response_model=AchievementsResponse)
 async def list_achievements(
     state: GatewayState = STATE_DEP,
+    locale: str = Query(default="en", max_length=8),
     include_hidden: bool = Query(default=False),
 ) -> AchievementsResponse:
-    """Catalog + per-achievement progress + unlock status."""
+    """Catalog + per-achievement progress + unlock status.
+
+    ``locale`` selects per-locale copy from the ``achievement_i18n``
+    table. Unknown locales fall back to the canonical English copy
+    baked into the achievements catalog.
+    """
     engine = state.achievement_engine
-    rows = engine.get_state(include_hidden_locked=include_hidden)
+    rows = engine.get_state(locale=locale, include_hidden_locked=include_hidden)
     summary = engine.summary()
     items = [_to_item(r) for r in rows]
     return AchievementsResponse(
@@ -65,11 +71,14 @@ async def list_achievements(
 @router.post("/refresh", response_model=AchievementsResponse)
 async def refresh_achievements(
     state: GatewayState = STATE_DEP,
+    locale: str = Query(default="en", max_length=8),
 ) -> AchievementsResponse:
     """Force a recompute + unlock check.
 
     Intended for ops/admin: the background tick normally handles this.
+    The optional ``locale`` query string selects copy for the returned
+    snapshot — the recompute itself is locale-agnostic.
     """
     result = state.achievement_engine.refresh()
     log.info("achievements_force_refresh", **result)
-    return await list_achievements(state)
+    return await list_achievements(state, locale=locale, include_hidden=False)
