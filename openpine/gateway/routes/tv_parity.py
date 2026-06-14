@@ -135,6 +135,7 @@ def parse_tradingview_candles_csv(
     timeframe: str,
     from_ms: int | None = None,
     to_ms: int | None = None,
+    drop_pre_window: bool = True,
 ) -> ParsedTradingViewCandles:
     """Parse a TradingView candle CSV into a BarSeries for replay backtests."""
 
@@ -173,7 +174,7 @@ def parse_tradingview_candles_csv(
                 invalid_rows += 1
                 continue
             time_close = open_time + duration_ms
-            if from_ms is not None and open_time < from_ms:
+            if from_ms is not None and drop_pre_window and open_time < from_ms:
                 continue
             if to_ms is not None and open_time >= to_ms:
                 continue
@@ -383,6 +384,10 @@ def _run_root(state: GatewayState, run_id: str) -> Path:
     return _tv_parity_root(state) / safe
 
 
+def _is_seeded_demo_run_id(run_id: Any) -> bool:
+    return isinstance(run_id, str) and run_id.startswith("tvpar_demo_")
+
+
 def _list_tv_parity_history(state: GatewayState) -> list[dict[str, Any]]:
     """Scan data_dir/tv-parity/ for run directories and read their summary JSON.
 
@@ -403,9 +408,10 @@ def _list_tv_parity_history(state: GatewayState) -> list[dict[str, Any]]:
         except (OSError, json.JSONDecodeError):
             continue
         candle_summary = payload.get("candle_summary") or {}
+        run_id = payload.get("run_id") or child.name
         entries.append(
             {
-                "run_id": payload.get("run_id") or child.name,
+                "run_id": run_id,
                 "strategy_id": payload.get("strategy_id"),
                 "source": payload.get("source"),
                 "status": payload.get("status"),
@@ -419,6 +425,7 @@ def _list_tv_parity_history(state: GatewayState) -> list[dict[str, Any]]:
                 "valid_bars": candle_summary.get("valid_bars"),
                 "from_time": candle_summary.get("from_time"),
                 "to_time": candle_summary.get("to_time"),
+                "is_demo": _is_seeded_demo_run_id(run_id),
                 "result_path": result_path.as_posix(),
             }
         )
@@ -870,6 +877,7 @@ async def list_tv_parity_runs(
     state: GatewayState = Depends(get_state),
     strategy_id: str | None = Query(None, description="Filter by strategy_id"),
     source: str | None = Query(None, description="Filter by source (tradingview_csv | exchange_data)"),
+    include_demo: bool = Query(False, description="Include seeded demo rows such as tvpar_demo_*"),
     limit: int = Query(50, ge=1, le=500, description="Maximum number of runs to return"),
 ) -> dict[str, Any]:
     """List TV parity runs discovered on disk, newest first.
@@ -880,6 +888,8 @@ async def list_tv_parity_runs(
     one request per row.
     """
     entries = _list_tv_parity_history(state)
+    if not include_demo:
+        entries = [e for e in entries if not e.get("is_demo")]
     if strategy_id is not None and strategy_id != "":
         entries = [e for e in entries if e.get("strategy_id") == strategy_id]
     if source is not None and source != "":
@@ -893,6 +903,7 @@ async def list_tv_parity_runs(
         "limit": limit,
         "strategy_id": strategy_id,
         "source": source,
+        "include_demo": include_demo,
     }
 
 
@@ -1000,11 +1011,37 @@ async def run_tv_parity(
                 timeframe=strategy.timeframe,
                 from_ms=requested_from,
                 to_ms=requested_to,
+                drop_pre_window=False,
             )
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
-        compare_from_ms = requested_compare_from if requested_compare_from is not None else parsed.summary["from_time"]
-        compare_to_ms = requested_compare_to if requested_compare_to is not None else parsed.summary["to_time"]
+        compare_from_ms = (
+            requested_compare_from
+            if requested_compare_from is not None
+            else requested_from
+            if requested_from is not None
+            else parsed.summary["from_time"]
+        )
+        compare_to_ms = (
+            requested_compare_to
+            if requested_compare_to is not None
+            else requested_to
+            if requested_to is not None
+            else parsed.summary["to_time"]
+        )
+        effective_pre_bars = sum(1 for bar in parsed.bars if int(bar.time) < compare_from_ms)
+        parsed.summary.update(
+            {
+                "calculation_from": parsed.summary["from_time"],
+                "calculation_to": parsed.summary["to_time"],
+                "compare_from": compare_from_ms,
+                "compare_to": compare_to_ms,
+                "requested_from_ms": requested_from,
+                "requested_to_ms": requested_to,
+                "effective_pre_bars": effective_pre_bars,
+                "seeded_with_full_history": effective_pre_bars > 0,
+            }
+        )
     else:
         calculation_from_ms, calculation_to_ms, compare_from_ms, compare_to_ms = _exchange_data_window(
             strategy=strategy,
@@ -1065,6 +1102,10 @@ async def run_tv_parity(
         "include_base_columns": include_base_columns,
         "compare_from": compare_from_ms,
         "compare_to": compare_to_ms,
+        "requested_from_ms": requested_from,
+        "requested_to_ms": requested_to,
+        "requested_compare_from_ms": requested_compare_from,
+        "requested_compare_to_ms": requested_compare_to,
         "candle_summary": parsed.summary,
         "uploads": _public_path_map(uploads, run_root),
     }

@@ -116,6 +116,36 @@ def test_export_trades_filters_closed_by_exit_time(tmp_path):
     assert exported["trade_id"].tolist() == ["in"]
 
 
+def test_export_trades_window_outputs_closed_trades_only(tmp_path):
+    output = tmp_path / "trades.csv"
+
+    rows = export_trades(
+        [
+            {
+                "trade_id": "visible-closed",
+                "status": "closed",
+                "direction": "long",
+                "entry_time_ms": 1000,
+                "exit_time_ms": 2000,
+            },
+            {
+                "trade_id": "visible-open",
+                "status": "open",
+                "direction": "long",
+                "entry_time_ms": 2000,
+                "exit_time_ms": None,
+            },
+        ],
+        output,
+        window=ExportWindow(1500, 2500),
+    )
+
+    exported = pd.read_csv(output)
+    assert rows == 1
+    assert exported["trade_id"].tolist() == ["visible-closed"]
+    assert exported["status"].tolist() == ["closed"]
+
+
 def test_export_equity_curve_filters_visible_window(tmp_path):
     output = tmp_path / "equity_curve.csv"
 
@@ -185,7 +215,7 @@ def test_export_strategy_result_filters_all_outputs_to_visible_window(tmp_path):
     )
 
     assert exported.plots_rows == 1
-    assert exported.trades_rows == 2
+    assert exported.trades_rows == 1
     assert exported.all_trades_rows == 4
     assert exported.equity_rows == 1
     assert exported.initial_equity_at_export_start == 9900.0
@@ -196,7 +226,7 @@ def test_export_strategy_result_filters_all_outputs_to_visible_window(tmp_path):
     equity = pd.read_csv(tmp_path / "equity_curve.csv")
 
     assert plots["bar_time"].tolist() == [2000]
-    assert trades["trade_id"].tolist() == ["visible-close", "visible-open"]
+    assert trades["trade_id"].tolist() == ["visible-close"]
     assert all_trades["trade_id"].tolist() == [
         "prehistory-close",
         "visible-close",

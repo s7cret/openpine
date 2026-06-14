@@ -299,6 +299,100 @@ def test_run_endpoint_queues_tv_candle_replay_without_server_side_paths(tmp_path
     assert request_payload["capture_plots"] is True
 
 
+def test_run_endpoint_treats_csv_from_time_as_visible_window_not_calculation_window(
+    tmp_path: Path, monkeypatch
+):
+    class FakeStrategyRegistry:
+        def get_strategy(self, strategy_id: str):
+            assert strategy_id == "strat_csv_window"
+            return SimpleNamespace(
+                strategy_id="strat_csv_window",
+                pine_id="pine_1",
+                artifact_id="art_1",
+                params_hash="params_1",
+                exchange="binance",
+                market_type="spot",
+                symbol="BTCUSDT",
+                timeframe="1m",
+                params_json=None,
+            )
+
+    class FakeBacktestStore:
+        def __init__(self):
+            self.requests = []
+
+        def create_run(self, request):
+            self.requests.append(request)
+            return "run_csv_window"
+
+    seen = {}
+
+    async def fake_background(**kwargs):
+        parsed = kwargs["parsed"]
+        seen["bars"] = len(parsed.bars)
+        seen["summary"] = dict(parsed.summary)
+        result_path = kwargs["run_root"] / "tv_parity_result.json"
+        payload = json.loads(result_path.read_text(encoding="utf-8"))
+        payload["status"] = "done"
+        result_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    fake_store = FakeBacktestStore()
+    state = SimpleNamespace(
+        config=SimpleNamespace(data_dir=tmp_path),
+        strategy_registry=FakeStrategyRegistry(),
+        backtest_store=fake_store,
+    )
+    app = FastAPI()
+    app.include_router(tv_parity.router, prefix="/api")
+    from openpine.gateway.deps import get_state
+
+    app.dependency_overrides[get_state] = lambda: state
+    monkeypatch.setattr(tv_parity, "_run_tv_parity_background", fake_background)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/tv-parity/run",
+        data={
+            "strategy_id": "strat_csv_window",
+            "from_time": "1704067260000",
+            "to_time": "1704067380000",
+            "capture_plots": "true",
+        },
+        files={
+            "candles_file": (
+                "candles.csv",
+                "time,open,high,low,close,volume\n"
+                "1704067200000,1,2,0.5,1.5,10\n"
+                "1704067260000,1.5,2.5,1,2,11\n"
+                "1704067320000,2,3,1.5,2.5,12\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["valid_bars"] == 3
+    assert payload["locked_period"] == {
+        "from_time": 1704067260000,
+        "to_time": 1704067380000,
+    }
+    assert seen["bars"] == 3
+    assert seen["summary"]["valid_bars"] == 3
+    assert seen["summary"]["from_time"] == 1704067200000
+    assert seen["summary"]["to_time"] == 1704067380000
+    assert seen["summary"]["compare_from"] == 1704067260000
+    assert seen["summary"]["compare_to"] == 1704067380000
+    assert seen["summary"]["effective_pre_bars"] == 1
+    request_payload = json.loads(
+        (tmp_path / "tv-parity" / "run_csv_window" / "request.json").read_text(encoding="utf-8")
+    )
+    assert request_payload["requested_from_ms"] == 1704067260000
+    assert request_payload["requested_to_ms"] == 1704067380000
+    assert fake_store.requests[0].from_time == 1704067200000
+    assert fake_store.requests[0].to_time == 1704067380000
+
+
 def test_parser_filters_invalid_duplicate_and_window_rows(tmp_path: Path):
     candles = tmp_path / "mixed.csv"
     candles.write_text(
@@ -1435,6 +1529,55 @@ def test_list_tv_parity_runs_returns_disk_history_newest_first(tmp_path: Path) -
     assert first["symbol"] == "BTCUSDT"
     assert first["source"] == "exchange_data"
     assert first["status"] == "running"
+
+
+def test_list_tv_parity_runs_hides_seeded_demo_rows_by_default(tmp_path: Path) -> None:
+    from fastapi import FastAPI
+    from openpine.gateway.deps import get_state
+
+    state = SimpleNamespace(config=SimpleNamespace(data_dir=tmp_path))
+    base = tmp_path / "tv-parity"
+
+    def _seed(run_id: str, queued_at: int, status: str) -> None:
+        rd = base / run_id
+        rd.mkdir(parents=True)
+        payload = {
+            "run_id": run_id,
+            "strategy_id": "strat_a",
+            "source": "tradingview_csv",
+            "status": status,
+            "queued_at": queued_at,
+            "compare_from": 1,
+            "compare_to": 2,
+            "candle_summary": {
+                "symbol": "BTCUSDT",
+                "exchange": "binance",
+                "market_type": "spot",
+                "timeframe": "1h",
+                "valid_bars": 24,
+                "from_time": 1,
+                "to_time": 2,
+            },
+        }
+        (rd / "tv_parity_result.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    _seed("tvpar_demo_002", 9_000, "running")
+    _seed("run_real_001", 8_000, "done")
+
+    app = FastAPI()
+    app.include_router(tv_parity.router, prefix="/api")
+    app.dependency_overrides[get_state] = lambda: state
+    client = TestClient(app)
+
+    default_payload = client.get("/api/tv-parity/runs").json()
+    assert default_payload["total"] == 1
+    assert [e["run_id"] for e in default_payload["items"]] == ["run_real_001"]
+    assert default_payload["include_demo"] is False
+
+    debug_payload = client.get("/api/tv-parity/runs", params={"include_demo": True}).json()
+    assert debug_payload["total"] == 2
+    assert [e["run_id"] for e in debug_payload["items"]] == ["tvpar_demo_002", "run_real_001"]
+    assert debug_payload["include_demo"] is True
 
 
 def test_list_tv_parity_runs_filters_by_strategy_and_source(tmp_path: Path) -> None:

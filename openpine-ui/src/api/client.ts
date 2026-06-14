@@ -175,6 +175,7 @@ export type TvParityHistoryEntry = {
   valid_bars: number | null
   from_time: number | null
   to_time: number | null
+  is_demo?: boolean
 }
 
 export type TvParityHistoryResponse = {
@@ -183,11 +184,13 @@ export type TvParityHistoryResponse = {
   limit: number
   strategy_id: string | null
   source: string | null
+  include_demo?: boolean
 }
 
 export const listTvParityRuns = (params?: {
   strategy_id?: string
   source?: 'tradingview_csv' | 'exchange_data'
+  include_demo?: boolean
   limit?: number
 }) => api.get('/tv-parity/runs', { params })
 

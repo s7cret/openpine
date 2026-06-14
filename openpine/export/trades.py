@@ -25,10 +25,9 @@ def export_trades(
         row = trade_row(trade)
         if window is not None:
             status = str(row.get("status") or "").lower()
-            if status == "closed":
-                if not window.contains(int_or_none(row.get("exit_time_ms"))):
-                    continue
-            elif not window.contains(int_or_none(row.get("entry_time_ms"))):
+            if status != "closed":
+                continue
+            if not window.contains(int_or_none(row.get("exit_time_ms"))):
                 continue
         rows.append(row)
     pd.DataFrame(rows, columns=TRADE_COLUMNS).to_csv(output, index=False)

@@ -85,8 +85,10 @@ describe('settings helpers', () => {
 
   it('renders stable quote controls only behind the stable-only toggle', () => {
     const settingsVue = readFileSync(resolve(srcRoot, 'pages/Settings.vue'), 'utf8')
+    const enMessages = JSON.parse(readFileSync(resolve(srcRoot, 'i18n/locales/en.json'), 'utf8'))
     expect(settingsVue).toContain('v-if="form.stableQuotesOnly"')
-    expect(settingsVue).toContain('Stable quote assets')
+    expect(settingsVue).toContain("t('settings.stableQuotes')")
+    expect(enMessages.settings.stableQuotes).toBe('Stable quote assets')
     expect(settingsVue).not.toContain('stableQuoteAssetsText')
   })
 
