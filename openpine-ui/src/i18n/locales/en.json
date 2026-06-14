@@ -1,0 +1,84 @@
+{
+  "app": {
+    "name": "OpenPine",
+    "version": "OpenPine Gateway v1.0",
+    "connected": "Connected",
+    "gatewayOnline": "Gateway online"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "pineFiles": "Pine Files",
+    "strategies": "Strategies",
+    "backtests": "Backtests",
+    "tvParity": "TV Parity",
+    "data": "Data",
+    "achievements": "Achievements",
+    "settings": "Settings"
+  },
+  "common": {
+    "refresh": "Refresh",
+    "reset": "Reset",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "back": "Back",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "close": "Close",
+    "error": "Error",
+    "success": "Success"
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "ru": "Russian",
+    "description": "Used for UI text. Affects display only; does not change exchange or chart data."
+  },
+  "dashboard": {
+    "title": "Dashboard"
+  },
+  "achievements": {
+    "title": "Achievements",
+    "live": "Live",
+    "offline": "Backend offline",
+    "backendOk": "Live · {count} items",
+    "loadingEmpty": "Loading achievements…",
+    "noTier": "No achievements in this tier. Try \"All\".",
+    "backendDown": "Backend unavailable. Showing nothing.",
+    "tierAll": "All tiers",
+    "tierProHint": "Getting started",
+    "tierUltraHint": "Serious trader",
+    "tierHyperHint": "Hardcore",
+    "tierApexHint": "One in a million",
+    "unlocked": "✓ UNLOCKED"
+  },
+  "settings": {
+    "title": "⚙️ Settings",
+    "subtitle": "Runtime-safe OpenPine settings exposed without secrets.",
+    "saved": "Settings saved. New defaults will be used by symbol search, strategy creation, and data health views.",
+    "saveSettings": "Save Settings",
+    "sectionTime": "Time & chart defaults",
+    "sectionTimeDesc": "Used by date rendering, strategy form defaults, and future scheduler views.",
+    "sectionMarket": "Market data catalog",
+    "sectionMarketDesc": "Controls which timeframes and pairs the UI surfaces first. This does not hide explicitly stored data.",
+    "sectionLanguage": "Language & locale",
+    "sectionLanguageDesc": "Used for UI text. Affects display only; does not change exchange or chart data.",
+    "timezone": "Timezone",
+    "timezoneHint": "Popular UTC offsets only: {shown} shown / {unique} unique current offsets / {iana} IANA zones.",
+    "defaultTimeframe": "Default timeframe",
+    "defaultTimeframeHint": "Used as the default in new strategy forms.",
+    "enabledTimeframes": "Enabled timeframes",
+    "stableOnly": "Show only stablecoin pairs by default",
+    "stableOnlyHint": "Enable to choose which stable quote assets the UI prioritizes.",
+    "stableQuotes": "Stable quote assets",
+    "stableNone": "No stable quote assets selected.",
+    "stableAddPlaceholder": "Add stablecoin, e.g. PYUSD",
+    "stableAdd": "Add",
+    "symbolLimit": "Symbol search limit",
+    "symbolLimitHint": "Backend max result count per `/api/data/symbols` query.",
+    "include3m": "Includes 3m. Backend validates the list before saving."
+  }
+}

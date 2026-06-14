@@ -1,27 +1,34 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import TradeNotifications from '@/components/TradeNotifications.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const sidebarOpen = ref(false)
 
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { path: '/pine-files', label: 'Pine Files', icon: '📄' },
-  { path: '/strategies', label: 'Strategies', icon: '⚡' },
-  { path: '/backtests', label: 'Backtests', icon: '🧪' },
-  { path: '/tv-parity', label: 'TV Parity', icon: '📺' },
-  { path: '/data', label: 'Data', icon: '💾' },
-  { path: '/achievements', label: 'Achievements', icon: '🏆' },
-  { path: '/settings', label: 'Settings', icon: '⚙️' },
-]
+const navItems = computed(() => [
+  { path: '/dashboard',    label: t('nav.dashboard'),    icon: '📊' },
+  { path: '/pine-files',   label: t('nav.pineFiles'),    icon: '📄' },
+  { path: '/strategies',   label: t('nav.strategies'),   icon: '⚡' },
+  { path: '/backtests',    label: t('nav.backtests'),    icon: '🧪' },
+  { path: '/tv-parity',    label: t('nav.tvParity'),     icon: '📺' },
+  { path: '/data',         label: t('nav.data'),         icon: '💾' },
+  { path: '/achievements', label: t('nav.achievements'), icon: '🏆' },
+  { path: '/settings',     label: t('nav.settings'),     icon: '⚙️' },
+])
 
 function navigate(path: string) {
   router.push(path)
   sidebarOpen.value = false
 }
+
+const currentTitle = computed(
+  () => navItems.value.find(i => i.path === route.path)?.label ?? t('app.name')
+)
 </script>
 
 <template>
@@ -59,7 +66,7 @@ function navigate(path: string) {
 
       <!-- Footer -->
       <div class="p-3 border-t border-dark-500">
-        <div class="text-xs text-gray-500">OpenPine Gateway v1.0</div>
+        <div class="text-xs text-gray-500">{{ t('app.version') }}</div>
       </div>
     </aside>
 
@@ -72,10 +79,13 @@ function navigate(path: string) {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <div class="text-sm text-gray-400">{{ navItems.find(i => i.path === route.path)?.label ?? 'OpenPine' }}</div>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-success animate-pulse" title="Gateway online" />
-          <span class="text-xs text-gray-500">Connected</span>
+        <div class="text-sm text-gray-400">{{ currentTitle }}</div>
+        <div class="flex items-center gap-3">
+          <LanguageSwitcher />
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-success animate-pulse" :title="t('app.gatewayOnline')" />
+            <span class="text-xs text-gray-500">{{ t('app.connected') }}</span>
+          </div>
         </div>
       </header>
 

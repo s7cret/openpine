@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getSettings, updateSettings } from '@/api/client'
 import {
   addStableQuoteAsset,
@@ -14,6 +15,11 @@ import {
   type SettingsFormState,
   type TimezoneOption,
 } from '@/lib/settings'
+import { useLocaleStore } from '@/stores/locale'
+import { SUPPORTED_LOCALES, type LocaleCode } from '@/i18n'
+
+const { t, locale } = useI18n()
+const localeStore = useLocaleStore()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -75,6 +81,13 @@ function removeStableQuote(asset: string) {
   form.value.stableQuoteAssets = removeStableQuoteAsset(form.value.stableQuoteAssets, asset)
 }
 
+function setLanguage(code: LocaleCode) {
+  localeStore.change(code)
+  // vue-i18n's `locale` ref is mirrored in the store; this also writes
+  // localStorage and updates <html lang>. No reload needed.
+  locale.value = code
+}
+
 async function save() {
   if (!form.value) return
   saving.value = true
@@ -85,7 +98,7 @@ async function save() {
     const { data } = await updateSettings(payload)
     form.value = normalizeSettingsPayload(data)
     stableQuoteInput.value = ''
-    status.value = 'Settings saved. New defaults will be used by symbol search, strategy creation, and data health views.'
+    status.value = t('settings.saved')
   } catch (e: any) {
     const detail = e?.response?.data?.detail
     error.value = typeof detail === 'string' ? detail : JSON.stringify(detail ?? e?.message ?? 'Failed to save settings')
@@ -101,15 +114,15 @@ onMounted(load)
   <div class="mx-auto max-w-5xl space-y-4">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-lg font-semibold text-gray-200">⚙️ Settings</h1>
-        <p class="text-sm text-gray-500">Runtime-safe OpenPine settings exposed without secrets.</p>
+        <h1 class="text-lg font-semibold text-gray-200">{{ t('settings.title') }}</h1>
+        <p class="text-sm text-gray-500">{{ t('settings.subtitle') }}</p>
       </div>
       <button
         class="self-start rounded-lg bg-dark-700 px-3 py-2 text-sm text-gray-300 hover:bg-dark-600 disabled:opacity-50"
         :disabled="loading"
         @click="load"
       >
-        Refresh
+        {{ t('common.refresh') }}
       </button>
     </div>
 
@@ -120,22 +133,48 @@ onMounted(load)
       {{ status }}
     </div>
     <div v-if="loading && !form" class="rounded-xl border border-dark-500 bg-dark-800 px-4 py-8 text-center text-sm text-gray-500">
-      Loading settings...
+      {{ t('common.loading') }}
     </div>
 
     <form v-if="form" class="space-y-4" @submit.prevent="save">
+      <!-- Language & locale -->
+      <section class="rounded-xl border border-dark-500 bg-dark-800 p-4">
+        <div class="border-b border-dark-600 pb-3">
+          <h2 class="text-sm font-semibold text-gray-200">{{ t('settings.sectionLanguage') }}</h2>
+          <p class="mt-1 text-xs text-gray-500">{{ t('settings.sectionLanguageDesc') }}</p>
+        </div>
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label class="block sm:max-w-xs">
+            <span class="text-xs uppercase tracking-wide text-gray-500">{{ t('language.label') }}</span>
+            <select
+              :value="localeStore.current"
+              @change="(e) => setLanguage(((e.target as HTMLSelectElement).value as LocaleCode))"
+              class="mt-1 w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none"
+            >
+              <option v-for="code in SUPPORTED_LOCALES" :key="code" :value="code">
+                {{ t(`language.${code}`) }}
+              </option>
+            </select>
+          </label>
+          <div class="text-xs text-gray-500">
+            Current: <span class="font-semibold text-gray-300">{{ t(`language.${localeStore.current}`) }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Time & chart defaults -->
       <section class="rounded-xl border border-dark-500 bg-dark-800 p-4">
         <div class="flex flex-col gap-1 border-b border-dark-600 pb-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 class="text-sm font-semibold text-gray-200">Time & chart defaults</h2>
-            <p class="text-xs text-gray-500">Used by date rendering, strategy form defaults, and future scheduler views.</p>
+            <h2 class="text-sm font-semibold text-gray-200">{{ t('settings.sectionTime') }}</h2>
+            <p class="text-xs text-gray-500">{{ t('settings.sectionTimeDesc') }}</p>
           </div>
           <div class="text-xs text-gray-500">Resolved: {{ resolvedTimezoneLabel }}</div>
         </div>
 
         <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           <label class="block">
-            <span class="text-xs uppercase tracking-wide text-gray-500">Timezone</span>
+            <span class="text-xs uppercase tracking-wide text-gray-500">{{ t('settings.timezone') }}</span>
             <select
               v-model="form.timezone"
               class="mt-1 w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none"
@@ -145,33 +184,34 @@ onMounted(load)
               </option>
             </select>
             <span class="mt-1 block text-xs text-gray-500">
-              Popular UTC offsets only: {{ timezoneOptions.length }} shown / {{ UNIQUE_CURRENT_UTC_OFFSET_COUNT }} unique current offsets / {{ IANA_TIMEZONE_COUNT }} IANA zones.
+              {{ t('settings.timezoneHint', { shown: timezoneOptions.length, unique: UNIQUE_CURRENT_UTC_OFFSET_COUNT, iana: IANA_TIMEZONE_COUNT }) }}
             </span>
           </label>
 
           <label class="block">
-            <span class="text-xs uppercase tracking-wide text-gray-500">Default timeframe</span>
+            <span class="text-xs uppercase tracking-wide text-gray-500">{{ t('settings.defaultTimeframe') }}</span>
             <select
               v-model="form.defaultTimeframe"
               class="mt-1 w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none"
             >
               <option v-for="tf in defaultTimeframeOptions" :key="tf" :value="tf">{{ tf }}</option>
             </select>
-            <span class="mt-1 block text-xs text-gray-500">Used as the default in new strategy forms.</span>
+            <span class="mt-1 block text-xs text-gray-500">{{ t('settings.defaultTimeframeHint') }}</span>
           </label>
         </div>
       </section>
 
+      <!-- Market data catalog -->
       <section class="rounded-xl border border-dark-500 bg-dark-800 p-4">
         <div class="border-b border-dark-600 pb-3">
-          <h2 class="text-sm font-semibold text-gray-200">Market data catalog</h2>
-          <p class="text-xs text-gray-500">Controls which timeframes and pairs the UI surfaces first. This does not hide explicitly stored data.</p>
+          <h2 class="text-sm font-semibold text-gray-200">{{ t('settings.sectionMarket') }}</h2>
+          <p class="text-xs text-gray-500">{{ t('settings.sectionMarketDesc') }}</p>
         </div>
 
         <div class="mt-4 space-y-4">
           <div>
             <div class="mb-2 flex items-center justify-between gap-3">
-              <span class="text-xs uppercase tracking-wide text-gray-500">Enabled timeframes</span>
+              <span class="text-xs uppercase tracking-wide text-gray-500">{{ t('settings.enabledTimeframes') }}</span>
               <span class="text-xs text-gray-500">{{ enabledTimeframes.join(', ') }}</span>
             </div>
             <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-8">
@@ -190,7 +230,7 @@ onMounted(load)
                 {{ tf }}
               </button>
             </div>
-            <p class="mt-2 text-xs text-gray-500">Includes 3m. Backend validates the list before saving.</p>
+            <p class="mt-2 text-xs text-gray-500">{{ t('settings.include3m') }}</p>
           </div>
 
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -201,14 +241,14 @@ onMounted(load)
                 class="mt-1 h-4 w-4 rounded border-dark-500 bg-dark-700 text-accent focus:ring-accent"
               />
               <span>
-                <span class="block text-sm font-medium text-gray-200">Show only stablecoin pairs by default</span>
-                <span class="block text-xs text-gray-500">Enable to choose which stable quote assets the UI prioritizes.</span>
+                <span class="block text-sm font-medium text-gray-200">{{ t('settings.stableOnly') }}</span>
+                <span class="block text-xs text-gray-500">{{ t('settings.stableOnlyHint') }}</span>
               </span>
             </label>
 
             <div v-if="form.stableQuotesOnly" class="rounded-xl border border-dark-600 bg-dark-700/60 p-3">
               <div class="flex items-center justify-between gap-3">
-                <span class="text-xs uppercase tracking-wide text-gray-500">Stable quote assets</span>
+                <span class="text-xs uppercase tracking-wide text-gray-500">{{ t('settings.stableQuotes') }}</span>
                 <span class="text-xs text-gray-500">{{ stableQuotes.length }} selected</span>
               </div>
 
@@ -224,18 +264,18 @@ onMounted(load)
                   <span>{{ asset }}</span>
                   <span aria-hidden="true">×</span>
                 </button>
-                <span v-if="!stableQuotes.length" class="text-sm text-warning">No stable quote assets selected.</span>
+                <span v-if="!stableQuotes.length" class="text-sm text-warning">{{ t('settings.stableNone') }}</span>
               </div>
 
               <div class="mt-3 flex flex-col gap-2 sm:flex-row">
                 <input
                   v-model.trim="stableQuoteInput"
                   class="min-w-0 flex-1 rounded-lg border border-dark-500 bg-dark-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-accent focus:outline-none"
-                  placeholder="Add stablecoin, e.g. PYUSD"
+                  :placeholder="t('settings.stableAddPlaceholder')"
                   @keydown.enter.prevent="addStableQuoteFromInput"
                 />
                 <button type="button" class="rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="addStableQuoteFromInput">
-                  Add
+                  {{ t('settings.stableAdd') }}
                 </button>
               </div>
 
@@ -255,7 +295,7 @@ onMounted(load)
           </div>
 
           <label class="block max-w-xs">
-            <span class="text-xs uppercase tracking-wide text-gray-500">Symbol search limit</span>
+            <span class="text-xs uppercase tracking-wide text-gray-500">{{ t('settings.symbolLimit') }}</span>
             <input
               v-model.number="form.symbolSearchLimit"
               type="number"
@@ -263,7 +303,7 @@ onMounted(load)
               max="500"
               class="mt-1 w-full rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200 focus:border-accent focus:outline-none"
             />
-            <span class="mt-1 block text-xs text-gray-500">Backend max result count per `/api/data/symbols` query.</span>
+            <span class="mt-1 block text-xs text-gray-500">{{ t('settings.symbolLimitHint') }}</span>
           </label>
         </div>
       </section>
@@ -271,10 +311,10 @@ onMounted(load)
       <div class="sticky bottom-0 -mx-4 border-t border-dark-500 bg-dark-900/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
         <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button type="button" class="rounded-lg bg-dark-700 px-4 py-2 text-sm text-gray-300 hover:bg-dark-600" @click="load">
-            Reset
+            {{ t('common.reset') }}
           </button>
           <button type="submit" :disabled="saving || !form.timeframes.length" class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-light disabled:opacity-50">
-            {{ saving ? 'Saving...' : 'Save Settings' }}
+            {{ saving ? t('common.saving') : t('settings.saveSettings') }}
           </button>
         </div>
       </div>
