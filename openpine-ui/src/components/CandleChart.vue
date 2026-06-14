@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createChart, ColorType, CrosshairMode } from 'lightweight-charts'
 import DateRangePicker from './DateRangePicker.vue'
 import type { IChartApi, ISeriesApi, CandlestickData, HistogramData, Time, SeriesMarker } from 'lightweight-charts'
 import { formatChartTime } from '@/utils/time'
 import { getDataKlines } from '@/api/client'
+
+const { t } = useI18n()
 
 interface Trade {
   side: string
@@ -238,7 +241,7 @@ async function loadData() {
     const toMs = new Date(dateTo.value + 'T23:59:59Z').getTime()
     emit('dataRange', { fromMs, toMs })
   } catch (e) {
-    console.error('Chart data load failed', e)
+    console.error(t('candleChart.loadFailed'), e)
   }
 }
 

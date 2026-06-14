@@ -66,7 +66,7 @@ const currentTitle = computed(
 
       <!-- Footer -->
       <div class="p-3 border-t border-dark-500">
-        <div class="text-xs text-gray-500">{{ t('app.version') }}</div>
+        <div class="text-xs text-gray-500">{{ t('app.version') }} · {{ t('app.gatewayOnline') }}</div>
       </div>
     </aside>
 

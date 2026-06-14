@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getOrders } from '@/api/client'
 
 interface Toast {
@@ -20,6 +21,7 @@ let isFirstLoad = true
 const mountedAt = Date.now()
 const RECENT_ORDER_GRACE_MS = 60_000
 const SEEN_STORAGE_KEY = 'openpine.notifiedTradeOrderKeys.v2'
+const { t } = useI18n()
 
 function loadNotifiedKeys() {
   try {
@@ -170,10 +172,10 @@ onUnmounted(() => {
             </span>
           </div>
           <div class="text-[11px] uppercase tracking-wide text-accent-light mt-0.5">
-            New trade
+            {{ t('tradeNotifications.newTrade') }}
           </div>
           <div class="text-xs text-gray-400 mt-0.5">
-            Qty: {{ toast.qty }} · Price: {{ formatPrice(toast.price) }}
+            {{ t('tradeNotifications.qty') }}: {{ toast.qty }} · {{ t('tradeNotifications.price') }}: {{ formatPrice(toast.price) }}
           </div>
           <div class="text-xs text-gray-500 mt-0.5 truncate">
             {{ toast.strategyId.slice(0, 20) }}...

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { tm, t } = useI18n()
 
 const props = defineProps<{
   from: string
@@ -31,9 +34,22 @@ const initCalRight = () => {
 }
 initCalRight()
 
-const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December']
-const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-const dayNames = ['Mo','Tu','We','Th','Fr','Sa','Su']
+const monthNames = computed<string[]>(() => {
+  // monthNames in JSON order: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
+  const list = tm('dateRange.monthsFull') as unknown
+  if (Array.isArray(list)) return list as string[]
+  return ['January','February','March','April','May','June','July','August','September','October','November','December']
+})
+const monthShort = computed<string[]>(() => {
+  const list = tm('dateRange.monthsShort') as unknown
+  if (Array.isArray(list)) return list as string[]
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+})
+const dayNames = computed<string[]>(() => {
+  const list = tm('dateRange.dayNamesShort') as unknown
+  if (Array.isArray(list)) return list as string[]
+  return ['Mo','Tu','We','Th','Fr','Sa','Su']
+})
 
 const presets = [
   { label: '1D', days: 1 },
@@ -306,13 +322,13 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
         <!-- Selected range display -->
         <div class="mt-2 flex flex-col gap-2 border-t border-dark-600 pt-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:pt-3">
           <div class="flex min-w-0 flex-wrap items-center gap-1.5 text-xs sm:gap-2 sm:text-sm">
-            <span class="text-gray-500">Selected:</span>
+            <span class="text-gray-500">{{ t('dateRangePicker.selected') }}</span>
             <span class="text-accent font-medium">{{ fmtDisplay(localFrom) }}</span>
             <span class="text-gray-500">→</span>
             <span class="text-accent font-medium">{{ fmtDisplay(localTo) }}</span>
           </div>
           <button @click="isOpen = false" class="w-full rounded-md bg-accent px-3 py-1.5 text-xs text-white transition-colors hover:bg-accent-dark sm:w-auto sm:rounded-lg">
-            Done
+            {{ t('dateRangePicker.done') }}
           </button>
         </div>
       </div>
