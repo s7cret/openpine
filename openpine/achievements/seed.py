@@ -36,6 +36,7 @@ def seed_achievements(storage: SQLiteStorage) -> int:
                 a.reward,
                 1 if a.hidden else 0,
                 sort,
+                1 if a.inverted else 0,
                 now,
                 now,
             )
@@ -46,8 +47,8 @@ def seed_achievements(storage: SQLiteStorage) -> int:
         """
         INSERT OR REPLACE INTO achievements(
             id, tier, icon, title, description, target_value, metric,
-            reward, hidden, sort_order, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            reward, hidden, sort_order, inverted, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         cast(Any, rows),
     )

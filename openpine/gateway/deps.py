@@ -108,7 +108,11 @@ class GatewayState:
             )
         self.achievement_engine = AchievementEngine(self.storage)
         try:
-            self.achievement_engine.recompute_stats()
+            # recompute_stats() rebuilds achievement_stats; refresh()
+            # also runs check_unlocks() so newly-met targets land in
+            # achievement_unlocks on startup. Without this the UI sees
+            # 0 unlocked until the 5-min background tick fires.
+            self.achievement_engine.refresh()
         except Exception as exc:
             from openpine._compat import structlog
             structlog.get_logger(__name__).warning(

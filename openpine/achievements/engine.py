@@ -32,16 +32,31 @@ log = structlog.get_logger(__name__)
 # source columns are guarded by the achievements compat schema layer
 # (storage/schema_compat.py), which adds them on first run.
 _METRIC_SQL: dict[str, str] = {
-    # Data lake
+    # Data lake — `candle_manifests` is the authoritative source
+    # for bar counts (per-symbol, per-timeframe), written on every
+    # successful candle pull.
     "bars_loaded":  "SELECT COALESCE(SUM(row_count), 0) FROM candle_manifests",
     "bars_cached":  "SELECT COALESCE(SUM(row_count), 0) FROM candle_manifests",
-    # Orders / fills
-    "trades":       "SELECT COUNT(*) FROM orders WHERE status IN ('filled','closed')",
-    "symbols":      "SELECT COUNT(DISTINCT symbol) FROM orders",
-    "exchanges":    "SELECT COUNT(DISTINCT COALESCE(account_id, symbol)) FROM orders",
-    # Strategies
+    # Orders / fills — `backtest_trades` is the live order ledger
+    # (76k+ rows in real deployments). `symbol`/`exchange` live on
+    # `backtest_runs` (denormalized at run time), so we JOIN.
+    "trades":       "SELECT COUNT(*) FROM backtest_trades",
+    "symbols": (
+        "SELECT COUNT(DISTINCT r.symbol) "
+        "FROM backtest_trades t JOIN backtest_runs r ON r.run_id = t.run_id"
+    ),
+    "exchanges": (
+        "SELECT COUNT(DISTINCT r.exchange) "
+        "FROM backtest_trades t JOIN backtest_runs r ON r.run_id = t.run_id"
+    ),
+    # Strategies — count distinct strategy instances.
     "strategies":   "SELECT COUNT(*) FROM strategy_instances",
-    "udt_strategies": "SELECT COUNT(*) FROM strategy_instances WHERE uses_udt = 1",
+    # UDT detection — derived view `v_strategy_udt` from migration
+    # 014. Joins strategy_instances with pine_sources and flags a
+    # 1 when the Pine source declares `type <Name>` (v6 UDT syntax).
+    "udt_strategies": (
+        "SELECT COUNT(*) FROM v_strategy_udt WHERE uses_udt = 1"
+    ),
     # Backtest outcomes — pnl_peak is the best-ever pct return across
     # all completed runs. max_drawdown_pct is stored as a positive
     # number (the drawdown), so the achievement target is the *lowest*
@@ -51,60 +66,73 @@ _METRIC_SQL: dict[str, str] = {
     "pnl_peak_pct":  "SELECT COALESCE(MAX(net_profit_pct), 0) FROM backtest_runs WHERE status='done'",
     "max_drawdown_pct": "SELECT COALESCE(MIN(max_drawdown_pct), 100) FROM backtest_runs WHERE status='done' AND max_drawdown_pct IS NOT NULL",
     "sharpe":        "SELECT COALESCE(MAX(sharpe), 0) FROM backtest_runs WHERE status='done' AND sharpe IS NOT NULL",
-    "winrate_pct":   "SELECT COALESCE(MAX(win_rate), 0) * 100 FROM backtest_runs WHERE status='done' AND win_rate IS NOT NULL",
-    # Throughput — bars_per_sec and bars_per_min are added by the
-    # compat schema to backtest_runs. We use the best run.
+    # `backtest_runs.win_rate` is already stored as a percent (0-100).
+    "winrate_pct":   "SELECT COALESCE(MAX(win_rate), 0) FROM backtest_runs WHERE status='done' AND win_rate IS NOT NULL",
+    # Throughput — `bars_per_sec`, `bars_per_min`, `bars_processed`
+    # are added by the compat schema to `backtest_runs` and written
+    # by `BacktestResultStore.save_result`. We use the best run.
     "speed_bars_sec": "SELECT COALESCE(MAX(bars_per_sec), 0) FROM backtest_runs WHERE status='done'",
     "speed_bars_min": "SELECT COALESCE(MAX(bars_per_min), 0) FROM backtest_runs WHERE status='done'",
     # Live uptime: longest single-session uptime (in hours) for any
     # strategy that has been enabled and was running. We approximate
     # by (updated_at - created_at) for any non-pending instance.
+    # ``created_at``/``updated_at`` are stored in milliseconds, so we
+    # divide by 3 600 000 to land in hours.
     "live_uptime_h": (
-        "SELECT COALESCE(MAX((updated_at - created_at) / 3600.0), 0) "
+        "SELECT COALESCE(MAX((updated_at - created_at) / 3600000.0), 0) "
         "FROM strategy_instances WHERE status NOT IN ('pending','disabled')"
     ),
-    # AST node count: pine_artifacts.ast_node_count is added by the
+    # AST node count: `pine_artifacts.ast_node_count` is added by the
     # compat schema. The compile pipeline writes the per-artifact
     # node count on every successful parse.
     "ast_nodes":     "SELECT COALESCE(SUM(ast_node_count), 0) FROM pine_artifacts",
     # Multi-TF: MAX number of distinct timeframes per single strategy
-    # instance. We group by strategy and take the max. Strategies
-    # with no timeframe data return 0.
+    # instance. Uses the derived view `v_strategy_timeframes`.
     "multi_tf_max": (
-        "SELECT COALESCE(MAX(c), 0) FROM ("
-        "  SELECT COUNT(DISTINCT timeframe) AS c "
-        "  FROM strategy_instances GROUP BY strategy_id"
-        ") sub"
+        "SELECT COALESCE(MAX(tf_count), 0) FROM v_strategy_timeframes"
     ),
     # Has 1m / 1d timeframe — boolean (1 / 0) per existing strategy.
     "has_tf_1m":     "SELECT COUNT(*) FROM strategy_instances WHERE timeframe='1m'",
     "has_tf_1d":     "SELECT COUNT(*) FROM strategy_instances WHERE timeframe='1d'",
-    # Both sides: 1 if any order exists with side='buy' AND any with
-    # side='sell'. 0 otherwise. We surface a count-of-true-conditions
-    # (0 or 1) and the catalog has a single target of 1.
+    # Both sides: 1 if any backtest_trade has direction in {long,buy}
+    # AND any has direction in {short,sell}. 0 otherwise. Catalog
+    # target is 1.
     "both_sides": (
         "SELECT CASE WHEN "
-        "  EXISTS(SELECT 1 FROM orders WHERE side='buy') AND "
-        "  EXISTS(SELECT 1 FROM orders WHERE side='sell') "
+        "  EXISTS(SELECT 1 FROM backtest_trades WHERE direction IN ('long','buy','LONG','BUY')) AND "
+        "  EXISTS(SELECT 1 FROM backtest_trades WHERE direction IN ('short','sell','SHORT','SELL')) "
         "THEN 1 ELSE 0 END"
     ),
     # Top-10 by market cap — how many of the top 10 spot pairs
     # (BTCUSDT, ETHUSDT, SOLUSDT, BNBUSDT, XRPUSDT, DOGEUSDT,
     # ADAUSDT, AVAXUSDT, TRXUSDT, DOTUSDT) the user has traded at
-    # least once. Source-of-truth = orders table.
+    # least once. Source-of-truth = backtest_runs.symbol JOIN
+    # backtest_trades.
     "mcap_top10_count": (
-        "SELECT COUNT(DISTINCT symbol) FROM orders WHERE symbol IN ("
+        "SELECT COUNT(DISTINCT r.symbol) FROM backtest_trades t "
+        "JOIN backtest_runs r ON r.run_id = t.run_id "
+        "WHERE r.symbol IN ("
         "'BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT',"
         "'ADAUSDT','AVAXUSDT','TRXUSDT','DOTUSDT'"
         ")"
     ),
-    # Event-style metrics without a source-of-truth column yet.
-    # These are placeholders that wire up the engine today so a
-    # future emission point can just write to achievement_stats.
-    "ruin_recovery":  "SELECT 0",
-    "shipped_lib":    "SELECT 0",
-    "secret_buy_zero": "SELECT 0",
-    "secret_nuclear":  "SELECT 0",
+    # Event-style metrics. Source-of-truth = `achievement_events`
+    # (migration 015), an append-only log subsystems can write to.
+    # The engine just COUNTs rows by event_type, so partial events
+    # are still meaningful.
+    "ruin_recovery": (
+        "SELECT COUNT(*) FROM achievement_events WHERE event_type = 'ruin_recovery'"
+    ),
+    "shipped_lib": (
+        "SELECT COUNT(DISTINCT source_id) FROM achievement_events "
+        "WHERE event_type = 'shipped_lib'"
+    ),
+    "secret_buy_zero": (
+        "SELECT COUNT(*) FROM achievement_events WHERE event_type = 'secret_buy_zero'"
+    ),
+    "secret_nuclear": (
+        "SELECT COUNT(*) FROM achievement_events WHERE event_type = 'secret_nuclear'"
+    ),
 }
 
 
@@ -177,7 +205,7 @@ class AchievementEngine:
             try:
                 rows = self.storage.execute(
                     """
-                    SELECT a.id, a.target_value
+                    SELECT a.id, a.target_value, a.inverted
                     FROM achievements a
                     WHERE a.metric = ?
                       AND a.id NOT IN (
@@ -190,8 +218,12 @@ class AchievementEngine:
             except Exception as exc:
                 log.debug("achievement_unlock_query_fail", metric=metric, error=str(exc))
                 continue
-            for ach_id, target in rows:
-                if value >= float(target):
+            for ach_id, target, inverted in rows:
+                if inverted:
+                    unlocked_now = value <= float(target)
+                else:
+                    unlocked_now = value >= float(target)
+                if unlocked_now:
                     try:
                         self.storage.execute(
                             """
@@ -318,3 +350,49 @@ class AchievementEngine:
         stats = self.recompute_stats()
         unlocked = self.check_unlocks(stats)
         return {"stats_computed": len(stats), "newly_unlocked": unlocked}
+
+    # ── Event emission ─────────────────────────────────
+    def record_event(
+        self,
+        event_type: str,
+        source_id: str | None = None,
+        value: float = 1.0,
+        payload: dict[str, Any] | None = None,
+    ) -> list[str]:
+        """Append a row to ``achievement_events`` and recompute that
+        single metric so unlocks fire immediately.
+
+        Returns the list of achievement ids that were just unlocked
+        (empty list when nothing crossed the threshold). Safe to call
+        from any subsystem.
+
+        This is the bridge for non-SQL metrics (ruin_recovery,
+        shipped_lib, secret_*) — anything that doesn't have a natural
+        source table. Calling code only needs to know the event_type
+        string and an optional source_id for distinct-counting.
+        """
+        import json
+        import uuid
+        now_ms = int(time.time() * 1000)
+        self.storage.execute(
+            """
+            INSERT INTO achievement_events(
+                event_id, event_type, source_id, value, payload_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                uuid.uuid4().hex,
+                event_type,
+                source_id,
+                float(value),
+                json.dumps(payload) if payload else None,
+                now_ms,
+            ),
+        )
+        self.storage.commit()
+        log.info("achievement_event_recorded", type=event_type, source=source_id)
+        # Recompute the matching metric so unlocks fire without
+        # waiting for the 5-min background tick. The metric name maps
+        # 1:1 to the event_type.
+        stats = self.recompute_stats()
+        return self.check_unlocks({event_type: stats.get(event_type, 0.0)})

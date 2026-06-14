@@ -2,12 +2,16 @@
 
 The engine is the source of truth for derived stats and unlock state.
 The route is intentionally thin: a single GET that powers the
-``/achievements`` page in the UI.
+``/achievements`` page in the UI, plus a POST event-sink for
+non-SQL metrics (ruin_recovery, shipped_lib, secret_*).
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from typing import Any
+
+from fastapi import APIRouter, Body, Depends, Query
+from pydantic import BaseModel, Field
 
 from openpine._compat import structlog
 from openpine.gateway.deps import GatewayState, get_state
@@ -20,6 +24,20 @@ from openpine.gateway.schemas import (
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/achievements", tags=["achievements"])
 STATE_DEP = Depends(get_state)
+
+
+class AchievementEventIn(BaseModel):
+    """Payload for ``POST /achievements/events``.
+
+    ``event_type`` must match a metric in the engine (e.g. 'ruin_recovery',
+    'shipped_lib', 'secret_buy_zero', 'secret_nuclear'). ``source_id``
+    is optional and used for distinct-counting (e.g. one event per
+    shipped library version). ``value`` defaults to 1.0 (count)."""
+
+    event_type: str = Field(min_length=1, max_length=64)
+    source_id: str | None = Field(default=None, max_length=128)
+    value: float = 1.0
+    payload: dict[str, Any] | None = None
 
 
 def _to_item(state_row) -> AchievementItem:
@@ -82,3 +100,29 @@ async def refresh_achievements(
     result = state.achievement_engine.refresh()
     log.info("achievements_force_refresh", **result)
     return await list_achievements(state, locale=locale, include_hidden=False)
+
+
+@router.post("/events")
+async def record_event(
+    event: AchievementEventIn = Body(...),
+    state: GatewayState = STATE_DEP,
+) -> dict[str, Any]:
+    """Append a row to ``achievement_events`` and recompute that metric.
+
+    Use this for achievements that don't have a natural SQL source
+    (ruin_recovery, shipped_lib, secret_*). The engine treats
+    ``event_type`` 1:1 as a metric name. Returns the list of
+    achievement ids that crossed their target as a result of this
+    event.
+    """
+    unlocked = state.achievement_engine.record_event(
+        event_type=event.event_type,
+        source_id=event.source_id,
+        value=event.value,
+        payload=event.payload,
+    )
+    return {
+        "event_type": event.event_type,
+        "source_id": event.source_id,
+        "newly_unlocked": unlocked,
+    }
