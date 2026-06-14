@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDashboardStore } from '@/stores/dashboard'
 import { summarizeDataHealth } from '@/lib/dataHealth'
 import { useRouter } from 'vue-router'
 
+const { t } = useI18n()
 const store = useDashboardStore()
 const router = useRouter()
 let timer: ReturnType<typeof setInterval>
@@ -40,9 +42,9 @@ const runningStrategies = computed(() => strategies.value.filter((s: any) => s.s
 function fmtAgo(ms?: number | null) {
   if (!ms) return '—'
   const sec = Math.max(0, Math.floor((Date.now() - ms) / 1000))
-  if (sec < 60) return `${sec}s ago`
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`
-  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m ago`
+  if (sec < 60) return t('dashboard.agoShort', { sec })
+  if (sec < 3600) return t('dashboard.agoMin', { m: Math.floor(sec / 60) })
+  return t('dashboard.agoHour', { h: Math.floor(sec / 3600), m: Math.floor((sec % 3600) / 60) })
 }
 
 function healthClass(status?: string) {
@@ -64,7 +66,7 @@ function jobSubtitle(job: any) {
     const progress = job.progress
     if (progress?.message) return progress.message
     const result = job.result
-    if (result?.bars_loaded != null) return `Loaded ${Number(result.bars_loaded).toLocaleString()} candles`
+    if (result?.bars_loaded != null) return t('dashboard.loadedCandles', { count: Number(result.bars_loaded).toLocaleString() })
   }
   return job.strategy_id ?? '—'
 }
@@ -72,6 +74,12 @@ function jobSubtitle(job: any) {
 function jobPct(job: any) {
   const pct = Number(job.progress?.pct ?? (job.status === 'done' ? 1 : 0))
   return Math.max(0, Math.min(100, Math.round(pct * 100)))
+}
+
+function agoShort(sec: number) {
+  if (sec < 60) return t('dashboard.agoSec', { s: sec })
+  if (sec < 3600) return t('dashboard.agoMin', { m: Math.floor(sec / 60) })
+  return t('dashboard.agoHour', { h: Math.floor(sec / 3600), m: Math.floor((sec % 3600) / 60) })
 }
 </script>
 
@@ -85,11 +93,11 @@ function jobPct(job: any) {
         @click="router.push('/pine-files')"
       >
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-500 uppercase tracking-wider">Pine Files</span>
+          <span class="text-xs text-gray-500 uppercase tracking-wider">{{ t('dashboard.statPineFiles') }}</span>
           <span class="text-xl">📄</span>
         </div>
         <div class="mt-2 text-3xl font-bold text-gray-100">{{ store.pineCount }}</div>
-        <div class="mt-1 text-xs text-gray-500">loaded sources</div>
+        <div class="mt-1 text-xs text-gray-500">{{ t('dashboard.statPineFilesDesc') }}</div>
       </div>
 
       <!-- Strategies -->
@@ -98,58 +106,58 @@ function jobPct(job: any) {
         @click="router.push('/strategies')"
       >
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-500 uppercase tracking-wider">Strategies</span>
+          <span class="text-xs text-gray-500 uppercase tracking-wider">{{ t('dashboard.statStrategies') }}</span>
           <span class="text-xl">⚡</span>
         </div>
         <div class="mt-2 text-3xl font-bold text-gray-100">{{ store.strategiesCount }}</div>
         <div class="mt-1 text-xs text-gray-500">
-          {{ store.enabledCount }} enabled / {{ runningStrategies.length }} running
+          {{ t('dashboard.statStrategiesDesc', { enabled: store.enabledCount, running: runningStrategies.length }) }}
         </div>
       </div>
 
       <!-- Errors -->
       <div class="bg-dark-800 rounded-xl border border-dark-500 p-4">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-500 uppercase tracking-wider">Errors</span>
+          <span class="text-xs text-gray-500 uppercase tracking-wider">{{ t('dashboard.statErrors') }}</span>
           <span class="text-xl">⚠️</span>
         </div>
         <div class="mt-2 text-3xl font-bold" :class="store.errorCount > 0 ? 'text-danger' : 'text-gray-100'">
           {{ store.errorCount }}
         </div>
-        <div class="mt-1 text-xs text-gray-500">failed jobs</div>
+        <div class="mt-1 text-xs text-gray-500">{{ t('dashboard.statErrorsDesc') }}</div>
       </div>
 
       <!-- System -->
       <div class="bg-dark-800 rounded-xl border border-dark-500 p-4">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-500 uppercase tracking-wider">System</span>
+          <span class="text-xs text-gray-500 uppercase tracking-wider">{{ t('dashboard.statSystem') }}</span>
           <span class="text-xl">🌐</span>
         </div>
         <div class="mt-3 space-y-2">
           <div class="flex items-center gap-2 text-sm">
             <span class="w-2 h-2 rounded-full bg-accent" />
-            <span class="text-gray-400">Market data</span>
-            <span class="ml-auto text-right text-gray-300 text-xs">{{ dataHealthSummary?.exchangeLabel ?? 'loading' }}</span>
+            <span class="text-gray-400">{{ t('dashboard.systemMarket') }}</span>
+            <span class="ml-auto text-right text-gray-300 text-xs">{{ dataHealthSummary?.exchangeLabel ?? t('dashboard.loading') }}</span>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <span :class="[staleMarketCount ? 'bg-warning' : 'bg-success', 'w-2 h-2 rounded-full']" />
-            <span class="text-gray-400">Cache</span>
+            <span class="text-gray-400">{{ t('dashboard.systemCache') }}</span>
             <span class="ml-auto text-right text-gray-300 text-xs">{{ dataHealthSummary?.cacheLabel ?? '—' }}</span>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <span class="w-2 h-2 rounded-full bg-success" />
-            <span class="text-gray-400">Stable pairs</span>
+            <span class="text-gray-400">{{ t('dashboard.systemStable') }}</span>
             <span class="ml-auto text-right text-gray-300 text-xs">{{ dataHealthSummary?.stableQuotesLabel ?? '—' }}</span>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <span :class="[store.backendOk ? 'bg-success' : 'bg-danger', 'w-2 h-2 rounded-full']" />
-            <span class="text-gray-400">Backend</span>
-            <span class="ml-auto text-gray-300 text-xs">{{ store.backendOk ? 'Up ' + uptime : 'Down' }}</span>
+            <span class="text-gray-400">{{ t('dashboard.systemBackend') }}</span>
+            <span class="ml-auto text-gray-300 text-xs">{{ store.backendOk ? t('common.up') + ' ' + uptime : t('common.down') }}</span>
           </div>
           <div v-if="store.stats?.last_bar_update" class="flex items-center gap-2 text-sm">
             <span class="w-2 h-2 rounded-full bg-accent" />
-            <span class="text-gray-400">Last bars</span>
-            <span class="ml-auto text-gray-300 text-xs">{{ (() => { const sec = Math.floor((Date.now() - store.stats.last_bar_update) / 1000); if (sec < 60) return sec + 's ago'; if (sec < 3600) return Math.floor(sec/60) + 'm ago'; return Math.floor(sec/3600) + 'h ' + Math.floor((sec%3600)/60) + 'm ago'; })() }}</span>
+            <span class="text-gray-400">{{ t('dashboard.systemLastBars') }}</span>
+            <span class="ml-auto text-gray-300 text-xs">{{ agoShort(Math.floor((Date.now() - store.stats.last_bar_update) / 1000)) }}</span>
           </div>
         </div>
       </div>
@@ -158,11 +166,11 @@ function jobPct(job: any) {
     <!-- Enabled Strategies Quick View -->
     <div class="bg-dark-800 rounded-xl border border-dark-500">
       <div class="px-4 py-3 border-b border-dark-500 flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-gray-300">⚡ Running Strategies</h2>
-        <span class="text-xs text-gray-500">{{ runningStrategies.length }} running</span>
+        <h2 class="text-sm font-semibold text-gray-300">{{ t('dashboard.runningStrategies') }}</h2>
+        <span class="text-xs text-gray-500">{{ t('dashboard.runningCount', { count: runningStrategies.length }) }}</span>
       </div>
       <div class="md:hidden divide-y divide-dark-600/60">
-        <div v-if="runningStrategies.length === 0" class="px-4 py-6 text-center text-gray-500 text-sm">No running strategies</div>
+        <div v-if="runningStrategies.length === 0" class="px-4 py-6 text-center text-gray-500 text-sm">{{ t('dashboard.noRunning') }}</div>
         <button
           v-for="s in runningStrategies"
           :key="s.strategy_id"
@@ -191,12 +199,12 @@ function jobPct(job: any) {
           </div>
           <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
             <div>
-              <span class="text-gray-500">Health</span>
+              <span class="text-gray-500">{{ t('dashboard.thHealth') }}</span>
               <div :class="[healthClass(s.health?.status), 'mt-1']">{{ s.health?.status ?? '—' }}</div>
-              <div class="mt-0.5 text-[10px] text-gray-500">bar {{ fmtAgo(s.health?.last_bar_time) }}</div>
+              <div class="mt-0.5 text-[10px] text-gray-500">{{ t('dashboard.healthBar') }} {{ fmtAgo(s.health?.last_bar_time) }}</div>
             </div>
             <div>
-              <span class="text-gray-500">Last Order</span>
+              <span class="text-gray-500">{{ t('dashboard.thLastOrder') }}</span>
               <div class="mt-1 text-gray-300">{{ s.health?.last_order?.side ?? '—' }} {{ s.health?.last_order?.status ?? '' }}</div>
               <div class="mt-0.5 text-[10px] text-gray-500">{{ fmtAgo(s.health?.last_order?.created_at) }}</div>
             </div>
@@ -207,18 +215,18 @@ function jobPct(job: any) {
         <table class="w-full text-sm">
           <thead>
             <tr class="text-xs text-gray-500 uppercase tracking-wider border-b border-dark-600">
-              <th class="px-4 py-2.5 text-left">Name</th>
-              <th class="px-4 py-2.5 text-left">Symbol</th>
-              <th class="px-4 py-2.5 text-left">TF</th>
-              <th class="px-4 py-2.5 text-left">Mode</th>
-              <th class="px-4 py-2.5 text-left">Health</th>
-              <th class="px-4 py-2.5 text-left">Last Order</th>
-              <th class="px-4 py-2.5 text-left">Status</th>
+              <th class="px-4 py-2.5 text-left">{{ t('dashboard.thName') }}</th>
+              <th class="px-4 py-2.5 text-left">{{ t('dashboard.thSymbol') }}</th>
+              <th class="px-4 py-2.5 text-left">{{ t('dashboard.thTf') }}</th>
+              <th class="px-4 py-2.5 text-left">{{ t('dashboard.thMode') }}</th>
+              <th class="px-4 py-2.5 text-left">{{ t('dashboard.thHealth') }}</th>
+              <th class="px-4 py-2.5 text-left">{{ t('dashboard.thLastOrder') }}</th>
+              <th class="px-4 py-2.5 text-left">{{ t('dashboard.thStatus') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="runningStrategies.length === 0">
-              <td colspan="7" class="px-4 py-6 text-center text-gray-500">No running strategies</td>
+              <td colspan="7" class="px-4 py-6 text-center text-gray-500">{{ t('dashboard.noRunning') }}</td>
             </tr>
             <tr
               v-for="s in runningStrategies"
@@ -233,7 +241,7 @@ function jobPct(job: any) {
               <td class="px-4 py-2 text-xs">
                 <div :class="healthClass(s.health?.status)">{{ s.health?.status ?? '—' }}</div>
                 <div class="text-[10px] text-gray-500">
-                  bar {{ fmtAgo(s.health?.last_bar_time) }} · runner {{ s.health?.runner_alive ? 'on' : 'off' }}
+                  {{ t('dashboard.healthBar') }} {{ fmtAgo(s.health?.last_bar_time) }} · runner {{ s.health?.runner_alive ? t('dashboard.runnerOn') : t('dashboard.runnerOff') }}
                 </div>
               </td>
               <td class="px-4 py-2 text-xs">
@@ -265,28 +273,28 @@ function jobPct(job: any) {
         class="bg-dark-800 rounded-xl border border-dark-500 p-4 cursor-pointer transition-all hover:ring-1 hover:ring-blue-500/50"
         @click="router.push('/data')"
       >
-        <h2 class="text-sm font-semibold text-gray-300 mb-3">💾 Market Data</h2>
+        <h2 class="text-sm font-semibold text-gray-300 mb-3">{{ t('dashboard.marketData') }}</h2>
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-400">Total size</span>
+            <span class="text-gray-400">{{ t('dashboard.totalSize') }}</span>
             <span class="text-gray-200 font-mono">{{ dataSizeMB }} MB</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400">Database</span>
+            <span class="text-gray-400">{{ t('dashboard.database') }}</span>
             <span class="text-gray-200 font-mono">{{ databaseSizeMB }} MB</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400">Bars</span>
+            <span class="text-gray-400">{{ t('dashboard.bars') }}</span>
             <span class="text-gray-200 font-mono">{{ totalBars }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400">Series</span>
+            <span class="text-gray-400">{{ t('dashboard.series') }}</span>
             <span class="text-gray-200">{{ store.dataInfo?.series_count ?? 0 }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400">Kill switch</span>
+            <span class="text-gray-400">{{ t('dashboard.killSwitch') }}</span>
             <span :class="store.stats?.kill_switch ? 'text-danger' : 'text-success'">
-              {{ store.stats?.kill_switch ? 'ACTIVE' : 'Off' }}
+              {{ store.stats?.kill_switch ? t('common.active') : t('common.off_upper') }}
             </span>
           </div>
         </div>
@@ -294,8 +302,8 @@ function jobPct(job: any) {
 
       <!-- Recent Jobs -->
       <div class="bg-dark-800 rounded-xl border border-dark-500 p-4">
-        <h2 class="text-sm font-semibold text-gray-300 mb-3">🔄 Recent Jobs</h2>
-        <div v-if="!jobs.recent?.length" class="text-gray-500 text-sm text-center py-4">No jobs yet</div>
+        <h2 class="text-sm font-semibold text-gray-300 mb-3">{{ t('dashboard.recentJobs') }}</h2>
+        <div v-if="!jobs.recent?.length" class="text-gray-500 text-sm text-center py-4">{{ t('dashboard.noJobs') }}</div>
         <div v-else class="space-y-2">
           <div
             v-for="job in (jobs.recent ?? []).slice(0, 5)"
