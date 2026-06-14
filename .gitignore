@@ -122,3 +122,9 @@ backups/
 # But ignore data subdirectories that are runtime
 !data/*.py
 !data/__init__.py
+
+# Node / Vite
+node_modules/
+/openpine-ui/node_modules/
+/node_modules/
+.vite/
