@@ -2,6 +2,16 @@
 
 ![OpenPine 4.0.0 architecture](docs/assets/openpine-architecture.png)
 
+![Version](https://img.shields.io/badge/version-4.0.0-blue)
+![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Pine2AST](https://img.shields.io/badge/pine2ast-4.0.0-blue)
+![AST2Python](https://img.shields.io/badge/ast2python-4.0.0-blue)
+![PineLib](https://img.shields.io/badge/pinelib-4.0.0-blue)
+![Backtest Engine](https://img.shields.io/badge/backtest_engine-4.0.0-blue)
+![MarketData Provider](https://img.shields.io/badge/marketdata_provider-4.0.0-blue)
+![Optimizer](https://img.shields.io/badge/optimizer-4.0.0-blue)
+
 **GitHub description:** OpenPine orchestrates the Pine research stack: Pine source registry, Pine2AST, AST2Python, PineLib runtime, deterministic backtests, market data, optimization, paper/live adapters, FastAPI gateway, and local product storage.
 
 **Suggested topics:** `pine-script`, `tradingview`, `backtesting`, `algorithmic-trading`, `market-data`, `strategy-optimization`, `fastapi`, `sqlite`, `python`.
@@ -99,10 +109,6 @@ bash scripts/release_gate.sh
 
 The backend gate runs compileall, `ruff --select F,E9`, pytest+coverage, duplicate/architecture checks, distribution manifest, release manifest, and import smoke. UI audit/test/build is intentionally separate and should be run from `openpine-ui/`.
 
-## License
-
-MIT. See `LICENSE`.
-
 ## 4.0 Coverage Baseline
 
 The backend gate now enforces a 90% package coverage floor after the large CLI strategy/data lifecycle, marketdata provider-adapter, exchange-metadata, stream-adapter, TV-corpus, compare-helper, gateway/storage/execution, Telegram, runtime-adapter, optimizer-route, and gateway-lifespan, state CLI, Telegram polling, storage-adapter, and strategy lifecycle hardening pass. This is still a backend-only baseline for the product repository; later passes should continue raising it while decomposing the remaining legacy CLI, batch, live-runner, and Telegram surfaces.
@@ -122,3 +128,15 @@ Supported values include `UTC`, `MSK`, fixed offsets such as `UTC+03:00`, and IA
 ### SQLite storage health
 
 Run `openpine storage migrate` and `openpine storage health` before deployment. The health command verifies the `openpine.sqlite.v4` contract, pending migrations, required indexes, and durable-event compatibility.
+
+## License
+
+MIT. See `LICENSE`.
+
+## Support
+
+OpenPine development is independent and MIT-licensed. Support is optional and does not change license terms, feature access, or project guarantees.
+
+- Telegram: https://t.me/OpenPine
+- TON: `UQAyIr2sQ4-_Q5L-4VINcU18khDas5GPbAlYEkQN6S_qzui2`
+- SOL: `EbxMUK2W4RGeQZCTRFrdgpEJvnqtyczPZvBrQa1cYJnQ`
