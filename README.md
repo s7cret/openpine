@@ -2,6 +2,71 @@
 
 ![OpenPine 4.0.0 architecture](docs/assets/openpine-architecture.png)
 
+**Quick tour of the OpenPine UI** (click a tab to expand):
+
+<details open>
+<summary>🗂  Architecture diagram</summary>
+
+![OpenPine 4.0.0 architecture](docs/assets/openpine-architecture.png)
+
+</details>
+
+<details>
+<summary>📊  Dashboard</summary>
+
+![Dashboard — Pine-файлы / Стратегии / Ошибки / Система / Запущенные стратегии / Рыночные данные / Последние задачи](docs/assets/screenshots/01-dashboard.png)
+
+</details>
+
+<details>
+<summary>📄  Pine-файлы</summary>
+
+![Pine-файлы — список загруженных Pine source-файлов с поиском и фильтрами](docs/assets/screenshots/02-pine-files.png)
+
+</details>
+
+<details>
+<summary>⚡  Стратегии</summary>
+
+![Стратегии — реестр скомпилированных стратегий, поиск по имени, фильтры по тикеру/бирже/ТФ/рынку/статусу](docs/assets/screenshots/03-strategies.png)
+
+</details>
+
+<details>
+<summary>🧪  Бэктесты</summary>
+
+![Бэктесты — история запусков бэктестов с параметрами, equity, статистикой по сделкам](docs/assets/screenshots/04-backtests.png)
+
+</details>
+
+<details>
+<summary>📺  TV-паритет</summary>
+
+![TV-паритет — запуск сравнения Pine-стратегии со свечами TradingView, форма ввода + прошлые сравнения](docs/assets/screenshots/05-tv-parity.png)
+
+</details>
+
+<details>
+<summary>💾  Данные</summary>
+
+![Данные — управление market data: OHLCV, footprint, archive, стабильные пары, кеш](docs/assets/screenshots/06-data.png)
+
+</details>
+
+<details>
+<summary>🏆  Достижения</summary>
+
+![Достижения — трекер прогресса по функциональности OpenPine: настройки, бэктесты, TV-паритет, стратегии, потоки данных](docs/assets/screenshots/07-achievements.png)
+
+</details>
+
+<details>
+<summary>⚙️  Настройки</summary>
+
+![Настройки — конфигурация timezone, market data провайдеров, безопасность, модули стека (pine2ast / ast2python / pinelib / marketdata_provider / backtest_engine / optimizer)](docs/assets/screenshots/08-settings.png)
+
+</details>
+
 ![Version](https://img.shields.io/badge/version-4.0.0-blue)
 ![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
