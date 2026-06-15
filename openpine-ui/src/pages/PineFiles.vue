@@ -2,6 +2,7 @@
 import { onMounted, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePineFilesStore } from '@/stores/pineFiles'
+import { readPineFile, normalizePineFileName } from '@/lib/pineFileUpload'
 
 const { t } = useI18n()
 const store = usePineFilesStore()
@@ -12,8 +13,45 @@ const expandedId = ref<string | null>(null)
 const copied = ref(false)
 const createStatus = ref('')
 const createLoading = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const uploadStatus = ref('')
+const uploadError = ref(false)
 
 onMounted(() => store.fetchAll())
+
+/**
+ * Wire the <input type="file"> picker to the same fields the manual
+ * textarea uses.  Reading the file client-side avoids a multi-megabyte
+ * round-trip just to set `newContent` — the user sees the parsed
+ * contents in the textarea, can tweak if they want, then clicks Save.
+ */
+async function onPineFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  uploadStatus.value = ''
+  uploadError.value = false
+  if (!file) return
+  try {
+    const text = await readPineFile(file)
+    newContent.value = text
+    // If the user hasn't typed a name yet, default to the file's
+    // basename.  normalizePineFileName trims dir prefix + ensures .pine.
+    if (!newName.value.trim()) {
+      newName.value = normalizePineFileName(file.name)
+    }
+    uploadStatus.value = t('pineFiles.uploaded', {
+      name: file.name,
+      bytes: file.size,
+    })
+    uploadError.value = false
+  } catch (e: any) {
+    uploadStatus.value = e?.message ?? String(e)
+    uploadError.value = true
+  } finally {
+    // Reset the input so picking the same file twice still triggers change.
+    if (fileInput.value) fileInput.value.value = ''
+  }
+}
 
 // Filter state
 const filterName = ref('')
@@ -128,6 +166,22 @@ async function copyContent() {
           :placeholder="t('pineFiles.newFileName')"
           class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
         />
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".pine,text/plain"
+            data-testid="pine-file-input"
+            class="block w-full max-w-xs text-xs text-gray-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-accent file:text-white file:text-sm file:cursor-pointer hover:file:bg-accent-dark"
+            @change="onPineFileSelected"
+          />
+          <span
+            v-if="uploadStatus"
+            class="text-xs"
+            :class="uploadError ? 'text-danger' : 'text-success'"
+            data-testid="pine-file-status"
+          >{{ uploadStatus }}</span>
+        </div>
         <textarea
           v-model="newContent"
           :placeholder="t('pineFiles.newFileContent')"

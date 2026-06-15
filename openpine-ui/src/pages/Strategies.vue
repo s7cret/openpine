@@ -644,6 +644,59 @@ function tradeStatusBadge(status: string) {
           </select>
         </div>
 
+        <!-- Row 2b: Pine source + artifact.  Required for strategy creation.
+             Previously this row was hidden and the form relied on
+             autoFillPineSource picking the first pine file from the store;
+             that left users with no way to (a) change the source or
+             (b) know why the Create button was disabled. -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-1">
+            <label class="text-[10px] uppercase tracking-wide text-gray-500">
+              {{ t('strategies.pineSourceLabel') }}
+            </label>
+            <select
+              v-model="form.pine_id"
+              data-testid="strategy-pine-source"
+              class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
+            >
+              <option value="">{{ t('strategies.pineSourcePlaceholder') }}</option>
+              <option
+                v-for="p in pineStore.items"
+                :key="p.id ?? p.source_id"
+                :value="p.id ?? p.source_id"
+              >
+                {{ p.name ?? (p.id ?? p.source_id) }}
+              </option>
+            </select>
+            <div v-if="!pineStore.items.length" class="text-[10px] text-warning">
+              {{ t('strategies.pineSourceEmpty') }}
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[10px] uppercase tracking-wide text-gray-500">
+              {{ t('strategies.pineArtifactLabel') }}
+            </label>
+            <select
+              v-model="form.artifact_id"
+              data-testid="strategy-pine-artifact"
+              :disabled="!form.pine_id || artifactsLoading"
+              class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <option value="">{{ t('strategies.pineArtifactPlaceholder') }}</option>
+              <option
+                v-for="a in artifacts"
+                :key="a.artifact_id"
+                :value="a.artifact_id"
+              >
+                {{ a.artifact_id }}<span v-if="a.status"> — {{ a.status }}</span>
+              </option>
+            </select>
+            <div v-if="form.pine_id && !artifacts.length && !artifactsLoading" class="text-[10px] text-warning">
+              {{ t('strategies.pineArtifactEmpty') }}
+            </div>
+          </div>
+        </div>
+
         <!-- Row 3: ticker search -->
         <div class="relative">
           <input
