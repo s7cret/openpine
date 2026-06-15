@@ -1,7 +1,5 @@
 # OpenPine 4.0.0
 
-![OpenPine 4.0.0 architecture](docs/assets/openpine-architecture.png)
-
 **Quick tour of the OpenPine UI** (click a tab to expand):
 
 <details open>
