@@ -12,6 +12,7 @@ import {
   type TvParityHistoryEntry,
 } from '@/api/client'
 import { EMPTY_MARKET_METADATA, exchangeLabel } from '@/lib/marketMetadata'
+import TvParityVisualization from '@/components/TvParityVisualization.vue'
 
 const { t } = useI18n()
 const strategies = ref<any[]>([])
@@ -717,6 +718,11 @@ function artifactHref(artifact: any) {
         </div>
       </div>
     </section>
+
+    <TvParityVisualization
+      v-if="result?.run_id"
+      :run-id="result.run_id"
+    />
 
     <section class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
       <div class="flex items-center justify-between">

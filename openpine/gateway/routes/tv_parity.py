@@ -1227,3 +1227,123 @@ async def download_tv_parity_artifact(
     if path.suffix == ".md":
         media_type = "text/markdown"
     return FileResponse(path, media_type=media_type, filename=path.name)
+
+
+# ---------------------------------------------------------------------------
+# Visualization endpoints (chart data, top mismatches, diagnostics callouts,
+# summary cards, HTML/PNG reports, ZIP export).
+# ---------------------------------------------------------------------------
+
+
+@router.get("/runs/{run_id}/chart-data")
+async def get_tv_parity_chart_data(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, Any]:
+    """Aligned equity / OHLC / signal series for the overlay canvas."""
+    from openpine.gateway.routes import tv_parity_viz
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    payload = tv_parity_viz.build_chart_data(run_root=run_root)
+    payload["run_id"] = run_id
+    return payload
+
+
+@router.get("/runs/{run_id}/mismatches/top")
+async def get_tv_parity_top_mismatches(
+    run_id: str,
+    limit: int = Query(20, ge=1, le=200),
+    state: GatewayState = Depends(get_state),
+) -> dict[str, Any]:
+    """Top-N bars / trades by absolute delta (descending)."""
+    from openpine.gateway.routes import tv_parity_viz
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    return tv_parity_viz.top_mismatches(run_root=run_root, limit=limit)
+
+
+@router.get("/runs/{run_id}/diagnostics/callouts")
+async def get_tv_parity_diagnostics_callouts(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, Any]:
+    """Collect ``P092_DIAG_*`` markers from the uploaded TV chart CSV."""
+    from openpine.gateway.routes import tv_parity_viz
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    payload = tv_parity_viz.diagnostics_callouts(run_root=run_root)
+    payload["run_id"] = run_id
+    return payload
+
+
+@router.get("/runs/{run_id}/summary-cards")
+async def get_tv_parity_summary_cards(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, Any]:
+    """Bloomberg-style compact status payload for the UI cards row."""
+    from openpine.gateway.routes import tv_parity_viz
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    return tv_parity_viz.summary_cards(run_root=run_root)
+
+
+@router.get("/runs/{run_id}/report.html")
+async def get_tv_parity_report_html(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> Response:
+    """Render a self-contained HTML report for the run."""
+    from openpine.gateway.routes import tv_parity_viz
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    cards = tv_parity_viz.summary_cards(run_root=run_root)
+    html = tv_parity_viz.render_html_report(
+        run_root=run_root,
+        run_id=run_id,
+        strategy_id=cards.get("strategy_id"),
+    )
+    return Response(content=html, media_type="text/html")
+
+
+@router.get("/runs/{run_id}/report.png")
+async def get_tv_parity_report_png(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> Response:
+    """Render a small PNG equity overlay (matplotlib, Agg backend)."""
+    from openpine.gateway.routes import tv_parity_viz
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    png_bytes = tv_parity_viz.render_png_report(run_root=run_root, run_id=run_id)
+    return Response(content=png_bytes, media_type="image/png")
+
+
+@router.get("/runs/{run_id}/export.zip")
+async def get_tv_parity_export_zip(
+    run_id: str,
+    state: GatewayState = Depends(get_state),
+) -> Response:
+    """Bundle comparison artifacts + reports into a single zip."""
+    from openpine.gateway.routes import tv_parity_viz
+
+    run_root = _run_root(state, run_id)
+    if not run_root.exists() or not run_root.is_dir():
+        raise HTTPException(404, f"TV parity run not found: {run_id}")
+    zip_bytes = tv_parity_viz.build_export_zip(run_root=run_root)
+    headers = {"Content-Disposition": f'attachment; filename="tv-parity-{run_id}.zip"'}
+    return Response(
+        content=zip_bytes, media_type="application/zip", headers=headers
+    )

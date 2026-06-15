@@ -160,6 +160,91 @@ export const getTvParityRun = (runId: string) => api.get(apiPath('/tv-parity/run
 export const tvParityArtifactUrl = (runId: string, artifactName: string) =>
   `/api${apiPath('/tv-parity/runs', runId, 'artifacts', artifactName)}`
 
+// --- Visualization endpoints (1-7) -----------------------------------------
+
+export type TvParityChartDataPoint = {
+  kind: 'openpine_equity' | 'tv_equity' | 'openpine_ohlc' | 'tv_ohlc' | 'signal' | 'marker'
+  t: number
+  v?: number
+  o?: number
+  h?: number
+  l?: number
+  c?: number
+  [key: string]: unknown
+}
+
+export type TvParityChartData = {
+  run_id: string
+  series: TvParityChartDataPoint[]
+  abs_tol: number
+  rel_tol: number
+  max_abs_delta: number | null
+  mismatch_cells: number | null
+  tv_equity: [number, number][]
+  failures: any[]
+  plots: Record<string, unknown>
+  trades: Record<string, unknown>
+  initial_equity: number | null
+  final_equity: number | null
+}
+
+export type TvParityTopMismatch = {
+  bar_time: number | null
+  row_kind: string
+  trade_index: number | null
+  delta_entry_price: number
+  delta_exit_price: number
+  delta_qty: number
+  delta_net_profit: number
+  delta_entry_price_abs: number
+  delta_net_profit_abs: number
+}
+
+export type TvParitySummaryCards = {
+  run_id: string | null
+  strategy_id: string | null
+  status: string | null
+  compare_from: number | null
+  compare_to: number | null
+  overall_status: 'match' | 'mismatch' | 'failed' | string
+  trades_match: boolean
+  trades_status: string
+  plots_status: string
+  equity_status: string
+  max_abs_delta: number | null
+  mismatch_cells: number | null
+  failure_count: number
+  failures: any[]
+  initial_equity: number | null
+  final_equity: number | null
+}
+
+export type TvParityDiagnosticsCallout = {
+  bar_time: number
+  new_closed_trade: 1
+  last_closed_profit: number | null
+  last_closed_size: number | null
+  last_closed_entry_price: number | null
+  last_closed_exit_price: number | null
+}
+
+export const getTvParityChartData = (runId: string) =>
+  api.get<TvParityChartData>(apiPath('/tv-parity/runs', runId, 'chart-data'))
+export const getTvParityTopMismatches = (runId: string, limit = 20) =>
+  api.get<{ total: number; limit: number; items: TvParityTopMismatch[] }>(
+    apiPath('/tv-parity/runs', runId, 'mismatches/top'),
+    { params: { limit } },
+  )
+export const getTvParitySummaryCards = (runId: string) =>
+  api.get<TvParitySummaryCards>(apiPath('/tv-parity/runs', runId, 'summary-cards'))
+export const getTvParityDiagnosticsCallouts = (runId: string) =>
+  api.get<{ run_id: string; chart_path: string | null; callouts: TvParityDiagnosticsCallout[] }>(
+    apiPath('/tv-parity/runs', runId, 'diagnostics/callouts'),
+  )
+
+export const tvParityReportUrl = (runId: string, kind: 'html' | 'png' | 'zip') =>
+  `/api${apiPath('/tv-parity/runs', runId, `report.${kind === 'zip' ? 'zip' : kind}`)}`
+
 export type TvParityHistoryEntry = {
   run_id: string
   strategy_id: string | null
