@@ -65,15 +65,8 @@
 
 </details>
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue)
-![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Pine2AST](https://img.shields.io/badge/pine2ast-4.0.0-blue)
-![AST2Python](https://img.shields.io/badge/ast2python-4.0.0-blue)
-![PineLib](https://img.shields.io/badge/pinelib-4.0.0-blue)
-![Backtest Engine](https://img.shields.io/badge/backtest_engine-4.0.0-blue)
-![MarketData Provider](https://img.shields.io/badge/marketdata_provider-4.0.0-blue)
-![Optimizer](https://img.shields.io/badge/optimizer-4.0.0-blue)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue)](https://github.com/s7cret/openpine) [![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)](https://github.com/s7cret/openpine) [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/s7cret/openpine) [![Pine2AST](https://img.shields.io/badge/pine2ast-4.0.0-blue)](https://github.com/s7cret/pine2ast) [![AST2Python](https://img.shields.io/badge/ast2python-4.0.0-blue)](https://github.com/s7cret/ast2python) [![PineLib](https://img.shields.io/badge/pinelib-4.0.0-blue)](https://github.com/s7cret/pinelib) [![Backtest Engine](https://img.shields.io/badge/backtest_engine-4.0.0-blue)](https://github.com/s7cret/backtest_engine) [![MarketData Provider](https://img.shields.io/badge/marketdata_provider-4.0.0-blue)](https://github.com/s7cret/marketdata-provider) [![Optimizer](https://img.shields.io/badge/optimizer-4.0.0-blue)](https://github.com/s7cret/optimizer)
+
 
 **GitHub description:** OpenPine orchestrates the Pine research stack: Pine source registry, Pine2AST, AST2Python, PineLib runtime, deterministic backtests, market data, optimization, paper/live adapters, FastAPI gateway, and local product storage.
 
