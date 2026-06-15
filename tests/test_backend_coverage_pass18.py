@@ -32,7 +32,12 @@ def test_compile_adapter_pure_edges(monkeypatch, tmp_path: Path):
     assert compile_adapter._is_visual_contract_diagnostic(
         "P2A1507 Not lowerable under runtime_contract: Builtin plot has no runtime-equivalent"
     )
-    assert not compile_adapter._is_visual_contract_diagnostic("P2A1507 Builtin label.new")
+    assert compile_adapter._is_visual_contract_diagnostic(
+        "P2A1507 Not lowerable under runtime_contract: Builtin color.new has no runtime-equivalent"
+    )
+    assert compile_adapter._is_visual_contract_diagnostic("P2A1507 Builtin label.new")
+    assert compile_adapter._is_visual_contract_diagnostic("P2A1507 Builtin barcolor")
+    assert not compile_adapter._is_visual_contract_diagnostic("P2A1507 Builtin request.financial")
     assert compile_adapter._unsupported_request_in_source_error("request.financial(s, f)") == (
         "unsupported request call is not production lowerable: request.financial"
     )

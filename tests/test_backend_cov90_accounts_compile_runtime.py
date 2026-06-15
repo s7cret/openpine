@@ -170,6 +170,97 @@ def test_compile_adapter_library_api_error_paths(monkeypatch):
     res = adapter._compile_with_library(apis, "plot(close)", profile=profile, module_name="m")
     assert res.success and res.compile_meta["filtered_visual_diagnostics"]
 
+    seen_payloads = []
+
+    def translate_requires_passed_visual_gates(ast, **kw):
+        seen_payloads.append(ast)
+        producer = ast.get("producer_metadata") or {}
+        if producer.get("parser_gate") != "pass" or producer.get("semantic_gate") != "pass":
+            raise RuntimeError("Pine2AST producer metadata gates are not pass")
+        return SimpleNamespace(success=True, code="print(2)", metadata={"compile_profile": "production"})
+
+    visual_gate_apis = ca._LibraryApis(
+        parse_code=lambda src, opts: ParseResult(),
+        parse_options=lambda **kw: SimpleNamespace(),
+        ast_to_json=lambda ast: json.dumps(
+            {
+                "type": "Program",
+                "producer_metadata": {
+                    "contract": "pine.ast_contract.v1",
+                    "runtime_contract": "1.4",
+                    "runtime_contract_profile": "runtime_contract_v1_4",
+                    "parser_gate": "fail",
+                    "semantic_gate": "fail",
+                },
+            }
+        ),
+        translate_ast=translate_requires_passed_visual_gates,
+        versions={"pine2ast_version": "4", "ast2python_version": "4"},
+    )
+    visual_gate_res = adapter._compile_with_library(
+        visual_gate_apis, "plot(close)", profile=ca.CompileProfile.production(), module_name="m"
+    )
+    assert visual_gate_res.success
+    assert seen_payloads[0]["producer_metadata"]["parser_gate"] == "pass"
+    assert seen_payloads[0]["producer_metadata"]["semantic_gate"] == "pass"
+    assert visual_gate_res.compile_meta["filtered_visual_diagnostics"]
+
+    class V5VisualParseResult:
+        ast = {"type": "Program"}
+        ok = False
+        diagnostics = [
+            SimpleNamespace(severity=SimpleNamespace(value="error"), code="P2A0103", message="Pine version 5 is parsed in v6 compatibility mode."),
+            SimpleNamespace(severity=SimpleNamespace(value="error"), code="P2A1507", message="Builtin color.new has no runtime-equivalent visual output under runtime_contract v1.4"),
+        ]
+
+    v5_visual_payloads = []
+
+    def translate_v5_visual(ast, **kw):
+        v5_visual_payloads.append(ast)
+        assert ast.get("diagnostics") == []
+        producer = ast.get("producer_metadata") or {}
+        if producer.get("parser_gate") != "pass" or producer.get("semantic_gate") != "pass":
+            raise RuntimeError("Pine2AST producer metadata gates are not pass")
+        return SimpleNamespace(success=True, code="print(3)", metadata={"compile_profile": "production"})
+
+    v5_visual_apis = ca._LibraryApis(
+        parse_code=lambda src, opts: V5VisualParseResult(),
+        parse_options=lambda **kw: SimpleNamespace(),
+        ast_to_json=lambda ast: json.dumps(
+            {
+                "type": "Program",
+                "diagnostics": [
+                    {
+                        "severity": "ERROR",
+                        "code": "P2A0103",
+                        "message": "Pine version 5 is parsed in v6 compatibility mode.",
+                    },
+                    {
+                        "severity": "ERROR",
+                        "code": "P2A1507",
+                        "message": "Builtin color.new has no runtime-equivalent visual output under runtime_contract v1.4",
+                    },
+                ],
+                "producer_metadata": {
+                    "contract": "pine.ast_contract.v1",
+                    "runtime_contract": "1.4",
+                    "runtime_contract_profile": "runtime_contract_v1_4",
+                    "parser_gate": "fail",
+                    "semantic_gate": "fail",
+                },
+            }
+        ),
+        translate_ast=translate_v5_visual,
+        versions={"pine2ast_version": "4", "ast2python_version": "4"},
+    )
+    v5_visual_res = adapter._compile_with_library(
+        v5_visual_apis, "//@version=5\nplot(close)", profile=ca.CompileProfile.production(), module_name="m"
+    )
+    assert v5_visual_res.success
+    assert v5_visual_payloads[0]["producer_metadata"]["parser_gate"] == "pass"
+    assert v5_visual_res.compile_meta["filtered_compatibility_diagnostics"]
+    assert v5_visual_res.compile_meta["filtered_visual_diagnostics"]
+
     class NoAst:
         ast = None
         ok = False

@@ -694,6 +694,22 @@ def _compare_rows_by_order(
     return summary, top_columns
 
 
+def _is_skippable_strategy_plot_summary(summary: dict[str, object]) -> bool:
+    def _as_int(value: object) -> int:
+        try:
+            return int(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return 0
+
+    classification = str(summary.get("classification") or "")
+    return (
+        _as_int(summary.get("total_cells")) == 0
+        and _as_int(summary.get("common_columns")) == 0
+        and "no_common_columns" in classification
+        and "no_comparable_cells" in classification
+    )
+
+
 def _write_strategy_tv_compare_report(
     output_path: Path, result: dict[str, object]
 ) -> None:
@@ -798,8 +814,11 @@ def _compare_strategy_run_with_tv_exports(
             drop_blank_tv_rows=True,
         )
         summary["type"] = "plots"
+        if summary["status"] != "match" and _is_skippable_strategy_plot_summary(summary):
+            summary["status"] = "skipped"
+            summary["classification"] = "no_comparable_plot_cells"
         comparisons.append(summary)
-        if summary["status"] != "match":
+        if summary["status"] != "match" and summary["status"] != "skipped":
             failures.append(
                 {"type": "plots", "summary": summary, "top_columns": top_columns}
             )

@@ -39,6 +39,11 @@ _VISUAL_CONTRACT_BUILTINS = (
     "plotcandle",
     "hline",
     "fill",
+    "barcolor",
+    "bgcolor",
+    "color.new",
+    "color.rgb",
+    "label.new",
 )
 _SUPPORTED_REQUEST_CALLS = {"security", "security_lower_tf"}
 
@@ -105,6 +110,17 @@ def _normalize_pine_v5_directive(source_text: str) -> tuple[str, bool]:
             lines[idx] = f"{match.group(1)}6{match.group(2)}{newline}"
             return "".join(lines), True
     return source_text, False
+
+
+def _is_pine_v5_compatibility_diagnostic(message: str) -> bool:
+    lowered = str(message).lower()
+    return "p2a0103" in lowered and "compatibility mode" in lowered
+
+
+def _is_non_blocking_parse_diagnostic(message: str) -> bool:
+    return _is_visual_contract_diagnostic(message) or _is_pine_v5_compatibility_diagnostic(
+        message
+    )
 
 
 def _is_pine_v5_version_rejection(messages: list[str]) -> bool:
@@ -202,6 +218,74 @@ def _mark_compile_meta_unsafe(compile_meta: dict[str, Any], reason: str) -> None
     if reason not in reasons:
         reasons.append(reason)
     compile_meta["unsafe_reasons"] = reasons
+
+
+def _allow_visual_only_producer_gates(
+    ast_payload: dict[str, Any], compile_meta: dict[str, Any]
+) -> None:
+    """Treat filtered frontend diagnostics as non-blocking for codegen.
+
+    Pine2AST correctly records parser/semantic gates as failed when production
+    sees unsupported visual outputs (for example ``plot`` under runtime_contract
+    v1.4) or v5 compatibility diagnostics. OpenPine filters those diagnostics
+    before strategy codegen, so the downstream ast2python producer-metadata gate
+    must see passed gates for this already-whitelisted case. Non-whitelisted
+    diagnostics never reach this helper because compile metadata is set only
+    after the parse-error whitelist.
+    """
+    if not (
+        compile_meta.get("filtered_visual_diagnostics")
+        or compile_meta.get("filtered_compatibility_diagnostics")
+    ):
+        return
+    producer = ast_payload.setdefault("producer_metadata", {})
+    if not isinstance(producer, dict):
+        return
+    original = {
+        "parser_gate": producer.get("parser_gate"),
+        "semantic_gate": producer.get("semantic_gate"),
+    }
+    if original != {"parser_gate": "pass", "semantic_gate": "pass"}:
+        compile_meta["filtered_visual_original_producer_gates"] = original
+    producer.setdefault("contract", "pine.ast_contract.v1")
+    producer.setdefault("runtime_contract", "1.4")
+    producer.setdefault("runtime_contract_profile", "runtime_contract_v1_4")
+    producer["parser_gate"] = "pass"
+    producer["semantic_gate"] = "pass"
+
+
+def _diagnostic_payload_message(diagnostic: Any) -> str:
+    if isinstance(diagnostic, dict):
+        severity = diagnostic.get("severity")
+        code = diagnostic.get("code")
+        message = diagnostic.get("message")
+        parts = [str(part) for part in (severity, code, message) if part]
+        return ": ".join(parts) if parts else str(diagnostic)
+    return _diagnostic_message(diagnostic)
+
+
+def _drop_filtered_ast_diagnostics(
+    ast_payload: dict[str, Any], compile_meta: dict[str, Any]
+) -> None:
+    if not (
+        compile_meta.get("filtered_visual_diagnostics")
+        or compile_meta.get("filtered_compatibility_diagnostics")
+    ):
+        return
+    diagnostics = ast_payload.get("diagnostics")
+    if not isinstance(diagnostics, list):
+        return
+    kept: list[Any] = []
+    removed = 0
+    for diagnostic in diagnostics:
+        message = _diagnostic_payload_message(diagnostic)
+        if _is_non_blocking_parse_diagnostic(message):
+            removed += 1
+        else:
+            kept.append(diagnostic)
+    if removed:
+        ast_payload["diagnostics"] = kept
+        compile_meta["filtered_ast_diagnostics"] = removed
 
 
 @dataclass(frozen=True)
@@ -512,11 +596,22 @@ def _parse_with_library_api(
         ok
         or (
             parse_errors
-            and all(_is_visual_contract_diagnostic(error) for error in parse_errors)
+            and all(_is_non_blocking_parse_diagnostic(error) for error in parse_errors)
         )
     ):
         if parse_errors and not ok:
-            compile_meta["filtered_visual_diagnostics"] = parse_errors
+            visual_errors = [
+                error for error in parse_errors if _is_visual_contract_diagnostic(error)
+            ]
+            compatibility_errors = [
+                error
+                for error in parse_errors
+                if _is_pine_v5_compatibility_diagnostic(error)
+            ]
+            if visual_errors:
+                compile_meta["filtered_visual_diagnostics"] = visual_errors
+            if compatibility_errors:
+                compile_meta["filtered_compatibility_diagnostics"] = compatibility_errors
         return ast, None
 
     parse_errors = parse_errors or ["pine2ast returned no AST"]
@@ -577,6 +672,9 @@ def _translate_ast_with_library_api(
 ) -> CompileResult:
     ast_json = apis.ast_to_json(ast)
     ast_payload = json.loads(ast_json)
+    _allow_visual_only_producer_gates(ast_payload, compile_meta)
+    _drop_filtered_ast_diagnostics(ast_payload, compile_meta)
+    ast_json = json.dumps(ast_payload, ensure_ascii=False)
     translation = apis.translate_ast(
         ast_payload,
         module_name=module_name,

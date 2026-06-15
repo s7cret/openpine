@@ -643,6 +643,51 @@ def test_tv_compare_ignores_chart_rows_with_blank_strategy_plot_values(tmp_path:
     assert plots["openpine_rows"] == 1
 
 
+def test_tv_compare_skips_empty_visual_only_strategy_plots_when_trades_match(tmp_path: Path):
+    from openpine.cli.compare import _compare_strategy_run_with_tv_exports
+
+    tv_chart = tmp_path / "chart.csv"
+    tv_chart.write_text(
+        "time,open,high,low,close,P092_LOCAL_BAR,P092_CLOSED_TRADES,"
+        "P092_DIAG_NEW_CLOSED_TRADE,"
+        "P092_DIAG_LAST_CLOSED_PROFIT,P092_DIAG_LAST_CLOSED_SIZE,"
+        "P092_DIAG_LAST_CLOSED_ENTRY_PRICE,P092_DIAG_LAST_CLOSED_EXIT_PRICE,"
+        "P092_DIAG_LAST_CLOSED_ENTRY_BAR,P092_DIAG_LAST_CLOSED_EXIT_BAR\n"
+        "1704067200000,100.004,101,99,100.5,0,0,0,,,,,,\n"
+        "1704153600000,100.5,102,100,101.2,1,1,1,10.0,1,100.0,110.0,0,1\n",
+        encoding="utf-8",
+    )
+    op_plots = tmp_path / "plots.csv"
+    op_plots.write_text("bar_time\n", encoding="utf-8")
+    op_trades = tmp_path / "trades.csv"
+    op_trades.write_text(
+        "trade_id,status,direction,entry_time_ms,exit_time_ms,entry_price,exit_price,qty,gross_profit,commission,net_profit\n"
+        "S,closed,long,1704067200000,1704153600000,100.0,110.0,1,10.0,,10.0\n",
+        encoding="utf-8",
+    )
+
+    result = _compare_strategy_run_with_tv_exports(
+        strategy_id="strat_daily",
+        run=SimpleNamespace(run_id="run_daily"),
+        exported={"plots": str(op_plots), "trades": str(op_trades)},
+        output_path=tmp_path / "comparison_empty_plots",
+        tv_chart=str(tv_chart),
+        tv_trades=None,
+        tv_equity=None,
+        abs_tol=0.000001,
+        rel_tol=0.000000001,
+        include_base_columns=False,
+        compare_from_ms=1704067200000,
+        compare_to_ms=1704240000000,
+    )
+
+    plots = next(row for row in result["comparisons"] if row["type"] == "plots")
+    trades = next(row for row in result["comparisons"] if row["type"] == "trades")
+    assert plots["status"] == "skipped"
+    assert trades["status"] == "match"
+    assert result["failures"] == []
+
+
 @pytest.mark.asyncio
 async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: Path, monkeypatch):
     candles = tmp_path / "candles.csv"

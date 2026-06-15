@@ -712,6 +712,7 @@ def _build_strategy_run_config(
         max_bars_back=decl_args.get("max_bars_back", 0),
         qty_step=args.qty_step,
         qty_rounding_mode=args.qty_rounding_mode,
+        mintick=0.01,
         capture_plots=True,
         plot_from_ms=compare_from,
         plot_to_ms=compare_to,

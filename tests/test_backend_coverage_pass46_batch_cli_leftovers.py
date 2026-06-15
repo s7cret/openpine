@@ -192,6 +192,31 @@ def test_runner_revision_registry_and_calculation_bar_leftovers(monkeypatch, tmp
     assert meta["bar_source"] == "provider_with_tv_visible_overlay"
 
 
+def test_batch_strategy_run_config_enables_tv_price_tick_rounding(tmp_path: Path):
+    chart = _chart(tmp_path, timeframe="1D")
+
+    class CaptureConfig(SimpleNamespace):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+    config = runner._build_strategy_run_config(
+        chart=chart,
+        args=_runner_args(
+            tmp_path,
+            symbol="BTCUSD",
+            qty_step=0.000001,
+            qty_rounding_mode="truncate",
+        ),
+        data_meta={"calculation_from": 1, "calculation_to": 2},
+        decl_args={"commission_type": "percent", "commission_value": 0.055},
+        config_cls=CaptureConfig,
+    )
+
+    assert config.mintick == 0.01
+    assert config.qty_step == 0.000001
+    assert config.qty_rounding_mode == "truncate"
+
+
 def test_runner_bar_index_meta_completion_and_timeframe_skip_branches(monkeypatch, tmp_path: Path):
     chart = ChartExport("15m", tmp_path / "unused.csv", 3, 1_000, 3_000)
     assert runner._infer_tv_bar_index_offset(chart, [SimpleNamespace(time=999)]) == (0, None)
