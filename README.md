@@ -14,56 +14,56 @@
 <details>
 <summary>📊  Dashboard</summary>
 
-![Dashboard — Pine-файлы / Стратегии / Ошибки / Система / Запущенные стратегии / Рыночные данные / Последние задачи](docs/assets/screenshots/01-dashboard.png)
+![Dashboard — Pine files / Strategies / Errors / System / Running strategies / Market data / Recent jobs](docs/assets/screenshots/01-dashboard.png)
 
 </details>
 
 <details>
-<summary>📄  Pine-файлы</summary>
+<summary>📄  Pine files</summary>
 
-![Pine-файлы — список загруженных Pine source-файлов с поиском и фильтрами](docs/assets/screenshots/02-pine-files.png)
-
-</details>
-
-<details>
-<summary>⚡  Стратегии</summary>
-
-![Стратегии — реестр скомпилированных стратегий, поиск по имени, фильтры по тикеру/бирже/ТФ/рынку/статусу](docs/assets/screenshots/03-strategies.png)
+![Pine files — registry of uploaded Pine source files with search and filters](docs/assets/screenshots/02-pine-files.png)
 
 </details>
 
 <details>
-<summary>🧪  Бэктесты</summary>
+<summary>⚡  Strategies</summary>
 
-![Бэктесты — история запусков бэктестов с параметрами, equity, статистикой по сделкам](docs/assets/screenshots/04-backtests.png)
-
-</details>
-
-<details>
-<summary>📺  TV-паритет</summary>
-
-![TV-паритет — запуск сравнения Pine-стратегии со свечами TradingView, форма ввода + прошлые сравнения](docs/assets/screenshots/05-tv-parity.png)
+![Strategies — registry of compiled strategies, name search, filters by symbol / exchange / timeframe / market / status](docs/assets/screenshots/03-strategies.png)
 
 </details>
 
 <details>
-<summary>💾  Данные</summary>
+<summary>🧪  Backtests</summary>
 
-![Данные — управление market data: OHLCV, footprint, archive, стабильные пары, кеш](docs/assets/screenshots/06-data.png)
-
-</details>
-
-<details>
-<summary>🏆  Достижения</summary>
-
-![Достижения — трекер прогресса по функциональности OpenPine: настройки, бэктесты, TV-паритет, стратегии, потоки данных](docs/assets/screenshots/07-achievements.png)
+![Backtests — run history with parameters, equity curve, per-trade statistics](docs/assets/screenshots/04-backtests.png)
 
 </details>
 
 <details>
-<summary>⚙️  Настройки</summary>
+<summary>📺  TV parity</summary>
 
-![Настройки — конфигурация timezone, market data провайдеров, безопасность, модули стека (pine2ast / ast2python / pinelib / marketdata_provider / backtest_engine / optimizer)](docs/assets/screenshots/08-settings.png)
+![TV parity — launch a Pine strategy vs TradingView candle comparison, input form + past comparisons](docs/assets/screenshots/05-tv-parity.png)
+
+</details>
+
+<details>
+<summary>💾  Data</summary>
+
+![Data — market data management: OHLCV, footprint, archive, stable pairs, cache](docs/assets/screenshots/06-data.png)
+
+</details>
+
+<details>
+<summary>🏆  Achievements</summary>
+
+![Achievements — progress tracker across OpenPine capabilities: settings, backtests, TV parity, strategies, data streams](docs/assets/screenshots/07-achievements.png)
+
+</details>
+
+<details>
+<summary>⚙️  Settings</summary>
+
+![Settings — timezone, market data providers, security, stack modules (pine2ast / ast2python / pinelib / marketdata_provider / backtest_engine / optimizer)](docs/assets/screenshots/08-settings.png)
 
 </details>
 
