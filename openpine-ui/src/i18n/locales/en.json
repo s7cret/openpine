@@ -409,6 +409,8 @@
       "status": "Status",
       "trades": "Trades",
       "maxDelta": "Max |Δ|",
+      "maxDeltaPrice": "Max |Δ| (price)",
+      "maxDeltaTime": "Max |Δ| (time)",
       "failures": "Failures",
       "pnl": "Equity",
       "window": "Compare window",

@@ -83,6 +83,8 @@ def _seed_run(
                 "common_columns": 8,
                 "mismatch_cells": 0,
                 "max_abs_delta": 0.0,
+                "worst_column": "",
+                "worst_time_ms": 0,
             }
         ],
         "failures": [],
@@ -91,7 +93,10 @@ def _seed_run(
         json.dumps(summary), encoding="utf-8"
     )
 
-    # Comparison summary CSV (per-bar / per-trade deltas, for top-mismatches + heatmap)
+    # Comparison summary CSV (legacy, kept for back-compat but no longer
+    # used by top_mismatches).  Real per-row data lives in
+    # tradingview_trades_normalized.csv (TV side) + openpine_outputs/trades.csv
+    # (OP side); the visualizer joins them by row index.
     delta_fields = [
         "bar_time",
         "row_kind",
@@ -122,6 +127,47 @@ def _seed_run(
         writer.writeheader()
         for row in delta_rows:
             writer.writerow({k: row.get(k, "") for k in delta_fields})
+
+    # TV normalized trades CSV (mirror of TV List-of-Trades).  Used by
+    # top_mismatches + summary_cards as the TV-side per-row ground truth.
+    tv_trade_fields = [
+        "trade_id",
+        "status",
+        "direction",
+        "entry_time_ms",
+        "exit_time_ms",
+        "entry_price",
+        "exit_price",
+        "qty",
+        "net_profit",
+        "max_runup",
+        "max_drawdown",
+        "entry_signal",
+        "exit_signal",
+    ]
+    with (comparison / "tradingview_trades_normalized.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as f:
+        writer = csv.DictWriter(f, fieldnames=tv_trade_fields)
+        writer.writeheader()
+        for i in range(trades_rows):
+            writer.writerow(
+                {
+                    "trade_id": str(i + 1),
+                    "status": "closed",
+                    "direction": "long" if i % 2 == 0 else "short",
+                    "entry_time_ms": 1_700_000_000_000 + i * 3_600_000,
+                    "exit_time_ms": 1_700_000_000_000 + (i + 1) * 3_600_000,
+                    "entry_price": 100 + i * 0.1,
+                    "exit_price": 101 + i * 0.1,
+                    "qty": 0.01,
+                    "net_profit": 0.4,
+                    "max_runup": 0.5,
+                    "max_drawdown": -0.2,
+                    "entry_signal": "P092_LONG",
+                    "exit_signal": "P092_CLOSE_LONG",
+                }
+            )
 
     # TradingView chart CSV with P092_DIAG_* columns (for diagnostics callouts)
     chart_fields = [
@@ -200,23 +246,70 @@ def test_tv_parity_chart_data_returns_aligned_equity_series(tmp_path: Path) -> N
 def test_tv_parity_top_mismatches_returns_sorted_with_limit(tmp_path: Path) -> None:
     state = SimpleNamespace(config=SimpleNamespace(data_dir=tmp_path))
     run_root = _seed_run(tmp_path, run_id="run_top")
-    # Inject one extreme mismatch row.
-    with (run_root / "comparison" / "comparison_summary.csv").open("a", encoding="utf-8") as f:
-        f.write(
-            "17000014400000,trade,99,0,0,0,0.05,0,0.05\n"
-        )
+    # Inject a per-row mismatch: shift OP trade #2 entry_time_ms by 86_400_000
+    # ms (1 day).  This is the same root-cause pattern we see in production
+    # (entry_time_ms column on a per-trade comparison row).
+    op_path = run_root / "openpine_outputs" / "trades.csv"
+    with op_path.open("r", encoding="utf-8") as f:
+        lines = f.readlines()
+    # header + 5 rows, mutate row index 2 (third trade)
+    fields = lines[2].strip().split(",")
+    if "bar_time" in lines[0]:
+        # old shape, no-op
+        pass
+    # The OP trades.csv has columns: bar_time, exit_bar_time, side,
+    # entry_price, exit_price, qty, pnl, net_profit, status.  We rebuild a
+    # clean trades.csv with entry_time_ms / exit_time_ms columns so the
+    # new top_mismatches reader can join against TV normalized.
+    new_fields = [
+        "entry_time_ms",
+        "exit_time_ms",
+        "direction",
+        "entry_price",
+        "exit_price",
+        "qty",
+        "net_profit",
+        "max_runup",
+        "max_drawdown",
+        "status",
+    ]
+    op_rows = [
+        {
+            "entry_time_ms": 1_700_000_000_000 + i * 3_600_000,
+            "exit_time_ms": 1_700_000_000_000 + (i + 1) * 3_600_000,
+            "direction": "long" if i % 2 == 0 else "short",
+            "entry_price": 100 + i * 0.1,
+            "exit_price": 101 + i * 0.1,
+            "qty": 0.01,
+            "net_profit": 0.4,
+            "max_runup": 0.5,
+            "max_drawdown": -0.2,
+            "status": "closed",
+        }
+        for i in range(5)
+    ]
+    # Shift trade #2 entry_time_ms by 1 day to introduce a real mismatch.
+    op_rows[2]["entry_time_ms"] += 86_400_000
+    with op_path.open("w", encoding="utf-8") as f:
+        f.write(",".join(new_fields) + "\n")
+        for row in op_rows:
+            f.write(",".join(str(row[k]) for k in new_fields) + "\n")
     client = _client(state)
 
     response = client.get(
-        "/api/tv-parity/runs/run_top/mismatches/top?limit=3"
+        "/api/tv-parity/runs/run_top/mismatches/top?limit=10"
     )
     assert response.status_code == 200
     payload = response.json()
-    assert len(payload["items"]) == 3
+    assert payload["total"] >= 1
     # Top must be sorted desc by |delta_net_profit|.
     deltas = [row["delta_net_profit_abs"] for row in payload["items"]]
     assert deltas == sorted(deltas, reverse=True)
-    assert payload["items"][0]["delta_net_profit_abs"] == 0.05
+    # Worst is the entry_time_ms shift we injected.
+    worst = payload["items"][0]
+    assert worst["column"] == "entry_time_ms"
+    assert worst["delta_net_profit_abs"] == 86_400_000
+    assert worst["trade_index"] == 2
 
 
 def test_tv_parity_diagnostics_callouts_collects_p092_markers(tmp_path: Path) -> None:
@@ -240,17 +333,21 @@ def test_tv_parity_diagnostics_callouts_collects_p092_markers(tmp_path: Path) ->
 
 def test_tv_parity_summary_cards_for_match(tmp_path: Path) -> None:
     state = SimpleNamespace(config=SimpleNamespace(data_dir=tmp_path))
-    _seed_run(tmp_path, run_id="run_cards")
+    _seed_run(tmp_path, run_id="run_match")
     client = _client(state)
 
-    response = client.get("/api/tv-parity/runs/run_cards/summary-cards")
+    response = client.get("/api/tv-parity/runs/run_match/summary-cards")
     assert response.status_code == 200
     payload = response.json()
     assert payload["overall_status"] == "match"
     assert payload["trades_match"] is True
+    assert payload["failure_count"] == 0
+    # Both max_abs_delta subfields must be 0 (no time / no price mismatches).
     assert payload["max_abs_delta"] == 0.0
-    assert payload["mismatch_cells"] == 0
-    assert "plots_status" in payload
+    assert payload["max_abs_delta_time_ms"] == 0.0
+    assert payload["max_abs_delta_price"] == 0.0
+    assert payload["initial_equity"] == 10_000.0
+    assert payload["final_equity"] == 10_090.0
     assert "initial_equity" in payload
     assert "final_equity" in payload
 

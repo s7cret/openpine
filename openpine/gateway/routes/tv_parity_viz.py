@@ -119,8 +119,14 @@ def build_chart_data(
             {"kind": "openpine_equity", "t": t, "v": v}
         )
 
-    # TV equity curve (when uploaded) — column 'equity' or 'value' or 'tv_equity'
+    # TV equity curve (when uploaded) — column 'equity' or 'value' or 'tv_equity'.
+    # Also: TV writes the P092 strategy equity into the chart CSV (column
+    # 'P092_EQUITY' or 'P092_DIAG_RECONSTRUCTED_EQUITY') because the strategy
+    # itself computes and plots equity.  When a dedicated tv_equity.csv is
+    # missing we fall back to that column on the chart CSV.
     tv_equity_pts: list[tuple[int, float]] = []
+    tv_chart_path = run_root / "uploads" / "chart.csv"
+    dedicated_tv_equity_read = False
     for candidate in (
         run_root / "uploads" / "equity.csv",
         run_root / "uploads" / "tv_equity.csv",
@@ -134,7 +140,33 @@ def build_chart_data(
                 continue
             tv_equity_pts.append((t, v))
             series.append({"kind": "tv_equity", "t": t, "v": v})
+        dedicated_tv_equity_read = True
         break
+
+    if not dedicated_tv_equity_read and tv_chart_path.exists():
+        # TV strategy writes its computed equity into the chart CSV itself.
+        # Prefer the explicit P092_EQUITY column; fall back to
+        # P092_DIAG_RECONSTRUCTED_EQUITY when only diagnostics is present.
+        for col in (
+            "P092_EQUITY",
+            "P092_DIAG_RECONSTRUCTED_EQUITY",
+        ):
+            saw_any = False
+            for row in _read_csv_dicts(tv_chart_path):
+                t = _as_int(
+                    row.get("bar_time")
+                    or row.get("bar_time_ms")
+                    or row.get("time")
+                    or row.get("t")
+                )
+                v = _as_float(row.get(col))
+                if t is None or v is None:
+                    continue
+                tv_equity_pts.append((t, v))
+                series.append({"kind": "tv_equity", "t": t, "v": v, "source": col})
+                saw_any = True
+            if saw_any:
+                break
 
     # OpenPine OHLC (when plots captured) — emitted as a hint for future
     # candle rendering. Today we only carry equity, but the wire format is
@@ -193,38 +225,97 @@ def build_chart_data(
 def top_mismatches(*, run_root: Path, limit: int = 20) -> dict[str, Any]:
     """Top-N bars/trades by absolute delta (descending).
 
-    Reads ``comparison/comparison_summary.csv`` and ranks by
-    ``delta_net_profit_abs`` then ``delta_entry_price_abs`` (ties).
+    For per-trade comparisons we join ``comparison/tradingview_trades_normalized.csv``
+    against ``openpine_outputs/trades.csv`` by row index and rank individual
+    column deltas.  Per-plot comparisons use the worst_column from
+    ``comparison/comparison_summary.json`` as a single high-level entry.
     """
-    rows = _read_csv_dicts(run_root / "comparison" / "comparison_summary.csv")
     enriched: list[dict[str, Any]] = []
-    for row in rows:
-        if not row:
+    tv_norm = _read_csv_dicts(
+        run_root / "comparison" / "tradingview_trades_normalized.csv"
+    )
+    op_trades = _read_csv_dicts(run_root / "openpine_outputs" / "trades.csv")
+    cols_to_compare = (
+        "entry_price",
+        "exit_price",
+        "qty",
+        "net_profit",
+        "max_runup",
+        "max_drawdown",
+        "entry_time_ms",
+        "exit_time_ms",
+    )
+    for i in range(min(len(tv_norm), len(op_trades))):
+        for col in cols_to_compare:
+            t_raw = tv_norm[i].get(col)
+            o_raw = op_trades[i].get(col)
+            if t_raw is None or o_raw is None or t_raw == "" or o_raw == "":
+                continue
+            try:
+                t_v = float(t_raw)
+                o_v = float(o_raw)
+            except (TypeError, ValueError):
+                continue
+            d = o_v - t_v
+            if d == 0.0:
+                continue
+            bar_time = _as_int(
+                tv_norm[i].get("entry_time_ms") or tv_norm[i].get("exit_time_ms")
+            )
+            enriched.append(
+                {
+                    "bar_time": bar_time,
+                    "row_kind": "trade",
+                    "trade_index": i,
+                    "column": col,
+                    "delta_entry_price": d if col == "entry_price" else None,
+                    "delta_exit_price": d if col == "exit_price" else None,
+                    "delta_qty": d if col == "qty" else None,
+                    "delta_net_profit": d if col == "net_profit" else d,
+                    "delta_entry_price_abs": abs(d) if col == "entry_price" else 0.0,
+                    "delta_net_profit_abs": abs(d),
+                }
+            )
+
+    # Add a single per-comparison highlight (worst_column) for plots/trades
+    # for cases where per-row data is unavailable (or as a fallback when
+    # per-row mismatches are empty).  The kind string may be plural
+    # ("trades") while the per-row hardcode is "trade", so we normalize.
+    summary = _read_json(run_root / "comparison" / "comparison_summary.json", {})
+
+    def _norm(k: str) -> str:
+        k = (k or "").lower().rstrip("s")
+        return {"trade": "trade", "plot": "plot"}.get(k, k)
+
+    seen_per_row = {(_norm(r["row_kind"]), r["column"]) for r in enriched}
+    for comp in summary.get("comparisons") or []:
+        worst = (comp.get("worst_column") or "").strip()
+        if not worst:
             continue
-        bar_time = _as_int(row.get("bar_time"))
-        delta_net = _as_float(row.get("delta_net_profit")) or 0.0
-        delta_net_abs = _as_float(row.get("delta_net_profit_abs"))
-        if delta_net_abs is None:
-            delta_net_abs = abs(delta_net)
-        delta_entry = _as_float(row.get("delta_entry_price")) or 0.0
-        delta_entry_abs = _as_float(row.get("delta_entry_price_abs"))
-        if delta_entry_abs is None:
-            delta_entry_abs = abs(delta_entry)
-        delta_exit = _as_float(row.get("delta_exit_price")) or 0.0
-        delta_qty = _as_float(row.get("delta_qty")) or 0.0
+        delta = _as_float(comp.get("max_abs_delta")) or 0.0
+        if delta == 0.0:
+            continue
+        kind = comp.get("type") or "trade"
+        # Skip when we already have a per-row match for this exact column
+        # and kind (e.g. entry_time_ms in trades).
+        if (_norm(kind), worst) in seen_per_row:
+            continue
+        bar_time = _as_int(comp.get("worst_time_ms"))
         enriched.append(
             {
                 "bar_time": bar_time,
-                "row_kind": row.get("row_kind") or "trade",
-                "trade_index": _as_int(row.get("trade_index")),
-                "delta_entry_price": delta_entry,
-                "delta_exit_price": delta_exit,
-                "delta_qty": delta_qty,
-                "delta_net_profit": delta_net,
-                "delta_entry_price_abs": delta_entry_abs,
-                "delta_net_profit_abs": delta_net_abs,
+                "row_kind": kind,
+                "trade_index": None,
+                "column": worst,
+                "delta_entry_price": None,
+                "delta_exit_price": None,
+                "delta_qty": None,
+                "delta_net_profit": delta,
+                "delta_entry_price_abs": 0.0,
+                "delta_net_profit_abs": abs(delta),
             }
         )
+
     enriched.sort(
         key=lambda r: (r["delta_net_profit_abs"], r["delta_entry_price_abs"]),
         reverse=True,
@@ -338,6 +429,26 @@ def summary_cards(*, run_root: Path) -> dict[str, Any]:
         overall = "mismatch"
 
     chart = build_chart_data(run_root=run_root)
+
+    # Disambiguate MAX |Δ|: the raw trades_summary.max_abs_delta is usually
+    # dominated by exit_time_ms / entry_time_ms shifts (in milliseconds) which
+    # makes the headline number meaningless for users.  We pull the time-shifts
+    # out and report a "price-only" max delta alongside them.
+    time_ms_columns = {"entry_time_ms", "exit_time_ms", "bar_time_ms"}
+    price_max_abs_delta = 0.0
+    time_max_abs_delta_ms = 0.0
+    for summary in (trades_summary, plots_summary):
+        worst = (summary.get("worst_column") or "").strip()
+        delta = _as_float(summary.get("max_abs_delta")) or 0.0
+        if not worst or delta == 0.0:
+            continue
+        if worst in time_ms_columns:
+            if delta > time_max_abs_delta_ms:
+                time_max_abs_delta_ms = delta
+        else:
+            if delta > price_max_abs_delta:
+                price_max_abs_delta = delta
+
     return {
         "run_id": result.get("run_id"),
         "strategy_id": result.get("strategy_id"),
@@ -350,6 +461,8 @@ def summary_cards(*, run_root: Path) -> dict[str, Any]:
         "plots_status": plots_status,
         "equity_status": equity_status,
         "max_abs_delta": chart["max_abs_delta"],
+        "max_abs_delta_time_ms": time_max_abs_delta_ms,
+        "max_abs_delta_price": price_max_abs_delta,
         "mismatch_cells": chart["mismatch_cells"],
         "failure_count": len(failures),
         "failures": failures,
@@ -431,13 +544,25 @@ def render_html_report(
     def _fmt_delta(v: float | None) -> str:
         return f"{v:.3e}" if v is not None else "n/a"
 
+    def _fmt_time_delta(ms: float | None) -> str:
+        if ms is None or ms == 0.0:
+            return "n/a"
+        days = ms / 86_400_000
+        if days >= 1:
+            return f"+{days:.0f}d"
+        hours = ms / 3_600_000
+        if hours >= 1:
+            return f"+{hours:.0f}h"
+        return f"+{ms / 60_000:.0f}m"
+
     cards_html = (
         '<div class="cards">'
         f'<div class="card"><div class="card-title">Status</div><div class="card-value">{overall_badge}</div></div>'
         f'<div class="card"><div class="card-title">Trades</div><div class="card-value">{escape(cards["trades_status"])}</div></div>'
         f'<div class="card"><div class="card-title">Plots</div><div class="card-value">{escape(cards["plots_status"])}</div></div>'
         f'<div class="card"><div class="card-title">Equity</div><div class="card-value">{escape(cards["equity_status"])}</div></div>'
-        f'<div class="card"><div class="card-title">Max |Δ|</div><div class="card-value">{_fmt_delta(cards["max_abs_delta"])}</div></div>'
+        f'<div class="card"><div class="card-title">Max |Δ| (price)</div><div class="card-value">{_fmt_delta(cards.get("max_abs_delta_price"))}</div></div>'
+        f'<div class="card"><div class="card-title">Max |Δ| (time)</div><div class="card-value">{_fmt_time_delta(cards.get("max_abs_delta_time_ms"))}</div></div>'
         f'<div class="card"><div class="card-title">Mismatched cells</div><div class="card-value">{cards["mismatch_cells"]}</div></div>'
         f'<div class="card"><div class="card-title">Failures</div><div class="card-value">{cards["failure_count"]}</div></div>'
         f'<div class="card"><div class="card-title">Initial → Final</div><div class="card-value">{_fmt_money(initial)} → {_fmt_money(final)}</div>'
@@ -454,6 +579,9 @@ def render_html_report(
 
     empty_top = '<tr><td colspan="7" class="muted">no mismatches</td></tr>'
     top_rows_list = []
+    def _cell(v):
+        return f"{v:.3e}" if v is not None else ""
+
     for i, item in enumerate(top["items"]):
         top_rows_list.append(
             "<tr>"
@@ -461,9 +589,9 @@ def render_html_report(
             f"<td>{item['bar_time']}</td>"
             f"<td>{escape(str(item['row_kind']))}</td>"
             f"<td>{escape(str(item['trade_index']) if item['trade_index'] is not None else '')}</td>"
-            f"<td>{item['delta_entry_price']:.3e}</td>"
-            f"<td>{item['delta_exit_price']:.3e}</td>"
-            f"<td>{item['delta_net_profit']:.3e}</td>"
+            f"<td>{_cell(item.get('delta_entry_price'))}</td>"
+            f"<td>{_cell(item.get('delta_exit_price'))}</td>"
+            f"<td>{_cell(item.get('delta_net_profit'))}</td>"
             "</tr>"
         )
     top_rows = "".join(top_rows_list)

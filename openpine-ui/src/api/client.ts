@@ -212,6 +212,8 @@ export type TvParitySummaryCards = {
   plots_status: string
   equity_status: string
   max_abs_delta: number | null
+  max_abs_delta_time_ms: number | null
+  max_abs_delta_price: number | null
   mismatch_cells: number | null
   failure_count: number
   failures: any[]

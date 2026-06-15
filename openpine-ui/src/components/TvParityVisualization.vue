@@ -30,6 +30,7 @@ const scrubTo = ref<number | null>(null)
 
 // (3) leaderboard sort
 const sortBy = ref<'delta_net_profit_abs' | 'delta_entry_price_abs'>('delta_net_profit_abs')
+const calloutsExpanded = ref(false)
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const canvasSize = ref({ width: 720, height: 220 })
@@ -290,6 +291,23 @@ function formatDelta(value: number | null | undefined, digits = 6) {
   return value.toExponential(digits)
 }
 
+function formatTimeDelta(ms: number | null | undefined) {
+  if (ms === null || ms === undefined || Number.isNaN(ms) || ms <= 0) return '—'
+  // 86_400_000 ms = 1 day.  Round to nearest hour for compactness.
+  const dayMs = 86_400_000
+  const days = ms / dayMs
+  if (days >= 1) {
+    const hours = Math.round((ms % dayMs) / 3_600_000)
+    return hours === 0
+      ? `+${days.toFixed(0)}d`
+      : `+${days.toFixed(0)}d ${hours}h`
+  }
+  const hours = Math.round(ms / 3_600_000)
+  if (hours >= 1) return `+${hours}h`
+  const minutes = Math.round(ms / 60_000)
+  return `+${minutes}m`
+}
+
 function formatPct(initial: number | null, final: number | null) {
   if (!initial || !final) return '—'
   return `${(((final - initial) / initial) * 100).toFixed(3)}%`
@@ -366,10 +384,18 @@ function drillIntoMismatch(mismatch: TvParityTopMismatch) {
       </div>
       <div class="rounded-lg border border-dark-500 bg-dark-700/50 p-3">
         <div class="text-[10px] uppercase tracking-wide text-gray-500">
-          {{ t('tvParity.viz.maxDelta') }}
+          {{ t('tvParity.viz.maxDeltaPrice') }}
         </div>
         <div class="mt-1 font-mono text-sm text-gray-200">
-          {{ formatDelta(summary.max_abs_delta) }}
+          {{ formatDelta(summary.max_abs_delta_price ?? summary.max_abs_delta) }}
+        </div>
+      </div>
+      <div class="rounded-lg border border-dark-500 bg-dark-700/50 p-3">
+        <div class="text-[10px] uppercase tracking-wide text-gray-500">
+          {{ t('tvParity.viz.maxDeltaTime') }}
+        </div>
+        <div class="mt-1 font-mono text-sm text-gray-200">
+          {{ formatTimeDelta(summary.max_abs_delta_time_ms) }}
         </div>
       </div>
       <div class="rounded-lg border border-dark-500 bg-dark-700/50 p-3">
@@ -473,20 +499,38 @@ function drillIntoMismatch(mismatch: TvParityTopMismatch) {
       </div>
     </div>
 
-    <!-- (4) Diagnostics callouts strip -->
+    <!-- (4) Diagnostics callouts strip — collapsed by default to keep the
+         equity chart visible.  Header click toggles the body. -->
     <div class="rounded-lg border border-dark-500 bg-dark-700/30 p-3">
-      <div class="mb-2 flex items-center justify-between">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-400">
-          {{ t('tvParity.viz.calloutsTitle') }}
-        </h3>
+      <button
+        type="button"
+        class="mb-2 flex w-full items-center justify-between text-left"
+        :aria-expanded="calloutsExpanded"
+        @click="calloutsExpanded = !calloutsExpanded"
+      >
+        <span class="flex items-center gap-2">
+          <svg
+            class="h-3 w-3 text-gray-500 transition-transform"
+            :class="calloutsExpanded ? 'rotate-90' : ''"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M6 3l5 5-5 5V3z" />
+          </svg>
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            {{ t('tvParity.viz.calloutsTitle') }}
+          </span>
+        </span>
         <span class="text-[10px] text-gray-500">
           {{ t('tvParity.viz.calloutsCount', { count: visibleCallouts.length }) }}
+          <span v-if="!calloutsExpanded" class="ml-1 text-gray-600">— click to expand</span>
         </span>
-      </div>
+      </button>
       <div v-if="!visibleCallouts.length" class="text-xs text-gray-500">
         {{ t('tvParity.viz.calloutsEmpty') }}
       </div>
-      <div v-else class="overflow-x-auto">
+      <div v-else-if="calloutsExpanded" class="overflow-x-auto">
         <table class="w-full min-w-[640px] text-xs">
           <thead>
             <tr class="text-left text-gray-500 border-b border-dark-500">

@@ -409,6 +409,8 @@
       "status": "Статус",
       "trades": "Сделки",
       "maxDelta": "Макс |Δ|",
+      "maxDeltaPrice": "Макс |Δ| (цена)",
+      "maxDeltaTime": "Макс |Δ| (время)",
       "failures": "Провалы",
       "pnl": "Эквити",
       "window": "Окно сравнения",
