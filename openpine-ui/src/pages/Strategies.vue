@@ -22,6 +22,7 @@ import {
 } from '@/lib/marketMeta'
 import {
   clearStrategySymbolForMarketChange,
+  isCreateDisabled,
   loadStrategySymbolOptions,
   newStrategyForm,
   selectStrategySymbol,
@@ -291,6 +292,8 @@ function hideSymbolDropdown() {
 
 const createStatus = ref('')
 const createLoading = ref(false)
+const createDisabled = computed(() => isCreateDisabled(form.value, createLoading.value))
+const createHint = computed(() => (createDisabled.value ? strategyValidationMessage(form.value) : ''))
 const detailError = ref('')
 
 function apiErrorMessage(e: any, fallback: string) {
@@ -302,9 +305,12 @@ function apiErrorMessage(e: any, fallback: string) {
 }
 
 async function addStrategy() {
-  if (!form.value.name || !form.value.symbol || !form.value.pine_id || !form.value.artifact_id) {
-    autoFillPineSource(true)
-  }
+  // No silent auto-fill: the user MUST pick a Pine source (and an
+  // artifact becomes available transitively).  Without this guard the
+  // form would POST a strategy with whichever Pine file happened to be
+  // first in the store, which felt like "I created a strategy without
+  // choosing a Pine".  The Create button is already disabled in that
+  // state, so this branch only fires on keyboard/Enter submits.
   const validationMessage = strategyValidationMessage(form.value)
   if (validationMessage) {
     createStatus.value = validationMessage
@@ -745,9 +751,18 @@ function tradeStatusBadge(status: string) {
 
         <!-- Actions -->
         <div class="flex flex-wrap gap-2 justify-end items-center">
-          <span v-if="createStatus" class="min-w-0 flex-1 text-xs" :class="createStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ createStatus }}</span>
+          <!-- Live validation hint: shown whenever Create is disabled and no
+               explicit error has been raised yet, so the user understands
+               why the button is greyed out before clicking it. -->
+          <span v-if="createHint && !createStatus" class="min-w-0 flex-1 text-xs text-warning" data-testid="strategy-create-hint">{{ createHint }}</span>
+          <span v-else-if="createStatus" class="min-w-0 flex-1 text-xs" :class="createStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ createStatus }}</span>
           <button @click="showAdd = false; createStatus = ''" class="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200">{{ t('strategies.cancel') }}</button>
-          <button @click="addStrategy" :disabled="createLoading" class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:opacity-50">
+          <button
+            @click="addStrategy"
+            :disabled="createDisabled"
+            data-testid="strategy-create-button"
+            class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:opacity-50"
+          >
             {{ createLoading ? t('strategies.creating') : t('common.create') }}
           </button>
         </div>

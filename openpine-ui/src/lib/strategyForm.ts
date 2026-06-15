@@ -67,3 +67,24 @@ export function strategyValidationMessage(form: StrategyFormDraft): string {
   if (missingCompiledSource) return '❌ Select a compiled Pine source before creating the strategy.'
   return ''
 }
+
+/**
+ * Whether the "Create strategy" button should be disabled.
+ *
+ * Mirrors `strategyValidationMessage` so the button state and the error
+ * banner below it always agree.  A strategy MUST have:
+ *   - a non-empty name
+ *   - a non-empty symbol
+ *   - a Pine source the user explicitly chose (pine_id)
+ *   - a compiled artifact for that Pine source (artifact_id)
+ *
+ * Auto-filling pine_id/artifact_id from the store on submit was tempting
+ * but made the form silently create strategies with a random Pine file,
+ * which users perceived as "I created a strategy without picking a Pine".
+ * The current contract: the form is disabled until the user has chosen
+ * both a Pine source and (transitively, via the artifact chip) an artifact.
+ */
+export function isCreateDisabled(form: StrategyFormDraft, isLoading = false): boolean {
+  if (isLoading) return true
+  return strategyValidationMessage(form) !== ''
+}
