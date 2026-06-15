@@ -672,26 +672,32 @@ function tradeStatusBadge(status: string) {
               {{ t('strategies.pineSourceEmpty') }}
             </div>
           </div>
-          <div class="space-y-1">
+          <!-- Artifact is auto-selected from the active compiled version of the
+               chosen Pine source.  Hidden from the user; surfaced only as a
+               read-only info chip so they can see what will be used. -->
+          <div class="space-y-1" data-testid="strategy-pine-artifact-readonly">
             <label class="text-[10px] uppercase tracking-wide text-gray-500">
               {{ t('strategies.pineArtifactLabel') }}
             </label>
-            <select
-              v-model="form.artifact_id"
-              data-testid="strategy-pine-artifact"
-              :disabled="!form.pine_id || artifactsLoading"
-              class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent disabled:opacity-60 disabled:cursor-not-allowed"
+            <div
+              class="w-full bg-dark-900 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-300 flex items-center gap-2"
             >
-              <option value="">{{ t('strategies.pineArtifactPlaceholder') }}</option>
-              <option
-                v-for="a in artifacts"
-                :key="a.artifact_id"
-                :value="a.artifact_id"
-              >
-                {{ a.artifact_id }}<span v-if="a.status"> — {{ a.status }}</span>
-              </option>
-            </select>
-            <div v-if="form.pine_id && !artifacts.length && !artifactsLoading" class="text-[10px] text-warning">
+              <span class="text-[10px] uppercase tracking-wide text-gray-500 shrink-0">
+                {{ t('strategies.pineArtifactAutoLabel') }}
+              </span>
+              <code
+                v-if="form.artifact_id"
+                class="font-mono text-xs text-accent truncate"
+                :title="form.artifact_id"
+              >{{ form.artifact_id }}</code>
+              <span v-else class="text-xs text-gray-500">
+                {{ artifactsLoading ? t('strategies.pineArtifactAutoLoading') : t('strategies.pineArtifactAutoEmpty') }}
+              </span>
+            </div>
+            <div
+              v-if="form.pine_id && !artifacts.length && !artifactsLoading"
+              class="text-[10px] text-warning"
+            >
               {{ t('strategies.pineArtifactEmpty') }}
             </div>
           </div>
