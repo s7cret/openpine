@@ -37,7 +37,7 @@ def _compare_csv_time_ms(value) -> int | None:
         raw = int(float(text))
     except Exception:
         try:
-            return parse_timestamp_ms(text, 0, default_tz="UTC")
+            return parse_timestamp_ms(text, 0)
         except Exception:
             return None
     return raw * 1000 if abs(raw) < 10_000_000_000 else raw
@@ -589,9 +589,16 @@ def _compare_rows_by_order(
     common_count = min(len(tv_rows), len(op_rows))
     total = 0
     mismatches = 0
+    ignored_blank_tv_cells = 0
     max_abs_delta = 0.0
     worst: dict[str, object] | None = None
     column_rows: list[dict[str, object]] = []
+
+    def _is_blank_tv_cell(value: object) -> bool:
+        if value is None:
+            return True
+        text = str(value).strip().lower()
+        return text in {"", "nan", "none", "null"}
 
     for column in common_columns:
         col_total = 0
@@ -602,6 +609,9 @@ def _compare_rows_by_order(
         for row_index in range(common_count):
             tv_raw = tv_rows[row_index].get(column)
             op_raw = op_rows[row_index].get(column)
+            if _is_blank_tv_cell(tv_raw):
+                ignored_blank_tv_cells += 1
+                continue
             tv_num = _compare_csv_float(tv_raw)
             op_num = _compare_csv_float(op_raw)
             both_numeric = not (_math.isnan(tv_num) or _math.isnan(op_num))
@@ -682,6 +692,7 @@ def _compare_rows_by_order(
         "mismatch_cells": mismatches,
         "mismatch_ratio": (mismatches / total) if total else None,
         "nan_mismatches": 0,
+        "ignored_blank_tv_cells": ignored_blank_tv_cells,
         "max_abs_delta": max_abs_delta,
         "worst_column": (worst or {}).get("column"),
         "worst_time_ms": (worst or {}).get("row"),

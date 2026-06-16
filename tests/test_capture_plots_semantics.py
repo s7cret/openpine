@@ -254,7 +254,7 @@ def test_normalized_tv_trades_supports_localized_headers(tmp_path):
 
     text = normalized.read_text(encoding="utf-8")
     assert "trade_id,status,direction,entry_time_ms,exit_time_ms" in text
-    assert "1,closed,long,1775037600000,1775044800000,100,110,0.5,5.5,8,-1,L,XL" in text
+    assert "1,closed,long,1775026800000,1775034000000,100,110,0.5,5.5,8,-1,L,XL" in text
 
 
 def test_cli_backtest_runtime_meta_and_progress_helpers():
