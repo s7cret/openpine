@@ -229,7 +229,11 @@ def test_strategy_tv_chart_compare_filters_to_compare_window(tmp_path):
 
 
 def test_normalized_tv_trades_supports_localized_headers(tmp_path):
+    from openpine.cli import compare as cli_compare
     from openpine.cli.main import _write_normalized_tv_trades
+
+    assert cli_compare._compare_csv_time_ms("2026-04-01") == 1775001600000
+    assert cli_compare._compare_csv_time_ms("2026-04-01 10:00") == 1775026800000
 
     tv = tmp_path / "tv_trades.csv"
     normalized = tmp_path / "normalized.csv"

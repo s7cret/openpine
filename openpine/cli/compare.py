@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 
 import click
 from openpine.timezones import parse_timestamp_ms
@@ -37,7 +38,8 @@ def _compare_csv_time_ms(value) -> int | None:
         raw = int(float(text))
     except Exception:
         try:
-            return parse_timestamp_ms(text, 0)
+            default_tz = "UTC" if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text) else None
+            return parse_timestamp_ms(text, 0, default_tz=default_tz)
         except Exception:
             return None
     return raw * 1000 if abs(raw) < 10_000_000_000 else raw
