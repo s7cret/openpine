@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import math
 from pathlib import Path
 import re
 
@@ -574,6 +575,38 @@ def _compare_rows_by_time(
     return summary, top_columns
 
 
+def _canonical_trade_order_rows(
+    fields: list[str], rows: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    required = {"entry_time_ms", "exit_time_ms", "direction", "qty"}
+    if not required.issubset(set(fields)):
+        return rows
+
+    def _num(row: dict[str, str], column: str, default: float = 0.0) -> float:
+        value = _compare_csv_float(row.get(column))
+        return default if math.isnan(value) else value
+
+    def _ts(row: dict[str, str], column: str) -> int:
+        return _compare_csv_time_ms(row.get(column)) or -1
+
+    def _key(item: tuple[int, dict[str, str]]) -> tuple[object, ...]:
+        index, row = item
+        qty = abs(_num(row, "qty"))
+        return (
+            _ts(row, "entry_time_ms"),
+            _ts(row, "exit_time_ms"),
+            str(row.get("status") or ""),
+            str(row.get("direction") or ""),
+            _num(row, "entry_price"),
+            -qty,
+            _num(row, "exit_price"),
+            _num(row, "net_profit"),
+            index,
+        )
+
+    return [row for _index, row in sorted(enumerate(rows), key=_key)]
+
+
 def _compare_rows_by_order(
     *,
     tv_path: Path,
@@ -587,6 +620,8 @@ def _compare_rows_by_order(
 
     tv_fields, tv_rows = _read_compare_csv(tv_path)
     op_fields, op_rows = _read_compare_csv(op_path)
+    tv_rows = _canonical_trade_order_rows(tv_fields, tv_rows)
+    op_rows = _canonical_trade_order_rows(op_fields, op_rows)
     common_columns = sorted((set(tv_fields) & set(op_fields)) - exclude_columns)
     common_count = min(len(tv_rows), len(op_rows))
     total = 0

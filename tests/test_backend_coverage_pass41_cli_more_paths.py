@@ -990,6 +990,58 @@ def test_compare_scalar_normalization_row_comparison_and_run_export_edges(monkey
     assert "no_common_columns" in summary["classification"]
     assert "no_comparable_cells" in summary["classification"]
 
+    tv_order_missing = tmp_path / "tv_order_missing_trade_fields.csv"
+    op_order_missing = tmp_path / "op_order_missing_trade_fields.csv"
+    tv_order_missing.write_text(
+        "entry_time_ms,exit_time_ms,net_profit\n"
+        ",1000,1.25\n"
+        ",2000,2.50\n",
+        encoding="utf-8",
+    )
+    op_order_missing.write_text(
+        "entry_time_ms,exit_time_ms,net_profit\n"
+        "900,1000,1.25\n"
+        "1900,2000,2.50\n",
+        encoding="utf-8",
+    )
+    summary, top = cli_compare._compare_rows_by_order(
+        tv_path=tv_order_missing,
+        op_path=op_order_missing,
+        exclude_columns=set(),
+        abs_tol=0.0,
+        rel_tol=0.0,
+    )
+    assert summary["status"] == "match"
+    assert summary["mismatch_cells"] == 0
+    assert summary["total_cells"] == 4
+    assert top == []
+
+    tv_order_unsorted_legs = tmp_path / "tv_order_unsorted_legs.csv"
+    op_order_unsorted_legs = tmp_path / "op_order_unsorted_legs.csv"
+    fields = "entry_time_ms,exit_time_ms,direction,entry_price,exit_price,qty,net_profit\n"
+    tv_order_unsorted_legs.write_text(
+        fields
+        + "1000,2000,long,10,10,1,-0.1\n"
+        + "1000,2000,long,10,11,100,10\n",
+        encoding="utf-8",
+    )
+    op_order_unsorted_legs.write_text(
+        fields
+        + "1000,2000,long,10,11,100,10\n"
+        + "1000,2000,long,10,10,1,-0.1\n",
+        encoding="utf-8",
+    )
+    summary, top = cli_compare._compare_rows_by_order(
+        tv_path=tv_order_unsorted_legs,
+        op_path=op_order_unsorted_legs,
+        exclude_columns=set(),
+        abs_tol=0.0,
+        rel_tol=0.0,
+    )
+    assert summary["status"] == "match"
+    assert summary["mismatch_cells"] == 0
+    assert top == []
+
     def fake_compare_rows_by_time(**kwargs):
         return (
             {
