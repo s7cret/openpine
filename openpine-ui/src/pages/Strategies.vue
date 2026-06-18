@@ -539,6 +539,7 @@ const backtestTradeRows = computed<any[]>(() => {
     pnl: t.net_profit ?? t.pnl ?? null,
     status: t.exit_price ? 'closed' : 'open',
     entry_time: t.entry_time,
+    exit_time: t.exit_time,
     entry_id: t.entry_id,
     exit_id: t.exit_id,
     exit_reason: t.exit_reason,
@@ -576,9 +577,14 @@ const periodTrades = computed(() => {
   return allTrades.value.filter(tradeOverlapsSelectedPeriod)
 })
 
+const chartTrades = computed(() => {
+  // Pass the full ledger into the chart so it can auto-load the backtest date
+  // span. CandleChart only renders markers that align with loaded candles.
+  return allTrades.value.length > 0 ? allTrades.value : periodTrades.value
+})
+
 const filteredTrades = computed(() => {
   // The table is the strategy/backtest ledger, not a chart-range overlay.
-  // Keep chart markers range-limited via periodTrades, but show all trades here.
   return allTrades.value
     .filter((t: any) => {
       if (tradeFilterSide.value && normalizeTradeSide(t.side) !== tradeFilterSide.value) return false
@@ -1040,7 +1046,7 @@ function exitBadgeClass(exitId: string | null | undefined): string {
                 :symbol="store.current?.symbol ?? 'BTCUSDT'"
                 :timeframe="store.current?.timeframe ?? '15m'"
                 :market="store.current?.market_type ?? 'spot'"
-                :trades="periodTrades"
+                :trades="chartTrades"
                 class="h-full"
                 @visibleRange="onChartRangeChange"
                 @dataRange="onDataRangeChange"

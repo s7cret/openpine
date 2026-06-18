@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 from pathlib import Path
 
@@ -213,8 +214,24 @@ def test_save_result_updates_status_and_metrics(store):
     run = store.get_run(run_id)
     assert run.status == "done"
     assert run.metrics.net_profit == 50.0
+    assert run.metrics.max_drawdown_pct == 0.1
     assert run.metrics.trades_total == 10
     assert run.equity_curve_path is not None
+
+    metrics_payload = store.get_metrics(run_id)
+    assert metrics_payload is not None
+    assert metrics_payload["metrics"]["max_drawdown_pct"] == 0.1
+
+    # Older report.json artifacts did not include max_drawdown_pct. The API must
+    # still serve the persisted percentage instead of letting the UI format the
+    # cash drawdown as a percent (e.g. 129379 -> 129379%).
+    report_path = Path(run.report_path)
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["metrics"].pop("max_drawdown_pct")
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    backfilled_metrics = store.get_metrics(run_id)
+    assert backfilled_metrics is not None
+    assert backfilled_metrics["metrics"]["max_drawdown_pct"] == 0.1
 
 
 def test_metrics_from_result_preserves_summary_mapping():
@@ -355,6 +372,8 @@ def test_result_database_row_helpers_map_trades_and_artifacts(tmp_path: Path):
         2000,
         100.0,
         110.0,
+        None,
+        None,
         1.0,
         10.0,
         10.0,

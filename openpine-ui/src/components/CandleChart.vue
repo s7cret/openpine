@@ -6,6 +6,7 @@ import DateRangePicker from './DateRangePicker.vue'
 import type { IChartApi, ISeriesApi, CandlestickData, HistogramData, Time, SeriesMarker } from 'lightweight-charts'
 import { formatChartTime } from '@/utils/time'
 import { getDataKlines } from '@/api/client'
+import { dateInputFromMs, rangesOverlap, tradeBoundsMs } from '@/lib/tradeChartRange'
 
 const { t } = useI18n()
 
@@ -16,6 +17,9 @@ interface Trade {
   entry_time?: number | string | null
   exit_time?: number | string | null
   pnl?: number | null
+  entry_id?: string | null
+  exit_id?: string | null
+  exit_reason?: string | null
 }
 
 const props = defineProps<{
@@ -41,7 +45,9 @@ function localDateInputValue(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
-// Default: 1 month ago to now
+// Default: 1 month ago to now. If backtest trades arrive and this default
+// range misses them, auto-expand once to the trade ledger span so markers are
+// visible immediately after a backtest.
 const now = new Date()
 const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 const dateFrom = ref(localDateInputValue(monthAgo))
@@ -105,6 +111,8 @@ type ChartBarPayload = {
   volume: number | null
 }
 
+let loadDataRequestId = 0
+
 async function fetchKlines(symbol: string, interval: string, market: string, exchange?: string) {
   const startTime = new Date(dateFrom.value + 'T00:00:00Z').getTime()
   const endTime = new Date(dateTo.value + 'T23:59:59Z').getTime()
@@ -152,6 +160,25 @@ function toTimestamp(val: number | string | null | undefined): number | null {
   return n > 1e12 ? Math.floor(n / 1000) : n
 }
 
+function currentDateRangeMs() {
+  return {
+    fromMs: new Date(dateFrom.value + 'T00:00:00Z').getTime(),
+    toMs: new Date(dateTo.value + 'T23:59:59Z').getTime(),
+  }
+}
+
+function syncDateRangeToTrades(): boolean {
+  const bounds = tradeBoundsMs(props.trades ?? [], 24 * 60 * 60 * 1000)
+  if (!bounds) return false
+
+  const current = currentDateRangeMs()
+  if (rangesOverlap(current, bounds)) return false
+
+  dateFrom.value = dateInputFromMs(bounds.fromMs)
+  dateTo.value = dateInputFromMs(bounds.toMs)
+  return true
+}
+
 function findNearestCandle(tradeTime: number): Time | null {
   if (!candleTimes.length) return null
   let lo = 0
@@ -171,21 +198,49 @@ function findNearestCandle(tradeTime: number): Time | null {
   return diff <= maxGap ? (best as Time) : null
 }
 
+function exitLabel(trade: Trade): string {
+  const raw = String(trade.exit_reason ?? trade.exit_id ?? '').trim()
+  if (!raw) return 'EXIT'
+  const head = raw.split(/\s+/)[0].replace(/[:].*$/, '')
+  if (/^TP\d+$/i.test(head)) return head.toUpperCase()
+  if (/^Trail$/i.test(head)) return 'TRAIL'
+  if (/^BE$/i.test(head)) return 'BE'
+  if (/^(Long|Short)$/i.test(head)) return 'CLOSE'
+  return head.toUpperCase()
+}
+
+function exitColor(label: string, pnl: number | null | undefined): string {
+  if (pnl != null && pnl < 0) return '#ef5350'
+  if (label === 'BE') return '#60a5fa'
+  if (label === 'TRAIL') return '#f59e0b'
+  if (label.startsWith('TP')) return '#22c55e'
+  if (pnl != null && pnl >= 0) return '#26a69a'
+  return '#ef5350'
+}
+
+function exitShape(label: string): SeriesMarker<Time>['shape'] {
+  return label === 'TRAIL' || label === 'BE' ? 'square' : 'circle'
+}
+
 function buildMarkers(): SeriesMarker<Time>[] {
   if (!props.trades?.length || !candleTimes.length) return []
 
   const markers: SeriesMarker<Time>[] = []
+  const seenEntries = new Set<string>()
 
   for (const trade of props.trades) {
     const isBuy = trade.side === 'buy' || trade.side === 'long'
     const isSell = trade.side === 'sell' || trade.side === 'short'
     if (!isBuy && !isSell) continue
 
-    // Entry marker
+    // Entry marker. Backtests with partial exits create multiple trade rows for
+    // the same entry; show the entry once, then draw every TP/Trail/BE exit.
     const entryTime = toTimestamp(trade.entry_time)
     if (entryTime != null) {
+      const entryKey = `${trade.side}:${entryTime}:${trade.entry_price}:${trade.entry_id ?? ''}`
       const t = findNearestCandle(entryTime)
-      if (t != null) {
+      if (t != null && !seenEntries.has(entryKey)) {
+        seenEntries.add(entryKey)
         markers.push({
           time: t,
           position: isBuy ? 'belowBar' : 'aboveBar',
@@ -196,19 +251,21 @@ function buildMarkers(): SeriesMarker<Time>[] {
       }
     }
 
-    // Exit marker (for closed trades)
-    if (trade.exit_price && trade.exit_time) {
+    // Exit marker (for closed trades). Preserve Pine exit names so partial exits
+    // are visible on chart: TP1/TP2/TP3/Trail/BE instead of generic EXIT.
+    if (trade.exit_price != null && trade.exit_time != null) {
       const exitTime = toTimestamp(trade.exit_time)
       if (exitTime != null) {
         const t = findNearestCandle(exitTime)
         if (t != null) {
+          const label = exitLabel(trade)
           const pnlStr = trade.pnl != null ? (trade.pnl >= 0 ? `+${trade.pnl.toFixed(0)}` : trade.pnl.toFixed(0)) : ''
           markers.push({
             time: t,
             position: isBuy ? 'aboveBar' : 'belowBar',
-            color: trade.pnl != null && trade.pnl >= 0 ? '#26a69a' : '#ef5350',
-            shape: 'circle',
-            text: pnlStr ? `EXIT ${pnlStr}` : 'EXIT',
+            color: exitColor(label, trade.pnl),
+            shape: exitShape(label),
+            text: pnlStr ? `${label} ${pnlStr}` : label,
           })
         }
       }
@@ -221,8 +278,10 @@ function buildMarkers(): SeriesMarker<Time>[] {
 
 async function loadData() {
   if (!chart || !props.symbol) return
+  const requestId = ++loadDataRequestId
   try {
     const raw = await fetchKlines(props.symbol, props.timeframe, props.market, props.exchange)
+    if (requestId !== loadDataRequestId) return
     const { candles, volumes } = mapKlines(raw)
     if (candleSeries) {
       candleSeries.setData(candles)
@@ -304,7 +363,7 @@ function initChart() {
 
 onMounted(() => {
   initChart()
-  loadData()
+  if (!syncDateRangeToTrades()) loadData()
 
   if (containerRef.value) {
     resizeObserver = new ResizeObserver(() => {
@@ -321,7 +380,7 @@ watch(() => [props.exchange, props.symbol, props.timeframe, props.market], () =>
 })
 
 watch(() => props.trades, () => {
-  updateMarkers()
+  if (!syncDateRangeToTrades()) updateMarkers()
 }, { deep: true })
 
 // Reload when date range changes

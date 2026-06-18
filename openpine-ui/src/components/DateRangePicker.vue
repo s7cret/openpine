@@ -78,7 +78,7 @@ function parseDateOnly(value: string): Date {
 function fmtDisplay(d: string): string {
   if (!d) return ''
   const dt = parseDateOnly(d)
-  return `${dt.getDate()} ${monthShort[dt.getMonth()]} ${dt.getFullYear()}`
+  return `${dt.getDate()} ${monthShort.value[dt.getMonth()]} ${dt.getFullYear()}`
 }
 
 function applyPreset(p: { label: string; days: number; all?: boolean }) {
@@ -164,8 +164,8 @@ function generateDays(monthDate: Date) {
 const leftDays = computed(() => generateDays(calLeft.value))
 const rightDays = computed(() => generateDays(calRight.value))
 
-const leftMonthLabel = computed(() => `${monthNames[calLeft.value.getMonth()]} ${calLeft.value.getFullYear()}`)
-const rightMonthLabel = computed(() => `${monthNames[calRight.value.getMonth()]} ${calRight.value.getFullYear()}`)
+const leftMonthLabel = computed(() => `${monthNames.value[calLeft.value.getMonth()]} ${calLeft.value.getFullYear()}`)
+const rightMonthLabel = computed(() => `${monthNames.value[calRight.value.getMonth()]} ${calRight.value.getFullYear()}`)
 
 let clickState: 'from' | 'to' = 'from'
 

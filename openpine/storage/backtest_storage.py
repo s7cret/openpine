@@ -658,6 +658,7 @@ class BacktestResultStore:
         """Get metrics summary for a backtest run from the report artifact."""
         import json as _json
 
+        stored_metrics = self._stored_metrics_payload(run_id)
         rows = self._storage.execute(
             """
             SELECT path FROM backtest_artifacts
@@ -674,17 +675,21 @@ class BacktestResultStore:
             ).fetchone()
             if row and row[0]:
                 try:
-                    return _json.loads(row[0])
+                    return self._merge_metrics_payload(
+                        _json.loads(row[0]), stored_metrics
+                    )
                 except Exception:
-                    return None
-            return None
+                    return stored_metrics or None
+            return stored_metrics or None
         path = Path(rows[0][0])
         if not path.exists():
-            return None
+            return stored_metrics or None
         try:
-            return _json.loads(path.read_text(encoding="utf-8"))
+            return self._merge_metrics_payload(
+                _json.loads(path.read_text(encoding="utf-8")), stored_metrics
+            )
         except Exception:
-            return None
+            return stored_metrics or None
 
     def list_trades(self, run_id: str) -> list[BacktestTrade]:
         """List trades for a run."""
@@ -742,6 +747,91 @@ class BacktestResultStore:
             commission_total=getattr(result, "commission_total", None),
             expectancy=getattr(result, "expectancy", None),
         )
+
+    def _stored_metrics_payload(self, run_id: str) -> dict[str, Any]:
+        row = self._storage.execute(
+            """
+            SELECT
+                initial_capital,
+                final_equity,
+                net_profit,
+                net_profit_pct,
+                gross_profit,
+                gross_loss,
+                profit_factor,
+                max_drawdown,
+                max_drawdown_pct,
+                sharpe,
+                sortino,
+                calmar,
+                win_rate,
+                trades_total,
+                winning_trades,
+                losing_trades,
+                avg_trade,
+                avg_win,
+                avg_loss,
+                largest_win,
+                largest_loss,
+                avg_bars_in_trade,
+                commission_total,
+                expectancy
+            FROM backtest_runs WHERE run_id = ?
+            """,
+            (run_id,),
+        ).fetchone()
+        if row is None:
+            return {}
+        keys = (
+            "initial_capital",
+            "final_equity",
+            "net_profit",
+            "net_profit_pct",
+            "gross_profit",
+            "gross_loss",
+            "profit_factor",
+            "max_drawdown",
+            "max_drawdown_pct",
+            "sharpe",
+            "sortino",
+            "calmar",
+            "win_rate",
+            "trades_total",
+            "winning_trades",
+            "losing_trades",
+            "avg_trade",
+            "avg_win",
+            "avg_loss",
+            "largest_win",
+            "largest_loss",
+            "avg_bars_in_trade",
+            "commission_total",
+            "expectancy",
+        )
+        payload = {key: value for key, value in zip(keys, row) if value is not None}
+        if "trades_total" in payload:
+            payload["total_trades"] = payload["trades_total"]
+        return payload
+
+    @staticmethod
+    def _merge_metrics_payload(
+        payload: dict[str, Any], stored_metrics: dict[str, Any]
+    ) -> dict[str, Any]:
+        if not stored_metrics or not isinstance(payload, dict):
+            return payload
+        result = dict(payload)
+        nested_metrics = result.get("metrics")
+        metrics = nested_metrics if isinstance(nested_metrics, dict) else result
+        merged = dict(stored_metrics)
+        merged.update({k: v for k, v in metrics.items() if v is not None})
+        if "trades_total" not in merged and "total_trades" in merged:
+            merged["trades_total"] = merged["total_trades"]
+        if "total_trades" not in merged and "trades_total" in merged:
+            merged["total_trades"] = merged["trades_total"]
+        if isinstance(result.get("metrics"), dict):
+            result["metrics"] = merged
+            return result
+        return merged
 
     @staticmethod
     def _equity_curve_records(equity_curve: list[Any]) -> list[dict[str, Any]]:
@@ -921,6 +1011,7 @@ class BacktestResultStore:
                 "net_profit_pct": metrics.net_profit_pct,
                 "profit_factor": metrics.profit_factor,
                 "max_drawdown": metrics.max_drawdown,
+                "max_drawdown_pct": metrics.max_drawdown_pct,
                 "sharpe": metrics.sharpe,
                 "sortino": metrics.sortino,
                 "win_rate": metrics.win_rate,
@@ -955,6 +1046,7 @@ class BacktestResultStore:
             f"| Net Profit % | {metrics.net_profit_pct} |",
             f"| Profit Factor | {metrics.profit_factor} |",
             f"| Max Drawdown | {metrics.max_drawdown} |",
+            f"| Max Drawdown % | {metrics.max_drawdown_pct} |",
             f"| Sharpe | {metrics.sharpe} |",
             f"| Win Rate | {metrics.win_rate} |",
             f"| Total Trades | {metrics.trades_total} |",

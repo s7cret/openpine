@@ -405,7 +405,7 @@ function effectiveRange(e: any) {
                   </div>
                   <div>
                     <span class="text-xs text-gray-500">{{ t('backtests.maxDrawdown') }}</span>
-                    <div class="text-sm font-bold text-danger">{{ fmtPct(metric(btStore.current, 'max_drawdown_pct') ?? metric(btStore.current, 'max_drawdown')) }}</div>
+                    <div class="text-sm font-bold text-danger">{{ fmtPct(metric(btStore.current, 'max_drawdown_pct')) }}</div>
                   </div>
                   <div>
                     <span class="text-xs text-gray-500">{{ t('backtests.period') }}</span>
