@@ -338,10 +338,11 @@ class BacktestResultStore:
             """
             INSERT INTO backtest_trades
             (trade_id, run_id, strategy_id, entry_id, exit_id, direction,
-             entry_time, exit_time, entry_price, exit_price, qty,
+             entry_time, exit_time, entry_price, exit_price, stop_price,
+             take_profit_price, qty,
              gross_pnl, net_pnl, net_pnl_pct, fee, slippage,
              bars_held, exit_reason, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             self._trade_db_rows(
                 run_id=run_id,
@@ -491,6 +492,8 @@ class BacktestResultStore:
                 getattr(t, "exit_time", None),
                 t.entry_price,
                 getattr(t, "exit_price", None),
+                getattr(t, "stop_price", None),
+                getattr(t, "take_profit_price", None),
                 t.qty,
                 getattr(t, "profit", None),
                 getattr(t, "profit", None),
@@ -498,7 +501,12 @@ class BacktestResultStore:
                 getattr(t, "commission_entry", 0) + getattr(t, "commission_exit", 0),
                 0.0,
                 getattr(t, "bars_held", None),
-                getattr(t, "exit_reason", None),
+                # ast2python trade objects expose the Pine exit name (e.g. "TP1 Long:L",
+                # "TP2 Long:L", "Trail Long:L", "BE Long:L") as `exit_id`; they do not
+                # carry a separate `exit_reason` attribute. Persist `exit_id` into the
+                # `exit_reason` column so the API can return the original exit name
+                # (TP1/TP2/TP3/Trail/BE) to the UI.
+                getattr(t, "exit_id", None) or getattr(t, "exit_reason", None),
                 now,
             )
             for i, t in enumerate(trades)
@@ -762,6 +770,8 @@ class BacktestResultStore:
                 "entry_price": t.entry_price,
                 "exit_time": getattr(t, "exit_time", None),
                 "exit_price": getattr(t, "exit_price", None),
+                "stop_price": getattr(t, "stop_price", None),
+                "take_profit_price": getattr(t, "take_profit_price", None),
                 "qty": t.qty,
                 "profit": getattr(t, "profit", None),
                 "profit_percent": getattr(t, "profit_percent", None),
@@ -1029,6 +1039,8 @@ class BacktestResultStore:
             exit_id=data.get("exit_id"),
             exit_time=data.get("exit_time"),
             exit_price=data.get("exit_price"),
+            stop_price=data.get("stop_price"),
+            take_profit_price=data.get("take_profit_price"),
             gross_pnl=data.get("gross_pnl"),
             net_pnl=data.get("net_pnl"),
             net_pnl_pct=data.get("net_pnl_pct"),

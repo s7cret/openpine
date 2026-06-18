@@ -820,13 +820,20 @@ async def get_run_trades(
         BacktestTradeResponse(
             trade_id=t.trade_id,
             run_id=run_id,
+            entry_id=getattr(t, "entry_id", None),
+            exit_id=getattr(t, "exit_id", None),
             entry_time=t.entry_time,
             exit_time=t.exit_time,
             direction=t.direction,
             entry_price=t.entry_price,
             exit_price=t.exit_price,
+            stop_price=getattr(t, "stop_price", None),
+            take_profit_price=getattr(t, "take_profit_price", None),
             qty=t.qty,
             net_profit=t.net_pnl,
+            gross_profit=getattr(t, "gross_pnl", None),
+            bars_held=getattr(t, "bars_held", None),
+            exit_reason=getattr(t, "exit_reason", None),
         )
         for t in trades
     ]
@@ -1056,6 +1063,8 @@ async def export_run(
             "direction": t.direction,
             "entry_price": t.entry_price,
             "exit_price": t.exit_price,
+            "stop_price": getattr(t, "stop_price", None),
+            "take_profit_price": getattr(t, "take_profit_price", None),
             "qty": t.qty,
             "net_profit": t.net_pnl,
         }

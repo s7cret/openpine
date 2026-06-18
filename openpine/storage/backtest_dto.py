@@ -100,6 +100,8 @@ class BacktestTrade:
     exit_id: str | None = None
     exit_time: int | None = None
     exit_price: float | None = None
+    stop_price: float | None = None
+    take_profit_price: float | None = None
     gross_pnl: float | None = None
     net_pnl: float | None = None
     net_pnl_pct: float | None = None

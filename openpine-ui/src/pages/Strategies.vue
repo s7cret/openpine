@@ -415,6 +415,7 @@ function fmt24hChange(value: any) {
 }
 
 function fmtPrice(value: any) {
+  if (value === null || value === undefined || value === '') return '—'
   const n = Number(value)
   if (!Number.isFinite(n)) return '—'
   return n.toLocaleString(undefined, { maximumFractionDigits: 8 })
@@ -434,30 +435,42 @@ const chartVisibleTo = ref<number | null>(null)
 let tradesRefreshTimer: ReturnType<typeof setInterval> | null = null
 
 async function loadTrades(strategyId: string) {
-  try {
-    const [ordersRes, positionsRes, btRunsRes] = await Promise.all([
-      getOrders(strategyId),
-      getPositions(strategyId),
-      getBacktestRuns(strategyId, 20),
-    ])
-    orders.value = ordersRes.data ?? []
-    trades.value = positionsRes.data?.recent_trades ?? []
+  const [ordersRes, positionsRes, btRunsRes] = await Promise.allSettled([
+    getOrders(strategyId),
+    getPositions(strategyId),
+    getBacktestRuns(strategyId, 20),
+  ])
 
-    // Load backtest trades from latest completed run
-    const btRuns = (btRunsRes.data ?? []).filter((r: any) => r.status === 'done' || r.status === 'completed')
+  if (ordersRes.status === 'fulfilled') {
+    orders.value = ordersRes.value.data ?? []
+  } else {
+    orders.value = []
+  }
+
+  if (positionsRes.status === 'fulfilled') {
+    trades.value = positionsRes.value.data?.recent_trades ?? []
+  } else {
+    trades.value = []
+  }
+
+  if (btRunsRes.status === 'fulfilled') {
+    // Load backtest trades from latest completed run. This must not depend on
+    // orders/positions: backtest history is the authoritative post-run ledger.
+    const btRuns = (btRunsRes.value.data ?? []).filter((r: any) => r.status === 'done' || r.status === 'completed')
     if (btRuns.length > 0) {
       try {
         const btTradesRes = await getBacktestTrades(btRuns[0].run_id)
         backtestTrades.value = btTradesRes.data ?? []
-      } catch { backtestTrades.value = [] }
+      } catch (e: any) {
+        backtestTrades.value = []
+        detailError.value = apiErrorMessage(e, t('strategies.tradesLoadFailed'))
+      }
     } else {
       backtestTrades.value = []
     }
-  } catch (e: any) {
-    detailError.value = apiErrorMessage(e, t('strategies.tradesLoadFailed'))
-    trades.value = []
-    orders.value = []
+  } else {
     backtestTrades.value = []
+    detailError.value = apiErrorMessage(btRunsRes.reason, t('strategies.tradesLoadFailed'))
   }
 }
 
@@ -526,6 +539,12 @@ const backtestTradeRows = computed<any[]>(() => {
     pnl: t.net_profit ?? t.pnl ?? null,
     status: t.exit_price ? 'closed' : 'open',
     entry_time: t.entry_time,
+    entry_id: t.entry_id,
+    exit_id: t.exit_id,
+    exit_reason: t.exit_reason,
+    stop_price: t.stop_price,
+    take_profit_price: t.take_profit_price,
+    gross_pnl: t.gross_pnl,
   }))
 })
 
@@ -558,7 +577,9 @@ const periodTrades = computed(() => {
 })
 
 const filteredTrades = computed(() => {
-  return periodTrades.value
+  // The table is the strategy/backtest ledger, not a chart-range overlay.
+  // Keep chart markers range-limited via periodTrades, but show all trades here.
+  return allTrades.value
     .filter((t: any) => {
       if (tradeFilterSide.value && normalizeTradeSide(t.side) !== tradeFilterSide.value) return false
       if (tradeFilterStatus.value && (t.status ?? '').toLowerCase() !== tradeFilterStatus.value) return false
@@ -596,6 +617,25 @@ function tradeStatusBadge(status: string) {
     cancelled: 'bg-danger/20 text-danger',
   }
   return map[(status ?? '').toLowerCase()] ?? 'bg-gray-500/20 text-gray-400'
+}
+
+// Pine exit_id values look like "TP1 Long:L", "TP2 Short:L", "Trail Long:L",
+// "BE Short:L" (the trailing ":L" / ":S" is an ast2python marker). Surface
+// them as short, color-coded badges so the cascade-TP structure is visible.
+function formatExitBadge(exitId: string | null | undefined): string {
+  if (!exitId) return '—'
+  // Strip the trailing ":L" / ":S" ast2python marker.
+  return exitId.replace(/:\w+$/, '')
+}
+
+function exitBadgeClass(exitId: string | null | undefined): string {
+  if (!exitId) return 'bg-gray-500/20 text-gray-400'
+  if (/^TP1\b/.test(exitId)) return 'bg-emerald-500/20 text-emerald-300'
+  if (/^TP2\b/.test(exitId)) return 'bg-sky-500/20 text-sky-300'
+  if (/^TP3\b/.test(exitId)) return 'bg-indigo-500/20 text-indigo-300'
+  if (/^Trail\b/.test(exitId)) return 'bg-purple-500/20 text-purple-300'
+  if (/^BE\b/.test(exitId)) return 'bg-amber-500/20 text-amber-300'
+  return 'bg-gray-500/20 text-gray-400'
 }
 </script>
 
@@ -1059,6 +1099,10 @@ function tradeStatusBadge(status: string) {
                       </div>
                       <span class="shrink-0 px-1.5 py-0.5 rounded text-xs" :class="tradeStatusBadge(tItem.status)">{{ tItem.status ?? '—' }}</span>
                     </div>
+                    <div class="mt-2">
+                      <span v-if="tItem.exit_id" class="px-1.5 py-0.5 rounded text-xs font-mono" :class="exitBadgeClass(tItem.exit_id)">{{ formatExitBadge(tItem.exit_id) }}</span>
+                      <span v-else class="text-xs text-gray-600">—</span>
+                    </div>
                     <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                       <div>
                         <span class="text-gray-500">{{ t('strategies.price') }}</span>
@@ -1090,6 +1134,7 @@ function tradeStatusBadge(status: string) {
                       <th class="px-3 py-1.5 text-left">{{ t('strategies.thSide') }}</th>
                       <th class="px-3 py-1.5 text-right">{{ t('strategies.thQty') }}</th>
                       <th class="px-3 py-1.5 text-right">{{ t('strategies.thPrice') }}</th>
+                      <th class="px-3 py-1.5 text-left">{{ t('strategies.thExit') }}</th>
                       <th class="px-3 py-1.5 text-right">{{ t('strategies.thSl') }}</th>
                       <th class="px-3 py-1.5 text-right">{{ t('strategies.thTp') }}</th>
                       <th class="px-3 py-1.5 text-right">{{ t('strategies.thPnl') }}</th>
@@ -1098,7 +1143,7 @@ function tradeStatusBadge(status: string) {
                   </thead>
                   <tbody>
                     <tr v-if="filteredTrades.length === 0">
-                      <td colspan="8" class="px-3 py-4 text-center text-gray-500">{{ t('strategies.noTrades') }}</td>
+                      <td colspan="9" class="px-3 py-4 text-center text-gray-500">{{ t('strategies.noTrades') }}</td>
                     </tr>
                     <tr v-for="tItem in filteredTrades" :key="tItem.trade_id ?? tItem.order_id" class="border-b border-dark-700/50 hover:bg-dark-800">
                       <td class="px-3 py-1.5 text-gray-400">{{ formatTime(tItem.entry_time ?? tItem.created_at) }}</td>
@@ -1109,6 +1154,10 @@ function tradeStatusBadge(status: string) {
                       </td>
                       <td class="px-3 py-1.5 text-right text-gray-300 font-mono">{{ tItem.qty ?? tItem.filled_quantity ?? '—' }}</td>
                       <td class="px-3 py-1.5 text-right text-gray-300 font-mono">{{ fmtPrice(tItem.entry_price ?? tItem.avg_fill_price ?? tItem.limit_price) }}</td>
+                      <td class="px-3 py-1.5">
+                        <span v-if="tItem.exit_id" class="px-1.5 py-0.5 rounded text-xs font-mono" :class="exitBadgeClass(tItem.exit_id)">{{ formatExitBadge(tItem.exit_id) }}</span>
+                        <span v-else class="text-gray-600">—</span>
+                      </td>
                       <td class="px-3 py-1.5 text-right text-danger font-mono">{{ fmtPrice(tItem.stop_price) }}</td>
                       <td class="px-3 py-1.5 text-right text-success font-mono">{{ fmtPrice(tItem.take_profit_price) }}</td>
                       <td class="px-3 py-1.5 text-right font-mono" :class="(tItem.pnl ?? 0) >= 0 ? 'text-success' : 'text-danger'">
