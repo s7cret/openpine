@@ -79,6 +79,7 @@ const uniqueStatuses = computed(() => {
   store.items.forEach((s: any) => { if (s.status) set.add(s.status) })
   return Array.from(set).sort()
 })
+const archiveView = ref<'active' | 'archived'>('active')
 const filteredStrategies = computed(() => {
   return store.items.filter((s: any) => {
     if (filterName.value && !(s.name ?? '').toLowerCase().includes(filterName.value.toLowerCase())) return false
@@ -90,6 +91,10 @@ const filteredStrategies = computed(() => {
     return true
   })
 })
+const filteredActiveStrategies = computed(() => filteredStrategies.value.filter((s: any) => !s.archived))
+const filteredArchivedStrategies = computed(() => filteredStrategies.value.filter((s: any) => s.archived))
+const visibleStrategies = computed(() => archiveView.value === 'archived' ? filteredArchivedStrategies.value : filteredActiveStrategies.value)
+const activePineSources = computed(() => pineStore.items.filter((p: any) => !p.archived))
 
 // Add form
 const form = ref({
@@ -217,11 +222,11 @@ watch(() => form.value.pine_id, async (pineId) => {
 })
 
 const selectedPineSource = computed(() => {
-  return pineStore.items.find((p: any) => (p.id ?? p.source_id) === form.value.pine_id) ?? null
+  return activePineSources.value.find((p: any) => (p.id ?? p.source_id) === form.value.pine_id) ?? null
 })
 
 function autoFillPineSource(force: boolean) {
-  const sources = pineStore.items.filter((p: any) => p.active_artifact_id || (p.id ?? p.source_id))
+  const sources = activePineSources.value.filter((p: any) => p.active_artifact_id || (p.id ?? p.source_id))
   if (!sources.length) return
   const exact = sources.find((p: any) => String(p.name ?? '').toLowerCase() === form.value.name.trim().toLowerCase())
   const source = exact ?? sources[0]
@@ -370,9 +375,37 @@ function isRunning(s: any) {
 }
 
 function visibleControlButtons(s: any) {
+  if (s?.archived) return []
   return isRunning(s)
     ? controlButtons.filter((btn) => btn.action === 'pause')
     : controlButtons.filter((btn) => btn.action === 'start')
+}
+
+function strategyId(s: any) {
+  return s?.strategy_id ?? s?.id ?? ''
+}
+
+function archivedRowClass(item: any) {
+  return item?.archived ? 'opacity-60 grayscale' : ''
+}
+
+async function setStrategyArchived(s: any, archived: boolean) {
+  const id = strategyId(s)
+  if (!id) return
+  await store.setArchived(id, archived)
+}
+
+function onStrategyDragStart(event: DragEvent, s: any) {
+  const id = strategyId(s)
+  if (!id || !event.dataTransfer) return
+  event.dataTransfer.setData('application/x-openpine-strategy', id)
+  event.dataTransfer.effectAllowed = 'move'
+}
+
+async function onStrategyDrop(event: DragEvent, archived: boolean) {
+  const id = event.dataTransfer?.getData('application/x-openpine-strategy')
+  if (!id) return
+  await store.setArchived(id, archived)
 }
 
 function buttonLabel(btn: { labelKey: string }): string {
@@ -713,14 +746,14 @@ function exitBadgeClass(exitId: string | null | undefined): string {
             >
               <option value="">{{ t('strategies.pineSourcePlaceholder') }}</option>
               <option
-                v-for="p in pineStore.items"
+                v-for="p in activePineSources"
                 :key="p.id ?? p.source_id"
                 :value="p.id ?? p.source_id"
               >
                 {{ p.name ?? (p.id ?? p.source_id) }}
               </option>
             </select>
-            <div v-if="!pineStore.items.length" class="text-[10px] text-warning">
+            <div v-if="!activePineSources.length" class="text-[10px] text-warning">
               {{ t('strategies.pineSourceEmpty') }}
             </div>
           </div>
@@ -847,21 +880,57 @@ function exitBadgeClass(exitId: string | null | undefined): string {
       </span>
     </div>
 
+    <div class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        :class="[
+          archiveView === 'active' ? 'border-success/60 bg-success/15 text-success ring-1 ring-success/30' : 'border-dark-500 bg-dark-800 text-gray-400 hover:border-success/40 hover:text-success',
+          'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors'
+        ]"
+        @click="archiveView = 'active'"
+        @dragenter.prevent
+        @dragover.prevent
+        @drop.prevent.stop="onStrategyDrop($event, false)"
+      >
+        <span>{{ t('strategies.activeDropZone') }}</span>
+        <span class="rounded bg-black/20 px-1.5 py-0.5 font-mono">{{ filteredActiveStrategies.length }}</span>
+      </button>
+      <button
+        type="button"
+        :class="[
+          archiveView === 'archived' ? 'border-warning/60 bg-warning/15 text-warning ring-1 ring-warning/30' : 'border-dark-500 bg-dark-800 text-gray-400 hover:border-warning/40 hover:text-warning',
+          'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors'
+        ]"
+        @click="archiveView = 'archived'"
+        @dragenter.prevent
+        @dragover.prevent
+        @drop.prevent.stop="onStrategyDrop($event, true)"
+      >
+        <span>{{ t('strategies.archiveDropZone') }}</span>
+        <span class="rounded bg-black/20 px-1.5 py-0.5 font-mono">{{ filteredArchivedStrategies.length }}</span>
+      </button>
+    </div>
+
     <!-- Table -->
     <div class="bg-dark-800 rounded-xl border border-dark-500 overflow-hidden">
       <div class="md:hidden divide-y divide-dark-600/60">
-        <div v-if="filteredStrategies.length === 0" class="px-4 py-8 text-center text-gray-500">
+        <div v-if="visibleStrategies.length === 0" class="px-4 py-8 text-center text-gray-500">
           {{ store.loading ? t('common.loading') : (store.items.length === 0 ? t('strategies.noStrategies') : t('strategies.noMatch')) }}
         </div>
         <div
-          v-for="s in filteredStrategies"
+          v-for="s in visibleStrategies"
           :key="s.strategy_id ?? s.id"
-          class="p-4 space-y-3"
+          :class="[archivedRowClass(s), 'p-4 space-y-3']"
+          draggable="true"
+          @dragstart="onStrategyDragStart($event, s)"
           @click="openDetail(s.strategy_id ?? s.id)"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <div class="truncate font-medium text-gray-200">{{ s.name ?? '—' }}</div>
+              <div class="flex min-w-0 items-center gap-2">
+                <div class="truncate font-medium text-gray-200">{{ s.name ?? '—' }}</div>
+                <span v-if="s.archived" class="shrink-0 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] text-warning">{{ t('strategies.archivedBadge') }}</span>
+              </div>
               <div class="mt-1 flex min-w-0 items-center gap-2 font-mono text-xs text-gray-500">
                 <img
                   v-if="s.symbol && hasTickerIcon(baseAssetFromSymbol(s.symbol))"
@@ -921,6 +990,12 @@ function exitBadgeClass(exitId: string | null | undefined): string {
             >
               {{ buttonLabel(btn) }}
             </button>
+            <button
+              @click="setStrategyArchived(s, !s.archived)"
+              class="min-w-0 rounded bg-dark-600 px-2 py-2 text-xs text-gray-300 transition-colors hover:bg-dark-500"
+            >
+              {{ s.archived ? t('strategies.restore') : t('strategies.archive') }}
+            </button>
           </div>
         </div>
       </div>
@@ -937,18 +1012,25 @@ function exitBadgeClass(exitId: string | null | undefined): string {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="filteredStrategies.length === 0">
+          <tr v-if="visibleStrategies.length === 0">
             <td colspan="7" class="px-4 py-8 text-center text-gray-500">
               {{ store.loading ? t('common.loading') : (store.items.length === 0 ? t('strategies.noStrategies') : t('strategies.noMatch')) }}
             </td>
           </tr>
           <tr
-            v-for="s in filteredStrategies"
+            v-for="s in visibleStrategies"
             :key="s.strategy_id ?? s.id"
-            class="border-b border-dark-600/50 hover:bg-dark-700/50 cursor-pointer transition-colors"
+            :class="[archivedRowClass(s), 'border-b border-dark-600/50 hover:bg-dark-700/50 cursor-pointer transition-colors']"
+            draggable="true"
+            @dragstart="onStrategyDragStart($event, s)"
             @click="openDetail(s.strategy_id ?? s.id)"
           >
-            <td class="px-4 py-2.5 font-medium text-gray-200 max-w-[120px] sm:max-w-none truncate">{{ s.name ?? '—' }}</td>
+            <td class="px-4 py-2.5 font-medium text-gray-200 max-w-[120px] sm:max-w-none">
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="truncate">{{ s.name ?? '—' }}</span>
+                <span v-if="s.archived" class="shrink-0 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] text-warning">{{ t('strategies.archivedBadge') }}</span>
+              </div>
+            </td>
             <td class="px-4 py-2.5 text-gray-400 font-mono">
               <span class="flex items-center gap-2">
                 <img
@@ -995,6 +1077,12 @@ function exitBadgeClass(exitId: string | null | undefined): string {
                   :title="buttonLabel(btn)"
                 >
                   {{ buttonLabel(btn).split(' ')[0] }}
+                </button>
+                <button
+                  @click="setStrategyArchived(s, !s.archived)"
+                  class="rounded bg-dark-600 px-2 py-1 text-xs text-gray-300 transition-colors hover:bg-dark-500"
+                >
+                  {{ s.archived ? t('strategies.restore') : t('strategies.archive') }}
                 </button>
               </div>
             </td>
@@ -1180,6 +1268,7 @@ function exitBadgeClass(exitId: string | null | undefined): string {
 
             <div class="px-4 sm:px-5 pb-5 grid grid-cols-2 gap-2 sm:flex">
               <button v-for="btn in visibleControlButtons(store.current)" :key="btn.action" @click="store.control(showDetail!, btn.action)" :class="[btn.cls, 'px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors']">{{ buttonLabel(btn) }}</button>
+              <button @click="async () => { if (store.current) await setStrategyArchived(store.current, !store.current.archived) }" class="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium bg-dark-600 hover:bg-dark-500 text-gray-300 transition-colors">{{ store.current?.archived ? t('strategies.restore') : t('strategies.archive') }}</button>
               <button @click="async () => { await store.remove(showDetail!); showDetail = null }" class="col-span-2 sm:ml-auto px-3 sm:px-4 py-2 rounded-lg text-sm font-medium bg-dark-600 hover:bg-dark-500 text-gray-400 transition-colors">{{ t('strategies.delete') }}</button>
             </div>
           </div>

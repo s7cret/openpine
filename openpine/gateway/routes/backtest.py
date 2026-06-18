@@ -84,6 +84,32 @@ def _backtest_progress_source_label(phase: str, query) -> str:
     return f"{query.instrument.exchange} {query.instrument.market}"
 
 
+def _progress_ratio(done: int | float, total: int | float) -> float:
+    if not total or total <= 0:
+        return 0.0
+    return max(0.0, min(float(done) / float(total), 1.0))
+
+
+def _backtest_market_data_pct(
+    *,
+    bars_fetched: int,
+    pages_done: int,
+    expected_bars: int,
+    expected_pages: int,
+) -> float:
+    """Progress for market-data loading: 20% → 35%, driven by bars/pages."""
+    ratio = max(
+        _progress_ratio(bars_fetched, expected_bars),
+        _progress_ratio(pages_done, expected_pages),
+    )
+    return 0.20 + 0.15 * ratio
+
+
+def _backtest_compute_pct(done: int, total: int) -> float:
+    """Progress for strategy computation: 35% → 95%."""
+    return 0.35 + 0.60 * _progress_ratio(done, total)
+
+
 def _bar_series_fingerprint(series) -> str:
     digest = hashlib.sha256()
     digest.update(b"openpine.bar_series.v1\0")
@@ -315,13 +341,27 @@ async def _run_backtest_background(
         # Load bars
         if await cancel_if_requested("artifact load"):
             return
-        ws_manager.update_progress(
-            run_id, "backtest", "running", 0.2, "Loading market data..."
-        )
-        await ws_manager.broadcast_progress(run_id)
-
         query = _market_data_query_for_strategy(strategy, from_ms, to_ms)
         estimate = _estimate_backtest_market_data(strategy, from_ms, to_ms)
+        ws_manager.update_progress(
+            run_id,
+            "backtest",
+            "running",
+            0.2,
+            f"Preparing market data: 0/{estimate.estimated_bars:,} bars",
+            detail={
+                "phase": "market_data",
+                "bars_processed": 0,
+                "total_bars": estimate.estimated_bars,
+                "pages_processed": 0,
+                "total_pages": estimate.estimated_pages,
+                "requested_from": from_ms,
+                "effective_from": estimate.effective_from,
+                "earliest_available": getattr(estimate, "earliest_available", None),
+                "adjusted": getattr(estimate, "adjusted", False),
+            },
+        )
+        await ws_manager.broadcast_progress(run_id)
 
         def bar_load_progress(
             bars_fetched: int,
@@ -333,8 +373,12 @@ async def _run_backtest_background(
         ) -> None:
             expected_bars = total_bars or estimate.estimated_bars
             expected_pages = total_pages or estimate.estimated_pages
-            page_ratio = pages / max(expected_pages, 1)
-            pct = 0.2 + 0.1 * max(0.0, min(page_ratio, 1.0))
+            pct = _backtest_market_data_pct(
+                bars_fetched=bars_fetched,
+                pages_done=pages,
+                expected_bars=expected_bars,
+                expected_pages=expected_pages,
+            )
             source = _backtest_progress_source_label(phase, query)
             ws_manager.update_progress(
                 run_id,
@@ -397,8 +441,8 @@ async def _run_backtest_background(
             run_id,
             "backtest",
             "running",
-            0.3,
-            f"Running backtest on {total_bars} bars...",
+            0.35,
+            f"Running backtest on {total_bars:,} bars...",
             detail={
                 "bars_processed": 0,
                 "total_bars": total_bars,
@@ -414,17 +458,15 @@ async def _run_backtest_background(
         from openpine.runtime.engine import BacktestRunConfig
 
         # Read strategy declaration args (calc_on_order_fills, commission, etc.)
+        from openpine.runtime.declaration_args import artifact_strategy_declaration_args
+
         try:
             artifact = state.artifact_store.get_artifact(
                 strategy.artifact_id, strategy.pine_id
             )
-            compile_meta = artifact.get("compile_meta", {})
-            declaration = compile_meta.get("translation_metadata", {}).get(
-                "declaration", {}
-            )
-            decl_args = declaration.get("arguments", {})
+            decl_args = artifact_strategy_declaration_args(artifact)
         except Exception:
-            decl_args = {}
+            decl_args = artifact_strategy_declaration_args(None)
 
         params = {}
         if params_override:
@@ -502,7 +544,7 @@ async def _run_backtest_background(
             log.warning("runtime_data_provider_init_failed", error=str(exc))
 
         def progress_callback(done: int, total: int) -> None:
-            pct = 0.3 + 0.6 * (done / max(total, 1))
+            pct = _backtest_compute_pct(done, total)
             ws_manager.update_progress(
                 run_id,
                 "backtest",
@@ -535,7 +577,7 @@ async def _run_backtest_background(
 
         # Save results
         ws_manager.update_progress(
-            run_id, "backtest", "running", 0.9, "Saving results..."
+            run_id, "backtest", "running", 0.97, "Saving results..."
         )
         await ws_manager.broadcast_progress(run_id)
 
@@ -592,6 +634,9 @@ async def run_backtest(
         strategy = registry.get_strategy(body.strategy_id)
     except KeyError:
         raise HTTPException(404, f"Strategy not found: {body.strategy_id}")
+
+    if getattr(strategy, "archived", False):
+        raise HTTPException(400, "Archived strategy is not available for backtests")
 
     if not strategy.pine_id or not strategy.artifact_id:
         raise HTTPException(
@@ -672,6 +717,8 @@ async def estimate_backtest(
         strategy = state.strategy_registry.get_strategy(strategy_id)
     except KeyError:
         raise HTTPException(404, f"Strategy not found: {strategy_id}")
+    if getattr(strategy, "archived", False):
+        raise HTTPException(400, "Archived strategy is not available for backtests")
     return _estimate_backtest_market_data(strategy, from_ms, to_ms)
 
 

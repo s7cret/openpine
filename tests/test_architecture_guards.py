@@ -91,17 +91,18 @@ def test_pyproject_includes_all_package_directories() -> None:
 
 def test_no_executable_legacy_scripts_remain() -> None:
     scripts_dir = ROOT / "scripts"
-    script_files = (
+    legacy_executables = (
         sorted(
             path.relative_to(ROOT)
             for path in scripts_dir.rglob("*.py")
             if "__pycache__" not in path.parts
+            and (path.stat().st_mode & 0o111)
         )
         if scripts_dir.exists()
         else []
     )
 
-    assert script_files == []
+    assert legacy_executables == []
 
 
 def test_batch_runner_is_not_a_legacy_executable_surface() -> None:

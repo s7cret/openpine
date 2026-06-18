@@ -85,5 +85,18 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
     } catch (e) { console.error(e) }
   }
 
-  return { items, currentContent, loading, compiling, fetchAll, fetchContent, create, remove }
+  async function setArchived(id: string, archived: boolean) {
+    try {
+      const { data } = archived ? await api.archivePineFile(id) : await api.unarchivePineFile(id)
+      const idx = items.value.findIndex((f: any) => (f.id ?? f.source_id) === id)
+      if (idx !== -1) items.value[idx] = data
+      await fetchAll()
+      return data
+    } catch (e) {
+      console.error(e)
+      throw e
+    }
+  }
+
+  return { items, currentContent, loading, compiling, fetchAll, fetchContent, create, remove, setArchived }
 })

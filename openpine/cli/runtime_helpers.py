@@ -92,6 +92,9 @@ def _build_strategy_backtest_config(
     capture_to_ms: int | None,
     config_cls,
 ):
+    from openpine.runtime.declaration_args import normalize_strategy_declaration_args
+
+    decl_args = normalize_strategy_declaration_args(decl_args)
     visible_start_ms = (
         requested_start_ms if requested_start_ms is not None else start_ms
     )
@@ -163,6 +166,9 @@ def _build_strategy_replay_config(
     end_ms: int,
     config_cls,
 ):
+    from openpine.runtime.declaration_args import normalize_strategy_declaration_args
+
+    decl_args = normalize_strategy_declaration_args(decl_args)
     return config_cls(
         symbol=strategy.symbol,
         timeframe=strategy.timeframe,
@@ -1199,11 +1205,11 @@ def _load_strategy_backtest_bars(
 
 
 def _strategy_backtest_declaration_args(*, artifact_store_cls, strategy) -> dict:
+    from openpine.runtime.declaration_args import artifact_strategy_declaration_args
+
     store = artifact_store_cls()
     artifact = store.get_artifact(strategy.artifact_id, strategy.pine_id)
-    compile_meta = artifact.get("compile_meta", {})
-    declaration = compile_meta.get("translation_metadata", {}).get("declaration", {})
-    return declaration.get("arguments", {})
+    return artifact_strategy_declaration_args(artifact)
 
 
 def _save_strategy_backtest_result(

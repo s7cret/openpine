@@ -23,7 +23,7 @@ class BacktestRunConfig:
     end_time: int
     exchange: str = "binance"
     market_type: str = "spot"
-    initial_capital: float = 10_000.0
+    initial_capital: float = 100_000.0
     default_qty_type: str = "fixed"
     default_qty_value: float = 1.0
     commission_type: str = "none"
@@ -322,8 +322,8 @@ class BacktestEngineAdapter:
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
         qty_rounding = (
             "floor"
-            if config.qty_rounding_mode == "truncate"
-            else config.qty_rounding_mode
+            if getattr(config, "qty_rounding_mode", None) == "truncate"
+            else getattr(config, "qty_rounding_mode", None) or "floor"
         )
         engine_config = self._module.BacktestConfig(
             symbol=config.symbol,

@@ -22,6 +22,7 @@ class PineSource:
     version: str = "1.0.0"
     source_type: str = "strategy"  # strategy | indicator | library | unknown
     active_artifact_id: str | None = None
+    archived: bool = False
     created_at: int = field(default_factory=lambda: int(time.time() * 1000))
     updated_at: int = field(default_factory=lambda: int(time.time() * 1000))
 
@@ -36,6 +37,7 @@ class PineSource:
             "version": self.version,
             "source_type": self.source_type,
             "active_artifact_id": self.active_artifact_id,
+            "archived": self.archived,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -52,6 +54,7 @@ class PineSource:
             version=data.get("version", "1.0.0"),
             source_type=data.get("source_type", "strategy"),
             active_artifact_id=data.get("active_artifact_id"),
+            archived=data.get("archived", False),
             created_at=data.get("created_at", int(time.time() * 1000)),
             updated_at=data.get("updated_at", int(time.time() * 1000)),
         )

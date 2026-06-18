@@ -64,6 +64,7 @@ class PineSourceUpdate(BaseModel):
     name: str | None = None
     source_text: str | None = None
     source_type: str | None = None
+    archived: bool | None = None
 
 
 class PineSourceResponse(BaseModel):
@@ -72,6 +73,7 @@ class PineSourceResponse(BaseModel):
     source_type: str
     version: str
     active_artifact_id: str | None = None
+    archived: bool = False
     created_at: int
     updated_at: int
 
@@ -108,6 +110,7 @@ class StrategyUpdate(BaseModel):
     params_json: str | None = None
     mode: StrategyMode | None = None
     enabled: bool | None = None
+    archived: bool | None = None
 
 
 class StrategyResponse(BaseModel):
@@ -123,6 +126,7 @@ class StrategyResponse(BaseModel):
     params_hash: str
     mode: str
     enabled: bool
+    archived: bool = False
     status: str
     created_at: int
     updated_at: int

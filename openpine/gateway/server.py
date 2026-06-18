@@ -43,7 +43,15 @@ def _env_flag(name: str, default: bool = False) -> bool:
     return raw.lower() in {"1", "true", "yes", "on"}
 
 
-def _run_background_services(stop_event) -> None:
+def _live_runner_requested(state: GatewayState) -> bool:
+    """Return whether live/paper catch-up work is enabled for this gateway."""
+
+    return bool(getattr(state.config, "live_enabled", False)) or _env_flag(
+        "OPENPINE_ENABLE_LIVE_RUNNER"
+    )
+
+
+def _run_background_services(stop_event, live_runner_enabled: bool = True) -> None:
     """Run market refresh and paper/live catch-up outside the API process."""
 
     async def _main() -> None:
@@ -58,14 +66,16 @@ def _run_background_services(stop_event) -> None:
             registry=state.strategy_registry,
             orchestrator=state.orchestrator,
         )
-        runner = LiveStrategyRunner(
-            config=RunnerConfig(check_interval_seconds=5.0),
-            registry=state.strategy_registry,
-            orchestrator=state.orchestrator,
-            storage=state.storage,
-            artifact_store=state.artifact_store,
-            state_store=state.state_store,
-        )
+        runner = None
+        if live_runner_enabled:
+            runner = LiveStrategyRunner(
+                config=RunnerConfig(check_interval_seconds=5.0),
+                registry=state.strategy_registry,
+                orchestrator=state.orchestrator,
+                storage=state.storage,
+                artifact_store=state.artifact_store,
+                state_store=state.state_store,
+            )
 
         async def _achievement_tick(stop_event: asyncio.Event) -> None:
             """Recompute achievements every 5 min. Self-heal path that
@@ -85,7 +95,10 @@ def _run_background_services(stop_event) -> None:
         ach_task = asyncio.create_task(_achievement_tick(ach_stop))
         try:
             fetcher.start()
-            runner.start()
+            if runner is not None:
+                runner.start()
+            else:
+                log.info("background_live_runner_disabled")
             log.info("gateway_background_services_started")
             while not stop_event.is_set():
                 await asyncio.sleep(1.0)
@@ -96,7 +109,8 @@ def _run_background_services(stop_event) -> None:
                 await ach_task
             except (asyncio.CancelledError, Exception):
                 pass
-            runner.stop()
+            if runner is not None:
+                runner.stop()
             fetcher.stop()
             state.close()
             log.info("gateway_background_services_stopped")
@@ -134,12 +148,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     background_process = None
     background_stop = None
     state._background_worker_process = None
-    if _env_flag("OPENPINE_ENABLE_BACKGROUND_WORKER", True):
-        ctx = mp.get_context("fork")
+    background_worker_enabled = _env_flag("OPENPINE_ENABLE_BACKGROUND_WORKER", True)
+    live_runner_requested = _live_runner_requested(state)
+    if background_worker_enabled:
+        ctx = mp.get_context("spawn")
         background_stop = ctx.Event()
         background_process = ctx.Process(
             target=_run_background_services,
-            args=(background_stop,),
+            args=(background_stop, live_runner_requested),
             name="openpine-gateway-background",
             daemon=True,
         )
@@ -173,10 +189,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # mini-backtests in the gateway process and can starve API responses on
     # active paper/live strategies.
     runner = None
-    live_runner_enabled = state.config.live_enabled or _env_flag(
-        "OPENPINE_ENABLE_LIVE_RUNNER"
-    )
-    if live_runner_enabled:
+    in_process_live_runner_enabled = live_runner_requested and not background_worker_enabled
+    if in_process_live_runner_enabled:
         from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig
 
         runner = LiveStrategyRunner(
@@ -189,6 +203,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         runner.start()
         state._live_runner = runner
         log.info("live_runner_started")
+    elif live_runner_requested:
+        state._live_runner = None
+        log.info("live_runner_delegated_to_background_worker")
     else:
         state._live_runner = None
         log.info("live_runner_disabled")

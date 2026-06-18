@@ -118,6 +118,9 @@ def _is_pine_v5_compatibility_diagnostic(message: str) -> bool:
 
 
 def _is_non_blocking_parse_diagnostic(message: str) -> bool:
+    lowered = message.lower()
+    if "p2a1304" in lowered:
+        return True
     return _is_visual_contract_diagnostic(message) or _is_pine_v5_compatibility_diagnostic(
         message
     )

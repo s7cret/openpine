@@ -66,6 +66,27 @@ def test_accounts_data_coverage_and_backfill_paths(monkeypatch, tmp_path):
     assert scheduler.done["bars_loaded"] == 10
     assert events
 
+    job_iso = SimpleNamespace(status=JobStatus.PENDING)
+    scheduler_iso = Scheduler(job_iso)
+    state_iso = SimpleNamespace(scheduler=scheduler_iso)
+    subprocess_payloads = []
+    monkeypatch.setattr(
+        ad,
+        "_run_data_backfill_subprocess",
+        lambda payload: subprocess_payloads.append(payload)
+        or {"bars_loaded": 7, "skipped_existing": 0, "execution_mode": "isolated_process"},
+    )
+    asyncio.run(
+        ad._run_data_backfill_job(
+            "job-iso",
+            {"symbol": "SOLUSDT", "estimated_source_bars": 250_001},
+            state_iso,
+        )
+    )
+    assert scheduler_iso.done["bars_loaded"] == 7
+    assert scheduler_iso.done["execution_mode"] == "isolated_process"
+    assert subprocess_payloads
+
     job2 = SimpleNamespace(status=JobStatus.PENDING)
     scheduler2 = Scheduler(job2)
     state2 = SimpleNamespace(scheduler=scheduler2)

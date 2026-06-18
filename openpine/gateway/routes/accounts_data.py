@@ -7,9 +7,12 @@ import asyncio
 import json
 import shutil
 import sqlite3
+import subprocess
+import sys
+import threading
 import time
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 from openpine._compat import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -101,9 +104,14 @@ _MARKET_TYPE_MAP = {
 }
 _DATA_KLINES_MAX_BARS = 200000
 _DATA_KLINES_MAX_VARIABLE_WINDOW_MS = 10 * 366 * 24 * 60 * 60 * 1000
+_DATA_BACKFILL_SUBPROCESS_SOURCE_BARS = 250_000
 _SYMBOL_SEARCH_TIMEOUT_SECONDS = 8.0
 _SYMBOL_SEARCH_RESPONSE_TIMEOUT_SECONDS = 9.0
 _DATA_LOAD_RESPONSE_TIMEOUT_SECONDS = 15.0
+_DATA_SUMMARY_RESPONSE_TIMEOUT_SECONDS = 10.0
+_DATA_SUMMARY_CACHE_TTL_SECONDS = 10.0
+_DATA_SUMMARY_CACHE_LOCK = threading.Lock()
+_DATA_SUMMARY_CACHE: tuple[tuple[str, str, str, str], float, dict[str, object]] | None = None
 
 
 def _strategy_market_type_payload(market_type_id: str) -> dict[str, object]:
@@ -508,13 +516,15 @@ async def data_cache_status(
     state: GatewayState = Depends(get_state),
 ) -> CacheStatusResponse:
     """Get cache status."""
-    summary = _data_summary(state)
-    instruments = {item["symbol"] for item in summary["series"]}
-    timeframes = {item["timeframe"] for item in summary["series"]}
+    summary = await _data_summary_for_response(state)
+    series = cast(list[dict[str, object]], summary.get("series") or [])
+    instruments = {str(item.get("symbol") or "") for item in series if item.get("symbol")}
+    timeframes = {str(item.get("timeframe") or "") for item in series if item.get("timeframe")}
+    cache_size = cast(Any, summary.get("cache_size_bytes") or 0)
 
     return CacheStatusResponse(
         cache_dir=str(default_cache_dir()),
-        total_size_bytes=int(summary["cache_size_bytes"]),
+        total_size_bytes=int(cache_size),
         instruments=sorted(instruments),
         timeframes=sorted(timeframes),
     )
@@ -525,7 +535,7 @@ async def data_summary(
     state: GatewayState = Depends(get_state),
 ) -> dict[str, object]:
     """Return market-data and order inventory for dashboard/data page."""
-    return _data_summary(state)
+    return await _data_summary_for_response(state)
 
 
 @router.post("/data/series/{series_id}/refresh")
@@ -697,12 +707,48 @@ async def data_coverage(
         return []
 
 
+def _estimate_api_backfill_source_bars(
+    timeframe: str, from_ms: int, to_ms: int
+) -> tuple[int, str]:
+    """Estimate source candle count for routing the backfill execution mode."""
+
+    try:
+        target_timeframe = parse_timeframe(timeframe)
+        source_timeframe = _backfill_source_timeframe(target_timeframe)
+    except Exception as exc:  # noqa: BLE001 - convert provider/parser errors to API 400
+        raise HTTPException(400, f"Invalid timeframe {timeframe!r}: {exc}") from exc
+
+    duration_ms = getattr(source_timeframe, "duration_ms", None)
+    if not isinstance(duration_ms, int) or duration_ms <= 0:
+        return 0, str(getattr(source_timeframe, "canonical", timeframe))
+    estimated_source_bars = max(0, (to_ms - from_ms + duration_ms - 1) // duration_ms)
+    return estimated_source_bars, str(getattr(source_timeframe, "canonical", timeframe))
+
+
+def _backfill_needs_isolated_process(payload: dict[str, object]) -> bool:
+    estimated = payload.get("estimated_source_bars")
+    if isinstance(estimated, (int, float, str)) and str(estimated) != "":
+        try:
+            return int(estimated) > _DATA_BACKFILL_SUBPROCESS_SOURCE_BARS
+        except ValueError:
+            return False
+    try:
+        estimated_source_bars, _source_label = _estimate_api_backfill_source_bars(
+            str(payload["timeframe"]),
+            int(cast(int | str, payload["from_time"])),
+            int(cast(int | str, payload["to_time"])),
+        )
+    except Exception:
+        return False
+    return estimated_source_bars > _DATA_BACKFILL_SUBPROCESS_SOURCE_BARS
+
+
 @router.post("/data/backfill")
 async def data_backfill(
     body: DataBackfillRequest,
     background_tasks: BackgroundTasks,
     state: GatewayState = Depends(get_state),
-) -> dict[str, str]:
+) -> dict[str, object]:
     """Start a data backfill job."""
     from openpine.jobs import Job, JobType
 
@@ -710,8 +756,12 @@ async def data_backfill(
     to_ms = _parse_date_ms(body.to_time)
     if from_ms >= to_ms:
         raise HTTPException(400, "from_time must be before to_time")
+    estimated_source_bars, source_timeframe = _estimate_api_backfill_source_bars(
+        body.timeframe, from_ms, to_ms
+    )
+    isolated = estimated_source_bars > _DATA_BACKFILL_SUBPROCESS_SOURCE_BARS
 
-    job = Job(
+    candidate = Job(
         job_type=JobType.BACKFILL,
         idempotency_key=(
             f"data-backfill:{body.exchange.lower()}:{body.market_type.lower()}:"
@@ -724,23 +774,48 @@ async def data_backfill(
             "to_time": to_ms,
             "exchange": body.exchange,
             "market_type": body.market_type,
+            "estimated_source_bars": estimated_source_bars,
+            "source_timeframe": source_timeframe,
+            "execution_mode": "isolated_process" if isolated else "in_process_thread",
         },
     )
-    job = state.scheduler.enqueue(job)
-    background_tasks.add_task(
-        _run_data_backfill_job, job.id, dict(job.input or {}), state
-    )
-    ws_manager.update_progress(
-        job.id,
-        "data_backfill",
-        job.status.value,
-        0.0,
-        f"Queued candle backfill for {body.symbol.upper()} {body.timeframe}",
-        detail=dict(job.input or {}),
-    )
-    await ws_manager.broadcast_progress(job.id)
-    log.info("backfill_enqueued", symbol=body.symbol, timeframe=body.timeframe)
-    return {"job_id": job.id, "status": job.status.value}
+    job = state.scheduler.enqueue(candidate)
+    if job.id == candidate.id and job.status == JobStatus.PENDING:
+        message = (
+            f"Queued large candle backfill for {body.symbol.upper()} {body.timeframe} "
+            f"in isolated process ({estimated_source_bars:,} source {source_timeframe} candles)"
+            if isolated
+            else f"Queued candle backfill for {body.symbol.upper()} {body.timeframe}"
+        )
+        background_tasks.add_task(
+            _run_data_backfill_job, job.id, dict(job.input or {}), state
+        )
+        ws_manager.update_progress(
+            job.id,
+            "data_backfill",
+            job.status.value,
+            0.0,
+            message,
+            detail=dict(job.input or {}),
+        )
+        await ws_manager.broadcast_progress(job.id)
+        log.info("backfill_enqueued", symbol=body.symbol, timeframe=body.timeframe)
+        return {"job_id": job.id, "status": job.status.value, "message": message}
+
+    progress = ws_manager.get_progress(job.id) or {}
+    result = job.result or None
+    message = str(progress.get("message") or "")
+    if not message and isinstance(result, dict):
+        message = _backfill_done_message(result)
+    if not message:
+        message = f"Backfill job {job.id[:8]} is already {job.status.value}"
+    return {
+        "job_id": job.id,
+        "status": job.status.value,
+        "deduplicated": True,
+        "message": message,
+        "result": result,
+    }
 
 
 async def _run_data_backfill_job(
@@ -798,10 +873,28 @@ async def _run_data_backfill_job(
         )
 
     try:
-        result = await asyncio.to_thread(
-            _run_data_backfill_sync, payload, state, _progress
-        )
-        bars_loaded = int(result["bars_loaded"])
+        if _backfill_needs_isolated_process(payload):
+            estimated = payload.get("estimated_source_bars")
+            source_timeframe = payload.get("source_timeframe") or payload.get("timeframe")
+            ws_manager.update_progress(
+                job_id,
+                "data_backfill",
+                "running",
+                0.05,
+                (
+                    "Large candle backfill is running in an isolated process"
+                    f" ({int(cast(int | str, estimated)):,} source {source_timeframe} candles)"
+                    if isinstance(estimated, (int, float, str)) and str(estimated) != ""
+                    else "Large candle backfill is running in an isolated process"
+                ),
+                detail={**payload, "execution_mode": "isolated_process"},
+            )
+            await ws_manager.broadcast_progress(job_id)
+            result = await asyncio.to_thread(_run_data_backfill_subprocess, payload)
+        else:
+            result = await asyncio.to_thread(
+                _run_data_backfill_sync, payload, state, _progress
+            )
         result = {
             **payload,
             **result,
@@ -812,7 +905,7 @@ async def _run_data_backfill_job(
             "data_backfill",
             "done",
             1.0,
-            f"Loaded {bars_loaded:,} candles, skipped {int(result.get('skipped_existing') or 0):,} existing",
+            _backfill_done_message(result),
             detail=result,
         )
         await ws_manager.broadcast_progress(job_id)
@@ -825,6 +918,58 @@ async def _run_data_backfill_job(
         log.warning("backfill_failed", job_id=job_id, error=str(exc))
 
 
+def _run_data_backfill_subprocess(payload: dict[str, object]) -> dict[str, object]:
+    """Run a large backfill in a fresh Python process so uvicorn stays responsive."""
+
+    repo_root = Path(__file__).resolve().parents[3]
+    marker = "OPENPINE_BACKFILL_RESULT_JSON="
+    script = r'''
+import json
+import sys
+
+from openpine.gateway.deps import GatewayState
+from openpine.gateway.routes.accounts_data import _run_data_backfill_sync
+
+payload = json.loads(sys.stdin.read())
+state = GatewayState()
+
+def _progress(*args):
+    return None
+
+try:
+    result = _run_data_backfill_sync(payload, state, _progress)
+    print("OPENPINE_BACKFILL_RESULT_JSON=" + json.dumps(result, default=str), flush=True)
+finally:
+    try:
+        state.close()
+    except Exception:
+        pass
+'''
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        input=json.dumps(payload, default=str),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=str(repo_root),
+        timeout=None,
+        check=False,
+    )
+    if completed.returncode != 0:
+        stderr_tail = "\n".join(completed.stderr.splitlines()[-20:])
+        raise RuntimeError(
+            f"isolated backfill process failed with exit {completed.returncode}: {stderr_tail}"
+        )
+    for line in reversed(completed.stdout.splitlines()):
+        if line.startswith(marker):
+            parsed = json.loads(line[len(marker) :])
+            if isinstance(parsed, dict):
+                return {**parsed, "execution_mode": "isolated_process"}
+            break
+    stdout_tail = "\n".join(completed.stdout.splitlines()[-20:])
+    raise RuntimeError(f"isolated backfill process returned no result: {stdout_tail}")
+
+
 def _run_data_backfill_sync(
     payload: dict[str, object], state: GatewayState, progress_callback
 ):
@@ -835,30 +980,535 @@ def _run_data_backfill_sync(
         return {
             "bars_loaded": 0,
             "skipped_existing": skipped_existing,
+            "bars_available": skipped_existing,
             "coverage_complete": True,
             "fast_skipped": True,
         }
 
+    target_timeframe = parse_timeframe(str(payload["timeframe"]))
+    source_timeframe = _backfill_source_timeframe(target_timeframe)
+    start_ms = int(cast(int | str, payload["from_time"]))
+    end_ms = int(cast(int | str, payload["to_time"]))
+    instrument = InstrumentKey(
+        exchange=str(payload["exchange"]).lower(),
+        market=str(payload["market_type"]).lower(),
+        symbol=str(payload["symbol"]).upper(),
+    )
+    estimated_source_bars = _estimate_bars_for_window(
+        start_ms, end_ms, source_timeframe.canonical
+    )
+    if estimated_source_bars > _DATA_BACKFILL_SUBPROCESS_SOURCE_BARS:
+        return _run_data_backfill_chunked(
+            payload=payload,
+            state=state,
+            progress_callback=progress_callback,
+            instrument=instrument,
+            source_timeframe=source_timeframe,
+            target_timeframe=target_timeframe,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            estimated_source_bars=estimated_source_bars,
+        )
+
     query = BarQuery(
-        instrument=InstrumentKey(
-            exchange=str(payload["exchange"]).lower(),
-            market=str(payload["market_type"]).lower(),
-            symbol=str(payload["symbol"]).upper(),
-        ),
-        timeframe=parse_timeframe(str(payload["timeframe"])),
-        start_ms=int(payload["from_time"]),
-        end_ms=int(payload["to_time"]),
+        instrument=instrument,
+        timeframe=source_timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
         source="provider",
         gap_policy="allow_with_metadata",
     )
-    series = state.orchestrator.load_bars(query, progress_callback=progress_callback)
-    progress_callback(len(series.bars), 0, len(series.bars), 0, None, "write")
-    bars_loaded, skipped_existing = _store_backfill_series(state, series)
+    return _run_data_backfill_window(
+        payload=payload,
+        state=state,
+        progress_callback=progress_callback,
+        source_series=state.orchestrator.load_bars(
+            query, progress_callback=progress_callback
+        ),
+        source_timeframe=source_timeframe,
+        target_timeframe=target_timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        chunk_count=1,
+    )
+
+
+def _run_data_backfill_window(
+    *,
+    payload: dict[str, object],
+    state: GatewayState,
+    progress_callback,
+    source_series,
+    source_timeframe,
+    target_timeframe,
+    start_ms: int,
+    end_ms: int,
+    chunk_count: int,
+) -> dict[str, object]:
+    progress_callback(
+        len(source_series.bars), 0, len(source_series.bars), 0, None, "write"
+    )
+    source_loaded, source_skipped_existing = _store_backfill_series(state, source_series)
+
+    if source_timeframe.canonical == target_timeframe.canonical:
+        coverage = getattr(source_series, "coverage", None)
+        missing_intervals = tuple(getattr(coverage, "missing_intervals", ()) or ())
+        return {
+            "bars_loaded": source_loaded,
+            "skipped_existing": source_skipped_existing,
+            "bars_available": len(source_series.bars),
+            "coverage_complete": bool(getattr(coverage, "is_complete", False)),
+            "coverage_status": getattr(coverage, "status", None),
+            "delivered_start_ms": getattr(coverage, "delivered_start_ms", None),
+            "delivered_end_ms": getattr(coverage, "delivered_end_ms", None),
+            "missing_interval_count": len(missing_intervals),
+            "missing_intervals_sample": [list(item) for item in missing_intervals[:10]],
+            "source_timeframe": source_timeframe.canonical,
+            "target_timeframe": target_timeframe.canonical,
+            "chunk_count": chunk_count,
+        }
+
+    target_series = _aggregate_backfill_series(
+        source_series,
+        target_timeframe=target_timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+    )
+    target_loaded, target_skipped_existing = _store_backfill_series(state, target_series)
+    coverage = getattr(target_series, "coverage", None)
+    source_coverage = getattr(source_series, "coverage", None)
+    missing_intervals = tuple(getattr(coverage, "missing_intervals", ()) or ())
+    source_missing_intervals = tuple(
+        getattr(source_coverage, "missing_intervals", ()) or ()
+    )
     return {
-        "bars_loaded": bars_loaded,
-        "skipped_existing": skipped_existing,
-        "coverage_complete": bool(getattr(series.coverage, "is_complete", False)),
+        "bars_loaded": target_loaded,
+        "skipped_existing": target_skipped_existing,
+        "bars_available": len(target_series.bars),
+        "coverage_complete": bool(getattr(coverage, "is_complete", False)),
+        "coverage_status": getattr(coverage, "status", None),
+        "delivered_start_ms": getattr(coverage, "delivered_start_ms", None),
+        "delivered_end_ms": getattr(coverage, "delivered_end_ms", None),
+        "missing_interval_count": len(missing_intervals),
+        "missing_intervals_sample": [list(item) for item in missing_intervals[:10]],
+        "source_timeframe": source_timeframe.canonical,
+        "target_timeframe": target_timeframe.canonical,
+        "source_bars_loaded": source_loaded,
+        "source_skipped_existing": source_skipped_existing,
+        "source_bars_available": len(source_series.bars),
+        "source_coverage_complete": bool(
+            getattr(source_coverage, "is_complete", False)
+        ),
+        "source_coverage_status": getattr(source_coverage, "status", None),
+        "source_missing_interval_count": len(source_missing_intervals),
+        "target_bars_loaded": target_loaded,
+        "target_skipped_existing": target_skipped_existing,
+        "target_bars_available": len(target_series.bars),
+        "chunk_count": chunk_count,
     }
+
+
+def _run_data_backfill_chunked(
+    *,
+    payload: dict[str, object],
+    state: GatewayState,
+    progress_callback,
+    instrument,
+    source_timeframe,
+    target_timeframe,
+    start_ms: int,
+    end_ms: int,
+    estimated_source_bars: int,
+) -> dict[str, object]:
+    from marketdata_provider.contracts import BarQuery
+
+    chunks = list(
+        _iter_backfill_source_chunks(
+            start_ms, end_ms, source_timeframe, target_timeframe
+        )
+    )
+    target_is_source = source_timeframe.canonical == target_timeframe.canonical
+    source_loaded_total = 0
+    source_skipped_total = 0
+    source_available_total = 0
+    target_loaded_total = 0
+    target_skipped_total = 0
+    target_available_total = 0
+    source_missing_count = 0
+    target_missing_count = 0
+    source_missing_sample: list[list[int]] = []
+    target_missing_sample: list[list[int]] = []
+    source_complete = True
+    target_complete = True
+    source_statuses: list[str] = []
+    target_statuses: list[str] = []
+    source_delivered_start: int | None = None
+    source_delivered_end: int | None = None
+    target_delivered_start: int | None = None
+    target_delivered_end: int | None = None
+
+    for index, (chunk_start_ms, chunk_end_ms) in enumerate(chunks, start=1):
+        query = BarQuery(
+            instrument=instrument,
+            timeframe=source_timeframe,
+            start_ms=chunk_start_ms,
+            end_ms=chunk_end_ms,
+            source="provider",
+            gap_policy="allow_with_metadata",
+        )
+        progress_callback(
+            source_available_total,
+            index - 1,
+            estimated_source_bars,
+            len(chunks),
+            None,
+            "fetch",
+        )
+        source_series = state.orchestrator.load_bars(
+            query, progress_callback=progress_callback
+        )
+        source_loaded, source_skipped = _store_backfill_series(state, source_series)
+        source_loaded_total += source_loaded
+        source_skipped_total += source_skipped
+        source_available_total += len(source_series.bars)
+        source_coverage = getattr(source_series, "coverage", None)
+        source_complete = source_complete and bool(
+            getattr(source_coverage, "is_complete", False)
+        )
+        source_statuses.append(str(getattr(source_coverage, "status", "unknown")))
+        source_missing = tuple(getattr(source_coverage, "missing_intervals", ()) or ())
+        source_missing_count += len(source_missing)
+        _extend_missing_sample(source_missing_sample, source_missing)
+        source_delivered_start = _min_optional_ms(
+            source_delivered_start, getattr(source_coverage, "delivered_start_ms", None)
+        )
+        source_delivered_end = _max_optional_ms(
+            source_delivered_end, getattr(source_coverage, "delivered_end_ms", None)
+        )
+
+        if target_is_source:
+            target_loaded_total = source_loaded_total
+            target_skipped_total = source_skipped_total
+            target_available_total = source_available_total
+            target_complete = source_complete
+            target_statuses = list(source_statuses)
+            target_missing_count = source_missing_count
+            target_missing_sample = list(source_missing_sample)
+            target_delivered_start = source_delivered_start
+            target_delivered_end = source_delivered_end
+        else:
+            target_series = _aggregate_backfill_series(
+                source_series,
+                target_timeframe=target_timeframe,
+                start_ms=chunk_start_ms,
+                end_ms=chunk_end_ms,
+            )
+            target_loaded, target_skipped = _store_backfill_series(state, target_series)
+            target_loaded_total += target_loaded
+            target_skipped_total += target_skipped
+            target_available_total += len(target_series.bars)
+            target_coverage = getattr(target_series, "coverage", None)
+            target_complete = target_complete and bool(
+                getattr(target_coverage, "is_complete", False)
+            )
+            target_statuses.append(str(getattr(target_coverage, "status", "unknown")))
+            target_missing = tuple(
+                getattr(target_coverage, "missing_intervals", ()) or ()
+            )
+            target_missing_count += len(target_missing)
+            _extend_missing_sample(target_missing_sample, target_missing)
+            target_delivered_start = _min_optional_ms(
+                target_delivered_start,
+                getattr(target_coverage, "delivered_start_ms", None),
+            )
+            target_delivered_end = _max_optional_ms(
+                target_delivered_end,
+                getattr(target_coverage, "delivered_end_ms", None),
+            )
+
+        progress_callback(
+            source_available_total,
+            index,
+            estimated_source_bars,
+            len(chunks),
+            None,
+            "write",
+        )
+
+    result: dict[str, object] = {
+        "bars_loaded": target_loaded_total,
+        "skipped_existing": target_skipped_total,
+        "bars_available": target_available_total,
+        "coverage_complete": target_complete,
+        "coverage_status": _combined_coverage_status(target_statuses, target_complete),
+        "delivered_start_ms": target_delivered_start,
+        "delivered_end_ms": target_delivered_end,
+        "missing_interval_count": target_missing_count,
+        "missing_intervals_sample": target_missing_sample,
+        "source_timeframe": source_timeframe.canonical,
+        "target_timeframe": target_timeframe.canonical,
+        "source_bars_loaded": source_loaded_total,
+        "source_skipped_existing": source_skipped_total,
+        "source_bars_available": source_available_total,
+        "source_coverage_complete": source_complete,
+        "source_coverage_status": _combined_coverage_status(
+            source_statuses, source_complete
+        ),
+        "source_missing_interval_count": source_missing_count,
+        "source_missing_intervals_sample": source_missing_sample,
+        "target_bars_loaded": target_loaded_total,
+        "target_skipped_existing": target_skipped_total,
+        "target_bars_available": target_available_total,
+        "chunk_count": len(chunks),
+        "execution_mode": payload.get("execution_mode") or "chunked",
+    }
+    if target_is_source:
+        result.pop("source_bars_loaded", None)
+        result.pop("source_skipped_existing", None)
+        result.pop("source_bars_available", None)
+        result.pop("source_coverage_complete", None)
+        result.pop("source_coverage_status", None)
+        result.pop("source_missing_interval_count", None)
+        result.pop("source_missing_intervals_sample", None)
+        result.pop("target_bars_loaded", None)
+        result.pop("target_skipped_existing", None)
+        result.pop("target_bars_available", None)
+    return result
+
+
+def _iter_backfill_source_chunks(
+    start_ms: int,
+    end_ms: int,
+    source_timeframe,
+    target_timeframe,
+):
+    source_ms = getattr(source_timeframe, "duration_ms", None)
+    if not isinstance(source_ms, int) or source_ms <= 0:
+        yield start_ms, end_ms
+        return
+
+    max_source_bars = max(1, _DATA_BACKFILL_SUBPROCESS_SOURCE_BARS)
+    max_chunk_ms = max_source_bars * source_ms
+    target_ms = getattr(target_timeframe, "duration_ms", None)
+    current = start_ms
+
+    if (
+        isinstance(target_ms, int)
+        and target_ms > source_ms
+        and target_ms % source_ms == 0
+    ):
+        target_source_bars = max(1, target_ms // source_ms)
+        while current < end_ms:
+            if current % target_ms == 0:
+                complete_target_bars = max(1, max_source_bars // target_source_bars)
+                chunk_end = current + complete_target_bars * target_ms
+            else:
+                first_aligned = ((current + target_ms - 1) // target_ms) * target_ms
+                partial_bars = max(1, (first_aligned - current + source_ms - 1) // source_ms)
+                remaining_source_bars = max(0, max_source_bars - partial_bars)
+                complete_target_bars = remaining_source_bars // target_source_bars
+                chunk_end = first_aligned + complete_target_bars * target_ms
+                if chunk_end <= current:
+                    chunk_end = current + max_chunk_ms
+            chunk_end = min(end_ms, chunk_end)
+            if chunk_end <= current:
+                chunk_end = min(end_ms, current + source_ms)
+            yield current, chunk_end
+            current = chunk_end
+        return
+
+    while current < end_ms:
+        chunk_end = min(end_ms, current + max_chunk_ms)
+        if chunk_end <= current:
+            chunk_end = min(end_ms, current + source_ms)
+        yield current, chunk_end
+        current = chunk_end
+
+
+def _extend_missing_sample(
+    sample: list[list[int]], intervals: tuple[tuple[int, int], ...], *, limit: int = 10
+) -> None:
+    for start, end in intervals:
+        if len(sample) >= limit:
+            return
+        sample.append([int(start), int(end)])
+
+
+def _min_optional_ms(current: int | None, candidate: object) -> int | None:
+    if candidate is None:
+        return current
+    candidate_ms = int(cast(int | float | str, candidate))
+    return candidate_ms if current is None else min(current, candidate_ms)
+
+
+def _max_optional_ms(current: int | None, candidate: object) -> int | None:
+    if candidate is None:
+        return current
+    candidate_ms = int(cast(int | float | str, candidate))
+    return candidate_ms if current is None else max(current, candidate_ms)
+
+
+def _combined_coverage_status(statuses: list[str], complete: bool) -> str:
+    normalized = {status for status in statuses if status and status != "unknown"}
+    if complete and (not normalized or normalized == {"valid"}):
+        return "valid"
+    for status in ("duplicate", "unordered", "gap", "empty"):
+        if status in normalized:
+            return status
+    return next(iter(normalized), "empty")
+
+
+def _backfill_source_timeframe(target_timeframe):
+    """Return the exchange-fetch timeframe for a requested backfill timeframe.
+
+    OpenPine stores exchange pulls as 1m source bars; higher timeframes are derived
+    locally from those source bars instead of fetched directly from the provider.
+    """
+
+    source_timeframe = parse_timeframe("1m")
+    source_ms = getattr(source_timeframe, "duration_ms", None)
+    target_ms = getattr(target_timeframe, "duration_ms", None)
+    if source_ms is None or target_ms is None:
+        return target_timeframe
+    if target_ms <= source_ms or target_ms % source_ms:
+        return target_timeframe
+    return source_timeframe
+
+
+def _aggregate_backfill_series(source_series, *, target_timeframe, start_ms: int, end_ms: int):
+    from marketdata_provider.contracts import BarSeries
+    from openpine.data.orchestrator import DataOrchestrator
+    from openpine.workers.strategy_fanout import _aggregate_bars
+
+    source_query = source_series.query
+    source_timeframe = source_query.timeframe
+    source_ms = getattr(source_timeframe, "duration_ms", None)
+    target_ms = getattr(target_timeframe, "duration_ms", None)
+    target_query = BarQuery(
+        instrument=source_query.instrument,
+        timeframe=target_timeframe,
+        start_ms=start_ms,
+        end_ms=end_ms,
+        source="storage",
+        gap_policy="allow_with_metadata",
+    )
+    if source_ms is None or target_ms is None or target_ms <= source_ms:
+        return BarSeries(
+            target_query,
+            (),
+            DataOrchestrator.coverage_for_series(target_query, (), "aggregate"),
+        )
+    if target_ms % source_ms:
+        return BarSeries(
+            target_query,
+            (),
+            DataOrchestrator.coverage_for_series(target_query, (), "aggregate"),
+        )
+
+    by_time = {bar.time: bar for bar in source_series.bars}
+    expected = target_ms // source_ms
+    first_open = ((start_ms + target_ms - 1) // target_ms) * target_ms
+    aggregate_bars: list[Bar] = []
+    for open_ms in range(first_open, end_ms, target_ms):
+        close_ms = open_ms + target_ms
+        if close_ms > end_ms:
+            continue
+        window = [
+            by_time[open_ms + index * source_ms]
+            for index in range(expected)
+            if open_ms + index * source_ms in by_time
+        ]
+        if len(window) != expected:
+            continue
+        aggregate_bars.append(
+            _aggregate_bars(window, target_timeframe=target_timeframe.canonical)
+        )
+
+    bars = tuple(aggregate_bars)
+    return BarSeries(
+        target_query,
+        bars,
+        DataOrchestrator.coverage_for_series(target_query, bars, "aggregate"),
+    )
+
+
+def _backfill_done_message(result: dict[str, object]) -> str:
+    bars_loaded_value = result.get("bars_loaded")
+    skipped_existing_value = result.get("skipped_existing")
+    bars_loaded = (
+        int(bars_loaded_value)
+        if isinstance(bars_loaded_value, (int, float, str)) and bars_loaded_value != ""
+        else 0
+    )
+    skipped_existing = (
+        int(skipped_existing_value)
+        if isinstance(skipped_existing_value, (int, float, str)) and skipped_existing_value != ""
+        else 0
+    )
+    bars_available_value = result.get("bars_available")
+    bars_available = (
+        int(bars_available_value)
+        if isinstance(bars_available_value, (int, float, str)) and bars_available_value != ""
+        else bars_loaded + skipped_existing
+    )
+    coverage_complete = result.get("coverage_complete")
+    coverage_note = ""
+    if coverage_complete is False:
+        coverage_note = "; requested window still has provider coverage gaps"
+    source_timeframe = str(result.get("source_timeframe") or "")
+    target_timeframe = str(result.get("target_timeframe") or "")
+    if source_timeframe and target_timeframe and source_timeframe != target_timeframe:
+        source_loaded_value = result.get("source_bars_loaded")
+        source_skipped_value = result.get("source_skipped_existing")
+        source_available_value = result.get("source_bars_available")
+        source_loaded = (
+            int(source_loaded_value)
+            if isinstance(source_loaded_value, (int, float, str))
+            and source_loaded_value != ""
+            else 0
+        )
+        source_skipped = (
+            int(source_skipped_value)
+            if isinstance(source_skipped_value, (int, float, str))
+            and source_skipped_value != ""
+            else 0
+        )
+        source_available = (
+            int(source_available_value)
+            if isinstance(source_available_value, (int, float, str))
+            and source_available_value != ""
+            else source_loaded + source_skipped
+        )
+        source_note = (
+            f"; source {source_timeframe}: loaded {source_loaded:,}, "
+            f"skipped {source_skipped:,}, available {source_available:,}"
+        )
+        if bars_loaded == 0 and skipped_existing > 0:
+            return (
+                f"No new {target_timeframe} candles; {skipped_existing:,} already derived"
+                f" ({bars_available:,} derived candles available){source_note}{coverage_note}"
+            )
+        if bars_loaded == 0:
+            return (
+                f"No {target_timeframe} candles derived from {source_timeframe} source"
+                f"{source_note}{coverage_note}"
+            )
+        return (
+            f"Loaded {bars_loaded:,} {target_timeframe} candles derived from "
+            f"{source_timeframe}, skipped {skipped_existing:,} existing"
+            f" ({bars_available:,} derived candles available){source_note}{coverage_note}"
+        )
+    if bars_loaded == 0 and skipped_existing > 0:
+        return (
+            f"No new candles; {skipped_existing:,} already cached"
+            f" ({bars_available:,} provider candles available){coverage_note}"
+        )
+    if bars_loaded == 0:
+        return f"No candles returned for requested window{coverage_note}"
+    return (
+        f"Loaded {bars_loaded:,} new candles, skipped {skipped_existing:,} existing"
+        f" ({bars_available:,} provider candles available){coverage_note}"
+    )
 
 
 def _stored_ranges_cover_request(
@@ -946,6 +1596,41 @@ def _store_backfill_series(state: GatewayState, series) -> tuple[int, int]:
 def _parse_date_ms(value: str) -> int:
     """Parse ISO date or ms timestamp using the configured default timezone."""
     return parse_timestamp_ms(value, 0)
+
+
+async def _data_summary_for_response(state: GatewayState) -> dict[str, object]:
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_data_summary_cached, state),
+            timeout=_DATA_SUMMARY_RESPONSE_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(status_code=504, detail="Data summary timed out") from exc
+
+
+def _data_summary_cache_key(state: GatewayState) -> tuple[str, str, str, str]:
+    config = getattr(state, "config", None)
+    return (
+        str(getattr(config, "sqlite_path", "")),
+        str(getattr(config, "data_dir", "")),
+        str(getattr(config, "data_cache_root", "")),
+        str(default_cache_dir()),
+    )
+
+
+def _data_summary_cached(state: GatewayState) -> dict[str, object]:
+    global _DATA_SUMMARY_CACHE
+
+    key = _data_summary_cache_key(state)
+    now = time.monotonic()
+    with _DATA_SUMMARY_CACHE_LOCK:
+        if _DATA_SUMMARY_CACHE is not None:
+            cached_key, cached_at, cached_payload = _DATA_SUMMARY_CACHE
+            if cached_key == key and now - cached_at < _DATA_SUMMARY_CACHE_TTL_SECONDS:
+                return cached_payload
+        payload = _data_summary(state)
+        _DATA_SUMMARY_CACHE = (key, time.monotonic(), payload)
+        return payload
 
 
 def _data_summary(state: GatewayState) -> dict[str, object]:

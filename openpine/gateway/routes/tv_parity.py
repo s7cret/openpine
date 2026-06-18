@@ -592,16 +592,13 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def _strategy_decl_args(state: GatewayState, strategy: Any) -> dict[str, Any]:
+    from openpine.runtime.declaration_args import artifact_strategy_declaration_args
+
     try:
         artifact = state.artifact_store.get_artifact(strategy.artifact_id, strategy.pine_id)
-        return (
-            artifact.get("compile_meta", {})
-            .get("translation_metadata", {})
-            .get("declaration", {})
-            .get("arguments", {})
-        )
+        return artifact_strategy_declaration_args(artifact)
     except Exception:
-        return {}
+        return artifact_strategy_declaration_args(None)
 
 
 def _backtest_config_for_tv_replay(
@@ -617,8 +614,14 @@ def _backtest_config_for_tv_replay(
     effective_pre_bars: int = 0,
 ) -> Any:
     from openpine.runtime.engine import BacktestRunConfig
-    from openpine.exchange_metadata import default_qty_rounding_mode, default_qty_step
+    from openpine.runtime.declaration_args import normalize_strategy_declaration_args
+    from openpine.exchange_metadata import (
+        default_price_tick,
+        default_qty_rounding_mode,
+        default_qty_step,
+    )
 
+    decl_args = normalize_strategy_declaration_args(decl_args)
     commission_type = {
         "cash_per_order": "fixed_per_order",
         "cash_per_contract": "fixed_per_contract",
@@ -652,7 +655,7 @@ def _backtest_config_for_tv_replay(
         qty_rounding_mode=default_qty_rounding_mode(
             strategy.exchange, strategy.market_type, strategy.symbol
         ),
-        mintick=0.01,
+        mintick=default_price_tick(strategy.exchange, strategy.market_type, strategy.symbol) or 0.01,
         export_resume_state=False,
         content_hash_enabled=True,
         collect_events=True,

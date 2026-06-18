@@ -34,6 +34,7 @@ async def list_sources(
             source_type=src.source_type,
             version=src.version,
             active_artifact_id=src.active_artifact_id,
+            archived=getattr(src, "archived", False),
             created_at=src.created_at,
             updated_at=src.updated_at,
         )
@@ -67,6 +68,7 @@ async def create_source(
         version=src.version,
         source_text=src.source_text,
         active_artifact_id=src.active_artifact_id,
+        archived=getattr(src, "archived", False),
         created_at=src.created_at,
         updated_at=src.updated_at,
     )
@@ -89,6 +91,7 @@ async def get_source(
         version=src.version,
         source_text=src.source_text,
         active_artifact_id=src.active_artifact_id,
+        archived=getattr(src, "archived", False),
         created_at=src.created_at,
         updated_at=src.updated_at,
     )
@@ -115,21 +118,44 @@ async def update_source(
         src.name = body.name
     if body.source_type is not None:
         src.source_type = body.source_type
+    if body.archived is not None:
+        src.archived = body.archived
 
     src.updated_at = int(__import__("time").time() * 1000)
-    # Persist via registry internals
-    registry._conn.execute(
-        "UPDATE pine_sources SET name=?, source_text=?, source_hash=?, source_type=?, updated_at=? WHERE id=?",
-        (
-            src.name,
-            src.source_text,
-            src.source_hash,
-            src.source_type,
-            src.updated_at,
-            src.id,
-        ),
-    )
-    registry._conn.commit()
+    # Persist via registry internals; tolerate legacy/fake registries that do
+    # not have the archived column yet.
+    conn = getattr(registry, "_conn", None)
+    columns = set()
+    if conn is not None:
+        pragma = conn.execute("PRAGMA table_info(pine_sources)")
+        if hasattr(pragma, "fetchall"):
+            columns = {row[1] for row in pragma.fetchall()}
+        if "archived" in columns:
+            conn.execute(
+                "UPDATE pine_sources SET name=?, source_text=?, source_hash=?, source_type=?, archived=?, updated_at=? WHERE id=?",
+                (
+                    src.name,
+                    src.source_text,
+                    src.source_hash,
+                    src.source_type,
+                    int(getattr(src, "archived", False)),
+                    src.updated_at,
+                    src.id,
+                ),
+            )
+        else:
+            conn.execute(
+                "UPDATE pine_sources SET name=?, source_text=?, source_hash=?, source_type=?, updated_at=? WHERE id=?",
+                (
+                    src.name,
+                    src.source_text,
+                    src.source_hash,
+                    src.source_type,
+                    src.updated_at,
+                    src.id,
+                ),
+            )
+        conn.commit()
     registry._mem[src.id] = src
 
     return PineSourceDetailResponse(
@@ -139,9 +165,54 @@ async def update_source(
         version=src.version,
         source_text=src.source_text,
         active_artifact_id=src.active_artifact_id,
+        archived=getattr(src, "archived", False),
         created_at=src.created_at,
         updated_at=src.updated_at,
     )
+
+
+def _source_to_detail_response(src) -> PineSourceDetailResponse:
+    return PineSourceDetailResponse(
+        id=src.id,
+        name=src.name,
+        source_type=src.source_type,
+        version=src.version,
+        source_text=src.source_text,
+        active_artifact_id=src.active_artifact_id,
+        archived=getattr(src, "archived", False),
+        created_at=src.created_at,
+        updated_at=src.updated_at,
+    )
+
+
+@router.put("/{source_id}/archive", response_model=PineSourceDetailResponse)
+async def archive_source(
+    source_id: str,
+    registry: SQLitePineSourceRegistry = Depends(get_pine_registry),
+) -> PineSourceDetailResponse:
+    """Archive a Pine source so it cannot be used for new strategies."""
+    try:
+        registry.set_archived(source_id, True)
+        src = registry.get_source(source_id)
+    except KeyError:
+        raise HTTPException(404, f"Pine source not found: {source_id}")
+    log.info("pine_source_archived", source_id=src.id)
+    return _source_to_detail_response(src)
+
+
+@router.put("/{source_id}/unarchive", response_model=PineSourceDetailResponse)
+async def unarchive_source(
+    source_id: str,
+    registry: SQLitePineSourceRegistry = Depends(get_pine_registry),
+) -> PineSourceDetailResponse:
+    """Restore a Pine source from archive."""
+    try:
+        registry.set_archived(source_id, False)
+        src = registry.get_source(source_id)
+    except KeyError:
+        raise HTTPException(404, f"Pine source not found: {source_id}")
+    log.info("pine_source_unarchived", source_id=src.id)
+    return _source_to_detail_response(src)
 
 
 @router.delete("/{source_id}", status_code=204)

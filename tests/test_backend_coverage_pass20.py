@@ -64,10 +64,14 @@ def test_backtest_store_delete_metrics_and_artifact_edges(tmp_path: Path):
         storage.execute("ALTER TABLE backtest_runs ADD COLUMN metrics_json TEXT")
         storage.execute("UPDATE backtest_runs SET metrics_json = ? WHERE run_id = ?", (json.dumps({"net": 1}), run_id))
         storage.commit()
-        assert store.get_metrics(run_id) == {"net": 1}
+        metrics = store.get_metrics(run_id)
+        assert metrics is not None and metrics["net"] == 1
         storage.execute("UPDATE backtest_runs SET metrics_json = ? WHERE run_id = ?", ("{bad", run_id))
         storage.commit()
-        assert store.get_metrics(run_id) is None
+        fallback_metrics = store.get_metrics(run_id)
+        assert fallback_metrics is not None
+        assert fallback_metrics["trades_total"] == 0
+        assert fallback_metrics["total_trades"] == 0
         report = tmp_path / "report.json"
         report.write_text(json.dumps({"metrics": {"x": 2}}), encoding="utf-8")
         storage.execute(
@@ -75,15 +79,55 @@ def test_backtest_store_delete_metrics_and_artifact_edges(tmp_path: Path):
             ("ar1", run_id, "strat", ARTIFACT_TYPE_REPORT_JSON, str(report), "json", None, 9),
         )
         storage.commit()
-        assert store.get_metrics(run_id) == {"metrics": {"x": 2}}
+        merged_metrics = store.get_metrics(run_id)
+        assert merged_metrics is not None
+        assert merged_metrics["metrics"]["x"] == 2
+        assert merged_metrics["metrics"]["trades_total"] == 0
+        assert merged_metrics["metrics"]["total_trades"] == 0
         report.write_text("{bad", encoding="utf-8")
-        assert store.get_metrics(run_id) is None
+        fallback_metrics = store.get_metrics(run_id)
+        assert fallback_metrics is not None
+        assert fallback_metrics["trades_total"] == 0
+        assert fallback_metrics["total_trades"] == 0
         artifact_dir = tmp_path / "data" / "strat" / run_id
         store._data_dir = tmp_path / "data"
         artifact_dir.mkdir(parents=True)
         (artifact_dir / "x.txt").write_text("x", encoding="utf-8")
         assert store.delete_run(run_id) is True
         assert not artifact_dir.exists()
+
+
+def test_backtest_trade_exit_prices_are_persisted(tmp_path: Path):
+    with _storage(tmp_path) as storage:
+        store = BacktestResultStore(storage)
+        run_id = store.create_run(_request())
+        trade = SimpleNamespace(
+            id="entry-1",
+            exit_id="TP1:L",
+            direction="long",
+            entry_time=1,
+            exit_time=2,
+            entry_price=100.0,
+            exit_price=110.0,
+            stop_price=95.0,
+            take_profit_price=110.0,
+            qty=1.0,
+            profit=10.0,
+            profit_percent=10.0,
+            commission_entry=0.0,
+            commission_exit=0.0,
+            bars_held=1,
+        )
+
+        store._insert_trade_db_rows(run_id=run_id, strategy_id="strat", trades=[trade], now=3)
+
+        row = store.list_trades(run_id)[0]
+        assert row.stop_price == 95.0
+        assert row.take_profit_price == 110.0
+        assert storage.execute(
+            "SELECT stop_price, take_profit_price FROM backtest_trades WHERE run_id = ?",
+            (run_id,),
+        ).fetchone() == (95.0, 110.0)
 
 
 def test_backtest_store_artifact_records_and_publish_failures(tmp_path: Path):

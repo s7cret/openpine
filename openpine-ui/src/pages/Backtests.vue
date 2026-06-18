@@ -23,6 +23,7 @@ let estimateTimer: ReturnType<typeof setTimeout> | null = null
 
 const form = ref({ strategy_id: '', from_time: '', to_time: '' })
 const allAvailableFrom = computed(() => msToDate(availability.value?.earliest_available ?? availability.value?.effective_from))
+const selectableStrategies = computed(() => stStore.items.filter((item: any) => !item.archived))
 const selectedStrategy = computed(() => stStore.items.find((item: any) => (item.strategy_id ?? item.id) === form.value.strategy_id) ?? null)
 
 onMounted(() => {
@@ -53,6 +54,7 @@ watch(
 
 async function runBacktest() {
   if (!form.value.strategy_id) { runStatus.value = t('backtests.selectStrategyFirst'); return }
+  if (selectedStrategy.value?.archived) { runStatus.value = t('backtests.archivedStrategyUnavailable'); return }
   if (!form.value.from_time || !form.value.to_time) { runStatus.value = t('backtests.selectDateRange'); return }
   runLoading.value = true
   runStatus.value = t('backtests.startingMessage')
@@ -237,7 +239,7 @@ function effectiveRange(e: any) {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <select v-model="form.strategy_id" class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent">
             <option value="" disabled>{{ t('backtests.selectStrategy') }}</option>
-            <option v-for="s in stStore.items" :key="s.strategy_id ?? s.id" :value="s.strategy_id ?? s.id">
+            <option v-for="s in selectableStrategies" :key="s.strategy_id ?? s.id" :value="s.strategy_id ?? s.id">
               {{ s.name ?? s.strategy_id }}
             </option>
           </select>

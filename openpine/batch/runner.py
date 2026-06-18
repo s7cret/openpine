@@ -45,7 +45,8 @@ from openpine.batch.tv_corpus import (
     openpine_name,
     strategy_name,
 )
-from openpine.exchange_metadata import default_qty_step
+from openpine.exchange_metadata import default_price_tick, default_qty_step
+from openpine.runtime.declaration_args import normalize_strategy_declaration_args
 
 LIBRARY_NAMES: tuple[str, ...] = (
     "openpine",
@@ -283,6 +284,43 @@ def load_calculation_bars(
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
     from openpine.export import parse_time_ms
+
+    tv_authoritative_bars = bool(getattr(args, "tv_authoritative_bars", False))
+    if tv_authoritative_bars:
+        t0 = time.perf_counter()
+        bars = _merge_tv_visible_bars(
+            provider_bars=[],
+            chart=chart,
+            symbol=args.symbol,
+            exchange=args.exchange,
+            market_type=args.market_type,
+        )
+        timings["data_load_sec"] = round(time.perf_counter() - t0, 3)
+        calculation_from = chart.start_ms
+        calculation_to = chart_end_exclusive_ms(chart)
+        if not bars:
+            raise RuntimeError(f"no TradingView chart bars in {chart.path}")
+        return bars, {
+            "symbol": args.symbol,
+            "exchange": args.exchange,
+            "market_type": args.market_type,
+            "timeframe": chart.timeframe,
+            "calculation_from": calculation_from,
+            "calculation_to": calculation_to,
+            "calculation_from_iso": ms_to_utc_iso(calculation_from),
+            "calculation_to_iso": ms_to_utc_iso(calculation_to),
+            "compare_from": chart.start_ms,
+            "compare_to": chart_end_exclusive_ms(chart),
+            "compare_from_iso": ms_to_utc_iso(chart.start_ms),
+            "compare_to_iso": ms_to_utc_iso(chart_end_exclusive_ms(chart)),
+            "bars_total": len(bars),
+            "visible_bars": chart.bars,
+            "tv_corpus_overlay": None,
+            "tv_corpus_patched_bars": 0,
+            "cache_hit": False,
+            "data_fetch": None,
+            "bar_source": "tradingview_csv_authoritative",
+        }
 
     calculation_from = parse_time_ms(args.calculation_from)
     if calculation_from is None:
@@ -680,6 +718,7 @@ def _build_strategy_run_config(
     config_cls: Any,
 ) -> Any:
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
+    decl_args = normalize_strategy_declaration_args(decl_args)
     commission_type = {
         "cash_per_order": "fixed_per_order",
         "cash_per_contract": "fixed_per_contract",
@@ -709,10 +748,10 @@ def _build_strategy_run_config(
         calc_on_order_fills=bool(decl_args.get("calc_on_order_fills", False)),
         calc_on_every_tick=bool(decl_args.get("calc_on_every_tick", False)),
         use_bar_magnifier=bool(decl_args.get("use_bar_magnifier", False)),
-        max_bars_back=decl_args.get("max_bars_back", 0),
+        max_bars_back=int(decl_args.get("max_bars_back") or 0),
         qty_step=args.qty_step,
         qty_rounding_mode=args.qty_rounding_mode,
-        mintick=0.01,
+        mintick=default_price_tick(args.exchange, args.market_type, args.symbol) or 0.01,
         capture_plots=True,
         plot_from_ms=compare_from,
         plot_to_ms=compare_to,
@@ -1376,6 +1415,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         help="Use provider bars for the full calculation range without TV visible-window OHLCV overlay.",
     )
     parser.add_argument(
+        "--tv-authoritative-bars",
+        action="store_true",
+        help="Use the TradingView chart CSV itself as the complete calculation/replay bar series; do not fetch provider bars.",
+    )
+    parser.add_argument(
         "--progress-every",
         type=int,
         default=10_000,
@@ -1439,6 +1483,8 @@ def _build_batch_summary_payload(
         "market_type": args.market_type,
         "calculation_from": args.calculation_from,
         "calculation_to": args.calculation_to,
+        "provider_only_bars": bool(getattr(args, "provider_only_bars", False)),
+        "tv_authoritative_bars": bool(getattr(args, "tv_authoritative_bars", False)),
         "calculation_to_by_timeframe": {
             tf: ms_to_utc_iso(value)
             for tf, value in sorted(

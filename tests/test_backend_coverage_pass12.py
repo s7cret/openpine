@@ -542,6 +542,8 @@ def test_gateway_server_lifespan_worker_modes(monkeypatch):
 
     class _Process:
         def __init__(self, *args, **kwargs):
+            self.args = args
+            self.kwargs = kwargs
             self.pid = 123
             self.joined = []
             self.terminated = False
@@ -580,15 +582,31 @@ def test_gateway_server_lifespan_worker_modes(monkeypatch):
             state = app.state.gateway
             assert state.storage.commits == 1
             assert state._fetcher.started is True
-            assert state._live_runner.started is True
+            assert state._live_runner is None
             assert state._background_worker_process.pid == 123
+            assert state._background_worker_process.kwargs["args"][1] is True
         assert _State.instances[-1].closed is True
         assert all(s.stopped for s in _Service.instances)
     asyncio.run(_run())
 
     monkeypatch.setenv("OPENPINE_ENABLE_BACKGROUND_WORKER", "0")
     monkeypatch.setenv("OPENPINE_ENABLE_PERIODIC_FETCHER", "0")
+    monkeypatch.setenv("OPENPINE_ENABLE_LIVE_RUNNER", "1")
+    _Service.instances.clear()
     _State.instances.clear()
+    app_no_worker = FastAPI()
+
+    async def _run_no_worker():
+        async with server.lifespan(app_no_worker):
+            state = app_no_worker.state.gateway
+            assert state._background_worker_process is None
+            assert state._fetcher is None
+            assert state._live_runner.started is True
+        assert _State.instances[-1].closed is True
+        assert all(s.stopped for s in _Service.instances)
+
+    asyncio.run(_run_no_worker())
+
     app2 = server.create_app()
     assert app2.title.startswith("OpenPine")
     routes = {route.path for route in app2.routes}

@@ -571,7 +571,8 @@ def test_strategy_backtest_data_and_declaration_helpers():
     assert data_fetch == {"source": "fixture"}
     assert load_sec >= 0
     assert captured_query["query"].timeframe == "tf:15m"
-    assert decl_args == {"initial_capital": 50_000}
+    assert decl_args["initial_capital"] == 50_000
+    assert decl_args["pyramiding"] == 1
 
 
 def test_data_backfill_helpers_parse_dates():

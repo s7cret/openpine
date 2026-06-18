@@ -59,6 +59,8 @@ export const compilePineFile = (sourceId: string) => api.post(apiPath('/pine', s
 export const getPineArtifacts = (sourceId: string) => api.get(apiPath('/pine', sourceId, 'artifacts'))
 export const previewDeletePineFile = (id: string) => api.get(apiPath('/pine-sources', id, 'delete-preview'))
 export const deletePineFile = (id: string) => api.delete(apiPath('/pine-sources', id))
+export const archivePineFile = (id: string) => api.put(apiPath('/pine-sources', id, 'archive'))
+export const unarchivePineFile = (id: string) => api.put(apiPath('/pine-sources', id, 'unarchive'))
 
 // Strategies
 export const getStrategies = () => api.get('/strategies')
@@ -67,6 +69,8 @@ export const createStrategy = (data: any) => api.post('/strategies', data)
 export const updateStrategy = (id: string, data: any) => api.patch(apiPath('/strategies', id), data)
 export const previewDeleteStrategy = (id: string) => api.get(apiPath('/strategies', id, 'delete-preview'))
 export const deleteStrategy = (id: string) => api.delete(apiPath('/strategies', id))
+export const archiveStrategy = (id: string) => api.put(apiPath('/strategies', id, 'archive'))
+export const unarchiveStrategy = (id: string) => api.put(apiPath('/strategies', id, 'unarchive'))
 export const controlStrategy = (id: string, action: string) => api.post(apiPath('/strategies', id, 'action'), null, { params: { action } })
 
 // Backtests

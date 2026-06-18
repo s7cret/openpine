@@ -463,6 +463,52 @@ def test_backtest_background_cancel_progress_and_failure_mark_failed(monkeypatch
     assert any(event.get("status") == "failed" for event in ws.events)
 
 
+def test_backtest_background_uses_pinelib_defaults_when_strategy_omits_initial_capital(monkeypatch):
+    ws = _FakeWS()
+    monkeypatch.setattr(bt, "ws_manager", ws)
+    _patch_backtest_runtime(monkeypatch)
+
+    captured = {}
+
+    def run_in_process(adapter, strategy_class, bars, config, params, runtime_data_provider, progress_callback=None):
+        captured["config"] = config
+        if progress_callback is not None:
+            progress_callback(len(bars), len(bars))
+        return SimpleNamespace(
+            raw_result=SimpleNamespace(trades=[], equity_curve=None),
+            bars_processed=len(bars),
+        )
+
+    monkeypatch.setattr(bt, "_run_backtest_in_process", run_in_process)
+    artifact_store = SimpleNamespace(
+        get_artifact=lambda artifact_id, pine_id: {
+            "compile_meta": {
+                "translation_metadata": {
+                    "declaration": {
+                        "arguments": {
+                            "default_qty_type": "percent_of_equity",
+                            "default_qty_value": 80,
+                            "commission_type": "percent",
+                            "commission_value": 0.055,
+                        }
+                    }
+                }
+            }
+        }
+    )
+    store = _BacktestStore()
+    state = _backtest_state(store=store, artifact_store=artifact_store)
+
+    asyncio.run(bt._run_backtest_background(state, "s1", "run-defaults", 0, 240_000, None, 0, False))
+
+    config = captured["config"]
+    assert config.initial_capital == 1000000.0
+    assert config.pyramiding == 1
+    assert config.default_qty_type == "percent_of_equity"
+    assert config.default_qty_value == 80
+    assert store.saved
+
+
 def test_backtest_routes_listing_estimate_run_and_artifact_error_paths(monkeypatch, tmp_path):
     store = _BacktestStore()
     store.runs = [_run_row("old", started_at=1), _run_row("new", started_at=2)]
@@ -804,6 +850,28 @@ def test_accounts_data_route_validation_refresh_delete_and_backfill(monkeypatch)
         )
     assert bad_backfill.value.status_code == 400
 
+    from openpine.jobs import Job, JobScheduler, JobStatus, JobType
+
+    huge_scheduler = JobScheduler()
+    huge_backfill = asyncio.run(
+        ad.data_backfill(
+            DataBackfillRequest(
+                symbol="SOLUSDT",
+                timeframe="4h",
+                from_time="2020-01-01T00:00:00Z",
+                to_time="2021-01-01T00:00:00Z",
+            ),
+            BackgroundTasks(),
+            SimpleNamespace(scheduler=huge_scheduler),
+        )
+    )
+    assert huge_backfill["status"] == "pending"
+    assert "isolated process" in str(huge_backfill["message"])
+    huge_job = huge_scheduler.get_job(str(huge_backfill["job_id"]))
+    assert huge_job is not None
+    assert huge_job.input["execution_mode"] == "isolated_process"
+    assert huge_job.input["source_timeframe"] == "1m"
+
     payload = {
         "exchange": "binance",
         "market_type": "spot",
@@ -825,8 +893,185 @@ def test_accounts_data_route_validation_refresh_delete_and_backfill(monkeypatch)
         result = ad._run_data_backfill_sync(
             payload, SimpleNamespace(orchestrator=Orchestrator()), lambda *args: progress.append(args)
         )
-    assert result == {"bars_loaded": 2, "skipped_existing": 1, "coverage_complete": True}
+    assert result["bars_loaded"] == 2
+    assert result["skipped_existing"] == 1
+    assert result["bars_available"] == 2
+    assert result["coverage_complete"] is True
     assert progress and progress[-1][-1] == "write"
+
+    target_ms = parse_timeframe("4h").duration_ms
+    source_tf = parse_timeframe("1m")
+    sol_inst = InstrumentKey(exchange="binance", market="spot", symbol="SOLUSDT")
+    source_bars = tuple(
+        Bar(
+            sol_inst,
+            source_tf,
+            timestamp,
+            timestamp + 60_000,
+            float(index + 1),
+            float(index + 2),
+            float(index),
+            float(index + 1),
+            1.0,
+            True,
+        )
+        for index, timestamp in enumerate(range(0, target_ms, 60_000))
+    )
+
+    class TargetOrchestrator:
+        def __init__(self):
+            self.queries = []
+
+        def load_bars(self, query, progress_callback=None):
+            self.queries.append(query)
+            coverage = CoverageReport(
+                query.start_ms,
+                query.end_ms,
+                source_bars[0].time,
+                source_bars[-1].time_close,
+                source_mix=("provider",),
+            )
+            return BarSeries(query, source_bars, coverage)
+
+    target_payload = {
+        "exchange": "binance",
+        "market_type": "spot",
+        "symbol": "SOLUSDT",
+        "timeframe": "4h",
+        "from_time": 0,
+        "to_time": target_ms,
+    }
+    target_orchestrator = TargetOrchestrator()
+    stored_timeframes = []
+    with monkeypatch.context() as m:
+        m.setattr(ad, "_stored_ranges_cover_request", lambda payload, state: (False, 0))
+        m.setattr(
+            ad,
+            "_store_backfill_series",
+            lambda state, series: (stored_timeframes.append(series.query.timeframe.canonical) or len(series.bars), 0),
+        )
+        target_result = ad._run_data_backfill_sync(
+            target_payload,
+            SimpleNamespace(orchestrator=target_orchestrator),
+            lambda *args: None,
+        )
+    assert [query.timeframe.canonical for query in target_orchestrator.queries] == ["1m"]
+    assert stored_timeframes == ["1m", "4h"]
+    assert target_result["source_timeframe"] == "1m"
+    assert target_result["target_timeframe"] == "4h"
+    assert target_result["target_bars_available"] == 1
+    target_message = ad._backfill_done_message(target_result)
+    assert "4h candles derived from 1m" in target_message
+    assert "source 1m" in target_message
+
+    assert "No new candles" in ad._backfill_done_message(
+        {
+            "bars_loaded": 0,
+            "skipped_existing": 12_808,
+            "bars_available": 12_808,
+            "coverage_complete": False,
+        }
+    )
+
+    scheduler = JobScheduler()
+    existing = scheduler.enqueue(
+        Job(
+            job_type=JobType.BACKFILL,
+            status=JobStatus.DONE,
+            idempotency_key="data-backfill:binance:spot:SOLUSDT:4h:0:60000",
+            input={
+                "symbol": "SOLUSDT",
+                "timeframe": "4h",
+                "from_time": 0,
+                "to_time": 60_000,
+                "exchange": "binance",
+                "market_type": "spot",
+            },
+            result={
+                "bars_loaded": 0,
+                "skipped_existing": 12_808,
+                "bars_available": 12_808,
+                "coverage_complete": False,
+            },
+        )
+    )
+    deduped = asyncio.run(
+        ad.data_backfill(
+            DataBackfillRequest(
+                symbol="SOLUSDT",
+                timeframe="4h",
+                from_time="1970-01-01T00:00:00Z",
+                to_time="1970-01-01T00:01:00Z",
+            ),
+            BackgroundTasks(),
+            SimpleNamespace(scheduler=scheduler),
+        )
+    )
+    assert deduped["job_id"] == existing.id
+    assert deduped["status"] == "done"
+    assert deduped["deduplicated"] is True
+    assert "No new candles" in str(deduped["message"])
+
+
+def test_data_backfill_streams_large_1m_windows_in_provider_chunks(monkeypatch):
+    """Large 1m backfills must not request the whole source window at once."""
+
+    minute_ms = parse_timeframe("1m").duration_ms
+    total_source_bars = ad._DATA_BACKFILL_SUBPROCESS_SOURCE_BARS * 2 + 17
+    payload = {
+        "exchange": "binance",
+        "market_type": "spot",
+        "symbol": "SOLUSDT",
+        "timeframe": "1m",
+        "from_time": 0,
+        "to_time": total_source_bars * minute_ms,
+    }
+    inst = InstrumentKey(exchange="binance", market="spot", symbol="SOLUSDT")
+    queries = []
+
+    class ChunkOrchestrator:
+        def load_bars(self, query, progress_callback=None):
+            queries.append(query)
+            bar = Bar(
+                inst,
+                query.timeframe,
+                query.start_ms,
+                query.start_ms + minute_ms,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                True,
+            )
+            coverage = CoverageReport(
+                query.start_ms,
+                query.end_ms,
+                bar.time,
+                bar.time_close,
+                source_mix=("provider",),
+                status="gap",
+            )
+            return BarSeries(query, (bar,), coverage)
+
+    with monkeypatch.context() as m:
+        m.setattr(ad, "_stored_ranges_cover_request", lambda payload, state: (False, 0))
+        m.setattr(ad, "_store_backfill_series", lambda state, series: (len(series.bars), 0))
+        result = ad._run_data_backfill_sync(
+            payload,
+            SimpleNamespace(orchestrator=ChunkOrchestrator()),
+            lambda *args: None,
+        )
+
+    assert len(queries) >= 3
+    assert [query.timeframe.canonical for query in queries] == ["1m"] * len(queries)
+    assert all(
+        (query.end_ms - query.start_ms) <= ad._DATA_BACKFILL_SUBPROCESS_SOURCE_BARS * minute_ms
+        for query in queries
+    )
+    assert result["chunk_count"] == len(queries)
+    assert result["bars_loaded"] == len(queries)
+    assert result["bars_available"] == len(queries)
 
 
 def test_accounts_data_inventory_range_store_and_delete_edges(monkeypatch, tmp_path):

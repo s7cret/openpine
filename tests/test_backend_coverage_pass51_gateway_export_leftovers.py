@@ -99,8 +99,13 @@ async def test_lifespan_logs_stuck_backtest_cleanup_failure_and_stops_fake_worke
         Process = FakeProcess
 
     fake_context = FakeContext()
+    requested_methods: list[str] = []
     monkeypatch.setattr(server, "GatewayState", FakeGatewayState)
-    monkeypatch.setattr(server.mp, "get_context", lambda method: fake_context)
+    monkeypatch.setattr(
+        server.mp,
+        "get_context",
+        lambda method: requested_methods.append(method) or fake_context,
+    )
     monkeypatch.setenv("OPENPINE_ENABLE_BACKGROUND_WORKER", "1")
     monkeypatch.setenv("OPENPINE_ENABLE_PERIODIC_FETCHER", "0")
     monkeypatch.setenv("OPENPINE_ENABLE_LIVE_RUNNER", "0")
@@ -112,6 +117,7 @@ async def test_lifespan_logs_stuck_backtest_cleanup_failure_and_stops_fake_worke
         assert app.state.gateway._background_worker_process is FakeProcess.instances[0]
 
     proc = FakeProcess.instances[0]
+    assert requested_methods == ["spawn"]
     assert fake_context.stop_event.was_set is True
     assert proc.terminated is True
     assert proc.join_timeouts == [10, 5]

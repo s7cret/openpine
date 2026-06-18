@@ -78,5 +78,19 @@ export const useStrategiesStore = defineStore('strategies', () => {
     } catch (e: any) { error.value = errorMessage(e, 'Strategy delete failed') }
   }
 
-  return { items, current, loading, error, fetchAll, fetchOne, control, create, remove }
+  async function setArchived(id: string, archived: boolean) {
+    try {
+      const { data } = archived ? await api.archiveStrategy(id) : await api.unarchiveStrategy(id)
+      const idx = items.value.findIndex(s => getId(s) === id)
+      if (idx !== -1) items.value[idx] = data
+      if (getId(current.value) === id) current.value = data
+      await fetchAll()
+      return data
+    } catch (e: any) {
+      error.value = errorMessage(e, archived ? 'Strategy archive failed' : 'Strategy restore failed')
+      throw e
+    }
+  }
+
+  return { items, current, loading, error, fetchAll, fetchOne, control, create, remove, setArchived }
 })

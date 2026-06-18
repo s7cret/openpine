@@ -192,6 +192,41 @@ def test_runner_revision_registry_and_calculation_bar_leftovers(monkeypatch, tmp
     assert meta["bar_source"] == "provider_with_tv_visible_overlay"
 
 
+def test_load_calculation_bars_tv_authoritative_uses_chart_csv_without_provider(monkeypatch, tmp_path: Path):
+    entry = _entry(tmp_path / "tv_authoritative")
+    chart = entry.charts[0]
+
+    def provider_should_not_be_called():
+        raise AssertionError("provider should not be called for TV-authoritative batch replay")
+
+    monkeypatch.setattr(
+        "openpine.data.provider_adapter.create_local_marketdata_provider_adapter",
+        provider_should_not_be_called,
+    )
+    runner.BAR_CACHE.clear()
+
+    bars, meta = runner.load_calculation_bars(
+        entry,
+        chart,
+        _runner_args(
+            tmp_path,
+            provider_only_bars=False,
+            tv_authoritative_bars=True,
+            calculation_from="1",
+            calculation_to="999999999",
+        ),
+        {},
+    )
+
+    assert [bar.time for bar in bars] == [chart.start_ms, chart.end_ms]
+    assert [float(bar.open) for bar in bars] == [1.0, 2.0]
+    assert meta["bar_source"] == "tradingview_csv_authoritative"
+    assert meta["calculation_from"] == chart.start_ms
+    assert meta["calculation_to"] == runner.chart_end_exclusive_ms(chart)
+    assert meta["tv_corpus_patched_bars"] == 0
+    assert meta["data_fetch"] is None
+
+
 def test_batch_strategy_run_config_enables_tv_price_tick_rounding(tmp_path: Path):
     chart = _chart(tmp_path, timeframe="1D")
 
@@ -214,6 +249,40 @@ def test_batch_strategy_run_config_enables_tv_price_tick_rounding(tmp_path: Path
 
     assert config.mintick == 0.01
     assert config.qty_step == 0.000001
+    assert config.qty_rounding_mode == "truncate"
+
+
+def test_batch_strategy_run_config_uses_symbol_price_tick_for_small_price_assets(
+    monkeypatch, tmp_path: Path
+):
+    chart = _chart(tmp_path, timeframe="1D")
+
+    class CaptureConfig(SimpleNamespace):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+    monkeypatch.setattr(
+        runner,
+        "default_price_tick",
+        lambda exchange, market_type, symbol: 0.0001 if symbol == "XLMUSDT" else None,
+        raising=False,
+    )
+
+    config = runner._build_strategy_run_config(
+        chart=chart,
+        args=_runner_args(
+            tmp_path,
+            symbol="XLMUSDT",
+            qty_step=1.0,
+            qty_rounding_mode="truncate",
+        ),
+        data_meta={"calculation_from": 1, "calculation_to": 2},
+        decl_args={"commission_type": "percent", "commission_value": 0.055},
+        config_cls=CaptureConfig,
+    )
+
+    assert config.mintick == 0.0001
+    assert config.qty_step == 1.0
     assert config.qty_rounding_mode == "truncate"
 
 

@@ -343,18 +343,15 @@ class LiveStrategyRunner:
                 return []
 
             # Build config
-            decl_args = {}
+            from openpine.runtime.declaration_args import artifact_strategy_declaration_args
+
+            decl_args = artifact_strategy_declaration_args(None)
             if self.artifact_store:
                 try:
                     artifact_data = self.artifact_store.get_artifact(
                         strategy.artifact_id, strategy.pine_id
                     )
-                    if artifact_data:
-                        compile_meta = artifact_data.get("compile_meta", {})
-                        declaration = compile_meta.get("translation_metadata", {}).get(
-                            "declaration", {}
-                        )
-                        decl_args = declaration.get("arguments", {})
+                    decl_args = artifact_strategy_declaration_args(artifact_data)
                 except Exception:
                     pass
 

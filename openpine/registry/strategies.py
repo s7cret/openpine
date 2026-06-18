@@ -35,6 +35,7 @@ class StrategyInstance:
     price_type: str = "trade"
     mode: str = "paper"
     enabled: bool = False
+    archived: bool = False
     status: str = "pending"
     created_at: int = field(default_factory=lambda: int(time.time() * 1000))
     updated_at: int = field(default_factory=lambda: int(time.time() * 1000))
@@ -54,6 +55,7 @@ class StrategyInstance:
             "price_type": self.price_type,
             "mode": self.mode,
             "enabled": self.enabled,
+            "archived": self.archived,
             "status": self.status,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
@@ -75,6 +77,7 @@ class StrategyInstance:
             price_type=data.get("price_type", "trade"),
             mode=data.get("mode", "paper"),
             enabled=data.get("enabled", False),
+            archived=data.get("archived", False),
             status=data.get("status", "pending"),
             created_at=data.get("created_at", int(time.time() * 1000)),
             updated_at=data.get("updated_at", int(time.time() * 1000)),
@@ -149,6 +152,7 @@ class SQLiteStrategyRegistry:
                 execution_provider TEXT NOT NULL DEFAULT 'paper',
                 mode TEXT NOT NULL DEFAULT 'disabled',
                 enabled INTEGER NOT NULL DEFAULT 0,
+                archived INTEGER NOT NULL DEFAULT 0,
                 live_enabled INTEGER NOT NULL DEFAULT 0,
                 risk_profile_id TEXT,
                 status TEXT NOT NULL DEFAULT 'pending',
@@ -158,6 +162,14 @@ class SQLiteStrategyRegistry:
                 FOREIGN KEY (artifact_id) REFERENCES compile_artifacts(id)
             )
         """)
+        columns = {
+            row[1]
+            for row in self._conn.execute("PRAGMA table_info(strategy_instances)").fetchall()
+        }
+        if "archived" not in columns:
+            self._conn.execute(
+                "ALTER TABLE strategy_instances ADD COLUMN archived INTEGER NOT NULL DEFAULT 0"
+            )
         self._conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_strategy_instances_pine_id
             ON strategy_instances(pine_id)
@@ -177,7 +189,7 @@ class SQLiteStrategyRegistry:
         """
         rows = self._conn.execute(
             """SELECT strategy_id, name, pine_id, artifact_id, params_json, params_hash,
-                      symbol, timeframe, exchange, market_type, price_type, mode, enabled, status,
+                      symbol, timeframe, exchange, market_type, price_type, mode, enabled, archived, status,
                       created_at, updated_at
                FROM strategy_instances
                WHERE strategy_id IS NOT NULL"""
@@ -197,9 +209,10 @@ class SQLiteStrategyRegistry:
                 price_type=row[10],
                 mode=row[11],
                 enabled=bool(row[12]),
-                status=row[13],
-                created_at=row[14],
-                updated_at=row[15],
+                archived=bool(row[13]),
+                status=row[14],
+                created_at=row[15],
+                updated_at=row[16],
             )
             for row in rows
         }
@@ -245,8 +258,8 @@ class SQLiteStrategyRegistry:
             """INSERT INTO strategy_instances
                (id, strategy_id, name, pine_id, artifact_id, params_json, params_hash,
                 symbol, exchange, market_type, price_type, timeframe, data_provider,
-                execution_provider, mode, enabled, status, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                execution_provider, mode, enabled, archived, status, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 strategy_id,
                 si.strategy_id,
@@ -264,6 +277,7 @@ class SQLiteStrategyRegistry:
                 "paper",
                 si.mode,
                 int(si.enabled),
+                int(si.archived),
                 si.status,
                 si.created_at,
                 si.updated_at,
@@ -342,8 +356,8 @@ class SQLiteStrategyRegistry:
             """INSERT INTO strategy_instances
                (id, strategy_id, name, pine_id, artifact_id, params_json, params_hash,
                 symbol, exchange, market_type, price_type, timeframe, data_provider,
-                execution_provider, mode, enabled, status, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                execution_provider, mode, enabled, archived, status, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 strategy_id,
                 si.strategy_id,
@@ -361,6 +375,7 @@ class SQLiteStrategyRegistry:
                 "paper",
                 si.mode,
                 int(si.enabled),
+                int(si.archived),
                 si.status,
                 si.created_at,
                 si.updated_at,
@@ -380,6 +395,24 @@ class SQLiteStrategyRegistry:
             (int(enabled), si.updated_at, strategy_id),
         )
         self._conn.commit()
+
+    def set_archived(self, strategy_id: str, archived: bool) -> None:
+        """Archive/unarchive a strategy. Archiving always disables it."""
+        si = self.get_strategy(strategy_id)
+        si.archived = archived
+        si.updated_at = int(time.time() * 1000)
+        if archived:
+            si.enabled = False
+            if si.status in {"running", "pending"}:
+                si.status = "paused"
+        self._conn.execute(
+            """UPDATE strategy_instances
+               SET archived = ?, enabled = ?, status = ?, updated_at = ?
+               WHERE strategy_id = ?""",
+            (int(archived), int(si.enabled), si.status, si.updated_at, strategy_id),
+        )
+        self._conn.commit()
+
 
     def update_mode(self, strategy_id: str, mode: str) -> None:
         """Update strategy execution mode (paper/live/observe)."""

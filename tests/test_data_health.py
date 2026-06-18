@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import cast
 from types import SimpleNamespace
 
 from fastapi import HTTPException
@@ -75,6 +76,51 @@ def test_data_health_endpoint_returns_runtime_matrix(monkeypatch) -> None:
     assert payload["source"] == "marketdata_provider.exchanges.registry + openpine.cache"
     assert payload["settings"]["stable_quotes_only"] is False
     assert len(payload["exchanges"]) == 10
+
+
+def test_data_summary_endpoint_offloads_blocking_inventory(monkeypatch) -> None:
+    state = SimpleNamespace()
+    calls = []
+
+    def fake_summary(received_state):
+        return {"series": [], "orders": {}}
+
+    async def fake_to_thread(func, *args, **kwargs):
+        calls.append((func, args, kwargs))
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(accounts_data, "_data_summary_cached", fake_summary)
+    monkeypatch.setattr(accounts_data.asyncio, "to_thread", fake_to_thread)
+
+    payload = asyncio.run(accounts_data.data_summary(cast(accounts_data.GatewayState, state)))
+
+    assert payload == {"series": [], "orders": {}}
+    assert calls == [(fake_summary, (state,), {})]
+
+
+def test_data_cache_status_offloads_blocking_inventory(monkeypatch) -> None:
+    state = SimpleNamespace()
+    calls = []
+
+    def fake_summary(received_state):
+        return {
+            "cache_size_bytes": 12,
+            "series": [{"symbol": "BTCUSDT", "timeframe": "1m"}],
+        }
+
+    async def fake_to_thread(func, *args, **kwargs):
+        calls.append((func, args, kwargs))
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(accounts_data, "_data_summary_cached", fake_summary)
+    monkeypatch.setattr(accounts_data.asyncio, "to_thread", fake_to_thread)
+
+    payload = asyncio.run(accounts_data.data_cache_status(cast(accounts_data.GatewayState, state)))
+
+    assert payload.total_size_bytes == 12
+    assert payload.instruments == ["BTCUSDT"]
+    assert payload.timeframes == ["1m"]
+    assert calls == [(fake_summary, (state,), {})]
 
 
 def test_data_health_handles_disabled_and_cached_only_markets(monkeypatch) -> None:

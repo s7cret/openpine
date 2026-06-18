@@ -77,6 +77,7 @@ def _to_response(s) -> StrategyResponse:
         params_hash=s.params_hash,
         mode=s.mode,
         enabled=s.enabled,
+        archived=getattr(s, "archived", False),
         status=s.status,
         created_at=s.created_at,
         updated_at=s.updated_at,
@@ -99,11 +100,13 @@ async def create_strategy(
     """Create a new strategy instance."""
     registry = state.strategy_registry
 
-    # Validate Pine source exists
+    # Validate Pine source exists and is not archived
     try:
-        state.pine_registry.get_source(body.pine_id)
+        source = state.pine_registry.get_source(body.pine_id)
     except KeyError:
         raise HTTPException(400, f"Pine source not found: {body.pine_id}")
+    if getattr(source, "archived", False):
+        raise HTTPException(400, "Archived Pine source cannot be used to create a strategy")
 
     # Validate artifact exists
     try:
@@ -172,7 +175,11 @@ async def update_strategy(
 
     # Mode/enabled/status changes need special handling
     if "enabled" in updates:
+        if updates["enabled"] and getattr(s, "archived", False):
+            raise HTTPException(400, "Archived strategy cannot be enabled")
         registry.set_enabled(strategy_id, updates["enabled"])
+    if "archived" in updates:
+        registry.set_archived(strategy_id, bool(updates["archived"]))
     if "mode" in updates:
         mode_val = updates["mode"]
         if hasattr(mode_val, "value"):
@@ -227,6 +234,9 @@ async def strategy_action(
     except KeyError:
         raise HTTPException(404, f"Strategy not found: {strategy_id}")
 
+    if action in {"start", "enable"} and getattr(s, "archived", False):
+        raise HTTPException(400, "Archived strategy cannot be started or enabled")
+
     if action == "start":
         if s.status == "error":
             raise HTTPException(
@@ -250,6 +260,34 @@ async def strategy_action(
 
     log.info("strategy_action", strategy_id=strategy_id, action=action)
     return {"strategy_id": strategy_id, "action": action, "status": "ok"}
+
+
+@router.put("/{strategy_id}/archive", response_model=StrategyResponse)
+async def archive_strategy(
+    strategy_id: str,
+    registry: SQLiteStrategyRegistry = Depends(get_strategy_registry),
+) -> StrategyResponse:
+    """Archive a strategy. Archived strategies are always disabled."""
+    try:
+        registry.set_archived(strategy_id, True)
+        log.info("strategy_archived", strategy_id=strategy_id)
+        return _to_response(registry.get_strategy(strategy_id))
+    except KeyError:
+        raise HTTPException(404, f"Strategy not found: {strategy_id}")
+
+
+@router.put("/{strategy_id}/unarchive", response_model=StrategyResponse)
+async def unarchive_strategy(
+    strategy_id: str,
+    registry: SQLiteStrategyRegistry = Depends(get_strategy_registry),
+) -> StrategyResponse:
+    """Restore a strategy from archive. It stays disabled until explicitly enabled."""
+    try:
+        registry.set_archived(strategy_id, False)
+        log.info("strategy_unarchived", strategy_id=strategy_id)
+        return _to_response(registry.get_strategy(strategy_id))
+    except KeyError:
+        raise HTTPException(404, f"Strategy not found: {strategy_id}")
 
 
 @router.delete("/{strategy_id}", status_code=204)
@@ -551,7 +589,9 @@ async def strategy_enable(
 ) -> dict[str, str]:
     """Enable a strategy for auto-refresh and trading."""
     try:
-        registry.get_strategy(strategy_id)
+        strategy = registry.get_strategy(strategy_id)
+        if getattr(strategy, "archived", False):
+            raise HTTPException(400, "Archived strategy cannot be enabled")
         registry.set_enabled(strategy_id, True)
         log.info("strategy_enabled", strategy_id=strategy_id)
         return {"strategy_id": strategy_id, "enabled": "true", "status": "ok"}

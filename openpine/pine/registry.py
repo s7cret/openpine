@@ -49,6 +49,7 @@ def _source_from_row(row: tuple) -> PineSource:
         version=row[6],
         source_type=row[7],
         active_artifact_id=row[8],
+        archived=bool(row[11]) if len(row) > 11 else False,
         created_at=row[9],
         updated_at=row[10],
     )
@@ -78,10 +79,19 @@ class SQLitePineSourceRegistry:
                 version TEXT NOT NULL DEFAULT '1.0.0',
                 source_type TEXT NOT NULL DEFAULT 'strategy',
                 active_artifact_id TEXT,
+                archived INTEGER NOT NULL DEFAULT 0,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL
             )
         """)
+        columns = {
+            row[1]
+            for row in self._conn.execute("PRAGMA table_info(pine_sources)").fetchall()
+        }
+        if "archived" not in columns:
+            self._conn.execute(
+                "ALTER TABLE pine_sources ADD COLUMN archived INTEGER NOT NULL DEFAULT 0"
+            )
         self._conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_pine_sources_name ON pine_sources(name)
         """)
@@ -90,7 +100,11 @@ class SQLitePineSourceRegistry:
         rows = self._conn.execute("SELECT id FROM pine_sources").fetchall()
         for (row_id,) in rows:
             row = self._conn.execute(
-                "SELECT * FROM pine_sources WHERE id = ?", (row_id,)
+                """SELECT id, pine_id, name, source_path, source_hash, source_text,
+                          version, source_type, active_artifact_id, created_at,
+                          updated_at, archived
+                   FROM pine_sources WHERE id = ?""",
+                (row_id,),
             ).fetchone()
             if row:
                 self._mem[row_id] = _source_from_row(row)
@@ -110,8 +124,8 @@ class SQLitePineSourceRegistry:
         )
         self._conn.execute(
             """INSERT INTO pine_sources
-               (id, pine_id, name, source_text, version, source_type, active_artifact_id, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (id, pine_id, name, source_text, version, source_type, active_artifact_id, archived, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 source.id,
                 None,
@@ -120,6 +134,7 @@ class SQLitePineSourceRegistry:
                 source.version,
                 source.source_type,
                 source.active_artifact_id,
+                int(source.archived),
                 source.created_at,
                 source.updated_at,
             ),
@@ -158,6 +173,18 @@ class SQLitePineSourceRegistry:
         self._conn.execute(
             "UPDATE pine_sources SET active_artifact_id = ?, updated_at = ? WHERE id = ?",
             (artifact_id, source.updated_at, source.id),
+        )
+        self._conn.commit()
+        self._mem[source.id] = source
+
+    def set_archived(self, pine_ref: str, archived: bool) -> None:
+        """Archive/unarchive a Pine source."""
+        source = self.get_source(pine_ref)
+        source.archived = archived
+        source.updated_at = int(time.time() * 1000)
+        self._conn.execute(
+            "UPDATE pine_sources SET archived = ?, updated_at = ? WHERE id = ?",
+            (int(archived), source.updated_at, source.id),
         )
         self._conn.commit()
         self._mem[source.id] = source

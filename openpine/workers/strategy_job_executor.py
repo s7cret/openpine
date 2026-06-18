@@ -16,6 +16,7 @@ from openpine.data.provider_adapter import create_local_runtime_data_provider_ad
 from openpine.exchange_metadata import default_qty_rounding_mode, default_qty_step
 from openpine.jobs import Job, JobScheduler, JobType
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
+from openpine.runtime.declaration_args import normalize_strategy_declaration_args
 from openpine.runtime.engine import (
     BacktestEngineAdapter,
     BacktestRunConfig,
@@ -411,7 +412,7 @@ def _strategy_params(strategy: StrategyInstance) -> dict[str, Any]:
 
 
 def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunConfig:
-    decl_args = _artifact_declaration_args(strategy)
+    decl_args = normalize_strategy_declaration_args(_artifact_declaration_args(strategy))
     commission_type = {
         "cash_per_order": "fixed_per_order",
         "cash_per_contract": "fixed_per_contract",

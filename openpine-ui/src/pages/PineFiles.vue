@@ -54,12 +54,16 @@ async function onPineFileSelected(event: Event) {
 }
 
 // Filter state
+const archiveView = ref<'active' | 'archived'>('active')
 const filterName = ref('')
 const filteredFiles = computed(() => {
   if (!filterName.value) return store.items
   const q = filterName.value.toLowerCase()
   return store.items.filter((f: any) => (f.name ?? '').toLowerCase().includes(q))
 })
+const filteredActiveFiles = computed(() => filteredFiles.value.filter((f: any) => !f.archived))
+const filteredArchivedFiles = computed(() => filteredFiles.value.filter((f: any) => f.archived))
+const visibleFiles = computed(() => archiveView.value === 'archived' ? filteredArchivedFiles.value : filteredActiveFiles.value)
 
 function getId(file: any) {
   return file.id ?? file.source_id ?? ''
@@ -90,6 +94,29 @@ function fileParentPath(file: any) {
   const leaf = fileLeafName(file)
   if (!raw || raw === leaf) return ''
   return raw.slice(0, Math.max(0, raw.length - leaf.length)).replace(/\/$/, '')
+}
+
+function archivedRowClass(file: any) {
+  return file?.archived ? 'opacity-60 grayscale' : ''
+}
+
+async function setFileArchived(file: any, archived: boolean) {
+  const id = getId(file)
+  if (!id) return
+  await store.setArchived(id, archived)
+}
+
+function onFileDragStart(event: DragEvent, file: any) {
+  const id = getId(file)
+  if (!id || !event.dataTransfer) return
+  event.dataTransfer.setData('application/x-openpine-pine-file', id)
+  event.dataTransfer.effectAllowed = 'move'
+}
+
+async function onFileDrop(event: DragEvent, archived: boolean) {
+  const id = event.dataTransfer?.getData('application/x-openpine-pine-file')
+  if (!id) return
+  await store.setArchived(id, archived)
 }
 
 async function toggleExpand(file: any) {
@@ -210,6 +237,37 @@ async function copyContent() {
       </span>
     </div>
 
+    <div class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        :class="[
+          archiveView === 'active' ? 'border-success/60 bg-success/15 text-success ring-1 ring-success/30' : 'border-dark-500 bg-dark-800 text-gray-400 hover:border-success/40 hover:text-success',
+          'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors'
+        ]"
+        @click="archiveView = 'active'"
+        @dragenter.prevent
+        @dragover.prevent
+        @drop.prevent.stop="onFileDrop($event, false)"
+      >
+        <span>{{ t('pineFiles.activeDropZone') }}</span>
+        <span class="rounded bg-black/20 px-1.5 py-0.5 font-mono">{{ filteredActiveFiles.length }}</span>
+      </button>
+      <button
+        type="button"
+        :class="[
+          archiveView === 'archived' ? 'border-warning/60 bg-warning/15 text-warning ring-1 ring-warning/30' : 'border-dark-500 bg-dark-800 text-gray-400 hover:border-warning/40 hover:text-warning',
+          'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors'
+        ]"
+        @click="archiveView = 'archived'"
+        @dragenter.prevent
+        @dragover.prevent
+        @drop.prevent.stop="onFileDrop($event, true)"
+      >
+        <span>{{ t('pineFiles.archiveDropZone') }}</span>
+        <span class="rounded bg-black/20 px-1.5 py-0.5 font-mono">{{ filteredArchivedFiles.length }}</span>
+      </button>
+    </div>
+
     <!-- Table -->
     <div class="max-w-full overflow-hidden rounded-xl border border-dark-500 bg-dark-800">
       <table class="w-full table-fixed text-sm">
@@ -224,20 +282,25 @@ async function copyContent() {
           </tr>
         </thead>
         <tbody>
-          <tr v-if="filteredFiles.length === 0">
+          <tr v-if="visibleFiles.length === 0">
             <td colspan="6" class="px-4 py-8 text-center text-gray-500">
               {{ store.loading ? t('common.loading') : (store.items.length === 0 ? t('pineFiles.noFiles') : t('pineFiles.noMatchSearch')) }}
             </td>
           </tr>
-          <template v-for="file in filteredFiles" :key="getId(file)">
+          <template v-for="file in visibleFiles" :key="getId(file)">
             <tr
-              class="border-b border-dark-600/50 hover:bg-dark-700/50 cursor-pointer transition-colors"
+              :class="[archivedRowClass(file), 'border-b border-dark-600/50 hover:bg-dark-700/50 cursor-pointer transition-colors']"
+              draggable="true"
+              @dragstart="onFileDragStart($event, file)"
               @click="toggleExpand(file)"
             >
               <td class="min-w-0 px-3 py-2.5 font-medium text-gray-200 sm:px-4">
                 <div class="min-w-0">
                   <div class="flex min-w-0 items-center gap-2">
                     <span class="min-w-0 truncate leading-snug" :title="rawFileName(file)">{{ fileStem(file) }}</span>
+                    <span v-if="file.archived" class="shrink-0 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] text-warning">
+                      {{ t('pineFiles.archivedBadge') }}
+                    </span>
                     <span v-if="fileExt(file)" class="shrink-0 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] text-accent-light">
                       {{ fileExt(file) }}
                     </span>
@@ -258,13 +321,22 @@ async function copyContent() {
                 <span class="text-gray-500 transition-transform inline-block" :class="expandedId === getId(file) ? 'rotate-90' : ''">▶</span>
               </td>
               <td class="px-2 py-2.5 text-center">
-                <button
-                  @click.stop="store.remove(getId(file))"
-                  class="p-1 rounded hover:bg-danger/20 text-gray-500 hover:text-danger transition-colors"
-                  :title="t('pineFiles.deleteFile')"
-                >
-                  🗑
-                </button>
+                <div class="flex items-center justify-center gap-1">
+                  <button
+                    @click.stop="setFileArchived(file, !file.archived)"
+                    class="rounded p-1 text-gray-500 transition-colors hover:bg-dark-600 hover:text-gray-200"
+                    :title="file.archived ? t('pineFiles.restoreFile') : t('pineFiles.archiveFile')"
+                  >
+                    {{ file.archived ? '↩' : '📦' }}
+                  </button>
+                  <button
+                    @click.stop="store.remove(getId(file))"
+                    class="p-1 rounded hover:bg-danger/20 text-gray-500 hover:text-danger transition-colors"
+                    :title="t('pineFiles.deleteFile')"
+                  >
+                    🗑
+                  </button>
+                </div>
               </td>
             </tr>
             <!-- Expanded content -->

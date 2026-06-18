@@ -26,6 +26,25 @@ def test_binance_spot_default_qty_step_uses_lot_size(monkeypatch) -> None:
     )
 
 
+def test_binance_spot_default_price_tick_uses_price_filter(monkeypatch) -> None:
+    payload = {
+        "symbols": [
+            {
+                "symbol": "XLMUSDT",
+                "filters": [
+                    {"filterType": "PRICE_FILTER", "tickSize": "0.00010000"},
+                    {"filterType": "LOT_SIZE", "stepSize": "1.00000000"},
+                ],
+            }
+        ]
+    }
+    monkeypatch.setattr(
+        exchange_metadata, "_load_binance_spot_exchange_info", lambda: payload
+    )
+
+    assert exchange_metadata.default_price_tick("binance", "spot", "xlmusdt") == 0.0001
+
+
 def test_default_qty_step_ignores_non_binance_spot(monkeypatch) -> None:
     monkeypatch.setattr(
         exchange_metadata, "_load_binance_spot_exchange_info", lambda: None
@@ -33,3 +52,5 @@ def test_default_qty_step_ignores_non_binance_spot(monkeypatch) -> None:
 
     assert exchange_metadata.default_qty_step("coinbase", "spot", "BTCUSD") is None
     assert exchange_metadata.default_qty_step("binance", "futures", "BTCUSDT") is None
+    assert exchange_metadata.default_price_tick("coinbase", "spot", "BTCUSD") is None
+    assert exchange_metadata.default_price_tick("binance", "futures", "BTCUSDT") is None

@@ -27,7 +27,7 @@ from openpine.gateway.schemas import DataBackfillRequest, KillSwitchRequest
 class SqliteWrapper:
     def __init__(self, path: Path):
         self.db_path = path
-        self.conn = sqlite3.connect(path)
+        self.conn = sqlite3.connect(path, check_same_thread=False)
 
     def execute(self, sql: str, params: tuple[object, ...] = ()):  # noqa: ANN201
         return self.conn.execute(sql, params)

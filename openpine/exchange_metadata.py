@@ -27,6 +27,18 @@ _BINANCE_SPOT_STEP_FALLBACKS: dict[str, float] = {
     "LTCUSDT": 0.001,
     "XLMUSDT": 1.0,
 }
+_BINANCE_SPOT_PRICE_TICK_FALLBACKS: dict[str, float] = {
+    "BTCUSDT": 0.01,
+    "ETHUSDT": 0.01,
+    "BNBUSDT": 0.01,
+    "SOLUSDT": 0.01,
+    "XRPUSDT": 0.0001,
+    "ADAUSDT": 0.0001,
+    "DOGEUSDT": 0.00001,
+    "MATICUSDT": 0.0001,
+    "LTCUSDT": 0.01,
+    "XLMUSDT": 0.0001,
+}
 _TV_SYMBOL_STEP_FALLBACKS: dict[str, float] = {
     # TradingView BTCUSD strategy exports use six-decimal contract sizing. The
     # symbol is commonly uploaded into TV Parity without an exchange-qualified
@@ -78,6 +90,26 @@ def default_qty_rounding_mode(exchange: str, market_type: str, symbol: str) -> s
         if default_qty_step(exchange, market_type, symbol) is not None
         else "none"
     )
+
+
+def default_price_tick(exchange: str, market_type: str, symbol: str) -> float | None:
+    exchange_id = exchange.lower()
+    market_id = market_type.lower()
+    normalized_symbol = symbol.upper()
+    if exchange_id != "binance" or market_id != "spot":
+        return None
+    fallback = _BINANCE_SPOT_PRICE_TICK_FALLBACKS.get(normalized_symbol)
+    try:
+        info = _load_binance_spot_exchange_info(fetch_network=fallback is None)
+    except TypeError:
+        info = _load_binance_spot_exchange_info()
+    symbol_info = _symbol_info(info, normalized_symbol)
+    if symbol_info is None:
+        return fallback
+    price_filter = _filter(symbol_info, "PRICE_FILTER")
+    if price_filter is None:
+        return fallback
+    return _float_or_none(price_filter.get("tickSize")) or fallback
 
 
 def _load_binance_spot_exchange_info(*, fetch_network: bool = False) -> dict | None:

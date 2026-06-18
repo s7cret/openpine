@@ -542,7 +542,9 @@ def test_strategy_decl_args_and_backtest_config_map_defaults_and_commission():
     assert config.qty_step == 0.00001
     assert config.qty_rounding_mode == "truncate"
     assert config.mintick == 0.01
-    assert tv_parity._strategy_decl_args(SimpleNamespace(artifact_store=SimpleNamespace(get_artifact=lambda *_: (_ for _ in ()).throw(RuntimeError("x")))), strategy) == {}
+    fallback_decl_args = tv_parity._strategy_decl_args(SimpleNamespace(artifact_store=SimpleNamespace(get_artifact=lambda *_: (_ for _ in ()).throw(RuntimeError("x")))), strategy)
+    assert fallback_decl_args["initial_capital"] == 1000000.0
+    assert fallback_decl_args["pyramiding"] == 1
 
 
 def test_tv_compare_prefers_chart_diagnostic_trades_over_stale_trade_report(tmp_path: Path):
