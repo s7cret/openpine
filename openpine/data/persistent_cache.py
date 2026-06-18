@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ from openpine.data.cache_io import read_valid_meta, write_csv_atomic, write_json
 from marketdata_provider.contracts import Bar, BarQuery, BarSeries
 
 CACHE_SCHEMA_VERSION = 1
+CACHE_PROGRESS_CHUNK_ROWS = 1000
 
 
 def default_cache_dir() -> Path:
@@ -48,7 +50,9 @@ def query_key(query: BarQuery) -> dict[str, Any]:
     }
 
 
-def load_bar_series(cache_dir: Path, query: BarQuery) -> BarSeries | None:
+def load_bar_series(
+    cache_dir: Path, query: BarQuery, progress_callback=None
+) -> BarSeries | None:
     key_payload = query_key(query)
     key = _cache_key(key_payload)
     meta_path, data_path = _paths(cache_dir, key)
@@ -56,8 +60,49 @@ def load_bar_series(cache_dir: Path, query: BarQuery) -> BarSeries | None:
     if meta is None or not data_path.exists():
         return None
 
-    df = pd.read_csv(data_path)
-    bars = tuple(
+    total_rows = _safe_int(meta.get("rows"), fallback=0)
+    _emit_cache_progress(progress_callback, 0, total_rows, "cache_read")
+    bars_list: list[Bar] = []
+    for df in pd.read_csv(data_path, chunksize=CACHE_PROGRESS_CHUNK_ROWS):
+        bars_list.extend(_bars_from_dataframe(query, df))
+        _emit_cache_progress(
+            progress_callback,
+            len(bars_list),
+            total_rows or len(bars_list),
+            "cache_read",
+        )
+    bars = tuple(bars_list)
+    _emit_cache_progress(
+        progress_callback,
+        len(bars),
+        total_rows or len(bars),
+        "cache_hit",
+    )
+    coverage = _coverage_for(query, bars, source="persistent_cache")
+    return BarSeries(query=query, bars=bars, coverage=coverage)
+
+
+def _safe_int(value: Any, *, fallback: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _emit_cache_progress(progress_callback, done: int, total: int, phase: str) -> None:
+    if progress_callback is None:
+        return
+    total = max(0, int(total or 0))
+    total_pages = max(1, math.ceil(total / CACHE_PROGRESS_CHUNK_ROWS)) if total else 0
+    pages = min(total_pages, math.ceil(done / CACHE_PROGRESS_CHUNK_ROWS)) if done else 0
+    try:
+        progress_callback(done, pages, total, total_pages, None, phase)
+    except Exception:
+        return
+
+
+def _bars_from_dataframe(query: BarQuery, df: pd.DataFrame) -> list[Bar]:
+    return [
         Bar(
             instrument=query.instrument,
             timeframe=query.timeframe,
@@ -71,9 +116,7 @@ def load_bar_series(cache_dir: Path, query: BarQuery) -> BarSeries | None:
             closed=bool(row.closed),
         )
         for row in df.itertuples(index=False)
-    )
-    coverage = _coverage_for(query, bars, source="persistent_cache")
-    return BarSeries(query=query, bars=bars, coverage=coverage)
+    ]
 
 
 def save_bar_series(cache_dir: Path, series: BarSeries) -> None:

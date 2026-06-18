@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import math
 import json as _json
 import urllib.request
@@ -23,6 +24,20 @@ from openpine.data.persistent_cache import (
 
 BINANCE_PAGE_LIMIT = 1000
 _EARLIEST_OPEN_CACHE: dict[tuple[str, str, str], int | None] = {}
+
+
+def _load_bar_series_accepts_progress() -> bool:
+    try:
+        return "progress_callback" in inspect.signature(load_bar_series).parameters
+    except (TypeError, ValueError):
+        return True
+
+
+def _load_bar_series_with_optional_progress(cache_dir, query, progress_callback=None):
+    """Call cache loader with progress when supported; keep old test doubles working."""
+    if _load_bar_series_accepts_progress():
+        return load_bar_series(cache_dir, query, progress_callback=progress_callback)
+    return load_bar_series(cache_dir, query)
 
 
 class DirectBinanceProvider:
@@ -88,9 +103,12 @@ class DirectBinanceProvider:
             )
 
         if cache_enabled_by_env():
-            cached = load_bar_series(default_cache_dir(), effective_query)
+            cache_loader_accepts_progress = _load_bar_series_accepts_progress()
+            cached = _load_bar_series_with_optional_progress(
+                default_cache_dir(), effective_query, progress_callback
+            )
             if cached is not None:
-                if progress_callback:
+                if progress_callback and not cache_loader_accepts_progress:
                     progress_callback(
                         len(cached.bars),
                         total_pages,
@@ -146,8 +164,8 @@ class DirectBinanceProvider:
 
             all_bars.extend(batch_bars)
 
-            # Report progress every 10 pages
-            if progress_callback and (page_num + 1) % 10 == 0:
+            # Report every page so UI does not sit at 0/N until the fetch ends.
+            if progress_callback:
                 progress_callback(
                     len(all_bars),
                     page_num + 1,

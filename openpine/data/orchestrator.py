@@ -93,7 +93,7 @@ class DataOrchestrator:
             return self._load_storage(
                 query, require_complete=query.gap_policy == "fail"
             )
-        cached = self._load_cache(query)
+        cached = self._load_cache(query, progress_callback=progress_callback)
         if cached is not None:
             return cached
         if query.source == "provider":
@@ -216,10 +216,14 @@ class DataOrchestrator:
         self._validator.validate(series, allow_gaps=True)
         return self._require_complete(series, "storage") if require_complete else series
 
-    def _load_cache(self, query: BarQuery) -> BarSeries | None:
+    def _load_cache(
+        self, query: BarQuery, progress_callback: Callable[..., None] | None = None
+    ) -> BarSeries | None:
         if not self._cache_enabled:
             return None
-        series = load_bar_series(self._cache_dir, query)
+        series = load_bar_series(
+            self._cache_dir, query, progress_callback=progress_callback
+        )
         if series is None:
             return None
         self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
