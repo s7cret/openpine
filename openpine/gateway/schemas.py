@@ -151,6 +151,9 @@ class BacktestRunRequest(BaseModel):
     params_override: dict[str, Any] | None = None
     warmup_bars: int = 0
     capture_plots: bool = False
+    initial_capital: float | None = Field(
+        None, description="Override starting capital (defaults to strategy declaration)"
+    )
 
 
 class BacktestRunResponse(BaseModel):

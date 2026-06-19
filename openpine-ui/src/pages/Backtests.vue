@@ -21,7 +21,7 @@ const availability = ref<any>(null)
 const estimateLoading = ref(false)
 let estimateTimer: ReturnType<typeof setTimeout> | null = null
 
-const form = ref({ strategy_id: '', from_time: '', to_time: '' })
+const form = ref({ strategy_id: '', from_time: '', to_time: '', initial_capital: '' })
 const allAvailableFrom = computed(() => msToDate(availability.value?.earliest_available ?? availability.value?.effective_from))
 const selectableStrategies = computed(() => stStore.items.filter((item: any) => !item.archived))
 const selectedStrategy = computed(() => stStore.items.find((item: any) => (item.strategy_id ?? item.id) === form.value.strategy_id) ?? null)
@@ -58,7 +58,11 @@ async function runBacktest() {
   if (!form.value.from_time || !form.value.to_time) { runStatus.value = t('backtests.selectDateRange'); return }
   runLoading.value = true
   runStatus.value = t('backtests.startingMessage')
-  const result = await btStore.run(form.value)
+  const payload: any = { ...form.value }
+  if (payload.initial_capital === '' || payload.initial_capital == null) {
+    delete payload.initial_capital
+  }
+  const result = await btStore.run(payload)
   runLoading.value = false
   if (result?.run_id) {
     runStatus.value = t('backtests.backtestStarted')
@@ -252,6 +256,19 @@ function effectiveRange(e: any) {
               @update:to="form.to_time = $event"
             />
           </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <label class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500">{{ t('backtests.initialCapital') }}</span>
+            <input
+              v-model="form.initial_capital"
+              type="number"
+              min="0"
+              step="any"
+              :placeholder="t('backtests.initialCapitalPlaceholder')"
+              class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
+            />
+          </label>
         </div>
         <div class="rounded-lg border px-3 py-3 text-xs" :class="availabilityTone(estimate ?? availability)">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

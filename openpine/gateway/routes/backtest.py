@@ -282,6 +282,7 @@ async def _run_backtest_background(
     params_override: dict | None,
     warmup_bars: int,
     capture_plots: bool,
+    initial_capital_override: float | None = None,
 ) -> None:
     """Execute backtest in background, update progress via WebSocket."""
     import asyncio
@@ -492,7 +493,11 @@ async def _run_backtest_background(
             end_time=to_ms,
             exchange=strategy.exchange,
             market_type=strategy.market_type,
-            initial_capital=decl_args.get("initial_capital", 10000.0),
+            initial_capital=(
+                initial_capital_override
+                if initial_capital_override is not None
+                else decl_args.get("initial_capital", 10000.0)
+            ),
             default_qty_type=decl_args.get("default_qty_type", "fixed"),
             default_qty_value=decl_args.get("default_qty_value", 1.0),
             commission_type=commission_type or "none",
@@ -690,6 +695,7 @@ async def run_backtest(
         body.params_override,
         body.warmup_bars,
         body.capture_plots,
+        body.initial_capital,
     )
 
     log.info("backtest_started", run_id=run_id, strategy_id=body.strategy_id)

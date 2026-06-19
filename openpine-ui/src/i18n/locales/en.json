@@ -295,6 +295,8 @@
     "selectStrategy": "Select strategy",
     "starting": "Starting...",
     "startRun": "🧪 Run",
+    "initialCapital": "Initial capital",
+    "initialCapitalPlaceholder": "Default (from strategy)",
     "backtestStarted": "✅ Backtest started!",
     "selectStrategyFirst": "❌ Select a strategy",
     "archivedStrategyUnavailable": "❌ Archived strategy is not available for backtests",

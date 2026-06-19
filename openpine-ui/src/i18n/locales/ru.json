@@ -295,6 +295,8 @@
     "selectStrategy": "Выберите стратегию",
     "starting": "Запуск...",
     "startRun": "🧪 Запустить",
+    "initialCapital": "Стартовый капитал",
+    "initialCapitalPlaceholder": "По умолчанию (из стратегии)",
     "backtestStarted": "✅ Бэктест запущен!",
     "selectStrategyFirst": "❌ Выберите стратегию",
     "archivedStrategyUnavailable": "❌ Архивная стратегия недоступна для бэктеста",
