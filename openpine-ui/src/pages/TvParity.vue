@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getDataMetadata,
   getStrategies,
   getTvParityRun,
+  getTvParitySummaryCards,
   listTvParityRuns,
   previewTvParityCandles,
   runTvParity,
   tvParityArtifactUrl,
   type TvParityHistoryEntry,
+  type TvParitySummaryCards,
 } from '@/api/client'
 import { EMPTY_MARKET_METADATA, exchangeLabel } from '@/lib/marketMetadata'
 import TvParityVisualization from '@/components/TvParityVisualization.vue'
@@ -21,10 +23,9 @@ const candlesFile = ref<File | null>(null)
 const tvChartFile = ref<File | null>(null)
 const tvTradesFile = ref<File | null>(null)
 const tvEquityFile = ref<File | null>(null)
-const candlesInput = ref<HTMLInputElement | null>(null)
-const tvChartInput = ref<HTMLInputElement | null>(null)
-const tvTradesInput = ref<HTMLInputElement | null>(null)
-const tvEquityInput = ref<HTMLInputElement | null>(null)
+const unifiedFileInput = ref<HTMLInputElement | null>(null)
+const isDragging = ref(false)
+const summaryCache = reactive<Record<string, TvParitySummaryCards>>({})
 const preview = ref<any | null>(null)
 const result = ref<any | null>(null)
 const lockedPeriod = ref<{ from_time: number; to_time: number } | null>(null)
@@ -137,37 +138,154 @@ function marketTypeLabel(exchangeId: string, marketTypeId: string) {
   return exchange?.market_types.find((item) => item.id === marketTypeId)?.label ?? (marketTypeId || '—')
 }
 
-function fileFromTarget(target: EventTarget | null) {
-  const input = target as HTMLInputElement | null
-  return input?.files?.[0] ?? null
+async function detectFileType(file: File): Promise<'candles' | 'trades' | 'chart' | 'equity' | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = String(reader.result ?? '')
+      const firstLine = text.split(/\r?\n/, 1)[0] ?? ''
+      const cols = firstLine
+        .split(',')
+        .map((c) => c.trim().replace(/^"|"$/g, '').toLowerCase())
+        .filter(Boolean)
+      const colSet = new Set(cols)
+      const tradesHints = ['trade #', 'номер сделки', 'тип', 'type', 'signal', 'сигнал']
+      if (cols.some((c) => tradesHints.includes(c))) {
+        resolve('trades')
+        return
+      }
+      if (colSet.has('equity') || colSet.has('balance')) {
+        resolve('equity')
+        return
+      }
+      const hasOhlc = ['open', 'high', 'low', 'close'].every((c) => colSet.has(c))
+      if (hasOhlc) {
+        resolve(cols.length <= 6 ? 'candles' : 'chart')
+        return
+      }
+      resolve(null)
+    }
+    reader.onerror = () => resolve(null)
+    reader.readAsText(file.slice(0, 8192))
+  })
 }
 
-function fileName(file?: File | null): string {
-  return file?.name ?? t('tvParity.noFile')
+async function handleFiles(files: FileList | File[]) {
+  const list = Array.from(files)
+  for (const file of list) {
+    const type = await detectFileType(file)
+    if (type === 'candles') candlesFile.value = file
+    else if (type === 'chart') tvChartFile.value = file
+    else if (type === 'trades') tvTradesFile.value = file
+    else if (type === 'equity') tvEquityFile.value = file
+    else status.value = t('tvParity.fileTypeUnknown', { name: file.name })
+  }
+}
+
+function handleDrop(event: DragEvent) {
+  isDragging.value = false
+  const files = event.dataTransfer?.files
+  if (files && files.length) handleFiles(files)
+}
+
+function openUnifiedPicker() {
+  unifiedFileInput.value?.click()
+}
+
+function onUnifiedInputChange(event: Event) {
+  const files = (event.target as HTMLInputElement).files
+  if (files && files.length) handleFiles(files)
+  ;(event.target as HTMLInputElement).value = ''
+}
+
+function removeFile(type: 'candles' | 'chart' | 'trades' | 'equity') {
+  if (type === 'candles') candlesFile.value = null
+  else if (type === 'chart') tvChartFile.value = null
+  else if (type === 'trades') tvTradesFile.value = null
+  else if (type === 'equity') tvEquityFile.value = null
 }
 
 function apiErrorMessage(error: any, fallback: string) {
   return error?.response?.data?.detail ?? error?.message ?? fallback
 }
 
-function openFilePicker(input: HTMLInputElement | null) {
-  input?.click()
+const canRun = computed(() => (isExchangeDataSource.value ? true : !!candlesFile.value))
+const candlesMissing = computed(() => !isExchangeDataSource.value && !candlesFile.value)
+
+const detectedFileChips = computed(() => {
+  const chips: { type: 'candles' | 'chart' | 'trades' | 'equity'; icon: string; label: string; file: File }[] = []
+  if (candlesFile.value) chips.push({ type: 'candles', icon: '🕯️', label: t('tvParity.detectedCandles'), file: candlesFile.value })
+  if (tvChartFile.value) chips.push({ type: 'chart', icon: '📊', label: t('tvParity.detectedChart'), file: tvChartFile.value })
+  if (tvTradesFile.value) chips.push({ type: 'trades', icon: '📉', label: t('tvParity.detectedTrades'), file: tvTradesFile.value })
+  if (tvEquityFile.value) chips.push({ type: 'equity', icon: '💰', label: t('tvParity.detectedEquity'), file: tvEquityFile.value })
+  return chips
+})
+
+const fileStatusBadges = computed(() => {
+  const badges = [
+    { key: 'candles', icon: '🕯️', label: t('tvParity.detectedCandles'), detected: !!candlesFile.value, required: !isExchangeDataSource.value },
+    { key: 'trades', icon: '📉', label: t('tvParity.detectedTrades'), detected: !!tvTradesFile.value, required: false },
+    { key: 'chart', icon: '📊', label: t('tvParity.detectedChart'), detected: !!tvChartFile.value, required: false },
+    { key: 'equity', icon: '💰', label: t('tvParity.detectedEquity'), detected: !!tvEquityFile.value, required: false },
+  ]
+  return isExchangeDataSource.value ? badges.filter((b) => b.key !== 'candles') : badges
+})
+
+async function loadSummary(runId: string) {
+  if (summaryCache[runId]) return
+  summaryCache[runId] = {} as TvParitySummaryCards
+  try {
+    const { data } = await getTvParitySummaryCards(runId)
+    summaryCache[runId] = data
+  } catch {
+    // keep placeholder; metrics simply stay hidden on failure
+  }
 }
 
-function setCandlesFile(target: EventTarget | null) {
-  candlesFile.value = fileFromTarget(target)
+watch(
+  visibleHistory,
+  (rows) => {
+    for (const row of rows) {
+      if (row.status === 'completed' && !summaryCache[row.run_id]) {
+        loadSummary(row.run_id)
+      }
+    }
+  },
+  { immediate: true },
+)
+
+function summaryOf(runId: string): TvParitySummaryCards | null {
+  return summaryCache[runId] ?? null
 }
 
-function setTvChartFile(target: EventTarget | null) {
-  tvChartFile.value = fileFromTarget(target)
+function overallBadge(s?: string | null) {
+  if (s === 'match') return { icon: '✅', text: t('tvParity.history.match'), cls: 'text-success' }
+  if (s === 'mismatch' || s === 'failed') return { icon: '⚠️', text: t('tvParity.history.mismatch'), cls: 'text-error' }
+  return { icon: '—', text: '', cls: 'text-gray-500' }
 }
 
-function setTvTradesFile(target: EventTarget | null) {
-  tvTradesFile.value = fileFromTarget(target)
+function tradesBadge(s?: string | null) {
+  if (s === 'match') return { icon: '✅', cls: 'text-success' }
+  if (s === 'mismatch') return { icon: '⚠️', cls: 'text-error' }
+  return { icon: '—', cls: 'text-gray-500' }
 }
 
-function setTvEquityFile(target: EventTarget | null) {
-  tvEquityFile.value = fileFromTarget(target)
+function fmtDelta(v?: number | null) {
+  return v == null ? '—' : v.toFixed(4)
+}
+
+function compactNum(v: number) {
+  const abs = Math.abs(v)
+  if (abs >= 1e9) return (v / 1e9).toFixed(2) + 'B'
+  if (abs >= 1e6) return (v / 1e6).toFixed(2) + 'M'
+  if (abs >= 1e3) return (v / 1e3).toFixed(1) + 'K'
+  return v.toFixed(2)
+}
+
+function fmtEquity(initial?: number | null, final?: number | null) {
+  if (initial == null && final == null) return '—'
+  const fmt = (v: number | null) => (v == null ? '?' : compactNum(v))
+  return `${fmt(initial ?? null)} → ${fmt(final ?? null)}`
 }
 
 async function previewCandles() {
@@ -368,7 +486,7 @@ function artifactHref(artifact: any) {
             <button :disabled="loading || isExchangeDataSource" @click="previewCandles" class="rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500 disabled:opacity-50">
               {{ loading ? t('tvParity.previewing') : t('tvParity.previewCandles') }}
             </button>
-            <button :disabled="runLoading" @click="queueRun" class="rounded-lg bg-accent px-3 py-2 text-sm text-white hover:bg-accent-dark disabled:opacity-50">
+            <button :disabled="runLoading || !canRun" @click="queueRun" class="rounded-lg bg-accent px-3 py-2 text-sm text-white hover:bg-accent-dark disabled:opacity-50">
               {{ runLoading ? t('tvParity.queueing') : t('tvParity.runTvParity') }}
             </button>
           </div>
@@ -391,16 +509,61 @@ function artifactHref(artifact: any) {
               </option>
             </select>
           </label>
-          <label v-if="!isExchangeDataSource" class="space-y-1 text-xs text-gray-400">
-            {{ t('tvParity.tradingviewCsv') }}
-            <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(candlesInput)">
-                {{ t('tvParity.chooseFile') }}
-              </button>
-              <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(candlesFile) }}</span>
-              <input ref="candlesInput" type="file" accept=".csv,text/csv" class="hidden" @change="setCandlesFile($event.target)" />
-            </span>
-          </label>
+          <div class="md:col-span-2 space-y-2">
+            <div
+              class="relative cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors"
+              :class="isDragging ? 'border-accent bg-accent/10' : 'border-dark-500 bg-dark-700/40 hover:border-dark-400'"
+              @click="openUnifiedPicker"
+              @dragenter.prevent="isDragging = true"
+              @dragover.prevent="isDragging = true"
+              @dragleave.prevent="isDragging = false"
+              @drop.prevent="handleDrop"
+            >
+              <div class="text-2xl">📥</div>
+              <div class="mt-1 text-sm text-gray-200">{{ t('tvParity.dropFiles') }}</div>
+              <div class="mt-0.5 text-xs text-gray-500">{{ t('tvParity.dropFilesHint') }}</div>
+              <input
+                ref="unifiedFileInput"
+                type="file"
+                accept=".csv,text/csv"
+                multiple
+                class="hidden"
+                @change="onUnifiedInputChange"
+              />
+            </div>
+
+            <div v-if="candlesMissing" class="text-xs text-error">{{ t('tvParity.candlesRequired') }}</div>
+
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              <span
+                v-for="badge in fileStatusBadges"
+                :key="badge.key"
+                class="inline-flex items-center gap-1"
+              >
+                <span v-if="badge.detected" class="text-success">✅</span>
+                <span v-else-if="badge.required" class="text-error">❌</span>
+                <span v-else class="text-gray-500">—</span>
+                <span :class="badge.detected ? 'text-gray-200' : 'text-gray-500'">{{ badge.icon }} {{ badge.label }}</span>
+              </span>
+            </div>
+
+            <div v-if="detectedFileChips.length" class="flex flex-wrap gap-2">
+              <span
+                v-for="chip in detectedFileChips"
+                :key="chip.type"
+                class="inline-flex items-center gap-1 rounded-full border border-dark-500 bg-dark-700 px-2 py-1 text-xs text-gray-200"
+              >
+                <span>{{ chip.icon }} {{ chip.label }}</span>
+                <span class="max-w-[140px] truncate text-gray-400" :title="chip.file.name">{{ chip.file.name }}</span>
+                <button
+                  type="button"
+                  class="ml-0.5 text-gray-500 hover:text-error"
+                  :title="t('tvParity.removeFile')"
+                  @click.stop="removeFile(chip.type)"
+                >×</button>
+              </span>
+            </div>
+          </div>
           <div class="md:col-span-2 rounded-lg border border-dark-500 bg-dark-700/40 p-3 text-xs text-gray-300">
             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('tvParity.strategyContext') }}</div>
             <div v-if="selectedStrategyMarketContext" class="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -425,38 +588,6 @@ function artifactHref(artifact: any) {
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <label class="space-y-1 text-xs text-gray-400">
-            {{ t('tvParity.tvChartCsv') }}
-            <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(tvChartInput)">
-                {{ t('tvParity.chooseFile') }}
-              </button>
-              <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(tvChartFile) }}</span>
-              <input ref="tvChartInput" type="file" accept=".csv,text/csv" class="hidden" @change="setTvChartFile($event.target)" />
-            </span>
-          </label>
-          <label class="space-y-1 text-xs text-gray-400">
-            {{ t('tvParity.tvTradesCsv') }}
-            <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(tvTradesInput)">
-                {{ t('tvParity.chooseFile') }}
-              </button>
-              <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(tvTradesFile) }}</span>
-              <input ref="tvTradesInput" type="file" accept=".csv,text/csv" class="hidden" @change="setTvTradesFile($event.target)" />
-            </span>
-          </label>
-          <label class="space-y-1 text-xs text-gray-400">
-            {{ t('tvParity.tvEquityCsv') }}
-            <span class="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <button type="button" class="inline-flex w-max rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-200 hover:bg-dark-500" @click="openFilePicker(tvEquityInput)">
-                {{ t('tvParity.chooseFile') }}
-              </button>
-              <span class="min-w-0 truncate text-sm text-gray-300">{{ fileName(tvEquityFile) }}</span>
-              <input ref="tvEquityInput" type="file" accept=".csv,text/csv" class="hidden" @change="setTvEquityFile($event.target)" />
-            </span>
-          </label>
-        </div>
 
       </div>
 
@@ -603,6 +734,31 @@ function artifactHref(artifact: any) {
                 <div class="mt-1 truncate font-mono text-gray-400">{{ fmtMs(row.queued_at) }}</div>
               </div>
             </div>
+            <div v-if="row.status === 'completed' && summaryOf(row.run_id)?.overall_status" class="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div class="text-gray-500">{{ t('tvParity.history.headerOverall') }}</div>
+                <div class="mt-1" :class="overallBadge(summaryOf(row.run_id)?.overall_status).cls">
+                  {{ overallBadge(summaryOf(row.run_id)?.overall_status).icon }}
+                  {{ overallBadge(summaryOf(row.run_id)?.overall_status).text }}
+                </div>
+              </div>
+              <div>
+                <div class="text-gray-500">{{ t('tvParity.history.headerTrades') }}</div>
+                <div class="mt-1" :class="tradesBadge(summaryOf(row.run_id)?.trades_status).cls">
+                  {{ tradesBadge(summaryOf(row.run_id)?.trades_status).icon }}
+                </div>
+              </div>
+              <div>
+                <div class="text-gray-500">{{ t('tvParity.history.headerMaxDelta') }}</div>
+                <div class="mt-1 font-mono text-gray-300">{{ fmtDelta(summaryOf(row.run_id)?.max_abs_delta_price) }}</div>
+              </div>
+              <div>
+                <div class="text-gray-500">{{ t('tvParity.history.headerEquity') }}</div>
+                <div class="mt-1 font-mono text-gray-300">
+                  {{ fmtEquity(summaryOf(row.run_id)?.initial_equity, summaryOf(row.run_id)?.final_equity) }}
+                </div>
+              </div>
+            </div>
             <div class="mt-3 grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -625,7 +781,7 @@ function artifactHref(artifact: any) {
         </div>
 
         <div class="hidden overflow-x-auto md:block">
-          <table class="w-full min-w-[760px] text-xs">
+          <table class="w-full min-w-[1180px] text-xs">
             <thead>
               <tr class="text-left text-gray-500 border-b border-dark-500">
                 <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerActions') }}</th>
@@ -634,6 +790,10 @@ function artifactHref(artifact: any) {
                 <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerTimeframe') }}</th>
                 <th class="py-2 pr-2 font-medium text-right">{{ t('tvParity.history.headerBars') }}</th>
                 <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerStatus') }}</th>
+                <th class="py-2 pr-2 font-medium text-center">{{ t('tvParity.history.headerOverall') }}</th>
+                <th class="py-2 pr-2 font-medium text-center">{{ t('tvParity.history.headerTrades') }}</th>
+                <th class="py-2 pr-2 font-medium text-right">{{ t('tvParity.history.headerMaxDelta') }}</th>
+                <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerEquity') }}</th>
                 <th class="py-2 pr-2 font-medium">{{ t('tvParity.history.headerWhen') }}</th>
               </tr>
             </thead>
@@ -691,6 +851,18 @@ function artifactHref(artifact: any) {
                   >
                     {{ statusBadgeLabel(row.status) }}
                   </span>
+                </td>
+                <td class="py-2 pr-2 text-center" :class="overallBadge(summaryOf(row.run_id)?.overall_status).cls">
+                  {{ row.status === 'completed' ? overallBadge(summaryOf(row.run_id)?.overall_status).icon : '' }}
+                </td>
+                <td class="py-2 pr-2 text-center" :class="tradesBadge(summaryOf(row.run_id)?.trades_status).cls">
+                  {{ row.status === 'completed' ? tradesBadge(summaryOf(row.run_id)?.trades_status).icon : '' }}
+                </td>
+                <td class="py-2 pr-2 font-mono text-gray-300 text-right">
+                  {{ row.status === 'completed' ? fmtDelta(summaryOf(row.run_id)?.max_abs_delta_price) : '—' }}
+                </td>
+                <td class="py-2 pr-2 font-mono text-gray-400">
+                  {{ row.status === 'completed' ? fmtEquity(summaryOf(row.run_id)?.initial_equity, summaryOf(row.run_id)?.final_equity) : '—' }}
                 </td>
                 <td class="py-2 pr-2 font-mono text-gray-400">{{ fmtMs(row.queued_at) }}</td>
               </tr>
