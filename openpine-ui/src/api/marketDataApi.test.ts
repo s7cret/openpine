@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
-import api, { getDataKlines, getDataTicker24h, searchMarketSymbols } from './client'
+import api, { getDataBackfillJob, getDataKlines, getDataTicker24h, searchMarketSymbols } from './client'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const srcRoot = resolve(here, '..')
@@ -47,6 +47,15 @@ describe('provider-backed market data API', () => {
     spy.mockRestore()
   })
 
+  it('routes backfill job polling through the data API', () => {
+    const spy = vi.spyOn(api, 'get').mockReturnValue({} as any)
+
+    getDataBackfillJob('job-123')
+
+    expect(spy).toHaveBeenCalledWith('/data/backfill/job-123')
+    spy.mockRestore()
+  })
+
   it('surfaces symbol discovery failures instead of returning a fake empty list', async () => {
     const err = new Error('symbol backend offline')
     const spy = vi.spyOn(api, 'get').mockRejectedValue(err)
@@ -54,6 +63,15 @@ describe('provider-backed market data API', () => {
     await expect(searchMarketSymbols('BTC', 'bybit', 'futures')).rejects.toThrow('symbol backend offline')
 
     spy.mockRestore()
+  })
+
+  it('makes Data page discovered symbols click-to-backfill with progress polling', () => {
+    const dataSource = readFileSync(resolve(srcRoot, 'pages/Data.vue'), 'utf8')
+
+    expect(dataSource).toContain('openDiscoveredBackfill(symbol)')
+    expect(dataSource).toContain('getDataBackfillJob(jobId)')
+    expect(dataSource).toContain('backfillTimeframe')
+    expect(dataSource).toContain('progressPctById(discoverBackfillKey(symbol))')
   })
 
   it('does not leave strategy/chart components coupled to browser-side Binance REST', () => {

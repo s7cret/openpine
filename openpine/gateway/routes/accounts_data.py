@@ -818,6 +818,44 @@ async def data_backfill(
     }
 
 
+@router.get("/data/backfill/{job_id}")
+async def data_backfill_status(
+    job_id: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    """Return current status/progress for a data backfill job."""
+    job = state.scheduler.get_job(job_id)
+    progress = ws_manager.get_progress(job_id)
+    if job is None and progress is None:
+        raise HTTPException(404, "backfill job not found")
+    if job is not None and getattr(getattr(job, "job_type", None), "value", job.job_type) != "backfill":
+        raise HTTPException(404, "backfill job not found")
+
+    result = job.result if job is not None else None
+    progress_message = str((progress or {}).get("message") or "")
+    result_message = _backfill_done_message(result) if isinstance(result, dict) else ""
+    status = (
+        job.status.value
+        if job is not None
+        else str((progress or {}).get("status") or "unknown")
+    )
+    message = progress_message or result_message or (job.error if job is not None else "") or ""
+    pct = float((progress or {}).get("pct") or (1.0 if status == "done" else 0.0))
+    return {
+        "job_id": job_id,
+        "status": status,
+        "message": message,
+        "pct": pct,
+        "progress": progress,
+        "input": job.input if job is not None else None,
+        "result": result,
+        "error": job.error if job is not None else None,
+        "created_at": job.created_at if job is not None else None,
+        "started_at": job.started_at if job is not None else None,
+        "finished_at": job.finished_at if job is not None else None,
+    }
+
+
 async def _run_data_backfill_job(
     job_id: str, payload: dict[str, object], state: GatewayState
 ) -> None:
@@ -836,17 +874,33 @@ async def _run_data_backfill_job(
     )
     await ws_manager.broadcast_progress(job_id)
 
-    def _progress(*args: object) -> None:
-        bars_done = int(args[0] or 0) if len(args) > 0 else 0
-        pages_done = int(args[1] or 0) if len(args) > 1 else 0
-        total_bars = int(args[2] or 0) if len(args) > 2 else 0
-        total_pages = int(args[3] or 0) if len(args) > 3 else 0
-        phase = str(args[5] or "fetch") if len(args) > 5 else "fetch"
-        pct = (
-            0.99
-            if phase == "write"
-            else min(0.98, bars_done / total_bars) if total_bars > 0 else 0.2
+    def _progress(*args: object, **kwargs: object) -> None:
+        if kwargs:
+            def _progress_int(value: object) -> int:
+                try:
+                    return int(cast(Any, value) or 0)
+                except (TypeError, ValueError):
+                    return 0
+
+            bars_done = _progress_int(kwargs.get("bars_fetched") or kwargs.get("bars_done"))
+            pages_done = _progress_int(kwargs.get("pages") or kwargs.get("pages_done"))
+            total_bars = _progress_int(kwargs.get("total_bars") or kwargs.get("expected_bars"))
+            total_pages = _progress_int(kwargs.get("total_pages") or kwargs.get("expected_pages"))
+            phase = str(kwargs.get("phase") or "fetch")
+        else:
+            bars_done = int(args[0] or 0) if len(args) > 0 else 0
+            pages_done = int(args[1] or 0) if len(args) > 1 else 0
+            total_bars = int(args[2] or 0) if len(args) > 2 else 0
+            total_pages = int(args[3] or 0) if len(args) > 3 else 0
+            phase = str(args[5] or "fetch") if len(args) > 5 else "fetch"
+        progress_ratio = (
+            bars_done / total_bars
+            if total_bars > 0
+            else pages_done / total_pages
+            if total_pages > 0
+            else 0.0
         )
+        pct = 0.99 if phase == "write" else min(0.98, progress_ratio) if progress_ratio > 0 else 0.2
         detail = {
             **payload,
             "bars_processed": bars_done,
@@ -933,7 +987,7 @@ from openpine.gateway.routes.accounts_data import _run_data_backfill_sync
 payload = json.loads(sys.stdin.read())
 state = GatewayState()
 
-def _progress(*args):
+def _progress(*args, **kwargs):
     return None
 
 try:

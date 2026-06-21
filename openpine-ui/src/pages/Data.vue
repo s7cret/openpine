@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { backfillDataSeries, deleteDataOrders, deleteDataSeries, getDataHealth, getDataSummary, refreshDataSeries, searchMarketSymbols, type MarketSymbolOption } from '@/api/client'
+import { backfillDataSeries, deleteDataOrders, deleteDataSeries, getDataBackfillJob, getDataHealth, getDataSummary, refreshDataSeries, searchMarketSymbols, type MarketSymbolOption } from '@/api/client'
 import DateRangePicker from '@/components/DateRangePicker.vue'
 import { coverageRangeLabels } from '@/lib/coverageRanges'
 import { healthStatusClass, type DataHealthPayload } from '@/lib/dataHealth'
@@ -44,7 +44,11 @@ function markActionError(id: string, e: any, fallback: string) {
 
 const backfillFrom = ref('')
 const backfillTo = ref('')
-let timer: ReturnType<typeof setInterval>
+const backfillTimeframe = ref('1m')
+const backfillPollJobs = ref<Record<string, string>>({})
+let summaryTimer: ReturnType<typeof setInterval> | null = null
+let backfillPollTimer: ReturnType<typeof setInterval> | null = null
+let backfillPollInFlight = false
 
 const series = computed(() => summary.value?.series ?? [])
 const sourceSeries = computed(() => {
@@ -76,6 +80,11 @@ const timeframeOptions = computed<string[]>(() => {
   const values = sourceSeries.value.map((row: any) => String(row.timeframe ?? '')).filter((item: string) => item.length > 0)
   return Array.from(new Set<string>(values)).sort()
 })
+const backfillTimeframeOptions = computed<string[]>(() => {
+  const configured = timeframeOptions.value
+  if (configured.length) return configured
+  return ['1m', '5m', '15m', '1h', '4h', '1D']
+})
 const statusOptions = computed<string[]>(() => {
   const values = sourceSeries.value.map((row: any) => String(row.status ?? '')).filter((item: string) => item.length > 0)
   return Array.from(new Set<string>(values)).sort()
@@ -88,9 +97,12 @@ const orders = computed(() => summary.value?.orders ?? { total: 0, by_symbol: []
 
 onMounted(() => {
   load()
-  timer = setInterval(() => load(false), 30000)
+  summaryTimer = setInterval(() => load(false), 30000)
 })
-onUnmounted(() => clearInterval(timer))
+onUnmounted(() => {
+  if (summaryTimer) clearInterval(summaryTimer)
+  if (backfillPollTimer) clearInterval(backfillPollTimer)
+})
 
 watch(discoverExchange, () => {
   const firstMarket = discoverMarketOptions.value[0]?.id
@@ -157,30 +169,128 @@ async function refreshSeries(id: string) {
   }
 }
 
+function defaultBackfillTimeframe(row?: any) {
+  const rowTimeframe = String(row?.timeframe ?? '')
+  if (rowTimeframe) return rowTimeframe
+  if (backfillTimeframeOptions.value.includes('1m')) return '1m'
+  return backfillTimeframeOptions.value[0] ?? '1m'
+}
+
+function discoverBackfillKey(symbol: MarketSymbolOption) {
+  return `discover:${symbol.exchange}:${symbol.market}:${symbol.symbol}`
+}
+
+function openDiscoveredBackfill(symbol: MarketSymbolOption) {
+  openBackfill({
+    id: discoverBackfillKey(symbol),
+    exchange: symbol.exchange,
+    market_type: symbol.market,
+    symbol: symbol.symbol,
+    timeframe: defaultBackfillTimeframe(),
+    role: 'discover',
+  })
+}
+
 function openBackfill(row: any) {
   backfillRow.value = row
+  backfillTimeframe.value = defaultBackfillTimeframe(row)
   backfillFrom.value = toDateInput(row.earliest_ms ?? Date.now() - 30 * 24 * 3600 * 1000)
   backfillTo.value = toDateInput(Date.now())
   backfillDialog.value = true
 }
 
+function isTerminalJobStatus(status: string) {
+  return ['done', 'failed', 'cancelled'].includes(status)
+}
+
+function normalizeBackfillJob(data: any) {
+  const progress = data?.progress ?? {}
+  const detail = progress?.detail ?? data?.detail ?? data?.result ?? {}
+  const status = String(data?.status ?? progress?.status ?? 'pending')
+  const pctRaw = Number(data?.pct ?? progress?.pct ?? (status === 'done' ? 1 : 0))
+  const pct = Number.isFinite(pctRaw) ? Math.max(0, Math.min(1, pctRaw)) : 0
+  const message = String(data?.message ?? progress?.message ?? data?.error ?? '')
+  return {
+    status,
+    pct,
+    job_id: data?.job_id ?? data?.id,
+    message,
+    bars_loaded: detail?.bars_loaded ?? detail?.bars_processed ?? data?.result?.bars_loaded ?? 0,
+    detail,
+  }
+}
+
+function startBackfillPolling(rowId: string, jobId: string) {
+  backfillPollJobs.value = { ...backfillPollJobs.value, [jobId]: rowId }
+  if (!backfillPollTimer) backfillPollTimer = setInterval(() => { void pollBackfillJobs() }, 2000)
+  void pollBackfillJobs()
+}
+
+function stopBackfillPollingIfIdle() {
+  if (Object.keys(backfillPollJobs.value).length === 0 && backfillPollTimer) {
+    clearInterval(backfillPollTimer)
+    backfillPollTimer = null
+  }
+}
+
+async function pollBackfillJobs() {
+  if (backfillPollInFlight) return
+  const entries = Object.entries(backfillPollJobs.value)
+  if (!entries.length) {
+    stopBackfillPollingIfIdle()
+    return
+  }
+  backfillPollInFlight = true
+  try {
+    const nextJobs = { ...backfillPollJobs.value }
+    let shouldReload = false
+    for (const [jobId, rowId] of entries) {
+      try {
+        const { data } = await getDataBackfillJob(jobId)
+        const normalized = normalizeBackfillJob(data)
+        actionStatus.value = { ...actionStatus.value, [rowId]: normalized }
+        if (isTerminalJobStatus(normalized.status)) {
+          delete nextJobs[jobId]
+          if (normalized.status === 'done') shouldReload = true
+        }
+      } catch (e: any) {
+        actionStatus.value = {
+          ...actionStatus.value,
+          [rowId]: { status: 'failed', pct: 0, message: apiErrorMessage(e, t('data.backfillFailed')) },
+        }
+        delete nextJobs[jobId]
+      }
+    }
+    backfillPollJobs.value = nextJobs
+    if (shouldReload) await load(false)
+  } finally {
+    backfillPollInFlight = false
+    stopBackfillPollingIfIdle()
+  }
+}
+
 async function runBackfill() {
   const row = backfillRow.value
-  if (!row || !backfillFrom.value || !backfillTo.value) return
+  if (!row || !backfillFrom.value || !backfillTo.value || !backfillTimeframe.value) return
   actionId.value = row.id
   try {
     const { data } = await backfillDataSeries({
       symbol: row.symbol,
-      timeframe: row.timeframe,
+      timeframe: backfillTimeframe.value,
       from_time: dateOnlyToIso(backfillFrom.value, 'start'),
       to_time: dateOnlyToIso(backfillTo.value, 'end'),
       exchange: row.exchange,
       market_type: row.market_type,
     })
+    const jobId = String(data.job_id ?? '')
     actionStatus.value = {
       ...actionStatus.value,
-      [row.id]: { status: data.status, bars_loaded: 0, message: t('data.backfillQueued', { id: String(data.job_id).slice(0, 8) }) },
+      [row.id]: {
+        ...normalizeBackfillJob(data),
+        message: data.message || t('data.backfillQueued', { id: jobId.slice(0, 8) }),
+      },
     }
+    if (jobId) startBackfillPolling(row.id, jobId)
     backfillDialog.value = false
     await load(false)
   } catch (e: any) {
@@ -215,13 +325,35 @@ async function removeOrders(symbol?: string, strategyId?: string, strategyName?:
   }
 }
 
-function refreshMessage(row: any) {
-  const status = actionStatus.value[row.id]
+function actionMessageById(id: string) {
+  const status = actionStatus.value[id]
   if (!status) return ''
-  if (status.message) return status.message
+  const pct = Number(status.pct ?? 0)
+  const pctLabel = Number.isFinite(pct) && pct > 0 && pct < 1 ? ` (${Math.round(pct * 100)}%)` : ''
+  if (status.message) return `${status.message}${pctLabel}`
   const bars = Number(status.bars_loaded ?? 0).toLocaleString()
   const ranges = status.coverage_ranges_after != null ? `, ${status.coverage_ranges_after} ranges` : ''
-  return `${status.status}: ${bars} bars${ranges}`
+  return `${status.status}: ${bars} bars${ranges}${pctLabel}`
+}
+
+function refreshMessage(row: any) {
+  return actionMessageById(row.id)
+}
+
+function progressPctById(id: string) {
+  const status = actionStatus.value[id]
+  if (!status) return 0
+  const pct = Number(status.pct ?? (status.status === 'done' ? 1 : 0))
+  return Number.isFinite(pct) ? Math.max(0, Math.min(100, pct * 100)) : 0
+}
+
+function backfillProgressPct(row: any) {
+  return progressPctById(row.id)
+}
+
+function isBackfillActiveById(id: string) {
+  const status = actionStatus.value[id]
+  return status != null && ['pending', 'running'].includes(String(status.status ?? ''))
 }
 
 function fmtBytes(bytes?: number) {
@@ -389,7 +521,14 @@ function statusClass(status: string) {
       </div>
       <div v-if="discoverError" class="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{{ discoverError }}</div>
       <div v-if="discoverResults.length" class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        <div v-for="symbol in discoverResults" :key="`${symbol.exchange}-${symbol.market}-${symbol.symbol}`" class="rounded-lg border border-dark-600 bg-dark-700/50 p-3">
+        <button
+          v-for="symbol in discoverResults"
+          :key="`${symbol.exchange}-${symbol.market}-${symbol.symbol}`"
+          type="button"
+          class="rounded-lg border border-dark-600 bg-dark-700/50 p-3 text-left transition hover:border-accent/70 hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:cursor-wait disabled:opacity-70"
+          :disabled="isBackfillActiveById(discoverBackfillKey(symbol))"
+          @click="openDiscoveredBackfill(symbol)"
+        >
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
               <div class="truncate font-mono text-sm text-gray-200">{{ symbol.symbol }}</div>
@@ -397,8 +536,14 @@ function statusClass(status: string) {
             </div>
             <span v-if="symbol.contractType" class="shrink-0 rounded bg-dark-600 px-2 py-0.5 text-[10px] uppercase text-gray-300">{{ symbol.contractType }}</span>
           </div>
-          <div class="mt-2 text-xs text-gray-500">{{ t('data.useInHint') }}</div>
-        </div>
+          <div class="mt-2 text-xs text-accent-light">{{ t('data.clickToBackfill') }}</div>
+          <div v-if="actionMessageById(discoverBackfillKey(symbol))" class="mt-2 space-y-1">
+            <div class="text-xs text-accent-light">{{ actionMessageById(discoverBackfillKey(symbol)) }}</div>
+            <div class="h-1.5 overflow-hidden rounded-full bg-dark-600">
+              <div class="h-full rounded-full bg-accent transition-all" :style="{ width: `${progressPctById(discoverBackfillKey(symbol))}%` }" />
+            </div>
+          </div>
+        </button>
       </div>
       <div v-else-if="!discoverLoading" class="mt-4 rounded-lg border border-dashed border-dark-600 px-3 py-3 text-sm text-gray-500">
         {{ t('data.noResultsHint') }}
@@ -452,6 +597,9 @@ function statusClass(status: string) {
           </div>
           <div class="text-xs text-gray-400 break-words">{{ fmtDate(row.earliest_ms) }} → {{ fmtDate(row.latest_ms) }}</div>
           <div v-if="refreshMessage(row)" class="text-xs text-accent-light">{{ refreshMessage(row) }}</div>
+          <div v-if="backfillProgressPct(row) > 0" class="h-1.5 overflow-hidden rounded-full bg-dark-600">
+            <div class="h-full rounded-full bg-accent transition-all" :style="{ width: `${backfillProgressPct(row)}%` }" />
+          </div>
           <div class="flex flex-wrap gap-1">
             <span v-for="(label, idx) in dataRangeLabels(row.ranges ?? [])" :key="idx" class="px-1.5 py-0.5 rounded bg-dark-600 text-[10px] text-gray-400">{{ label }}</span>
           </div>
@@ -501,6 +649,9 @@ function statusClass(status: string) {
                   </span>
                 </div>
                 <div v-if="refreshMessage(row)" class="mt-1 text-[10px] text-accent-light">{{ refreshMessage(row) }}</div>
+                <div v-if="backfillProgressPct(row) > 0" class="mt-1 h-1.5 overflow-hidden rounded-full bg-dark-600">
+                  <div class="h-full rounded-full bg-accent transition-all" :style="{ width: `${backfillProgressPct(row)}%` }" />
+                </div>
               </td>
               <td class="px-4 py-2.5 text-right text-gray-200 font-mono">{{ Number(row.bar_count ?? 0).toLocaleString() }}</td>
               <td class="px-4 py-2.5 text-right text-gray-300 font-mono">{{ fmtBytes(row.size_bytes) }}</td>
@@ -626,24 +777,30 @@ function statusClass(status: string) {
           <div class="min-w-0">
             <h3 class="text-sm font-semibold text-gray-200">{{ t('data.backfillTitle') }}</h3>
             <div class="mt-1 truncate font-mono text-xs text-gray-500">
-              {{ backfillRow?.exchange }} / {{ backfillRow?.market_type }} / {{ backfillRow?.symbol }} / {{ backfillRow?.timeframe }}
+              {{ backfillRow?.exchange }} / {{ backfillRow?.market_type }} / {{ backfillRow?.symbol }} / {{ backfillTimeframe }}
             </div>
           </div>
           <button class="rounded px-2 py-1 text-sm text-gray-400 hover:bg-dark-600" @click="backfillDialog = false">×</button>
+        </div>
+        <div class="mt-4 grid gap-2">
+          <div class="text-xs text-gray-500">{{ t('data.timeframe') }}</div>
+          <select v-model="backfillTimeframe" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+            <option v-for="tf in backfillTimeframeOptions" :key="tf" :value="tf">{{ tf }}</option>
+          </select>
         </div>
         <div class="mt-4 grid gap-2">
           <div class="text-xs text-gray-500">{{ t('data.period') }}</div>
           <DateRangePicker
             :from="backfillFrom"
             :to="backfillTo"
-            :all-from="toDateInput(backfillRow?.earliest_ms)"
+            :all-from="toDateInput(backfillRow?.earliest_ms ?? Date.now() - 30 * 24 * 3600 * 1000)"
             @update:from="backfillFrom = $event"
             @update:to="backfillTo = $event"
           />
         </div>
         <div class="mt-4 flex gap-2">
           <button class="flex-1 rounded-lg bg-dark-600 px-3 py-2 text-sm text-gray-300 hover:bg-dark-500" @click="backfillDialog = false">{{ t('data.cancel') }}</button>
-          <button class="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-light disabled:opacity-50" :disabled="!backfillFrom || !backfillTo || actionId === backfillRow?.id" @click="runBackfill">
+          <button class="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-light disabled:opacity-50" :disabled="!backfillFrom || !backfillTo || !backfillTimeframe || actionId === backfillRow?.id" @click="runBackfill">
             {{ t('data.startBackfill') }}
           </button>
         </div>

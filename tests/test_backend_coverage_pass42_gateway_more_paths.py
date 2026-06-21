@@ -1013,6 +1013,46 @@ def test_accounts_data_route_validation_refresh_delete_and_backfill(monkeypatch)
     assert "No new candles" in str(deduped["message"])
 
 
+def test_data_backfill_status_endpoint_reports_scheduler_progress():
+    from openpine.jobs import Job, JobScheduler, JobType
+
+    scheduler = JobScheduler()
+    job = scheduler.enqueue(
+        Job(
+            job_type=JobType.BACKFILL,
+            input={
+                "exchange": "bybit",
+                "market_type": "linear",
+                "symbol": "SOLUSDT",
+                "timeframe": "15m",
+            },
+        )
+    )
+    scheduler.mark_running(job.id)
+    ad.ws_manager.update_progress(
+        job.id,
+        "data_backfill",
+        "running",
+        0.42,
+        "Loading candles: 420/1000 bars",
+        detail={"bars_processed": 420, "total_bars": 1000},
+    )
+
+    status = asyncio.run(
+        ad.data_backfill_status(job.id, SimpleNamespace(scheduler=scheduler))
+    )
+
+    assert status["job_id"] == job.id
+    assert status["status"] == "running"
+    assert status["pct"] == 0.42
+    assert status["message"] == "Loading candles: 420/1000 bars"
+    assert status["progress"]["detail"]["bars_processed"] == 420
+
+    with pytest.raises(HTTPException) as missing:
+        asyncio.run(ad.data_backfill_status("missing", SimpleNamespace(scheduler=scheduler)))
+    assert missing.value.status_code == 404
+
+
 def test_data_backfill_streams_large_1m_windows_in_provider_chunks(monkeypatch):
     """Large 1m backfills must not request the whole source window at once."""
 

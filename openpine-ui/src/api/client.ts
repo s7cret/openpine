@@ -47,6 +47,7 @@ export async function searchMarketSymbols(query: string, exchange: string, marke
 export const refreshDataSeries = (id: string) => api.post(apiPath('/data/series', id, 'refresh'))
 export const backfillDataSeries = (data: { symbol: string; timeframe: string; from_time: string; to_time: string; exchange?: string; market_type?: string }) =>
   api.post('/data/backfill', data)
+export const getDataBackfillJob = (jobId: string) => api.get(apiPath('/data/backfill', jobId))
 export const deleteDataSeries = (id: string) => api.delete(apiPath('/data/series', id))
 export const deleteDataOrders = (params?: { symbol?: string; strategy_id?: string; status?: string }) =>
   api.delete('/data/orders', { params })
