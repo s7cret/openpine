@@ -2144,10 +2144,19 @@ def _safe_candle_partition_path(state: GatewayState, partition_path: object) -> 
     return path
 
 
+def _marketdata_atomic_temp_file(path: Path) -> bool:
+    name = path.name
+    return name.startswith(".bars.") or name.startswith(".manifest.json.")
+
+
 def _dir_size(path: Path) -> int:
     if not path.exists():
         return 0
-    return sum(file.stat().st_size for file in path.rglob("*") if file.is_file())
+    return sum(
+        file.stat().st_size
+        for file in path.rglob("*")
+        if file.is_file() and not _marketdata_atomic_temp_file(file)
+    )
 
 
 def _orders_summary(state: GatewayState) -> dict[str, object]:

@@ -1136,6 +1136,12 @@ def test_accounts_data_inventory_range_store_and_delete_edges(monkeypatch, tmp_p
     assert ad._coalesce_ranges([{"from_ms": 10, "to_ms": 0, "rows": 5}], "1m") == []
     assert ad._estimate_unique_bars([{"from_ms": 10, "to_ms": 0, "rows": 7}], "1m") == 7
     assert ad._dir_size(tmp_path / "missing") == 0
+    size_dir = tmp_path / "size-filter"
+    size_dir.mkdir()
+    (size_dir / "bars.csv").write_bytes(b"1234")
+    (size_dir / ".bars.csv.abandoned").write_bytes(b"x" * 10)
+    (size_dir / ".manifest.json.abandoned").write_bytes(b"x" * 10)
+    assert ad._dir_size(size_dir) == 4
 
     no_bar_state = SimpleNamespace(orchestrator=SimpleNamespace(load_bars=lambda query: _series((0,))))
     assert ad._store_backfill_series(no_bar_state, SimpleNamespace(bars=[])) == (0, 0)
