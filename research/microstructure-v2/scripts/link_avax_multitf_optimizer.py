@@ -380,6 +380,7 @@ def make_candidates(symbol: str, tf: str, df: pd.DataFrame, *, candles_only: boo
 def quick_events(df: pd.DataFrame, cand: Candidate) -> pd.DataFrame:
     idxs = np.flatnonzero(cand.mask.fillna(False).to_numpy(bool))
     close = df["close"].to_numpy(float)
+    open_ = df["open"].to_numpy(float)
     high = df["high"].to_numpy(float)
     low = df["low"].to_numpy(float)
     risk_arr = np.maximum(df["atr_pct"].to_numpy(float), 0.003)
@@ -390,8 +391,8 @@ def quick_events(df: pd.DataFrame, cand: Candidate) -> pd.DataFrame:
         entry = pos + 1
         if entry + max_h >= n_bars:
             continue
-        entry_price = close[entry]
-        risk = risk_arr[entry] if np.isfinite(risk_arr[entry]) else 0.003
+        entry_price = open_[entry]
+        risk = risk_arr[pos] if np.isfinite(risk_arr[pos]) else 0.003
         row = {
             "symbol": cand.symbol,
             "timeframe": cand.timeframe,
@@ -525,6 +526,9 @@ def simulate_path(df: pd.DataFrame, ev: pd.DataFrame, tp_r: float, sl_r: float, 
         else:
             tp = entry_price * (1.0 - tp_r * risk)
             sl = entry_price * (1.0 + sl_r * risk)
+        def outcome_for(exit_price: float) -> float:
+            gross = direction * (exit_price / entry_price - 1.0)
+            return (gross - COST_RT) / risk
         outcome_r: float | None = None
         exit_pos = entry + max_hold
         exit_reason = "timeout"
@@ -536,17 +540,17 @@ def simulate_path(df: pd.DataFrame, ev: pd.DataFrame, tp_r: float, sl_r: float, 
                 hit_tp = low[pos] <= tp
                 hit_sl = high[pos] >= sl
             if hit_tp and hit_sl:
-                outcome_r = -sl_r  # conservative same-bar ambiguity
+                outcome_r = outcome_for(sl)  # conservative same-bar ambiguity
                 exit_pos = pos
                 exit_reason = "same_bar_sl"
                 break
             if hit_sl:
-                outcome_r = -sl_r
+                outcome_r = outcome_for(sl)
                 exit_pos = pos
                 exit_reason = "sl"
                 break
             if hit_tp:
-                outcome_r = tp_r
+                outcome_r = outcome_for(tp)
                 exit_pos = pos
                 exit_reason = "tp"
                 break

@@ -201,13 +201,20 @@ def simulate(df: pd.DataFrame, s: Setup, tp: float, sl: float, hold: int) -> pd.
     entry = sig + 1
     high = df['high'].to_numpy(float)
     low = df['low'].to_numpy(float)
+    open_ = df['open'].to_numpy(float)
     close = df['close'].to_numpy(float)
     atr = np.maximum(df['atr_pct'].to_numpy(float), 0.003)
     outcomes = np.empty(len(entry), dtype=float)
     reason = np.full(len(entry), 'timeout', dtype=object)
     for i, ep in enumerate(entry):
-        eprice = close[ep]
-        risk = atr[ep]
+        # Signal is known at signal-bar close; enter next bar open and use
+        # signal-bar ATR to avoid lookahead. Apply round-trip costs to every
+        # exit, including TP/SL bracket fills.
+        eprice = open_[ep]
+        risk = atr[sig[i]]
+        def outcome_for(exit_price: float) -> float:
+            gross = s.direction * (exit_price / eprice - 1)
+            return (gross - COST_RT) / risk
         if s.direction > 0:
             tp_price = eprice * (1 + tp*risk)
             sl_price = eprice * (1 - sl*risk)
@@ -224,11 +231,11 @@ def simulate(df: pd.DataFrame, s: Setup, tp: float, sl: float, hold: int) -> pd.
                 hit_tp = low[pos] <= tp_price
                 hit_sl = high[pos] >= sl_price
             if hit_tp and hit_sl:
-                out = -sl; why = 'same_bar_sl'; break
+                out = outcome_for(sl_price); why = 'same_bar_sl'; break
             if hit_sl:
-                out = -sl; why = 'sl'; break
+                out = outcome_for(sl_price); why = 'sl'; break
             if hit_tp:
-                out = tp; why = 'tp'; break
+                out = outcome_for(tp_price); why = 'tp'; break
         if out is None:
             gross = s.direction * (close[ep+hold] / eprice - 1)
             out = (gross - COST_RT) / risk

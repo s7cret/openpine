@@ -224,10 +224,11 @@ def quick_rows_for_candidate(df: pd.DataFrame, cand: Candidate) -> tuple[list[di
     if len(idx) < 20:
         return [], {}
     entry = idx + 1
+    open_ = df['open'].to_numpy(float)
     close = df['close'].to_numpy(float)
     atr = np.maximum(df['atr_pct'].to_numpy(float), 0.003)
-    entry_price = close[entry]
-    risk = atr[entry]
+    entry_price = open_[entry]
+    risk = atr[idx]
     split = split_masks(entry, n)
     rows: list[dict[str, object]] = []
     for h in HORIZONS[cand.timeframe]:
@@ -272,6 +273,9 @@ def simulate_path(df: pd.DataFrame, cand: Candidate, idx: np.ndarray, entry: np.
         else:
             tp_price = eprice * (1 - tp * rr)
             sl_price = eprice * (1 + sl * rr)
+        def outcome_for(exit_price: float) -> float:
+            gross = cand.direction * (exit_price / eprice - 1.0)
+            return (gross - COST_RT) / rr
         outcome = None
         reason = 'timeout'
         for pos in range(ep, ep + max_hold + 1):
@@ -282,15 +286,15 @@ def simulate_path(df: pd.DataFrame, cand: Candidate, idx: np.ndarray, entry: np.
                 hit_tp = low[pos] <= tp_price
                 hit_sl = high[pos] >= sl_price
             if hit_tp and hit_sl:
-                outcome = -sl
+                outcome = outcome_for(sl_price)
                 reason = 'same_bar_sl'
                 break
             if hit_sl:
-                outcome = -sl
+                outcome = outcome_for(sl_price)
                 reason = 'sl'
                 break
             if hit_tp:
-                outcome = tp
+                outcome = outcome_for(tp_price)
                 reason = 'tp'
                 break
         if outcome is None:

@@ -98,10 +98,11 @@ def quick_eval(df: pd.DataFrame, s: Setup) -> list[dict[str, object]]:
     split = split_masks(entry, n)
     if split['validation'].sum() < 25 or split['holdout'].sum() < 25:
         return []
+    open_ = df['open'].to_numpy(float)
     close = df['close'].to_numpy(float)
     atr = np.maximum(df['atr_pct'].to_numpy(float), 0.003)
-    entry_price = close[entry]
-    risk = atr[entry]
+    entry_price = open_[entry]
+    risk = atr[sig]
     rows: list[dict[str, object]] = []
     for h in HORIZONS[s.tf]:
         r = (s.direction * (close[entry + h] / entry_price - 1.0) - COST_RT) / risk
