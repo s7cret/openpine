@@ -138,9 +138,26 @@ def read_many(symbol: str, prefix: str) -> pd.DataFrame:
     return out
 
 
-def load_1m_sources(symbol: str) -> dict[str, pd.DataFrame]:
+def empty_source() -> pd.DataFrame:
+    out = pd.DataFrame()
+    out.index.name = "timestamp"
+    return out
+
+
+def load_1m_sources(symbol: str, *, candles_only: bool = False) -> dict[str, pd.DataFrame]:
+    kline = read_many(symbol, "kline")
+    if candles_only:
+        return {
+            "kline": kline,
+            "tradeflow": empty_source(),
+            "oi": empty_source(),
+            "funding": empty_source(),
+            "mark": empty_source(),
+            "index": empty_source(),
+            "premium": empty_source(),
+        }
     return {
-        "kline": read_many(symbol, "kline"),
+        "kline": kline,
         "tradeflow": read_many(symbol, "tradeflow_1m"),
         "oi": read_many(symbol, "oi5m"),
         "funding": read_many(symbol, "funding"),
@@ -293,10 +310,24 @@ def session_mask(df: pd.DataFrame, sess: object) -> pd.Series:
     return df["session"] == int(sess)
 
 
-def make_candidates(symbol: str, tf: str, df: pd.DataFrame) -> list[Candidate]:
+def make_candidates(symbol: str, tf: str, df: pd.DataFrame, *, candles_only: bool = False) -> list[Candidate]:
     cands: list[Candidate] = []
     sessions: list[object] = ["ALL", 0, 1, 2, 3, 4, 5, "H05"]
-    long_filters = {
+    if candles_only:
+        long_filters = {
+            "none": pd.Series(True, index=df.index),
+            "vol15": df["vol_spike"] >= 1.5,
+            "belowE96": df["trend96"] == "below_ema96",
+            "atrNotTop": df["atr_q"].fillna(2) <= 3,
+        }
+        short_filters = {
+            "none": pd.Series(True, index=df.index),
+            "vol15": df["vol_spike"] >= 1.5,
+            "aboveE96": df["trend96"] == "above_ema96",
+            "atrNotTop": df["atr_q"].fillna(2) <= 3,
+        }
+    else:
+        long_filters = {
         "none": pd.Series(True, index=df.index),
         "tsr70": df["tsr_p100"] >= 0.70,
         "tsr80": df["tsr_p100"] >= 0.80,
@@ -306,8 +337,8 @@ def make_candidates(symbol: str, tf: str, df: pd.DataFrame) -> list[Candidate]:
         "vol15": df["vol_spike"] >= 1.5,
         "belowE96": df["trend96"] == "below_ema96",
         "atrNotTop": df["atr_q"].fillna(2) <= 3,
-    }
-    short_filters = {
+        }
+        short_filters = {
         "none": pd.Series(True, index=df.index),
         "tbr70": df["tbr_p100"] >= 0.70,
         "tbr80": df["tbr_p100"] >= 0.80,
@@ -317,7 +348,7 @@ def make_candidates(symbol: str, tf: str, df: pd.DataFrame) -> list[Candidate]:
         "vol15": df["vol_spike"] >= 1.5,
         "aboveE96": df["trend96"] == "above_ema96",
         "atrNotTop": df["atr_q"].fillna(2) <= 3,
-    }
+        }
     for rsi_col in ["rsi7", "rsi14"]:
         for rsi_t in [20, 25, 30, 35]:
             for sess in sessions:
@@ -336,9 +367,13 @@ def make_candidates(symbol: str, tf: str, df: pd.DataFrame) -> list[Candidate]:
     for w in [3, 4, 5]:
         for sess in sessions:
             sm = session_mask(df, sess)
-            cands.append(Candidate(symbol, tf, 1, f"LONG_CLC{w}_S{sess}_tsr80", (df[f"clc{w}"] == w) & sm & (df["tsr_p100"] >= 0.80)))
-            cands.append(Candidate(symbol, tf, 1, f"LONG_CLC{w}_S{sess}_flowNeg", (df[f"clc{w}"] == w) & sm & (df["flow_z"] <= -0.5)))
-            cands.append(Candidate(symbol, tf, -1, f"SHORT_CUC{w}_S{sess}_tbr80", (df[f"cuc{w}"] == w) & sm & (df["tbr_p100"] >= 0.80)))
+            if candles_only:
+                cands.append(Candidate(symbol, tf, 1, f"LONG_CLC{w}_S{sess}_none", (df[f"clc{w}"] == w) & sm))
+                cands.append(Candidate(symbol, tf, -1, f"SHORT_CUC{w}_S{sess}_none", (df[f"cuc{w}"] == w) & sm))
+            else:
+                cands.append(Candidate(symbol, tf, 1, f"LONG_CLC{w}_S{sess}_tsr80", (df[f"clc{w}"] == w) & sm & (df["tsr_p100"] >= 0.80)))
+                cands.append(Candidate(symbol, tf, 1, f"LONG_CLC{w}_S{sess}_flowNeg", (df[f"clc{w}"] == w) & sm & (df["flow_z"] <= -0.5)))
+                cands.append(Candidate(symbol, tf, -1, f"SHORT_CUC{w}_S{sess}_tbr80", (df[f"cuc{w}"] == w) & sm & (df["tbr_p100"] >= 0.80)))
     return cands
 
 
@@ -438,12 +473,12 @@ def summarize_candidate(ev: pd.DataFrame, horizon: int) -> dict[str, object]:
     return base
 
 
-def quick_scan(panels: dict[tuple[str, str], pd.DataFrame], max_candidates: int) -> tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
+def quick_scan(panels: dict[tuple[str, str], pd.DataFrame], max_candidates: int, *, candles_only: bool = False) -> tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
     rows = []
     event_cache: dict[str, pd.DataFrame] = {}
     scanned = 0
     for (symbol, tf), df in panels.items():
-        cands = make_candidates(symbol, tf, df)
+        cands = make_candidates(symbol, tf, df, candles_only=candles_only)
         print(f"scan {symbol} {tf}: bars={len(df)} candidates={len(cands)}", flush=True)
         for cand in cands:
             ev = quick_events(df, cand)
@@ -759,12 +794,19 @@ def main() -> int:
     ap.add_argument("--timeframes", nargs="+", default=["5m", "15m", "1h", "4h"])
     ap.add_argument("--max-base", type=int, default=80)
     ap.add_argument("--quick-max", type=int, default=120)
+    ap.add_argument("--candles-only", action="store_true", help="Ignore partial tradeflow/OI/funding and scan price/volume-derived candidates only.")
+    ap.add_argument("--artifact-dir", default=None, help="Optional artifact subdirectory under research/microstructure-v2/artifacts.")
     args = ap.parse_args()
+
+    global ART
+    if args.artifact_dir:
+        ART = ROOT / "artifacts" / str(args.artifact_dir)
+        ART.mkdir(parents=True, exist_ok=True)
 
     coverage_rows = []
     panels: dict[tuple[str, str], pd.DataFrame] = {}
     for symbol in args.symbols:
-        src = load_1m_sources(symbol)
+        src = load_1m_sources(symbol, candles_only=args.candles_only)
         coverage_rows.extend(coverage_summary(symbol, src))
         for tf in args.timeframes:
             panel = resample_panel(symbol, src, tf)
@@ -779,7 +821,7 @@ def main() -> int:
         print("ERROR no panels", flush=True)
         return 2
 
-    quick, event_cache = quick_scan(panels, args.quick_max)
+    quick, event_cache = quick_scan(panels, args.quick_max, candles_only=args.candles_only)
     quick.to_csv(ART / "quick_scan_results.csv", index=False)
     if quick.empty:
         write_report(coverage, quick, pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
