@@ -37,13 +37,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: s7cret/backtest_engine
-          ref: 848dfd59e4a432b449a8ec7775f2b9aef0b55ecb
+          ref: d75c270cd6aae4b557ec72f96bd5d33407aee334
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
           repository: s7cret/marketdata-provider
-          ref: bcf733de6b0ff05d06d3fb2add5d068c52280965
+          ref: ae95042ee482feb82d87a51484658fdb031dd0d5
           path: marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import tomllib
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -39,18 +40,24 @@ def _pyproject(root: Path) -> dict:
 
 def _dependency_errors(project: dict) -> list[str]:
     errors: list[str] = []
-    deps = "\n".join(project.get("dependencies", []))
-    expected_fragments = {
-        "pine2ast": f"pine2ast.git@v{REQUIRED_STACK_VERSION}",
-        "ast2python": f"ast2python.git@v{REQUIRED_STACK_VERSION}",
-        "pinelib": f"pinelib.git@v{REQUIRED_STACK_VERSION}",
-        "backtest-engine": f"backtest_engine.git@v{REQUIRED_STACK_VERSION}",
-        "marketdata-provider": f"marketdata-provider.git@v{REQUIRED_STACK_VERSION}",
-        "optimizer": f"optimizer.git@v{REQUIRED_STACK_VERSION}",
+    dependencies = [str(item) for item in project.get("dependencies", [])]
+    repositories = {
+        "pine2ast": "pine2ast",
+        "ast2python": "ast2python",
+        "pinelib": "pinelib",
+        "backtest-engine": "backtest_engine",
+        "marketdata-provider": "marketdata-provider",
+        "optimizer": "optimizer",
     }
-    for package, fragment in expected_fragments.items():
-        if fragment not in deps:
-            errors.append(f"dependency tag for {package} is not v{REQUIRED_STACK_VERSION}")
+    for package, repository in repositories.items():
+        prefix = f"{package} @ git+https://github.com/s7cret/{repository}.git@"
+        refs = [
+            dependency.removeprefix(prefix)
+            for dependency in dependencies
+            if dependency.startswith(prefix)
+        ]
+        if len(refs) != 1 or re.fullmatch(r"[0-9a-f]{40}", refs[0]) is None:
+            errors.append(f"dependency ref for {package} is not an immutable commit SHA")
     return errors
 
 

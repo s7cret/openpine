@@ -317,6 +317,30 @@ def test_runtime_imports_are_declared_as_package_dependencies() -> None:
     )
 
 
+def test_stack_dependencies_are_immutable_and_ci_extras_are_complete() -> None:
+    root = Path(__file__).resolve().parents[1]
+    config = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = [str(item) for item in config["project"]["dependencies"]]
+
+    fastapi = next(item for item in dependencies if item.startswith("fastapi"))
+    assert "<0.139" in fastapi
+
+    direct_names = {
+        "pine2ast",
+        "ast2python",
+        "pinelib",
+        "backtest-engine",
+        "marketdata-provider",
+        "optimizer",
+    }
+    for name in direct_names:
+        dependency = next(item for item in dependencies if item.startswith(f"{name} @ "))
+        assert re.fullmatch(r".+@[0-9a-f]{40}", dependency)
+
+    dev_dependencies = config["project"]["optional-dependencies"]["dev"]
+    assert any(str(item).startswith("matplotlib") for item in dev_dependencies)
+
+
 def test_stack_release_reports_run_inside_each_checkout() -> None:
     root = Path(__file__).resolve().parents[1]
     workflow = (root / ".github" / "workflows" / "stack-ci.yml").read_text(
