@@ -323,7 +323,7 @@ def test_stack_dependencies_are_immutable_and_ci_extras_are_complete() -> None:
     dependencies = [str(item) for item in config["project"]["dependencies"]]
 
     fastapi = next(item for item in dependencies if item.startswith("fastapi"))
-    assert "<0.139" in fastapi
+    assert "<0.137" in fastapi
 
     direct_names = {
         "pine2ast",

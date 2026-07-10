@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: s7cret/ast2python
-          ref: 471fd5ef4531fe8c4b8833bc0553b9876f6f01de
+          ref: d6d83ba7d11db651e17307244033394cf8a623ab
           path: ast2python
       - name: Checkout PineLib
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: s7cret/marketdata-provider
-          ref: ae95042ee482feb82d87a51484658fdb031dd0d5
+          ref: f42cd7d7cb2069a40d00917978a8732aa3278423
           path: marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4
