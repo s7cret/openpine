@@ -26,7 +26,6 @@ import json
 import logging
 import re
 import zipfile
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path

@@ -16,6 +16,7 @@ import shutil
 import time
 import uuid
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -789,27 +790,21 @@ async def _run_tv_parity_background(
             )
 
         run_effective_pre_bars = effective_pre_bars if effective_pre_bars > 0 else None
-        if run_effective_pre_bars is not None:
-            run_callable = lambda: _run_backtest_in_process(
-                BacktestEngineAdapter(),
-                strategy_class,
-                list(parsed.bars),
-                config,
-                params or {},
-                runtime_data_provider,
-                progress_callback,
-                run_effective_pre_bars,
-            )
-        else:
-            run_callable = lambda: _run_backtest_in_process(
-                BacktestEngineAdapter(),
-                strategy_class,
-                list(parsed.bars),
-                config,
-                params or {},
-                runtime_data_provider,
-                progress_callback,
-            )
+        run_args = (
+            BacktestEngineAdapter(),
+            strategy_class,
+            list(parsed.bars),
+            config,
+            params or {},
+            runtime_data_provider,
+            progress_callback,
+        )
+        run_callable = (
+            partial(_run_backtest_in_process, *run_args, run_effective_pre_bars)
+            if run_effective_pre_bars is not None
+            else partial(_run_backtest_in_process, *run_args)
+        )
+
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, run_callable)
         raw_result = result.raw_result

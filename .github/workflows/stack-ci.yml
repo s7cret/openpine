@@ -1,0 +1,100 @@
+name: OpenPine Stack CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+jobs:
+  stack-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout OpenPine
+        uses: actions/checkout@v4
+        with:
+          path: openpine
+      - name: Checkout Pine2AST
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/pine2ast
+          ref: bf2614855851e0626bbe802b6d945ce23593e886
+          path: pine2ast
+      - name: Checkout AST2Python
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/ast2python
+          ref: f27290cad40202d92eae29feb2cc4de43a8a4458
+          path: ast2python
+      - name: Checkout PineLib
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/pinelib
+          ref: fc52c04d3ab07e9eb1b1cd22655cc5cd0bd637ce
+          path: pinelib
+      - name: Checkout Backtest Engine
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/backtest_engine
+          ref: aff7d2339d0907c0b7cc84a74b9a1f1b54703162
+          path: backtest_engine
+      - name: Checkout Marketdata Provider
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/marketdata-provider
+          ref: 58a8467d44ede2c36aface2de214ca28e4f38918
+          path: marketdata-provider
+      - name: Checkout Optimizer
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/optimizer
+          ref: 2d5e3d580484e7d1b6c5d3199105296cd48687ae
+          path: optimizer
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install stack
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e './openpine[dev]'
+          python -m pip install --no-deps -e ./marketdata-provider
+          python -m pip install --no-deps -e ./pinelib
+          python -m pip install --no-deps -e ./pine2ast
+          python -m pip install --no-deps -e ./ast2python
+          python -m pip install --no-deps -e ./backtest_engine
+          python -m pip install --no-deps -e ./optimizer
+      - name: Verify installed stack versions
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+
+          distributions = (
+              'openpine',
+              'pine2ast',
+              'ast2python',
+              'pinelib',
+              'backtest-engine',
+              'marketdata-provider',
+              'optimizer',
+          )
+          for distribution in distributions:
+              installed = version(distribution)
+              if installed != '4.0.0':
+                  raise SystemExit(f'{distribution}: expected 4.0.0, got {installed!r}')
+              print(distribution, installed)
+          PY
+      - name: Cross-project compiler/runtime E2E
+        env:
+          PINE_STACK_ROOT: ${{ github.workspace }}
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: python -m pytest -q ast2python/tests/integration/test_v1_0_cross_project_e2e.py
+      - name: Seven-library release reports
+        run: |
+          python -m openpine.release --root openpine
+          python -m pine2ast.release --root pine2ast
+          python -m ast2python.release --root ast2python
+          python -m pinelib.release --root pinelib
+          python -m backtest_engine.release --root backtest_engine
+          python -m marketdata_provider.release --root marketdata-provider
+          python -m optimizer.release --root optimizer

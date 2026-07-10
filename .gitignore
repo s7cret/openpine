@@ -119,6 +119,15 @@ logs/
 backups/
 *.tsbuildinfo
 
+# Generated research payloads (keep scripts, contracts, and reports trackable)
+research/**/data/
+research/**/artifacts/
+research/**/results/
+research/**/.cache/
+research/**/cache/
+research/**/caches/
+research/**/*.zip
+
 # But ignore data subdirectories that are runtime
 !data/*.py
 !data/__init__.py
