@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
+import json
 import math
 from pathlib import Path
 import re
@@ -413,6 +415,14 @@ def _time_in_compare_window(
     return True
 
 
+def _sha256_compare_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _compare_rows_by_time(
     *,
     tv_path: Path,
@@ -425,18 +435,30 @@ def _compare_rows_by_time(
     compare_from_ms: int | None = None,
     compare_to_ms: int | None = None,
     drop_blank_tv_rows: bool = False,
+    closed_bars_only: bool = False,
+    require_exact_columns: bool = True,
 ) -> tuple[dict[str, object], list[dict[str, object]]]:
     import math as _math
     import statistics as _statistics
 
     tv_fields, tv_rows = _read_compare_csv(tv_path)
     op_fields, op_rows = _read_compare_csv(op_path)
-    common_columns = sorted((set(tv_fields) & set(op_fields)) - exclude_columns)
+    tv_value_fields = set(tv_fields) - exclude_columns - {tv_time_column}
+    op_value_fields = set(op_fields) - exclude_columns - {op_time_column}
+    common_columns = sorted(tv_value_fields & op_value_fields)
+    missing_column_names = sorted(tv_value_fields - op_value_fields)
+    extra_column_names = sorted(op_value_fields - tv_value_fields)
     blank_tv_times: set[int] = set()
+    duplicate_tv_times: set[int] = set()
+    duplicate_op_times: set[int] = set()
+    invalid_tv_rows: list[None] = []
+    invalid_op_rows: list[None] = []
 
     def has_comparable_values(row: dict[str, str]) -> bool:
         return any(
-            not _math.isnan(_compare_csv_float(row.get(column)))
+            row.get(column) is not None
+            and str(row.get(column)).strip().lower()
+            not in {"", "na", "nan", "none", "null"}
             for column in common_columns
         )
 
@@ -445,26 +467,69 @@ def _compare_rows_by_time(
         time_column: str,
         *,
         drop_blank_rows: bool = False,
+        duplicate_times: set[int],
+        invalid_rows: list[None],
     ) -> dict[int, dict[str, str]]:
         indexed: dict[int, dict[str, str]] = {}
+        seen_times: set[int] = set()
         for row in rows:
             ts = _compare_csv_time_ms(row.get(time_column))
-            if ts is None or not _time_in_compare_window(
-                ts, compare_from_ms, compare_to_ms
-            ):
+            if ts is None:
+                invalid_rows.append(None)
                 continue
+            if not _time_in_compare_window(ts, compare_from_ms, compare_to_ms):
+                continue
+            if ts in seen_times:
+                duplicate_times.add(ts)
+            seen_times.add(ts)
             if drop_blank_rows and not has_comparable_values(row):
                 blank_tv_times.add(ts)
                 continue
             indexed[ts] = row
         return indexed
 
-    tv_by_time = rows_by_time(
-        tv_rows, tv_time_column, drop_blank_rows=drop_blank_tv_rows
+    def latest_time(rows: list[dict[str, str]], time_column: str) -> int | None:
+        times = [
+            ts
+            for row in rows
+            if (ts := _compare_csv_time_ms(row.get(time_column))) is not None
+            and _time_in_compare_window(ts, compare_from_ms, compare_to_ms)
+        ]
+        return max(times, default=None)
+
+    exclude_unbounded_latest = closed_bars_only and compare_to_ms is None
+    latest_tv_time = (
+        latest_time(tv_rows, tv_time_column) if exclude_unbounded_latest else None
     )
-    op_by_time = rows_by_time(op_rows, op_time_column)
+    latest_op_time = (
+        latest_time(op_rows, op_time_column) if exclude_unbounded_latest else None
+    )
+    shared_latest_time = (
+        latest_tv_time
+        if latest_tv_time is not None and latest_tv_time == latest_op_time
+        else None
+    )
+    excluded_latest_tv_time = shared_latest_time
+    excluded_latest_op_time = shared_latest_time
+    tv_by_time = rows_by_time(
+        tv_rows,
+        tv_time_column,
+        drop_blank_rows=drop_blank_tv_rows,
+        duplicate_times=duplicate_tv_times,
+        invalid_rows=invalid_tv_rows,
+    )
+    op_by_time = rows_by_time(
+        op_rows,
+        op_time_column,
+        duplicate_times=duplicate_op_times,
+        invalid_rows=invalid_op_rows,
+    )
     for ts in blank_tv_times:
         op_by_time.pop(ts, None)
+    if excluded_latest_tv_time is not None:
+        tv_by_time.pop(excluded_latest_tv_time, None)
+    if excluded_latest_op_time is not None:
+        op_by_time.pop(excluded_latest_op_time, None)
     common_times = sorted(set(tv_by_time) & set(op_by_time))
 
     total = 0
@@ -482,34 +547,45 @@ def _compare_rows_by_time(
         deltas: list[float] = []
         first_bad: dict[str, object] | None = None
         for ts in common_times:
-            tv_value = _compare_csv_float(tv_by_time[ts].get(column))
-            op_value = _compare_csv_float(op_by_time[ts].get(column))
+            tv_raw = tv_by_time[ts].get(column)
+            op_raw = op_by_time[ts].get(column)
+            tv_text = "" if tv_raw is None else str(tv_raw).strip()
+            op_text = "" if op_raw is None else str(op_raw).strip()
+            tv_blank = tv_text.lower() in {"", "na", "nan", "none", "null"}
+            op_blank = op_text.lower() in {"", "na", "nan", "none", "null"}
+            tv_num = _compare_csv_float(tv_raw)
+            op_num = _compare_csv_float(op_raw)
             col_total += 1
             total += 1
-            if _math.isnan(tv_value) != _math.isnan(op_value):
-                col_nan += 1
-                nan_mismatches += 1
-            delta = (
-                abs(op_value - tv_value)
-                if not (_math.isnan(tv_value) or _math.isnan(op_value))
-                else _math.nan
-            )
-            if not _math.isnan(delta):
+            if tv_blank or op_blank:
+                if tv_blank != op_blank:
+                    col_nan += 1
+                    nan_mismatches += 1
+                equal = tv_blank and op_blank
+                delta = _math.nan
+                tv_value: object = None if tv_blank else tv_text
+                op_value: object = None if op_blank else op_text
+            elif not (_math.isnan(tv_num) or _math.isnan(op_num)):
+                delta = abs(op_num - tv_num)
+                equal = _math.isclose(tv_num, op_num, abs_tol=abs_tol, rel_tol=rel_tol)
                 deltas.append(delta)
                 col_max = max(col_max, delta)
                 max_abs_delta = max(max_abs_delta, delta)
-            equal = (_math.isnan(tv_value) and _math.isnan(op_value)) or (
-                not (_math.isnan(tv_value) or _math.isnan(op_value))
-                and _math.isclose(tv_value, op_value, abs_tol=abs_tol, rel_tol=rel_tol)
-            )
+                tv_value = tv_num
+                op_value = op_num
+            else:
+                delta = _math.nan
+                tv_value = tv_text
+                op_value = op_text
+                equal = tv_text == op_text
             if not equal:
                 col_mismatches += 1
                 mismatches += 1
                 bad = {
                     "time_ms": ts,
                     "column": column,
-                    "tv": None if _math.isnan(tv_value) else tv_value,
-                    "openpine": None if _math.isnan(op_value) else op_value,
+                    "tv": tv_value,
+                    "openpine": op_value,
                     "abs_delta": None if _math.isnan(delta) else delta,
                 }
                 if first_bad is None:
@@ -531,12 +607,33 @@ def _compare_rows_by_time(
             }
         )
 
-    status = "match" if total and mismatches == 0 else "mismatch"
+    missing_times = set(tv_by_time) - set(op_by_time)
+    extra_times = set(op_by_time) - set(tv_by_time)
+    status = (
+        "match"
+        if total
+        and mismatches == 0
+        and not missing_times
+        and not extra_times
+        and not missing_column_names
+        and (not require_exact_columns or not extra_column_names)
+        and not duplicate_tv_times
+        and not duplicate_op_times
+        and not invalid_tv_rows
+        and not invalid_op_rows
+        else "mismatch"
+    )
     classification: list[str] = []
     if not common_columns:
         classification.append("no_common_columns")
-    if set(tv_by_time) - set(op_by_time) or set(op_by_time) - set(tv_by_time):
+    if missing_column_names or (require_exact_columns and extra_column_names):
+        classification.append("column_set_mismatch")
+    if missing_times or extra_times:
         classification.append("time_window_mismatch")
+    if duplicate_tv_times or duplicate_op_times:
+        classification.append("duplicate_timestamps")
+    if invalid_tv_rows or invalid_op_rows:
+        classification.append("invalid_timestamps")
     if total == 0:
         classification.append("no_comparable_cells")
     elif mismatches:
@@ -546,19 +643,27 @@ def _compare_rows_by_time(
         "classification": "+".join(classification) if classification else "match",
         "tv_file": str(tv_path),
         "openpine_file": str(op_path),
+        "tv_sha256": _sha256_compare_file(tv_path),
+        "openpine_sha256": _sha256_compare_file(op_path),
+        "closed_bars_only": closed_bars_only,
+        "require_exact_columns": require_exact_columns,
+        "excluded_latest_tv_time_ms": excluded_latest_tv_time,
+        "excluded_latest_openpine_time_ms": excluded_latest_op_time,
         "tv_rows": len(tv_by_time),
         "openpine_rows": len(op_by_time),
+        "duplicate_times_in_tv": sorted(duplicate_tv_times),
+        "duplicate_times_in_openpine": sorted(duplicate_op_times),
+        "invalid_time_rows_in_tv": len(invalid_tv_rows),
+        "invalid_time_rows_in_openpine": len(invalid_op_rows),
         "ignored_blank_tv_rows": len(blank_tv_times),
         "common_times": len(common_times),
-        "missing_times_in_openpine": len(set(tv_by_time) - set(op_by_time)),
-        "extra_times_in_openpine": len(set(op_by_time) - set(tv_by_time)),
+        "missing_times_in_openpine": len(missing_times),
+        "extra_times_in_openpine": len(extra_times),
         "common_columns": len(common_columns),
-        "missing_columns_in_openpine": len(
-            (set(tv_fields) - exclude_columns) - set(op_fields)
-        ),
-        "extra_columns_in_openpine": len(
-            (set(op_fields) - exclude_columns) - set(tv_fields)
-        ),
+        "missing_columns_in_openpine": len(missing_column_names),
+        "extra_columns_in_openpine": len(extra_column_names),
+        "missing_column_names_in_openpine": missing_column_names,
+        "extra_column_names_in_openpine": extra_column_names,
         "total_cells": total,
         "mismatch_cells": mismatches,
         "mismatch_ratio": (mismatches / total) if total else None,
@@ -622,7 +727,11 @@ def _compare_rows_by_order(
     op_fields, op_rows = _read_compare_csv(op_path)
     tv_rows = _canonical_trade_order_rows(tv_fields, tv_rows)
     op_rows = _canonical_trade_order_rows(op_fields, op_rows)
-    common_columns = sorted((set(tv_fields) & set(op_fields)) - exclude_columns)
+    tv_value_fields = set(tv_fields) - exclude_columns
+    op_value_fields = set(op_fields) - exclude_columns
+    common_columns = sorted(tv_value_fields & op_value_fields)
+    missing_column_names = sorted(tv_value_fields - op_value_fields)
+    extra_column_names = sorted(op_value_fields - tv_value_fields)
     common_count = min(len(tv_rows), len(op_rows))
     total = 0
     mismatches = 0
@@ -646,27 +755,34 @@ def _compare_rows_by_order(
         for row_index in range(common_count):
             tv_raw = tv_rows[row_index].get(column)
             op_raw = op_rows[row_index].get(column)
-            if _is_blank_tv_cell(tv_raw):
-                ignored_blank_tv_cells += 1
-                continue
-            tv_num = _compare_csv_float(tv_raw)
-            op_num = _compare_csv_float(op_raw)
-            both_numeric = not (_math.isnan(tv_num) or _math.isnan(op_num))
+            tv_blank = _is_blank_tv_cell(tv_raw)
+            op_blank = _is_blank_tv_cell(op_raw)
             col_total += 1
             total += 1
-            if both_numeric:
-                delta = abs(op_num - tv_num)
-                equal = _math.isclose(tv_num, op_num, abs_tol=abs_tol, rel_tol=rel_tol)
-                deltas.append(delta)
-                col_max = max(col_max, delta)
-                max_abs_delta = max(max_abs_delta, delta)
-                tv_value: object = tv_num
-                op_value: object = op_num
-            else:
-                tv_value = "" if tv_raw is None else str(tv_raw).strip().lower()
-                op_value = "" if op_raw is None else str(op_raw).strip().lower()
+            if tv_blank or op_blank:
+                if tv_blank:
+                    ignored_blank_tv_cells += 1
+                tv_value = None if tv_blank else str(tv_raw).strip().lower()
+                op_value = None if op_blank else str(op_raw).strip().lower()
                 delta = None
-                equal = tv_value == op_value
+                equal = tv_blank and op_blank
+            else:
+                tv_num = _compare_csv_float(tv_raw)
+                op_num = _compare_csv_float(op_raw)
+                both_numeric = not (_math.isnan(tv_num) or _math.isnan(op_num))
+                if both_numeric:
+                    delta = abs(op_num - tv_num)
+                    equal = _math.isclose(tv_num, op_num, abs_tol=abs_tol, rel_tol=rel_tol)
+                    deltas.append(delta)
+                    col_max = max(col_max, delta)
+                    max_abs_delta = max(max_abs_delta, delta)
+                    tv_value = tv_num
+                    op_value = op_num
+                else:
+                    tv_value = str(tv_raw).strip().lower()
+                    op_value = str(op_raw).strip().lower()
+                    delta = None
+                    equal = tv_value == op_value
             if not equal:
                 col_mismatches += 1
                 mismatches += 1
@@ -697,6 +813,8 @@ def _compare_rows_by_order(
     classification: list[str] = []
     if not common_columns:
         classification.append("no_common_columns")
+    if missing_column_names or extra_column_names:
+        classification.append("column_set_mismatch")
     if len(tv_rows) != len(op_rows):
         classification.append("row_count_mismatch")
     if total == 0:
@@ -705,7 +823,11 @@ def _compare_rows_by_order(
         classification.append("value_mismatch")
     status = (
         "match"
-        if total and mismatches == 0 and len(tv_rows) == len(op_rows)
+        if total
+        and mismatches == 0
+        and len(tv_rows) == len(op_rows)
+        and not missing_column_names
+        and not extra_column_names
         else "mismatch"
     )
     summary = {
@@ -713,23 +835,24 @@ def _compare_rows_by_order(
         "classification": "+".join(classification) if classification else "match",
         "tv_file": str(tv_path),
         "openpine_file": str(op_path),
+        "tv_sha256": _sha256_compare_file(tv_path),
+        "openpine_sha256": _sha256_compare_file(op_path),
         "tv_rows": len(tv_rows),
         "openpine_rows": len(op_rows),
         "common_times": common_count,
         "missing_times_in_openpine": max(0, len(tv_rows) - len(op_rows)),
         "extra_times_in_openpine": max(0, len(op_rows) - len(tv_rows)),
         "common_columns": len(common_columns),
-        "missing_columns_in_openpine": len(
-            (set(tv_fields) - exclude_columns) - set(op_fields)
-        ),
-        "extra_columns_in_openpine": len(
-            (set(op_fields) - exclude_columns) - set(tv_fields)
-        ),
+        "missing_columns_in_openpine": len(missing_column_names),
+        "extra_columns_in_openpine": len(extra_column_names),
+        "missing_column_names_in_openpine": missing_column_names,
+        "extra_column_names_in_openpine": extra_column_names,
         "total_cells": total,
         "mismatch_cells": mismatches,
         "mismatch_ratio": (mismatches / total) if total else None,
         "nan_mismatches": 0,
-        "ignored_blank_tv_cells": ignored_blank_tv_cells,
+        "ignored_blank_tv_cells": 0,
+        "blank_tv_cells_compared": ignored_blank_tv_cells,
         "max_abs_delta": max_abs_delta,
         "worst_column": (worst or {}).get("column"),
         "worst_time_ms": (worst or {}).get("row"),
@@ -801,6 +924,9 @@ def _write_strategy_tv_compare_report(
         f"- Run: `{result['run_id']}`",
         f"- Abs tolerance: `{result['abs_tol']}`",
         f"- Rel tolerance: `{result['rel_tol']}`",
+        f"- Status: `{result.get('status')}`",
+        f"- Evidence complete: `{result.get('evidence_complete')}`",
+        f"- Deterministic artifact hash: `{result.get('artifact_hash')}`",
         "",
         "## Summary",
         "",
@@ -814,6 +940,37 @@ def _write_strategy_tv_compare_report(
     (output_path / "comparison_report.md").write_text(
         "\n".join(lines) + "\n", encoding="utf-8"
     )
+
+
+def _comparison_artifact_hash(
+    *,
+    strategy_id: str,
+    abs_tol: float,
+    rel_tol: float,
+    comparisons: list[dict[str, object]],
+) -> str:
+    stable_comparisons = [
+        {
+            key: value
+            for key, value in sorted(summary.items())
+            if key not in {"tv_file", "openpine_file"}
+        }
+        for summary in comparisons
+    ]
+    payload = {
+        "strategy_id": strategy_id,
+        "abs_tol": abs_tol,
+        "rel_tol": rel_tol,
+        "comparisons": stable_comparisons,
+    }
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _compare_strategy_run_with_tv_exports(
@@ -860,6 +1017,7 @@ def _compare_strategy_run_with_tv_exports(
             compare_from_ms=compare_from_ms,
             compare_to_ms=compare_to_ms,
             drop_blank_tv_rows=True,
+            closed_bars_only=True,
         )
         summary["type"] = "plots"
         if summary["status"] != "match" and _is_skippable_strategy_plot_summary(summary):
@@ -882,6 +1040,8 @@ def _compare_strategy_run_with_tv_exports(
             rel_tol=rel_tol,
             compare_from_ms=compare_from_ms,
             compare_to_ms=compare_to_ms,
+            closed_bars_only=True,
+            require_exact_columns=False,
         )
         summary["type"] = "equity"
         comparisons.append(summary)
@@ -925,14 +1085,33 @@ def _compare_strategy_run_with_tv_exports(
                 failures.append(
                     {"type": "trades", "summary": summary, "top_columns": top_columns}
                 )
+    comparison_types = sorted(str(summary.get("type")) for summary in comparisons)
+    required_types = {"plots", "trades", "equity"}
+    evidence_complete = set(comparison_types) == required_types
+    all_matched = bool(comparisons) and all(
+        summary.get("status") == "match" for summary in comparisons
+    )
     result = {
         "strategy_id": strategy_id,
         "run_id": run.run_id,
         "abs_tol": abs_tol,
         "rel_tol": rel_tol,
+        "status": (
+            "match"
+            if evidence_complete and all_matched and not failures
+            else ("mismatch" if failures else "incomplete")
+        ),
+        "evidence_complete": evidence_complete,
+        "comparison_types": comparison_types,
         "comparisons": comparisons,
         "failures": failures,
     }
+    result["artifact_hash"] = _comparison_artifact_hash(
+        strategy_id=strategy_id,
+        abs_tol=abs_tol,
+        rel_tol=rel_tol,
+        comparisons=comparisons,
+    )
     _write_strategy_tv_compare_report(output_path, result)
     return result
 

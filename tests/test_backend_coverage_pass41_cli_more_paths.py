@@ -1011,10 +1011,10 @@ def test_compare_scalar_normalization_row_comparison_and_run_export_edges(monkey
         abs_tol=0.0,
         rel_tol=0.0,
     )
-    assert summary["status"] == "match"
-    assert summary["mismatch_cells"] == 0
-    assert summary["total_cells"] == 4
-    assert top == []
+    assert summary["status"] == "mismatch"
+    assert summary["mismatch_cells"] == 2
+    assert summary["total_cells"] == 6
+    assert top[0]["column"] == "entry_time_ms"
 
     tv_order_unsorted_legs = tmp_path / "tv_order_unsorted_legs.csv"
     op_order_unsorted_legs = tmp_path / "op_order_unsorted_legs.csv"

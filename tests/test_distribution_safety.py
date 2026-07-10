@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -303,3 +304,33 @@ def test_backend_ci_covers_every_supported_python_minor() -> None:
     assert "python-version: ${{ matrix.python-version }}" in workflow
     for version in ("'3.11'", "'3.12'", "'3.13'"):
         assert version in workflow
+
+
+def test_runtime_imports_are_declared_as_package_dependencies() -> None:
+    root = Path(__file__).resolve().parents[1]
+    config = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = config["project"]["dependencies"]
+
+    assert any(
+        re.split(r"[<>=!~\[]", str(item), maxsplit=1)[0] == "msgpack"
+        for item in dependencies
+    )
+
+
+def test_stack_release_reports_run_inside_each_checkout() -> None:
+    root = Path(__file__).resolve().parents[1]
+    workflow = (root / ".github" / "workflows" / "stack-ci.yml").read_text(
+        encoding="utf-8"
+    )
+
+    modules = {
+        "openpine": "openpine.release",
+        "pine2ast": "pine2ast.release",
+        "ast2python": "ast2python.release",
+        "pinelib": "pinelib.release",
+        "backtest_engine": "backtest_engine.release",
+        "marketdata-provider": "marketdata_provider.release",
+        "optimizer": "optimizer.release",
+    }
+    for checkout, module in modules.items():
+        assert f"(cd {checkout} && python -m {module} --root .)" in workflow

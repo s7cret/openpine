@@ -25,31 +25,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: s7cret/ast2python
-          ref: d6c9d464a3b6c2f477b229ecbbf01d60667283a6
+          ref: 471fd5ef4531fe8c4b8833bc0553b9876f6f01de
           path: ast2python
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
           repository: s7cret/pinelib
-          ref: fc52c04d3ab07e9eb1b1cd22655cc5cd0bd637ce
+          ref: 33239a0093fa5d548058d79d5d079104db0ef43e
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: s7cret/backtest_engine
-          ref: 294f1a117a8fa47cdc2a3e6c361284a67daf6d3d
+          ref: 848dfd59e4a432b449a8ec7775f2b9aef0b55ecb
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
           repository: s7cret/marketdata-provider
-          ref: 58a8467d44ede2c36aface2de214ca28e4f38918
+          ref: bcf733de6b0ff05d06d3fb2add5d068c52280965
           path: marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
           repository: s7cret/optimizer
-          ref: 2d5e3d580484e7d1b6c5d3199105296cd48687ae
+          ref: 2922b0c515ad6e68cf0a078635235604b4c3c220
           path: optimizer
       - uses: actions/setup-python@v5
         with:
@@ -91,10 +91,10 @@ jobs:
         run: python -m pytest -q ast2python/tests/integration/test_v1_0_cross_project_e2e.py
       - name: Seven-library release reports
         run: |
-          python -m openpine.release --root openpine
-          python -m pine2ast.release --root pine2ast
-          python -m ast2python.release --root ast2python
-          python -m pinelib.release --root pinelib
-          python -m backtest_engine.release --root backtest_engine
-          python -m marketdata_provider.release --root marketdata-provider
-          python -m optimizer.release --root optimizer
+          (cd openpine && python -m openpine.release --root .)
+          (cd pine2ast && python -m pine2ast.release --root .)
+          (cd ast2python && python -m ast2python.release --root .)
+          (cd pinelib && python -m pinelib.release --root .)
+          (cd backtest_engine && python -m backtest_engine.release --root .)
+          (cd marketdata-provider && python -m marketdata_provider.release --root .)
+          (cd optimizer && python -m optimizer.release --root .)
