@@ -136,6 +136,32 @@ def test_module_record_requires_exact_vcs_identity_for_sibling_conformance(monke
     assert mismatched["conforms_to_lock"] is False
 
 
+def test_module_record_prefers_exact_tree_identity_for_wheel_conformance(monkeypatch) -> None:
+    tree_sha256 = "d" * 64
+    monkeypatch.setattr(version, "_module_origin", lambda _name: "/tmp/pkg/__init__.py")
+    monkeypatch.setattr(version, "_runtime_version", lambda _name: "4.0.1")
+    monkeypatch.setattr(version.importlib.metadata, "version", lambda _name: "4.0.1")
+    monkeypatch.setattr(version, "_module_summary", lambda _name: "summary")
+    monkeypatch.setattr(version, "package_tree_identity", lambda _path: tree_sha256)
+
+    def unexpected_vcs_lookup(_name: str) -> str:
+        raise AssertionError("wheel tree identity must not fall back to VCS metadata")
+
+    monkeypatch.setattr(version, "_distribution_vcs_commit", unexpected_vcs_lookup)
+
+    record = version._module_record(
+        "pine2ast",
+        lock_version="4.0.1",
+        lock_commit="a" * 40,
+        lock_tree_sha256=tree_sha256,
+    )
+
+    assert record["lock_identity"] == tree_sha256
+    assert record["installed_identity"] == tree_sha256
+    assert record["identity_conforms"] is True
+    assert record["conforms_to_lock"] is True
+
+
 def test_distribution_vcs_commit_reads_direct_url_metadata(monkeypatch) -> None:
     class Distribution:
         def read_text(self, filename: str) -> str | None:

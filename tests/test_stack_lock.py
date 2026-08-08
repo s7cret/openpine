@@ -79,6 +79,18 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     assert all(item["version"] == "4.0.1" for item in lock["components"])
     siblings = lock["components"][1:]
     assert all(re.fullmatch(r"(?!0{40})[0-9a-f]{40}", item["commit"]) for item in siblings)
+    expected_tree_sha256 = {
+        "openpine": "09f25c64f9ad09bc19572d1208c3120adc1099733c80c38f56a7abc5fcd802ad",
+        "pine2ast": "d9128262d3993c93c19825aacdb9cd7bcb067c438c6de9e7691d4b23f82f1c55",
+        "ast2python": "c66cd275d984f2c4636cac9ce69f6c80435550e25c7f05a47929b54c6709be58",
+        "pinelib": "90588c6d928a3d15e7d370667a4a56f2fdfcb9a279893a5a61906bcdaa280be3",
+        "backtest_engine": "9f429beb741005c2b3d962ad1312a425e13b064506f7e1911c58d6c83a41b36e",
+        "marketdata_provider": "a9abcd2512a1fa57f220b526d729def03f6cb44b7ff60c979bb3b10dfd7ae761",
+        "optimizer": "379a6c78de36798ba8d6bcbb5270c853d3f6b91a2f9b785467efe9d7cfdffbc5",
+    }
+    assert {
+        item["name"]: item["tree_sha256"] for item in lock["components"]
+    } == expected_tree_sha256
     self_identity = lock["components"][0]
     assert "commit" not in self_identity
     assert re.fullmatch(r"(?!0{64})[0-9a-f]{64}", self_identity["tree_sha256"])
@@ -103,9 +115,11 @@ def test_stack_lock_validation_reports_component_and_sha_errors() -> None:
     broken = copy.deepcopy(lock)
     broken["components"] = broken["components"][:-1]
     broken["components"][1]["commit"] = "main"
+    broken["components"][2].pop("tree_sha256")
     errors = validate_stack_lock(broken)
     assert any("components" in error for error in errors)
     assert any("immutable" in error for error in errors)
+    assert any("ast2python tree_sha256" in error for error in errors)
 
 
 def test_stack_lock_validation_rejects_valid_looking_wrong_package_and_repository() -> None:
@@ -187,6 +201,16 @@ def test_stack_lock_rejects_zero_sha_and_invalid_openpine_self_identity() -> Non
     assert any("tree_sha256" in error for error in errors)
 
 
+def test_stack_lock_rejects_non_string_tree_identity() -> None:
+    lock = load_stack_lock()
+    broken = copy.deepcopy(lock)
+    broken["components"][1]["tree_sha256"] = int("1" * 64)
+
+    errors = validate_stack_lock(broken)
+
+    assert any("pine2ast tree_sha256" in error for error in errors)
+
+
 def test_stack_lock_summary_is_endpoint_safe() -> None:
     summary = stack_lock_summary()
     assert set(summary) == {
@@ -209,7 +233,7 @@ def test_stack_lock_summary_is_endpoint_safe() -> None:
         "contracts",
     }
     assert all(
-        set(item) == {"name", "version", "commit", "contracts"}
+        set(item) == {"name", "version", "commit", "tree_sha256", "contracts"}
         for item in summary["components"][1:]
     )
 
@@ -247,6 +271,7 @@ assert response.status_code == 200, response.text
 payload = response.json()
 assert payload['stack_lock']['release'] == '4.0.1'
 assert len(payload['stack_lock']['sha256']) == 64
+assert all(len(item['tree_sha256']) == 64 for item in payload['stack_lock']['components'])
 """
     completed = subprocess.run(
         [sys.executable, "-I", "-c", smoke],

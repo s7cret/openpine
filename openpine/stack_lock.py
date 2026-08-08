@@ -144,13 +144,16 @@ def validate_stack_lock(
                 )
         if item.get("version") != __version__:
             errors.append(f"stack lock component {name} version must be {__version__}")
+        tree_sha256 = item.get("tree_sha256")
+        if not isinstance(tree_sha256, str) or _NONZERO_SHA256.fullmatch(tree_sha256) is None:
+            errors.append(
+                f"stack lock component {name} tree_sha256 must be a nonzero SHA-256"
+            )
         if index == 0 and name == "openpine":
             if "commit" in item:
                 errors.append(
                     "stack lock component openpine must use tree_sha256, not a commit that omits dirty sources"
                 )
-            if _NONZERO_SHA256.fullmatch(str(item.get("tree_sha256", ""))) is None:
-                errors.append("stack lock component openpine tree_sha256 must be a nonzero SHA-256")
         elif _NONZERO_SHA40.fullmatch(str(item.get("commit", ""))) is None:
             errors.append(
                 f"stack lock component {name} commit is not a nonzero immutable SHA"
@@ -366,11 +369,9 @@ def stack_lock_summary(lock: Mapping[str, Any] | None = None) -> dict[str, Any]:
         raise ValueError("; ".join(errors))
     components = []
     for item in payload["components"]:
-        identity = (
-            {"tree_sha256": item["tree_sha256"]}
-            if item["name"] == "openpine"
-            else {"commit": item["commit"]}
-        )
+        identity = {"tree_sha256": item["tree_sha256"]}
+        if item["name"] != "openpine":
+            identity["commit"] = item["commit"]
         components.append(
             {
                 "name": item["name"],
