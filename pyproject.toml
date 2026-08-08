@@ -23,9 +23,9 @@ dependencies = [
     "pandas>=2.0.0",
     "pyarrow>=15.0.0",
     "pine2ast @ git+https://github.com/s7cret/pine2ast.git@b7b52d3399afc2641ad4d9623e5c63a421588c6c",
-    "ast2python @ git+https://github.com/s7cret/ast2python.git@7e2c0760aa0d0f6f5db83bd0bf5ac3cf59b874c7",
-    "pinelib @ git+https://github.com/s7cret/pinelib.git@531e284d710ca48ce44ce8f88e6e8aa6c34a8385",
-    "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@6e6b263c6119d9b77f02a87022008a066f936472",
+    "ast2python @ git+https://github.com/s7cret/ast2python.git@ea03d1fc9a094a13f4ecd630bf67dd14a12d72e6",
+    "pinelib @ git+https://github.com/s7cret/pinelib.git@38987ec94bde5158ea379b45485b7ceb8614b30b",
+    "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@7d9ff8befef2295d2a87b59eb272c051761275ee",
     "marketdata-provider @ git+https://github.com/s7cret/marketdata-provider.git@a8f0b5626c7ec227d08e9d0157b191bd2a50ddd4",
     "optimizer @ git+https://github.com/s7cret/optimizer.git@edd4b1d44ef00592bccaa80bf65e6f776563e902",
 ]

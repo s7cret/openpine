@@ -206,6 +206,43 @@ def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
     return errors
 
 
+def _transitive_pin_errors(
+    component_name: str,
+    project: Mapping[str, Any],
+    expected_commits: Mapping[str, str],
+) -> tuple[str, ...]:
+    """Reject stale direct-URL refs in sibling runtime and optional dependencies."""
+
+    dependencies: list[str] = []
+    direct = project.get("dependencies", ())
+    if isinstance(direct, list):
+        dependencies.extend(str(item) for item in direct)
+    optional = project.get("optional-dependencies", {})
+    if isinstance(optional, Mapping):
+        for group in optional.values():
+            if isinstance(group, list):
+                dependencies.extend(str(item) for item in group)
+
+    errors: list[str] = []
+    for dependency in dependencies:
+        _package, separator, url = dependency.partition(" @ ")
+        if not separator or not url.startswith("git+"):
+            continue
+        origin, at, ref = url.removeprefix("git+").rpartition("@")
+        if not at:
+            continue
+        repository = _github_repository_from_url(origin)
+        if repository is None:
+            continue
+        expected = expected_commits.get(repository.casefold())
+        if expected is not None and ref != expected:
+            errors.append(
+                f"stack lock component {component_name} dependency {repository} "
+                "ref does not match lock"
+            )
+    return tuple(errors)
+
+
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         ["git", "-C", str(repo), *args],
@@ -239,6 +276,11 @@ def validate_stack_refs(
     components = lock.get("components")
     if not isinstance(components, list):
         return ("stack lock components must be a list",)
+    expected_commits = {
+        str(item.get("repository", "")).casefold(): str(item.get("commit", ""))
+        for item in components[1:]
+        if isinstance(item, Mapping)
+    }
     for item in components[1:]:
         if not isinstance(item, Mapping):
             continue
@@ -267,7 +309,8 @@ def validate_stack_refs(
             errors.append(f"stack lock component {name} committed pyproject.toml is unavailable")
         else:
             try:
-                committed_version = str(tomllib.loads(metadata.stdout)["project"]["version"])
+                committed_project = tomllib.loads(metadata.stdout)["project"]
+                committed_version = str(committed_project["version"])
             except (KeyError, tomllib.TOMLDecodeError) as exc:
                 errors.append(
                     f"stack lock component {name} committed version is unreadable: {exc}"
@@ -277,6 +320,10 @@ def validate_stack_refs(
                     errors.append(
                         f"stack lock component {name} committed version {committed_version} "
                         f"!= lock version {version}"
+                    )
+                if isinstance(committed_project, Mapping):
+                    errors.extend(
+                        _transitive_pin_errors(name, committed_project, expected_commits)
                     )
         if verify_remote:
             remote = _git(repo, "ls-remote", "origin")

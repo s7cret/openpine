@@ -11,6 +11,7 @@ from pathlib import Path, PurePosixPath
 from openpine.stack_lock import (
     EXPECTED_COMPONENTS,
     _github_repository_from_url,
+    _transitive_pin_errors,
     load_stack_lock,
     package_tree_identity,
     stack_lock_identity,
@@ -39,6 +40,35 @@ def test_github_repository_origin_rejects_lookalikes() -> None:
         "https://github.com:444/s7cret/optimizer.git",
     )
     assert all(_github_repository_from_url(origin) is None for origin in rejected)
+
+
+def test_transitive_pin_validation_rejects_stale_stack_dependency_refs() -> None:
+    expected = {
+        "s7cret/pinelib": "a" * 40,
+        "s7cret/backtest_engine": "b" * 40,
+    }
+    project = {
+        "dependencies": [
+            "pinelib @ git+https://github.com/s7cret/pinelib.git@" + "1" * 40,
+        ],
+        "optional-dependencies": {
+            "dev": [
+                "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@"
+                + "b" * 40,
+            ]
+        },
+    }
+
+    errors = _transitive_pin_errors("ast2python", project, expected)
+
+    assert errors == (
+        "stack lock component ast2python dependency s7cret/pinelib ref does not match lock",
+    )
+
+    project["dependencies"] = [
+        "pinelib @ git+https://github.com/s7cret/pinelib.git@" + "a" * 40,
+    ]
+    assert _transitive_pin_errors("ast2python", project, expected) == ()
 
 
 def test_packaged_stack_lock_is_complete_and_immutable() -> None:
