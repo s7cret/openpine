@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError
 
-from openpine.config.model import OpenPineConfig, SUPPORTED_MARKETDATA_TIMEFRAMES
+from openpine.config.model import SUPPORTED_MARKETDATA_TIMEFRAMES, OpenPineConfig
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.timezones import resolve_timezone
 

@@ -41,6 +41,7 @@ def test_gateway_state_tolerates_nonfatal_startup_failures(monkeypatch, tmp_path
         def __init__(self, *args, **kwargs) -> None:
             self.args = args
             self.kwargs = kwargs
+            self._kill_switch = args[0] if args else False
 
     class FailingEventBus:
         def __init__(self, _storage) -> None:

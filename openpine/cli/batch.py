@@ -8,7 +8,6 @@ import click
 @click.group()
 def batch() -> None:
     """Batch execution commands."""
-    pass
 
 
 def _run_batch_phase(ctx: click.Context, phase: str) -> None:

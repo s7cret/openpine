@@ -326,7 +326,12 @@ def test_gateway_simple_routes_and_dashboard_helpers():
     assert asyncio.run(trading.get_trading_status("s1", state)).position_side == "long"
     assert dashboard._count_jobs([{"status": "done"}, {"status": "running"}], "done") == 1
     assert dashboard._normalize_job_status("completed") == "done"
-    assert dashboard._strategy_health(state, state.strategy_registry.strategy)["status"] in {"ok", "warning", "error"}
+    assert dashboard._strategy_health(state, state.strategy_registry.strategy)["status"] in {
+        "ok",
+        "warning",
+        "error",
+        "metadata_error",
+    }
 
 
 def test_orders_positions_routes_with_fake_storage():

@@ -201,7 +201,10 @@ async def test_dashboard_trading_orders_and_events_remaining_gateway_edges(monke
     assert dashboard._strategy_health(state, state.strategy_registry.items["s1"])["status"] == "error"
     state.strategy_registry.items["s1"].status = "paused"
     state._background_worker_process = SimpleNamespace(is_alive=lambda: True)
-    assert dashboard._strategy_health(state, state.strategy_registry.items["s1"])["runner_alive"] is True
+    legacy_health = dashboard._strategy_health(
+        state, state.strategy_registry.items["s1"]
+    )
+    assert legacy_health["runner_alive"] is False
     state.storage.fail_events = True
     assert await events.list_events(state=state) == []
     state.storage.fail_events = False

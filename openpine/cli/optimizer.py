@@ -13,7 +13,6 @@ console = Console()
 @click.group()
 def optimizer() -> None:
     """Optimization commands."""
-    pass
 
 
 @optimizer.command("dry-run")

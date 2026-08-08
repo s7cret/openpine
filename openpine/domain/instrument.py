@@ -9,7 +9,7 @@ from __future__ import annotations
 from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe
 
 __all__ = [
+    "Bar",
     "InstrumentKey",
     "Timeframe",
-    "Bar",
 ]

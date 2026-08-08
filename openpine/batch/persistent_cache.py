@@ -5,10 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import pandas as pd
+
 from openpine.data.cache_io import read_valid_meta, write_csv_atomic, write_json_atomic
 
 CACHE_SCHEMA_VERSION = 1

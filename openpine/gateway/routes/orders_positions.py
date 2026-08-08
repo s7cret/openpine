@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-
-from openpine._compat import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from openpine._compat import structlog
 from openpine.gateway.deps import GatewayState, get_state
 
 log = structlog.get_logger(__name__)

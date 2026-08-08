@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import hashlib
 import json
 import math
-from pathlib import Path
 import re
+from datetime import UTC, datetime
+from pathlib import Path
 
 import click
+
 from openpine.timezones import parse_timestamp_ms
+
 
 def _compare_csv_float(value) -> float:
     import math as _math
@@ -27,7 +29,7 @@ def _compare_csv_float(value) -> float:
         text = text.replace(",", "")
     try:
         return float(text)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return _math.nan
 
 
@@ -39,11 +41,11 @@ def _compare_csv_time_ms(value) -> int | None:
         return None
     try:
         raw = int(float(text))
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         try:
             default_tz = "UTC" if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text) else None
             return parse_timestamp_ms(text, 0, default_tz=default_tz)
-        except Exception:
+        except (TypeError, ValueError, OverflowError, OSError):
             return None
     return raw * 1000 if abs(raw) < 10_000_000_000 else raw
 
@@ -167,7 +169,7 @@ def _write_normalized_tv_trades(
 
     def trade_sort_key(item: str) -> tuple[int, float | str]:
         numeric = _compare_csv_float(item)
-        return (1, item) if numeric != numeric else (0, numeric)
+        return (1, item) if math.isnan(numeric) else (0, numeric)
 
     for trade_no in sorted(grouped, key=trade_sort_key):
         bucket = grouped[trade_no]
@@ -331,7 +333,7 @@ def _write_chart_diagnostic_tv_trades(
         bar_number = _compare_csv_float(row.get(local_bar_col))
         time_ms = _compare_csv_time_ms(row.get(time_col))
         if not _math.isnan(bar_number) and time_ms is not None:
-            time_by_bar[int(round(bar_number))] = time_ms
+            time_by_bar[round(bar_number)] = time_ms
 
     normalized_rows: list[dict[str, object]] = []
     sequence = 0
@@ -343,14 +345,14 @@ def _write_chart_diagnostic_tv_trades(
         if exit_time is None:
             exit_bar = _compare_csv_float(row.get(exit_bar_col))
             if not _math.isnan(exit_bar):
-                exit_time = time_by_bar.get(int(round(exit_bar)))
+                exit_time = time_by_bar.get(round(exit_bar))
         if exit_time is None:
             continue
         if not _time_in_compare_window(exit_time, compare_from_ms, compare_to_ms):
             continue
 
         entry_bar = _compare_csv_float(row.get(entry_bar_col))
-        entry_time = None if _math.isnan(entry_bar) else time_by_bar.get(int(round(entry_bar)))
+        entry_time = None if _math.isnan(entry_bar) else time_by_bar.get(round(entry_bar))
         entry_price = _compare_csv_float(row.get(entry_price_col))
         exit_price = _compare_csv_float(row.get(exit_price_col))
         qty = _compare_csv_float(row.get(size_col))
@@ -359,7 +361,7 @@ def _write_chart_diagnostic_tv_trades(
         qty_text = None if _math.isnan(qty) else f"{abs(qty):.12g}"
         sequence += 1
         trade_id = (
-            str(int(round(closed_count)))
+            str(round(closed_count))
             if not _math.isnan(closed_count)
             else str(sequence)
         )
@@ -410,9 +412,7 @@ def _time_in_compare_window(
 ) -> bool:
     if compare_from_ms is not None and ts < compare_from_ms:
         return False
-    if compare_to_ms is not None and ts >= compare_to_ms:
-        return False
-    return True
+    return not (compare_to_ms is not None and ts >= compare_to_ms)
 
 
 def _sha256_compare_file(path: Path) -> str:
@@ -919,7 +919,7 @@ def _write_strategy_tv_compare_report(
     lines = [
         "# OpenPine vs TradingView Run Comparison",
         "",
-        f"- Generated: {datetime.now(timezone.utc).isoformat()}",
+        f"- Generated: {datetime.now(UTC).isoformat()}",
         f"- Strategy: `{result['strategy_id']}`",
         f"- Run: `{result['run_id']}`",
         f"- Abs tolerance: `{result['abs_tol']}`",
@@ -1119,13 +1119,13 @@ def _compare_strategy_run_with_tv_exports(
 __all__ = [
     "_compare_csv_float",
     "_compare_csv_time_ms",
-    "_read_compare_csv",
     "_compare_normalized_header",
-    "_find_compare_column",
-    "_trade_action_and_direction",
-    "_write_normalized_tv_trades",
     "_compare_rows_by_order",
     "_compare_rows_by_time",
-    "_write_strategy_tv_compare_report",
     "_compare_strategy_run_with_tv_exports",
+    "_find_compare_column",
+    "_read_compare_csv",
+    "_trade_action_and_direction",
+    "_write_normalized_tv_trades",
+    "_write_strategy_tv_compare_report",
 ]

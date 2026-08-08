@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from openpine._compat import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
+from openpine._compat import structlog
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.schemas import (
     OptimizerDryRunRequest,

@@ -7,7 +7,7 @@ provided to route handlers via FastAPI's Depends() mechanism.
 from __future__ import annotations
 
 import threading
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, Request
 
@@ -87,16 +87,22 @@ class GatewayState:
             structlog.get_logger(__name__).warning(
                 "marketdata_provider_init_error", error=str(exc)
             )
-        self._risk_kill_switch = [self.config.kill_switch]
-        self.risk_manager = RiskManager(self._risk_kill_switch)
+        self.risk_manager = RiskManager(self.config.kill_switch)
+        self._risk_kill_switch = self.risk_manager._kill_switch
         self.backtest_cancel_requests: set[str] = set()
         self._lock = threading.Lock()
+        self.strategy_activation_lock = threading.RLock()
+        self._startup_time = 0.0
+        self._background_worker_process: Any | None = None
+        self._background_worker_supervisor: Any | None = None
+        self._fetcher: Any | None = None
+        self._live_runner: Any | None = None
 
         # Achievement engine: depends on storage. Seed the catalog on every
         # start (idempotent INSERT OR REPLACE) and run an initial recompute
         # so the UI shows real numbers on first paint.
         from openpine.achievements.engine import AchievementEngine
-        from openpine.achievements.seed import seed_achievements, seed_achievement_i18n
+        from openpine.achievements.seed import seed_achievement_i18n, seed_achievements
 
         try:
             seed_achievements(self.storage)

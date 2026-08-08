@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 # Auto-load workspace-local OpenPine env if it exists.
@@ -17,8 +17,7 @@ if _ENV_FILE.exists():
     for line in _ENV_FILE.read_text().splitlines():
         line = line.strip()
         if line and not line.startswith("#"):
-            if line.startswith("export "):
-                line = line[7:]
+            line = line.removeprefix("export ")
             if "=" in line:
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
@@ -615,9 +614,10 @@ class TelegramCommandPlugin:
 # =============================================================================
 
 import asyncio
-from openpine._compat import structlog
 import subprocess
 from types import ModuleType
+
+from openpine._compat import structlog
 
 logger = structlog.get_logger("telegram_bot")
 
@@ -634,6 +634,7 @@ def _run_cli_argv(argv: list[str], cli_path: str = "openpine") -> str:
             capture_output=True,
             text=True,
             timeout=60,
+            check=False,
         )
         if result.returncode == 0:
             return result.stdout.strip()
@@ -709,7 +710,7 @@ class TelegramBotHandler:
 
             try:
                 await asyncio.wait_for(stop_event.wait(), timeout=poll_interval)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass  # normal timeout — continue polling
 
         logger.info("telegram_bot_stopping")
@@ -832,20 +833,14 @@ class TelegramBotHandler:
                 strategy_id = parts[3]
                 if strategy_id:
                     kb = self._keyboards.strategy_actions_keyboard(strategy_id)
-        elif callback_data == "op:strategies:list":
-            kb = self._build_strategies_list_keyboard()
-        elif callback_data == "op:strat:refresh":
-            kb = self._build_strategies_list_keyboard()
-        elif callback_data == "op:strat:cancel_delete":
+        elif callback_data == "op:strategies:list" or callback_data == "op:strat:refresh" or callback_data == "op:strat:cancel_delete":
             kb = self._build_strategies_list_keyboard()
         elif callback_data.startswith("op:strat:confirm_delete:"):
             parts = callback_data.split(":")
             if len(parts) >= 4:
                 strategy_id = parts[3]
                 kb = self._keyboards.confirm_delete_keyboard(strategy_id)
-        elif callback_data == "op:pine:list":
-            kb = self._build_pine_list_keyboard()
-        elif callback_data == "op:pine:refresh":
+        elif callback_data == "op:pine:list" or callback_data == "op:pine:refresh":
             kb = self._build_pine_list_keyboard()
 
         if kb is None:
@@ -928,7 +923,7 @@ class TelegramBotHandler:
             return
 
         # Handle /menu and /help specially — attach home keyboard
-        is_menu_or_help = text.startswith("/menu") or text.startswith("/help")
+        is_menu_or_help = text.startswith(("/menu", "/help"))
 
         output = _run_cli_argv(argv, self.cli_path)
         formatted = _format_cli_output_for_html(output)
@@ -961,7 +956,7 @@ class TelegramBotHandler:
 
         # Check file extension
         filename = doc.get("file_name", "")
-        if not (filename.endswith(".pine") or filename.endswith(".txt")):
+        if not (filename.endswith((".pine", ".txt"))):
             self._send_message(
                 chat_id,
                 f"Unsupported file type: {filename!r}. Send a .pine or .txt file.",
@@ -1042,8 +1037,8 @@ class TelegramBotHandler:
     ) -> None:
         """Edit message reply_markup via the plugin's transport."""
 
-        from urllib.parse import urlencode
         import json
+        from urllib.parse import urlencode
 
         token = self.plugin.notifier._resolve_token()
         payload = {

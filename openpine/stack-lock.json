@@ -1,0 +1,78 @@
+{
+  "schema": "openpine.stack-lock.v1",
+  "release": "4.0.1",
+  "components": [
+    {
+      "name": "openpine",
+      "package": "openpine",
+      "repository": "s7cret/openpine",
+      "version": "4.0.1",
+      "tree_sha256": "94eb514e8e4d7345a9d78b2f1bcd6a9acdf9dbb7845f219886d9f69ebca7ab85",
+      "contracts": {
+        "version_api": "openpine.version.v1"
+      }
+    },
+    {
+      "name": "pine2ast",
+      "package": "pine2ast",
+      "repository": "s7cret/pine2ast",
+      "version": "4.0.1",
+      "commit": "b7b52d3399afc2641ad4d9623e5c63a421588c6c",
+      "contracts": {
+        "ast": "pine.ast_contract.v1",
+        "frontend": "openpine.frontend.v1",
+        "runtime_profile": "runtime_contract_v1_4"
+      }
+    },
+    {
+      "name": "ast2python",
+      "package": "ast2python",
+      "repository": "s7cret/ast2python",
+      "version": "4.0.1",
+      "commit": "7e2c0760aa0d0f6f5db83bd0bf5ac3cf59b874c7",
+      "contracts": {
+        "ast": "pine.ast_contract.v1",
+        "runtime": "1.4"
+      }
+    },
+    {
+      "name": "pinelib",
+      "package": "pinelib",
+      "repository": "s7cret/pinelib",
+      "version": "4.0.1",
+      "commit": "531e284d710ca48ce44ce8f88e6e8aa6c34a8385",
+      "contracts": {
+        "runtime": "1.4"
+      }
+    },
+    {
+      "name": "backtest_engine",
+      "package": "backtest-engine",
+      "repository": "s7cret/backtest_engine",
+      "version": "4.0.1",
+      "commit": "6e6b263c6119d9b77f02a87022008a066f936472",
+      "contracts": {
+        "tick_replay": "deterministic-explicit-v1"
+      }
+    },
+    {
+      "name": "marketdata_provider",
+      "package": "marketdata-provider",
+      "repository": "s7cret/marketdata-provider",
+      "version": "4.0.1",
+      "commit": "a8f0b5626c7ec227d08e9d0157b191bd2a50ddd4",
+      "contracts": {
+        "runtime": "1.4",
+        "segment_manifest": "stage-d-csv-2"
+      }
+    },
+    {
+      "name": "optimizer",
+      "package": "optimizer",
+      "repository": "s7cret/optimizer",
+      "version": "4.0.1",
+      "commit": "edd4b1d44ef00592bccaa80bf65e6f776563e902",
+      "contracts": {}
+    }
+  ]
+}

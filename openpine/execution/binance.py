@@ -8,26 +8,22 @@ Enforces instrument precision rules before any network call.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from openpine.execution.ccxt_common import CcxtOrderClientMixin
+from openpine.execution.live_orders import rejected_live_order
 from openpine.execution.models import (
     CancelResult,
     ExecutionUnavailableError,
     InstrumentRules,
     LiveOrderResult,
 )
-from openpine.execution.live_orders import rejected_live_order
-from openpine.execution.ccxt_common import CcxtOrderClientMixin
 from openpine.orders.models import (
     Order,
     OrderIntent,
     OrderStatus,
     generate_order_id,
 )
-
-if TYPE_CHECKING:
-    pass
-
 
 # Default empty rules — no symbols allowed without explicit rules
 _DEFAULT_RULES: dict[str, InstrumentRules] = {}

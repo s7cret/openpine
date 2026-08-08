@@ -2,18 +2,39 @@
 
 from __future__ import annotations
 
-from openpine._compat import structlog
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 
+from openpine._compat import structlog
 from openpine.gateway.deps import GatewayState, get_state
+from openpine.gateway.routes.activation_guard import (
+    guarded_strategy_activation,
+)
 from openpine.gateway.schemas import (
     LiveStartRequest,
     PaperStartRequest,
     TradingStatusResponse,
 )
+from openpine.registry.strategies import (
+    ArchivedStrategyActivationError,
+    WorkerCircuitOpenError,
+)
 
 log = structlog.get_logger(__name__)
 router = APIRouter(tags=["trading"])
+
+
+def _activate_registry_strategy(
+    registry: Any, strategy_id: str, *, status: str, mode: str
+) -> None:
+    activate = getattr(registry, "activate_strategy", None)
+    if callable(activate):
+        activate(strategy_id, status=status, mode=mode)
+        return
+    registry.update_status(strategy_id, status)
+    registry.update_mode(strategy_id, mode)
+    registry.set_enabled(strategy_id, True)
 
 
 @router.post("/paper/start", response_model=TradingStatusResponse)
@@ -30,10 +51,17 @@ async def start_paper(
 
     if s.status == "error":
         raise HTTPException(400, "Cannot start paper: strategy is in error state.")
-
-    registry.update_status(body.strategy_id, "running")
-    registry.update_mode(body.strategy_id, "paper")
-    registry.set_enabled(body.strategy_id, True)
+    if getattr(s, "archived", False):
+        raise HTTPException(400, "Archived strategy cannot be started")
+    try:
+        with guarded_strategy_activation(state):
+            _activate_registry_strategy(
+                registry, body.strategy_id, status="running", mode="paper"
+            )
+    except WorkerCircuitOpenError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except ArchivedStrategyActivationError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
     log.info("paper_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
@@ -55,8 +83,12 @@ async def stop_paper(
     except KeyError:
         raise HTTPException(404, f"Strategy not found: {body.strategy_id}")
 
-    registry.update_status(body.strategy_id, "paused")
-    registry.set_enabled(body.strategy_id, False)
+    transition = getattr(registry, "transition_strategy", None)
+    if callable(transition):
+        transition(body.strategy_id, status="paused", enabled=False)
+    else:
+        registry.update_status(body.strategy_id, "paused")
+        registry.set_enabled(body.strategy_id, False)
 
     log.info("paper_stopped", strategy_id=body.strategy_id)
     return {"strategy_id": body.strategy_id, "status": "stopped"}
@@ -82,10 +114,17 @@ async def start_live(
 
     if s.status == "error":
         raise HTTPException(400, "Cannot start live: strategy is in error state.")
-
-    registry.update_status(body.strategy_id, "running")
-    registry.update_mode(body.strategy_id, "live")
-    registry.set_enabled(body.strategy_id, True)
+    if getattr(s, "archived", False):
+        raise HTTPException(400, "Archived strategy cannot be started")
+    try:
+        with guarded_strategy_activation(state):
+            _activate_registry_strategy(
+                registry, body.strategy_id, status="running", mode="live"
+            )
+    except WorkerCircuitOpenError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except ArchivedStrategyActivationError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
     log.info("live_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
@@ -107,8 +146,12 @@ async def stop_live(
     except KeyError:
         raise HTTPException(404, f"Strategy not found: {body.strategy_id}")
 
-    registry.update_status(body.strategy_id, "disabled")
-    registry.set_enabled(body.strategy_id, False)
+    transition = getattr(registry, "transition_strategy", None)
+    if callable(transition):
+        transition(body.strategy_id, status="disabled", enabled=False)
+    else:
+        registry.update_status(body.strategy_id, "disabled")
+        registry.set_enabled(body.strategy_id, False)
 
     log.info("live_stopped", strategy_id=body.strategy_id)
     return {"strategy_id": body.strategy_id, "status": "stopped"}

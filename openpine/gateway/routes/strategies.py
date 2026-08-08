@@ -5,21 +5,45 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from openpine._compat import structlog
 from fastapi import APIRouter, Depends, HTTPException
 
-from openpine.gateway.deps import get_state, get_strategy_registry
+from openpine._compat import structlog
+from openpine.gateway.deps import GatewayState, get_state, get_strategy_registry
+from openpine.gateway.routes.activation_guard import (
+    guarded_strategy_activation,
+)
 from openpine.gateway.schemas import (
     CompareTvRequest,
     StrategyCreate,
     StrategyResponse,
     StrategyUpdate,
 )
-from openpine.gateway.deps import GatewayState
-from openpine.registry.strategies import SQLiteStrategyRegistry
+from openpine.registry.strategies import (
+    ArchivedStrategyActivationError,
+    SQLiteStrategyRegistry,
+    WorkerCircuitOpenError,
+)
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/strategies", tags=["strategies"])
+
+
+def _activate_registry_strategy(
+    registry: SQLiteStrategyRegistry,
+    strategy_id: str,
+    *,
+    status: str | None = None,
+    mode: str | None = None,
+) -> None:
+    activate = getattr(registry, "activate_strategy", None)
+    if callable(activate):
+        activate(strategy_id, status=status, mode=mode)
+        return
+    if status is not None:
+        registry.update_status(strategy_id, status)
+    if mode is not None:
+        registry.update_mode(strategy_id, mode)
+    registry.set_enabled(strategy_id, True)
 
 
 def _path_is_relative_to(path: Path, root: Path) -> bool:
@@ -173,11 +197,46 @@ async def update_strategy(
     if not updates:
         return _to_response(s)
 
-    # Mode/enabled/status changes need special handling
+    if updates.get("enabled") and (
+        getattr(s, "archived", False) or updates.get("archived")
+    ):
+        raise HTTPException(400, "Archived strategy cannot be enabled")
+    if "mode" in updates and hasattr(updates["mode"], "value"):
+        updates["mode"] = updates["mode"].value
+    if "params_json" in updates:
+        import hashlib
+
+        updates["params_hash"] = hashlib.sha256(
+            updates["params_json"].encode()
+        ).hexdigest()[:16]
+    atomic_patch = getattr(registry, "patch_strategy_atomic", None)
+    if callable(atomic_patch):
+        try:
+            if updates.get("enabled"):
+                with guarded_strategy_activation(state):
+                    atomic_patch(strategy_id, updates)
+            else:
+                atomic_patch(strategy_id, updates)
+        except WorkerCircuitOpenError as exc:
+            raise HTTPException(503, str(exc)) from exc
+        except ArchivedStrategyActivationError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return _to_response(registry.get_strategy(strategy_id))
+
+    # Compatibility fallback for lightweight registry test doubles.
     if "enabled" in updates:
         if updates["enabled"] and getattr(s, "archived", False):
             raise HTTPException(400, "Archived strategy cannot be enabled")
-        registry.set_enabled(strategy_id, updates["enabled"])
+        try:
+            if updates["enabled"]:
+                with guarded_strategy_activation(state):
+                    registry.set_enabled(strategy_id, True)
+            else:
+                registry.set_enabled(strategy_id, False)
+        except WorkerCircuitOpenError as exc:
+            raise HTTPException(503, str(exc)) from exc
+        except ArchivedStrategyActivationError as exc:
+            raise HTTPException(400, str(exc)) from exc
     if "archived" in updates:
         registry.set_archived(strategy_id, bool(updates["archived"]))
     if "mode" in updates:
@@ -236,25 +295,43 @@ async def strategy_action(
 
     if action in {"start", "enable"} and getattr(s, "archived", False):
         raise HTTPException(400, "Archived strategy cannot be started or enabled")
-
     if action == "start":
         if s.status == "error":
             raise HTTPException(
                 400, "Cannot start strategy in error state. Clear error first."
             )
-        registry.update_status(strategy_id, "running")
-        registry.set_enabled(strategy_id, True)
+        try:
+            with guarded_strategy_activation(state):
+                _activate_registry_strategy(registry, strategy_id, status="running")
+        except WorkerCircuitOpenError as exc:
+            raise HTTPException(503, str(exc)) from exc
+        except ArchivedStrategyActivationError as exc:
+            raise HTTPException(400, str(exc)) from exc
     elif action == "stop" or action == "pause":
-        registry.update_status(strategy_id, "paused")
-        registry.set_enabled(strategy_id, False)
+        transition = getattr(registry, "transition_strategy", None)
+        if callable(transition):
+            transition(strategy_id, status="paused", enabled=False)
+        else:
+            registry.update_status(strategy_id, "paused")
+            registry.set_enabled(strategy_id, False)
     elif action == "enable":
-        registry.set_enabled(strategy_id, True)
+        try:
+            with guarded_strategy_activation(state):
+                _activate_registry_strategy(registry, strategy_id)
+        except WorkerCircuitOpenError as exc:
+            raise HTTPException(503, str(exc)) from exc
+        except ArchivedStrategyActivationError as exc:
+            raise HTTPException(400, str(exc)) from exc
     elif action == "clear_error":
         if s.status != "error":
             raise HTTPException(
                 400, f"Strategy is not in error state (current: {s.status})"
             )
-        registry.update_status(strategy_id, "paused")
+        transition = getattr(registry, "transition_strategy", None)
+        if callable(transition):
+            transition(strategy_id, status="paused")
+        else:
+            registry.update_status(strategy_id, "paused")
     else:
         raise HTTPException(400, f"Unknown action: {action}")
 
@@ -380,8 +457,9 @@ async def strategy_replay(
 ) -> dict[str, object]:
     """Replay a strategy over historical data (async backtest)."""
     import asyncio
-    from openpine.gateway.ws_manager import ws_manager
+
     from openpine.gateway.schemas import ProgressUpdate
+    from openpine.gateway.ws_manager import ws_manager
 
     try:
         s = registry.get_strategy(strategy_id)
@@ -392,11 +470,13 @@ async def strategy_replay(
         try:
             registry.update_status(strategy_id, "running")
             import time as _time_module
+
             from marketdata_provider.contracts import (
                 BarQuery,
                 InstrumentKey,
                 parse_timeframe,
             )
+
             from openpine.runtime.engine import (
                 BacktestEngineAdapter,
                 BacktestRunConfig,
@@ -482,7 +562,7 @@ async def strategy_replay(
 @router.post("/{strategy_id}/compare-tv")
 async def strategy_compare_tv(
     strategy_id: str,
-    req: "CompareTvRequest",
+    req: CompareTvRequest,
     state: GatewayState = Depends(get_state),
 ) -> dict[str, object]:
     """Compare OpenPine plots against TradingView chart export."""
@@ -586,17 +666,32 @@ async def strategy_compare_tv(
 async def strategy_enable(
     strategy_id: str,
     registry: SQLiteStrategyRegistry = Depends(get_strategy_registry),
+    state: GatewayState = Depends(get_state),
 ) -> dict[str, str]:
     """Enable a strategy for auto-refresh and trading."""
+    runtime_state = state if hasattr(state, "strategy_registry") else None
+    if runtime_state is not None:
+        registry = runtime_state.strategy_registry
     try:
-        strategy = registry.get_strategy(strategy_id)
-        if getattr(strategy, "archived", False):
-            raise HTTPException(400, "Archived strategy cannot be enabled")
-        registry.set_enabled(strategy_id, True)
+        if runtime_state is not None:
+            with guarded_strategy_activation(runtime_state):
+                strategy = registry.get_strategy(strategy_id)
+                if getattr(strategy, "archived", False):
+                    raise HTTPException(400, "Archived strategy cannot be enabled")
+                _activate_registry_strategy(registry, strategy_id)
+        else:
+            strategy = registry.get_strategy(strategy_id)
+            if getattr(strategy, "archived", False):
+                raise HTTPException(400, "Archived strategy cannot be enabled")
+            _activate_registry_strategy(registry, strategy_id)
         log.info("strategy_enabled", strategy_id=strategy_id)
         return {"strategy_id": strategy_id, "enabled": "true", "status": "ok"}
     except KeyError:
         raise HTTPException(404, f"Strategy not found: {strategy_id}")
+    except WorkerCircuitOpenError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except ArchivedStrategyActivationError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.post("/{strategy_id}/disable")

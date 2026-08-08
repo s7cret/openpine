@@ -81,9 +81,7 @@ def read_chart(path: Path) -> pd.DataFrame:
     if df.empty:
         raise ValueError(f"{path.name}: empty chart CSV")
     raw_time = pd.to_numeric(df["time"], errors="raise")
-    if raw_time.max() > 2_000_000_000_000:
-        bar_time = raw_time.astype("int64")
-    elif raw_time.max() > 2_000_000_000:
+    if raw_time.max() > 2_000_000_000_000 or raw_time.max() > 2_000_000_000:
         bar_time = raw_time.astype("int64")
     else:
         bar_time = (raw_time * 1000).astype("int64")
@@ -163,9 +161,7 @@ def _chart_filename_can_match_symbol(path: Path, symbol: str) -> bool:
     upper_symbol = symbol.upper()
     if upper_symbol in upper_name:
         return True
-    if "BTCUSD" in upper_name and upper_symbol != "BTCUSD":
-        return False
-    return True
+    return not ("BTCUSD" in upper_name and upper_symbol != "BTCUSD")
 
 
 def load_visible_bars_by_time(
@@ -257,7 +253,7 @@ def merge_visible_bars(
     patched: list[Any] = []
     patched_count = 0
     for bar in provider_bars:
-        payload = visible_bars_by_time.get(int(getattr(bar, "time")))
+        payload = visible_bars_by_time.get(int(bar.time))
         if payload is None:
             patched.append(bar)
             continue

@@ -14,7 +14,7 @@ from typing import Any
 try:  # pragma: no cover - exercised when the real dependency is installed.
     import structlog as _structlog
 except ModuleNotFoundError:  # pragma: no cover - fallback is covered by tests.
-    _structlog = None
+    _structlog = None  # type: ignore[assignment,unused-ignore]
 
 
 class BoundLoggerAdapter:
@@ -23,13 +23,13 @@ class BoundLoggerAdapter:
     def __init__(self, logger: logging.Logger) -> None:
         self._logger = logger
 
-    def bind(self, **_: Any) -> "BoundLoggerAdapter":
+    def bind(self, **_: Any) -> BoundLoggerAdapter:
         return self
 
-    def unbind(self, *_: str) -> "BoundLoggerAdapter":
+    def unbind(self, *_: str) -> BoundLoggerAdapter:
         return self
 
-    def new(self, **_: Any) -> "BoundLoggerAdapter":
+    def new(self, **_: Any) -> BoundLoggerAdapter:
         return self
 
     def _log(self, level: int, event: object, **kwargs: Any) -> None:

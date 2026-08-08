@@ -8,10 +8,11 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 from ast2python.profiles import CompileProfile
 
@@ -452,6 +453,7 @@ def _parse_with_pine2ast_subprocess(
         capture_output=True,
         text=True,
         timeout=timeout,
+        check=False,
     )
     if result_p2a.returncode == 0:
         return result_p2a, None
@@ -474,6 +476,7 @@ def _parse_with_pine2ast_subprocess(
         capture_output=True,
         text=True,
         timeout=timeout,
+        check=False,
     )
     warnings = list(compile_meta.get("warnings", []))
     warnings.append(_PINE_V5_FALLBACK_WARNING)
@@ -527,6 +530,7 @@ def _translate_ast_with_subprocess(
         capture_output=True,
         text=True,
         timeout=timeout,
+        check=False,
     )
     if result.returncode != 0:
         return (
@@ -715,7 +719,7 @@ def _translate_ast_with_library_api(
             )
     return CompileResult(
         success=True,
-        python_code=getattr(translation, "code"),
+        python_code=translation.code,
         ast_json=ast_json,
         compile_meta=compile_meta,
     )

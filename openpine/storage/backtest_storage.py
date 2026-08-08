@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
 from openpine._compat import parquet
 from openpine.config import OpenPineConfig
 from openpine.storage.backtest_dto import (
@@ -361,7 +362,7 @@ class BacktestResultStore:
         artifact_paths: dict[str, Path],
         now: int,
     ) -> None:
-        for atype in artifact_paths:
+        for atype, artifact_path in artifact_paths.items():
             self._storage.execute(
                 """
                 INSERT INTO backtest_artifacts
@@ -372,7 +373,7 @@ class BacktestResultStore:
                     run_id=run_id,
                     strategy_id=strategy_id,
                     artifact_type=atype,
-                    path=run_dir / artifact_paths[atype].name,
+                    path=run_dir / artifact_path.name,
                     now=now,
                 ),
             )

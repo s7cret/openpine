@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
@@ -17,18 +17,17 @@ _cli_scheduler = JobScheduler()
 
 def _fmt_utc_ms(timestamp_ms: int) -> str:
     return (
-        f"{datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc):%Y-%m-%d %H:%M:%S}"
+        f"{datetime.fromtimestamp(timestamp_ms / 1000, UTC):%Y-%m-%d %H:%M:%S}"
     )
 
 
 def _fmt_utc_ms_as(timestamp_ms: int, fmt: str) -> str:
-    return datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc).strftime(fmt)
+    return datetime.fromtimestamp(timestamp_ms / 1000, UTC).strftime(fmt)
 
 
 @click.group()
 def jobs() -> None:
     """Job management commands."""
-    pass
 
 
 @jobs.command("list")
@@ -158,7 +157,6 @@ def jobs_enqueue_live_bar(
 @click.group()
 def service() -> None:
     """Systemd service management commands."""
-    pass
 
 
 def _systemd_available() -> bool:
@@ -278,6 +276,7 @@ def service_status() -> None:
         ["systemctl", "--user", "status", "openpine"],
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.stdout:
         console.print(result.stdout)
@@ -341,7 +340,6 @@ def service_disable() -> None:
 @click.group()
 def queue() -> None:
     """Job queue status commands."""
-    pass
 
 
 @queue.command("status")
@@ -379,7 +377,6 @@ def queue_status() -> None:
 @click.group()
 def workers() -> None:
     """Worker pool management commands."""
-    pass
 
 
 @workers.command("status")

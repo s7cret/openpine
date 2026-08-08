@@ -7,6 +7,6 @@ from openpine.recovery.rebuild import StateRebuilder
 from openpine.state.errors import StateInconsistencyError
 
 __all__ = [
-    "StateRebuilder",
     "StateInconsistencyError",
+    "StateRebuilder",
 ]

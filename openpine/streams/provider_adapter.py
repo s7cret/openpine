@@ -3,22 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable
-
-from openpine.data.row_helpers import attr_or_item, has_any_field, has_field
+from typing import Any
 
 from marketdata_provider import create_live_kline_client
 from marketdata_provider.config import MarketDataConfig
 from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe, parse_timeframe
+
 from openpine.data.provider_adapter import ensure_marketdata_provider_version
+from openpine.data.row_helpers import attr_or_item, has_any_field, has_field
 from openpine.streams.adapter import KlineUpdateEnvelope
-
-
-
-
-
-
 
 
 def normalize_provider_kline_update(

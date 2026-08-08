@@ -6,13 +6,11 @@ enabled strategies, storing them via DataOrchestrator.
 
 from __future__ import annotations
 
-from collections import defaultdict
-from dataclasses import dataclass
 import threading
 import time
+from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any
-
-from openpine._compat import structlog
 
 from marketdata_provider.contracts import (
     Bar,
@@ -21,6 +19,8 @@ from marketdata_provider.contracts import (
     InstrumentKey,
     parse_timeframe,
 )
+
+from openpine._compat import structlog
 from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
@@ -48,7 +48,7 @@ class RawMarketKey:
     price_type: str
 
     @classmethod
-    def from_strategy(cls, strategy: StrategyInstance) -> "RawMarketKey":
+    def from_strategy(cls, strategy: StrategyInstance) -> RawMarketKey:
         return cls(
             exchange=strategy.exchange.lower(),
             market_type=strategy.market_type.lower(),

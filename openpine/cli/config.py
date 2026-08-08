@@ -15,7 +15,6 @@ console = Console()
 @click.group(name="config")
 def config() -> None:
     """Configuration management commands."""
-    pass
 
 
 @config.command("show")

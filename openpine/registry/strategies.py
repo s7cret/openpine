@@ -5,10 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import wraps
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Concatenate, ParamSpec, Protocol, TypeVar, cast
 
 from openpine.config import DEFAULT_CONFIG
 
@@ -16,6 +19,14 @@ from openpine.config import DEFAULT_CONFIG
 def _is_missing_optional_schema_error(exc: sqlite3.OperationalError) -> bool:
     message = str(exc).lower()
     return "no such table" in message or "no such column" in message
+
+
+class WorkerCircuitOpenError(RuntimeError):
+    """Raised when durable worker fail-safe state forbids strategy activation."""
+
+
+class ArchivedStrategyActivationError(RuntimeError):
+    """Raised when an archived strategy is activated through any ingress."""
 
 
 @dataclass
@@ -62,7 +73,7 @@ class StrategyInstance:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "StrategyInstance":
+    def from_dict(cls, data: dict) -> StrategyInstance:
         return cls(
             strategy_id=data["strategy_id"],
             name=data["name"],
@@ -121,6 +132,24 @@ class StrategyRegistry(Protocol):
         ...
 
 
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+_S = TypeVar("_S")
+
+
+def _serialized_connection(
+    method: Callable[Concatenate[_S, _P], _R],
+) -> Callable[Concatenate[_S, _P], _R]:
+    """Hold the registry RLock for every shared SQLite connection operation."""
+
+    @wraps(method)
+    def locked(self: _S, *args: _P.args, **kwargs: _P.kwargs) -> _R:
+        with cast(Any, self)._lock:
+            return method(self, *args, **kwargs)
+
+    return locked
+
+
 class SQLiteStrategyRegistry:
     """StrategyRegistry backed by in-memory dict + SQLite."""
 
@@ -130,9 +159,11 @@ class SQLiteStrategyRegistry:
         self._db_path = db_path
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._mem: dict[str, StrategyInstance] = {}
+        self._lock = threading.RLock()
         self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
         self._init_db()
 
+    @_serialized_connection
     def _init_db(self) -> None:
         self._conn.execute("""
             CREATE TABLE IF NOT EXISTS strategy_instances (
@@ -178,9 +209,23 @@ class SQLiteStrategyRegistry:
             CREATE INDEX IF NOT EXISTS idx_strategy_instances_status
             ON strategy_instances(status)
         """)
+        self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS runtime_circuits (
+                name TEXT PRIMARY KEY,
+                is_open INTEGER NOT NULL DEFAULT 0,
+                reason TEXT,
+                updated_at INTEGER NOT NULL
+            )
+        """)
+        self._conn.execute(
+            """INSERT OR IGNORE INTO runtime_circuits(name, is_open, reason, updated_at)
+               VALUES ('background_worker', 0, NULL, ?)""",
+            (int(time.time() * 1000),),
+        )
         self._conn.commit()
         self._reload_from_db()
 
+    @_serialized_connection
     def _reload_from_db(self) -> None:
         """Refresh the in-memory view from SQLite.
 
@@ -217,6 +262,7 @@ class SQLiteStrategyRegistry:
             for row in rows
         }
 
+    @_serialized_connection
     def register_strategy(
         self,
         artifact_id: str,
@@ -287,6 +333,7 @@ class SQLiteStrategyRegistry:
         self._mem[si.strategy_id] = si
         return si
 
+    @_serialized_connection
     def get_strategy(self, strategy_id: str) -> StrategyInstance:
         """Get a strategy instance by id."""
         self._reload_from_db()
@@ -294,6 +341,7 @@ class SQLiteStrategyRegistry:
             return self._mem[strategy_id]
         raise KeyError(f"StrategyInstance not found: {strategy_id!r}")
 
+    @_serialized_connection
     def list_strategies(self, status: str | None = None) -> list[StrategyInstance]:
         """List strategy instances, optionally filtered by status."""
         self._reload_from_db()
@@ -301,6 +349,7 @@ class SQLiteStrategyRegistry:
             return list(self._mem.values())
         return [s for s in self._mem.values() if s.status == status]
 
+    @_serialized_connection
     def update_status(self, strategy_id: str, status: str) -> None:
         """Update the status of a strategy."""
         si = self.get_strategy(strategy_id)
@@ -312,10 +361,12 @@ class SQLiteStrategyRegistry:
         )
         self._conn.commit()
 
+    @_serialized_connection
     def close(self) -> None:
         """Close the database connection."""
         self._conn.close()
 
+    @_serialized_connection
     def create_strategy(
         self,
         *,
@@ -385,35 +436,280 @@ class SQLiteStrategyRegistry:
         self._mem[si.strategy_id] = si
         return si
 
+    @_serialized_connection
     def set_enabled(self, strategy_id: str, enabled: bool) -> None:
         """Enable or disable a strategy."""
-        si = self.get_strategy(strategy_id)
-        si.enabled = enabled
-        si.updated_at = int(time.time() * 1000)
-        self._conn.execute(
-            "UPDATE strategy_instances SET enabled = ?, updated_at = ? WHERE strategy_id = ?",
-            (int(enabled), si.updated_at, strategy_id),
-        )
-        self._conn.commit()
+        with self._lock:
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                _current_enabled, archived, _status, _mode = (
+                    self._strategy_execution_state_locked(strategy_id)
+                )
+                if enabled and archived:
+                    raise ArchivedStrategyActivationError(
+                        "Archived strategy cannot be enabled"
+                    )
+                if enabled and self._worker_circuit_state_locked()["open"]:
+                    raise WorkerCircuitOpenError("Background worker circuit is open")
+                now = int(time.time() * 1000)
+                self._conn.execute(
+                    "UPDATE strategy_instances SET enabled = ?, updated_at = ? WHERE strategy_id = ?",
+                    (int(enabled), now, strategy_id),
+                )
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+                raise
+            self._reload_from_db()
 
+    @_serialized_connection
+    def activate_strategy(
+        self,
+        strategy_id: str,
+        *,
+        status: str | None = None,
+        mode: str | None = None,
+    ) -> None:
+        """Atomically check the durable circuit and activate one strategy."""
+        with self._lock:
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                _enabled, archived, current_status, current_mode = (
+                    self._strategy_execution_state_locked(strategy_id)
+                )
+                if archived:
+                    raise ArchivedStrategyActivationError(
+                        "Archived strategy cannot be activated"
+                    )
+                if self._worker_circuit_state_locked()["open"]:
+                    raise WorkerCircuitOpenError("Background worker circuit is open")
+                now = int(time.time() * 1000)
+                next_status = status or current_status
+                next_mode = mode or current_mode
+                self._conn.execute(
+                    """UPDATE strategy_instances
+                       SET enabled = 1, status = ?, mode = ?, updated_at = ?
+                       WHERE strategy_id = ?""",
+                    (next_status, next_mode, now, strategy_id),
+                )
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+                raise
+            self._reload_from_db()
+
+    @_serialized_connection
+    def transition_strategy(
+        self,
+        strategy_id: str,
+        *,
+        enabled: bool | None = None,
+        status: str | None = None,
+        mode: str | None = None,
+    ) -> None:
+        """Apply execution state fields in one transaction and one memory update."""
+        with self._lock:
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                current_enabled, archived, current_status, current_mode = (
+                    self._strategy_execution_state_locked(strategy_id)
+                )
+                next_enabled = current_enabled if enabled is None else enabled
+                if next_enabled and archived:
+                    raise ArchivedStrategyActivationError(
+                        "Archived strategy cannot be enabled"
+                    )
+                if next_enabled and self._worker_circuit_state_locked()["open"]:
+                    raise WorkerCircuitOpenError("Background worker circuit is open")
+                next_status = current_status if status is None else status
+                next_mode = current_mode if mode is None else mode
+                now = int(time.time() * 1000)
+                self._conn.execute(
+                    """UPDATE strategy_instances
+                       SET enabled = ?, status = ?, mode = ?, updated_at = ?
+                       WHERE strategy_id = ?""",
+                    (int(next_enabled), next_status, next_mode, now, strategy_id),
+                )
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+                raise
+            self._reload_from_db()
+
+    @_serialized_connection
+    def patch_strategy_atomic(
+        self, strategy_id: str, updates: dict[str, object]
+    ) -> None:
+        """Apply one public PATCH as a single durable registry transaction."""
+        allowed = {
+            "enabled",
+            "archived",
+            "mode",
+            "status",
+            "name",
+            "symbol",
+            "timeframe",
+            "exchange",
+            "market_type",
+            "params_json",
+            "params_hash",
+        }
+        unknown = set(updates) - allowed
+        if unknown:
+            raise ValueError(f"Unsupported strategy fields: {sorted(unknown)}")
+        with self._lock:
+            values = dict(updates)
+            if not values:
+                return
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                current_enabled, current_archived, current_status, _mode = (
+                    self._strategy_execution_state_locked(strategy_id)
+                )
+                next_archived = bool(
+                    values.get("archived", current_archived)
+                )
+                requested_enabled = values.get("enabled")
+                if requested_enabled and next_archived:
+                    raise ArchivedStrategyActivationError(
+                        "Archived strategy cannot be enabled"
+                    )
+                next_enabled = (
+                    False
+                    if values.get("archived")
+                    else bool(values.get("enabled", current_enabled))
+                )
+                if next_enabled and self._worker_circuit_state_locked()["open"]:
+                    raise WorkerCircuitOpenError("Background worker circuit is open")
+                if values.get("archived"):
+                    values["enabled"] = False
+                    if values.get("status", current_status) in {
+                        "running",
+                        "pending",
+                    }:
+                        values["status"] = "paused"
+                values["updated_at"] = int(time.time() * 1000)
+                columns = list(values)
+                set_clause = ", ".join(f"{column} = ?" for column in columns)
+                self._conn.execute(
+                    f"UPDATE strategy_instances SET {set_clause} WHERE strategy_id = ?",
+                    tuple(values[column] for column in columns) + (strategy_id,),
+                )
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+                raise
+            self._reload_from_db()
+
+    def _strategy_execution_state_locked(
+        self, strategy_id: str
+    ) -> tuple[bool, bool, str, str]:
+        row = self._conn.execute(
+            """SELECT enabled, archived, status, mode
+               FROM strategy_instances WHERE strategy_id = ?""",
+            (strategy_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"Strategy not found: {strategy_id}")
+        return bool(row[0]), bool(row[1]), str(row[2]), str(row[3])
+
+    @_serialized_connection
+    def _worker_circuit_state_locked(self) -> dict[str, object]:
+        row = self._conn.execute(
+            "SELECT is_open, reason, updated_at FROM runtime_circuits WHERE name = ?",
+            ("background_worker",),
+        ).fetchone()
+        return {
+            "open": bool(row and row[0]),
+            "reason": None if row is None else row[1],
+            "updated_at": None if row is None else row[2],
+        }
+
+    @_serialized_connection
+    def worker_circuit_state(self) -> dict[str, object]:
+        with self._lock:
+            return self._worker_circuit_state_locked()
+
+    @_serialized_connection
+    def reset_worker_circuit(self) -> None:
+        with self._lock:
+            self._conn.execute(
+                """UPDATE runtime_circuits
+                   SET is_open = 0, reason = NULL, updated_at = ?
+                   WHERE name = 'background_worker'""",
+                (int(time.time() * 1000),),
+            )
+            self._conn.commit()
+
+    @_serialized_connection
+    def trip_worker_circuit(self, reason: str) -> int:
+        """Durably open the circuit and pause strategies in one transaction."""
+        with self._lock:
+            now = int(time.time() * 1000)
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                self._conn.execute(
+                    """UPDATE runtime_circuits
+                       SET is_open = 1, reason = ?, updated_at = ?
+                       WHERE name = 'background_worker'""",
+                    (reason, now),
+                )
+                cursor = self._conn.execute(
+                    """UPDATE strategy_instances
+                       SET enabled = 0, status = 'paused', updated_at = ?
+                       WHERE enabled = 1""",
+                    (now,),
+                )
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+                raise
+            self._reload_from_db()
+            return max(0, int(cursor.rowcount))
+
+    @_serialized_connection
+    def pause_all_enabled(self) -> int:
+        """Atomically pause and disable every enabled strategy."""
+        with self._lock:
+            now = int(time.time() * 1000)
+            cursor = self._conn.execute(
+                """UPDATE strategy_instances
+                   SET enabled = 0, status = 'paused', updated_at = ?
+                   WHERE enabled = 1""",
+                (now,),
+            )
+            self._conn.commit()
+            self._reload_from_db()
+            return max(0, int(cursor.rowcount))
+
+    @_serialized_connection
     def set_archived(self, strategy_id: str, archived: bool) -> None:
         """Archive/unarchive a strategy. Archiving always disables it."""
-        si = self.get_strategy(strategy_id)
-        si.archived = archived
-        si.updated_at = int(time.time() * 1000)
-        if archived:
-            si.enabled = False
-            if si.status in {"running", "pending"}:
-                si.status = "paused"
-        self._conn.execute(
-            """UPDATE strategy_instances
-               SET archived = ?, enabled = ?, status = ?, updated_at = ?
-               WHERE strategy_id = ?""",
-            (int(archived), int(si.enabled), si.status, si.updated_at, strategy_id),
-        )
-        self._conn.commit()
+        with self._lock:
+            try:
+                self._conn.execute("BEGIN IMMEDIATE")
+                enabled, _current_archived, status, _mode = (
+                    self._strategy_execution_state_locked(strategy_id)
+                )
+                if archived:
+                    enabled = False
+                    if status in {"running", "pending"}:
+                        status = "paused"
+                now = int(time.time() * 1000)
+                self._conn.execute(
+                    """UPDATE strategy_instances
+                       SET archived = ?, enabled = ?, status = ?, updated_at = ?
+                       WHERE strategy_id = ?""",
+                    (int(archived), int(enabled), status, now, strategy_id),
+                )
+                self._conn.commit()
+            except Exception:
+                self._conn.rollback()
+                raise
+            self._reload_from_db()
 
 
+    @_serialized_connection
     def update_mode(self, strategy_id: str, mode: str) -> None:
         """Update strategy execution mode (paper/live/observe)."""
         si = self.get_strategy(strategy_id)
@@ -425,6 +721,7 @@ class SQLiteStrategyRegistry:
         )
         self._conn.commit()
 
+    @_serialized_connection
     def delete_strategy(self, strategy_id: str) -> None:
         """Delete a strategy instance."""
         self.get_strategy(strategy_id)  # raises if not found

@@ -7,7 +7,6 @@ Uses stored candles as fill source, supports market/limit/stop/stop_limit.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING
 
 from openpine.orders.models import (
     Order,
@@ -15,9 +14,6 @@ from openpine.orders.models import (
     OrderStatus,
     generate_order_id,
 )
-
-if TYPE_CHECKING:
-    pass
 
 
 class PaperExecutionAdapter:

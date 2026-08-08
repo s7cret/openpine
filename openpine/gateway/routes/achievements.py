@@ -17,8 +17,8 @@ from openpine._compat import structlog
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.schemas import (
     AchievementItem,
-    AchievementSummary,
     AchievementsResponse,
+    AchievementSummary,
 )
 
 log = structlog.get_logger(__name__)

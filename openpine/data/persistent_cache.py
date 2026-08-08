@@ -10,8 +10,9 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from openpine.data.cache_io import read_valid_meta, write_csv_atomic, write_json_atomic
 from marketdata_provider.contracts import Bar, BarQuery, BarSeries
+
+from openpine.data.cache_io import read_valid_meta, write_csv_atomic, write_json_atomic
 
 CACHE_SCHEMA_VERSION = 1
 CACHE_PROGRESS_CHUNK_ROWS = 1000

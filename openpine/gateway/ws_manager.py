@@ -8,8 +8,9 @@ import time
 import uuid
 from typing import Any
 
-from openpine._compat import structlog
 from fastapi import WebSocket
+
+from openpine._compat import structlog
 
 log = structlog.get_logger(__name__)
 

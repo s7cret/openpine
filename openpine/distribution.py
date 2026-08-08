@@ -190,8 +190,7 @@ def _git_tracked_candidates(root: Path) -> list[Path] | None:
     tracked = subprocess.run(
         ["git", "-C", os.fspath(root), "ls-files", "-z", "--cached"],
         check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
     if tracked.returncode != 0:
         detail = os.fsdecode(tracked.stderr).strip() or f"exit code {tracked.returncode}"

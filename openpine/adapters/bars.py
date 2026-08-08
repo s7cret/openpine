@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable
-
-from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_any_field, has_field
+from collections.abc import Iterable
+from typing import Any
 
 from marketdata_provider.contracts import (
     Bar,
@@ -13,6 +12,8 @@ from marketdata_provider.contracts import (
     CoverageReport,
     InstrumentKey,
 )
+
+from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_any_field, has_field
 
 
 def from_provider_bars(raw: Iterable[Any], query: BarQuery) -> BarSeries:

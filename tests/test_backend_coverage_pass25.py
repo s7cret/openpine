@@ -286,6 +286,8 @@ def test_gateway_server_background_and_env_edges(monkeypatch):
             calls.append("run-start")
         def stop(self):
             calls.append("run-stop")
+        async def wait_stopped(self):
+            return True
     state = SimpleNamespace(strategy_registry=None, orchestrator=None, storage=None, artifact_store=None, state_store=None, close=lambda: calls.append("state-close"))
     monkeypatch.setattr("openpine.gateway.server.GatewayState", lambda: state)
     monkeypatch.setattr("openpine.data.periodic_fetcher.PeriodicBarFetcher", Fetcher)

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import inspect
-import math
 import json as _json
-import urllib.request
+import math
 import urllib.error
+import urllib.request
 
 from marketdata_provider.contracts import (
     Bar,
@@ -15,6 +15,7 @@ from marketdata_provider.contracts import (
     CoverageReport,
     InstrumentKey,
 )
+
 from openpine.data.persistent_cache import (
     cache_enabled_by_env,
     default_cache_dir,

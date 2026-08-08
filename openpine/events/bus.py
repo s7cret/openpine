@@ -13,11 +13,12 @@ Rules:
 from __future__ import annotations
 
 import json
-from openpine._compat import structlog
 from collections import defaultdict
-from typing import Any, Callable
+from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
+from typing import Any
 
+from openpine._compat import structlog
 from openpine.events.types import (
     CandleClosedEventPayload,
     Event,

@@ -502,6 +502,8 @@ def test_gateway_state_getters_and_close(monkeypatch, tmp_path):
     monkeypatch.setattr("openpine.data.orchestrator.DataOrchestrator", DummyOrchestrator)
     monkeypatch.setattr("openpine.data.direct_provider.DirectBinanceProvider", DummyProvider)
     state = gateway_deps.GatewayState()
+    assert state._risk_kill_switch == [False]
+    assert state.risk_manager.kill_switch is False
     request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(gateway=state)))
     assert gateway_deps.get_state(request) is state
     assert gateway_deps.get_pine_registry(state) is state.pine_registry

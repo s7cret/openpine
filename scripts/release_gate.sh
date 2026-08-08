@@ -5,7 +5,7 @@ export PYTHONPATH="${PYTHONPATH:-}:$(pwd)"
 export DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-false}
 
 $PYTHON -m compileall -q openpine tests
-$PYTHON -m ruff check openpine scripts --select F,E9
+$PYTHON -m ruff check openpine scripts
 $PYTHON -m pytest -q -p no:ddtrace --cov=openpine --cov-report=term
 find . -type d -name __pycache__ -prune -exec rm -rf {} +
 rm -rf .coverage .pytest_cache .ruff_cache .mypy_cache .openpine

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import click
@@ -13,14 +13,13 @@ console = Console()
 
 def _fmt_utc_seconds(timestamp_seconds: int) -> str:
     return (
-        f"{datetime.fromtimestamp(timestamp_seconds, timezone.utc):%Y-%m-%d %H:%M:%S}"
+        f"{datetime.fromtimestamp(timestamp_seconds, UTC):%Y-%m-%d %H:%M:%S}"
     )
 
 
 @click.group()
 def storage() -> None:
     """Storage management commands."""
-    pass
 
 
 @storage.command()

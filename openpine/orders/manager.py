@@ -47,7 +47,7 @@ class OrderManager:
     - All orders pass through RiskManager before execution
     """
 
-    def __init__(self, storage: "SQLiteStorage") -> None:
+    def __init__(self, storage: SQLiteStorage) -> None:
         """Initialize OrderManager.
 
         Args:

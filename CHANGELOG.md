@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.0.1
+
+- Added bounded background-worker supervision with zombie reaping, restart backoff/budget, truthful health, and fail-safe strategy pause/disable transitions.
+- Replaced Dashboard strategy health full-data reads with O(1) manifest/latest-bar metadata lookups suitable for async routes.
+- Added worker lifecycle telemetry and regression coverage for death, restart, exhausted budget, clean shutdown, and nonblocking health paths.
+- Aligned the coordinated seven-repository stack release metadata with 4.0.1.
+
 - Backend coverage gate raised to 72% with CLI Pine artifact/state/plugin coverage, runtime adapter coverage, Telegram bot handler edge coverage, gateway lifespan coverage, and optimizer dry-run route coverage.
 - Backend coverage gate raised to 70% with JobScheduler lifecycle/locking coverage, dashboard persistent-job/health coverage, export writer edge coverage, and a real export-directory creation fix.
 ## 4.0.0

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
-from typing import Any
+from typing import Any, cast
 
 
 def object_dict(value: Any) -> dict[str, Any]:
     if is_dataclass(value):
-        return asdict(value)
+        return asdict(cast(Any, value))
     if hasattr(value, "__dict__"):
         return dict(value.__dict__)
     if isinstance(value, dict):

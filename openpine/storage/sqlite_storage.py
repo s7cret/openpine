@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import contextlib
 import sqlite3
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Self
 
 
 class SQLiteStorage:
@@ -87,10 +88,10 @@ class SQLiteStorage:
             self._conn.close()
             self._conn = None
 
-    def __enter__(self) -> "SQLiteStorage":
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         self.close()
 
     def __del__(self) -> None:

@@ -19,9 +19,9 @@ from openpine.events.types import (
 )
 
 __all__ = [
-    "EventBus",
-    "Event",
-    "EventType",
     "CandleClosedEventPayload",
+    "Event",
+    "EventBus",
+    "EventType",
     "StrategyRuntimeErrorPayload",
 ]

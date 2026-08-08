@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 from enum import Enum
-from typing import Optional
 
 import pydantic
 from marketdata_provider import contracts as mdp_contracts
@@ -77,5 +76,5 @@ class StrategyRuntimeError(pydantic.BaseModel):
     error_type: str
     message: str
     traceback_id: str
-    job_id: Optional[str] = None
+    job_id: str | None = None
     strategy_status_after: Status = Status.ERROR

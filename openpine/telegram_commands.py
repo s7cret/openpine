@@ -7,8 +7,8 @@ the returned OpenPine CLI argv.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import shlex
+from dataclasses import dataclass
 from typing import Any, Literal
 
 ArgMode = Literal["fixed", "append"]

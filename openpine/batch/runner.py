@@ -19,13 +19,14 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import itertools
 import json
 import math
 import shutil
 import subprocess
 import time
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -107,7 +108,7 @@ def _get_library_revisions() -> dict[str, str]:
 
         try:
             result[name] = (
-                subprocess.check_output(  # noqa: S603 - absolute git path, static argv
+                subprocess.check_output(
                     [_git_executable(), "rev-parse", "--short=8", "HEAD"],
                     cwd=str(repo_root),
                     timeout=5,
@@ -158,13 +159,13 @@ BAR_CACHE: dict[tuple[str, str, str, str, int, int], list[Any]] = {}
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def ms_to_utc_iso(value: int | None) -> str | None:
     if value is None:
         return None
-    return datetime.fromtimestamp(value / 1000, tz=timezone.utc).isoformat()
+    return datetime.fromtimestamp(value / 1000, tz=UTC).isoformat()
 
 
 def load_source_registry():
@@ -281,6 +282,7 @@ def load_calculation_bars(
 ) -> tuple[list[Any], dict[str, Any]]:
     """Load full calculation/prehistory bars through OpenPine's data boundary."""
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
     from openpine.export import parse_time_ms
@@ -440,6 +442,7 @@ def _merge_tv_visible_bars(
     """Use TV-exported visible OHLCV rows for oracle parity, provider rows for prehistory."""
 
     from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
+
     from openpine.batch.tv_corpus import read_chart
 
     timeframe = parse_timeframe(chart.timeframe)
@@ -486,7 +489,7 @@ def _infer_tv_bar_index_offset(
         (
             idx
             for idx, bar in enumerate(bars)
-            if int(getattr(bar, "time")) >= chart.start_ms
+            if int(bar.time) >= chart.start_ms
         ),
         None,
     )
@@ -563,7 +566,7 @@ def _infer_tv_bar_index_offset_from_periodic_na(
         ]
         if len(na_positions) < 3:
             continue
-        gaps = [b - a for a, b in zip(na_positions, na_positions[1:])]
+        gaps = [b - a for a, b in itertools.pairwise(na_positions)]
         if not gaps:
             continue
         period = gaps[0]
@@ -628,6 +631,7 @@ def run_indicator(
     args: argparse.Namespace,
 ) -> dict[str, Any]:
     from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
+
     from openpine.data.provider_adapter import (
         create_local_runtime_data_provider_adapter,
     )
@@ -818,8 +822,8 @@ def run_strategy(
         market=args.market_type,
         prefetch_end_ms=data_meta["calculation_to"],
     )
-    setattr(strategy_class, "runtime_data_provider", runtime_data_provider)
-    setattr(strategy_class, "runtime_intrabar_provider", runtime_data_provider)
+    strategy_class.runtime_data_provider = runtime_data_provider
+    strategy_class.runtime_intrabar_provider = runtime_data_provider
     progress = build_progress_callback(
         f"{entry.export_id:04d}/{chart.timeframe}", args.progress_every
     )
@@ -1614,7 +1618,7 @@ def main(argv: list[str] | None = None) -> int:
     args._calculation_to_by_timeframe = resolve_calculation_to_by_timeframe(
         selected, args
     )
-    batch_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    batch_id = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     summary_path = args.root / (
         args.summary_name or f"openpine_batch_{args.phase}_{batch_id}.json"
     )

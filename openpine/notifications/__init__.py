@@ -20,6 +20,7 @@ from openpine.notifications.telegram import (
 __all__ = [
     "PluginInfo",
     "PluginManager",
+    "StdlibHTTPTransport",
     "TelegramAuthorizationError",
     "TelegramCallbackQuery",
     "TelegramCommandPlugin",
@@ -30,6 +31,5 @@ __all__ = [
     "TelegramSendResult",
     "TelegramTransport",
     "TelegramUpdate",
-    "StdlibHTTPTransport",
     "TransportError",
 ]

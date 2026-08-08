@@ -10,7 +10,7 @@ import tempfile
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -313,7 +313,7 @@ class StateStore:
 
         snapshot_id = str(uuid.uuid4())
         bar_time = state.bar_time
-        saved_at = int(datetime.now().timestamp() * 1000)
+        saved_at = int(datetime.now(UTC).timestamp() * 1000)
 
         payload = self._snapshot_payload(state, data_fingerprint=data_fingerprint)
         packed, encoding, checksum = self._encode_payload(payload)
@@ -436,7 +436,7 @@ class StateStore:
             timeframe=timeframe,
             state_data=runtime_state,
             bar_time=bar_time,
-            saved_at=int(datetime.now().timestamp() * 1000),
+            saved_at=int(datetime.now(UTC).timestamp() * 1000),
         )
         return self.save_snapshot(
             state,

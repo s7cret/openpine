@@ -20,7 +20,7 @@ class AccountManager:
     readable for current execution/risk callers.
     """
 
-    def __init__(self, storage: "SQLiteStorage") -> None:
+    def __init__(self, storage: SQLiteStorage) -> None:
         self.storage = storage
 
     def create_account(

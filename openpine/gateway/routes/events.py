@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 
-from openpine._compat import structlog
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 
+from openpine._compat import structlog
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.schemas import EventResponse
 from openpine.gateway.ws_manager import ws_manager

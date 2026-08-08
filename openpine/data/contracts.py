@@ -51,7 +51,7 @@ PARQUET_FIELDS = [
 ]
 
 __all__ = [
-    "WriteMode",
-    "PARQUET_LAYOUT",
     "PARQUET_FIELDS",
+    "PARQUET_LAYOUT",
+    "WriteMode",
 ]

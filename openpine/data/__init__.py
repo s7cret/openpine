@@ -1,5 +1,6 @@
 """Canonical OpenPine data boundary."""
 
+from openpine.data.footprint_orchestrator import FootprintOrchestrator
 from openpine.data.orchestrator import (
     BarSeriesValidator,
     DataCoverageError,
@@ -8,7 +9,6 @@ from openpine.data.orchestrator import (
     ProviderUnavailableError,
     StorageUnavailableError,
 )
-from openpine.data.footprint_orchestrator import FootprintOrchestrator
 
 __all__ = [
     "BarSeriesValidator",

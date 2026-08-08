@@ -31,6 +31,23 @@ def test_dockerfile_copies_openpine_package_tree() -> None:
     assert "COPY __init__.py integrations.py exchange_metadata.py ./" not in text
 
 
+def test_systemd_gateway_has_bounded_memory_and_worker_restart_policy() -> None:
+    unit = _read("openpine-gateway.service")
+
+    for setting in (
+        "MemoryAccounting=yes",
+        "MemoryHigh=1G",
+        "MemoryMax=1536M",
+        "MemorySwapMax=512M",
+        "TasksMax=256",
+        "OOMPolicy=continue",
+        "Environment=OPENPINE_WORKER_MAX_RESTARTS=3",
+        "Environment=OPENPINE_WORKER_RESTART_WINDOW_SECONDS=300",
+        "Environment=OPENPINE_WORKER_RESTART_BACKOFF_MAX_SECONDS=30",
+    ):
+        assert setting in unit
+
+
 def test_systemd_gateway_runner_sources_env_in_current_shell() -> None:
     script = _read("scripts/run_gateway_systemd.sh")
 

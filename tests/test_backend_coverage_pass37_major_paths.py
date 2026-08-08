@@ -60,6 +60,19 @@ class _FakeRegistry:
         type(self).statuses.append((strategy_id, status))
         type(self).strategy.status = status
 
+    def patch_strategy_atomic(self, strategy_id: str, updates: dict[str, object]) -> None:
+        strategy = self.get_strategy(strategy_id)
+        for key, value in updates.items():
+            setattr(strategy, key, value)
+
+    def set_enabled(self, strategy_id: str, enabled: bool) -> None:
+        self.get_strategy(strategy_id).enabled = enabled
+
+    def delete_strategy(self, strategy_id: str) -> None:
+        if strategy_id not in self._mem:
+            raise KeyError(strategy_id)
+        del self._mem[strategy_id]
+
     def close(self) -> None:
         pass
 
@@ -227,6 +240,12 @@ def _install_registry_and_store(monkeypatch, tmp_path: Path):
 
 def test_strategy_history_commands_cover_json_text_empty_and_missing(monkeypatch, tmp_path):
     fixtures = _install_registry_and_store(monkeypatch, tmp_path)
+    monkeypatch.setattr(cli_main, "_enable_strategy_via_gateway", lambda _strategy_id: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_strategy_transition_via_gateway",
+        lambda *_args, **_kwargs: None,
+    )
     runner = CliRunner()
 
     for args in (
@@ -289,6 +308,12 @@ def test_strategy_history_commands_cover_json_text_empty_and_missing(monkeypatch
 
 def test_strategy_export_compare_paper_live_and_daemon_gateway_paths(monkeypatch, tmp_path):
     fixtures = _install_registry_and_store(monkeypatch, tmp_path)
+    monkeypatch.setattr(cli_main, "_enable_strategy_via_gateway", lambda _strategy_id: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_strategy_transition_via_gateway",
+        lambda *_args, **_kwargs: None,
+    )
     runner = CliRunner()
 
     out = tmp_path / "export"

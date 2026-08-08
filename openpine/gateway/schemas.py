@@ -324,6 +324,7 @@ class DashboardResponse(BaseModel):
     uptime_seconds: float
     last_event_time: int | None = None
     last_bar_update: int | None = None
+    runtime_health: dict[str, Any] = Field(default_factory=dict)
 
 
 # ── Risk ──────────────────────────────────────────────────────────────────────

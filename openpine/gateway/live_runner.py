@@ -14,9 +14,10 @@ import re
 import time
 import traceback
 from dataclasses import dataclass
+from functools import partial
+from typing import Any
 
 from openpine._compat import structlog
-
 from openpine.gateway.ws_manager import ws_manager
 
 log = structlog.get_logger(__name__)
@@ -30,7 +31,8 @@ class RunnerConfig:
     lookback_bars: int = 500  # bars to load for mini-backtest
     recheck_bars: int = 0  # do not replay already processed bars by default
     max_catchup_bars: int = 12  # cap burst catch-up after stalls/restarts
-    order_store: any = None  # set at init
+    shutdown_timeout_seconds: float = 30.0
+    order_store: Any = None  # set at init
 
 
 @dataclass
@@ -69,6 +71,7 @@ class LiveStrategyRunner:
 
         self._running = False
         self._task: asyncio.Task | None = None
+        self._executor_futures: set[asyncio.Future[Any]] = set()
         self._strategy_states: dict[str, StrategyBarState] = {}
 
     def start(self) -> None:
@@ -84,11 +87,55 @@ class LiveStrategyRunner:
         log.info("live_runner.started", interval=self.config.check_interval_seconds)
 
     def stop(self) -> None:
-        """Stop the live runner."""
+        """Request live-runner shutdown without claiming quiescence."""
         self._running = False
         if self._task and not self._task.done():
             self._task.cancel()
+        log.info("live_runner.stop_requested")
+
+    async def wait_stopped(self) -> bool:
+        """Wait boundedly for the task and executor work to become quiescent."""
+
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + max(0.0, self.config.shutdown_timeout_seconds)
+        task = self._task
+        if task is not None and not task.done():
+            _done, pending_tasks = await asyncio.wait(
+                {task},
+                timeout=max(0.0, deadline - loop.time()),
+            )
+            if pending_tasks:
+                log.error("live_runner.shutdown_timeout", pending_tasks=1)
+                return False
+        if task is not None and task.done():
+            try:
+                task.result()
+            except asyncio.CancelledError:
+                pass
+
+        pending = [future for future in self._executor_futures if not future.done()]
+        if pending:
+            _done, still_pending = await asyncio.wait(
+                pending,
+                timeout=max(0.0, deadline - loop.time()),
+            )
+            if still_pending:
+                log.error(
+                    "live_runner.shutdown_timeout",
+                    pending_executor_jobs=len(still_pending),
+                )
+                return False
         log.info("live_runner.stopped")
+        return True
+
+    def _executor_future_done(self, future: asyncio.Future[Any]) -> None:
+        self._executor_futures.discard(future)
+        if future.cancelled():
+            return
+        try:
+            future.exception()
+        except Exception:
+            return
 
     async def _run_loop(self) -> None:
         """Main loop: check for bar closes and process strategies."""
@@ -173,10 +220,13 @@ class LiveStrategyRunner:
         for bar_time in bars_to_process:
             # Run mini-backtest in executor to not block event loop
             try:
-                orders = await loop.run_in_executor(
+                executor_future = loop.run_in_executor(
                     None,
-                    lambda t=bar_time: self._run_mini_backtest(strategy, t),
+                    partial(self._run_mini_backtest, strategy, bar_time),
                 )
+                self._executor_futures.add(executor_future)
+                executor_future.add_done_callback(self._executor_future_done)
+                orders = await asyncio.shield(executor_future)
             except Exception as exc:
                 log.error(
                     "live_runner.backtest_failed",
@@ -245,15 +295,16 @@ class LiveStrategyRunner:
     def _run_mini_backtest(self, strategy, up_to_bar_time_ms: int) -> list[dict] | None:
         """Run a mini-backtest on recent bars to detect new order signals."""
         try:
-            from openpine.runtime.engine import (
-                BacktestEngineAdapter,
-                BacktestRunConfig,
-                load_strategy_class_from_artifact,
-            )
             from marketdata_provider.contracts import (
                 BarQuery,
                 InstrumentKey,
                 parse_timeframe,
+            )
+
+            from openpine.runtime.engine import (
+                BacktestEngineAdapter,
+                BacktestRunConfig,
+                load_strategy_class_from_artifact,
             )
 
             # Load strategy class

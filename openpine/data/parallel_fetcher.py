@@ -9,12 +9,13 @@ Supports:
 from __future__ import annotations
 
 import os
-from openpine._compat import structlog
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Callable
 
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
+
+from openpine._compat import structlog
 from openpine.data.orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 
@@ -190,7 +191,7 @@ class ParallelDataFetcher:
         # Merge and deduplicate bars by timestamp
         all_bars: list[Bar] = []
         seen_times: set[int] = set()
-        for key, bars in results.items():
+        for bars in results.values():
             for bar in bars:
                 if bar.time not in seen_times:
                     seen_times.add(bar.time)
@@ -203,7 +204,7 @@ class ParallelDataFetcher:
 
 __all__ = [
     "FetchJob",
-    "ParallelFetchError",
     "ParallelDataFetcher",
+    "ParallelFetchError",
     "_default_workers",
 ]

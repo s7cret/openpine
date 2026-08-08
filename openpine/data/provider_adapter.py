@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
 from bisect import bisect_left
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_any_field, has_field
-
-from openpine._compat import structlog
 from marketdata_provider import create_footprint_provider, create_provider
 from marketdata_provider.config import MarketDataConfig
 from marketdata_provider.contracts import (
@@ -21,9 +18,12 @@ from marketdata_provider.contracts import (
     parse_timeframe,
 )
 
+from openpine._compat import structlog
+from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_any_field, has_field
+
 log = structlog.get_logger(__name__)
 
-REQUIRED_MARKETDATA_PROVIDER_VERSION = "4.0.0"
+REQUIRED_MARKETDATA_PROVIDER_VERSION = "4.0.1"
 
 
 class RuntimeDataProviderAdapter:
@@ -275,9 +275,9 @@ def create_local_footprint_provider_adapter(
 
 
 __all__ = [
+    "create_local_footprint_provider_adapter",
     "create_local_marketdata_provider_adapter",
     "create_local_runtime_data_provider_adapter",
-    "create_local_footprint_provider_adapter",
     "ensure_marketdata_provider_version",
     "normalize_provider_bar",
 ]

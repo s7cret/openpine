@@ -131,7 +131,10 @@ async def test_create_app_health_and_root_routes_return_versions() -> None:
         getattr(route, "path", None): getattr(route, "endpoint") for route in app.routes
     }
 
-    assert await endpoints["/health"]() == {"status": "ok", "version": server.__version__}
+    health = await endpoints["/health"]()
+    assert health["status"] == "ok"
+    assert health["version"] == server.__version__
+    assert health["runtime"]["background_worker"]["enabled"] is False
     assert await endpoints["/"]() == {
         "service": "OpenPine Gateway",
         "version": server.__version__,

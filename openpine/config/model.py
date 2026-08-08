@@ -6,10 +6,8 @@ from pathlib import Path
 
 import pydantic
 
-from openpine.timezones import DEFAULT_TIMEZONE, resolve_timezone
-
 from openpine.notifications import TelegramPluginConfig
-
+from openpine.timezones import DEFAULT_TIMEZONE, resolve_timezone
 
 SUPPORTED_MARKETDATA_TIMEFRAMES: tuple[str, ...] = (
     "1m",
@@ -40,7 +38,7 @@ class PluginsConfig(pydantic.BaseModel):
 class OpenPineConfig(pydantic.BaseModel):
     """Root configuration for OpenPine."""
 
-    workspace_root: Path = Path(".").resolve()
+    workspace_root: Path = Path.cwd()
     data_dir: Path = Path(".openpine/data")
     data_cache_root: Path | None = None
     output_root: Path | None = None
@@ -156,7 +154,7 @@ class OpenPineConfig(pydantic.BaseModel):
             return v.expanduser()
         return v
 
-    def model_post_init(self, __context: object) -> None:
+    def model_post_init(self, __context: object) -> None:  # noqa: PYI063
         self.workspace_root = self.workspace_root.expanduser().resolve()
         for field_name in ("data_dir", "config_dir", "sqlite_path", "duckdb_path"):
             value = getattr(self, field_name)

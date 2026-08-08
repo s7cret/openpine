@@ -6,9 +6,9 @@ import argparse
 import ast
 import json
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
 
 _EXCLUDED_DIRS = {
     ".git",
@@ -77,12 +77,13 @@ def duplicate_report(root: Path) -> DuplicateReport:
         rel = path.relative_to(root).as_posix()
         for name, fingerprint in _function_fingerprints(path):
             buckets[fingerprint].append(f"{rel}:{name}")
-    groups = [
-        {"locations": sorted(locations)}
-        for locations in buckets.values()
-        if len(set(locations)) > 1
+    location_groups = [
+        sorted(locations) for locations in buckets.values() if len(set(locations)) > 1
     ]
-    groups.sort(key=lambda item: item["locations"])
+    location_groups.sort()
+    groups: list[dict[str, object]] = [
+        {"locations": locations} for locations in location_groups
+    ]
     return DuplicateReport(duplicate_group_count=len(groups), duplicate_groups=groups)
 
 
@@ -98,13 +99,13 @@ def main(argv: list[str] | None = None) -> int:
 
     root = Path(args.root).resolve()
     if args.command == "architecture":
-        report = architecture_report(root, max_lines=args.max_lines)
-        print(json.dumps(asdict(report), indent=2, sort_keys=True))
-        return 1 if report.oversized_count else 0
+        architecture = architecture_report(root, max_lines=args.max_lines)
+        print(json.dumps(asdict(architecture), indent=2, sort_keys=True))
+        return 1 if architecture.oversized_count else 0
     if args.command == "duplicates":
-        report = duplicate_report(root)
-        print(json.dumps(asdict(report), indent=2, sort_keys=True))
-        return 1 if report.duplicate_group_count else 0
+        duplicates = duplicate_report(root)
+        print(json.dumps(asdict(duplicates), indent=2, sort_keys=True))
+        return 1 if duplicates.duplicate_group_count else 0
     return 2
 
 

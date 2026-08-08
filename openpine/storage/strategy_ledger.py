@@ -126,7 +126,7 @@ class StrategyLedger:
     trades, and the current position checkpoint.
     """
 
-    def __init__(self, storage: "SQLiteStorage") -> None:
+    def __init__(self, storage: SQLiteStorage) -> None:
         self.storage = storage
 
     def upsert_position(self, position: StrategyPosition) -> StrategyPosition:

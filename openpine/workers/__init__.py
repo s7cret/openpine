@@ -21,9 +21,8 @@ from openpine.workers.strategy_job_executor import (
 )
 
 __all__ = [
-    "FanoutStatus",
-    "WorkerPool",
     "AggregationWorkerPool",
+    "FanoutStatus",
     "FeatureWorkerPool",
     "SourceBarFanoutResult",
     "StrategyBarFanout",
@@ -32,6 +31,7 @@ __all__ = [
     "StrategyJobExecutor",
     "StrategyJobStatus",
     "TargetBarResult",
+    "WorkerPool",
     "WorkerState",
     "WorkerStatus",
 ]

@@ -25,7 +25,7 @@ class StateRebuilder:
 
     def __init__(
         self,
-        state_store: "StateStore",
+        state_store: StateStore,
         data_orchestrator: Any | None = None,
         backtest_engine: Any | None = None,
     ) -> None:
@@ -38,7 +38,7 @@ class StateRebuilder:
         strategy_id: str,
         from_bar_time: int,
         reason: str = "data_repaired",
-    ) -> "StrategyState":
+    ) -> StrategyState:
         """Rebuild state by replaying bars from from_bar_time.
 
         Uses backtest_engine if available, otherwise replays from saved bars.
@@ -100,9 +100,7 @@ class StateRebuilder:
             # Basic consistency checks
             if state.bar_time <= 0:
                 return False
-            if not state.strategy_id:
-                return False
-            return True
+            return bool(state.strategy_id)
         except Exception:
             return False
 

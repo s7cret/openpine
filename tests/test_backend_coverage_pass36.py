@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import importlib
+import json
 import sys
+from email.message import Message
 from types import ModuleType, SimpleNamespace
 
+import click
+import pytest
 from click.testing import CliRunner
 
 cli_main = importlib.import_module("openpine.cli.main")
@@ -58,6 +62,14 @@ class FakeStrategyRegistry:
         return s
     def update_status(self, strategy_id, status):
         self.get_strategy(strategy_id).status = status
+    def patch_strategy_atomic(self, strategy_id, updates):
+        strategy = self.get_strategy(strategy_id)
+        for key, value in updates.items(): setattr(strategy, key, value)
+    def set_enabled(self, strategy_id, enabled):
+        self.get_strategy(strategy_id).enabled = enabled
+    def delete_strategy(self, strategy_id):
+        if strategy_id not in self.strategies: raise KeyError(strategy_id)
+        del self.strategies[strategy_id]
 
 
 class FakePineRegistry:
@@ -105,6 +117,7 @@ def _strategy(strategy_id="s1", status="paused"):
 
 def test_strategy_cli_lifecycle_happy_and_error_paths(monkeypatch):
     _install_fake_registries(monkeypatch)
+    monkeypatch.setattr(cli_main, "_enable_strategy_via_gateway", lambda _strategy_id: None)
     FakeStrategyRegistry.strategies = {}
     FakePineRegistry.sources = {}
     runner = CliRunner()
@@ -131,6 +144,176 @@ def test_strategy_cli_lifecycle_happy_and_error_paths(monkeypatch):
     assert runner.invoke(cli_main.cli, ["strategy", "disable", "s1"]).exit_code == 0
     assert runner.invoke(cli_main.cli, ["strategy", "remove", "missing"]).exit_code != 0
     assert runner.invoke(cli_main.cli, ["strategy", "remove", "s1"]).exit_code == 0
+
+
+def test_strategy_cli_enable_uses_guarded_gateway(monkeypatch):
+    from urllib.error import HTTPError, URLError
+
+    requests = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def success(request, *, timeout):
+        requests.append((request, timeout))
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", success)
+    cli_main._enable_strategy_via_gateway("s/1")
+    request, timeout = requests[0]
+    assert request.full_url == "http://127.0.0.1:8080/api/strategies/s%2F1/enable"
+    assert request.method == "POST"
+    assert timeout == 5
+
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            HTTPError("url", 503, "unready", Message(), None)
+        ),
+    )
+    with pytest.raises(click.ClickException, match="HTTP 503"):
+        cli_main._enable_strategy_via_gateway("s1")
+
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(URLError("down")),
+    )
+    with pytest.raises(click.ClickException, match="Gateway unavailable"):
+        cli_main._enable_strategy_via_gateway("s1")
+
+
+def test_strategy_cli_paper_and_live_transitions_use_gateway_endpoints(monkeypatch):
+    import openpine.config as config_mod
+    import openpine.registry as registry_mod
+
+    requests = []
+    strategy_obj = SimpleNamespace(
+        strategy_id="s/1",
+        name="guarded",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        status="paused",
+    )
+
+    class Registry:
+        def get_strategy(self, strategy_id):
+            assert strategy_id == "s/1"
+            return strategy_obj
+
+        def update_status(self, *_args):
+            raise AssertionError("CLI trading transitions must not write SQLite directly")
+
+        def close(self):
+            pass
+
+    class Config:
+        live_enabled = True
+
+        @classmethod
+        def load(cls):
+            return cls()
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def capture(request, *, timeout):
+        requests.append((request, timeout))
+        return Response()
+
+    monkeypatch.setattr(registry_mod, "SQLiteStrategyRegistry", Registry)
+    monkeypatch.setattr(config_mod, "OpenPineConfig", Config)
+    monkeypatch.setattr("urllib.request.urlopen", capture)
+    runner = CliRunner()
+
+    for args in (
+        ["strategy", "paper", "s/1", "start"],
+        ["strategy", "paper", "s/1", "stop"],
+        ["strategy", "live", "s/1", "enable"],
+        ["strategy", "live", "s/1", "start"],
+        ["strategy", "live", "s/1", "stop"],
+    ):
+        result = runner.invoke(cli_main.cli, args)
+        assert result.exit_code == 0, (args, result.output, result.exception)
+
+    assert [request.full_url for request, _timeout in requests] == [
+        "http://127.0.0.1:8080/api/paper/start",
+        "http://127.0.0.1:8080/api/paper/stop",
+        "http://127.0.0.1:8080/api/strategies/s%2F1/enable",
+        "http://127.0.0.1:8080/api/live/start",
+        "http://127.0.0.1:8080/api/live/stop",
+    ]
+    assert all(request.method == "POST" for request, _timeout in requests)
+    assert all(timeout == 5 for _request, timeout in requests)
+    assert [json.loads(request.data) for request, _timeout in requests if request.data] == [
+        {"strategy_id": "s/1"},
+        {"strategy_id": "s/1"},
+        {"strategy_id": "s/1"},
+        {"strategy_id": "s/1"},
+    ]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ["strategy", "paper", "s1", "start"],
+        ["strategy", "live", "s1", "enable"],
+        ["strategy", "live", "s1", "start"],
+    ],
+)
+def test_strategy_cli_activation_fails_closed_when_worker_circuit_is_exhausted(
+    monkeypatch, args
+):
+    from urllib.error import HTTPError
+
+    import openpine.config as config_mod
+    import openpine.registry as registry_mod
+
+    strategy_obj = SimpleNamespace(
+        strategy_id="s1",
+        name="guarded",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        status="paused",
+    )
+
+    class Registry:
+        def get_strategy(self, _strategy_id):
+            return strategy_obj
+
+        def update_status(self, *_args):
+            raise AssertionError("exhausted-circuit CLI must not mutate local status")
+
+        def close(self):
+            pass
+
+    class Config:
+        live_enabled = True
+
+        @classmethod
+        def load(cls):
+            return cls()
+
+    monkeypatch.setattr(registry_mod, "SQLiteStrategyRegistry", Registry)
+    monkeypatch.setattr(config_mod, "OpenPineConfig", Config)
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            HTTPError("url", 503, "restart budget exhausted", Message(), None)
+        ),
+    )
+
+    result = CliRunner().invoke(cli_main.cli, args)
+
+    assert result.exit_code != 0
+    assert "HTTP 503" in result.output
 
 
 def test_strategy_cli_create_and_update_edges(monkeypatch):

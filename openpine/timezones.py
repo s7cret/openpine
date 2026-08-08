@@ -10,14 +10,14 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 DEFAULT_TIMEZONE = "UTC+03:00"
 DEFAULT_TIMEZONE_LABEL = "MSK"
 _ENV_TIMEZONE = "OPENPINE_TIMEZONE"
 _UTC_OFFSET_RE = re.compile(
-    r"^(?:UTC)?(?P<sign>[+-])(?P<hours>\d{1,2})(?::?(?P<minutes>\d{2}))?$", re.I
+    r"^(?:UTC)?(?P<sign>[+-])(?P<hours>\d{1,2})(?::?(?P<minutes>\d{2}))?$", re.IGNORECASE
 )
 
 
@@ -52,7 +52,7 @@ def resolve_timezone(name: str | None = None) -> TimezoneSpec:
     raw = (name or DEFAULT_TIMEZONE).strip()
     upper = raw.upper()
     if upper in {"UTC", "Z"}:
-        return TimezoneSpec(name="UTC", label="UTC", tz=timezone.utc)
+        return TimezoneSpec(name="UTC", label="UTC", tz=UTC)
     if upper == "MSK":
         return TimezoneSpec(
             name=DEFAULT_TIMEZONE,
@@ -115,7 +115,7 @@ def parse_timestamp_ms(
     if text.isdigit():
         raw = int(text)
         return raw if raw > 10_000_000_000 else raw * 1000
-    parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    parsed = datetime.fromisoformat(text)
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=configured_timezone(default_tz).tz)
     return int(parsed.timestamp() * 1000)
@@ -131,7 +131,7 @@ def parse_ymd_ms(value: str, *, default_tz: str | None = None) -> int:
 
 
 def format_utc_ms(timestamp_ms: int, fmt: str = "%Y-%m-%d %H:%M:%S") -> str:
-    return datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc).strftime(fmt)
+    return datetime.fromtimestamp(timestamp_ms / 1000, UTC).strftime(fmt)
 
 
 __all__ = [

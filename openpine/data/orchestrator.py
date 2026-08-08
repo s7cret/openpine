@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import inspect
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
-import inspect
-from typing import Callable, Protocol
+from typing import Protocol
 
 from marketdata_provider import create_candle_store
 from marketdata_provider.config import MarketDataConfig, StorageConfig
@@ -17,15 +18,16 @@ from marketdata_provider.contracts import (
     CoverageReport,
     StoreResult,
 )
+
 from openpine.config import DEFAULT_CONFIG
 from openpine.data.models import CandleCommitResult, DataGap
-from openpine.data.row_helpers import duplicate_timestamps
 from openpine.data.persistent_cache import (
     cache_enabled_by_env,
     default_cache_dir,
     load_bar_series,
     save_bar_series,
 )
+from openpine.data.row_helpers import duplicate_timestamps
 
 
 class MarketDataProvider(Protocol):

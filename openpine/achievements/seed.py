@@ -21,9 +21,8 @@ log = structlog.get_logger(__name__)
 def seed_achievements(storage: SQLiteStorage) -> int:
     """Insert or refresh catalog rows. Returns the number of rows touched."""
     now = int(time.time())
-    sort = 0
     rows: list[tuple[Any, ...]] = []
-    for a in ALL:
+    for sort, a in enumerate(ALL):
         rows.append(
             (
                 a.id,
@@ -41,7 +40,6 @@ def seed_achievements(storage: SQLiteStorage) -> int:
                 now,
             )
         )
-        sort += 1
 
     storage.execute_many(
         """

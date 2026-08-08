@@ -19,37 +19,37 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: s7cret/pine2ast
-          ref: bf2614855851e0626bbe802b6d945ce23593e886
+          ref: b7b52d3399afc2641ad4d9623e5c63a421588c6c
           path: pine2ast
       - name: Checkout AST2Python
         uses: actions/checkout@v4
         with:
           repository: s7cret/ast2python
-          ref: d6d83ba7d11db651e17307244033394cf8a623ab
+          ref: 7e2c0760aa0d0f6f5db83bd0bf5ac3cf59b874c7
           path: ast2python
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
           repository: s7cret/pinelib
-          ref: 33239a0093fa5d548058d79d5d079104db0ef43e
+          ref: 531e284d710ca48ce44ce8f88e6e8aa6c34a8385
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: s7cret/backtest_engine
-          ref: d75c270cd6aae4b557ec72f96bd5d33407aee334
+          ref: 6e6b263c6119d9b77f02a87022008a066f936472
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
           repository: s7cret/marketdata-provider
-          ref: f42cd7d7cb2069a40d00917978a8732aa3278423
+          ref: a8f0b5626c7ec227d08e9d0157b191bd2a50ddd4
           path: marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
           repository: s7cret/optimizer
-          ref: 2922b0c515ad6e68cf0a078635235604b4c3c220
+          ref: edd4b1d44ef00592bccaa80bf65e6f776563e902
           path: optimizer
       - uses: actions/setup-python@v5
         with:
@@ -80,8 +80,8 @@ jobs:
           )
           for distribution in distributions:
               installed = version(distribution)
-              if installed != '4.0.0':
-                  raise SystemExit(f'{distribution}: expected 4.0.0, got {installed!r}')
+              if installed != '4.0.1':
+                  raise SystemExit(f'{distribution}: expected 4.0.1, got {installed!r}')
               print(distribution, installed)
           PY
       - name: Cross-project compiler/runtime E2E

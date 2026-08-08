@@ -211,6 +211,10 @@ def test_strategy_cli_lifecycle_with_fakes(monkeypatch):
             return strategy_obj
         def register_strategy(self, **kwargs): return strategy_obj
         def update_status(self, strategy_id, status): strategy_obj.status = status
+        def patch_strategy_atomic(self, strategy_id, updates):
+            for key, value in updates.items(): setattr(strategy_obj, key, value)
+        def set_enabled(self, strategy_id, enabled): strategy_obj.enabled = enabled
+        def delete_strategy(self, strategy_id): self._mem.pop(strategy_id, None)
         def close(self): pass
     class FakePineRegistry:
         def get_source(self, name):
@@ -336,6 +340,11 @@ def test_strategy_result_cli_commands_with_fake_store(monkeypatch, tmp_path: Pat
     monkeypatch.setattr(pd, "read_parquet", lambda path: pd.DataFrame({"time": [1, 2], "equity": [1000, 1100], "title": ["p", "p"], "value": [1.0, 2.0]}))
     monkeypatch.setattr(cli_main, "_copy_strategy_export_run_meta", lambda **kwargs: None)
     monkeypatch.setattr(cli_main, "_compare_strategy_run_with_tv_exports", lambda **kwargs: {"comparisons": [{"type": "plots", "status": "match", "classification": "exact", "mismatch_cells": 0, "total_cells": 1, "max_abs_delta": 0.0}]})
+    monkeypatch.setattr(
+        cli_main,
+        "_strategy_transition_via_gateway",
+        lambda *_args, **_kwargs: None,
+    )
 
     runner = CliRunner()
     commands = [
@@ -388,6 +397,14 @@ def test_strategy_live_error_and_gateway_cli_edges(monkeypatch):
 
     monkeypatch.setattr(registry_mod, "SQLiteStrategyRegistry", FakeRegistry)
     monkeypatch.setattr(config_mod, "OpenPineConfig", FakeConfig)
+    monkeypatch.setattr(
+        cli_main,
+        "_strategy_transition_via_gateway",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        cli_main, "_enable_strategy_via_gateway", lambda *_args, **_kwargs: None
+    )
     runner = CliRunner()
     assert runner.invoke(cli_main.cli, ["strategy", "live", "sid1", "enable"]).exit_code == 0
     assert runner.invoke(cli_main.cli, ["strategy", "live", "sid1", "stop"]).exit_code == 0

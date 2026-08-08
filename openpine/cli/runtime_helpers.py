@@ -10,10 +10,9 @@ import hashlib
 import inspect
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-
 
 from openpine.exchange_metadata import (
     default_qty_rounding_mode as metadata_default_qty_rounding_mode,
@@ -25,18 +24,18 @@ from openpine.timezones import parse_timestamp_ms
 def _fmt_utc_ms(timestamp_ms: int) -> str:
     """Format a millisecond timestamp without deprecated utcfromtimestamp()."""
     return (
-        f"{datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc):%Y-%m-%d %H:%M:%S}"
+        f"{datetime.fromtimestamp(timestamp_ms / 1000, UTC):%Y-%m-%d %H:%M:%S}"
     )
 
 
 def _fmt_utc_seconds(timestamp_seconds: int) -> str:
     return (
-        f"{datetime.fromtimestamp(timestamp_seconds, timezone.utc):%Y-%m-%d %H:%M:%S}"
+        f"{datetime.fromtimestamp(timestamp_seconds, UTC):%Y-%m-%d %H:%M:%S}"
     )
 
 
 def _fmt_utc_ms_as(timestamp_ms: int, fmt: str) -> str:
-    return datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc).strftime(fmt)
+    return datetime.fromtimestamp(timestamp_ms / 1000, UTC).strftime(fmt)
 
 
 def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | None:
@@ -715,6 +714,7 @@ def _ensure_output_dir(output_dir: str) -> Path:
 
 def _strategy_backtest_dependencies():
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
     from openpine.artifacts import ArtifactStore
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
@@ -744,6 +744,7 @@ def _strategy_backtest_dependencies():
 
 def _indicator_plot_dependencies():
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
     from openpine.export import export_plot_records, parse_time_ms, write_json
@@ -1548,58 +1549,58 @@ def _build_indicator_plot_run_meta(
 
 
 __all__ = [
-    "_fmt_utc_ms",
-    "_fmt_utc_seconds",
-    "_fmt_utc_ms_as",
-    "_default_qty_step",
-    "_default_qty_rounding_mode",
-    "_parse_cli_date_ms",
-    "_plot_record_count",
     "_bars_data_fingerprint",
-    "_build_strategy_backtest_config",
-    "_build_strategy_replay_config",
-    "_get_strategy_or_exit",
-    "_print_strategy_command_header",
-    "_strategy_backtest_readiness_error",
-    "_exit_if_strategy_not_ready_for_backtest",
-    "_parse_strategy_backtest_window",
-    "_parse_valid_strategy_backtest_window",
-    "_print_backtest_result_summary",
-    "_load_strategy_backtest_class",
-    "_load_strategy_backtest_class_or_exit",
-    "_exit_if_no_strategy_bars",
-    "_build_strategy_backtest_params_and_config",
-    "_prepare_strategy_backtest_inputs",
-    "_prepare_strategy_replay_inputs",
-    "_build_strategy_backtest_run_request",
-    "_prepare_strategy_backtest_runtime",
-    "_build_progress_callback",
-    "_parse_indicator_plot_window",
-    "_load_pine_source_or_exit",
-    "_require_active_pine_artifact",
-    "_load_generated_class_timed",
-    "_print_indicator_plot_header",
-    "_ensure_output_dir",
-    "_strategy_backtest_dependencies",
-    "_indicator_plot_dependencies",
-    "_load_indicator_plot_bars",
-    "_execute_indicator_plot_runtime",
-    "_run_indicator_plot_runtime",
-    "_write_indicator_plot_outputs",
-    "_write_indicator_plot_run_meta",
-    "_write_indicator_plot_run_outputs",
-    "_prepare_indicator_plot_inputs",
-    "_build_strategy_backtest_run_meta",
-    "_print_strategy_plot_capture_status",
-    "_load_strategy_backtest_bars",
-    "_strategy_backtest_declaration_args",
-    "_save_strategy_backtest_result",
-    "_save_strategy_backtest_result_safely",
-    "_persist_strategy_backtest_result",
-    "_save_strategy_resume_snapshot",
-    "_run_strategy_backtest_adapter",
-    "_run_strategy_backtest_or_exit",
     "_build_cli_bar_query",
     "_build_indicator_plot_config",
     "_build_indicator_plot_run_meta",
+    "_build_progress_callback",
+    "_build_strategy_backtest_config",
+    "_build_strategy_backtest_params_and_config",
+    "_build_strategy_backtest_run_meta",
+    "_build_strategy_backtest_run_request",
+    "_build_strategy_replay_config",
+    "_default_qty_rounding_mode",
+    "_default_qty_step",
+    "_ensure_output_dir",
+    "_execute_indicator_plot_runtime",
+    "_exit_if_no_strategy_bars",
+    "_exit_if_strategy_not_ready_for_backtest",
+    "_fmt_utc_ms",
+    "_fmt_utc_ms_as",
+    "_fmt_utc_seconds",
+    "_get_strategy_or_exit",
+    "_indicator_plot_dependencies",
+    "_load_generated_class_timed",
+    "_load_indicator_plot_bars",
+    "_load_pine_source_or_exit",
+    "_load_strategy_backtest_bars",
+    "_load_strategy_backtest_class",
+    "_load_strategy_backtest_class_or_exit",
+    "_parse_cli_date_ms",
+    "_parse_indicator_plot_window",
+    "_parse_strategy_backtest_window",
+    "_parse_valid_strategy_backtest_window",
+    "_persist_strategy_backtest_result",
+    "_plot_record_count",
+    "_prepare_indicator_plot_inputs",
+    "_prepare_strategy_backtest_inputs",
+    "_prepare_strategy_backtest_runtime",
+    "_prepare_strategy_replay_inputs",
+    "_print_backtest_result_summary",
+    "_print_indicator_plot_header",
+    "_print_strategy_command_header",
+    "_print_strategy_plot_capture_status",
+    "_require_active_pine_artifact",
+    "_run_indicator_plot_runtime",
+    "_run_strategy_backtest_adapter",
+    "_run_strategy_backtest_or_exit",
+    "_save_strategy_backtest_result",
+    "_save_strategy_backtest_result_safely",
+    "_save_strategy_resume_snapshot",
+    "_strategy_backtest_declaration_args",
+    "_strategy_backtest_dependencies",
+    "_strategy_backtest_readiness_error",
+    "_write_indicator_plot_outputs",
+    "_write_indicator_plot_run_meta",
+    "_write_indicator_plot_run_outputs",
 ]

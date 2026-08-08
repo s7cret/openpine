@@ -6,8 +6,9 @@ Service lifecycle management for OpenPine daemon processes.
 from __future__ import annotations
 
 import asyncio
-from openpine._compat import structlog
 from enum import StrEnum
+
+from openpine._compat import structlog
 
 log = structlog.get_logger(__name__)
 
@@ -47,11 +48,9 @@ class DaemonService:
 
     async def _on_start(self) -> None:
         """Hook: called when service starts. Override in subclass."""
-        pass
 
     async def _on_stop(self, timeout: float) -> None:
         """Hook: called when service stops. Override in subclass."""
-        pass
 
     async def start(self) -> None:
         """Start the service.
@@ -100,7 +99,7 @@ class DaemonService:
 
         try:
             await asyncio.wait_for(self._on_stop(timeout), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             log.warning("daemon_service.stop.timeout", name=self.name, timeout=timeout)
         except Exception as exc:
             log.error("daemon_service.stop.error", name=self.name, error=str(exc))

@@ -42,7 +42,7 @@ class Event:
         event_type: EventType,
         payload: dict,
         durable: bool = True,
-    ) -> "Event":
+    ) -> Event:
         """Factory: create a new event with generated ID and current timestamp."""
         return cls(
             event_id=f"evt_{uuid.uuid4().hex[:16]}",

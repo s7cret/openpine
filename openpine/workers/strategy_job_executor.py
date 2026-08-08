@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
 
@@ -231,8 +232,8 @@ class StrategyJobExecutor:
                 market=strategy.market_type.lower(),
                 prefetch_end_ms=bar.time_close,
             )
-        setattr(strategy_class, "runtime_data_provider", runtime_data_provider)
-        setattr(strategy_class, "runtime_intrabar_provider", runtime_data_provider)
+        strategy_class.runtime_data_provider = runtime_data_provider
+        strategy_class.runtime_intrabar_provider = runtime_data_provider
         return self.runtime_adapter.run(
             strategy_class,
             [bar],

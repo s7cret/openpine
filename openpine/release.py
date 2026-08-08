@@ -12,10 +12,17 @@ from pathlib import Path
 from openpine import __version__
 from openpine.distribution import distribution_manifest
 from openpine.quality import architecture_report, duplicate_report
+from openpine.stack_lock import (
+    load_stack_lock,
+    package_tree_identity,
+    stack_lock_identity,
+    validate_stack_lock,
+    validate_stack_refs,
+)
 from openpine.storage.migrations import _get_migration_files
 from openpine.storage.schema_indexes import REQUIRED_INDEXES
 
-REQUIRED_STACK_VERSION = "4.0.0"
+REQUIRED_STACK_VERSION = "4.0.1"
 CANONICAL_DOCS = {
     "docs/README.md",
     "docs/ARCHITECTURE.md",
@@ -69,6 +76,44 @@ def release_report(root: Path) -> ReleaseReport:
     if __version__ != REQUIRED_STACK_VERSION:
         errors.append(f"package version {__version__} != required {REQUIRED_STACK_VERSION}")
     errors.extend(_dependency_errors(project))
+    lock_path = root / "openpine" / "stack-lock.json"
+    lock_checks: dict[str, object] = {"path": str(lock_path.relative_to(root))}
+    try:
+        lock = load_stack_lock(lock_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        errors.append(f"invalid stack lock: {type(exc).__name__}: {exc}")
+        lock_checks.update(
+            {"valid": False, "coherent": False, "source_tree_matches": False}
+        )
+    else:
+        lock_errors = validate_stack_lock(lock, root=root)
+        ref_errors = validate_stack_refs(lock, root=root)
+        errors.extend(lock_errors)
+        errors.extend(ref_errors)
+        components_value = lock.get("components", [])
+        components = components_value if isinstance(components_value, list) else []
+        openpine_identity = components[0] if components else {}
+        source_tree_matches = bool(
+            isinstance(openpine_identity, dict)
+            and openpine_identity.get("name") == "openpine"
+            and openpine_identity.get("tree_sha256")
+            == package_tree_identity(root / "openpine")
+        )
+        if not source_tree_matches:
+            errors.append("stack lock OpenPine tree_sha256 does not match package sources")
+        lock_checks.update(
+            {
+                "valid": not lock_errors,
+                "coherent": not lock_errors and not ref_errors and source_tree_matches,
+                "source_tree_matches": source_tree_matches,
+                "refs_verified": not ref_errors,
+                "ref_errors": list(ref_errors),
+                "schema": lock.get("schema"),
+                "release": lock.get("release"),
+                "sha256": stack_lock_identity(lock),
+                "component_count": len(components),
+            }
+        )
     missing_docs = sorted(path for path in CANONICAL_DOCS if not (root / path).is_file())
     if missing_docs:
         errors.append(f"missing canonical docs: {missing_docs}")
@@ -92,6 +137,7 @@ def release_report(root: Path) -> ReleaseReport:
         "architecture": asdict(arch),
         "duplicates": asdict(dup),
         "distribution": asdict(dist),
+        "stack_lock": lock_checks,
         "migration_count": len(migrations),
         "latest_migration": migrations[-1][0] if migrations else None,
         "required_index_count": len(REQUIRED_INDEXES),

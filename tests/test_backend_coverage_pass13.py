@@ -134,6 +134,19 @@ class _FakeStrategyRegistry:
         self.status_updates.append((strategy_id, status))
         self.get_strategy(strategy_id).status = status
 
+    def patch_strategy_atomic(self, strategy_id: str, updates: dict[str, object]):
+        strategy = self.get_strategy(strategy_id)
+        for key, value in updates.items():
+            setattr(strategy, key, value)
+
+    def set_enabled(self, strategy_id: str, enabled: bool):
+        self.get_strategy(strategy_id).enabled = enabled
+
+    def delete_strategy(self, strategy_id: str):
+        if strategy_id not in self._mem:
+            raise KeyError(strategy_id)
+        del self._mem[strategy_id]
+
     def close(self):
         self.closed = True
 
@@ -213,6 +226,14 @@ def _patch_strategy_dependencies(monkeypatch, tmp_path):
         "openpine.config.OpenPineConfig.load",
         lambda: SimpleNamespace(live_enabled=True, data_dir=tmp_path, config_dir=tmp_path),
     )
+    monkeypatch.setattr(
+        cli_main,
+        "_strategy_transition_via_gateway",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        cli_main, "_enable_strategy_via_gateway", lambda *_args, **_kwargs: None
+    )
     return registry, store
 
 
@@ -270,7 +291,7 @@ def test_strategy_cli_lifecycle_and_result_commands(monkeypatch, tmp_path):
         result = runner.invoke(cli_main.cli, args)
         assert result.exit_code == 0, (args, result.output, result.exception)
 
-    assert ("s1", "running") in registry.status_updates
+    assert ("s1", "paused") in registry.status_updates
     assert (tmp_path / "export" / "trades.csv").exists()
 
 

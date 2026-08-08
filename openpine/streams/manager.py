@@ -14,16 +14,18 @@ Rules:
 
 from __future__ import annotations
 
-from openpine._compat import structlog
 import uuid
 from dataclasses import asdict, dataclass, is_dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from openpine._compat import structlog
+
 if TYPE_CHECKING:
     from marketdata_provider.contracts import InstrumentKey, Timeframe
-    from openpine.events.bus import EventBus
+
     from openpine.data.orchestrator import DataOrchestrator
+    from openpine.events.bus import EventBus
     from openpine.streams.provider_adapter import LiveDataFeedAdapter
 
 log = structlog.get_logger(__name__)
@@ -66,10 +68,10 @@ class StreamSubscription:
     @classmethod
     def create(
         cls,
-        instrument_key: "InstrumentKey",
-        timeframe: "Timeframe",
+        instrument_key: InstrumentKey,
+        timeframe: Timeframe,
         provider: str = "marketdata-provider",
-    ) -> "StreamSubscription":
+    ) -> StreamSubscription:
         """Factory: create a new subscription from domain objects."""
         return cls(
             subscription_id=f"sub_{uuid.uuid4().hex[:16]}",
@@ -95,8 +97,8 @@ class MarketDataStreamManager:
 
     def __init__(
         self,
-        event_bus: "EventBus",
-        data_orchestrator: "DataOrchestrator",
+        event_bus: EventBus,
+        data_orchestrator: DataOrchestrator,
     ) -> None:
         """Initialize the stream manager.
 
@@ -107,10 +109,10 @@ class MarketDataStreamManager:
         self.event_bus = event_bus
         self.data_orchestrator = data_orchestrator
         self._subscriptions: dict[str, StreamSubscription] = {}
-        self._adapter: "LiveDataFeedAdapter | None" = None
+        self._adapter: LiveDataFeedAdapter | None = None
         log.info("market_data_stream_manager.init")
 
-    def set_adapter(self, adapter: "LiveDataFeedAdapter | None") -> None:
+    def set_adapter(self, adapter: LiveDataFeedAdapter | None) -> None:
         """Set the LiveDataFeedAdapter for live transport.
 
         Args:
@@ -124,8 +126,8 @@ class MarketDataStreamManager:
 
     def subscribe(
         self,
-        instrument_key: "InstrumentKey",
-        timeframe: "Timeframe",
+        instrument_key: InstrumentKey,
+        timeframe: Timeframe,
     ) -> StreamSubscription:
         """Start streaming bars for instrument/timeframe.
 
@@ -202,6 +204,8 @@ class MarketDataStreamManager:
                 # Reconstruct minimal key objects for unsubscribe
                 from marketdata_provider.contracts import (
                     InstrumentKey as CK,
+                )
+                from marketdata_provider.contracts import (
                     Timeframe as TF,
                 )
 

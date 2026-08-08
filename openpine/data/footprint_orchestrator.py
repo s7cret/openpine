@@ -6,6 +6,7 @@ from typing import Protocol
 
 from marketdata_provider.contracts import FootprintQuery, FootprintSeries, StoreResult
 from marketdata_provider.store.footprint_store import FootprintStore
+
 from openpine.data.orchestrator import IncompleteCoverageError, StorageUnavailableError
 
 

@@ -7,8 +7,8 @@ compatible with the DataProvider protocol expected by request.security.
 from __future__ import annotations
 
 import json as _json
-import urllib.request
 import urllib.error
+import urllib.request
 
 from pinelib.core.bar import Bar as PinelibBar
 

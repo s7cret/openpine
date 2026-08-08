@@ -22,7 +22,8 @@ Rules:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Protocol
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
     from marketdata_provider.contracts import Bar, InstrumentKey, Timeframe
@@ -47,8 +48,8 @@ class KlineUpdateEnvelope:
 
     def __init__(
         self,
-        instrument_key: "InstrumentKey | dict",
-        timeframe: "Timeframe | dict",
+        instrument_key: InstrumentKey | dict,
+        timeframe: Timeframe | dict,
         timestamp: int,
         open: float,
         high: float,
@@ -102,8 +103,8 @@ class LiveDataFeedAdapter(Protocol):
 
     async def subscribe(
         self,
-        instrument_key: "InstrumentKey",
-        timeframe: "Timeframe",
+        instrument_key: InstrumentKey,
+        timeframe: Timeframe,
     ) -> None:
         """Start streaming for instrument/timeframe.
 
@@ -115,8 +116,8 @@ class LiveDataFeedAdapter(Protocol):
 
     async def unsubscribe(
         self,
-        instrument_key: "InstrumentKey",
-        timeframe: "Timeframe",
+        instrument_key: InstrumentKey,
+        timeframe: Timeframe,
     ) -> None:
         """Stop streaming for instrument/timeframe.
 
@@ -126,7 +127,7 @@ class LiveDataFeedAdapter(Protocol):
         """
         ...
 
-    def on_bar(self, callback: Callable[["Bar"], None]) -> None:
+    def on_bar(self, callback: Callable[[Bar], None]) -> None:
         """Register a callback for confirmed closed bars.
 
         The callback is invoked for each confirmed closed bar received

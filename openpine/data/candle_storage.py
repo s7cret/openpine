@@ -18,10 +18,11 @@ import sqlite3
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
+from typing import Self
 
 import pandas as pd
 from marketdata_provider.contracts import Bar, BarQuery
+
 from openpine._compat import parquet
 from openpine.data.contracts import WriteMode
 from openpine.data.models import (
@@ -114,7 +115,7 @@ def _parse_instrument_key(instrument_key: str) -> tuple[str, str, str, str]:
 
 
 def _resolve_write_identity(
-    candles: list["Bar"], instrument_key: str | None
+    candles: list[Bar], instrument_key: str | None
 ) -> tuple[str, str, str, str]:
     if instrument_key:
         return _parse_instrument_key(instrument_key)
@@ -132,7 +133,7 @@ def _resolve_write_identity(
 
 
 def _bar_to_parquet_row(
-    bar: "Bar",
+    bar: Bar,
     *,
     exchange: str,
     market_type: str,
@@ -165,15 +166,15 @@ def _bar_to_parquet_row(
 
 
 def _partition_candles_by_month(
-    candles: list["Bar"],
+    candles: list[Bar],
     *,
     exchange: str,
     market_type: str,
     symbol: str,
     price_type: str,
     timeframe: str,
-) -> dict[tuple[str, str, str, str, str, tuple[int, int]], list["Bar"]]:
-    partitions: dict[tuple[str, str, str, str, str, tuple[int, int]], list["Bar"]] = {}
+) -> dict[tuple[str, str, str, str, str, tuple[int, int]], list[Bar]]:
+    partitions: dict[tuple[str, str, str, str, str, tuple[int, int]], list[Bar]] = {}
     for bar in candles:
         dt = _utc_from_ms(bar.time)
         key = (
@@ -263,7 +264,7 @@ class CandleStorage:
         self.data_root = Path(os.path.expanduser(str(data_root)))
         self.sqlite_path = Path(os.path.expanduser(str(sqlite_path)))
         self.provider = provider
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: sqlite3.Connection | None = None
         self._schema_hash = _compute_schema_hash()
 
     @property
@@ -370,7 +371,7 @@ class CandleStorage:
 
     def write_candles(
         self,
-        candles: list["Bar"],
+        candles: list[Bar],
         mode: WriteMode = WriteMode.UPSERT_PARTITION,
         instrument_key: str | None = None,
         timeframe: str = "1m",
@@ -414,7 +415,7 @@ class CandleStorage:
             market_type,
             symbol,
             price_type,
-            timeframe,
+            partition_timeframe,
             (_year, _month),
         ), bars in partitions.items():
             manifest = self._write_partition(
@@ -424,7 +425,7 @@ class CandleStorage:
                 market_type=market_type,
                 symbol=symbol,
                 price_type=price_type,
-                timeframe=timeframe,
+                timeframe=partition_timeframe,
             )
 
             # Insert manifest to SQLite
@@ -442,7 +443,7 @@ class CandleStorage:
     def _write_partition(
         self,
         *,
-        bars: list["Bar"],
+        bars: list[Bar],
         mode: WriteMode,
         exchange: str,
         market_type: str,
@@ -537,7 +538,7 @@ class CandleStorage:
         )
         conn.commit()
 
-    def read_candles(self, query: BarQuery) -> list["Bar"]:
+    def read_candles(self, query: BarQuery) -> list[Bar]:
         """Read candles matching the query.
 
         Args:
@@ -710,7 +711,7 @@ class CandleStorage:
             self._conn.close()
             self._conn = None
 
-    def __enter__(self) -> "CandleStorage":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: object) -> None:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import click
 from rich.console import Console
@@ -15,7 +15,7 @@ _cli_scheduler = JobScheduler()
 
 
 def _fmt_utc_ms_as(timestamp_ms: int, fmt: str) -> str:
-    return datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc).strftime(fmt)
+    return datetime.fromtimestamp(timestamp_ms / 1000, UTC).strftime(fmt)
 
 
 def _parse_cli_ymd_ms(value: str, *, option_name: str) -> tuple[int | None, str | None]:
@@ -61,6 +61,7 @@ def _run_sync_marketdata_backfill(
     import signal
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
     from openpine.data.orchestrator import DataCoverageError, DataOrchestrator
     from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 
@@ -119,7 +120,6 @@ def _run_sync_marketdata_backfill(
 @click.group()
 def data() -> None:
     """Data management commands."""
-    pass
 
 
 @data.command("status")
@@ -202,6 +202,7 @@ def data_status(symbol: str | None, exchange: str, tf: str | None) -> None:
 def data_gaps(symbol: str, timeframe: str, exchange: str, market: str) -> None:
     """Find and list data gaps for a symbol/timeframe."""
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
     from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
 
     console.print(
@@ -254,8 +255,8 @@ def data_repair(
 
     console.print(
         f"[bold]Data repair[/bold] {symbol} {timeframe} "
-        f"range={datetime.fromtimestamp(from_ts / 1000, timezone.utc):%Y-%m-%d %H:%M} → "
-        f"{datetime.fromtimestamp(to_ts / 1000, timezone.utc):%Y-%m-%d %H:%M}"
+        f"range={datetime.fromtimestamp(from_ts / 1000, UTC):%Y-%m-%d %H:%M} → "
+        f"{datetime.fromtimestamp(to_ts / 1000, UTC):%Y-%m-%d %H:%M}"
     )
 
     job = Job(
@@ -339,7 +340,7 @@ def data_backfill(
     start_ms, end_ms, error = _parse_data_backfill_window(
         from_date=from_date,
         to_date=to_date,
-        now_ms=int(datetime.now().timestamp() * 1000),
+        now_ms=int(datetime.now(UTC).timestamp() * 1000),
     )
     if error:
         console.print(f"[red]{error}[/red]")
@@ -407,13 +408,14 @@ def data_parallel_backfill(
 ) -> None:
     """Parallel backfill for multiple symbols (comma-separated)."""
     from datetime import datetime as dt
-    from openpine.data.parallel_fetcher import ParallelDataFetcher, FetchJob
+
+    from openpine.data.parallel_fetcher import FetchJob, ParallelDataFetcher
 
     symbol_list = [s.strip().upper() for s in symbols.split(",")]
 
     # Parse dates
     try:
-        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
+        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").replace(tzinfo=UTC).timestamp() * 1000)
     except ValueError:
         console.print(
             f"[red]Invalid --from date format: {from_date} (use YYYY-MM-DD)[/red]"
@@ -422,14 +424,14 @@ def data_parallel_backfill(
 
     if to_date:
         try:
-            end_ms = int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000)
+            end_ms = int(dt.strptime(to_date, "%Y-%m-%d").replace(tzinfo=UTC).timestamp() * 1000)
         except ValueError:
             console.print(
                 f"[red]Invalid --to date format: {to_date} (use YYYY-MM-DD)[/red]"
             )
             return
     else:
-        end_ms = int(dt.now().timestamp() * 1000)
+        end_ms = int(dt.now(UTC).timestamp() * 1000)
 
     console.print(
         f"[bold]Parallel backfill[/bold] {len(symbol_list)} symbols, tf={timeframe}"
@@ -494,7 +496,7 @@ def data_inspect(
     console.print(f"[bold]Data inspect[/bold] {symbol} {timeframe}")
 
     try:
-        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
+        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").replace(tzinfo=UTC).timestamp() * 1000)
     except ValueError:
         console.print(
             f"[red]Invalid --from date format: {from_date} (use YYYY-MM-DD)[/red]"
@@ -502,13 +504,14 @@ def data_inspect(
         return
 
     end_ms = (
-        int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000)
+        int(dt.strptime(to_date, "%Y-%m-%d").replace(tzinfo=UTC).timestamp() * 1000)
         if to_date
-        else int(dt.now().timestamp() * 1000)
+        else int(dt.now(UTC).timestamp() * 1000)
     )
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
-    from openpine.data.orchestrator import DataOrchestrator, DataCoverageError
+
+    from openpine.data.orchestrator import DataCoverageError, DataOrchestrator
 
     query = BarQuery(
         instrument=InstrumentKey(exchange=exchange, market=market, symbol=symbol),
@@ -544,7 +547,7 @@ def data_inspect(
     tbl.add_column("volume", style="yellow")
 
     for bar in bars[:20]:
-        ot = datetime.fromtimestamp(bar.time / 1000, tz=timezone.utc).strftime(
+        ot = datetime.fromtimestamp(bar.time / 1000, tz=UTC).strftime(
             "%Y-%m-%d %H:%M"
         )
         tbl.add_row(
@@ -585,21 +588,23 @@ def data_doctor(
 ) -> None:
     """Run diagnostic checks on candle data."""
     from datetime import datetime as dt
+
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
     from openpine.data.orchestrator import DataCoverageError, DataOrchestrator
 
     console.print(f"[bold]Data doctor[/bold] {symbol} {timeframe}")
 
     try:
-        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").timestamp() * 1000)
+        start_ms = int(dt.strptime(from_date, "%Y-%m-%d").replace(tzinfo=UTC).timestamp() * 1000)
     except ValueError:
         console.print(f"[red]Invalid --from date format: {from_date}[/red]")
         return
 
     end_ms = (
-        int(dt.strptime(to_date, "%Y-%m-%d").timestamp() * 1000)
+        int(dt.strptime(to_date, "%Y-%m-%d").replace(tzinfo=UTC).timestamp() * 1000)
         if to_date
-        else int(dt.now().timestamp() * 1000)
+        else int(dt.now(UTC).timestamp() * 1000)
     )
 
     query = BarQuery(

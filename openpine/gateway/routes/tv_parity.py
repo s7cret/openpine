@@ -312,7 +312,13 @@ def load_exchange_data_candles(
     compare_to_ms: int,
     full_prehistory: bool,
 ) -> ParsedTradingViewCandles:
-    from marketdata_provider.contracts import BarQuery, BarSeries, CoverageReport, InstrumentKey, parse_timeframe
+    from marketdata_provider.contracts import (
+        BarQuery,
+        BarSeries,
+        CoverageReport,
+        InstrumentKey,
+        parse_timeframe,
+    )
 
     instrument = InstrumentKey(
         exchange=strategy.exchange.lower(),
@@ -614,13 +620,13 @@ def _backtest_config_for_tv_replay(
     compare_to_ms: int | None = None,
     effective_pre_bars: int = 0,
 ) -> Any:
-    from openpine.runtime.engine import BacktestRunConfig
-    from openpine.runtime.declaration_args import normalize_strategy_declaration_args
     from openpine.exchange_metadata import (
         default_price_tick,
         default_qty_rounding_mode,
         default_qty_step,
     )
+    from openpine.runtime.declaration_args import normalize_strategy_declaration_args
+    from openpine.runtime.engine import BacktestRunConfig
 
     decl_args = normalize_strategy_declaration_args(decl_args)
     commission_type = {
@@ -708,7 +714,11 @@ async def _run_tv_parity_background(
         )
         await ws_manager.broadcast_progress(run_id)
 
-        from openpine.runtime.engine import BacktestArtifactError, BacktestEngineAdapter, load_strategy_class_from_artifact
+        from openpine.runtime.engine import (
+            BacktestArtifactError,
+            BacktestEngineAdapter,
+            load_strategy_class_from_artifact,
+        )
 
         try:
             strategy_class = load_strategy_class_from_artifact(

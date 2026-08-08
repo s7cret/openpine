@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from openpine._compat import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
+from openpine._compat import structlog
 from openpine.artifacts.store import ArtifactStore
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.ws_manager import ws_manager

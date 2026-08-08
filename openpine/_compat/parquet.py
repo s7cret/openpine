@@ -11,10 +11,10 @@ using pyarrow.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
+from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 import pandas as pd
 
@@ -22,8 +22,8 @@ try:  # pragma: no cover - exercised when production pyarrow is installed
     import pyarrow as _pa
     import pyarrow.parquet as _pq
 except Exception:  # pragma: no cover - fallback itself is covered instead
-    _pa = None
-    _pq = None
+    _pa = None  # type: ignore[assignment,unused-ignore]
+    _pq = None  # type: ignore[assignment,unused-ignore]
 
 
 @dataclass(frozen=True)
@@ -104,11 +104,11 @@ def _read_fallback_dataframe(source: Path) -> pd.DataFrame:
     try:
         loaded = pd.read_json(source, orient="table")
         if not isinstance(loaded, pd.DataFrame):
-            raise ValueError("fallback parquet artifact did not contain a dataframe")
+            raise TypeError("fallback parquet artifact did not contain a dataframe")
         return loaded
-    except (UnicodeDecodeError, ValueError) as exc:
+    except (UnicodeDecodeError, TypeError, ValueError) as exc:
         if os.environ.get("OPENPINE_ALLOW_LEGACY_PICKLE_PARQUET") == "1":
-            return pd.read_pickle(source)  # noqa: S301 - explicit trusted legacy opt-in
+            return pd.read_pickle(source)
         raise RuntimeError(
             "legacy pickle parquet fallback loading is disabled; set "
             "OPENPINE_ALLOW_LEGACY_PICKLE_PARQUET=1 only for trusted local artifacts"
@@ -130,5 +130,5 @@ def row_count(path: str | Path) -> int:
 
     if pyarrow_available():  # pragma: no cover - depends on pyarrow
         pq = _require_parquet_backend()
-        return pq.ParquetFile(str(path)).metadata.num_rows
+        return int(pq.ParquetFile(str(path)).metadata.num_rows)
     return len(read_dataframe(path))

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import shutil
-import sys
 import hashlib
 import inspect
 import json
+import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -43,60 +43,60 @@ from openpine.timezones import parse_timestamp_ms
 console = Console()
 _cli_scheduler = JobScheduler()
 from openpine.cli.runtime_helpers import (
-    _fmt_utc_ms,
-    _fmt_utc_seconds,
-    _fmt_utc_ms_as,
-    _default_qty_step,
-    _default_qty_rounding_mode,
-    _parse_cli_date_ms,
-    _plot_record_count,
     _bars_data_fingerprint,
-    _build_strategy_backtest_config,
-    _build_strategy_replay_config,
-    _get_strategy_or_exit,
-    _print_strategy_command_header,
-    _strategy_backtest_readiness_error,
-    _exit_if_strategy_not_ready_for_backtest,
-    _parse_strategy_backtest_window,
-    _parse_valid_strategy_backtest_window,
-    _print_backtest_result_summary,
-    _load_strategy_backtest_class,
-    _load_strategy_backtest_class_or_exit,
-    _exit_if_no_strategy_bars,
-    _build_strategy_backtest_params_and_config,
-    _prepare_strategy_backtest_inputs,
-    _prepare_strategy_replay_inputs,
-    _build_strategy_backtest_run_request,
-    _prepare_strategy_backtest_runtime,
-    _build_progress_callback,
-    _parse_indicator_plot_window,
-    _load_pine_source_or_exit,
-    _require_active_pine_artifact,
-    _load_generated_class_timed,
-    _print_indicator_plot_header,
-    _ensure_output_dir,
-    _strategy_backtest_dependencies,
-    _indicator_plot_dependencies,
-    _load_indicator_plot_bars,
-    _execute_indicator_plot_runtime,
-    _run_indicator_plot_runtime,
-    _write_indicator_plot_outputs,
-    _write_indicator_plot_run_meta,
-    _write_indicator_plot_run_outputs,
-    _prepare_indicator_plot_inputs,
-    _build_strategy_backtest_run_meta,
-    _print_strategy_plot_capture_status,
-    _load_strategy_backtest_bars,
-    _strategy_backtest_declaration_args,
-    _save_strategy_backtest_result,
-    _save_strategy_backtest_result_safely,
-    _persist_strategy_backtest_result,
-    _save_strategy_resume_snapshot,
-    _run_strategy_backtest_adapter,
-    _run_strategy_backtest_or_exit,
     _build_cli_bar_query,
     _build_indicator_plot_config,
     _build_indicator_plot_run_meta,
+    _build_progress_callback,
+    _build_strategy_backtest_config,
+    _build_strategy_backtest_params_and_config,
+    _build_strategy_backtest_run_meta,
+    _build_strategy_backtest_run_request,
+    _build_strategy_replay_config,
+    _default_qty_rounding_mode,
+    _default_qty_step,
+    _ensure_output_dir,
+    _execute_indicator_plot_runtime,
+    _exit_if_no_strategy_bars,
+    _exit_if_strategy_not_ready_for_backtest,
+    _fmt_utc_ms,
+    _fmt_utc_ms_as,
+    _fmt_utc_seconds,
+    _get_strategy_or_exit,
+    _indicator_plot_dependencies,
+    _load_generated_class_timed,
+    _load_indicator_plot_bars,
+    _load_pine_source_or_exit,
+    _load_strategy_backtest_bars,
+    _load_strategy_backtest_class,
+    _load_strategy_backtest_class_or_exit,
+    _parse_cli_date_ms,
+    _parse_indicator_plot_window,
+    _parse_strategy_backtest_window,
+    _parse_valid_strategy_backtest_window,
+    _persist_strategy_backtest_result,
+    _plot_record_count,
+    _prepare_indicator_plot_inputs,
+    _prepare_strategy_backtest_inputs,
+    _prepare_strategy_backtest_runtime,
+    _prepare_strategy_replay_inputs,
+    _print_backtest_result_summary,
+    _print_indicator_plot_header,
+    _print_strategy_command_header,
+    _print_strategy_plot_capture_status,
+    _require_active_pine_artifact,
+    _run_indicator_plot_runtime,
+    _run_strategy_backtest_adapter,
+    _run_strategy_backtest_or_exit,
+    _save_strategy_backtest_result,
+    _save_strategy_backtest_result_safely,
+    _save_strategy_resume_snapshot,
+    _strategy_backtest_declaration_args,
+    _strategy_backtest_dependencies,
+    _strategy_backtest_readiness_error,
+    _write_indicator_plot_outputs,
+    _write_indicator_plot_run_meta,
+    _write_indicator_plot_run_outputs,
 )
 
 
@@ -104,7 +104,6 @@ from openpine.cli.runtime_helpers import (
 @click.version_option(version=__version__, prog_name="openpine")
 def cli() -> None:
     """OpenPine Trading Platform CLI."""
-    pass
 
 
 def _auto_pine_source_name(source_path: Path) -> str:
@@ -132,7 +131,7 @@ def _run_openpine_cli(args: list[str]) -> str:
     import subprocess as _subprocess
 
     cmd = [sys.executable, "-m", "openpine.cli.main", *args]
-    result = _subprocess.run(cmd, text=True, capture_output=True)
+    result = _subprocess.run(cmd, text=True, capture_output=True, check=False)
     if result.stdout:
         console.print(result.stdout.rstrip())
     if result.stderr:
@@ -550,8 +549,8 @@ def _run_deep_checks(config, console, all_ok: bool) -> bool:
 
     # Worker heartbeat health
     try:
-        from openpine.workers import AggregationWorkerPool, FeatureWorkerPool
         from openpine.jobs import JobScheduler
+        from openpine.workers import AggregationWorkerPool, FeatureWorkerPool
 
         scheduler = JobScheduler()
         agg_pool = AggregationWorkerPool(scheduler)
@@ -678,7 +677,6 @@ def doctor(strict: bool, deep: bool) -> None:
 @cli.group()
 def pine() -> None:
     """Pine source management."""
-    pass
 
 
 @pine.command("list")
@@ -774,8 +772,8 @@ def pine_add(name: str, source_path: str) -> None:
 )
 def pine_compile(name: str, force: bool) -> None:
     """Compile a Pine source and produce a CompileArtifact."""
-    from openpine.pine.registry import SQLitePineSourceRegistry
     from openpine.compile import SubprocessCompilerAdapter, compile_pipeline
+    from openpine.pine.registry import SQLitePineSourceRegistry
 
     registry = SQLitePineSourceRegistry()
     try:
@@ -1256,7 +1254,6 @@ def version() -> None:
 @cli.group()
 def streams() -> None:
     """Stream management commands."""
-    pass
 
 
 @streams.command("status")
@@ -1264,10 +1261,11 @@ def streams_status() -> None:
     """Show active stream subscriptions."""
     import tempfile
     from pathlib import Path
-    from openpine.events import EventBus
-    from openpine.streams import MarketDataStreamManager
-    from openpine.storage import SQLiteStorage
+
     from openpine.data.orchestrator import DataOrchestrator
+    from openpine.events import EventBus
+    from openpine.storage import SQLiteStorage
+    from openpine.streams import MarketDataStreamManager
 
     console.print("[bold]Streams status[/bold]")
 
@@ -1340,7 +1338,6 @@ def streams_setup() -> None:
 @cli.group()
 def state() -> None:
     """State management commands."""
-    pass
 
 
 @state.command("policy")
@@ -1483,8 +1480,8 @@ def state_rebuild(strategy_id: str, from_bar_time: int | None) -> None:
     from openpine.config import OpenPineConfig
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.recovery import StateRebuilder
-    from openpine.state.store import StateStore
     from openpine.state.errors import StateInconsistencyError
+    from openpine.state.store import StateStore
 
     config = OpenPineConfig.load()
     state_dir = config.data_dir / "state"
@@ -1523,7 +1520,6 @@ def state_rebuild(strategy_id: str, from_bar_time: int | None) -> None:
 @cli.group()
 def accounts() -> None:
     """Exchange account management commands."""
-    pass
 
 
 @accounts.command("list")
@@ -1685,7 +1681,6 @@ def accounts_test(name: str) -> None:
 @cli.group()
 def providers() -> None:
     """Data provider management commands."""
-    pass
 
 
 _KNOWN_PROVIDERS = {
@@ -1900,13 +1895,11 @@ def risk_status(show_violations: bool) -> None:
 @cli.group()
 def events() -> None:
     """Event management commands."""
-    pass
 
 
 @events.group("schema")
 def events_schema() -> None:
     """Event schema commands."""
-    pass
 
 
 @events_schema.command("validate")
@@ -1927,7 +1920,6 @@ def events_schema_strategy_runtime_error() -> None:
 @cli.group()
 def core() -> None:
     """Core 6-library stack checks."""
-    pass
 
 
 @core.command("check")
@@ -1972,7 +1964,6 @@ cli.add_command(reports)
 @cli.group()
 def plugins() -> None:
     """Plugin management commands."""
-    pass
 
 
 @plugins.command("list")
@@ -2209,7 +2200,6 @@ def _telegram_api_request(
 @plugins.group("telegram")
 def plugins_telegram() -> None:
     """Telegram bot command, polling, webhook, and menu helpers."""
-    pass
 
 
 @plugins_telegram.command("commands")
@@ -2255,6 +2245,7 @@ def plugins_telegram_poll(
 ) -> None:
     """Poll Telegram getUpdates and display received bot commands."""
     import json as _json
+
     from openpine.config import OpenPineConfig
 
     config = OpenPineConfig.load()
@@ -2295,6 +2286,7 @@ def plugins_telegram_poll(
 def plugins_telegram_webhook_info(dry_run: bool) -> None:
     """Show Telegram getWebhookInfo output."""
     import json as _json
+
     from openpine.config import OpenPineConfig
 
     if dry_run:
@@ -2314,6 +2306,7 @@ def plugins_telegram_webhook_info(dry_run: bool) -> None:
 def plugins_telegram_send_menu(chat_id: str, dry_run: bool) -> None:
     """Send the OpenPine Telegram menu with inline keyboard buttons."""
     import json as _json
+
     from openpine.config import OpenPineConfig
 
     config = OpenPineConfig.load()
@@ -2345,7 +2338,6 @@ import time as _time_module
 @cli.group()
 def strategy() -> None:
     """Strategy lifecycle management."""
-    pass
 
 
 @strategy.command("list")
@@ -2558,6 +2550,7 @@ def strategy_update(
 ) -> None:
     """Update strategy params."""
     import json as _json
+
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.registry.strategies import _make_params_hash
 
@@ -2586,13 +2579,10 @@ def strategy_update(
         new_params_json = _json.dumps(current_params, sort_keys=True)
         new_hash = _make_params_hash(current_params)
 
-        now = int(_time_module.time() * 1000)
-        registry._conn.execute(
-            "UPDATE strategy_instances SET params_json = ?, params_hash = ?, "
-            "updated_at = ? WHERE strategy_id = ?",
-            (new_params_json, new_hash, now, s.strategy_id),
+        registry.patch_strategy_atomic(
+            s.strategy_id,
+            {"params_json": new_params_json, "params_hash": new_hash},
         )
-        registry._conn.commit()
         console.print(f"[green]Strategy updated: {strategy_id}[/green]")
         console.print(f"  params_hash: {new_hash}")
     finally:
@@ -2656,11 +2646,7 @@ def strategy_remove(strategy_id: str) -> None:
         except KeyError:
             console.print(f"[red]Strategy not found: {strategy_id}[/red]")
             sys.exit(1)
-        registry._conn.execute(
-            "DELETE FROM strategy_instances WHERE strategy_id = ?", (strategy_id,)
-        )
-        registry._conn.commit()
-        del registry._mem[strategy_id]
+        registry.delete_strategy(strategy_id)
         console.print(f"[green]Strategy removed: {strategy_id}[/green]")
     finally:
         registry.close()
@@ -2789,6 +2775,7 @@ def strategy_replay(
     import time as _time_module
 
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.runtime.engine import (
@@ -2864,21 +2851,60 @@ def strategy_replay(
         registry.close()
 
 
+def _enable_strategy_via_gateway(strategy_id: str) -> None:
+    """Route CLI activation through the gateway's worker/circuit guard."""
+
+    from urllib.parse import quote
+
+    _strategy_transition_via_gateway(
+        f"strategies/{quote(strategy_id, safe='')}/enable"
+    )
+
+
+def _strategy_transition_via_gateway(
+    endpoint: str, *, strategy_id: str | None = None
+) -> None:
+    """Execute one guarded strategy transition through the local gateway."""
+
+    from urllib.error import HTTPError, URLError
+    from urllib.request import Request, urlopen
+
+    import click
+
+    from openpine.gateway.config import GatewayConfig
+
+    config = GatewayConfig.from_openpine_config()
+    url = f"http://127.0.0.1:{config.port}{config.api_prefix}/{endpoint}"
+    data = None if strategy_id is None else json.dumps({"strategy_id": strategy_id}).encode()
+    request = Request(
+        url,
+        data=data,
+        headers={} if data is None else {"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=5):
+            return
+    except HTTPError as exc:
+        raise click.ClickException(
+            f"Gateway rejected strategy transition (HTTP {exc.code})"
+        ) from exc
+    except URLError as exc:
+        raise click.ClickException(
+            "Gateway unavailable; strategy activation failed closed"
+        ) from exc
+
+
 @strategy.command("enable")
 @click.argument("strategy_id")
 def strategy_enable(strategy_id: str) -> None:
     """Enable a strategy for auto-refresh and trading."""
-    import time as _time_module
     from openpine.registry import SQLiteStrategyRegistry
 
     registry = SQLiteStrategyRegistry()
     try:
         s = registry.get_strategy(strategy_id)
-        registry._conn.execute(
-            "UPDATE strategy_instances SET enabled = 1, updated_at = ? WHERE strategy_id = ?",
-            (int(_time_module.time() * 1000), strategy_id),
-        )
-        registry._conn.commit()
+        _enable_strategy_via_gateway(strategy_id)
         s.enabled = True
         console.print(f"[green]Strategy enabled: {strategy_id}[/green]")
         console.print(f"  name: {s.name}")
@@ -2895,17 +2921,13 @@ def strategy_enable(strategy_id: str) -> None:
 def strategy_disable(strategy_id: str) -> None:
     """Disable a strategy."""
     import time as _time_module
+
     from openpine.registry import SQLiteStrategyRegistry
 
     registry = SQLiteStrategyRegistry()
     try:
-        s = registry.get_strategy(strategy_id)
-        registry._conn.execute(
-            "UPDATE strategy_instances SET enabled = 0, updated_at = ? WHERE strategy_id = ?",
-            (int(_time_module.time() * 1000), strategy_id),
-        )
-        registry._conn.commit()
-        s.enabled = False
+        registry.get_strategy(strategy_id)
+        registry.set_enabled(strategy_id, False)
         console.print(f"[yellow]Strategy disabled: {strategy_id}[/yellow]")
     except KeyError:
         console.print(f"[red]Strategy not found: {strategy_id}[/red]")
@@ -3161,7 +3183,7 @@ def strategy_trades(strategy_id: str, run_id: str | None, as_json: bool) -> None
 def strategy_equity(strategy_id: str, run_id: str | None, tail: int) -> None:
     """Show equity curve artifact path and tail."""
     from openpine.registry import SQLiteStrategyRegistry
-    from openpine.storage import BacktestResultStore, ARTIFACT_TYPE_EQUITY_CURVE
+    from openpine.storage import ARTIFACT_TYPE_EQUITY_CURVE, BacktestResultStore
 
     registry = SQLiteStrategyRegistry()
     try:
@@ -3217,7 +3239,7 @@ def strategy_equity(strategy_id: str, run_id: str | None, tail: int) -> None:
 def strategy_plots(strategy_id: str, run_id: str | None, latest: bool) -> None:
     """Show plot outputs artifact path and summary for a strategy."""
     from openpine.registry import SQLiteStrategyRegistry
-    from openpine.storage import BacktestResultStore, ARTIFACT_TYPE_PLOT_OUTPUTS
+    from openpine.storage import ARTIFACT_TYPE_PLOT_OUTPUTS, BacktestResultStore
 
     registry = SQLiteStrategyRegistry()
     try:
@@ -3521,9 +3543,9 @@ def strategy_compare_tv(
     include_base_columns: bool,
 ) -> None:
     """Compare a saved backtest run against TradingView export CSV files."""
+    from openpine.export import parse_time_ms
     from openpine.registry import SQLiteStrategyRegistry
     from openpine.storage import BacktestResultStore
-    from openpine.export import parse_time_ms
 
     if not any((tv_chart, tv_trades, tv_equity)):
         console.print(
@@ -3624,10 +3646,14 @@ def strategy_paper(strategy_id: str, action: str) -> None:
                     "Clear error first.[/red]"
                 )
                 sys.exit(1)
-            registry.update_status(strategy_id, "running")
+            _strategy_transition_via_gateway(
+                "paper/start", strategy_id=strategy_id
+            )
             console.print(f"[green]Paper trading started: {strategy_id}[/green]")
         else:
-            registry.update_status(strategy_id, "paused")
+            _strategy_transition_via_gateway(
+                "paper/stop", strategy_id=strategy_id
+            )
             console.print(f"[green]Paper trading stopped: {strategy_id}[/green]")
     finally:
         registry.close()
@@ -3657,7 +3683,7 @@ def strategy_live(strategy_id: str, action: str) -> None:
                     "[red]Cannot enable live: strategy is in error state.[/red]"
                 )
                 sys.exit(1)
-            registry.update_status(strategy_id, "disabled")
+            _enable_strategy_via_gateway(strategy_id)
             console.print(f"[green]Live trading enabled: {strategy_id}[/green]")
         elif action == "start":
             # live start requires global live_enabled
@@ -3672,10 +3698,14 @@ def strategy_live(strategy_id: str, action: str) -> None:
                     "[red]Cannot start live: strategy is in error state.[/red]"
                 )
                 sys.exit(1)
-            registry.update_status(strategy_id, "running")
+            _strategy_transition_via_gateway(
+                "live/start", strategy_id=strategy_id
+            )
             console.print(f"[green]Live trading started: {strategy_id}[/green]")
         else:  # stop
-            registry.update_status(strategy_id, "disabled")
+            _strategy_transition_via_gateway(
+                "live/stop", strategy_id=strategy_id
+            )
             console.print(f"[green]Live trading stopped: {strategy_id}[/green]")
     finally:
         registry.close()
@@ -3722,7 +3752,6 @@ def strategy_error(strategy_id: str, action: str, to_state: str) -> None:
 @cli.group()
 def daemon() -> None:
     """Daemon management commands."""
-    pass
 
 
 @daemon.command("run")
@@ -3731,8 +3760,9 @@ def daemon_run(telegram: bool) -> None:
     """Run the OpenPine daemon (long-running service)."""
     import asyncio
     import signal
-    from openpine.daemon.service import DaemonService
+
     from openpine.config import OpenPineConfig
+    from openpine.daemon.service import DaemonService
 
     async def _run() -> None:
         services: list[DaemonService] = []
@@ -3810,7 +3840,6 @@ def daemon_run(telegram: bool) -> None:
 @cli.group()
 def gateway() -> None:
     """Web gateway commands."""
-    pass
 
 
 @gateway.command("run")

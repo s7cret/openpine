@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-import time
 import hashlib
 import multiprocessing as mp
 import queue
+import time
 import traceback
 from pathlib import Path
 
-from openpine._compat import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
+from openpine._compat import structlog
 from openpine.exchange_metadata import (
     default_price_tick,
     default_qty_rounding_mode,
@@ -84,7 +84,7 @@ def _backtest_progress_source_label(phase: str, query) -> str:
     return f"{query.instrument.exchange} {query.instrument.market}"
 
 
-def _progress_ratio(done: int | float, total: int | float) -> float:
+def _progress_ratio(done: float, total: float) -> float:
     if not total or total <= 0:
         return 0.0
     return max(0.0, min(float(done) / float(total), 1.0))
@@ -322,8 +322,8 @@ async def _run_backtest_background(
         await ws_manager.broadcast_progress(run_id)
 
         from openpine.runtime.engine import (
-            load_strategy_class_from_artifact,
             BacktestArtifactError,
+            load_strategy_class_from_artifact,
         )
 
         try:
@@ -456,10 +456,9 @@ async def _run_backtest_background(
         # Build config — read declaration args from artifact
         if await cancel_if_requested("backtest setup"):
             return
-        from openpine.runtime.engine import BacktestRunConfig
-
         # Read strategy declaration args (calc_on_order_fills, commission, etc.)
         from openpine.runtime.declaration_args import artifact_strategy_declaration_args
+        from openpine.runtime.engine import BacktestRunConfig
 
         try:
             artifact = state.artifact_store.get_artifact(
@@ -531,8 +530,8 @@ async def _run_backtest_background(
         )
 
         # Run
-        from openpine.runtime.engine import BacktestEngineAdapter
         from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
+        from openpine.runtime.engine import BacktestEngineAdapter
 
         adapter = BacktestEngineAdapter()
 

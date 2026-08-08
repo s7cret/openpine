@@ -9,9 +9,9 @@ from openpine.risk.manager import (
 )
 
 __all__ = [
+    "KillSwitchRule",
+    "MaxOrdersPerMinuteRule",
+    "MaxPositionSizeRule",
     "RiskManager",
     "RiskRule",
-    "KillSwitchRule",
-    "MaxPositionSizeRule",
-    "MaxOrdersPerMinuteRule",
 ]

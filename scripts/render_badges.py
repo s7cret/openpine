@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Render the badge block used at the top of every OpenPine-stack README.
 
 Each badge is wrapped in a clickable <a> that points at the target repository
@@ -18,9 +17,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
 
 ORG = "s7cret"
 

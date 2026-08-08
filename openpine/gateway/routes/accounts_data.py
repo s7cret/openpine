@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import hashlib
 import asyncio
+import hashlib
 import json
 import shutil
 import sqlite3
@@ -14,9 +14,14 @@ import time
 from pathlib import Path
 from typing import Any, cast
 
-from openpine._compat import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from marketdata_provider import search_symbols
+from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
+from marketdata_provider.errors import MarketDataError
 
+from openpine._compat import structlog
+from openpine.data.persistent_cache import default_cache_dir
+from openpine.exchange_metadata import marketdata_exchange_payloads
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.schemas import (
     AccountResponse,
@@ -27,13 +32,8 @@ from openpine.gateway.schemas import (
     RiskStatusResponse,
 )
 from openpine.gateway.ws_manager import ws_manager
-from openpine.timezones import parse_timestamp_ms
 from openpine.jobs import JobStatus
-from openpine.data.persistent_cache import default_cache_dir
-from openpine.exchange_metadata import marketdata_exchange_payloads
-from marketdata_provider import search_symbols
-from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
-from marketdata_provider.errors import MarketDataError
+from openpine.timezones import parse_timestamp_ms
 
 log = structlog.get_logger(__name__)
 router = APIRouter(tags=["accounts-data-risk"])
@@ -194,7 +194,7 @@ async def data_symbols(
             ),
             timeout=_SYMBOL_SEARCH_RESPONSE_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise HTTPException(status_code=504, detail='Symbol discovery timed out') from exc
     except MarketDataError as exc:
         raise HTTPException(status_code=400, detail=exc.message) from exc
@@ -336,7 +336,7 @@ async def data_klines(
             ),
             timeout=_DATA_LOAD_RESPONSE_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise HTTPException(status_code=504, detail='Market data load timed out') from exc
     bounded_bars = list(bars)[: int(limit)]
     return {
@@ -373,7 +373,7 @@ async def data_ticker24h(
             ),
             timeout=_DATA_LOAD_RESPONSE_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise HTTPException(status_code=504, detail='Market data load timed out') from exc
     if not bars:
         raise HTTPException(status_code=404, detail='ticker data not found')
@@ -715,7 +715,7 @@ def _estimate_api_backfill_source_bars(
     try:
         target_timeframe = parse_timeframe(timeframe)
         source_timeframe = _backfill_source_timeframe(target_timeframe)
-    except Exception as exc:  # noqa: BLE001 - convert provider/parser errors to API 400
+    except Exception as exc:
         raise HTTPException(400, f"Invalid timeframe {timeframe!r}: {exc}") from exc
 
     duration_ms = getattr(source_timeframe, "duration_ms", None)
@@ -1003,8 +1003,7 @@ finally:
         [sys.executable, "-c", script],
         input=json.dumps(payload, default=str),
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         cwd=str(repo_root),
         timeout=None,
         check=False,
@@ -1431,6 +1430,7 @@ def _backfill_source_timeframe(target_timeframe):
 
 def _aggregate_backfill_series(source_series, *, target_timeframe, start_ms: int, end_ms: int):
     from marketdata_provider.contracts import BarSeries
+
     from openpine.data.orchestrator import DataOrchestrator
     from openpine.workers.strategy_fanout import _aggregate_bars
 
@@ -1619,6 +1619,7 @@ def _store_backfill_series(state: GatewayState, series) -> tuple[int, int]:
     from dataclasses import replace
 
     from marketdata_provider.contracts import BarSeries
+
     from openpine.data.orchestrator import DataOrchestrator
 
     if not series.bars:
@@ -1658,7 +1659,7 @@ async def _data_summary_for_response(state: GatewayState) -> dict[str, object]:
             asyncio.to_thread(_data_summary_cached, state),
             timeout=_DATA_SUMMARY_RESPONSE_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise HTTPException(status_code=504, detail="Data summary timed out") from exc
 
 
@@ -2146,7 +2147,7 @@ def _safe_candle_partition_path(state: GatewayState, partition_path: object) -> 
 
 def _marketdata_atomic_temp_file(path: Path) -> bool:
     name = path.name
-    return name.startswith(".bars.") or name.startswith(".manifest.json.")
+    return name.startswith((".bars.", ".manifest.json."))
 
 
 def _dir_size(path: Path) -> int:

@@ -253,7 +253,7 @@ class ParquetDataLakeAdapter(StorageBackend):
         """
         import datetime
 
-        date_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+        date_str = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d")
         prefix = f"{symbol.replace('/', '_')}_{timeframe}_{date_str}"
         self._write_ohlcv_parquet(prefix, bars)
 

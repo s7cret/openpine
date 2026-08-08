@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openpine"
-version = "4.0.0"
+version = "4.0.1"
 description = "OpenPine product orchestration boundary for the Pine stack"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -22,12 +22,12 @@ dependencies = [
     "websockets>=14.0",
     "pandas>=2.0.0",
     "pyarrow>=15.0.0",
-    "pine2ast @ git+https://github.com/s7cret/pine2ast.git@bf2614855851e0626bbe802b6d945ce23593e886",
-    "ast2python @ git+https://github.com/s7cret/ast2python.git@d6d83ba7d11db651e17307244033394cf8a623ab",
-    "pinelib @ git+https://github.com/s7cret/pinelib.git@33239a0093fa5d548058d79d5d079104db0ef43e",
-    "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@d75c270cd6aae4b557ec72f96bd5d33407aee334",
-    "marketdata-provider @ git+https://github.com/s7cret/marketdata-provider.git@f42cd7d7cb2069a40d00917978a8732aa3278423",
-    "optimizer @ git+https://github.com/s7cret/optimizer.git@2922b0c515ad6e68cf0a078635235604b4c3c220",
+    "pine2ast @ git+https://github.com/s7cret/pine2ast.git@b7b52d3399afc2641ad4d9623e5c63a421588c6c",
+    "ast2python @ git+https://github.com/s7cret/ast2python.git@7e2c0760aa0d0f6f5db83bd0bf5ac3cf59b874c7",
+    "pinelib @ git+https://github.com/s7cret/pinelib.git@531e284d710ca48ce44ce8f88e6e8aa6c34a8385",
+    "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@6e6b263c6119d9b77f02a87022008a066f936472",
+    "marketdata-provider @ git+https://github.com/s7cret/marketdata-provider.git@a8f0b5626c7ec227d08e9d0157b191bd2a50ddd4",
+    "optimizer @ git+https://github.com/s7cret/optimizer.git@edd4b1d44ef00592bccaa80bf65e6f776563e902",
 ]
 
 [project.urls]
@@ -45,6 +45,7 @@ dev = [
     "httpx>=0.28.0",
     "pytest-asyncio>=0.23.0",
     "matplotlib>=3.8.0",
+    "build>=1.2.0",
 ]
 
 [project.scripts]
@@ -55,7 +56,7 @@ include = ["openpine*"]
 exclude = ["openpine-ui*"]
 
 [tool.setuptools.package-data]
-openpine = ["py.typed", "storage/migrations/*.sql"]
+openpine = ["py.typed", "stack-lock.json", "storage/migrations/*.sql"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -68,6 +69,11 @@ addopts = "-q --tb=short"
 line-length = 100
 target-version = "py311"
 
+[tool.ruff.lint]
+# The release gate enforces undefined-name/import checks plus the reviewed
+# exception-containment, FastAPI-default, and subprocess security policies.
+select = ["E4", "E7", "E9", "F", "BLE001", "S110", "S112", "B008", "S603", "S607"]
+
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true
@@ -75,8 +81,54 @@ warn_unused_ignores = true
 disallow_untyped_defs = false
 
 [tool.ruff.lint.per-file-ignores]
-"openpine/cli/main.py" = ["E402", "F401"]
-"openpine/notifications/telegram.py" = ["E402"]
+# FastAPI evaluates Depends(...) in parameter defaults by design. Route
+# handlers also contain and translate provider/storage failures at the API
+# boundary; selected best-effort fallbacks intentionally continue or pass.
+"openpine/gateway/routes/*.py" = ["B008", "BLE001", "S110", "S112"]
+# Command handlers are the top-level user boundary and must turn arbitrary
+# adapter/provider failures into deterministic exit codes and diagnostics.
+"openpine/cli/data.py" = ["BLE001"]
+"openpine/cli/main.py" = ["BLE001", "E402", "F401", "S603"]
+"openpine/cli/runtime_helpers.py" = ["BLE001"]
+# Process-supervision boundaries must contain arbitrary worker/plugin failures.
+"openpine/gateway/live_runner.py" = ["BLE001", "S110"]
+"openpine/gateway/worker_supervisor.py" = ["BLE001", "S110"]
+"openpine/workers/strategy_job_executor.py" = ["BLE001"]
+"openpine/batch/runner.py" = ["BLE001", "S603"]
+"openpine/compile/adapter.py" = ["BLE001", "S603"]
+"openpine/daemon/service.py" = ["BLE001"]
+# Gateway lifecycle, websocket, and dependency adapters isolate client,
+# optional dependency, and shutdown failures from the serving process.
+"openpine/gateway/deps.py" = ["BLE001"]
+"openpine/gateway/server.py" = ["BLE001", "S110"]
+"openpine/gateway/ws_manager.py" = ["BLE001"]
+# Network/exchange/notification boundaries normalize third-party failures.
+"openpine/execution/*.py" = ["BLE001"]
+"openpine/notifications/telegram.py" = ["BLE001", "E402", "S603"]
+"openpine/data/periodic_fetcher.py" = ["BLE001"]
+"openpine/optimizer/adapter.py" = ["BLE001"]
+# Storage/cache/recovery boundaries preserve fail-closed state while reporting
+# corrupt, legacy, or unavailable backends.
+"openpine/storage/*.py" = ["BLE001", "S112"]
+"openpine/state/store.py" = ["BLE001"]
+"openpine/recovery/rebuild.py" = ["BLE001"]
+"openpine/data/orchestrator.py" = ["BLE001"]
+"openpine/data/persistent_cache.py" = ["BLE001"]
+"openpine/_compat/parquet.py" = ["BLE001"]
+# User extension/subscriber/optional-integration boundaries isolate one bad
+# callback or optional package from unrelated work.
+"openpine/achievements/engine.py" = ["BLE001"]
+"openpine/events/bus.py" = ["BLE001"]
+"openpine/integrations.py" = ["BLE001"]
+# Timezone parsing converts arbitrary zone-provider errors to validation errors.
+"openpine/timezones.py" = ["BLE001"]
+# These subprocess boundaries use fixed executables or validated argv lists;
+# callers inspect return codes and never invoke a shell.
+"openpine/cli/ops.py" = ["S603", "S607"]
+"openpine/distribution.py" = ["S603", "S607"]
+"openpine/gateway/routes/accounts_data.py" = ["B008", "BLE001", "S110", "S112", "S603"]
+"openpine/stack_lock.py" = ["S603", "S607"]
+"scripts/soak_monitor.py" = ["S603", "S607"]
 
 [tool.coverage.run]
 source = ["openpine"]

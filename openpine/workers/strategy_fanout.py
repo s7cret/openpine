@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Iterable
 
 from marketdata_provider.contracts import Bar, BarQuery, parse_timeframe
-from openpine.data.orchestrator import IncompleteCoverageError
-from openpine.data.orchestrator import DataOrchestrator
+
+from openpine.data.orchestrator import DataOrchestrator, IncompleteCoverageError
 from openpine.data.periodic_fetcher import RawMarketKey
 from openpine.jobs import Job, JobScheduler, JobType
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance

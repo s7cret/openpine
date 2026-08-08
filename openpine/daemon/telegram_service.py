@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from openpine._compat import structlog
 
+from openpine._compat import structlog
 from openpine.daemon.service import DaemonService
 from openpine.notifications.telegram import (
     TelegramBotHandler,
@@ -79,7 +79,7 @@ class TelegramDaemonService(DaemonService):
             self._poll_task.cancel()
             try:
                 await asyncio.wait_for(self._poll_task, timeout=timeout)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 log.warning("telegram_daemon.stop.timeout")
             except asyncio.CancelledError:
                 pass

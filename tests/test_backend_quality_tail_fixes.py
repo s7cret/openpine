@@ -5,6 +5,7 @@ import importlib
 import shutil
 import sqlite3
 import subprocess
+import threading
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
@@ -687,6 +688,7 @@ class _RegistryConnWithOptionalFailure:
 
 def _registry_with_conn(conn) -> SQLiteStrategyRegistry:
     registry = SQLiteStrategyRegistry.__new__(SQLiteStrategyRegistry)
+    registry._lock = threading.RLock()
     registry._conn = conn
     registry._mem = {"s1": object()}
     registry.get_strategy = lambda strategy_id: object()  # type: ignore[method-assign]

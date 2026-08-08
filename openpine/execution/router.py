@@ -77,7 +77,7 @@ class ExecutionRouter:
     def __init__(
         self,
         risk_manager: RiskManager,
-        account_manager: "AccountManager",
+        account_manager: AccountManager,
     ) -> None:
         """Initialize ExecutionRouter.
 

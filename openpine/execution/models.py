@@ -72,7 +72,7 @@ class InstrumentRules:
             d_step = Decimal(str(step))
             # Check if value is an exact multiple of step: (value % step) == 0
             remainder = d_value % d_step
-            return remainder == Decimal("0") or remainder < Decimal(str(1e-9))
+            return remainder == Decimal(0) or remainder < Decimal(str(1e-9))
         except (InvalidOperation, ValueError):
             # Fall back to float check
             return self._is_aligned_float(value, step)

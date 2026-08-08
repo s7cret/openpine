@@ -24,12 +24,14 @@ import csv
 import io
 import json
 import logging
+import math
 import re
 import zipfile
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from html import escape
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +66,7 @@ def _as_float(value: Any) -> float | None:
         result = float(value)
     except (TypeError, ValueError):
         return None
-    if result != result:  # NaN
+    if math.isnan(result):
         return None
     return result
 
@@ -270,7 +272,7 @@ def top_mismatches(*, run_root: Path, limit: int = 20) -> dict[str, Any]:
                     "delta_entry_price": d if col == "entry_price" else None,
                     "delta_exit_price": d if col == "exit_price" else None,
                     "delta_qty": d if col == "qty" else None,
-                    "delta_net_profit": d if col == "net_profit" else d,
+                    "delta_net_profit": d,
                     "delta_entry_price_abs": abs(d) if col == "entry_price" else 0.0,
                     "delta_net_profit_abs": abs(d),
                 }
@@ -442,11 +444,9 @@ def summary_cards(*, run_root: Path) -> dict[str, Any]:
         if not worst or delta == 0.0:
             continue
         if worst in time_ms_columns:
-            if delta > time_max_abs_delta_ms:
-                time_max_abs_delta_ms = delta
+            time_max_abs_delta_ms = max(time_max_abs_delta_ms, delta)
         else:
-            if delta > price_max_abs_delta:
-                price_max_abs_delta = delta
+            price_max_abs_delta = max(price_max_abs_delta, delta)
 
     return {
         "run_id": result.get("run_id"),
@@ -625,7 +625,7 @@ def render_html_report(
         for f in cards.get("failures") or []
     )
 
-    generated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
     empty_failures = '<li class="muted">none</li>'
 

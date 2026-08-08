@@ -186,7 +186,8 @@ def test_dashboard_helpers_and_route_success_error_paths(monkeypatch):
     )
     assert dashboard_routes._persistent_jobs(error_state) == []
     bad_health = dashboard_routes._strategy_health(error_state, _strategy(enabled=True, status="active"))
-    assert bad_health["status"] == "runner_off"
+    assert bad_health["status"] == "metadata_error"
+    assert bad_health["metadata_ok"] is False
     response2 = asyncio.run(dashboard_routes.dashboard(error_state))
     assert response2.last_event_time is None
     assert response2.last_bar_update is None

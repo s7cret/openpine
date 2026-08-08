@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import time
 
-from openpine.compile.adapter import CompilerAdapter, CompileProfile
+from openpine.compile.adapter import CompileProfile, CompilerAdapter
 from openpine.pine.source import PineSource
 
 

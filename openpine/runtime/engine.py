@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from marketdata_provider.contracts import Bar
+
 from openpine.integrations import import_library
 
 
@@ -359,8 +360,8 @@ class BacktestEngineAdapter:
             collect_events=config.collect_events,
             collect_order_lifecycle=config.collect_order_lifecycle,
         )
-        setattr(engine_config, "exchange", config.exchange)
-        setattr(engine_config, "market_type", config.market_type)
+        engine_config.exchange = config.exchange
+        engine_config.market_type = config.market_type
         engine = self._module.BacktestEngine(engine_config)
         runtime_kwargs = {
             "symbol": config.symbol,
@@ -370,12 +371,12 @@ class BacktestEngineAdapter:
         }
         if progress_callback is not None:
             runtime_kwargs["progress_callback"] = progress_callback
-        setattr(strategy_class, "runtime_capture_plots", config.capture_plots)
-        setattr(strategy_class, "runtime_plot_from_ms", config.plot_from_ms)
-        setattr(strategy_class, "runtime_plot_to_ms", config.plot_to_ms)
-        setattr(strategy_class, "runtime_request_data_end_ms", config.end_time)
+        strategy_class.runtime_capture_plots = config.capture_plots
+        strategy_class.runtime_plot_from_ms = config.plot_from_ms
+        strategy_class.runtime_plot_to_ms = config.plot_to_ms
+        strategy_class.runtime_request_data_end_ms = config.end_time
         if runtime_data_provider is not None:
-            setattr(strategy_class, "runtime_data_provider", runtime_data_provider)
+            strategy_class.runtime_data_provider = runtime_data_provider
 
         callbacks = None
         if progress_callback is not None and engine_bars:

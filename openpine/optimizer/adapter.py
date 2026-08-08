@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from importlib import import_module, invalidate_caches
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable, Literal, Protocol
+from typing import Any, Literal, Protocol
 
 
 @dataclass(frozen=True)

@@ -539,6 +539,8 @@ def test_gateway_server_lifespan_worker_modes(monkeypatch):
             self.started = True
         def stop(self):
             self.stopped = True
+        async def wait_stopped(self):
+            return True
 
     class _Process:
         def __init__(self, *args, **kwargs):

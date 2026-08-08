@@ -1,11 +1,11 @@
-# OpenPine 4.0.0
+# OpenPine 4.0.1
 
 **Quick tour of the OpenPine UI** (click a tab to expand):
 
 <details open>
 <summary>🗂  Architecture diagram</summary>
 
-![OpenPine 4.0.0 architecture](docs/assets/openpine-architecture.png)
+![OpenPine 4.0.1 architecture](docs/assets/openpine-architecture.png)
 
 </details>
 
@@ -65,7 +65,7 @@
 
 </details>
 
-[![Version](https://img.shields.io/badge/version-4.0.0-blue)](https://github.com/s7cret/openpine) [![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)](https://github.com/s7cret/openpine) [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/s7cret/openpine) [![Pine2AST](https://img.shields.io/badge/pine2ast-4.0.0-blue)](https://github.com/s7cret/pine2ast) [![AST2Python](https://img.shields.io/badge/ast2python-4.0.0-blue)](https://github.com/s7cret/ast2python) [![PineLib](https://img.shields.io/badge/pinelib-4.0.0-blue)](https://github.com/s7cret/pinelib) [![Backtest Engine](https://img.shields.io/badge/backtest_engine-4.0.0-blue)](https://github.com/s7cret/backtest_engine) [![MarketData Provider](https://img.shields.io/badge/marketdata_provider-4.0.0-blue)](https://github.com/s7cret/marketdata-provider) [![Optimizer](https://img.shields.io/badge/optimizer-4.0.0-blue)](https://github.com/s7cret/optimizer)
+[![Version](https://img.shields.io/badge/version-4.0.1-blue)](https://github.com/s7cret/openpine) [![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)](https://github.com/s7cret/openpine) [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/s7cret/openpine) [![Pine2AST](https://img.shields.io/badge/pine2ast-4.0.1-blue)](https://github.com/s7cret/pine2ast) [![AST2Python](https://img.shields.io/badge/ast2python-4.0.1-blue)](https://github.com/s7cret/ast2python) [![PineLib](https://img.shields.io/badge/pinelib-4.0.1-blue)](https://github.com/s7cret/pinelib) [![Backtest Engine](https://img.shields.io/badge/backtest_engine-4.0.1-blue)](https://github.com/s7cret/backtest_engine) [![MarketData Provider](https://img.shields.io/badge/marketdata_provider-4.0.1-blue)](https://github.com/s7cret/marketdata-provider) [![Optimizer](https://img.shields.io/badge/optimizer-4.0.1-blue)](https://github.com/s7cret/optimizer)
 
 
 **GitHub description:** OpenPine orchestrates the Pine research stack: Pine source registry, Pine2AST, AST2Python, PineLib runtime, deterministic backtests, market data, optimization, paper/live adapters, FastAPI gateway, and local product storage.
@@ -80,12 +80,12 @@ The Vue/Vite dashboard lives in `openpine-ui/`. This backend release intentional
 
 OpenPine does not reimplement parser/runtime/backtest/data/optimizer internals. Those stay in independently versioned packages:
 
-- `pine2ast @ v4.0.0`
-- `ast2python @ v4.0.0`
-- `pinelib @ v4.0.0`
-- `backtest-engine @ v4.0.0`
-- `marketdata-provider @ v4.0.0`
-- `optimizer @ v4.0.0`
+- `pine2ast @ v4.0.1`
+- `ast2python @ v4.0.1`
+- `pinelib @ v4.0.1`
+- `backtest-engine @ v4.0.1`
+- `marketdata-provider @ v4.0.1`
+- `optimizer @ v4.0.1`
 
 OpenPine is responsible for orchestration: registering Pine sources, compiling strategies, attaching market data, scheduling backtests/jobs, storing results, exposing gateway APIs, and coordinating paper/live execution.
 

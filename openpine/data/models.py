@@ -6,7 +6,6 @@ Section OP-DL-004 of OpenPine.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -25,7 +24,7 @@ class CandleManifest:
     row_count: int
     schema_hash: str
     checksum: str
-    file_size_bytes: Optional[int] = None
+    file_size_bytes: int | None = None
     provider: str = "binance"
     ingested_at: int = 0
     created_at: int = 0
@@ -47,8 +46,8 @@ class DataGap:
     gap_end: int
     severity: str = "minor"
     status: str = "open"
-    filled_by_job_id: Optional[str] = None
-    filled_at: Optional[int] = None
+    filled_by_job_id: str | None = None
+    filled_at: int | None = None
     created_at: int = 0
     updated_at: int = 0
 
@@ -59,8 +58,8 @@ class WriteResult:
 
     success: bool
     rows_written: int = 0
-    partition_path: Optional[str] = None
-    error: Optional[str] = None
+    partition_path: str | None = None
+    error: str | None = None
     manifests_created: list[CandleManifest] = field(default_factory=list)
 
 
@@ -69,13 +68,13 @@ class CandleCommitResult:
     """Result of on_candle_closed operation."""
 
     success: bool
-    manifest_id: Optional[str] = None
-    error: Optional[str] = None
+    manifest_id: str | None = None
+    error: str | None = None
 
 
 __all__ = [
+    "CandleCommitResult",
     "CandleManifest",
     "DataGap",
     "WriteResult",
-    "CandleCommitResult",
 ]

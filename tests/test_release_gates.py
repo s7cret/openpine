@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from openpine import __version__
 from openpine.distribution import build_zip, distribution_manifest, source_files
 from openpine.quality import architecture_report, duplicate_report
 from openpine.release import release_report
+from openpine.stack_lock import load_stack_lock
 from openpine.storage import MigrationRunner, SQLiteStorage
 from openpine.storage.db_health import schema_health
 
@@ -27,6 +29,32 @@ def test_quality_reports_current_package_budget() -> None:
 
     assert arch.oversized_count == 0
     assert dup.duplicate_group_count == 0
+
+
+def test_release_gate_enforces_configured_ruff_policy() -> None:
+    root = Path(__file__).resolve().parents[1]
+    gate_lines = (root / "scripts" / "release_gate.sh").read_text().splitlines()
+    ruff_lines = [line for line in gate_lines if "-m ruff check" in line]
+    policy = tomllib.loads((root / "pyproject.toml").read_text())
+
+    assert ruff_lines == ["$PYTHON -m ruff check openpine scripts"]
+    lint = policy["tool"]["ruff"]["lint"]
+    assert set(lint["select"]) == {
+        "E4",
+        "E7",
+        "E9",
+        "F",
+        "BLE001",
+        "S110",
+        "S112",
+        "B008",
+        "S603",
+        "S607",
+    }
+    assert lint.get("ignore", []) == []
+    assert "B008" not in lint["per-file-ignores"].get(
+        "openpine/gateway/live_runner.py", []
+    )
 
 
 def test_distribution_manifest_excludes_local_runtime_artifacts(tmp_path: Path) -> None:
@@ -102,14 +130,54 @@ def test_distribution_manifest_and_zip_are_deterministic(tmp_path: Path) -> None
     assert output.stat().st_size > 0
 
 
-def test_release_report_is_green_for_4_0() -> None:
+def test_release_report_accepts_committed_sibling_4_0_1_release() -> None:
     root = Path(__file__).resolve().parents[1]
     _clean_release_artifacts(root)
     report = release_report(root)
 
-    assert __version__ == "4.0.0"
-    assert report.ok, report.errors
+    assert __version__ == "4.0.1"
+    assert report.ok is True
+    assert report.errors == ()
     assert report.checks["latest_migration"] >= 10
+
+
+def test_release_report_proves_coherent_immutable_stack_lock() -> None:
+    root = Path(__file__).resolve().parents[1]
+    report = release_report(root)
+    lock = load_stack_lock(root / "openpine" / "stack-lock.json")
+
+    assert report.ok is True
+    assert report.checks["stack_lock"]["coherent"] is True
+    assert report.checks["stack_lock"]["refs_verified"] is True
+    assert report.checks["stack_lock"]["valid"] is True
+    assert report.checks["stack_lock"]["source_tree_matches"] is True
+    assert all(item["version"] == "4.0.1" for item in lock["components"])
+    workflow = (root / ".github" / "workflows" / "stack-ci.yml").read_text()
+    assert "expected 4.0.1" in workflow
+    assert "installed != '4.0.1'" in workflow
+
+
+def test_release_report_returns_structured_failure_for_mapping_components(
+    monkeypatch,
+) -> None:
+    root = Path(__file__).resolve().parents[1]
+    malformed_lock = {
+        "schema": "openpine.stack-lock.v1",
+        "release": "4.0.1",
+        "components": {"openpine": {"name": "openpine"}},
+    }
+    monkeypatch.setattr("openpine.release.load_stack_lock", lambda _path: malformed_lock)
+    monkeypatch.setattr(
+        "openpine.release.validate_stack_refs", lambda _lock, *, root: ()
+    )
+
+    report = release_report(root)
+
+    assert report.ok is False
+    assert "stack lock components must be a list" in report.errors
+    assert report.checks["stack_lock"]["valid"] is False
+    assert report.checks["stack_lock"]["coherent"] is False
+    assert report.checks["stack_lock"]["source_tree_matches"] is False
 
 
 def test_schema_health_tracks_metadata_migration(tmp_path: Path) -> None:

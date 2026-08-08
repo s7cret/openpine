@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 
 from openpine.config import OpenPineConfig
 
-
 DEFAULT_CORS_ORIGINS = [
     "http://localhost:1888",
     "http://127.0.0.1:1888",
@@ -30,7 +29,7 @@ class GatewayConfig:
     @classmethod
     def from_openpine_config(
         cls, openpine: OpenPineConfig | None = None
-    ) -> "GatewayConfig":
+    ) -> GatewayConfig:
         """Build gateway config from OpenPine config (future YAML override)."""
         # In future, read from openpine config YAML section [gateway].
         # For now, use defaults.
