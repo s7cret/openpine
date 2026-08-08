@@ -120,7 +120,7 @@ def test_stack_lock_validation_rejects_valid_looking_wrong_package_and_repositor
     assert any("ast2python repository" in error for error in errors)
 
 
-def test_stack_lock_validation_checks_dependency_and_stack_ci_refs(tmp_path: Path) -> None:
+def test_stack_lock_validation_checks_dependency_and_ci_refs(tmp_path: Path) -> None:
     lock = load_stack_lock()
     root = tmp_path / "openpine"
     (root / ".github" / "workflows").mkdir(parents=True)
@@ -142,21 +142,37 @@ def test_stack_lock_validation_checks_dependency_and_stack_ci_refs(tmp_path: Pat
         + "\n]\n",
         encoding="utf-8",
     )
-    (root / ".github" / "workflows" / "stack-ci.yml").write_text(
-        "\n".join(workflow_lines) + "\n", encoding="utf-8"
+    workflow_text = "\n".join(workflow_lines) + "\n"
+    stack_workflow = root / ".github" / "workflows" / "stack-ci.yml"
+    stack_workflow.write_text(workflow_text, encoding="utf-8")
+    backend_workflow = root / ".github" / "workflows" / "ci.yml"
+    backend_workflow.write_text(
+        "PINE_STACK_ROOT: ${{ github.workspace }}/stack\n" + workflow_text,
+        encoding="utf-8",
     )
 
     assert validate_stack_lock(lock, root=root) == ()
 
-    workflow = root / ".github" / "workflows" / "stack-ci.yml"
-    workflow.write_text(
-        workflow.read_text(encoding="utf-8").replace(
-            lock["components"][1]["commit"], "1" * 40
-        ),
+    stack_workflow.write_text(
+        workflow_text.replace(lock["components"][1]["commit"], "1" * 40),
         encoding="utf-8",
     )
     errors = validate_stack_lock(lock, root=root)
     assert any("stack-ci ref" in error and "pine2ast" in error for error in errors)
+
+    stack_workflow.write_text(workflow_text, encoding="utf-8")
+    backend_workflow.write_text(
+        (
+            "PINE_STACK_ROOT: ${{ github.workspace }}/stack\n" + workflow_text
+        ).replace(lock["components"][1]["commit"], "1" * 40),
+        encoding="utf-8",
+    )
+    errors = validate_stack_lock(lock, root=root)
+    assert any("backend-ci ref" in error and "pine2ast" in error for error in errors)
+
+    backend_workflow.write_text(workflow_text, encoding="utf-8")
+    errors = validate_stack_lock(lock, root=root)
+    assert any("PINE_STACK_ROOT" in error for error in errors)
 
 
 def test_stack_lock_rejects_zero_sha_and_invalid_openpine_self_identity() -> None:

@@ -163,7 +163,7 @@ def validate_stack_lock(
 
 
 def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
-    """Validate lock SHAs against dependency URLs and immutable Stack CI refs."""
+    """Validate lock SHAs against dependency URLs and immutable CI refs."""
 
     errors: list[str] = []
     try:
@@ -173,19 +173,32 @@ def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
         dependencies = tuple(str(item) for item in project.get("dependencies", ()))
     except (OSError, ValueError, KeyError, tomllib.TOMLDecodeError) as exc:
         return [f"stack lock dependency pins unavailable: {type(exc).__name__}: {exc}"]
-    try:
-        workflow = (root / ".github" / "workflows" / "stack-ci.yml").read_text(
-            encoding="utf-8"
-        )
-    except OSError as exc:
-        return [f"stack lock stack-ci refs unavailable: {type(exc).__name__}: {exc}"]
+
+    workflows: dict[str, str] = {}
+    for label, filename in (("stack-ci", "stack-ci.yml"), ("backend-ci", "ci.yml")):
+        try:
+            workflows[label] = (
+                root / ".github" / "workflows" / filename
+            ).read_text(encoding="utf-8")
+        except OSError as exc:
+            return [f"stack lock {label} refs unavailable: {type(exc).__name__}: {exc}"]
 
     workflow_refs = {
-        repository: commit
-        for repository, commit in re.findall(
-            r"repository:\s*([^\s]+)\s*\n\s*ref:\s*([0-9a-f]{40})", workflow
-        )
+        label: {
+            repository: commit
+            for repository, commit in re.findall(
+                r"repository:\s*([^\s]+)\s*\n\s*ref:\s*([0-9a-f]{40})",
+                workflow,
+            )
+        }
+        for label, workflow in workflows.items()
     }
+    if re.search(
+        r"PINE_STACK_ROOT:\s*\$\{\{\s*github\.workspace\s*\}\}/stack",
+        workflows["backend-ci"],
+    ) is None:
+        errors.append("stack lock backend-ci must configure PINE_STACK_ROOT to pinned checkouts")
+
     components = lock.get("components")
     if not isinstance(components, list):
         return errors
@@ -201,8 +214,9 @@ def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
         )
         if expected_dependency not in dependencies:
             errors.append(f"stack lock component {name} dependency ref does not match lock")
-        if workflow_refs.get(repository) != commit:
-            errors.append(f"stack lock component {name} stack-ci ref does not match lock")
+        for label, refs in workflow_refs.items():
+            if refs.get(repository) != commit:
+                errors.append(f"stack lock component {name} {label} ref does not match lock")
     return errors
 
 

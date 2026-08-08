@@ -6,12 +6,50 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      PINE_STACK_ROOT: ${{ github.workspace }}/stack
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout Pine2AST
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/pine2ast
+          ref: b7b52d3399afc2641ad4d9623e5c63a421588c6c
+          path: stack/pine2ast
+      - name: Checkout AST2Python
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/ast2python
+          ref: ea03d1fc9a094a13f4ecd630bf67dd14a12d72e6
+          path: stack/ast2python
+      - name: Checkout PineLib
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/pinelib
+          ref: 38987ec94bde5158ea379b45485b7ceb8614b30b
+          path: stack/pinelib
+      - name: Checkout Backtest Engine
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/backtest_engine
+          ref: 7d9ff8befef2295d2a87b59eb272c051761275ee
+          path: stack/backtest_engine
+      - name: Checkout Marketdata Provider
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/marketdata-provider
+          ref: a8f0b5626c7ec227d08e9d0157b191bd2a50ddd4
+          path: stack/marketdata-provider
+      - name: Checkout Optimizer
+        uses: actions/checkout@v4
+        with:
+          repository: s7cret/optimizer
+          ref: edd4b1d44ef00592bccaa80bf65e6f776563e902
+          path: stack/optimizer
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
