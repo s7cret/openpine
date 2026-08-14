@@ -151,7 +151,7 @@ test('preserves a raced-in destination and cleans a read-only temporary candidat
       await delay(1)
     }
     await mkdir(destination)
-    await assert.rejects(packaging, /already exists/)
+    await assert.rejects(packaging, /(?:already exists|not replacing)/)
     assert.deepEqual(await readdir(destination), [])
     assert.equal(
       (await readdir(sandbox)).some(
@@ -198,7 +198,10 @@ test('the publish primitive never replaces an existing empty directory', async (
   await copyFile(path.join(UI_ROOT, 'dist/index.html'), path.join(temporary, 'index.html'))
   const destinationInode = (await stat(destination)).ino
   try {
-    await assert.rejects(publishNoReplace(temporary, destination), /already exists/)
+    await assert.rejects(
+      publishNoReplace(temporary, destination),
+      /(?:already exists|not replacing)/,
+    )
     assert.equal((await stat(destination)).ino, destinationInode)
     assert.equal((await stat(path.join(temporary, 'index.html'))).isFile(), true)
   } finally {

@@ -30,7 +30,7 @@
       "package": "ast2python",
       "repository": "s7cret/ast2python",
       "version": "4.0.2",
-      "commit": "e95fa8a3746caf641c847a38ead551e9d5f67c3f",
+      "commit": "b3013b13a32a6e3eb68edc111390e35f206323fc",
       "tree_sha256": "3f71e33228a1dcee5bf52e130e45d1b26e4fae9a75f11eb41c304677807ca864",
       "contracts": {
         "ast": "pine.ast_contract.v1",
@@ -42,7 +42,7 @@
       "package": "pinelib",
       "repository": "s7cret/pinelib",
       "version": "4.0.2",
-      "commit": "e42ccf881fbafb2c06311bcf8ba8435d055afea4",
+      "commit": "fcf9c0f92213313db39bc42c83f676786c85400c",
       "tree_sha256": "0f746ef57253621b546da75f50cc1d8a1ad29151fd75140d9088c682f654bd35",
       "contracts": {
         "runtime": "1.4"
@@ -53,7 +53,7 @@
       "package": "backtest-engine",
       "repository": "s7cret/backtest_engine",
       "version": "4.0.2",
-      "commit": "b1457ee8757047a8bdf39f718cd2f4b8590c7323",
+      "commit": "329b9905bff2ea0b7b7f48662e4ce8b83d919c60",
       "tree_sha256": "74332c1deda837fc0e4c7878897c1926f8ce7ff7ba876ffc9627dd87f58511d8",
       "contracts": {
         "tick_replay": "deterministic-explicit-v1"
@@ -64,8 +64,8 @@
       "package": "marketdata-provider",
       "repository": "s7cret/marketdata-provider",
       "version": "4.0.2",
-      "commit": "c943348f88f8af52b11a2c9fbcaca1b8e1d7e244",
-      "tree_sha256": "fe2bfa7ff74d223e11de595ebb71252b46434f3f9c08ac0f6114de4b78f980d6",
+      "commit": "b868ace65524f5c3bf62498f667db411e299a4ce",
+      "tree_sha256": "e7898ab7396365d2be685ae6138edd07ea2dacd84c340a9f83257ea05f82094d",
       "contracts": {
         "runtime": "1.4",
         "segment_manifest": "stage-d-csv-2"

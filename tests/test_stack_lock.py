@@ -85,7 +85,7 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
         "ast2python": "3f71e33228a1dcee5bf52e130e45d1b26e4fae9a75f11eb41c304677807ca864",
         "pinelib": "0f746ef57253621b546da75f50cc1d8a1ad29151fd75140d9088c682f654bd35",
         "backtest_engine": "74332c1deda837fc0e4c7878897c1926f8ce7ff7ba876ffc9627dd87f58511d8",
-        "marketdata_provider": "fe2bfa7ff74d223e11de595ebb71252b46434f3f9c08ac0f6114de4b78f980d6",
+        "marketdata_provider": "e7898ab7396365d2be685ae6138edd07ea2dacd84c340a9f83257ea05f82094d",
         "optimizer": "c0f7e23b458d01eaf60e8891305a037482c5d79035d4b865e78589f5c9d8fb97",
     }
     assert {
