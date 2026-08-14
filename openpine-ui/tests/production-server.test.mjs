@@ -233,24 +233,179 @@ test('rejects encoded traversal and non-GET static mutations', async () => {
   }
 })
 
+test('destroys a pending upstream WebSocket request when the browser disconnects', async () => {
+  let markStarted
+  let markClosed
+  let backendSocket = null
+  const started = new Promise((resolve) => { markStarted = resolve })
+  const closed = new Promise((resolve) => { markClosed = resolve })
+  const backend = http.createServer((req, res) => {
+    res.statusCode = 200
+    res.end('ok')
+  })
+  backend.on('upgrade', (req, socket) => {
+    backendSocket = socket
+    markStarted()
+    socket.once('end', () => markClosed(socket.readableEnded))
+    socket.once('close', () => markClosed(socket.destroyed))
+    socket.resume()
+  })
+  const backendPort = await listen(backend)
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openpine-ui-ws-disconnect-'))
+  await writeFile(path.join(root, 'index.html'), 'ok')
+  const logs = []
+  const server = createProductionServer({
+    staticRoot: root,
+    apiTarget: `http://127.0.0.1:${backendPort}`,
+    logger: event => logs.push(event),
+  })
+  const port = await listen(server)
+  const client = net.createConnection({ host: '127.0.0.1', port })
+  client.on('error', () => {})
+  try {
+    await new Promise((resolve) => client.once('connect', resolve))
+    client.write([
+      'GET /api/ws/events HTTP/1.1',
+      `Host: 127.0.0.1:${port}`,
+      'Connection: Upgrade',
+      'Upgrade: websocket',
+      'Sec-WebSocket-Version: 13',
+      'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==',
+      'Sec-WebSocket-Protocol: openpine.events.v1',
+      '',
+      '',
+    ].join('\r\n'))
+    await started
+    client.resetAndDestroy()
+    const upstreamDestroyed = await Promise.race([
+      closed,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`pending WebSocket upstream remained open: logs=${JSON.stringify(logs)} clientDestroyed=${client.destroyed} backendDestroyed=${backendSocket?.destroyed}`)), 2_000)),
+    ])
+    assert.equal(upstreamDestroyed, true)
+    assert.equal(logs.at(-1).status, 499)
+    const health = await request(port, '/health')
+    assert.equal(health.status, 200)
+  } finally {
+    client.destroy()
+    backendSocket?.destroy()
+    await close(server)
+    await close(backend)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test('proxies authenticated WebSocket upgrades and overwrites spoofed forwarded IP', async () => {
   let seen = null
   let backendSocket = null
-  const backend = http.createServer()
+  const backend = http.createServer((req, res) => {
+    res.statusCode = 200
+    res.end('ok')
+  })
   backend.on('upgrade', (req, socket) => {
     seen = req.headers
+    backendSocket = socket
+    socket.once('error', () => {})
+    socket.write([
+      'HTTP/1.1 101 Switching Protocols',
+      'Upgrade: websocket',
+      'Connection: Upgrade',
+      'Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=',
+      'Sec-WebSocket-Protocol: openpine.events.v1',
+      '',
+      '',
+    ].join('\r\n'), () => socket.destroy(new Error('forced upstream socket error')))
+  })
+  const backendPort = await listen(backend)
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openpine-ui-ws-'))
+  await writeFile(path.join(root, 'index.html'), 'ok')
+  let markLogged
+  const logged = new Promise((resolve) => { markLogged = resolve })
+  const logs = []
+  const server = createProductionServer({
+    staticRoot: root,
+    apiTarget: `http://127.0.0.1:${backendPort}`,
+    logger: event => {
+      logs.push(event)
+      markLogged()
+    },
+  })
+  const port = await listen(server)
+  try {
+    const response = await websocketHandshake(port, '/api/ws/events', {
+      Authorization: 'Bearer local-token',
+      'Sec-WebSocket-Protocol': 'openpine.events.v1, openpine.bearer.b64.c2VjcmV0',
+      'X-Forwarded-For': '203.0.113.200',
+    })
+    assert.match(response, /^HTTP\/1\.1 101 /)
+    assert.match(response, /Sec-WebSocket-Protocol: openpine\.events\.v1\r\n/i)
+    assert.doesNotMatch(response, /openpine\.bearer\.b64\./i)
+    assert.equal(seen.authorization, 'Bearer local-token')
+    assert.equal(seen['sec-websocket-protocol'], 'openpine.events.v1, openpine.bearer.b64.c2VjcmV0')
+    assert.equal(seen['x-forwarded-for'], '127.0.0.1')
+    await logged
+    assert.equal(logs.at(-1).status, 101)
+    const health = await request(port, '/health')
+    assert.equal(health.status, 200)
+  } finally {
+    backendSocket?.destroy()
+    await close(server)
+    await close(backend)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('rejects an upstream WebSocket credential-protocol echo as 502', async () => {
+  let backendSocket = null
+  const backend = http.createServer()
+  backend.on('upgrade', (_req, socket) => {
     backendSocket = socket
     socket.write([
       'HTTP/1.1 101 Switching Protocols',
       'Upgrade: websocket',
       'Connection: Upgrade',
       'Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=',
+      'Sec-WebSocket-Protocol: openpine.bearer.b64.c2VjcmV0',
       '',
       '',
     ].join('\r\n'))
   })
   const backendPort = await listen(backend)
-  const root = await mkdtemp(path.join(os.tmpdir(), 'openpine-ui-ws-'))
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openpine-ui-ws-echo-'))
+  await writeFile(path.join(root, 'index.html'), 'ok')
+  let markLogged
+  const logged = new Promise((resolve) => { markLogged = resolve })
+  const logs = []
+  const server = createProductionServer({
+    staticRoot: root,
+    apiTarget: `http://127.0.0.1:${backendPort}`,
+    logger: event => { logs.push(event); markLogged() },
+  })
+  const port = await listen(server)
+  try {
+    const response = await websocketHandshake(port, '/api/ws/events', {
+      'Sec-WebSocket-Protocol': 'openpine.events.v1, openpine.bearer.b64.c2VjcmV0',
+    })
+    assert.match(response, /^HTTP\/1\.1 502 /)
+    assert.doesNotMatch(response, /openpine\.bearer\.b64\./i)
+    await logged
+    assert.equal(logs.at(-1).status, 502)
+  } finally {
+    backendSocket?.destroy()
+    await close(server)
+    await close(backend)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('rejects a credential-only WebSocket protocol before contacting upstream', async () => {
+  let upgrades = 0
+  const backend = http.createServer()
+  backend.on('upgrade', (_req, socket) => {
+    upgrades += 1
+    socket.destroy()
+  })
+  const backendPort = await listen(backend)
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openpine-ui-ws-shape-'))
   await writeFile(path.join(root, 'index.html'), 'ok')
   const server = createProductionServer({
     staticRoot: root,
@@ -260,16 +415,72 @@ test('proxies authenticated WebSocket upgrades and overwrites spoofed forwarded 
   const port = await listen(server)
   try {
     const response = await websocketHandshake(port, '/api/ws/events', {
-      Authorization: 'Bearer local-token',
-      'X-Forwarded-For': '203.0.113.200',
+      'Sec-WebSocket-Protocol': 'openpine.bearer.b64.c2VjcmV0',
     })
-    assert.match(response, /^HTTP\/1\.1 101 /)
-    assert.equal(seen.authorization, 'Bearer local-token')
-    assert.equal(seen['x-forwarded-for'], '127.0.0.1')
+    assert.match(response, /^HTTP\/1\.1 400 /)
+    assert.equal(upgrades, 0)
   } finally {
-    backendSocket?.destroy()
     await close(server)
     await close(backend)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('preserves an upstream WebSocket rejection status in the audit record', async () => {
+  const backend = http.createServer()
+  backend.on('upgrade', (_req, socket) => {
+    socket.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n')
+  })
+  const backendPort = await listen(backend)
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openpine-ui-ws-status-'))
+  await writeFile(path.join(root, 'index.html'), 'ok')
+  let markLogged
+  const logged = new Promise((resolve) => { markLogged = resolve })
+  const logs = []
+  const server = createProductionServer({
+    staticRoot: root,
+    apiTarget: `http://127.0.0.1:${backendPort}`,
+    logger: event => { logs.push(event); markLogged() },
+  })
+  const port = await listen(server)
+  try {
+    const response = await websocketHandshake(port, '/api/ws/events', {
+      'Sec-WebSocket-Protocol': 'openpine.events.v1, openpine.bearer.b64.c2VjcmV0',
+    })
+    assert.match(response, /^HTTP\/1\.1 401 /)
+    await logged
+    assert.equal(logs.at(-1).status, 401)
+  } finally {
+    await close(server)
+    await close(backend)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('preserves an upstream WebSocket network failure as audit status 502', async () => {
+  const unavailable = http.createServer()
+  const backendPort = await listen(unavailable)
+  await close(unavailable)
+  const root = await mkdtemp(path.join(os.tmpdir(), 'openpine-ui-ws-502-'))
+  await writeFile(path.join(root, 'index.html'), 'ok')
+  let markLogged
+  const logged = new Promise((resolve) => { markLogged = resolve })
+  const logs = []
+  const server = createProductionServer({
+    staticRoot: root,
+    apiTarget: `http://127.0.0.1:${backendPort}`,
+    logger: event => { logs.push(event); markLogged() },
+  })
+  const port = await listen(server)
+  try {
+    const response = await websocketHandshake(port, '/api/ws/events', {
+      'Sec-WebSocket-Protocol': 'openpine.events.v1, openpine.bearer.b64.c2VjcmV0',
+    })
+    assert.match(response, /^HTTP\/1\.1 502 /)
+    await logged
+    assert.equal(logs.at(-1).status, 502)
+  } finally {
+    await close(server)
     await rm(root, { recursive: true, force: true })
   }
 })

@@ -345,6 +345,7 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
 
     class FakeProc:
         def __init__(self, *, exitcode=0, alive=(False,)):
+            self.pid = None
             self.exitcode = exitcode
             self.alive = list(alive)
 
@@ -364,6 +365,9 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
 
         def Queue(self):
             return self.q
+
+        def Event(self):
+            return SimpleNamespace(is_set=lambda: True)
 
         def Process(self, **kwargs):
             return self.proc

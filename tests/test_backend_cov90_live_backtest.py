@@ -135,7 +135,10 @@ def test_backtest_helpers_and_process_paths(monkeypatch):
         def close(self): pass
         def cancel_join_thread(self): pass
     class FakeProc:
-        def __init__(self, *a, **k): self.exitcode=0; self.alive=True
+        def __init__(self, *a, **k):
+            self.pid = None
+            self.exitcode = 0
+            self.alive = True
         def start(self): pass
         def is_alive(self):
             if self.alive: self.alive=False; return True
@@ -144,6 +147,7 @@ def test_backtest_helpers_and_process_paths(monkeypatch):
     class Ctx:
         def __init__(self, q): self.q=q
         def Queue(self): return self.q
+        def Event(self): return SimpleNamespace(is_set=lambda: True)
         def Process(self, **kw): return FakeProc()
     monkeypatch.setattr(bt.mp, "get_context", lambda name: Ctx(FakeQueue([("progress", 1, 3), ("ok", "done")])) )
     progress=[]

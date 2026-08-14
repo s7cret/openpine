@@ -22,6 +22,16 @@ describe('global UI correctness contracts', () => {
     expect(unlock).toContain('role="alert"')
   })
 
+  it('opens the date picker on the selected range and follows external range updates', () => {
+    const picker = source('components/DateRangePicker.vue')
+
+    expect(picker).toContain("from '@/lib/dateRangeCalendar'")
+    expect(picker).toContain('function syncCalendarsToRange()')
+    expect(picker).toContain('if (isOpen.value) syncCalendarsToRange()')
+    expect(picker).toContain("watch(() => [props.from, props.to]")
+    expect(picker).not.toContain('initCalRight')
+  })
+
   it('uses authenticated blob downloads for reports and exports', () => {
     const tvPage = source('pages/TvParity.vue')
     const tvViz = source('components/TvParityVisualization.vue')

@@ -79,6 +79,7 @@ def test_backtest_background_strategy_and_artifact_failures(monkeypatch):
     store = FakeStore()
     asyncio.run(bt._run_backtest_background(_state(registry=FakeRegistry(fail=True), store=store), "missing", "run1", 1, 2, None, 0, False))
     assert ws.events[-1][1] == "broadcast"
+    assert store.failed == [("run1", "Strategy not found")]
 
     import openpine.runtime.engine as rt
     def bad_loader(*args, **kwargs):

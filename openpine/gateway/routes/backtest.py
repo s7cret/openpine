@@ -8,7 +8,9 @@ import json
 import multiprocessing as mp
 import os
 import queue
+import select
 import signal
+import sys
 import threading
 import time
 import traceback
@@ -46,6 +48,10 @@ class _BacktestCancelled(RuntimeError):
     """Raised only after the owned compute process tree has stopped."""
 
 
+class _BacktestSupervisorShutdown(BaseException):
+    """Interrupt the supervisor so it can clean descendants before exit."""
+
+
 @dataclass
 class _BacktestWorker:
     process: BaseProcess
@@ -54,6 +60,8 @@ class _BacktestWorker:
     start_time: int | None
     lock: threading.Lock = field(default_factory=threading.Lock)
     cancel_requested: threading.Event = field(default_factory=threading.Event)
+    cleanup_proven: bool = False
+    cleanup_complete: object | None = None
 
 
 @dataclass(frozen=True)
@@ -293,25 +301,29 @@ def _backtest_admission_limiter(state: GatewayState) -> _BacktestAdmissionLimite
 def _proc_identity(pid: int) -> tuple[str, int, int] | None:
     try:
         text = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
-    except (FileNotFoundError, PermissionError, ProcessLookupError):
+    except (FileNotFoundError, ProcessLookupError):
         return None
+    except PermissionError as exc:
+        raise RuntimeError(f"unreadable process identity: {pid}") from exc
     closing = text.rfind(")")
     if closing < 0:
-        return None
+        raise RuntimeError(f"malformed process identity: {pid}")
     fields = text[closing + 2 :].split()
     if len(fields) <= 19:
-        return None
+        raise RuntimeError(f"malformed process identity: {pid}")
     try:
         return fields[0], int(fields[2]), int(fields[19])
-    except ValueError:
-        return None
+    except ValueError as exc:
+        raise RuntimeError(f"malformed process identity: {pid}") from exc
 
 
 def _enable_child_subreaper() -> None:
     """Keep escaped grandchildren owned by the backtest worker on Linux."""
 
-    if not Path("/proc/self/stat").exists():
+    if sys.platform != "linux":
         return
+    if not Path("/proc/self/stat").exists():
+        raise RuntimeError("Linux procfs is required for backtest child ownership")
     try:
         libc = ctypes.CDLL(None, use_errno=True)
         if libc.prctl(36, 1, 0, 0, 0) != 0:  # PR_SET_CHILD_SUBREAPER
@@ -329,8 +341,10 @@ def _descendant_process_identities(root_pid: int) -> dict[int, int]:
             closing = text.rfind(")")
             fields = text[closing + 2 :].split()
             rows[pid] = (int(fields[1]), int(fields[19]), fields[0])
-        except (FileNotFoundError, PermissionError, IndexError, ValueError):
+        except (FileNotFoundError, ProcessLookupError):
             continue
+        except (PermissionError, IndexError, ValueError) as exc:
+            raise RuntimeError(f"incomplete process ownership snapshot: {stat_path}") from exc
     descendants: dict[int, int] = {}
     frontier = {root_pid}
     while frontier:
@@ -345,55 +359,229 @@ def _descendant_process_identities(root_pid: int) -> dict[int, int]:
     return descendants
 
 
+def _pidfd_open(pid: int) -> int:
+    libc = ctypes.CDLL(None, use_errno=True)
+    descriptor = int(libc.syscall(434, pid, 0))  # __NR_pidfd_open on Linux
+    if descriptor < 0:
+        error = ctypes.get_errno()
+        raise OSError(error, os.strerror(error))
+    return descriptor
+
+
+def _pidfd_send_signal(descriptor: int, sig: signal.Signals) -> None:
+    libc = ctypes.CDLL(None, use_errno=True)
+    result = int(libc.syscall(424, descriptor, int(sig), 0, 0))
+    if result < 0:
+        error = ctypes.get_errno()
+        if error == 3:  # ESRCH: the pinned process has already exited.
+            return
+        raise OSError(error, os.strerror(error))
+
+
+def _pidfd_has_exited(descriptor: int) -> bool:
+    poller = select.poll()
+    poller.register(descriptor, select.POLLIN)
+    return bool(poller.poll(0))
+
+
+def _process_tasks_are_stopped(pid: int, start_time: int) -> bool:
+    """Require a stable all-TID group-stop snapshot for one exact process."""
+
+    identity = _proc_identity(pid)
+    if identity is None:
+        return False
+    if identity[2] != start_time:
+        raise RuntimeError(f"process identity changed while stopping: {pid}")
+    task_root = Path(f"/proc/{pid}/task")
+    for _attempt in range(2):
+        before = tuple(sorted(task_root.glob("[0-9]*/stat"), key=str))
+        if not before:
+            if _proc_identity(pid) is None:
+                return False
+            raise RuntimeError(f"incomplete process task snapshot: {pid}")
+        states: list[str] = []
+        for stat_path in before:
+            try:
+                text = stat_path.read_text(encoding="utf-8")
+            except (FileNotFoundError, ProcessLookupError):
+                break
+            except PermissionError as exc:
+                raise RuntimeError(
+                    f"incomplete process task snapshot: {stat_path}"
+                ) from exc
+            closing = text.rfind(")")
+            fields = text[closing + 2 :].split() if closing >= 0 else []
+            if not fields:
+                raise RuntimeError(f"malformed process task snapshot: {stat_path}")
+            states.append(fields[0])
+        else:
+            after = tuple(sorted(task_root.glob("[0-9]*/stat"), key=str))
+            final_identity = _proc_identity(pid)
+            if final_identity is None:
+                return False
+            if final_identity[2] != start_time:
+                raise RuntimeError(f"process identity changed while stopping: {pid}")
+            if before == after and all(state in {"T", "t"} for state in states):
+                return True
+        time.sleep(0.001)
+    return False
+
+
 def _terminate_current_process_descendants(timeout: float = 2.0) -> None:
-    """Fail closed until all descendants of this worker have exited."""
+    """Freeze, discover to a fixed point, then kill every owned descendant."""
 
     root_pid = os.getpid()
-    owned: dict[int, int] = {}
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        owned.update(_descendant_process_identities(root_pid))
-        live = {
-            pid: start_time
-            for pid, start_time in owned.items()
-            if (identity := _proc_identity(pid)) is not None
-            and identity[0] != "Z"
-            and identity[2] == start_time
-        }
-        if not live:
-            return
-        for pid, start_time in live.items():
-            identity = _proc_identity(pid)
-            if identity is None or identity[2] != start_time:
-                continue
-            try:
-                os.kill(pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
-        time.sleep(0.02)
+    if _proc_identity(root_pid) is None:
+        raise RuntimeError("backtest supervisor procfs identity is unavailable")
+    deadline = time.monotonic() + max(0.0, timeout)
+    owned: dict[int, tuple[int, int]] = {}
+    frozen: set[int] = set()
+    stable_scans = 0
+    try:
+        while time.monotonic() < deadline:
+            snapshot = _descendant_process_identities(root_pid)
+            for pid, start_time in snapshot.items():
+                existing = owned.get(pid)
+                if existing is not None:
+                    if existing[0] != start_time:
+                        raise RuntimeError(f"owned process identity changed: {pid}")
+                    continue
 
-    owned.update(_descendant_process_identities(root_pid))
-    for pid, start_time in owned.items():
-        identity = _proc_identity(pid)
-        if identity is None or identity[0] == "Z" or identity[2] != start_time:
-            continue
-        try:
-            os.kill(pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-    final_deadline = time.monotonic() + 1.0
-    while time.monotonic() < final_deadline:
-        live_pids = [
-            pid
-            for pid, start_time in owned.items()
-            if (identity := _proc_identity(pid)) is not None
-            and identity[0] != "Z"
-            and identity[2] == start_time
-        ]
-        if not live_pids and not _descendant_process_identities(root_pid):
-            return
-        time.sleep(0.02)
-    raise RuntimeError("backtest worker descendants did not stop")
+                descriptor: int | None = None
+                waited_for_pidfd = False
+                while descriptor is None:
+                    try:
+                        descriptor = _pidfd_open(pid)
+                    except OSError:
+                        identity = _proc_identity(pid)
+                        if (
+                            identity is None
+                            or identity[0] == "Z"
+                            or identity[2] != start_time
+                        ):
+                            break
+                        # Never destroy the subreaper boundary while a live
+                        # descendant is still unpinned.  A transient pidfd
+                        # acquisition failure is retried; a persistent one
+                        # deliberately keeps this supervisor alive and owning
+                        # the family until pinning becomes possible or the
+                        # exact process exits.
+                        waited_for_pidfd = True
+                        time.sleep(0.005)
+                if descriptor is None:
+                    continue
+                if waited_for_pidfd:
+                    deadline = max(
+                        deadline,
+                        time.monotonic() + max(0.1, timeout),
+                    )
+                owned[pid] = (start_time, descriptor)
+                identity = _proc_identity(pid)
+                ancestry = _descendant_process_identities(root_pid)
+                if (
+                    identity is None
+                    or identity[0] == "Z"
+                    or identity[2] != start_time
+                    or ancestry.get(pid) != start_time
+                ):
+                    if _pidfd_has_exited(descriptor):
+                        os.close(descriptor)
+                        owned.pop(pid, None)
+                        continue
+                    raise RuntimeError(f"unable to pin owned descendant: {pid}")
+
+                _pidfd_send_signal(descriptor, signal.SIGSTOP)
+                while time.monotonic() < deadline:
+                    if _pidfd_has_exited(descriptor):
+                        os.close(descriptor)
+                        owned.pop(pid, None)
+                        break
+                    if _process_tasks_are_stopped(pid, start_time):
+                        stopped_identity = _proc_identity(pid)
+                        stopped_ancestry = _descendant_process_identities(root_pid)
+                        if (
+                            stopped_identity is None
+                            or stopped_identity[2] != start_time
+                            or stopped_ancestry.get(pid) != start_time
+                        ):
+                            if _pidfd_has_exited(descriptor):
+                                os.close(descriptor)
+                                owned.pop(pid, None)
+                                break
+                            raise RuntimeError(
+                                f"owned descendant changed while stopped: {pid}"
+                            )
+                        frozen.add(pid)
+                        break
+                    time.sleep(0.005)
+                else:
+                    raise RuntimeError(f"owned descendant did not stop: {pid}")
+
+            for pid, (_start_time, descriptor) in tuple(owned.items()):
+                if _pidfd_has_exited(descriptor):
+                    os.close(descriptor)
+                    owned.pop(pid, None)
+                    frozen.discard(pid)
+
+            after = _descendant_process_identities(root_pid)
+            unseen = {
+                pid
+                for pid, start_time in after.items()
+                if owned.get(pid, (None, -1))[0] != start_time
+            }
+            if not unseen and all(pid in frozen for pid in owned):
+                stable_scans += 1
+                if stable_scans >= 2:
+                    break
+            else:
+                stable_scans = 0
+            time.sleep(0.005)
+        else:
+            raise RuntimeError("backtest descendant discovery did not converge")
+
+        for pid, (_start_time, descriptor) in owned.items():
+            if pid not in frozen:
+                raise RuntimeError(f"owned descendant is not stopped: {pid}")
+            _pidfd_send_signal(descriptor, signal.SIGKILL)
+
+        while owned and time.monotonic() < deadline:
+            for pid, (_start_time, descriptor) in tuple(owned.items()):
+                if _pidfd_has_exited(descriptor):
+                    os.close(descriptor)
+                    owned.pop(pid, None)
+                    frozen.discard(pid)
+            if owned:
+                time.sleep(0.005)
+        if owned:
+            raise RuntimeError("backtest worker descendants did not stop")
+        if _descendant_process_identities(root_pid):
+            raise RuntimeError("backtest worker descendants appeared after cleanup")
+    except BaseException as exc:
+        for _start_time, descriptor in owned.values():
+            try:
+                _pidfd_send_signal(descriptor, signal.SIGKILL)
+            except (OSError, ValueError):
+                pass
+        reap_deadline = max(deadline, time.monotonic() + 0.5)
+        while owned and time.monotonic() < reap_deadline:
+            for pid, (_start_time, descriptor) in tuple(owned.items()):
+                if _pidfd_has_exited(descriptor):
+                    os.close(descriptor)
+                    owned.pop(pid, None)
+                    frozen.discard(pid)
+            if owned:
+                time.sleep(0.005)
+        if owned:
+            raise RuntimeError(
+                "owned descendants did not exit after cleanup failure"
+            ) from exc
+        raise
+    finally:
+        for _start_time, descriptor in owned.values():
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
 
 
 def _put_backtest_process_result(out, result) -> None:
@@ -429,20 +617,6 @@ def _put_backtest_process_error(out, exc: BaseException) -> None:
     out.put(("err", exc.__class__.__name__, str(exc), original_traceback))
 
 
-def _process_group_has_live_members(process_group: int) -> bool:
-    for stat_path in Path("/proc").glob("[0-9]*/stat"):
-        try:
-            text = stat_path.read_text(encoding="utf-8")
-            closing = text.rfind(")")
-            fields = text[closing + 2 :].split()
-            state, pgrp = fields[0], int(fields[2])
-        except (FileNotFoundError, PermissionError, IndexError, ValueError):
-            continue
-        if pgrp == process_group and state != "Z":
-            return True
-    return False
-
-
 def _active_backtest_worker(run_id: str) -> _BacktestWorker | None:
     with _ACTIVE_BACKTEST_WORKERS_LOCK:
         return _ACTIVE_BACKTEST_WORKERS.get(run_id)
@@ -474,113 +648,98 @@ def _unregister_backtest_worker(run_id: str, worker: _BacktestWorker) -> None:
             _ACTIVE_BACKTEST_WORKERS.pop(run_id, None)
 
 
+def _cleanup_event_is_set(worker: _BacktestWorker) -> bool:
+    event = worker.cleanup_complete
+    is_set = getattr(event, "is_set", None)
+    if not callable(is_set):
+        return False
+    try:
+        return bool(is_set())
+    except BaseException:
+        return False
+
+
+def _pin_backtest_worker(worker: _BacktestWorker) -> int | None:
+    """Open and revalidate a pidfd for the exact live multiprocessing child."""
+
+    pid = worker.process.pid
+    if pid is None or not worker.process.is_alive():
+        return None
+    before = _proc_identity(pid)
+    if before is None:
+        raise RuntimeError("backtest supervisor identity is unavailable")
+    expected_start = worker.start_time if worker.start_time is not None else before[2]
+    if before[2] != expected_start:
+        raise RuntimeError("backtest supervisor identity changed")
+    descriptor = _pidfd_open(pid)
+    try:
+        after = _proc_identity(pid)
+        if after is None or after[2] != expected_start:
+            raise RuntimeError("backtest supervisor identity changed while pinning")
+        if not worker.process.is_alive():
+            if not _pidfd_has_exited(descriptor):
+                raise RuntimeError("backtest supervisor liveness is inconsistent")
+            os.close(descriptor)
+            return None
+        worker.start_time = expected_start
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
 def _terminate_backtest_worker(worker: _BacktestWorker, timeout: float = 3.0) -> bool:
-    """Freeze, identify, and stop the complete process tree owned by a run."""
+    """Stop the pinned supervisor and require its whole-family cleanup proof."""
 
     with worker.lock:
-        pid = worker.process.pid
-        process_group = worker.process_group
-        identity = _proc_identity(pid) if pid is not None else None
-        owned: dict[int, int] = {}
-        if identity is not None and pid is not None:
-            _state, live_process_group, start_time = identity
-            if worker.start_time is not None and start_time != worker.start_time:
-                return False
-            if process_group is not None and live_process_group != process_group:
-                return False
-            process_group = live_process_group
-
-            try:
-                os.kill(pid, signal.SIGSTOP)
-            except ProcessLookupError:
-                identity = None
-            if identity is not None:
-                verified = _proc_identity(pid)
-                if verified is None or verified[2] != start_time:
-                    return False
-                owned[pid] = start_time
-                stable_scans = 0
-                while stable_scans < 3:
-                    descendants = _descendant_process_identities(pid)
-                    new_descendants = {
-                        child_pid: child_start
-                        for child_pid, child_start in descendants.items()
-                        if child_pid not in owned
-                    }
-                    for child_pid, child_start in new_descendants.items():
-                        child_identity = _proc_identity(child_pid)
-                        if child_identity is None or child_identity[2] != child_start:
-                            continue
-                        try:
-                            os.kill(child_pid, signal.SIGSTOP)
-                        except ProcessLookupError:
-                            continue
-                        if (
-                            (child_identity := _proc_identity(child_pid)) is not None
-                            and child_identity[2] == child_start
-                        ):
-                            owned[child_pid] = child_start
-                    stable_scans = stable_scans + 1 if not new_descendants else 0
-                    time.sleep(0.01)
-
-        def identity_live(owned_pid: int, owned_start: int) -> bool:
-            current = _proc_identity(owned_pid)
-            return (
-                current is not None
-                and current[0] != "Z"
-                and current[2] == owned_start
-            )
-
-        def any_owned_live() -> bool:
-            process_group_live = (
-                process_group is not None
-                and _process_group_has_live_members(process_group)
-            )
-            return process_group_live or any(
-                identity_live(owned_pid, owned_start)
-                for owned_pid, owned_start in owned.items()
-            )
-
-        if not any_owned_live():
+        if worker.cleanup_proven:
             worker.process.join(timeout=0)
             return True
+        deadline = time.monotonic() + max(0.0, timeout)
+        descriptor: int | None = None
+        try:
+            if worker.process.is_alive():
+                descriptor = _pin_backtest_worker(worker)
+                if descriptor is None:
+                    worker.process.join(timeout=0)
+                else:
+                    _pidfd_send_signal(descriptor, signal.SIGTERM)
 
-        for owned_pid, owned_start in owned.items():
-            if not identity_live(owned_pid, owned_start):
-                continue
-            try:
-                os.kill(owned_pid, signal.SIGTERM)
-                os.kill(owned_pid, signal.SIGCONT)
-            except ProcessLookupError:
-                pass
-        if process_group is not None:
-            try:
-                os.killpg(process_group, signal.SIGTERM)
-                os.killpg(process_group, signal.SIGCONT)
-            except ProcessLookupError:
-                pass
+            while worker.process.is_alive() and time.monotonic() < deadline:
+                remaining = deadline - time.monotonic()
+                worker.process.join(timeout=min(0.05, max(0.0, remaining)))
+                if _cleanup_event_is_set(worker) and worker.process.is_alive():
+                    if descriptor is None:
+                        descriptor = _pin_backtest_worker(worker)
+                    if descriptor is not None:
+                        _pidfd_send_signal(descriptor, signal.SIGKILL)
+                    worker.process.join(timeout=max(0.0, deadline - time.monotonic()))
+                    break
 
-        deadline = time.monotonic() + max(0.1, timeout * 0.67)
-        while time.monotonic() < deadline and any_owned_live():
-            time.sleep(0.02)
-        if any_owned_live():
-            for owned_pid, owned_start in owned.items():
-                if not identity_live(owned_pid, owned_start):
-                    continue
+            stopped = not worker.process.is_alive()
+            cleanup_proven = stopped and _cleanup_event_is_set(worker)
+            if cleanup_proven:
+                worker.cleanup_proven = True
+            return cleanup_proven
+        finally:
+            if descriptor is not None:
                 try:
-                    os.kill(owned_pid, signal.SIGKILL)
-                except ProcessLookupError:
+                    os.close(descriptor)
+                except OSError:
                     pass
-            if process_group is not None:
-                try:
-                    os.killpg(process_group, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-        final_deadline = time.monotonic() + max(0.1, timeout * 0.33)
-        while time.monotonic() < final_deadline and any_owned_live():
-            time.sleep(0.02)
-        worker.process.join(timeout=0.1)
-        return not any_owned_live()
+
+
+def _cleanup_registered_backtest_worker(
+    run_id: str,
+    worker: _BacktestWorker,
+    timeout: float = 3.0,
+) -> bool:
+    """Drop registry ownership only after exact-family cleanup is proven."""
+
+    cleanup_proven = _terminate_backtest_worker(worker, timeout=timeout)
+    if cleanup_proven:
+        _unregister_backtest_worker(run_id, worker)
+    return cleanup_proven
 
 
 def _parse_date_ms(value: str) -> int:
@@ -688,14 +847,6 @@ def _bar_series_fingerprint(series) -> str:
 def _backtest_process_entry(
     out, adapter, strategy_class, bars, config, params, runtime_data_provider, effective_pre_bars=None
 ):
-    if hasattr(os, "setsid") and mp.parent_process() is not None:
-        try:
-            os.setsid()
-        except OSError as exc:
-            out.put(("err", exc.__class__.__name__, "unable to isolate backtest process group", traceback.format_exc()))
-            return
-    _enable_child_subreaper()
-
     def progress(done: int, total: int) -> None:
         try:
             out.put_nowait(("progress", int(done), int(total)))
@@ -723,14 +874,6 @@ def _backtest_process_entry(
 
 def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, config, params):
     """Reconstruct unpicklable runtime objects inside a safe spawned worker."""
-
-    if hasattr(os, "setsid") and mp.parent_process() is not None:
-        try:
-            os.setsid()
-        except OSError as exc:
-            out.put(("err", exc.__class__.__name__, "unable to isolate backtest process group", traceback.format_exc()))
-            return
-    _enable_child_subreaper()
 
     def progress(done: int, total: int) -> None:
         try:
@@ -771,6 +914,149 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
         _put_backtest_process_error(out, exc)
 
 
+def _supervised_backtest_process_entry(
+    out,
+    process_target,
+    process_args: tuple,
+    cleanup_complete=None,
+) -> None:
+    """Own the subreaper boundary until every callable descendant is gone."""
+
+    if sys.platform != "linux" or not hasattr(os, "fork"):
+        process_target(out, *process_args)
+        if cleanup_complete is not None:
+            cleanup_complete.set()
+        return
+
+    def request_shutdown(_signum, _frame) -> None:
+        raise _BacktestSupervisorShutdown()
+
+    signal.signal(signal.SIGTERM, request_shutdown)
+    ack_read: int | None = None
+    ack_write: int | None = None
+    pending_error: tuple[str, str, str, str] | None = None
+    shutdown_requested = False
+    cleanup_error: BaseException | None = None
+    try:
+        if hasattr(os, "setsid"):
+            try:
+                os.setsid()
+            except OSError as exc:
+                pending_error = (
+                    "err",
+                    exc.__class__.__name__,
+                    "unable to isolate backtest process group",
+                    traceback.format_exc(),
+                )
+                return
+        _enable_child_subreaper()
+        ack_read, ack_write = os.pipe()
+        child_pid = os.fork()
+        if child_pid == 0:
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            os.close(ack_read)
+            exit_code = 0
+            try:
+                process_target(out, *process_args)
+                out.close()
+                out.join_thread()
+                os.write(ack_write, b"1")
+            except BaseException as exc:
+                exit_code = 1
+                try:
+                    out.put(
+                        (
+                            "err",
+                            exc.__class__.__name__,
+                            str(exc),
+                            traceback.format_exc(),
+                        )
+                    )
+                    out.close()
+                    out.join_thread()
+                    os.write(ack_write, b"1")
+                except BaseException:
+                    pass
+            finally:
+                os.close(ack_write)
+            os._exit(exit_code)
+
+        os.close(ack_write)
+        ack_write = None
+        _, wait_status = os.waitpid(child_pid, 0)
+        os.set_blocking(ack_read, False)
+        try:
+            acknowledged = os.read(ack_read, 1) == b"1"
+        except BlockingIOError:
+            acknowledged = False
+        if not acknowledged:
+            exit_code = os.waitstatus_to_exitcode(wait_status)
+            pending_error = (
+                "err",
+                "RuntimeError",
+                f"backtest callable exited abruptly with code {exit_code}",
+                "",
+            )
+    except _BacktestSupervisorShutdown:
+        shutdown_requested = True
+    except BaseException as exc:
+        pending_error = (
+            "err",
+            exc.__class__.__name__,
+            str(exc),
+            traceback.format_exc(),
+        )
+    finally:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        for descriptor in (ack_read, ack_write):
+            if descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
+        try:
+            _terminate_current_process_descendants(timeout=3.0)
+            if cleanup_complete is not None:
+                cleanup_complete.set()
+        except BaseException as exc:
+            cleanup_error = exc
+        if not shutdown_requested:
+            if cleanup_error is not None:
+                pending_error = (
+                    "err",
+                    "RuntimeError",
+                    f"backtest supervisor cleanup failed: {cleanup_error}",
+                    traceback.format_exc(),
+                )
+            if pending_error is not None:
+                try:
+                    out.put(pending_error)
+                except BaseException:
+                    pass
+        try:
+            out.close()
+            out.join_thread()
+        except BaseException:
+            pass
+    if cleanup_error is not None:
+        raise RuntimeError("backtest supervisor cleanup failed") from cleanup_error
+
+
+def _close_backtest_queue(out) -> None:
+    close_error: BaseException | None = None
+    try:
+        out.close()
+    except BaseException as exc:
+        close_error = exc
+    try:
+        out.cancel_join_thread()
+    except BaseException as exc:
+        if close_error is None:
+            close_error = exc
+    if close_error is not None:
+        raise close_error
+
+
 def _execute_backtest_process(
     run_id: str,
     cancel_requests: set[str],
@@ -781,60 +1067,139 @@ def _execute_backtest_process(
 ):
     ctx = cast(Any, mp.get_context(context_name))
     out = ctx.Queue()
-    proc = ctx.Process(
-        target=process_target,
-        args=(out, *process_args),
-    )
+    try:
+        cleanup_complete = ctx.Event() if hasattr(ctx, "Event") else None
+        proc = ctx.Process(
+            target=_supervised_backtest_process_entry,
+            args=(out, process_target, process_args, cleanup_complete),
+        )
+    except BaseException:
+        _close_backtest_queue(out)
+        raise
     _set_backtest_worker_starting(run_id, True)
     try:
         proc.start()
-    except BaseException:
-        _set_backtest_worker_starting(run_id, False)
-        out.close()
-        out.cancel_join_thread()
+    except BaseException as start_exc:
+        start_cleanup_error: BaseException | None = None
+        pid = getattr(proc, "pid", None)
+        if pid is not None:
+            partial_worker = _BacktestWorker(
+                process=proc,
+                out=out,
+                process_group=None,
+                start_time=None,
+                cleanup_complete=cleanup_complete,
+            )
+            try:
+                if not _terminate_backtest_worker(partial_worker):
+                    start_cleanup_error = RuntimeError(
+                        "partially started backtest worker did not stop"
+                    )
+            except BaseException as exc:
+                start_cleanup_error = exc
+        queue_cleanup_error: BaseException | None = None
+        try:
+            _close_backtest_queue(out)
+        except BaseException as exc:
+            queue_cleanup_error = exc
+        finally:
+            _set_backtest_worker_starting(run_id, False)
+        if start_cleanup_error is None:
+            start_cleanup_error = queue_cleanup_error
+        if start_cleanup_error is not None:
+            raise RuntimeError(
+                f"partially started backtest worker cleanup failed; start failed: {start_exc}"
+            ) from start_cleanup_error
         raise
-    isolation_deadline = time.monotonic() + _BACKTEST_ISOLATION_TIMEOUT_SECONDS
     pid = getattr(proc, "pid", None)
-    identity = _proc_identity(pid) if pid is not None else None
-    while (
-        pid is not None
-        and proc.is_alive()
-        and identity is not None
-        and identity[1] != pid
-        and time.monotonic() < isolation_deadline
-    ):
-        time.sleep(0.005)
-        identity = _proc_identity(pid)
-    if pid is not None and proc.is_alive() and (identity is None or identity[1] != pid):
-        proc.terminate()
-        proc.join(timeout=1.0)
-        out.close()
-        out.cancel_join_thread()
-        _set_backtest_worker_starting(run_id, False)
-        raise RuntimeError("backtest worker failed to create an isolated process group")
-
-    verified_process_group = (
-        pid
-        if pid is not None
-        and (
-            (identity is not None and identity[1] == pid)
-            or _process_group_has_live_members(pid)
-        )
-        else None
-    )
     worker = _BacktestWorker(
         process=proc,
         out=out,
-        process_group=verified_process_group,
-        start_time=identity[2] if identity is not None else None,
+        process_group=None,
+        start_time=None,
+        cleanup_complete=cleanup_complete,
     )
     try:
+        isolation_deadline = time.monotonic() + _BACKTEST_ISOLATION_TIMEOUT_SECONDS
+        identity = _proc_identity(pid) if pid is not None else None
+        while (
+            pid is not None
+            and proc.is_alive()
+            and identity is not None
+            and identity[1] != pid
+            and time.monotonic() < isolation_deadline
+        ):
+            time.sleep(0.005)
+            identity = _proc_identity(pid)
+        verified_process_group = (
+            pid
+            if pid is not None and identity is not None and identity[1] == pid
+            else None
+        )
+        worker.process_group = verified_process_group
+        worker.start_time = identity[2] if identity is not None else None
+    except BaseException as setup_exc:
+        cleanup_ok = False
+        setup_cleanup_exc: BaseException | None = None
+        queue_cleanup_exc: BaseException | None = None
+        try:
+            cleanup_ok = _terminate_backtest_worker(worker)
+        except BaseException as exc:
+            setup_cleanup_exc = exc
+        finally:
+            try:
+                _close_backtest_queue(out)
+            except BaseException as exc:
+                queue_cleanup_exc = exc
+            finally:
+                _set_backtest_worker_starting(run_id, False)
+        cleanup_exc = setup_cleanup_exc or queue_cleanup_exc
+        if not cleanup_ok or cleanup_exc is not None:
+            raise RuntimeError(
+                f"backtest worker post-start cleanup was not proven; setup failed: {setup_exc}"
+            ) from (cleanup_exc or setup_exc)
+        raise
+    if pid is not None and proc.is_alive() and verified_process_group is None:
+        cleanup_ok = False
+        isolation_cleanup_exc: BaseException | None = None
+        try:
+            cleanup_ok = _terminate_backtest_worker(worker)
+        except BaseException as exc:
+            isolation_cleanup_exc = exc
+        finally:
+            try:
+                _close_backtest_queue(out)
+            except BaseException as exc:
+                if isolation_cleanup_exc is None:
+                    isolation_cleanup_exc = exc
+            finally:
+                _set_backtest_worker_starting(run_id, False)
+        if not cleanup_ok or isolation_cleanup_exc is not None:
+            raise RuntimeError(
+                "backtest worker isolation failed and its cleanup was not proven"
+            ) from isolation_cleanup_exc
+        raise RuntimeError("backtest worker failed to create an isolated process group")
+    try:
         _register_backtest_worker(run_id, worker)
-    except BaseException:
-        _terminate_backtest_worker(worker)
-        _set_backtest_worker_starting(run_id, False)
-        out.close()
-        out.cancel_join_thread()
+    except BaseException as registration_exc:
+        cleanup_ok = False
+        registration_cleanup_exc: BaseException | None = None
+        try:
+            cleanup_ok = _terminate_backtest_worker(worker)
+        except BaseException as exc:
+            registration_cleanup_exc = exc
+        finally:
+            try:
+                _close_backtest_queue(out)
+            except BaseException as exc:
+                if registration_cleanup_exc is None:
+                    registration_cleanup_exc = exc
+            finally:
+                _set_backtest_worker_starting(run_id, False)
+        if not cleanup_ok or registration_cleanup_exc is not None:
+            raise RuntimeError(
+                f"backtest worker registration cleanup was not proven; registration failed: {registration_exc}"
+            ) from (registration_cleanup_exc or registration_exc)
         raise
     _set_backtest_worker_starting(run_id, False)
     final: tuple | None = None
@@ -881,18 +1246,26 @@ def _execute_backtest_process(
         exc_name, message, tb = parts
         raise RuntimeError(f"{exc_name}: {message}\n{tb}")
     finally:
-        if proc.is_alive():
-            proc.join(timeout=1.0)
-        if proc.is_alive() or (
-            worker.process_group is not None
-            and _process_group_has_live_members(worker.process_group)
-        ):
-            _terminate_backtest_worker(worker)
-        else:
-            proc.join(timeout=0)
-        _unregister_backtest_worker(run_id, worker)
-        out.close()
-        out.cancel_join_thread()
+        final_cleanup_error: BaseException | None = None
+        final_cleanup_proven = False
+        try:
+            final_cleanup_proven = _cleanup_registered_backtest_worker(run_id, worker)
+            if not final_cleanup_proven:
+                final_cleanup_error = RuntimeError(
+                    "backtest process tree did not stop within the cleanup deadline"
+                )
+        except BaseException as exc:
+            final_cleanup_error = exc
+        finally:
+            try:
+                _close_backtest_queue(out)
+            except BaseException as exc:
+                if final_cleanup_error is None:
+                    final_cleanup_error = exc
+        if final_cleanup_error is not None:
+            raise RuntimeError(
+                "backtest process tree did not stop within the cleanup deadline"
+            ) from final_cleanup_error
 
 
 def _execute_backtest_run_in_thread(
@@ -1065,8 +1438,10 @@ async def _run_backtest_background(
         try:
             strategy = registry.get_strategy(strategy_id)
         except KeyError:
+            message = "Strategy not found"
+            state.backtest_store.mark_failed(run_id, message)
             ws_manager.update_progress(
-                run_id, "backtest", "failed", 0.0, "Strategy not found"
+                run_id, "backtest", "failed", 0.0, message
             )
             await ws_manager.broadcast_progress(run_id)
             return
@@ -1738,7 +2113,17 @@ async def run_action(
         raise HTTPException(404, f"Run not found: {run_id}")
     if action != "cancel":
         raise HTTPException(400, f"Unsupported backtest action: {action}")
+    worker = _active_backtest_worker(run_id)
     if run.status not in {"queued", "running"}:
+        if worker is not None:
+            import asyncio
+
+            worker.cancel_requested.set()
+            stopped = await asyncio.to_thread(
+                _cleanup_registered_backtest_worker, run_id, worker
+            )
+            if not stopped:
+                raise HTTPException(503, "Backtest process tree did not stop")
         return {
             "run_id": run_id,
             "action": action,
@@ -1746,7 +2131,6 @@ async def run_action(
             "accepted": False,
         }
     state.backtest_cancel_requests.add(run_id)
-    worker = _active_backtest_worker(run_id)
     if worker is None and _backtest_worker_is_starting(run_id):
         import asyncio
 
@@ -1762,7 +2146,9 @@ async def run_action(
         import asyncio
 
         worker.cancel_requested.set()
-        stopped = await asyncio.to_thread(_terminate_backtest_worker, worker)
+        stopped = await asyncio.to_thread(
+            _cleanup_registered_backtest_worker, run_id, worker
+        )
         if not stopped:
             raise HTTPException(503, "Backtest process tree did not stop")
         message = "Cancelled during compute"

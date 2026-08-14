@@ -15,7 +15,42 @@ import pytest
 from marketdata_provider.contracts import InstrumentKey, parse_timeframe
 
 
-def test_gateway_state_tolerates_nonfatal_startup_failures(monkeypatch, tmp_path: Path) -> None:
+def test_gateway_state_fails_closed_on_migration_failure(monkeypatch, tmp_path: Path) -> None:
+    from openpine.gateway import deps as gateway_deps
+    from openpine.storage import migrations as migrations_mod
+
+    created = []
+
+    class DummyStorage:
+        def __init__(self, path: Path) -> None:
+            self.path = path
+            self.closed = False
+            created.append(self)
+
+        def close(self) -> None:
+            self.closed = True
+
+    def fail_migrations(self, storage) -> None:
+        del self, storage
+        raise RuntimeError("migration 018 failed")
+
+    cfg = SimpleNamespace(
+        sqlite_path=tmp_path / "openpine.sqlite",
+        data_dir=tmp_path / "data",
+        kill_switch=False,
+    )
+    monkeypatch.setattr(gateway_deps.OpenPineConfig, "load", lambda: cfg)
+    monkeypatch.setattr(gateway_deps, "SQLiteStorage", DummyStorage)
+    monkeypatch.setattr(migrations_mod.MigrationRunner, "run_migrations", fail_migrations)
+
+    with pytest.raises(RuntimeError, match="migration 018 failed"):
+        gateway_deps.GatewayState()
+
+    assert len(created) == 1
+    assert created[0].closed is True
+
+
+def test_gateway_state_tolerates_nonfatal_service_failures(monkeypatch, tmp_path: Path) -> None:
     from openpine.gateway import deps as gateway_deps
     from openpine.storage import migrations as migrations_mod
     from openpine.data import direct_provider as direct_provider_mod
@@ -57,10 +92,6 @@ def test_gateway_state_tolerates_nonfatal_startup_failures(monkeypatch, tmp_path
     class DummyProvider:
         pass
 
-    def fail_migrations(self, storage) -> None:
-        del self, storage
-        raise RuntimeError("duplicate column")
-
     cfg = SimpleNamespace(
         sqlite_path=tmp_path / "openpine.sqlite",
         data_dir=tmp_path / "data",
@@ -68,7 +99,9 @@ def test_gateway_state_tolerates_nonfatal_startup_failures(monkeypatch, tmp_path
     )
     monkeypatch.setattr(gateway_deps.OpenPineConfig, "load", lambda: cfg)
     monkeypatch.setattr(gateway_deps, "SQLiteStorage", DummyStorage)
-    monkeypatch.setattr(migrations_mod.MigrationRunner, "run_migrations", fail_migrations)
+    monkeypatch.setattr(
+        migrations_mod.MigrationRunner, "run_migrations", lambda self, storage: []
+    )
     monkeypatch.setattr(gateway_deps, "SQLitePineSourceRegistry", DummyRegistry)
     monkeypatch.setattr(gateway_deps, "SQLiteStrategyRegistry", DummyRegistry)
     monkeypatch.setattr(gateway_deps, "BacktestResultStore", DummyManager)

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { calendarMonthsForRange, resolveLocalizedArray } from '@/lib/dateRangeCalendar'
 
-const { tm, t } = useI18n()
+const { tm, t, rt } = useI18n()
 
 const props = defineProps<{
   from: string
@@ -21,34 +22,37 @@ const localTo = ref(props.to)
 const activePreset = ref('1M')
 
 // Calendar state
-const calLeft = ref(new Date())
-const _calRightInit = new Date()
-_calRightInit.setMonth(_calRightInit.getMonth() + 1)
-const calRight = ref(_calRightInit)
+const initialCalendarMonths = calendarMonthsForRange(props.from, props.to)
+const calLeft = ref(initialCalendarMonths.left)
+const calRight = ref(initialCalendarMonths.right)
 
-// Initialize calRight
-const initCalRight = () => {
-  const d = new Date(calLeft.value)
-  d.setMonth(d.getMonth() + 1)
-  calRight.value = d
+function syncCalendarsToRange() {
+  const months = calendarMonthsForRange(localFrom.value, localTo.value)
+  calLeft.value = months.left
+  calRight.value = months.right
 }
-initCalRight()
 
 const monthNames = computed<string[]>(() => {
   // monthNames in JSON order: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
-  const list = tm('dateRange.monthsFull') as unknown
-  if (Array.isArray(list)) return list as string[]
-  return ['January','February','March','April','May','June','July','August','September','October','November','December']
+  return resolveLocalizedArray(
+    tm('dateRange.monthsFull'),
+    message => rt(message),
+    ['January','February','March','April','May','June','July','August','September','October','November','December'],
+  )
 })
 const monthShort = computed<string[]>(() => {
-  const list = tm('dateRange.monthsShort') as unknown
-  if (Array.isArray(list)) return list as string[]
-  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  return resolveLocalizedArray(
+    tm('dateRange.monthsShort'),
+    message => rt(message),
+    ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  )
 })
 const dayNames = computed<string[]>(() => {
-  const list = tm('dateRange.dayNamesShort') as unknown
-  if (Array.isArray(list)) return list as string[]
-  return ['Mo','Tu','We','Th','Fr','Sa','Su']
+  return resolveLocalizedArray(
+    tm('dateRange.dayNamesShort'),
+    message => rt(message),
+    ['Mo','Tu','We','Th','Fr','Sa','Su'],
+  )
 })
 
 const presets = [
@@ -89,9 +93,7 @@ function applyPreset(p: { label: string; days: number; all?: boolean }) {
   localTo.value = fmt(now)
   emit('update:from', localFrom.value)
   emit('update:to', localTo.value)
-  // Reset calendars
-  calLeft.value = new Date(from)
-  initCalRight()
+  syncCalendarsToRange()
 }
 
 function navigateMonth(cal: 'left' | 'right', delta: number) {
@@ -190,7 +192,10 @@ function onDayClick(dateStr: string) {
 
 function toggle() {
   isOpen.value = !isOpen.value
-  if (isOpen.value) clickState = 'from'
+  if (isOpen.value) {
+    clickState = 'from'
+    syncCalendarsToRange()
+  }
 }
 
 function onClickOutside(e: Event) {
@@ -200,8 +205,11 @@ function onClickOutside(e: Event) {
   }
 }
 
-watch(() => props.from, (v) => { localFrom.value = v })
-watch(() => props.to, (v) => { localTo.value = v })
+watch(() => [props.from, props.to] as const, ([from, to]) => {
+  localFrom.value = from
+  localTo.value = to
+  if (isOpen.value) syncCalendarsToRange()
+})
 
 // Attach/detach click outside
 import { onMounted, onUnmounted } from 'vue'
@@ -257,7 +265,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
               <button @click="navigateMonth('left', -1)" class="rounded p-0.5 text-gray-400 transition-colors hover:bg-dark-600 hover:text-gray-200 sm:p-1">
                 <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
               </button>
-              <span class="text-xs font-medium text-gray-200 sm:text-sm">{{ leftMonthLabel }}</span>
+              <span data-testid="calendar-left-month" class="text-xs font-medium text-gray-200 sm:text-sm">{{ leftMonthLabel }}</span>
               <button @click="navigateMonth('left', 1)" class="rounded p-0.5 text-gray-400 transition-colors hover:bg-dark-600 hover:text-gray-200 sm:p-1">
                 <svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
               </button>
@@ -292,7 +300,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
               <button @click="navigateMonth('right', -1)" class="p-1 rounded hover:bg-dark-600 text-gray-400 hover:text-gray-200 transition-colors">
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" /></svg>
               </button>
-              <span class="text-sm font-medium text-gray-200">{{ rightMonthLabel }}</span>
+              <span data-testid="calendar-right-month" class="text-sm font-medium text-gray-200">{{ rightMonthLabel }}</span>
               <button @click="navigateMonth('right', 1)" class="p-1 rounded hover:bg-dark-600 text-gray-400 hover:text-gray-200 transition-colors">
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>
               </button>

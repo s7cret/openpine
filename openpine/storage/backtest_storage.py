@@ -7,6 +7,7 @@ Stores summary metrics in SQLite, large time-series as Parquet artifacts.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import time
@@ -32,6 +33,8 @@ from openpine.storage.backtest_dto import (
     BacktestTrade,
 )
 from openpine.storage.sqlite_storage import SQLiteStorage
+
+logger = logging.getLogger(__name__)
 
 
 class BacktestResultStore:
@@ -212,8 +215,6 @@ class BacktestResultStore:
                 bars_per_min=bars_per_min,
                 now=now,
             )
-            if backup_dir is not None and backup_dir.exists():
-                shutil.rmtree(backup_dir)
 
         except Exception:
             if tmp_dir.exists():
@@ -225,6 +226,18 @@ class BacktestResultStore:
             elif published and run_dir.exists():
                 shutil.rmtree(run_dir)
             raise
+
+        # Artifact publication and its database transaction are now committed.
+        # A stale backup is safe to retain for maintenance; cleanup failure must
+        # never roll the filesystem back behind already committed DB records.
+        if backup_dir is not None and backup_dir.exists():
+            try:
+                shutil.rmtree(backup_dir)
+            except OSError as exc:
+                logger.warning(
+                    "backtest backup cleanup failed after commit: %s", backup_dir,
+                    exc_info=exc,
+                )
 
     def _get_started_at_ms(self, run_id: str) -> int | None:
         """Read ``created_at`` (ms) for a run, used as wall-clock start."""
@@ -276,7 +289,25 @@ class BacktestResultStore:
                 )
             os.rename(str(run_dir), str(backup_dir))
             active_backup = backup_dir
-        os.rename(str(tmp_dir), str(run_dir))
+        try:
+            os.rename(str(tmp_dir), str(run_dir))
+        except BaseException as publish_exc:
+            if active_backup is not None and active_backup.exists():
+                try:
+                    # A fault injector or unusual filesystem may report an
+                    # error after making the destination visible.  Remove only
+                    # the new publication before restoring the known backup.
+                    if run_dir.exists():
+                        shutil.rmtree(run_dir)
+                    os.rename(str(active_backup), str(run_dir))
+                except BaseException as restore_exc:
+                    error = RuntimeError(
+                        "backtest artifact publication failed and backup "
+                        "restoration was not proven"
+                    )
+                    error.add_note(f"publication error: {publish_exc!r}")
+                    raise error from restore_exc
+            raise
         return active_backup
 
     def _save_result_db_records(
@@ -323,7 +354,6 @@ class BacktestResultStore:
                 artifact_paths=artifact_paths,
                 now=now,
             )
-        self._storage.commit()
 
     def _insert_trade_db_rows(
         self,
@@ -568,8 +598,39 @@ class BacktestResultStore:
         )
         self._storage.commit()
 
+    def _rollback_incomplete_artifact_publication(
+        self, *, strategy_id: str, run_id: str
+    ) -> None:
+        run_dir = self._run_dir(strategy_id, run_id)
+        tmp_dir = self._tmp_run_dir(strategy_id, run_id)
+        backups = sorted(run_dir.parent.glob(f"{run_id}.backup-*"))
+        if len(backups) > 1:
+            raise RuntimeError(
+                f"ambiguous backtest artifact recovery for {run_id}: {backups}"
+            )
+        if tmp_dir.exists():
+            shutil.rmtree(tmp_dir)
+        if backups:
+            if run_dir.exists():
+                shutil.rmtree(run_dir)
+            os.rename(str(backups[0]), str(run_dir))
+        elif run_dir.exists():
+            shutil.rmtree(run_dir)
+
     def recover_incomplete_runs(self) -> int:
-        """Fail runs that could not have survived the previous gateway process."""
+        """Roll back uncommitted artifacts and fail interrupted run rows."""
+        interrupted = self._storage.execute(
+            """
+            SELECT run_id, strategy_id FROM backtest_runs
+            WHERE status IN (?, ?, ?)
+            """,
+            ("queued", "running", "cancelling"),
+        ).fetchall()
+        for run_id, strategy_id in interrupted:
+            self._rollback_incomplete_artifact_publication(
+                strategy_id=str(strategy_id), run_id=str(run_id)
+            )
+
         now = int(time.time() * 1000)
         cursor = self._storage.execute(
             """

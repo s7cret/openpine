@@ -618,6 +618,244 @@ def test_repeated_backtests_create_separate_runs(store):
     assert len(runs) == 2
 
 
+def test_backup_cleanup_failure_after_db_commit_keeps_new_artifacts(
+    store, monkeypatch, tmp_path
+):
+    store._data_dir = tmp_path / "backtests"
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+    run_dir = store._run_dir("strat_1", run_id)
+    run_dir.mkdir(parents=True)
+    (run_dir / "old.txt").write_text("old", encoding="utf-8")
+    committed = []
+    monkeypatch.setattr(
+        store,
+        "_save_result_db_records",
+        lambda **_kwargs: committed.append(True),
+    )
+
+    import openpine.storage.backtest_storage as storage_mod
+
+    real_rmtree = storage_mod.shutil.rmtree
+
+    def fail_backup_cleanup(path, *args, **kwargs):
+        if ".backup-" in Path(path).name:
+            raise OSError("backup cleanup denied")
+        return real_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr(storage_mod.shutil, "rmtree", fail_backup_cleanup)
+
+    store.save_result(
+        run_id,
+        FakeResult(initial_capital=10000.0, net_profit=25.0),
+        [],
+    )
+
+    assert committed == [True]
+    assert (run_dir / "report.json").is_file()
+    assert not (run_dir / "old.txt").exists()
+    assert len(list(run_dir.parent.glob(f"{run_id}.backup-*"))) == 1
+
+
+def test_publish_rename_failure_restores_existing_artifacts(store, monkeypatch, tmp_path):
+    store._data_dir = tmp_path / "backtests"
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+    run_dir = store._run_dir("strat_1", run_id)
+    run_dir.mkdir(parents=True)
+    marker = run_dir / "old.txt"
+    marker.write_text("old", encoding="utf-8")
+
+    import openpine.storage.backtest_storage as storage_mod
+
+    real_rename = storage_mod.os.rename
+
+    def fail_new_publication(src, dst):
+        if Path(src) == store._tmp_run_dir("strat_1", run_id) and Path(dst) == run_dir:
+            raise OSError("injected publish rename failure")
+        return real_rename(src, dst)
+
+    monkeypatch.setattr(storage_mod.os, "rename", fail_new_publication)
+
+    with pytest.raises(OSError, match="injected publish rename failure"):
+        store.save_result(
+            run_id,
+            FakeResult(initial_capital=10000.0, net_profit=25.0),
+            [],
+        )
+
+    assert marker.read_text(encoding="utf-8") == "old"
+    assert not list(run_dir.parent.glob(f"{run_id}.backup-*"))
+    assert not store._tmp_run_dir("strat_1", run_id).exists()
+
+
+def test_save_result_does_not_commit_again_after_transaction(store, monkeypatch, tmp_path):
+    store._data_dir = tmp_path / "backtests"
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+    original_commit = store._storage.commit
+    commits = 0
+
+    def fail_redundant_commit():
+        nonlocal commits
+        commits += 1
+        if commits > 1:
+            raise OSError("redundant post-transaction commit")
+        return original_commit()
+
+    monkeypatch.setattr(store._storage, "commit", fail_redundant_commit)
+
+    store.save_result(
+        run_id,
+        FakeResult(initial_capital=10000.0, net_profit=25.0),
+        [],
+    )
+
+    assert commits == 1
+    assert store.get_run(run_id).status == "done"
+    assert (store._run_dir("strat_1", run_id) / "report.json").is_file()
+
+
+def test_recovery_rolls_back_artifacts_published_before_db_commit(
+    store, monkeypatch, tmp_path
+):
+    class SimulatedAbruptDeath(BaseException):
+        pass
+
+    store._data_dir = tmp_path / "backtests"
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+    run_dir = store._run_dir("strat_1", run_id)
+    run_dir.mkdir(parents=True)
+    (run_dir / "old.txt").write_text("old", encoding="utf-8")
+    monkeypatch.setattr(
+        store,
+        "_save_result_db_records",
+        lambda **_kwargs: (_ for _ in ()).throw(SimulatedAbruptDeath()),
+    )
+
+    with pytest.raises(SimulatedAbruptDeath):
+        store.save_result(
+            run_id,
+            FakeResult(initial_capital=10000.0, net_profit=25.0),
+            [],
+        )
+
+    assert (run_dir / "report.json").is_file()
+    assert len(list(run_dir.parent.glob(f"{run_id}.backup-*"))) == 1
+    assert store.recover_incomplete_runs() == 1
+    assert (run_dir / "old.txt").read_text(encoding="utf-8") == "old"
+    assert not (run_dir / "report.json").exists()
+    assert not list(run_dir.parent.glob(f"{run_id}.backup-*"))
+    assert not store._tmp_run_dir("strat_1", run_id).exists()
+    assert store.get_run(run_id).status == "failed"
+
+
+def test_recovery_removes_first_uncommitted_artifact_publication(
+    store, monkeypatch, tmp_path
+):
+    class SimulatedAbruptDeath(BaseException):
+        pass
+
+    store._data_dir = tmp_path / "backtests"
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+    run_dir = store._run_dir("strat_1", run_id)
+    monkeypatch.setattr(
+        store,
+        "_save_result_db_records",
+        lambda **_kwargs: (_ for _ in ()).throw(SimulatedAbruptDeath()),
+    )
+
+    with pytest.raises(SimulatedAbruptDeath):
+        store.save_result(
+            run_id,
+            FakeResult(initial_capital=10000.0, net_profit=25.0),
+            [],
+        )
+
+    assert (run_dir / "report.json").is_file()
+    assert store.recover_incomplete_runs() == 1
+    assert not run_dir.exists()
+    assert store.get_run(run_id).status == "failed"
+    assert store.recover_incomplete_runs() == 0
+
+
+def test_recovery_fails_closed_on_ambiguous_artifact_backups(
+    store, monkeypatch, tmp_path
+):
+    class SimulatedAbruptDeath(BaseException):
+        pass
+
+    store._data_dir = tmp_path / "backtests"
+    req = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    run_id = store.create_run(req)
+    run_dir = store._run_dir("strat_1", run_id)
+    run_dir.mkdir(parents=True)
+    (run_dir / "old.txt").write_text("old", encoding="utf-8")
+    monkeypatch.setattr(
+        store,
+        "_save_result_db_records",
+        lambda **_kwargs: (_ for _ in ()).throw(SimulatedAbruptDeath()),
+    )
+
+    with pytest.raises(SimulatedAbruptDeath):
+        store.save_result(
+            run_id,
+            FakeResult(initial_capital=10000.0, net_profit=25.0),
+            [],
+        )
+    second_backup = run_dir.parent / f"{run_id}.backup-ambiguous"
+    second_backup.mkdir()
+
+    with pytest.raises(RuntimeError, match="ambiguous backtest artifact recovery"):
+        store.recover_incomplete_runs()
+    assert (run_dir / "report.json").is_file()
+    assert store.get_run(run_id).status == "running"
+
+
 def test_save_result_atomic_cleanup_on_failure(store, tmp_db):
     """If save_result fails, temp directory should be cleaned up."""
     req = BacktestRunRequest(

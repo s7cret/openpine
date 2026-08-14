@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import multiprocessing as mp
 import os
 import signal
 import subprocess
@@ -45,6 +46,10 @@ def _delayed_spawn_result_entry(out, value: str, delay: float) -> None:
     if hasattr(os, "setsid"):
         os.setsid()
     out.put(("ok", value))
+
+
+def _sleep_entry(_out, seconds: float) -> None:
+    time.sleep(seconds)
 
 
 class _BlockingTreeAdapter:
@@ -435,32 +440,32 @@ def test_cancel_action_stops_owned_spawn_worker_tree_before_return(
 def test_cancel_waits_for_starting_worker_registration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class PopenProcess:
-        def __init__(self) -> None:
-            self.child = subprocess.Popen(
-                [sys.executable, "-c", "import time; time.sleep(60)"],
-                start_new_session=True,
-            )
-            self.pid = self.child.pid
-
-        def is_alive(self) -> bool:
-            return self.child.poll() is None
-
-        def join(self, timeout: float | None = None) -> None:
-            try:
-                self.child.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                pass
-
     monkeypatch.setattr(backtest, "ws_manager", _Progress())
-    process = PopenProcess()
+    ctx = mp.get_context("spawn")
+    out = ctx.Queue()
+    cleanup_complete = ctx.Event()
+    process = ctx.Process(
+        target=backtest._supervised_backtest_process_entry,
+        args=(out, _sleep_entry, (60.0,), cleanup_complete),
+    )
+    process.start()
+    deadline = time.monotonic() + 5.0
     identity = backtest._proc_identity(process.pid)
+    while (
+        identity is not None
+        and identity[1] != process.pid
+        and time.monotonic() < deadline
+    ):
+        time.sleep(0.01)
+        identity = backtest._proc_identity(process.pid)
     assert identity is not None
+    assert identity[1] == process.pid
     worker = backtest._BacktestWorker(
         process=process,
-        out=object(),
+        out=out,
         process_group=process.pid,
         start_time=identity[2],
+        cleanup_complete=cleanup_complete,
     )
     store = _RunStore()
     state = SimpleNamespace(
@@ -484,9 +489,10 @@ def test_cancel_waits_for_starting_worker_registration(
     finally:
         backtest._set_backtest_worker_starting("run-owned", False)
         backtest._unregister_backtest_worker("run-owned", worker)
-        if process.is_alive():
-            os.killpg(process.pid, signal.SIGKILL)
+        assert backtest._terminate_backtest_worker(worker, timeout=2.0) is True
         process.join(timeout=1.0)
+        out.close()
+        out.cancel_join_thread()
         registration.join(timeout=1.0)
 
 

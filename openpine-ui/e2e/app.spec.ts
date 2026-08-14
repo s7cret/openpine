@@ -56,6 +56,43 @@ async function installApiMock(page: Page): Promise<void> {
   await page.route('**/api/**', route => mockApi(route))
 }
 
+async function installStrategyCalendarMock(page: Page): Promise<void> {
+  const strategy = {
+    strategy_id: 'strategy-calendar',
+    name: 'Calendar strategy',
+    symbol: 'SOLUSDT',
+    timeframe: '1h',
+    exchange: 'binance',
+    market_type: 'spot',
+    mode: 'paper',
+    enabled: false,
+    archived: false,
+    status: 'paused',
+    created_at: Date.UTC(2026, 5, 1),
+  }
+  await page.route('**/health', route => mockApi(route))
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url())
+    let payload: unknown = payloadFor(url.pathname)
+    if (url.pathname === '/api/strategies') payload = [strategy]
+    else if (url.pathname === '/api/strategies/strategy-calendar') payload = strategy
+    else if (url.pathname === '/api/positions') payload = { recent_trades: [] }
+    else if (url.pathname === '/api/backtest/runs') payload = [{ run_id: 'run-calendar', status: 'done' }]
+    else if (url.pathname === '/api/backtest/runs/run-calendar/trades') payload = [{
+      trade_id: 'trade-calendar',
+      direction: 'long',
+      entry_time: Date.UTC(2020, 7, 20, 17),
+      exit_time: Date.UTC(2026, 5, 15, 16),
+      entry_price: 10,
+      exit_price: 20,
+      qty: 1,
+      net_profit: 10,
+    }]
+    else if (url.pathname === '/api/data/klines') payload = { bars: [] }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload) })
+  })
+}
+
 test('401 opens LAN unlock flow and all subsequent API calls carry bearer auth', async ({ page }) => {
   const pageErrors: string[] = []
   const consoleErrors: string[] = []
@@ -79,6 +116,22 @@ test('401 opens LAN unlock flow and all subsequent API calls carry bearer auth',
     const requests = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name))
     return requests.some(url => url.includes('/api/'))
   }).toBe(true)
+})
+
+test('strategy trade calendar opens on the selected ledger range', async ({ page }, testInfo) => {
+  await page.addInitScript(token => sessionStorage.setItem('openpine.api.bearer-token', token), TOKEN)
+  await installStrategyCalendarMock(page)
+  await page.goto('/strategies')
+  await page.getByText('Calendar strategy', { exact: true }).filter({ visible: true }).click()
+
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.locator('.date-range-picker > button').click()
+
+  await expect(dialog.getByTestId('calendar-left-month')).toHaveText('August 2020')
+  if (testInfo.project.name === 'desktop') {
+    await expect(dialog.getByTestId('calendar-right-month')).toHaveText('June 2026')
+  }
 })
 
 for (const path of ['/dashboard', '/pine-files', '/strategies', '/backtests', '/tv-parity', '/data', '/achievements', '/settings']) {

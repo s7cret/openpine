@@ -177,6 +177,7 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
 
     class FakeProc:
         def __init__(self, *, alive=(False,), exitcode=0):
+            self.pid = None
             self.alive = list(alive)
             self.exitcode = exitcode
 
@@ -196,6 +197,9 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
 
         def Queue(self):
             return self.q
+
+        def Event(self):
+            return SimpleNamespace(is_set=lambda: True)
 
         def Process(self, **kwargs):
             return self.proc

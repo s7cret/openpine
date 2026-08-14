@@ -35,19 +35,16 @@ class GatewayState:
     def __init__(self) -> None:
         self.config = OpenPineConfig.load()
         self.storage = SQLiteStorage(self.config.sqlite_path)
-        # Run migrations before initializing managers that depend on schema.
-        # Wrap in try/except for idempotency: if DB was partially migrated by
-        # a prior run, duplicate-column errors are non-fatal.
+        # Schema compatibility is a startup invariant: managers below issue
+        # queries that require the latest migrations. Never run against a
+        # partially migrated database.
         from openpine.storage.migrations import MigrationRunner
 
         try:
             MigrationRunner().run_migrations(self.storage)
-        except Exception as exc:
-            from openpine._compat import structlog
-
-            structlog.get_logger(__name__).warning(
-                "migration_error_non_fatal", error=str(exc)
-            )
+        except BaseException:
+            self.storage.close()
+            raise
         self.pine_registry = SQLitePineSourceRegistry(self.config.sqlite_path)
         self.strategy_registry = SQLiteStrategyRegistry(self.config.sqlite_path)
         self.backtest_store = BacktestResultStore(self.storage)

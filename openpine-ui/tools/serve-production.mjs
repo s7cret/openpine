@@ -184,6 +184,24 @@ function proxyRequest(request, response, { apiTarget, id, ip }) {
 }
 
 function proxyWebSocket(request, clientSocket, head, { apiTarget, id, ip, onStatus }) {
+  const safeProtocol = 'openpine.events.v1'
+  const credentialPrefix = 'openpine.bearer.b64.'
+  const offeredProtocols = String(request.headers['sec-websocket-protocol'] ?? '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean)
+  const credentialProtocols = offeredProtocols.filter(value => value.startsWith(credentialPrefix))
+  const validProtocolShape = (
+    offeredProtocols.filter(value => value === safeProtocol).length === 1
+    && credentialProtocols.length <= 1
+    && offeredProtocols.every(value => value === safeProtocol || value.startsWith(credentialPrefix))
+  )
+  if (!validProtocolShape) {
+    onStatus(400)
+    clientSocket.end('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n')
+    return
+  }
+
   const target = originFormUrl(request.url, apiTarget)
   const headers = {}
   for (const [name, value] of Object.entries(request.headers)) {
@@ -209,34 +227,92 @@ function proxyWebSocket(request, clientSocket, head, { apiTarget, id, ip, onStat
     path: `${target.pathname}${target.search}`,
     headers,
   })
+  let upgradedSocket = null
+  let clientClosed = false
+  let terminalStatusSelected = false
+  const selectTerminalStatus = (value) => {
+    if (terminalStatusSelected) return
+    terminalStatusSelected = true
+    onStatus(value)
+  }
+  const pendingClientData = head.length ? [Buffer.from(head)] : []
+  let pendingClientBytes = head.length
+  const maxPendingClientBytes = 64 * 1024
+  const closeUpstream = () => {
+    clientClosed = true
+    if (upgradedSocket) upgradedSocket.destroy()
+    else {
+      selectTerminalStatus(499)
+      upstream.socket?.destroy()
+      upstream.destroy()
+    }
+  }
+  const bufferClientData = (chunk) => {
+    pendingClientBytes += chunk.length
+    if (pendingClientBytes > maxPendingClientBytes) {
+      clientSocket.destroy(new Error('OpenPine WebSocket pre-upgrade buffer exceeded'))
+      closeUpstream()
+      return
+    }
+    pendingClientData.push(Buffer.from(chunk))
+  }
+  clientSocket.once('end', closeUpstream)
+  clientSocket.prependOnceListener('close', closeUpstream)
+  clientSocket.once('error', closeUpstream)
+  clientSocket.on('data', bufferClientData)
+  clientSocket.resume()
   upstream.once('upgrade', (upstreamResponse, upstreamSocket, upstreamHead) => {
+    clientSocket.pause()
+    clientSocket.removeListener('data', bufferClientData)
+    upstreamSocket.once('error', () => clientSocket.destroy())
+    upstreamSocket.once('close', () => clientSocket.destroy())
+    if (clientClosed || clientSocket.destroyed) {
+      upstreamSocket.destroy()
+      return
+    }
+    const selectedProtocol = upstreamResponse.headers['sec-websocket-protocol']
+    if (selectedProtocol !== safeProtocol) {
+      selectTerminalStatus(502)
+      upstreamSocket.destroy()
+      clientSocket.end('HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n')
+      return
+    }
+    upgradedSocket = upstreamSocket
     upstream.setTimeout(0)
-    onStatus(101)
+    selectTerminalStatus(101)
     const responseHeaders = []
     for (let index = 0; index < upstreamResponse.rawHeaders.length; index += 2) {
+      if (upstreamResponse.rawHeaders[index].toLowerCase() === 'sec-websocket-protocol') continue
       responseHeaders.push(`${upstreamResponse.rawHeaders[index]}: ${upstreamResponse.rawHeaders[index + 1]}`)
     }
+    responseHeaders.push(`Sec-WebSocket-Protocol: ${safeProtocol}`)
     clientSocket.write([
       `HTTP/1.1 ${upstreamResponse.statusCode ?? 101} ${upstreamResponse.statusMessage ?? 'Switching Protocols'}`,
       ...responseHeaders,
       '',
       '',
     ].join('\r\n'))
-    if (head.length) upstreamSocket.write(head)
+    for (const chunk of pendingClientData) upstreamSocket.write(chunk)
     if (upstreamHead.length) clientSocket.write(upstreamHead)
-    clientSocket.once('close', () => upstreamSocket.destroy())
-    upstreamSocket.once('close', () => clientSocket.destroy())
     upstreamSocket.pipe(clientSocket)
     clientSocket.pipe(upstreamSocket)
+    clientSocket.resume()
   })
   upstream.once('response', (upstreamResponse) => {
-    onStatus(upstreamResponse.statusCode ?? 502)
+    upstreamResponse.once('error', () => clientSocket.destroy())
+    if (clientClosed || clientSocket.destroyed) {
+      upstreamResponse.destroy()
+      return
+    }
+    selectTerminalStatus(upstreamResponse.statusCode ?? 502)
     clientSocket.write(`HTTP/1.1 ${upstreamResponse.statusCode ?? 502} ${upstreamResponse.statusMessage ?? 'Bad Gateway'}\r\nConnection: close\r\n\r\n`)
     upstreamResponse.pipe(clientSocket)
   })
   upstream.once('error', () => {
-    onStatus(502)
-    clientSocket.end('HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n')
+    selectTerminalStatus(502)
+    if (!clientSocket.destroyed && clientSocket.writable) {
+      clientSocket.end('HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n')
+    }
   })
   upstream.setTimeout(15_000, () => upstream.destroy(new Error('OpenPine WebSocket handshake timed out')))
   upstream.end()

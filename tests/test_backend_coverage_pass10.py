@@ -168,7 +168,7 @@ def test_run_backtest_background_failure_and_cancel_paths(monkeypatch):
     _patch_runtime(monkeypatch)
     missing = _state(registry=FakeRegistry(fail=True))
     asyncio.run(backtest_routes._run_backtest_background(missing, "s1", "r2", 0, 120_000, None, 0, False))
-    assert missing.backtest_store.failed == []
+    assert missing.backtest_store.failed == ["Strategy not found"]
 
     data_fail = _state(orchestrator=FakeOrchestrator(fail=True))
     asyncio.run(backtest_routes._run_backtest_background(data_fail, "s1", "r3", 0, 120_000, None, 0, False))
