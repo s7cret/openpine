@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getOrders } from '@/api/client'
+import { createVisibilityPoller } from '@/lib/visibilityPoller'
 
 interface Toast {
   id: string
@@ -16,8 +17,8 @@ interface Toast {
 
 const toasts = ref<Toast[]>([])
 const notifiedOrderKeys = ref<Set<string>>(new Set())
-let pollTimer: ReturnType<typeof setInterval> | null = null
 let isFirstLoad = true
+let updatedAfter = 0
 const mountedAt = Date.now()
 const RECENT_ORDER_GRACE_MS = 60_000
 const SEEN_STORAGE_KEY = 'openpine.notifiedTradeOrderKeys.v2'
@@ -69,10 +70,14 @@ function sideKind(sideRaw: unknown) {
   return side === 'buy' || side === 'long' ? 'buy' : 'sell'
 }
 
-async function pollOrders() {
+async function pollOrders(signal?: AbortSignal) {
   try {
-    const { data } = await getOrders(undefined, 50)
+    const { data } = await getOrders(undefined, 50, updatedAfter || undefined, signal)
     const orders = Array.isArray(data) ? data : []
+    updatedAfter = orders.reduce(
+      (latest: number, order: any) => Math.max(latest, orderTimeMs(order)),
+      updatedAfter,
+    )
 
     if (isFirstLoad) {
       // Mark older existing orders as seen, but do not swallow a fresh order that
@@ -111,6 +116,8 @@ async function pollOrders() {
   }
 }
 
+const orderPoller = createVisibilityPoller({ poll: pollOrders, intervalMs: 5_000 })
+
 function addToast(toast: Toast) {
   toasts.value.push(toast)
   // Keep trade notifications visible long enough to notice while watching charts.
@@ -135,12 +142,11 @@ function formatPrice(p: number | string) {
 
 onMounted(() => {
   loadNotifiedKeys()
-  pollOrders()
-  pollTimer = setInterval(pollOrders, 5000)
+  orderPoller.start()
 })
 
 onUnmounted(() => {
-  if (pollTimer) clearInterval(pollTimer)
+  orderPoller.stop()
 })
 </script>
 

@@ -14,10 +14,11 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const loading = ref(false)
   const backendOk = ref(false)
   const error = ref('')
+  let fetchPromise: Promise<void> | null = null
 
   function errorMessage(e: any, fallback: string) { return e?.response?.data?.detail ?? e?.message ?? fallback }
 
-  async function fetchAll() {
+  async function fetchAllOnce() {
     loading.value = true
     error.value = ''
     try {
@@ -52,6 +53,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
     } catch (e) { /* ignore */ }
 
     loading.value = false
+  }
+
+  function fetchAll(): Promise<void> {
+    if (fetchPromise) return fetchPromise
+    fetchPromise = fetchAllOnce().finally(() => { fetchPromise = null })
+    return fetchPromise
   }
 
   return { stats, pineCount, strategiesCount, enabledCount, errorCount, cacheInfo, dataInfo, dataHealth, loading, backendOk, error, fetchAll }

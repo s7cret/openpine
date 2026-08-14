@@ -648,9 +648,17 @@ def test_provider_adapter_runtime_cache_and_helpers(monkeypatch, tmp_path):
     assert unordered.status == "unordered"
 
     monkeypatch.setattr(provider_adapter_mod, "ensure_marketdata_provider_version", lambda: None)
-    monkeypatch.setattr(provider_adapter_mod, "create_provider", lambda cfg: ("provider", cfg.storage.cache_dir))
-    provider = provider_adapter_mod.create_local_marketdata_provider_adapter(cache_dir=tmp_path / "cache")
-    assert provider[0] == "provider"
+    monkeypatch.setattr(
+        provider_adapter_mod,
+        "create_provider",
+        lambda cfg: SimpleNamespace(kind="provider", cache_dir=cfg.storage.cache_dir),
+    )
+    provider = provider_adapter_mod.create_local_marketdata_provider_adapter(
+        cache_dir=tmp_path / "cache"
+    )
+    assert provider.kind == "provider"
+    assert provider.cache_dir == tmp_path / "cache"
+    assert provider.persists_fetches is True
     monkeypatch.setattr(provider_adapter_mod, "create_footprint_provider", lambda cfg: ("footprint", cfg.storage.cache_dir))
     footprint = provider_adapter_mod.create_local_footprint_provider_adapter(cache_dir=tmp_path / "foot")
     assert footprint[0] == "footprint"

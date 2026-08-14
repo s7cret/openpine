@@ -177,9 +177,18 @@ async def get_trading_status(
         snapshot = state.state_store.load_snapshot(strategy_id)
         if snapshot:
             last_bar_time = snapshot.bar_time
-            pos_data = snapshot.state_data.get("position", {})
-            position_qty = pos_data.get("qty")
-            position_side = pos_data.get("side")
+            state_data = snapshot.state_data
+            if isinstance(state_data, dict):
+                pos_data = state_data.get("position", {})
+                if isinstance(pos_data, dict):
+                    position_qty = pos_data.get("qty")
+                    position_side = pos_data.get("side")
+            else:
+                broker_state = getattr(state_data, "broker_state", None)
+                position = getattr(broker_state, "position", None)
+                if position is not None:
+                    position_qty = getattr(position, "size", None)
+                    position_side = getattr(position, "direction", None)
     except Exception:
         pass
 

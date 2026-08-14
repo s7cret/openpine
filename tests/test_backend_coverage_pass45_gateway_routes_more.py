@@ -233,9 +233,15 @@ async def test_dashboard_trading_orders_and_events_remaining_gateway_edges(monke
     with pytest.raises(HTTPException):
         await orders_positions.get_order("missing", state)
     state.storage.fail_positions = True
-    assert await orders_positions.list_positions(state=state) == []
+    with pytest.raises(HTTPException) as exc_info:
+        await orders_positions.list_positions(state=state)
+    assert exc_info.value.status_code == 503
+    state.storage.fail_positions = False
     result = await orders_positions.get_strategy_positions("s1", state)
-    assert result["positions"] == [] and result["recent_trades"] == []
+    positions = result["positions"]
+    assert isinstance(positions, list)
+    assert positions[0]["strategy_id"] == "s1"
+    assert result["recent_trades"] == []
 
 
 @pytest.mark.asyncio

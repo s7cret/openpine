@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useStrategiesStore } from '@/stores/strategies'
 import { usePineFilesStore } from '@/stores/pineFiles'
@@ -7,6 +7,8 @@ import { useRoute } from 'vue-router'
 import { searchMarketSymbols, getDataMetadata, getDataTicker24h, getPineArtifacts, getOrders, getPositions, getBacktestRuns, getBacktestTrades, getSettings, type MarketSymbolOption } from '@/api/client'
 import CandleChart from '@/components/CandleChart.vue'
 import { formatDateTime } from '@/utils/time'
+import { createVisibilityPoller } from '@/lib/visibilityPoller'
+import { createLatestRequest } from '@/lib/latestRequest'
 import {
   baseAssetFromSymbol,
   exchangeClass,
@@ -45,6 +47,15 @@ const pineStore = usePineFilesStore()
 const route = useRoute()
 const showAdd = ref(false)
 const showDetail = ref<string | null>(null)
+const detailStrategy = computed(() => {
+  const current = store.current
+  if (!showDetail.value || strategyId(current) !== showDetail.value) return null
+  if (!current?.exchange || !current?.symbol || !current?.timeframe || !current?.market_type) return null
+  return current
+})
+const detailDialog = ref<HTMLElement | null>(null)
+const detailRequests = createLatestRequest()
+let detailTrigger: HTMLElement | null = null
 
 // Filter state
 const filterName = ref('')
@@ -178,7 +189,6 @@ onMounted(async () => {
   await Promise.all([loadMarketMetadata(), loadSettings()])
   await store.fetchAll()
   await pineStore.fetchAll()
-  autoFillPineSource(true)
   // Auto-open strategy if navigated from dashboard with ?open=ID
   const openId = route.query.open as string
   if (openId) {
@@ -189,22 +199,20 @@ onMounted(async () => {
   }
 })
 
-watch([showAdd, () => form.value.name, () => pineStore.items.length], () => {
-  if (showAdd.value) autoFillPineSource(false)
-})
-
-watch(showDetail, (strategyId) => {
-  if (tradesRefreshTimer) {
-    clearInterval(tradesRefreshTimer)
-    tradesRefreshTimer = null
-  }
+watch(showDetail, async (strategyId) => {
+  tradesPoller.stop()
   if (strategyId) {
-    tradesRefreshTimer = setInterval(() => loadTrades(strategyId), 15000)
+    await nextTick()
+    detailDialog.value?.focus()
+  } else {
+    detailRequests.cancel()
+    detailTrigger?.focus()
+    detailTrigger = null
   }
 })
 
 onUnmounted(() => {
-  if (tradesRefreshTimer) clearInterval(tradesRefreshTimer)
+  tradesPoller.stop()
 })
 
 // When pine file selected, fetch its artifacts
@@ -224,19 +232,6 @@ watch(() => form.value.pine_id, async (pineId) => {
 const selectedPineSource = computed(() => {
   return activePineSources.value.find((p: any) => (p.id ?? p.source_id) === form.value.pine_id) ?? null
 })
-
-function autoFillPineSource(force: boolean) {
-  const sources = activePineSources.value.filter((p: any) => p.active_artifact_id || (p.id ?? p.source_id))
-  if (!sources.length) return
-  const exact = sources.find((p: any) => String(p.name ?? '').toLowerCase() === form.value.name.trim().toLowerCase())
-  const source = exact ?? sources[0]
-  const sourceId = source.id ?? source.source_id
-  if (!sourceId) return
-  if (force || exact || !form.value.pine_id) {
-    form.value.pine_id = sourceId
-    form.value.artifact_id = source.active_artifact_id ?? form.value.artifact_id
-  }
-}
 
 const filteredSymbols = computed(() => {
   if (!symbolSearch.value) return symbols.value.slice(0, 30)
@@ -338,15 +333,25 @@ async function addStrategy() {
 }
 
 async function openDetail(id: string) {
+  const request = detailRequests.begin()
   detailError.value = ''
+  detailTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
   showDetail.value = id
   try {
-    await store.fetchOne(id)
+    await store.fetchOne(id, request.signal)
+    if (!request.isCurrent()) return
     await Promise.all([
-      loadTrades(id),
-      loadTicker24h(store.current?.exchange, store.current?.symbol, store.current?.market_type),
+      loadTrades(id, request.signal),
+      loadTicker24h(
+        store.current?.exchange,
+        store.current?.symbol,
+        store.current?.market_type,
+        request.signal,
+      ),
     ])
+    if (request.isCurrent()) tradesPoller.start(false)
   } catch (e: any) {
+    if (!request.isCurrent()) return
     showDetail.value = null
     detailError.value = apiErrorMessage(e, t('strategies.strategyLoadFailed'))
   }
@@ -416,7 +421,12 @@ function tickerKey(exchange?: string, symbol?: string, market?: string) {
   return `${String(exchange ?? 'binance').toLowerCase()}:${String(market ?? 'spot').toLowerCase()}:${String(symbol ?? '').toUpperCase()}`
 }
 
-async function loadTicker24h(exchange?: string, symbol?: string, market?: string) {
+async function loadTicker24h(
+  exchange?: string,
+  symbol?: string,
+  market?: string,
+  signal?: AbortSignal,
+) {
   const s = String(symbol ?? '').toUpperCase()
   if (!s) return
   const ex = String(exchange ?? 'binance').toLowerCase()
@@ -424,7 +434,10 @@ async function loadTicker24h(exchange?: string, symbol?: string, market?: string
   const key = tickerKey(ex, s, m)
   if (ticker24h.value[key]) return
   try {
-    const { data } = await getDataTicker24h({ exchange: ex, market_type: m, symbol: s })
+    const { data } = await getDataTicker24h(
+      { exchange: ex, market_type: m, symbol: s },
+      signal,
+    )
     ticker24h.value = { ...ticker24h.value, [key]: data }
   } catch {
     // Best-effort market metadata for the strategy card.
@@ -465,47 +478,62 @@ const chartDateFrom = ref<number | null>(null)
 const chartDateTo = ref<number | null>(null)
 const chartVisibleFrom = ref<number | null>(null)
 const chartVisibleTo = ref<number | null>(null)
-let tradesRefreshTimer: ReturnType<typeof setInterval> | null = null
+const completedTradeCache = new Map<string, any[]>()
 
-async function loadTrades(strategyId: string) {
+async function loadTrades(strategyId: string, signal?: AbortSignal) {
   const [ordersRes, positionsRes, btRunsRes] = await Promise.allSettled([
-    getOrders(strategyId),
-    getPositions(strategyId),
-    getBacktestRuns(strategyId, 20),
+    getOrders(strategyId, 100, undefined, signal),
+    getPositions(strategyId, signal),
+    getBacktestRuns(strategyId, 20, signal),
   ])
 
+  if (signal?.aborted) return
   if (ordersRes.status === 'fulfilled') {
     orders.value = ordersRes.value.data ?? []
   } else {
-    orders.value = []
+    detailError.value = apiErrorMessage(ordersRes.reason, t('strategies.tradesLoadFailed'))
   }
 
   if (positionsRes.status === 'fulfilled') {
     trades.value = positionsRes.value.data?.recent_trades ?? []
   } else {
-    trades.value = []
+    detailError.value = apiErrorMessage(positionsRes.reason, t('strategies.tradesLoadFailed'))
   }
 
   if (btRunsRes.status === 'fulfilled') {
-    // Load backtest trades from latest completed run. This must not depend on
-    // orders/positions: backtest history is the authoritative post-run ledger.
-    const btRuns = (btRunsRes.value.data ?? []).filter((r: any) => r.status === 'done' || r.status === 'completed')
-    if (btRuns.length > 0) {
-      try {
-        const btTradesRes = await getBacktestTrades(btRuns[0].run_id)
-        backtestTrades.value = btTradesRes.data ?? []
-      } catch (e: any) {
-        backtestTrades.value = []
-        detailError.value = apiErrorMessage(e, t('strategies.tradesLoadFailed'))
-      }
-    } else {
+    const btRuns = (btRunsRes.value.data ?? []).filter(
+      (run: any) => run.status === 'done' || run.status === 'completed',
+    )
+    const runId = btRuns[0]?.run_id
+    if (!runId) {
       backtestTrades.value = []
+    } else if (completedTradeCache.has(runId)) {
+      backtestTrades.value = completedTradeCache.get(runId) ?? []
+    } else {
+      try {
+        const btTradesRes = await getBacktestTrades(runId, 5000, 0, signal)
+        if (signal?.aborted) return
+        const ledger = btTradesRes.data ?? []
+        completedTradeCache.set(runId, ledger)
+        backtestTrades.value = ledger
+      } catch (e: any) {
+        if (!signal?.aborted) {
+          detailError.value = apiErrorMessage(e, t('strategies.tradesLoadFailed'))
+        }
+      }
     }
   } else {
-    backtestTrades.value = []
     detailError.value = apiErrorMessage(btRunsRes.reason, t('strategies.tradesLoadFailed'))
   }
 }
+
+const tradesPoller = createVisibilityPoller({
+  poll: async (signal) => {
+    const strategyId = showDetail.value
+    if (strategyId) await loadTrades(strategyId, signal)
+  },
+  intervalMs: 15_000,
+})
 
 function normalizeTradeSide(side: any) {
   const value = String(side ?? '').toLowerCase()
@@ -688,10 +716,13 @@ function exitBadgeClass(exitId: string | null | undefined): string {
       </button>
     </div>
 
-    <div v-if="detailError" class="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+    <div v-if="store.error" class="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+      {{ store.error }}
+    </div>
+    <div v-if="detailError" class="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
       {{ detailError }}
     </div>
-    <div v-if="marketMetadataError || settingsError" class="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+    <div v-if="marketMetadataError || settingsError" class="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning" role="status">
       <div v-if="marketMetadataError">{{ marketMetadataError }}</div>
       <div v-if="settingsError">{{ settingsError }}</div>
     </div>
@@ -729,11 +760,9 @@ function exitBadgeClass(exitId: string | null | undefined): string {
           </select>
         </div>
 
-        <!-- Row 2b: Pine source + artifact.  Required for strategy creation.
-             Previously this row was hidden and the form relied on
-             autoFillPineSource picking the first pine file from the store;
-             that left users with no way to (a) change the source or
-             (b) know why the Create button was disabled. -->
+        <!-- Row 2b: Pine source + artifact. Required for strategy creation.
+             This row must remain user-controlled so the selected Pine source
+             is explicit and the disabled Create state has a visible cause. -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="space-y-1">
             <label class="text-[10px] uppercase tracking-wide text-gray-500">
@@ -855,23 +884,23 @@ function exitBadgeClass(exitId: string | null | undefined): string {
         :placeholder="t('strategies.searchByName')"
         class="col-span-2 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent md:w-48"
       />
-      <select v-model="filterTicker" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterTicker" :aria-label="t('strategies.allTickers')" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">{{ t('strategies.allTickers') }}</option>
         <option v-for="t in uniqueTickers" :key="t" :value="t">{{ t }}</option>
       </select>
-      <select v-model="filterExchange" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterExchange" :aria-label="t('strategies.allExchanges')" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">{{ t('strategies.allExchanges') }}</option>
         <option v-for="ex in uniqueExchanges" :key="ex" :value="ex">{{ exchangeLabel(ex) }}</option>
       </select>
-      <select v-model="filterTimeframe" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterTimeframe" :aria-label="t('strategies.allTfs')" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">{{ t('strategies.allTfs') }}</option>
         <option v-for="tf in uniqueTimeframes" :key="tf" :value="tf">{{ tf }}</option>
       </select>
-      <select v-model="filterMarket" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterMarket" :aria-label="t('strategies.allMarkets')" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">{{ t('strategies.allMarkets') }}</option>
         <option v-for="m in uniqueMarkets" :key="m" :value="m">{{ m }}</option>
       </select>
-      <select v-model="filterStatus" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
+      <select v-model="filterStatus" :aria-label="t('strategies.allStatus')" class="min-w-0 bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent">
         <option value="">{{ t('strategies.allStatus') }}</option>
         <option v-for="st in uniqueStatuses" :key="st" :value="st">{{ st }}</option>
       </select>
@@ -1094,11 +1123,11 @@ function exitBadgeClass(exitId: string | null | undefined): string {
     <!-- Detail Modal -->
     <teleport to="body">
       <transition name="fade">
-        <div v-if="showDetail" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60" @click.self="showDetail = null">
-          <div class="bg-dark-800 rounded-2xl border border-dark-500 w-full max-w-5xl max-h-[94vh] overflow-y-auto resize-y flex flex-col" style="min-height: 400px;">
+        <div v-if="showDetail" class="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60" @click.self="showDetail = null" @keydown.esc="showDetail = null">
+          <div ref="detailDialog" role="dialog" aria-modal="true" aria-labelledby="strategy-detail-title" tabindex="-1" class="bg-dark-800 rounded-2xl border border-dark-500 w-full max-w-5xl max-h-[94vh] overflow-y-auto resize-y flex flex-col" style="min-height: 400px;">
             <div class="flex items-start justify-between gap-3 px-4 py-4 sm:px-5 border-b border-dark-500">
               <div class="min-w-0">
-                <h2 class="text-lg font-semibold text-gray-200">{{ store.current?.name ?? t('strategies.detailTitle') }}</h2>
+                <h2 id="strategy-detail-title" class="text-lg font-semibold text-gray-200">{{ store.current?.name ?? t('strategies.detailTitle') }}</h2>
                 <span class="block truncate text-xs text-gray-500">{{ store.current?.symbol ?? '' }} · {{ store.current?.timeframe ?? '' }} · {{ exchangeLabel(store.current?.exchange) }} · {{ marketTypeLabel(store.current?.market_type) }}</span>
               </div>
               <button @click="showDetail = null" class="shrink-0 p-1.5 rounded-lg hover:bg-dark-600 text-gray-400">✕</button>
@@ -1130,10 +1159,11 @@ function exitBadgeClass(exitId: string | null | undefined): string {
 
             <div class="px-4 sm:px-5 pb-3 flex-1 min-h-[300px]">
               <CandleChart
-                :exchange="store.current?.exchange ?? 'binance'"
-                :symbol="store.current?.symbol ?? 'BTCUSDT'"
-                :timeframe="store.current?.timeframe ?? '15m'"
-                :market="store.current?.market_type ?? 'spot'"
+                v-if="detailStrategy"
+                :exchange="detailStrategy.exchange"
+                :symbol="detailStrategy.symbol"
+                :timeframe="detailStrategy.timeframe"
+                :market="detailStrategy.market_type"
                 :trades="chartTrades"
                 class="h-full"
                 @visibleRange="onChartRangeChange"

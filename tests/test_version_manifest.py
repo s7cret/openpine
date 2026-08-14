@@ -30,7 +30,7 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     assert isinstance(payload["modules"], list)
     assert len(payload["modules"]) == 7
     assert payload["stack_lock"]["schema"] == "openpine.stack-lock.v1"
-    assert payload["stack_lock"]["release"] == "4.0.1"
+    assert payload["stack_lock"]["release"] == "4.0.2"
     assert len(payload["stack_lock"]["sha256"]) == 64
     assert len(payload["stack_lock"]["components"]) == 7
 
@@ -65,7 +65,7 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     # openpine is the workspace checkout and is definitely installed here
     openpine = next(m for m in payload["modules"] if m["name"] == "openpine")
     assert openpine["installed"] is True
-    assert openpine["version"] == "4.0.1"
+    assert openpine["version"] == "4.0.2"
     assert openpine["path"] is not None
     assert openpine["path"].endswith("/openpine/__init__.py")
     assert openpine["summary"] is not None
@@ -102,32 +102,32 @@ def test_version_manifest_reports_missing_module(tmp_path, monkeypatch) -> None:
 
 def test_module_record_prefers_distribution_metadata_and_exposes_runtime_drift(monkeypatch) -> None:
     monkeypatch.setattr(version, "_module_origin", lambda _name: "/tmp/pkg/__init__.py")
-    monkeypatch.setattr(version, "_runtime_version", lambda _name: "4.0.1-dirty")
+    monkeypatch.setattr(version, "_runtime_version", lambda _name: "4.0.2-dirty")
     monkeypatch.setattr(version.importlib.metadata, "version", lambda _name: "4.0.0")
     monkeypatch.setattr(version, "_module_summary", lambda _name: "summary")
 
-    record = version._module_record("pine2ast", lock_version="4.0.1")
+    record = version._module_record("pine2ast", lock_version="4.0.2")
 
     assert record["version"] == "4.0.0"
     assert record["distribution_version"] == "4.0.0"
-    assert record["module_version"] == "4.0.1-dirty"
-    assert record["lock_version"] == "4.0.1"
+    assert record["module_version"] == "4.0.2-dirty"
+    assert record["lock_version"] == "4.0.2"
     assert record["conforms_to_lock"] is False
 
 
 def test_module_record_requires_exact_vcs_identity_for_sibling_conformance(monkeypatch) -> None:
     commit = "a" * 40
     monkeypatch.setattr(version, "_module_origin", lambda _name: "/tmp/pkg/__init__.py")
-    monkeypatch.setattr(version, "_runtime_version", lambda _name: "4.0.1")
-    monkeypatch.setattr(version.importlib.metadata, "version", lambda _name: "4.0.1")
+    monkeypatch.setattr(version, "_runtime_version", lambda _name: "4.0.2")
+    monkeypatch.setattr(version.importlib.metadata, "version", lambda _name: "4.0.2")
     monkeypatch.setattr(version, "_module_summary", lambda _name: "summary")
     monkeypatch.setattr(version, "_distribution_vcs_commit", lambda _name: commit)
 
     matching = version._module_record(
-        "pine2ast", lock_version="4.0.1", lock_commit=commit
+        "pine2ast", lock_version="4.0.2", lock_commit=commit
     )
     mismatched = version._module_record(
-        "pine2ast", lock_version="4.0.1", lock_commit="b" * 40
+        "pine2ast", lock_version="4.0.2", lock_commit="b" * 40
     )
 
     assert matching["identity_conforms"] is True
@@ -139,8 +139,8 @@ def test_module_record_requires_exact_vcs_identity_for_sibling_conformance(monke
 def test_module_record_prefers_exact_tree_identity_for_wheel_conformance(monkeypatch) -> None:
     tree_sha256 = "d" * 64
     monkeypatch.setattr(version, "_module_origin", lambda _name: "/tmp/pkg/__init__.py")
-    monkeypatch.setattr(version, "_runtime_version", lambda _name: "4.0.1")
-    monkeypatch.setattr(version.importlib.metadata, "version", lambda _name: "4.0.1")
+    monkeypatch.setattr(version, "_runtime_version", lambda _name: "4.0.2")
+    monkeypatch.setattr(version.importlib.metadata, "version", lambda _name: "4.0.2")
     monkeypatch.setattr(version, "_module_summary", lambda _name: "summary")
     monkeypatch.setattr(version, "package_tree_identity", lambda _path: tree_sha256)
 
@@ -151,7 +151,7 @@ def test_module_record_prefers_exact_tree_identity_for_wheel_conformance(monkeyp
 
     record = version._module_record(
         "pine2ast",
-        lock_version="4.0.1",
+        lock_version="4.0.2",
         lock_commit="a" * 40,
         lock_tree_sha256=tree_sha256,
     )
@@ -178,12 +178,12 @@ def test_version_manifest_rejects_valid_versions_when_lock_tree_identity_is_wron
 ) -> None:
     state = SimpleNamespace(config=SimpleNamespace(data_dir="/tmp"))
     components = [
-        {"name": name, "version": "4.0.1", "commit": "a" * 40}
+        {"name": name, "version": "4.0.2", "commit": "a" * 40}
         for name in version._TRACKED_MODULES
     ]
     components[0] = {
         "name": "openpine",
-        "version": "4.0.1",
+        "version": "4.0.2",
         "tree_sha256": "b" * 64,
     }
     monkeypatch.setattr(
@@ -191,7 +191,7 @@ def test_version_manifest_rejects_valid_versions_when_lock_tree_identity_is_wron
         "stack_lock_summary",
         lambda: {
             "schema": "openpine.stack-lock.v1",
-            "release": "4.0.1",
+            "release": "4.0.2",
             "sha256": "d" * 64,
             "source_tree_matches": False,
             "components": components,

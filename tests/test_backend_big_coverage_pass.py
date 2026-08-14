@@ -443,8 +443,8 @@ class FakeBacktestStore:
     def delete_run(self, run_id):
         return run_id == "run1"
 
-    def list_trades(self, run_id):
-        return list(self.trades)
+    def list_trades(self, run_id, *, limit=500, offset=0):
+        return list(self.trades)[offset : offset + limit]
 
     def get_metrics(self, run_id):
         return {"net_profit": 1.0}
@@ -463,7 +463,7 @@ def test_backtest_routes_list_get_action_export_and_artifacts(tmp_path):
     assert asyncio.run(backtest.get_run("run1", state)).version == 1
     with pytest.raises(HTTPException):
         asyncio.run(backtest.get_run("missing", state))
-    assert asyncio.run(backtest.run_action("run1", "cancel", state))["accepted"] is True
+    assert asyncio.run(backtest.run_action("run1", "cancel", state))["accepted"] is False
     with pytest.raises(HTTPException):
         asyncio.run(backtest.run_action("run1", "pause", state))
     assert asyncio.run(backtest.get_run_trades("run1", state))[0].trade_id == "t1"
@@ -810,8 +810,8 @@ def test_additional_strategy_and_trading_edge_paths(tmp_path):
     state.strategy_registry.strategy.status = "paused"
     with pytest.raises(HTTPException):
         asyncio.run(strategies.strategy_action("s1", state, action="clear_error"))
-    untouched = asyncio.run(strategies.update_strategy("s1", StrategyUpdate(), state))
-    assert untouched.strategy_id == "s1"
+    with pytest.raises(ValueError, match="at least one update field is required"):
+        StrategyUpdate()
 
     class MissingArtifactStore:
         def get_artifact(self, artifact_id, source_id=None):

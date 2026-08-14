@@ -25,7 +25,13 @@ class ConnectionManager:
 
     async def connect(self, ws: WebSocket, client_id: str | None = None) -> str:
         """Accept a WebSocket connection and return its id."""
-        await ws.accept()
+        selected_subprotocol = getattr(
+            getattr(ws, "state", None), "selected_websocket_subprotocol", None
+        )
+        if selected_subprotocol is None:
+            await ws.accept()
+        else:
+            await ws.accept(subprotocol=selected_subprotocol)
         cid = client_id or f"ws_{uuid.uuid4().hex[:12]}"
         async with self._lock:
             self._connections[cid] = ws

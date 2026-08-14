@@ -42,3 +42,24 @@ export function rangesOverlap(a: TimeRangeMs, b: TimeRangeMs): boolean {
 export function dateInputFromMs(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10)
 }
+
+export function timeframeDurationMs(timeframe: string): number | null {
+  const match = /^(\d+)([mhdw])$/.exec(String(timeframe).trim())
+  if (!match) return null
+  const count = Number(match[1])
+  const unitMs = {
+    m: 60_000,
+    h: 60 * 60_000,
+    d: 24 * 60 * 60_000,
+    w: 7 * 24 * 60 * 60_000,
+  }[match[2]]
+  return Number.isFinite(count) && count > 0 && unitMs ? count * unitMs : null
+}
+
+export function clampRangeToBarLimit(range: TimeRangeMs, timeframe: string, maxBars: number): TimeRangeMs {
+  const intervalMs = timeframeDurationMs(timeframe)
+  if (!intervalMs || !Number.isFinite(maxBars) || maxBars < 1) return range
+  const maxSpanMs = intervalMs * Math.floor(maxBars)
+  if (range.toMs - range.fromMs <= maxSpanMs) return range
+  return { fromMs: range.toMs - maxSpanMs, toMs: range.toMs }
+}

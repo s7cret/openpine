@@ -4,17 +4,20 @@ import { useI18n } from 'vue-i18n'
 import { useDashboardStore } from '@/stores/dashboard'
 import { summarizeDataHealth } from '@/lib/dataHealth'
 import { useRouter } from 'vue-router'
+import { createVisibilityPoller } from '@/lib/visibilityPoller'
 
 const { t } = useI18n()
 const store = useDashboardStore()
 const router = useRouter()
-let timer: ReturnType<typeof setInterval>
+const dashboardPoller = createVisibilityPoller({
+  poll: async () => { await store.fetchAll() },
+  intervalMs: 15_000,
+})
 
 onMounted(() => {
-  store.fetchAll()
-  timer = setInterval(() => store.fetchAll(), 5000)
+  dashboardPoller.start()
 })
-onUnmounted(() => clearInterval(timer))
+onUnmounted(() => dashboardPoller.stop())
 
 const strategies = computed(() => store.stats?.strategies ?? [])
 const jobs = computed(() => store.stats?.jobs ?? {})

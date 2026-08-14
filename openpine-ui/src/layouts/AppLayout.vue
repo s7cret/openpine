@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { getGatewayHealth } from '@/api/client'
+import { subscribeUnauthorized } from '@/api/auth'
+import AuthUnlockDialog from '@/components/AuthUnlockDialog.vue'
 import TradeNotifications from '@/components/TradeNotifications.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
@@ -9,6 +12,11 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const sidebarOpen = ref(false)
+const authDialogOpen = ref(false)
+const gatewayStatus = ref<'checking' | 'ok' | 'degraded' | 'offline'>('checking')
+const gatewayVersion = ref('')
+let healthTimer: ReturnType<typeof setTimeout> | null = null
+let unsubscribeUnauthorized: (() => void) | null = null
 
 const navItems = computed(() => [
   { path: '/dashboard',    label: t('nav.dashboard'),    icon: '📊' },
@@ -29,24 +37,62 @@ function navigate(path: string) {
 const currentTitle = computed(
   () => navItems.value.find(i => i.path === route.path)?.label ?? t('app.name')
 )
+
+const gatewayLabel = computed(() => {
+  if (gatewayStatus.value === 'ok') return t('app.gatewayOnline')
+  if (gatewayStatus.value === 'degraded') return t('app.gatewayDegraded')
+  if (gatewayStatus.value === 'offline') return t('app.gatewayOffline')
+  return t('app.gatewayChecking')
+})
+
+const gatewayDotClass = computed(() => ({
+  checking: 'bg-gray-500',
+  ok: 'bg-success animate-pulse',
+  degraded: 'bg-warning animate-pulse',
+  offline: 'bg-danger',
+}[gatewayStatus.value]))
+
+async function refreshGatewayHealth() {
+  if (healthTimer) clearTimeout(healthTimer)
+  try {
+    const { data } = await getGatewayHealth()
+    gatewayVersion.value = data.version ?? ''
+    gatewayStatus.value = data.status === 'ok' ? 'ok' : 'degraded'
+  } catch {
+    gatewayStatus.value = 'offline'
+  } finally {
+    healthTimer = setTimeout(() => { void refreshGatewayHealth() }, 15_000)
+  }
+}
+
+function onUnlocked() {
+  authDialogOpen.value = false
+  router.go(0)
+}
+
+onMounted(() => {
+  unsubscribeUnauthorized = subscribeUnauthorized(() => { authDialogOpen.value = true })
+  void refreshGatewayHealth()
+})
+
+onBeforeUnmount(() => {
+  unsubscribeUnauthorized?.()
+  if (healthTimer) clearTimeout(healthTimer)
+})
 </script>
 
 <template>
   <div class="flex h-screen overflow-hidden">
-    <!-- Mobile overlay -->
     <div v-if="sidebarOpen" class="fixed inset-0 z-30 bg-black/50 lg:hidden" @click="sidebarOpen = false" />
 
-    <!-- Sidebar -->
     <aside
       :class="[sidebarOpen ? 'translate-x-0' : '-translate-x-full', 'lg:translate-x-0']"
       class="fixed z-40 lg:static inset-y-0 left-0 w-56 bg-dark-800 border-r border-dark-500 flex flex-col transition-transform duration-200 ease-in-out"
     >
-      <!-- Logo -->
       <div class="h-14 flex items-center px-4 border-b border-dark-500">
         <span class="text-lg font-bold text-accent-light">🌿 OpenPine</span>
       </div>
 
-      <!-- Nav -->
       <nav class="flex-1 py-3 space-y-0.5 px-2">
         <button
           v-for="item in navItems"
@@ -64,18 +110,15 @@ const currentTitle = computed(
         </button>
       </nav>
 
-      <!-- Footer -->
       <div class="p-3 border-t border-dark-500">
-        <div class="text-xs text-gray-500">{{ t('app.version') }} · {{ t('app.gatewayOnline') }}</div>
+        <div class="text-xs text-gray-400">{{ gatewayVersion ? `OpenPine Gateway v${gatewayVersion}` : t('app.name') }} · {{ gatewayLabel }}</div>
       </div>
     </aside>
 
-    <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0">
-      <!-- Topbar -->
       <header class="h-14 flex items-center justify-between px-4 bg-dark-800 border-b border-dark-500 shrink-0">
-        <button class="lg:hidden p-1.5 rounded-lg hover:bg-dark-600" @click="sidebarOpen = !sidebarOpen">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button class="lg:hidden p-1.5 rounded-lg hover:bg-dark-600" :aria-label="currentTitle" @click="sidebarOpen = !sidebarOpen">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -83,14 +126,13 @@ const currentTitle = computed(
         <div class="flex items-center gap-3">
           <LanguageSwitcher />
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-success animate-pulse" :title="t('app.gatewayOnline')" />
-            <span class="text-xs text-gray-500">{{ t('app.connected') }}</span>
+            <span :class="[gatewayDotClass, 'w-2 h-2 rounded-full']" :title="gatewayLabel" />
+            <span class="text-xs text-gray-400" aria-live="polite">{{ gatewayLabel }}</span>
           </div>
         </div>
       </header>
 
-      <!-- Content -->
-      <main class="flex-1 overflow-y-auto p-4 lg:p-6">
+      <main class="flex-1 overflow-y-auto p-4 lg:p-6" tabindex="0">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
@@ -99,7 +141,7 @@ const currentTitle = computed(
       </main>
     </div>
 
-    <!-- Global trade notifications -->
     <TradeNotifications />
+    <AuthUnlockDialog :open="authDialogOpen" @close="authDialogOpen = false" @unlocked="onUnlocked" />
   </div>
 </template>

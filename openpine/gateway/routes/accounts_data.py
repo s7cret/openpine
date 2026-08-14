@@ -93,9 +93,11 @@ _MARKET_TYPE_DESCRIPTIONS = {
 _MARKET_TYPE_MAP = {
     'spot': 'spot',
     'margin': 'margin',
+    'futures': 'futures',
     'usdm': 'futures',
     'linear': 'futures',
     'usdt_futures': 'futures',
+    'delivery': 'delivery',
     'coinm': 'delivery',
     'inverse': 'delivery',
     'coin_futures': 'delivery',
@@ -104,6 +106,7 @@ _MARKET_TYPE_MAP = {
 }
 _DATA_KLINES_MAX_BARS = 200000
 _DATA_KLINES_MAX_VARIABLE_WINDOW_MS = 10 * 366 * 24 * 60 * 60 * 1000
+_DATA_REFRESH_MAX_BARS = 5_000
 _DATA_BACKFILL_SUBPROCESS_SOURCE_BARS = 250_000
 _SYMBOL_SEARCH_TIMEOUT_SECONDS = 8.0
 _SYMBOL_SEARCH_RESPONSE_TIMEOUT_SECONDS = 9.0
@@ -112,6 +115,7 @@ _DATA_SUMMARY_RESPONSE_TIMEOUT_SECONDS = 10.0
 _DATA_SUMMARY_CACHE_TTL_SECONDS = 10.0
 _DATA_SUMMARY_CACHE_LOCK = threading.Lock()
 _DATA_SUMMARY_CACHE: tuple[tuple[str, str, str, str], float, dict[str, object]] | None = None
+_DATA_SUMMARY_REFRESHING: set[tuple[str, str, str, str]] = set()
 
 
 def _strategy_market_type_payload(market_type_id: str) -> dict[str, object]:
@@ -229,7 +233,8 @@ def _require_enabled_exchange(exchange: str) -> str:
 
 
 def _require_enabled_market_type(exchange_payload: dict[str, object], market_type: str) -> str:
-    market_id = market_type.strip().lower()
+    requested_market_id = market_type.strip().lower()
+    market_id = _MARKET_TYPE_MAP.get(requested_market_id, requested_market_id)
     market_payloads = cast(list[dict[str, object]], exchange_payload.get('market_types') or [])
     supported = {str(item.get('id')) for item in market_payloads}
     if market_id not in supported:
@@ -408,7 +413,8 @@ def _series_status(rows: list[dict[str, object]], enabled: bool) -> str:
 
 def _series_market_key(row: dict[str, object]) -> tuple[str, str] | None:
     exchange = str(row.get('exchange') or '').strip().lower()
-    market = str(row.get('market_type') or '').strip().lower()
+    raw_market = str(row.get('market_type') or '').strip().lower()
+    market = _MARKET_TYPE_MAP.get(raw_market, raw_market)
     if not exchange or not market:
         return None
     return exchange, market
@@ -508,7 +514,7 @@ def _data_health_payload(state: GatewayState, *, summary: dict[str, object] | No
 
 @router.get('/data/health')
 def data_health(state: GatewayState = Depends(get_state)) -> dict[str, object]:
-    return _data_health_payload(state)
+    return _data_health_payload(state, summary=_data_summary_cached(state))
 
 
 @router.get("/data/cache", response_model=CacheStatusResponse)
@@ -555,7 +561,8 @@ async def refresh_data_series(
     tf = parse_timeframe(str(series["timeframe"]))
     duration_ms = tf.duration_ms or 60_000
     now_ms = int(time.time() * 1000)
-    start_ms = int(series.get("earliest_ms") or series["latest_ms"])
+    start_ms = max(0, int(series["latest_ms"]) + duration_ms)
+    refresh_end_ms = min(now_ms, start_ms + duration_ms * _DATA_REFRESH_MAX_BARS)
     before_ranges = len(series.get("ranges") or [])
     if (
         int(series["latest_ms"]) + duration_ms >= now_ms
@@ -581,18 +588,19 @@ async def refresh_data_series(
         ),
         timeframe=tf,
         start_ms=start_ms,
-        end_ms=now_ms,
+        end_ms=refresh_end_ms,
         source="auto",
         gap_policy="allow_with_metadata",
     )
-    loaded = state.orchestrator.load_bars(query)
+    loaded = await asyncio.to_thread(state.orchestrator.load_bars, query)
     refreshed = _series_by_id(state).get(series_id) or series
     return {
         "status": "refreshed",
         "bars_loaded": len(loaded.bars),
         "coverage_complete": bool(getattr(loaded.coverage, "is_complete", False)),
         "from_ms": start_ms,
-        "to_ms": now_ms,
+        "to_ms": refresh_end_ms,
+        "remaining": refresh_end_ms < now_ms,
         "latest_ms": refreshed.get("latest_ms"),
         "coverage_ranges_before": before_ranges,
         "coverage_ranges_after": len(refreshed.get("ranges") or []),
@@ -1678,14 +1686,48 @@ def _data_summary_cached(state: GatewayState) -> dict[str, object]:
 
     key = _data_summary_cache_key(state)
     now = time.monotonic()
+    refresh_stale = False
     with _DATA_SUMMARY_CACHE_LOCK:
         if _DATA_SUMMARY_CACHE is not None:
             cached_key, cached_at, cached_payload = _DATA_SUMMARY_CACHE
-            if cached_key == key and now - cached_at < _DATA_SUMMARY_CACHE_TTL_SECONDS:
-                return cached_payload
+            if cached_key == key:
+                if now - cached_at < _DATA_SUMMARY_CACHE_TTL_SECONDS:
+                    return cached_payload
+                if key not in _DATA_SUMMARY_REFRESHING:
+                    _DATA_SUMMARY_REFRESHING.add(key)
+                    refresh_stale = True
+                stale_payload = cached_payload
+            else:
+                stale_payload = None
+        else:
+            stale_payload = None
+        if stale_payload is None:
+            payload = _data_summary(state)
+            _DATA_SUMMARY_CACHE = (key, time.monotonic(), payload)
+            return payload
+    if refresh_stale:
+        threading.Thread(
+            target=_refresh_data_summary_cache,
+            args=(state, key),
+            name="openpine-data-summary-refresh",
+            daemon=True,
+        ).start()
+    return stale_payload
+
+
+def _refresh_data_summary_cache(
+    state: GatewayState, key: tuple[str, str, str, str]
+) -> None:
+    global _DATA_SUMMARY_CACHE
+
+    try:
         payload = _data_summary(state)
-        _DATA_SUMMARY_CACHE = (key, time.monotonic(), payload)
-        return payload
+    except Exception:
+        payload = None
+    with _DATA_SUMMARY_CACHE_LOCK:
+        if payload is not None:
+            _DATA_SUMMARY_CACHE = (key, time.monotonic(), payload)
+        _DATA_SUMMARY_REFRESHING.discard(key)
 
 
 def _data_summary(state: GatewayState) -> dict[str, object]:
@@ -1886,6 +1928,14 @@ def _series_entry(
     groups: dict[tuple[str, str, str, str, str], dict[str, object]],
     group_key: tuple[str, str, str, str, str],
 ) -> dict[str, object]:
+    exchange, market_type, symbol, price_type, timeframe = group_key
+    group_key = (
+        exchange,
+        _MARKET_TYPE_MAP.get(market_type.strip().lower(), market_type.strip().lower()),
+        symbol,
+        price_type,
+        timeframe,
+    )
     if group_key in groups:
         return groups[group_key]
     exchange, market_type, symbol, price_type, timeframe = group_key

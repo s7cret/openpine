@@ -237,37 +237,39 @@ class PeriodicBarFetcher:
                 strategies=len(strategies),
                 bars_fetched=len(bars),
             )
-            # Persist the refresh batch once. WebSocket paths still use
-            # on_candle_closed for single confirmed candle events.
-            query = BarQuery(
-                instrument=InstrumentKey(
-                    symbol=key.symbol,
-                    exchange=key.exchange,
-                    market=key.market_type,
-                ),
-                timeframe=timeframe,
-                start_ms=start_ms,
-                end_ms=end_ms,
-                source="storage",
-            )
-            series = BarSeries(
-                query=query,
-                bars=tuple(bars),
-                coverage=DataOrchestrator.coverage_for_series(
-                    query, tuple(bars), "live"
-                ),
-            )
-            try:
-                self.orchestrator.store_bars(series)
-            except StorageUnavailableError as exc:
-                if "conflicting closed candle" not in str(exc):
-                    raise
-                log.info(
-                    "periodic_fetcher.market_refresh_already_stored",
-                    market_key=str(key),
-                    source_timeframe=timeframe.canonical,
-                    error=str(exc),
+            # Fetch-only providers delegate persistence to OpenPine. The
+            # canonical provider persists before returning, so writing its
+            # result here would create a second owner for the same series.
+            if not getattr(self.orchestrator, "provider_persists_fetches", False):
+                query = BarQuery(
+                    instrument=InstrumentKey(
+                        symbol=key.symbol,
+                        exchange=key.exchange,
+                        market=key.market_type,
+                    ),
+                    timeframe=timeframe,
+                    start_ms=start_ms,
+                    end_ms=end_ms,
+                    source="storage",
                 )
+                series = BarSeries(
+                    query=query,
+                    bars=tuple(bars),
+                    coverage=DataOrchestrator.coverage_for_series(
+                        query, tuple(bars), "live"
+                    ),
+                )
+                try:
+                    self.orchestrator.store_bars(series)
+                except StorageUnavailableError as exc:
+                    if "conflicting closed candle" not in str(exc):
+                        raise
+                    log.info(
+                        "periodic_fetcher.market_refresh_already_stored",
+                        market_key=str(key),
+                        source_timeframe=timeframe.canonical,
+                        error=str(exc),
+                    )
             self._store_target_aggregates(
                 key,
                 bars,

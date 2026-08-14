@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import contextlib
+import fcntl
 import json
 import os
 import pickle
 import tempfile
+import threading
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -17,6 +20,7 @@ from typing import Any
 
 import msgpack
 
+from openpine.state.codec import from_msgpack_safe, to_msgpack_safe
 from openpine.state.errors import (
     InvalidSnapshotError,
     SnapshotNotFoundError,
@@ -50,6 +54,7 @@ class SnapshotMetadata:
     )
     data_fingerprint: str | None = None
     state_encoding: str = "msgpack"
+    checksum: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -66,6 +71,7 @@ class SnapshotMetadata:
             "reason": self.reason,
             "data_fingerprint": self.data_fingerprint,
             "state_encoding": self.state_encoding,
+            "checksum": self.checksum,
         }
 
     @classmethod
@@ -84,6 +90,7 @@ class SnapshotMetadata:
             reason=d.get("reason", "scheduled"),
             data_fingerprint=d.get("data_fingerprint"),
             state_encoding=d.get("state_encoding", "msgpack"),
+            checksum=d.get("checksum"),
         )
 
 
@@ -149,11 +156,15 @@ class StateStore:
         storage_dir: Path,
         save_policy: SavePolicy = SavePolicy.EVERY_BAR,
         save_interval_bars: int = 1,
+        max_snapshots_per_strategy: int = 64,
     ) -> None:
         self.storage_dir = Path(storage_dir)
         self.save_policy = save_policy
         self.save_interval_bars = save_interval_bars
+        self.max_snapshots_per_strategy = max(1, max_snapshots_per_strategy)
         self._bars_since_last_save: dict[str, int] = defaultdict(int)
+        self._metadata_lock = threading.RLock()
+        self._index_signature: tuple[int, int] | None = None
 
         # In-memory snapshot registry: strategy_id -> list of SnapshotMetadata
         self._snapshots: dict[str, list[SnapshotMetadata]] = defaultdict(list)
@@ -200,6 +211,40 @@ class StateStore:
     def _metadata_index_path(self) -> Path:
         return self.storage_dir / "snapshots.index.json"
 
+    def _metadata_lock_path(self) -> Path:
+        return self.storage_dir / ".snapshots.index.lock"
+
+    @staticmethod
+    def _path_signature(path: Path) -> tuple[int, int] | None:
+        try:
+            stat = path.stat()
+        except FileNotFoundError:
+            return None
+        return stat.st_mtime_ns, stat.st_size
+
+    @contextlib.contextmanager
+    def _locked_metadata_mutation(self) -> Any:
+        """Serialize read-modify-write of the cross-process metadata index."""
+
+        with self._metadata_lock:
+            lock_path = self._metadata_lock_path()
+            lock_path.touch(mode=0o600, exist_ok=True)
+            with lock_path.open("rb") as lock_file:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                try:
+                    self._load_metadata_index(force=True)
+                    yield
+                finally:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+    def _reload_metadata_index_if_changed(self) -> None:
+        path = self._metadata_index_path()
+        if self._path_signature(path) == self._index_signature:
+            return
+        with self._metadata_lock:
+            if self._path_signature(path) != self._index_signature:
+                self._load_metadata_index(force=True)
+
     @staticmethod
     def _snapshot_payload(
         state: StrategyState, *, data_fingerprint: str | None = None
@@ -222,26 +267,7 @@ class StateStore:
 
     @staticmethod
     def _msgpack_safe(value: Any) -> Any:
-        if value is None or isinstance(value, str | bytes | int | float | bool):
-            return value
-        if isinstance(value, dict):
-            safe: dict[Any, Any] = {}
-            for key, item in value.items():
-                if not isinstance(key, str | bytes | int | float | bool | type(None)):
-                    raise TypeError(f"unsupported msgpack key type: {type(key).__name__}")
-                safe[key] = StateStore._msgpack_safe(item)
-            return safe
-        if isinstance(value, list | tuple):
-            return [StateStore._msgpack_safe(item) for item in value]
-        if isinstance(value, set) or callable(value):
-            raise TypeError(f"unsupported msgpack value type: {type(value).__name__}")
-        if hasattr(value, "__dict__"):
-            return {
-                key: StateStore._msgpack_safe(item)
-                for key, item in vars(value).items()
-                if not key.startswith("_")
-            }
-        raise TypeError(f"unsupported msgpack value type: {type(value).__name__}")
+        return to_msgpack_safe(value)
 
     @staticmethod
     def _pack_msgpack(payload: Any) -> bytes:
@@ -253,18 +279,14 @@ class StateStore:
     @staticmethod
     def _encode_payload(payload: dict[str, Any]) -> tuple[bytes, str, str]:
         try:
-            packed = StateStore._pack_msgpack(payload)
+            safe_payload = StateStore._msgpack_safe(payload)
+            packed = StateStore._pack_msgpack(safe_payload)
             return packed, "msgpack", hashlib.sha256(packed).hexdigest()
         except (TypeError, ValueError) as exc:
-            try:
-                safe_payload = StateStore._msgpack_safe(payload)
-                packed = StateStore._pack_msgpack(safe_payload)
-                return packed, "msgpack", hashlib.sha256(packed).hexdigest()
-            except (TypeError, ValueError):
-                if not StateStore._pickle_state_enabled():
-                    raise StateStore._pickle_state_error() from exc
-                packed = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
-                return packed, "pickle", hashlib.sha256(packed).hexdigest()
+            if not StateStore._pickle_state_enabled():
+                raise StateStore._pickle_state_error() from exc
+            packed = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
+            return packed, "pickle", hashlib.sha256(packed).hexdigest()
 
     @staticmethod
     def _decode_payload(packed: bytes, encoding: str) -> dict[str, Any]:
@@ -272,7 +294,11 @@ class StateStore:
             if not StateStore._pickle_state_enabled():
                 raise StateStore._pickle_state_error()
             return pickle.loads(packed)
-        return msgpack.unpackb(packed, raw=False)
+        decoded = msgpack.unpackb(packed, raw=False)
+        restored = from_msgpack_safe(decoded)
+        if not isinstance(restored, dict):
+            raise InvalidSnapshotError("snapshot root payload must be a mapping")
+        return restored
 
     @staticmethod
     def _debug_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -317,8 +343,6 @@ class StateStore:
 
         payload = self._snapshot_payload(state, data_fingerprint=data_fingerprint)
         packed, encoding, checksum = self._encode_payload(payload)
-        payload["checksum"] = checksum
-        payload["state_encoding"] = encoding
 
         # Atomic write: temp file → validate → rename
         sd = self._state_dir(state.strategy_id)
@@ -341,7 +365,16 @@ class StateStore:
 
         # Write debug JSON
         debug_path = self._debug_path(state.strategy_id, snapshot_id)
-        debug_path.write_text(json.dumps(self._debug_payload(payload), indent=2))
+        debug_path.write_text(
+            json.dumps(
+                {
+                    **self._debug_payload(payload),
+                    "checksum": checksum,
+                    "state_encoding": encoding,
+                },
+                indent=2,
+            )
+        )
 
         # Build metadata
         meta = SnapshotMetadata(
@@ -357,16 +390,19 @@ class StateStore:
             reason=reason,
             data_fingerprint=data_fingerprint,
             state_encoding=encoding,
+            checksum=checksum,
         )
 
-        # Mark previous active snapshots as superseded
-        for prev in self._snapshots[state.strategy_id]:
-            if prev.status == "active":
-                prev.status = "superseded"
+        with self._locked_metadata_mutation():
+            # Mark previous active snapshots as superseded.
+            for prev in self._snapshots[state.strategy_id]:
+                if prev.status == "active":
+                    prev.status = "superseded"
 
-        self._snapshots[state.strategy_id].append(meta)
-        self._bars_since_last_save[state.strategy_id] = 0
-        self._persist_metadata_index()
+            self._snapshots[state.strategy_id].append(meta)
+            self._prune_strategy_snapshots(state.strategy_id)
+            self._bars_since_last_save[state.strategy_id] = 0
+            self._persist_metadata_index()
 
         return meta
 
@@ -388,6 +424,7 @@ class StateStore:
     ) -> SnapshotMetadata | None:
         """Return newest active snapshot compatible with the supplied key."""
 
+        self._reload_metadata_index_if_changed()
         snapshots = self._snapshots.get(strategy_id, [])
         active = [
             s
@@ -456,11 +493,16 @@ class StateStore:
         if not snap_path.exists():
             return None
         packed = snap_path.read_bytes()
+        computed = hashlib.sha256(packed).hexdigest()
+        if meta.checksum is not None and meta.checksum != computed:
+            raise InvalidSnapshotError(
+                f"Checksum mismatch for snapshot {meta.snapshot_id}"
+            )
         payload = self._decode_payload(packed, meta.state_encoding)
-        # Verify checksum
+        # Legacy snapshots stored no usable checksum in metadata. Preserve
+        # compatibility with those files while removing vestigial payload keys.
         stored_checksum = payload.pop("checksum", None)
         payload.pop("state_encoding", None)
-        computed = hashlib.sha256(packed).hexdigest()
         if stored_checksum and stored_checksum != computed:
             raise InvalidSnapshotError(
                 f"Checksum mismatch for snapshot {meta.snapshot_id}"
@@ -469,6 +511,7 @@ class StateStore:
 
     def list_snapshots(self, strategy_id: str) -> list[SnapshotMetadata]:
         """List all snapshots for strategy, newest first."""
+        self._reload_metadata_index_if_changed()
         return sorted(
             self._snapshots.get(strategy_id, []),
             key=lambda s: s.saved_at,
@@ -477,16 +520,17 @@ class StateStore:
 
     def delete_snapshot(self, snapshot_id: str) -> None:
         """Delete specific snapshot and its files."""
-        for strategy_id, metas in self._snapshots.items():
-            for i, meta in enumerate(metas):
-                if meta.snapshot_id == snapshot_id:
-                    snap_path = self._snapshot_path(strategy_id, snapshot_id)
-                    snap_path.unlink(missing_ok=True)
-                    debug_path = self._debug_path(strategy_id, snapshot_id)
-                    debug_path.unlink(missing_ok=True)
-                    metas.pop(i)
-                    self._persist_metadata_index()
-                    return
+        with self._locked_metadata_mutation():
+            for strategy_id, metas in self._snapshots.items():
+                for i, meta in enumerate(metas):
+                    if meta.snapshot_id == snapshot_id:
+                        snap_path = self._snapshot_path(strategy_id, snapshot_id)
+                        snap_path.unlink(missing_ok=True)
+                        debug_path = self._debug_path(strategy_id, snapshot_id)
+                        debug_path.unlink(missing_ok=True)
+                        metas.pop(i)
+                        self._persist_metadata_index()
+                        return
         raise SnapshotNotFoundError(f"Snapshot not found: {snapshot_id}")
 
     def get_save_policy(self) -> tuple[SavePolicy, int]:
@@ -500,23 +544,41 @@ class StateStore:
 
     def mark_invalid(self, strategy_id: str, since_bar_time: int | None = None) -> None:
         """Mark snapshots as potentially invalid after data repair (section 30.8)."""
-        for meta in self._snapshots.get(strategy_id, []):
-            if since_bar_time is None or meta.bar_time >= since_bar_time:
-                meta.status = "invalid"
-        self._persist_metadata_index()
+        with self._locked_metadata_mutation():
+            for meta in self._snapshots.get(strategy_id, []):
+                if since_bar_time is None or meta.bar_time >= since_bar_time:
+                    meta.status = "invalid"
+            self._persist_metadata_index()
 
-    def _load_metadata_index(self) -> None:
+    def _prune_strategy_snapshots(self, strategy_id: str) -> None:
+        snapshots = sorted(
+            self._snapshots.get(strategy_id, []),
+            key=lambda snapshot: (snapshot.bar_time, snapshot.saved_at),
+            reverse=True,
+        )
+        keep = snapshots[: self.max_snapshots_per_strategy]
+        for stale in snapshots[self.max_snapshots_per_strategy :]:
+            self._snapshot_path(strategy_id, stale.snapshot_id).unlink(missing_ok=True)
+            self._debug_path(strategy_id, stale.snapshot_id).unlink(missing_ok=True)
+        self._snapshots[strategy_id] = list(reversed(keep))
+
+    def _load_metadata_index(self, *, force: bool = False) -> None:
         path = self._metadata_index_path()
         if not path.exists():
+            if force:
+                self._snapshots.clear()
+            self._index_signature = None
             return
         try:
             raw = json.loads(path.read_text())
         except Exception:
             return
+        self._snapshots.clear()
         for item in raw.get("snapshots", []):
             meta = SnapshotMetadata.from_dict(item)
             if self._snapshot_path(meta.strategy_id, meta.snapshot_id).exists():
                 self._snapshots[meta.strategy_id].append(meta)
+        self._index_signature = self._path_signature(path)
 
     def _persist_metadata_index(self) -> None:
         payload = {
@@ -532,6 +594,7 @@ class StateStore:
                 f.flush()
                 os.fsync(f.fileno())
             Path(tmp_path).replace(self._metadata_index_path())
+            self._index_signature = self._path_signature(self._metadata_index_path())
         except Exception:
             Path(tmp_path).unlink(missing_ok=True)
             raise

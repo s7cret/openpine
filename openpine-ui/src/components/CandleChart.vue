@@ -6,7 +6,8 @@ import DateRangePicker from './DateRangePicker.vue'
 import type { IChartApi, ISeriesApi, CandlestickData, HistogramData, Time, SeriesMarker } from 'lightweight-charts'
 import { formatChartTime } from '@/utils/time'
 import { getDataKlines } from '@/api/client'
-import { dateInputFromMs, rangesOverlap, tradeBoundsMs } from '@/lib/tradeChartRange'
+import { clampRangeToBarLimit, dateInputFromMs, rangesOverlap, tradeBoundsMs } from '@/lib/tradeChartRange'
+import { createLatestRequest } from '@/lib/latestRequest'
 
 const { t } = useI18n()
 
@@ -55,6 +56,9 @@ const dateTo = ref(localDateInputValue(now))
 
 const containerRef = ref<HTMLDivElement | null>(null)
 const visibleRange = ref('')
+const chartLoading = ref(false)
+const chartError = ref('')
+const rangeLimited = ref(false)
 let chart: IChartApi | null = null
 let candleSeries: ISeriesApi<'Candlestick'> | null = null
 let volumeSeries: ISeriesApi<'Histogram'> | null = null
@@ -62,6 +66,8 @@ let resizeObserver: ResizeObserver | null = null
 
 const DARK_BG = '#1a1a2e'
 const DARK_TEXT = '#e2e8f0'
+const MAX_CHART_BARS = 5000
+const klineRequests = createLatestRequest()
 
 // Store loaded candle times for marker alignment
 let candleTimes: number[] = []
@@ -111,21 +117,24 @@ type ChartBarPayload = {
   volume: number | null
 }
 
-let loadDataRequestId = 0
-
-async function fetchKlines(symbol: string, interval: string, market: string, exchange?: string) {
-  const startTime = new Date(dateFrom.value + 'T00:00:00Z').getTime()
-  const endTime = new Date(dateTo.value + 'T23:59:59Z').getTime()
+async function fetchKlines(symbol: string, interval: string, market: string, signal: AbortSignal, exchange?: string) {
+  const selectedRange = currentDateRangeMs()
+  const requestRange = clampRangeToBarLimit(selectedRange, interval, MAX_CHART_BARS)
   const { data } = await getDataKlines({
     exchange: exchange || 'binance',
     market_type: market,
     symbol,
     interval,
-    start_time: startTime,
-    end_time: endTime,
-    limit: 200000,
-  })
-  return (data?.bars ?? []) as ChartBarPayload[]
+    start_time: requestRange.fromMs,
+    end_time: requestRange.toMs,
+    limit: MAX_CHART_BARS,
+  }, signal)
+  const bars = (data?.bars ?? []) as ChartBarPayload[]
+  return {
+    bars: bars.slice(-MAX_CHART_BARS),
+    range: requestRange,
+    limited: requestRange.fromMs !== selectedRange.fromMs,
+  }
 }
 
 function mapKlines(raw: ChartBarPayload[]): { candles: CandlestickData<Time>[]; volumes: HistogramData<Time>[] } {
@@ -278,11 +287,13 @@ function buildMarkers(): SeriesMarker<Time>[] {
 
 async function loadData() {
   if (!chart || !props.symbol) return
-  const requestId = ++loadDataRequestId
+  const request = klineRequests.begin()
+  chartLoading.value = true
+  chartError.value = ''
   try {
-    const raw = await fetchKlines(props.symbol, props.timeframe, props.market, props.exchange)
-    if (requestId !== loadDataRequestId) return
-    const { candles, volumes } = mapKlines(raw)
+    const result = await fetchKlines(props.symbol, props.timeframe, props.market, request.signal, props.exchange)
+    if (!request.isCurrent()) return
+    const { candles, volumes } = mapKlines(result.bars)
     if (candleSeries) {
       candleSeries.setData(candles)
       const markers = buildMarkers()
@@ -295,12 +306,13 @@ async function loadData() {
     // Delay slightly to ensure the chart has rendered the range
     requestAnimationFrame(() => updateVisibleRange())
 
-    // Emit data range (what the DateRangePicker selected)
-    const fromMs = new Date(dateFrom.value + 'T00:00:00Z').getTime()
-    const toMs = new Date(dateTo.value + 'T23:59:59Z').getTime()
-    emit('dataRange', { fromMs, toMs })
-  } catch (e) {
-    console.error(t('candleChart.loadFailed'), e)
+    rangeLimited.value = result.limited
+    emit('dataRange', result.range)
+  } catch (e: any) {
+    if (!request.isCurrent()) return
+    chartError.value = e?.response?.data?.detail ?? e?.message ?? t('candleChart.loadFailed')
+  } finally {
+    if (request.isCurrent()) chartLoading.value = false
   }
 }
 
@@ -389,6 +401,7 @@ watch([dateFrom, dateTo], () => {
 })
 
 onUnmounted(() => {
+  klineRequests.cancel()
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
@@ -407,10 +420,20 @@ onUnmounted(() => {
     <!-- Date range picker + visible range -->
     <div class="flex items-center justify-between mb-2 px-1">
       <DateRangePicker :from="dateFrom" :to="dateTo" @update:from="dateFrom = $event" @update:to="dateTo = $event" />
-      <div v-if="visibleRange" class="text-[11px] text-gray-400 whitespace-nowrap ml-3">
-        {{ visibleRange }}
+      <div class="ml-3 text-right text-[11px] text-gray-400">
+        <div v-if="visibleRange" class="whitespace-nowrap">{{ visibleRange }}</div>
+        <div v-if="rangeLimited" class="text-warning">{{ t('candleChart.rangeLimited', { count: MAX_CHART_BARS }) }}</div>
       </div>
     </div>
     <div ref="containerRef" class="w-full h-full min-h-[256px] rounded-xl overflow-hidden border border-dark-600" />
+    <div v-if="chartLoading" class="absolute inset-x-0 bottom-0 grid min-h-[256px] place-items-center rounded-xl bg-dark-900/60 text-sm text-gray-300" role="status" aria-live="polite">
+      {{ t('candleChart.loading') }}
+    </div>
+    <div v-else-if="chartError" class="absolute inset-x-0 bottom-0 grid min-h-[256px] place-items-center rounded-xl bg-dark-900/90 p-6 text-center" role="alert">
+      <div>
+        <div class="text-sm text-danger">{{ t('candleChart.loadFailed') }}: {{ chartError }}</div>
+        <button type="button" class="mt-3 rounded-lg bg-dark-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-dark-500" @click="loadData">{{ t('candleChart.retry') }}</button>
+      </div>
+    </div>
   </div>
 </template>

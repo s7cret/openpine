@@ -704,6 +704,7 @@ def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
         mock_result.raw_result = MagicMock()
         mock_result.raw_result.trades = []
         mock_result.raw_result.open_trades = []
+        mock_result.resume_state = None
         mock_result.status = "completed"
         mock_result.bars_processed = 1
         mock_result.uses_backtest_engine = True
@@ -789,6 +790,7 @@ def test_no_generated_ref_no_backend():
         mock_result.raw_result = MagicMock()
         mock_result.raw_result.trades = []
         mock_result.raw_result.open_trades = []
+        mock_result.resume_state = None
         mock_result.status = "completed"
         mock_result.bars_processed = 1
         mock_result.uses_backtest_engine = True

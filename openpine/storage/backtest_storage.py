@@ -46,7 +46,7 @@ class BacktestResultStore:
             MigrationRunner().run_migrations(self._storage)
         else:
             self._storage = storage
-        self._data_dir = config.data_dir / "backtests"
+        self._data_dir: Path = config.data_dir / "backtests"
         self._data_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
@@ -568,6 +568,31 @@ class BacktestResultStore:
         )
         self._storage.commit()
 
+    def recover_incomplete_runs(self) -> int:
+        """Fail runs that could not have survived the previous gateway process."""
+        now = int(time.time() * 1000)
+        cursor = self._storage.execute(
+            """
+            UPDATE backtest_runs SET
+                status = ?,
+                finished_at = ?,
+                error_message = ?,
+                updated_at = ?
+            WHERE status IN (?, ?, ?)
+            """,
+            (
+                "failed",
+                now,
+                "Gateway restarted before the backtest completed",
+                now,
+                "queued",
+                "running",
+                "cancelling",
+            ),
+        )
+        self._storage.commit()
+        return max(0, int(cursor.rowcount))
+
     def mark_cancelled(self, run_id: str, message: str = "Cancelled by user") -> None:
         """Mark a run as cancelled without deleting partial metadata."""
         now = int(time.time() * 1000)
@@ -692,14 +717,29 @@ class BacktestResultStore:
         except Exception:
             return stored_metrics or None
 
-    def list_trades(self, run_id: str) -> list[BacktestTrade]:
-        """List trades for a run."""
-        rows = self._storage.execute(
-            """
-            SELECT * FROM backtest_trades WHERE run_id = ? ORDER BY entry_time
-            """,
-            (run_id,),
-        ).fetchall()
+    def list_trades(
+        self, run_id: str, *, limit: int | None = None, offset: int = 0
+    ) -> list[BacktestTrade]:
+        """List trades for a run, optionally using a bounded SQL page."""
+        if limit is not None and limit < 1:
+            raise ValueError("limit must be positive")
+        if offset < 0:
+            raise ValueError("offset cannot be negative")
+        if limit is None:
+            rows = self._storage.execute(
+                """
+                SELECT * FROM backtest_trades WHERE run_id = ? ORDER BY entry_time
+                """,
+                (run_id,),
+            ).fetchall()
+        else:
+            rows = self._storage.execute(
+                """
+                SELECT * FROM backtest_trades
+                WHERE run_id = ? ORDER BY entry_time LIMIT ? OFFSET ?
+                """,
+                (run_id, limit, offset),
+            ).fetchall()
         return [self._row_to_trade(row) for row in rows]
 
     def list_artifacts(self, run_id: str) -> list[BacktestArtifact]:
@@ -717,7 +757,7 @@ class BacktestResultStore:
             "SELECT strategy_id FROM backtest_runs WHERE run_id = ?", (run_id,)
         ).fetchone()
         if row:
-            return row[0]
+            return str(row[0])
         return ""
 
     @staticmethod

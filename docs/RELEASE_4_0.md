@@ -1,6 +1,6 @@
-# Release 4.0.1 Checklist
+# Release 4.0.2 Checklist
 
-1. Publish/install sibling stack packages at immutable 4.0.1 commit SHAs.
+1. Publish/install sibling stack packages at immutable 4.0.2 commit SHAs.
 2. Run backend gate:
 
 ```bash
@@ -10,7 +10,7 @@ bash scripts/release_gate.sh
 3. Optionally build a deterministic source zip:
 
 ```bash
-python -m openpine.distribution build-zip --root . --output openpine-4.0.1.zip --archive-root openpine-4.0.1
+python -m openpine.distribution build-zip --root . --output openpine-4.0.2.zip --archive-root openpine-4.0.2
 ```
 
 4. Run cross-repo smoke:

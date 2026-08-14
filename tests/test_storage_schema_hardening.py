@@ -49,7 +49,7 @@ def test_migrations_apply_index_profile_and_event_compat_columns(
             ).fetchall()
         )
         assert metadata["schema_contract"] == "openpine.sqlite.v4"
-        assert metadata["schema_index_profile"] == "openpine.sqlite.v4.indexes.011"
+        assert metadata["schema_index_profile"] == "openpine.sqlite.v4.indexes.019"
         report = schema_health(storage)
         assert report.ok
         assert report.index_count >= len(REQUIRED_INDEXES)

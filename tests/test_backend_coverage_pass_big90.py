@@ -369,7 +369,10 @@ def test_live_runner_mini_backtest_success_resume_and_fallback(monkeypatch):
     store = Store(snapshot)
     runner = lr.LiveStrategyRunner(orchestrator=SimpleNamespace(load_bars=lambda query: _series((0, 60_000, 120_000, 180_000))), artifact_store=ArtifactStore(), state_store=store, storage=_OrderStorage())
     orders = runner._run_mini_backtest(strategy, 180_000)
-    assert orders and len(orders) == 2
+    # A successful resumed pass is authoritative even when it emits no orders.
+    # Replaying the full window here would duplicate historical signals.
+    assert orders == []
+    assert FakeAdapter.calls == 1
     assert store.saved
 
     # resume replay error triggers full-window retry branch

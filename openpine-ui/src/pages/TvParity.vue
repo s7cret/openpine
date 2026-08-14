@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getDataMetadata,
   getStrategies,
+  deleteTvParityRun,
   getTvParityRun,
   getTvParitySummaryCards,
   listTvParityRuns,
@@ -13,7 +14,9 @@ import {
   type TvParityHistoryEntry,
   type TvParitySummaryCards,
 } from '@/api/client'
+import { downloadApiResource } from '@/api/auth'
 import { EMPTY_MARKET_METADATA, exchangeLabel } from '@/lib/marketMetadata'
+import { createTerminalPoller } from '@/lib/terminalPolling'
 import TvParityVisualization from '@/components/TvParityVisualization.vue'
 
 const { t } = useI18n()
@@ -32,6 +35,30 @@ const lockedPeriod = ref<{ from_time: number; to_time: number } | null>(null)
 const loading = ref(false)
 const runLoading = ref(false)
 const status = ref('')
+
+const runPoller = createTerminalPoller({
+  intervalMs: 1_500,
+  poll: async () => {
+    const runId = result.value?.run_id
+    if (!runId) return { status: 'cancelled' }
+    const { data } = await getTvParityRun(runId)
+    result.value = data
+    return data
+  },
+  getStatus: value => String(value?.status ?? ''),
+  onTerminal: async value => {
+    await fetchHistory()
+    if (value?.status === 'completed' && value?.run_id) await loadSummary(value.run_id)
+  },
+  onError: error => {
+    const apiError = error as { response?: { data?: { detail?: string } }; message?: string }
+    status.value = t('tvParity.runFailed', {
+      error: apiError.response?.data?.detail ?? apiError.message ?? String(error),
+    })
+  },
+})
+
+onUnmounted(() => runPoller.stop())
 
 const form = ref({
   source: 'tradingview_csv',
@@ -365,8 +392,8 @@ async function queueRun() {
     result.value = data
     lockedPeriod.value = data.locked_period ?? lockedPeriod.value
     status.value = t('tvParity.queued', { id: data.run_id })
-    setTimeout(() => refreshResult(data.run_id), 1500)
-    fetchHistory()
+    runPoller.start()
+    void fetchHistory()
   } catch (err: any) {
     status.value = t('tvParity.runFailed', { error: err.response?.data?.detail ?? err.message })
   } finally {
@@ -377,8 +404,16 @@ async function queueRun() {
 async function refreshResult(runId?: string) {
   const id = runId ?? result.value?.run_id
   if (!id) return
-  const { data } = await getTvParityRun(id)
-  result.value = data
+  try {
+    const { data } = await getTvParityRun(id)
+    result.value = data
+    const state = String(data?.status ?? '').toLowerCase()
+    if (!['completed', 'failed', 'cancelled', 'canceled', 'done', 'error'].includes(state)) {
+      runPoller.start()
+    }
+  } catch (err: any) {
+    status.value = t('tvParity.runFailed', { error: err?.response?.data?.detail ?? err?.message ?? String(err) })
+  }
 }
 
 async function fetchHistory() {
@@ -416,9 +451,7 @@ async function deleteHistoryEntry(entry: TvParityHistoryEntry) {
   )
   if (!confirmed) return
   try {
-    await fetch(`/api/tv-parity/runs/${encodeURIComponent(entry.run_id)}`, {
-      method: 'DELETE',
-    })
+    await deleteTvParityRun(entry.run_id)
     history.value = history.value.filter((row) => row.run_id !== entry.run_id)
     if (result.value?.run_id === entry.run_id) {
       result.value = null
@@ -451,6 +484,16 @@ function fmtMs(ms?: number | null) {
 function artifactHref(artifact: any) {
   return artifact.download_url || tvParityArtifactUrl(result.value?.run_id ?? '', artifact.name)
 }
+
+async function downloadArtifact(artifact: any) {
+  try {
+    await downloadApiResource(artifactHref(artifact), artifact.name)
+  } catch (err: any) {
+    status.value = t('tvParity.history.loadFailed', {
+      error: err?.response?.data?.detail ?? err?.message ?? String(err),
+    })
+  }
+}
 </script>
 
 <template>
@@ -471,10 +514,10 @@ function artifactHref(artifact: any) {
       </button>
     </div>
 
-    <div v-if="status" class="rounded-lg border border-dark-500 bg-dark-800 px-3 py-2 text-sm text-gray-300">
+    <div v-if="status" class="rounded-lg border border-dark-500 bg-dark-800 px-3 py-2 text-sm text-gray-300" role="status" aria-live="polite">
       {{ status }}
     </div>
-    <div v-if="marketMetadataError" class="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+    <div v-if="marketMetadataError" class="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning" role="alert">
       {{ marketMetadataError }}
     </div>
 
@@ -927,19 +970,18 @@ function artifactHref(artifact: any) {
       </div>
 
       <div v-if="artifacts.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        <a
+        <button
           v-for="artifact in artifacts"
           :key="artifact.name"
-          :href="artifactHref(artifact)"
-          class="rounded-lg border border-dark-500 bg-dark-700/50 px-3 py-2 text-sm text-accent-light hover:border-accent"
-          target="_blank"
-          rel="noopener"
+          type="button"
+          class="rounded-lg border border-dark-500 bg-dark-700/50 px-3 py-2 text-left text-sm text-accent-light hover:border-accent"
+          @click="downloadArtifact(artifact)"
         >
           {{ artifact.name }}
           <span class="block min-w-0 truncate text-xs text-gray-500" :title="artifact.filename">
             {{ artifact.filename }} · {{ t('tvParity.artifactSize', { bytes: artifact.size_bytes }) }}
           </span>
-        </a>
+        </button>
       </div>
       <div v-else class="text-sm text-gray-500">{{ t('tvParity.artifactsEmpty') }}</div>
     </section>

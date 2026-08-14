@@ -4,10 +4,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 
 import api, {
+  deleteTvParityRun,
+  getGatewayHealth,
+  getPineCompileProgress,
   getTvParityRun,
   previewTvParityCandles,
   runTvParity,
   tvParityArtifactUrl,
+  tvParityReportUrl,
 } from './client'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -112,10 +116,32 @@ describe('TV Parity API and UI contracts', () => {
     spy.mockRestore()
   })
 
+  it.each([
+    ['html', '/api/tv-parity/runs/run%201/report.html'],
+    ['png', '/api/tv-parity/runs/run%201/report.png'],
+    ['zip', '/api/tv-parity/runs/run%201/export.zip'],
+  ] as const)('builds the backend report route for %s', (kind, expected) => {
+    expect(tvParityReportUrl('run 1', kind)).toBe(expected)
+  })
+
+  it('routes terminal compile polling and TV parity deletion through the central client', () => {
+    const getSpy = vi.spyOn(api, 'get').mockReturnValue({} as any)
+    const deleteSpy = vi.spyOn(api, 'delete').mockReturnValue({} as any)
+
+    getPineCompileProgress('compile src/1')
+    deleteTvParityRun('run 1/unsafe')
+    getGatewayHealth()
+
+    expect(getSpy).toHaveBeenCalledWith('/pine/compile/progress/compile%20src%2F1')
+    expect(deleteSpy).toHaveBeenCalledWith('/tv-parity/runs/run%201%2Funsafe')
+    expect(getSpy).toHaveBeenCalledWith('/health', { baseURL: '' })
+  })
+
   it('registers TV Parity Lab route and nav before Data', () => {
     const routerSource = readFileSync(resolve(srcRoot, 'router/index.ts'), 'utf8')
     const layoutSource = readFileSync(resolve(srcRoot, 'layouts/AppLayout.vue'), 'utf8')
     const pageSource = readFileSync(resolve(srcRoot, 'pages/TvParity.vue'), 'utf8')
+    const visualizationSource = readFileSync(resolve(srcRoot, 'components/TvParityVisualization.vue'), 'utf8')
 
     const routeIndex = routerSource.indexOf("path: '/tv-parity'")
     const dataRouteIndex = routerSource.indexOf("path: '/data'")
@@ -130,6 +156,11 @@ describe('TV Parity API and UI contracts', () => {
     expect(pageSource).toContain('runTvParity')
     expect(pageSource).toContain('lockedPeriod')
     expect(pageSource).toContain('artifact.download_url')
+    expect(pageSource).toContain('createTerminalPoller')
+    expect(pageSource).toContain('onUnmounted')
+    expect(visualizationSource).toContain('onUnmounted')
+    expect(visualizationSource).toContain("window.removeEventListener('resize', resizeCanvas)")
+    expect(pageSource).not.toContain('await fetch(')
   })
 
   it('keeps TV parity inputs app-controlled instead of browser-locale editable controls', () => {

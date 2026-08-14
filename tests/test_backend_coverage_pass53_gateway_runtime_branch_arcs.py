@@ -186,7 +186,7 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
         def is_alive(self):
             return self.alive.pop(0) if self.alive else False
 
-        def join(self):
+        def join(self, timeout=None):
             pass
 
     class Ctx:

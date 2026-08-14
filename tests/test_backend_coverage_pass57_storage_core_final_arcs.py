@@ -298,19 +298,20 @@ def test_migration_file_scan_skips_unmatched_sql_before_valid_file() -> None:
 
 def test_state_store_supersede_loop_keeps_inactive_previous_metadata(tmp_path: Path) -> None:
     store = StateStore(tmp_path / "state-save")
-    inactive = SnapshotMetadata(
-        snapshot_id="old-snapshot",
-        strategy_id="strategy-1",
-        artifact_id="artifact-1",
-        params_hash="hash-1",
-        instrument_key={"symbol": "BTC/USDT"},
-        timeframe={"timeframe": "1m"},
-        bar_time=1,
-        saved_at=1,
-        size_bytes=0,
-        status="invalid",
+    first = store.save_snapshot(
+        StrategyState(
+            strategy_id="strategy-1",
+            artifact_id="artifact-1",
+            params_hash="hash-1",
+            instrument_key={"symbol": "BTC/USDT"},
+            timeframe={"timeframe": "1m"},
+            state_data={"position": {}},
+            bar_time=1,
+            saved_at=1,
+        )
     )
-    store._snapshots["strategy-1"].append(inactive)
+    assert first is not None
+    store.mark_invalid("strategy-1")
 
     saved = store.save_snapshot(
         StrategyState(
@@ -326,11 +327,11 @@ def test_state_store_supersede_loop_keeps_inactive_previous_metadata(tmp_path: P
     )
 
     assert saved is not None
-    assert inactive.status == "invalid"
-    assert [meta.status for meta in store._snapshots["strategy-1"]] == [
-        "invalid",
-        "active",
-    ]
+    statuses = {
+        meta.snapshot_id: meta.status for meta in store.list_snapshots("strategy-1")
+    }
+    assert statuses[first.snapshot_id] == "invalid"
+    assert statuses[saved.snapshot_id] == "active"
 
 
 def test_state_store_ignores_index_entries_with_missing_snapshot_files(tmp_path: Path) -> None:

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   getTvParityChartData,
@@ -12,6 +12,7 @@ import {
   type TvParitySummaryCards,
   type TvParityTopMismatch,
 } from '@/api/client'
+import { downloadApiResource } from '@/api/auth'
 
 const props = defineProps<{ runId: string }>()
 const { t } = useI18n()
@@ -118,6 +119,10 @@ onMounted(() => {
   resizeCanvas()
   window.addEventListener('resize', resizeCanvas)
   loadAll()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', resizeCanvas)
 })
 
 watch(
@@ -325,6 +330,18 @@ function drillIntoMismatch(mismatch: TvParityTopMismatch) {
   scrubTo.value = mismatch.bar_time + 7 * 24 * 60 * 60 * 1000
   onScrubChange('from')
 }
+async function downloadReport(kind: 'html' | 'png' | 'zip') {
+  error.value = ''
+  try {
+    await downloadApiResource(
+      tvParityReportUrl(props.runId, kind),
+      { filename: `openpine-tv-parity-${props.runId}.${kind}` },
+    )
+  } catch (cause: any) {
+    error.value = cause?.response?.data?.detail ?? cause?.message ?? String(cause)
+  }
+}
+
 </script>
 
 <template>
@@ -334,32 +351,31 @@ function drillIntoMismatch(mismatch: TvParityTopMismatch) {
         {{ t('tvParity.viz.title') }}
       </h2>
       <div class="flex flex-wrap items-center gap-2">
-        <a
-          :href="tvParityReportUrl(runId, 'html')"
-          target="_blank"
-          rel="noopener"
+        <button
+          type="button"
           class="rounded border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent-light hover:border-accent"
+          @click="downloadReport('html')"
         >
           {{ t('tvParity.viz.openHtml') }}
-        </a>
-        <a
-          :href="tvParityReportUrl(runId, 'png')"
-          target="_blank"
-          rel="noopener"
+        </button>
+        <button
+          type="button"
           class="rounded border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent-light hover:border-accent"
+          @click="downloadReport('png')"
         >
           {{ t('tvParity.viz.openPng') }}
-        </a>
-        <a
-          :href="tvParityReportUrl(runId, 'zip')"
+        </button>
+        <button
+          type="button"
           class="rounded border border-accent/40 bg-accent/10 px-2 py-1 text-xs text-accent-light hover:border-accent"
+          @click="downloadReport('zip')"
         >
           {{ t('tvParity.viz.downloadZip') }}
-        </a>
+        </button>
       </div>
     </div>
 
-    <div v-if="error" class="rounded border border-error/40 bg-error/10 px-3 py-2 text-xs text-error">
+    <div v-if="error" class="rounded border border-error/40 bg-error/10 px-3 py-2 text-xs text-error" role="alert">
       {{ error }}
     </div>
 

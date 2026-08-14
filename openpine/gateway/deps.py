@@ -51,6 +51,18 @@ class GatewayState:
         self.pine_registry = SQLitePineSourceRegistry(self.config.sqlite_path)
         self.strategy_registry = SQLiteStrategyRegistry(self.config.sqlite_path)
         self.backtest_store = BacktestResultStore(self.storage)
+        recover_incomplete_runs = getattr(
+            self.backtest_store, "recover_incomplete_runs", None
+        )
+        recovered_backtests = (
+            recover_incomplete_runs() if callable(recover_incomplete_runs) else 0
+        )
+        if recovered_backtests:
+            from openpine._compat import structlog
+
+            structlog.get_logger(__name__).warning(
+                "incomplete_backtests_recovered", count=recovered_backtests
+            )
         self.account_manager = AccountManager(self.storage)
         self.order_manager = OrderManager(self.storage)
         # EventBus may fail if events table schema is old (pre-gateway).

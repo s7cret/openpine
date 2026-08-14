@@ -1,0 +1,26 @@
+[Unit]
+Description=OpenPine immutable Web UI
+After=network-online.target openpine-api.service
+Wants=network-online.target
+Requires=openpine-api.service
+PartOf=openpine-api.service
+
+[Service]
+Type=simple
+# Deployment replaces __OPENPINE_UI_RELEASE__ with an immutable release directory.
+WorkingDirectory=__OPENPINE_UI_RELEASE__
+Environment=OPENPINE_UI_HOST=0.0.0.0
+Environment=OPENPINE_UI_PORT=1888
+Environment=OPENPINE_API_TARGET=http://127.0.0.1:8080
+Environment=OPENPINE_UI_STATIC_ROOT=__OPENPINE_UI_RELEASE__/dist
+ExecStart=__OPENPINE_UI_RELEASE__/run-production.sh
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=__OPENPINE_UI_RELEASE__
+
+[Install]
+WantedBy=default.target

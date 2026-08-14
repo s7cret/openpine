@@ -1,13 +1,13 @@
 {
   "schema": "openpine.stack-lock.v1",
-  "release": "4.0.1",
+  "release": "4.0.2",
   "components": [
     {
       "name": "openpine",
       "package": "openpine",
       "repository": "s7cret/openpine",
-      "version": "4.0.1",
-      "tree_sha256": "09f25c64f9ad09bc19572d1208c3120adc1099733c80c38f56a7abc5fcd802ad",
+      "version": "4.0.2",
+      "tree_sha256": "2ccfa97a314c700c92cc614e256937fa16326bbe786b14690112b8f711d6031c",
       "contracts": {
         "version_api": "openpine.version.v1"
       }
@@ -16,9 +16,9 @@
       "name": "pine2ast",
       "package": "pine2ast",
       "repository": "s7cret/pine2ast",
-      "version": "4.0.1",
-      "commit": "b7b52d3399afc2641ad4d9623e5c63a421588c6c",
-      "tree_sha256": "d9128262d3993c93c19825aacdb9cd7bcb067c438c6de9e7691d4b23f82f1c55",
+      "version": "4.0.2",
+      "commit": "c57323351a1e638e0337e1be247883da2570ab28",
+      "tree_sha256": "4f05344a48aae9d90a4d94ec467bdea3d915b4ae24acca7faa1fe9320c581670",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "frontend": "openpine.frontend.v1",
@@ -29,9 +29,9 @@
       "name": "ast2python",
       "package": "ast2python",
       "repository": "s7cret/ast2python",
-      "version": "4.0.1",
-      "commit": "ea03d1fc9a094a13f4ecd630bf67dd14a12d72e6",
-      "tree_sha256": "c66cd275d984f2c4636cac9ce69f6c80435550e25c7f05a47929b54c6709be58",
+      "version": "4.0.2",
+      "commit": "e95fa8a3746caf641c847a38ead551e9d5f67c3f",
+      "tree_sha256": "3f71e33228a1dcee5bf52e130e45d1b26e4fae9a75f11eb41c304677807ca864",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "runtime": "1.4"
@@ -41,9 +41,9 @@
       "name": "pinelib",
       "package": "pinelib",
       "repository": "s7cret/pinelib",
-      "version": "4.0.1",
-      "commit": "38987ec94bde5158ea379b45485b7ceb8614b30b",
-      "tree_sha256": "90588c6d928a3d15e7d370667a4a56f2fdfcb9a279893a5a61906bcdaa280be3",
+      "version": "4.0.2",
+      "commit": "e42ccf881fbafb2c06311bcf8ba8435d055afea4",
+      "tree_sha256": "0f746ef57253621b546da75f50cc1d8a1ad29151fd75140d9088c682f654bd35",
       "contracts": {
         "runtime": "1.4"
       }
@@ -52,9 +52,9 @@
       "name": "backtest_engine",
       "package": "backtest-engine",
       "repository": "s7cret/backtest_engine",
-      "version": "4.0.1",
-      "commit": "7d9ff8befef2295d2a87b59eb272c051761275ee",
-      "tree_sha256": "9f429beb741005c2b3d962ad1312a425e13b064506f7e1911c58d6c83a41b36e",
+      "version": "4.0.2",
+      "commit": "b1457ee8757047a8bdf39f718cd2f4b8590c7323",
+      "tree_sha256": "74332c1deda837fc0e4c7878897c1926f8ce7ff7ba876ffc9627dd87f58511d8",
       "contracts": {
         "tick_replay": "deterministic-explicit-v1"
       }
@@ -63,9 +63,9 @@
       "name": "marketdata_provider",
       "package": "marketdata-provider",
       "repository": "s7cret/marketdata-provider",
-      "version": "4.0.1",
-      "commit": "a8f0b5626c7ec227d08e9d0157b191bd2a50ddd4",
-      "tree_sha256": "a9abcd2512a1fa57f220b526d729def03f6cb44b7ff60c979bb3b10dfd7ae761",
+      "version": "4.0.2",
+      "commit": "c943348f88f8af52b11a2c9fbcaca1b8e1d7e244",
+      "tree_sha256": "fe2bfa7ff74d223e11de595ebb71252b46434f3f9c08ac0f6114de4b78f980d6",
       "contracts": {
         "runtime": "1.4",
         "segment_manifest": "stage-d-csv-2"
@@ -75,9 +75,9 @@
       "name": "optimizer",
       "package": "optimizer",
       "repository": "s7cret/optimizer",
-      "version": "4.0.1",
-      "commit": "edd4b1d44ef00592bccaa80bf65e6f776563e902",
-      "tree_sha256": "379a6c78de36798ba8d6bcbb5270c853d3f6b91a2f9b785467efe9d7cfdffbc5",
+      "version": "4.0.2",
+      "commit": "73d67934d078cb97a4947cc7b0b12665c4086099",
+      "tree_sha256": "c0f7e23b458d01eaf60e8891305a037482c5d79035d4b865e78589f5c9d8fb97",
       "contracts": {}
     }
   ]

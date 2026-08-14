@@ -6,6 +6,7 @@ import DateRangePicker from '@/components/DateRangePicker.vue'
 import { coverageRangeLabels } from '@/lib/coverageRanges'
 import { healthStatusClass, type DataHealthPayload } from '@/lib/dataHealth'
 import { loadDataSummaryState } from '@/lib/dataSummaryState'
+import { createVisibilityPoller } from '@/lib/visibilityPoller'
 
 const { t } = useI18n()
 
@@ -46,9 +47,6 @@ const backfillFrom = ref('')
 const backfillTo = ref('')
 const backfillTimeframe = ref('1m')
 const backfillPollJobs = ref<Record<string, string>>({})
-let summaryTimer: ReturnType<typeof setInterval> | null = null
-let backfillPollTimer: ReturnType<typeof setInterval> | null = null
-let backfillPollInFlight = false
 
 const series = computed(() => summary.value?.series ?? [])
 const sourceSeries = computed(() => {
@@ -96,12 +94,11 @@ const visibleTotalBars = computed(() => visibleSeries.value.reduce((total: numbe
 const orders = computed(() => summary.value?.orders ?? { total: 0, by_symbol: [] })
 
 onMounted(() => {
-  load()
-  summaryTimer = setInterval(() => load(false), 30000)
+  summaryPoller.start()
 })
 onUnmounted(() => {
-  if (summaryTimer) clearInterval(summaryTimer)
-  if (backfillPollTimer) clearInterval(backfillPollTimer)
+  summaryPoller.stop()
+  backfillPoller.stop()
 })
 
 watch(discoverExchange, () => {
@@ -155,6 +152,11 @@ async function load(showSpinner = true) {
     loading.value = false
   }
 }
+
+const summaryPoller = createVisibilityPoller({
+  poll: async () => { await load(false) },
+  intervalMs: 30_000,
+})
 
 async function refreshSeries(id: string) {
   actionId.value = id
@@ -222,52 +224,48 @@ function normalizeBackfillJob(data: any) {
 
 function startBackfillPolling(rowId: string, jobId: string) {
   backfillPollJobs.value = { ...backfillPollJobs.value, [jobId]: rowId }
-  if (!backfillPollTimer) backfillPollTimer = setInterval(() => { void pollBackfillJobs() }, 2000)
-  void pollBackfillJobs()
+  if (backfillPoller.active()) void backfillPoller.pollNow()
+  else backfillPoller.start()
 }
 
 function stopBackfillPollingIfIdle() {
-  if (Object.keys(backfillPollJobs.value).length === 0 && backfillPollTimer) {
-    clearInterval(backfillPollTimer)
-    backfillPollTimer = null
-  }
+  if (Object.keys(backfillPollJobs.value).length === 0) backfillPoller.stop()
 }
 
 async function pollBackfillJobs() {
-  if (backfillPollInFlight) return
   const entries = Object.entries(backfillPollJobs.value)
   if (!entries.length) {
     stopBackfillPollingIfIdle()
     return
   }
-  backfillPollInFlight = true
-  try {
-    const nextJobs = { ...backfillPollJobs.value }
-    let shouldReload = false
-    for (const [jobId, rowId] of entries) {
-      try {
-        const { data } = await getDataBackfillJob(jobId)
-        const normalized = normalizeBackfillJob(data)
-        actionStatus.value = { ...actionStatus.value, [rowId]: normalized }
-        if (isTerminalJobStatus(normalized.status)) {
-          delete nextJobs[jobId]
-          if (normalized.status === 'done') shouldReload = true
-        }
-      } catch (e: any) {
-        actionStatus.value = {
-          ...actionStatus.value,
-          [rowId]: { status: 'failed', pct: 0, message: apiErrorMessage(e, t('data.backfillFailed')) },
-        }
+  const nextJobs = { ...backfillPollJobs.value }
+  let shouldReload = false
+  for (const [jobId, rowId] of entries) {
+    try {
+      const { data } = await getDataBackfillJob(jobId)
+      const normalized = normalizeBackfillJob(data)
+      actionStatus.value = { ...actionStatus.value, [rowId]: normalized }
+      if (isTerminalJobStatus(normalized.status)) {
         delete nextJobs[jobId]
+        if (normalized.status === 'done') shouldReload = true
       }
+    } catch (e: any) {
+      actionStatus.value = {
+        ...actionStatus.value,
+        [rowId]: { status: 'failed', pct: 0, message: apiErrorMessage(e, t('data.backfillFailed')) },
+      }
+      delete nextJobs[jobId]
     }
-    backfillPollJobs.value = nextJobs
-    if (shouldReload) await load(false)
-  } finally {
-    backfillPollInFlight = false
-    stopBackfillPollingIfIdle()
   }
+  backfillPollJobs.value = nextJobs
+  if (shouldReload) await load(false)
+  stopBackfillPollingIfIdle()
 }
+
+const backfillPoller = createVisibilityPoller({
+  poll: pollBackfillJobs,
+  intervalMs: 2_000,
+})
 
 async function runBackfill() {
   const row = backfillRow.value
@@ -446,7 +444,7 @@ function statusClass(status: string) {
           <h2 class="text-sm font-semibold text-gray-300">{{ t('data.exchangeCatalog') }}</h2>
           <p class="text-xs text-gray-500">{{ t('data.exchangeCatalogDesc') }}</p>
         </div>
-        <RouterLink to="/settings" class="text-xs text-accent hover:text-accent-light">{{ t('data.openSettings') }}</RouterLink>
+        <RouterLink to="/settings" class="text-xs text-accent-light hover:text-indigo-300">{{ t('data.openSettings') }}</RouterLink>
       </div>
       <div class="p-4 space-y-4">
         <div class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
@@ -503,10 +501,10 @@ function statusClass(status: string) {
         <span class="text-xs text-gray-500">{{ t('data.discoverEndpoint') }}</span>
       </div>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_1.4fr_auto]">
-        <select v-model="discoverExchange" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+        <select v-model="discoverExchange" :aria-label="t('data.allExchanges')" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
           <option v-for="exchange in exchangeOptions" :key="exchange.id" :value="exchange.id">{{ exchange.name }}</option>
         </select>
-        <select v-model="discoverMarket" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+        <select v-model="discoverMarket" :aria-label="t('data.allMarkets')" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
           <option v-for="market in discoverMarketOptions" :key="market.id" :value="market.id">{{ market.label }}</option>
         </select>
         <input
@@ -556,19 +554,19 @@ function statusClass(status: string) {
         <button class="self-start rounded bg-dark-600 px-2 py-1 text-xs text-gray-300 hover:bg-dark-500" @click="filterExchange = ''; filterMarket = ''; filterTimeframe = ''; filterStatus = ''">{{ t('data.reset') }}</button>
       </div>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <select v-model="filterExchange" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+        <select v-model="filterExchange" :aria-label="t('data.allExchanges')" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
           <option value="">{{ t('data.allExchanges') }}</option>
           <option v-for="exchange in exchangeOptions" :key="exchange.id" :value="exchange.id">{{ exchange.name }}</option>
         </select>
-        <select v-model="filterMarket" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+        <select v-model="filterMarket" :aria-label="t('data.allMarkets')" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
           <option value="">{{ t('data.allMarkets') }}</option>
           <option v-for="market in marketOptions" :key="market.id" :value="market.id">{{ market.id }}</option>
         </select>
-        <select v-model="filterTimeframe" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+        <select v-model="filterTimeframe" :aria-label="t('data.allTimeframes')" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
           <option value="">{{ t('data.allTimeframes') }}</option>
           <option v-for="tf in timeframeOptions" :key="tf" :value="tf">{{ tf }}</option>
         </select>
-        <select v-model="filterStatus" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+        <select v-model="filterStatus" :aria-label="t('data.allStatuses')" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
           <option value="">{{ t('data.allStatuses') }}</option>
           <option v-for="status in statusOptions" :key="status" :value="status">{{ status }}</option>
         </select>
@@ -771,11 +769,17 @@ function statusClass(status: string) {
       </div>
     </div>
 
-    <div v-if="backfillDialog" class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 pb-4 sm:items-center sm:pb-0">
-      <div class="w-full max-w-md rounded-xl border border-dark-500 bg-dark-800 p-4 shadow-2xl">
+    <div
+      v-if="backfillDialog"
+      class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-4 pb-4 sm:items-center sm:pb-0"
+      role="presentation"
+      @click.self="backfillDialog = null"
+      @keydown.esc="backfillDialog = null"
+    >
+      <div class="w-full max-w-md rounded-xl border border-dark-500 bg-dark-800 p-4 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="backfill-dialog-title">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <h3 class="text-sm font-semibold text-gray-200">{{ t('data.backfillTitle') }}</h3>
+            <h3 id="backfill-dialog-title" class="text-sm font-semibold text-gray-200">{{ t('data.backfillTitle') }}</h3>
             <div class="mt-1 truncate font-mono text-xs text-gray-500">
               {{ backfillRow?.exchange }} / {{ backfillRow?.market_type }} / {{ backfillRow?.symbol }} / {{ backfillTimeframe }}
             </div>
@@ -784,7 +788,7 @@ function statusClass(status: string) {
         </div>
         <div class="mt-4 grid gap-2">
           <div class="text-xs text-gray-500">{{ t('data.timeframe') }}</div>
-          <select v-model="backfillTimeframe" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
+          <select v-model="backfillTimeframe" :aria-label="t('data.timeframe')" class="rounded-lg border border-dark-500 bg-dark-700 px-3 py-2 text-sm text-gray-200">
             <option v-for="tf in backfillTimeframeOptions" :key="tf" :value="tf">{{ tf }}</option>
           </select>
         </div>

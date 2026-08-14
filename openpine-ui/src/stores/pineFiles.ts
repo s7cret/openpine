@@ -7,6 +7,9 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
   const currentContent = ref('')
   const loading = ref(false)
   const compiling = ref<Set<string>>(new Set())
+  const compileOperations = ref<Record<string, string>>({})
+  const compileProgress = ref<Record<string, any>>({})
+  const compileErrors = ref<Record<string, string>>({})
 
   async function fetchAll() {
     loading.value = true
@@ -48,6 +51,8 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
           const compileResult = await api.compilePineFile(sourceId)
           const compileData = compileResult?.data ?? {}
           if (compileData.status === 'queued') {
+            compileOperations.value[sourceId] = compileData.operation_id
+            delete compileErrors.value[sourceId]
             await fetchAll()
             return { sourceId, compileQueued: true, operationId: compileData.operation_id }
           }
@@ -64,6 +69,30 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
       const msg = e?.response?.data?.detail ?? e?.message ?? 'Unknown error'
       console.error('Create pine file failed:', e)
       return { error: `Failed to create: ${msg}` }
+    }
+  }
+
+  async function pollCompileOperations() {
+    const active = Object.entries(compileOperations.value)
+    for (const [sourceId, operationId] of active) {
+      try {
+        const { data } = await api.getPineCompileProgress(operationId)
+        if (!data) continue
+        compileProgress.value[sourceId] = data
+        const status = String(data.status ?? '').toLowerCase()
+        if (['completed', 'done', 'failed', 'cancelled', 'canceled', 'error'].includes(status)) {
+          delete compileOperations.value[sourceId]
+          compiling.value = new Set([...compiling.value].filter(id => id !== sourceId))
+          if (['failed', 'error'].includes(status)) {
+            compileErrors.value[sourceId] = data.message ?? 'Compile failed'
+          } else {
+            delete compileErrors.value[sourceId]
+            await fetchAll()
+          }
+        }
+      } catch (e: any) {
+        compileErrors.value[sourceId] = e?.response?.data?.detail ?? e?.message ?? 'Compile status unavailable'
+      }
     }
   }
 
@@ -98,5 +127,19 @@ export const usePineFilesStore = defineStore('pineFiles', () => {
     }
   }
 
-  return { items, currentContent, loading, compiling, fetchAll, fetchContent, create, remove, setArchived }
+  return {
+    items,
+    currentContent,
+    loading,
+    compiling,
+    compileOperations,
+    compileProgress,
+    compileErrors,
+    fetchAll,
+    fetchContent,
+    create,
+    pollCompileOperations,
+    remove,
+    setArchived,
+  }
 })

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import sqlite3
+import threading
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Self
@@ -21,6 +22,7 @@ class SQLiteStorage:
         self.path = Path(path)
         self.busy_timeout_ms = busy_timeout_ms
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.RLock()
         self._conn: sqlite3.Connection | None = None
         self._open()
 
@@ -48,45 +50,53 @@ class SQLiteStorage:
         self, sql: str, params: tuple[Any, ...] | dict[str, Any] = ()
     ) -> sqlite3.Cursor:
         """Execute a single query."""
-        return self.conn.execute(sql, params)
+        with self._lock:
+            return self.conn.execute(sql, params)
 
     def execute_many(
         self, sql: str, params_list: list[tuple[Any, ...] | dict[str, Any]]
     ) -> sqlite3.Cursor:
         """Execute a query with many parameter sets."""
-        return self.conn.executemany(sql, params_list)
+        with self._lock:
+            return self.conn.executemany(sql, params_list)
 
     def execute_script(self, sql: str) -> sqlite3.Cursor:
         """Execute a SQLite script atomically through the sqlite3 parser."""
-        return self.conn.executescript(sql)
+        with self._lock:
+            return self.conn.executescript(sql)
 
     def optimize(self) -> None:
         """Run SQLite lightweight query-planner maintenance."""
-        self.conn.execute("PRAGMA optimize")
+        with self._lock:
+            self.conn.execute("PRAGMA optimize")
 
     def commit(self) -> None:
         """Commit the current transaction."""
-        self.conn.commit()
+        with self._lock:
+            self.conn.commit()
 
     def rollback(self) -> None:
         """Rollback the current transaction."""
-        self.conn.rollback()
+        with self._lock:
+            self.conn.rollback()
 
     @contextlib.contextmanager
     def transaction(self) -> Iterator[None]:
         """Context manager for atomic operations."""
-        try:
-            yield
-            self.commit()
-        except Exception:
-            self.rollback()
-            raise
+        with self._lock:
+            try:
+                yield
+                self.commit()
+            except Exception:
+                self.rollback()
+                raise
 
     def close(self) -> None:
         """Close the database connection."""
-        if self._conn is not None:
-            self._conn.close()
-            self._conn = None
+        with self._lock:
+            if self._conn is not None:
+                self._conn.close()
+                self._conn = None
 
     def __enter__(self) -> Self:
         return self

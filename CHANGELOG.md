@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.0.2
+
+- Added authenticated LAN-safe API/WebSocket access, immutable production UI packaging, strict browser/API contracts, and expanded backend/UI accessibility gates.
+- Added bounded backtest process-tree supervision, cancellation, persistent idempotency ownership, safe resume-state encoding, and incremental order cursors.
+- Integrated market-data hot-path optimizations and pinned all seven coordinated 4.0.2 component identities.
+
 ## 4.0.1
 
 - Added bounded background-worker supervision with zombie reaping, restart backoff/budget, truthful health, and fail-safe strategy pause/disable transitions.

@@ -1,0 +1,23 @@
+{
+  "http": [
+    {
+      "method": "GET",
+      "path": "/api/tv-parity/runs/{run_id}/artifacts/{artifact_name}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tv-parity/runs/{run_id}/report.html"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tv-parity/runs/{run_id}/report.png"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tv-parity/runs/{run_id}/export.zip"
+    }
+  ],
+  "websocket": [
+    "/api/ws/events"
+  ]
+}

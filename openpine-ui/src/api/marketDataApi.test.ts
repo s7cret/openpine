@@ -9,8 +9,9 @@ const here = dirname(fileURLToPath(import.meta.url))
 const srcRoot = resolve(here, '..')
 
 describe('provider-backed market data API', () => {
-  it('routes chart klines through the OpenPine gateway', () => {
+  it('caps chart klines at 5k bars and forwards cancellation to the gateway request', () => {
     const spy = vi.spyOn(api, 'get').mockReturnValue({} as any)
+    const controller = new AbortController()
 
     getDataKlines({
       exchange: 'bybit',
@@ -20,7 +21,7 @@ describe('provider-backed market data API', () => {
       start_time: 1,
       end_time: 2,
       limit: 200000,
-    })
+    }, controller.signal)
 
     expect(spy).toHaveBeenCalledWith('/data/klines', {
       params: {
@@ -30,8 +31,9 @@ describe('provider-backed market data API', () => {
         interval: '1h',
         start_time: 1,
         end_time: 2,
-        limit: 200000,
+        limit: 5000,
       },
+      signal: controller.signal,
     })
     spy.mockRestore()
   })
@@ -82,6 +84,15 @@ describe('provider-backed market data API', () => {
     expect(chartSource).not.toContain('binanceKlinesRequestUrl')
     expect(strategiesSource).not.toContain('@/api/binance')
     expect(strategiesSource).not.toContain('binanceTicker24hUrl')
+  })
+
+  it('cancels superseded chart loads and renders a visible load failure', () => {
+    const chartSource = readFileSync(resolve(srcRoot, 'components/CandleChart.vue'), 'utf8')
+
+    expect(chartSource).toContain('klineRequests.begin()')
+    expect(chartSource).toContain('klineRequests.cancel()')
+    expect(chartSource).toContain('chartError')
+    expect(chartSource).toContain('role="alert"')
   })
 
   it('does not ship fake market metadata fallbacks or page-level console logging', () => {

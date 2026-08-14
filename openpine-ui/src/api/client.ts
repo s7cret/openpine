@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { applyApiAuth, notifyUnauthorized } from './auth'
 import { apiPath } from './paths'
 import type { DataHealthPayload } from '@/lib/dataHealth'
 import type { MarketMetadataPayload } from '@/lib/marketMetadata'
@@ -13,14 +14,25 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+api.interceptors.request.use((config) => applyApiAuth(config))
+
 api.interceptors.response.use(
   (res) => res,
-  (err) => Promise.reject(err),
+  (err) => {
+    if (err?.response?.status === 401) notifyUnauthorized()
+    return Promise.reject(err)
+  },
 )
 
 export default api
 
 // Dashboard
+export type GatewayHealth = {
+  status: 'ok' | 'degraded' | string
+  version: string
+  runtime?: Record<string, unknown>
+}
+export const getGatewayHealth = () => api.get<GatewayHealth>('/health', { baseURL: '' })
 export const getDashboard = () => api.get('/dashboard')
 export const getSettings = () => api.get<SettingsPayload>('/settings')
 export const updateSettings = (data: SettingsUpdatePayload) => api.patch<SettingsPayload>('/settings', data)
@@ -37,9 +49,20 @@ export const getDataKlines = (params: {
   start_time: number
   end_time: number
   limit?: number
-}) => api.get('/data/klines', { params })
-export const getDataTicker24h = (params: { exchange: string; market_type: string; symbol: string }) =>
-  api.get('/data/ticker24h', { params })
+}, signal?: AbortSignal) => {
+  const requestedLimit = Number(params.limit ?? 5000)
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(5000, Math.floor(requestedLimit)))
+    : 5000
+  return api.get('/data/klines', {
+    params: { ...params, limit },
+    ...(signal ? { signal } : {}),
+  })
+}
+export const getDataTicker24h = (
+  params: { exchange: string; market_type: string; symbol: string },
+  signal?: AbortSignal,
+) => api.get('/data/ticker24h', { params, ...(signal ? { signal } : {}) })
 export async function searchMarketSymbols(query: string, exchange: string, marketType: string): Promise<MarketSymbolOption[]> {
   const { data } = await getDataSymbols({ exchange, market_type: marketType, query })
   return normalizeMarketSymbolOptions(data)
@@ -57,6 +80,8 @@ export const getPineFiles = () => api.get('/pine-sources')
 export const getPineFile = (id: string) => api.get(apiPath('/pine-sources', id))
 export const createPineFile = (data: { name: string; source_text: string; source_type?: string }) => api.post('/pine-sources', data)
 export const compilePineFile = (sourceId: string) => api.post(apiPath('/pine', sourceId, 'compile'))
+export const getPineCompileProgress = (operationId: string) =>
+  api.get(apiPath('/pine/compile/progress', operationId))
 export const getPineArtifacts = (sourceId: string) => api.get(apiPath('/pine', sourceId, 'artifacts'))
 export const previewDeletePineFile = (id: string) => api.get(apiPath('/pine-sources', id, 'delete-preview'))
 export const deletePineFile = (id: string) => api.delete(apiPath('/pine-sources', id))
@@ -65,7 +90,8 @@ export const unarchivePineFile = (id: string) => api.put(apiPath('/pine-sources'
 
 // Strategies
 export const getStrategies = () => api.get('/strategies')
-export const getStrategy = (id: string) => api.get(apiPath('/strategies', id))
+export const getStrategy = (id: string, signal?: AbortSignal) =>
+  api.get(apiPath('/strategies', id), signal ? { signal } : undefined)
 export const createStrategy = (data: any) => api.post('/strategies', data)
 export const updateStrategy = (id: string, data: any) => api.patch(apiPath('/strategies', id), data)
 export const previewDeleteStrategy = (id: string) => api.get(apiPath('/strategies', id, 'delete-preview'))
@@ -77,14 +103,21 @@ export const controlStrategy = (id: string, action: string) => api.post(apiPath(
 // Backtests
 export const getBacktests = () => api.get('/backtest/runs')
 export const getBacktest = (id: string) => api.get(apiPath('/backtest/runs', id))
-export const runBacktest = (data: any) => api.post('/backtest/run', data)
+export const runBacktest = (data: any, idempotencyKey: string) =>
+  api.post('/backtest/run', data, { headers: { 'Idempotency-Key': idempotencyKey } })
 export const estimateBacktest = (params: { strategy_id: string; from_time: string; to_time: string }) =>
   api.get('/backtest/estimate', { params })
 export const getBacktestProgress = (id: string) => api.get(apiPath('/backtest/progress', id))
-export const getBacktestRuns = (strategyId?: string, limit = 10) =>
-  api.get('/backtest/runs', { params: { strategy_id: strategyId, limit } })
-export const getBacktestTrades = (runId: string) =>
-  api.get(apiPath('/backtest/runs', runId, 'trades'))
+export const getBacktestRuns = (strategyId?: string, limit = 10, signal?: AbortSignal) =>
+  api.get('/backtest/runs', {
+    params: { strategy_id: strategyId, limit },
+    ...(signal ? { signal } : {}),
+  })
+export const getBacktestTrades = (runId: string, limit = 5000, offset = 0, signal?: AbortSignal) =>
+  api.get(apiPath('/backtest/runs', runId, 'trades'), {
+    params: { limit: Math.max(1, Math.min(5000, limit)), offset: Math.max(0, offset) },
+    ...(signal ? { signal } : {}),
+  })
 export const deleteBacktest = (runId: string) =>
   api.delete(apiPath('/backtest/runs', runId))
 export const controlBacktest = (runId: string, action: string) =>
@@ -250,7 +283,10 @@ export const getTvParityDiagnosticsCallouts = (runId: string) =>
   )
 
 export const tvParityReportUrl = (runId: string, kind: 'html' | 'png' | 'zip') =>
-  `/api${apiPath('/tv-parity/runs', runId, `report.${kind === 'zip' ? 'zip' : kind}`)}`
+  `/api${apiPath('/tv-parity/runs', runId, kind === 'zip' ? 'export.zip' : `report.${kind}`)}`
+
+export const deleteTvParityRun = (runId: string) =>
+  api.delete(apiPath('/tv-parity/runs', runId))
 
 export type TvParityHistoryEntry = {
   run_id: string
@@ -287,10 +323,17 @@ export const listTvParityRuns = (params?: {
 }) => api.get('/tv-parity/runs', { params })
 
 // Orders & Positions
-export const getOrders = (strategyId?: string, limit = 100) =>
-  api.get('/orders', { params: { strategy_id: strategyId, limit } })
-export const getPositions = (strategyId: string) =>
-  api.get(apiPath('/positions', strategyId))
+export const getOrders = (
+  strategyId?: string,
+  limit = 100,
+  updatedAfter?: number,
+  signal?: AbortSignal,
+) => api.get('/orders', {
+  params: { strategy_id: strategyId, limit, updated_after: updatedAfter },
+  ...(signal ? { signal } : {}),
+})
+export const getPositions = (strategyId: string, signal?: AbortSignal) =>
+  api.get(apiPath('/positions', strategyId), signal ? { signal } : undefined)
 
 // Achievements
 export interface AchievementItem {

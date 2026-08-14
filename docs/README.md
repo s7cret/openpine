@@ -1,6 +1,6 @@
 # OpenPine Backend Docs
 
-Canonical backend docs for the OpenPine 4.0.1 orchestration package:
+Canonical backend docs for the OpenPine 4.0.2 orchestration package:
 
 - `ARCHITECTURE.md` — backend boundaries and module map.
 - `DATABASE.md` — SQLite schema and migration policy.

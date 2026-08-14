@@ -354,7 +354,7 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
         def is_alive(self):
             return self.alive.pop(0) if self.alive else False
 
-        def join(self):
+        def join(self, timeout=None):
             pass
 
     class Ctx:
@@ -761,6 +761,43 @@ def test_live_runner_mini_backtest_resume_rebase_empty_and_optional_failures(mon
     empty_bars = SimpleNamespace(query=_series((0,)).query, bars=[])
     runner = lr.LiveStrategyRunner(orchestrator=SimpleNamespace(load_bars=lambda query: empty_bars), state_store=None)
     assert runner._run_mini_backtest(_strategy(), 60_000) == []
+
+
+def test_live_runner_valid_resume_with_no_order_runs_once(monkeypatch):
+    class EmptyResumeAdapter:
+        calls = 0
+
+        def run(self, *args, **kwargs):
+            type(self).calls += 1
+            assert kwargs.get("resume_state") is not None
+            return SimpleNamespace(
+                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
+                resume_state={"runtime_state": {}, "bar_index": 2},
+            )
+
+    _patch_live_runtime(monkeypatch, EmptyResumeAdapter)
+
+    class CountingOrchestrator:
+        def __init__(self):
+            self.calls = 0
+
+        def load_bars(self, query):
+            self.calls += 1
+            return _series((0, 60_000, 120_000))
+
+    orchestrator = CountingOrchestrator()
+    store = _StateStore(
+        SimpleNamespace(
+            bar_time=60_000,
+            state_data={"runtime_state": {}, "bar_index": 1},
+        )
+    )
+    runner = lr.LiveStrategyRunner(orchestrator=orchestrator, state_store=store)
+
+    assert runner._run_mini_backtest(_strategy(), 180_000) == []
+    assert orchestrator.calls == 1
+    assert EmptyResumeAdapter.calls == 1
+    assert store.saved
 
 
 def test_live_runner_mini_backtest_nonresume_error_and_resume_retry_empty(monkeypatch):

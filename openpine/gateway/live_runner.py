@@ -509,46 +509,6 @@ class LiveStrategyRunner:
 
             new_orders = self._extract_new_orders(result.raw_result, up_to_bar_time_ms)
             self._attach_risk_prices(strategy, new_orders)
-            if resume_state is not None and not new_orders:
-                start_ms = end_ms - lookback_ms
-                query = BarQuery(
-                    instrument=query.instrument,
-                    timeframe=tf,
-                    start_ms=start_ms,
-                    end_ms=end_ms,
-                    gap_policy="allow_with_metadata",
-                )
-                series = (
-                    self.orchestrator.load_bars(query)
-                    if self.orchestrator is not None
-                    else self._fetch_direct(query)
-                )
-                bars = list(series.bars)
-                if bars:
-                    config = BacktestRunConfig(
-                        **{**config.__dict__, "start_time": start_ms}
-                    )
-                    fallback_result = adapter.run(
-                        strategy_class,
-                        bars,
-                        config,
-                        params={},
-                        resume_state=None,
-                        runtime_data_provider=runtime_data_provider,
-                    )
-                    fallback_orders = self._extract_new_orders(
-                        fallback_result.raw_result, up_to_bar_time_ms
-                    )
-                    self._attach_risk_prices(strategy, fallback_orders)
-                    if fallback_orders:
-                        log.info(
-                            "live_runner.resume_zero_orders_fallback",
-                            strategy_id=strategy.strategy_id,
-                            bar_time=up_to_bar_time_ms,
-                            orders_count=len(fallback_orders),
-                        )
-                        result = fallback_result
-                        new_orders = fallback_orders
 
             self._save_resume_snapshot(
                 strategy,

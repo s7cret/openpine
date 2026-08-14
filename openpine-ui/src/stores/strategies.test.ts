@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,6 +23,7 @@ describe('strategies store detail lifecycle', () => {
     setActivePinia(createPinia())
     vi.mocked(api.getStrategy).mockReset()
     vi.mocked(api.getStrategies).mockReset()
+    vi.mocked(api.controlStrategy).mockReset()
     vi.mocked(api.archiveStrategy).mockReset()
     vi.mocked(api.unarchiveStrategy).mockReset()
   })
@@ -36,6 +40,22 @@ describe('strategies store detail lifecycle', () => {
     await expect(store.fetchOne('missing')).rejects.toThrow('not found')
     expect(store.current).toBeNull()
     consoleSpy.mockRestore()
+  })
+
+  it('clears stale detail before the next strategy request resolves', async () => {
+    vi.mocked(api.getStrategy).mockResolvedValueOnce({ data: { strategy_id: 'old', symbol: 'ETHUSDT' } } as any)
+    const store = useStrategiesStore()
+    await store.fetchOne('old')
+
+    let resolveNext!: (value: any) => void
+    vi.mocked(api.getStrategy).mockImplementationOnce(() => new Promise(resolve => { resolveNext = resolve }) as any)
+
+    const pending = store.fetchOne('new')
+
+    expect(store.current).toBeNull()
+    resolveNext({ data: { strategy_id: 'new', symbol: 'SOLUSDT' } })
+    await pending
+    expect(store.current?.strategy_id).toBe('new')
   })
 
   it('archives and restores a strategy through the API action', async () => {
@@ -59,5 +79,28 @@ describe('strategies store detail lifecycle', () => {
     expect(api.unarchiveStrategy).toHaveBeenCalledWith('strat-1')
     expect(store.items[0].archived).toBe(false)
     expect(store.items[0].enabled).toBe(false)
+  })
+
+  it('surfaces action failures for the Strategies page', async () => {
+    vi.mocked(api.controlStrategy).mockRejectedValueOnce(new Error('gateway refused start'))
+    const store = useStrategiesStore()
+
+    await store.control('strat-1', 'start')
+
+    expect(store.error).toBe('gateway refused start')
+  })
+
+  it('renders store/action errors and an accessible dismissible detail dialog', () => {
+    const here = dirname(fileURLToPath(import.meta.url))
+    const source = readFileSync(resolve(here, '../pages/Strategies.vue'), 'utf8')
+
+    expect(source).toContain('store.error')
+    expect(source).toContain('role="alert"')
+    expect(source).toContain('role="dialog"')
+    expect(source).toContain('aria-modal="true"')
+    expect(source).toContain('@keydown.esc')
+    expect(source).not.toContain('autoFillPineSource')
+    expect(source).toContain('v-if="detailStrategy"')
+    expect(source).not.toContain("store.current?.symbol ?? 'BTCUSDT'")
   })
 })

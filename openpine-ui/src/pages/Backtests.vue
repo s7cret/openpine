@@ -6,13 +6,14 @@ import { useStrategiesStore } from '@/stores/strategies'
 import DateRangePicker from '@/components/DateRangePicker.vue'
 import { formatDateTime } from '@/utils/time'
 import { confirmBacktestDelete, shouldStopBacktestPolling } from '@/lib/backtestUi'
+import { downloadApiResource } from '@/api/auth'
+import { createVisibilityPoller } from '@/lib/visibilityPoller'
 
 const { t } = useI18n()
 const btStore = useBacktestsStore()
 const stStore = useStrategiesStore()
 const showRun = ref(false)
 const expandedId = ref<string | null>(null)
-const progressTimer = ref<ReturnType<typeof setInterval> | null>(null)
 const activePollId = ref<string | null>(null)
 const runStatus = ref('')
 const runLoading = ref(false)
@@ -20,11 +21,30 @@ const estimate = ref<any>(null)
 const availability = ref<any>(null)
 const estimateLoading = ref(false)
 let estimateTimer: ReturnType<typeof setTimeout> | null = null
+const progressPoller = createVisibilityPoller({
+  poll: async () => {
+    const id = activePollId.value
+    if (!id) return
+    await btStore.fetchProgress(id)
+    if (shouldStopBacktestPolling(btStore.progress, runById(id))) {
+      stopProgressPolling(true)
+    }
+  },
+  intervalMs: 3_000,
+})
 
 const form = ref({ strategy_id: '', from_time: '', to_time: '', initial_capital: '' })
 const allAvailableFrom = computed(() => msToDate(availability.value?.earliest_available ?? availability.value?.effective_from))
 const selectableStrategies = computed(() => stStore.items.filter((item: any) => !item.archived))
 const selectedStrategy = computed(() => stStore.items.find((item: any) => (item.strategy_id ?? item.id) === form.value.strategy_id) ?? null)
+const runValidationMessage = computed(() => {
+  if (!form.value.strategy_id) return t('backtests.selectStrategyFirst')
+  if (selectedStrategy.value?.archived) return t('backtests.archivedStrategyUnavailable')
+  if (!form.value.from_time || !form.value.to_time) return t('backtests.selectDateRange')
+  if (form.value.initial_capital !== '' && Number(form.value.initial_capital) <= 0) return t('backtests.initialCapitalInvalid')
+  return ''
+})
+const runDisabled = computed(() => runLoading.value || Boolean(runValidationMessage.value))
 
 onMounted(() => {
   btStore.fetchAll()
@@ -32,7 +52,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (progressTimer.value) clearInterval(progressTimer.value)
+  progressPoller.stop()
   if (estimateTimer) clearTimeout(estimateTimer)
 })
 
@@ -53,9 +73,8 @@ watch(
 )
 
 async function runBacktest() {
-  if (!form.value.strategy_id) { runStatus.value = t('backtests.selectStrategyFirst'); return }
-  if (selectedStrategy.value?.archived) { runStatus.value = t('backtests.archivedStrategyUnavailable'); return }
-  if (!form.value.from_time || !form.value.to_time) { runStatus.value = t('backtests.selectDateRange'); return }
+  if (runLoading.value) return
+  if (runValidationMessage.value) { runStatus.value = runValidationMessage.value; return }
   runLoading.value = true
   runStatus.value = t('backtests.startingMessage')
   const payload: any = { ...form.value }
@@ -71,7 +90,7 @@ async function runBacktest() {
     pollProgress(result.run_id)
     setTimeout(() => runStatus.value = '', 2000)
   } else {
-    runStatus.value = t('backtests.startFailed')
+    runStatus.value = btStore.error || t('backtests.startFailed')
   }
 }
 
@@ -83,8 +102,7 @@ async function refreshEstimate() {
 }
 
 function stopProgressPolling(refresh = false) {
-  if (progressTimer.value) clearInterval(progressTimer.value)
-  progressTimer.value = null
+  progressPoller.stop()
   activePollId.value = null
   if (refresh) btStore.fetchAll()
 }
@@ -94,21 +112,13 @@ function runById(id: string) {
 }
 
 function pollProgress(id: string) {
-  if (progressTimer.value) clearInterval(progressTimer.value)
+  progressPoller.stop()
   if (shouldStopBacktestPolling(null, runById(id))) {
     stopProgressPolling(false)
     return
   }
   activePollId.value = id
-  // Immediate first poll
-  btStore.fetchProgress(id)
-  progressTimer.value = setInterval(async () => {
-    await btStore.fetchProgress(id)
-    const p = btStore.progress
-    if (shouldStopBacktestPolling(p, runById(id))) {
-      stopProgressPolling(true)
-    }
-  }, 3000)
+  progressPoller.start()
 }
 
 async function expandRun(id: string) {
@@ -146,6 +156,20 @@ async function deleteRun(run: any) {
   const id = confirmBacktestDelete(run)
   if (!id) return
   await btStore.deleteRun(id)
+}
+
+async function downloadBacktestArtifact(run: any, kind: 'equity' | 'report' | 'export') {
+  const id = run.run_id ?? run.id
+  if (!id) return
+  const extension = kind === 'equity' ? 'csv' : kind === 'report' ? 'html' : 'json'
+  try {
+    await downloadApiResource(
+      `/api/backtest/runs/${encodeURIComponent(id)}/${kind}`,
+      { filename: `openpine-backtest-${id}-${kind}.${extension}` },
+    )
+  } catch (cause: any) {
+    runStatus.value = cause?.response?.data?.detail ?? cause?.message ?? String(cause)
+  }
 }
 
 function msToDate(ms?: number | null) {
@@ -237,6 +261,10 @@ function effectiveRange(e: any) {
       </button>
     </div>
 
+    <div v-if="btStore.error" class="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+      {{ btStore.error }}
+    </div>
+
     <!-- Run Form -->
     <transition name="fade">
       <div v-if="showRun" class="bg-dark-800 rounded-xl border border-dark-500 p-4 space-y-3">
@@ -263,7 +291,7 @@ function effectiveRange(e: any) {
             <input
               v-model="form.initial_capital"
               type="number"
-              min="0"
+              min="0.00000001"
               step="any"
               :placeholder="t('backtests.initialCapitalPlaceholder')"
               class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
@@ -286,9 +314,10 @@ function effectiveRange(e: any) {
           </div>
         </div>
         <div class="flex gap-2 justify-end items-center">
-          <span v-if="runStatus" class="text-xs" :class="runStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ runStatus }}</span>
+          <span v-if="runStatus" class="text-xs" :class="btStore.error ? 'text-danger' : 'text-success'" role="status" aria-live="polite">{{ runStatus }}</span>
+          <span v-else-if="runValidationMessage" class="text-xs text-warning" role="status">{{ runValidationMessage }}</span>
           <button @click="showRun = false; runStatus = ''" class="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200">{{ t('common.cancel') }}</button>
-          <button @click="runBacktest" :disabled="runLoading" class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:opacity-50">
+          <button @click="runBacktest" :disabled="runDisabled" class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:cursor-not-allowed disabled:opacity-50">
             {{ runLoading ? t('backtests.starting') : t('backtests.startRun') }}
           </button>
         </div>
@@ -432,9 +461,9 @@ function effectiveRange(e: any) {
                   </div>
                 </div>
                 <div v-if="(run.status === 'done' || run.status === 'completed')" class="flex gap-2">
-                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/equity'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">{{ t('backtests.exportEquity') }}</a>
-                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/report'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">{{ t('backtests.exportReport') }}</a>
-                  <a :href="'/api/backtest/runs/' + (run.run_id ?? run.id) + '/export'" target="_blank" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300">{{ t('backtests.export') }}</a>
+                  <button type="button" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300" @click.stop="downloadBacktestArtifact(run, 'equity')">{{ t('backtests.exportEquity') }}</button>
+                  <button type="button" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300" @click.stop="downloadBacktestArtifact(run, 'report')">{{ t('backtests.exportReport') }}</button>
+                  <button type="button" class="px-3 py-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs text-gray-300" @click.stop="downloadBacktestArtifact(run, 'export')">{{ t('backtests.export') }}</button>
                 </div>
                 <div v-else class="text-xs text-gray-500">
                   {{ run.status === 'failed' ? t('backtests.failedNoArtifacts') : (run.status === 'cancelled' ? t('backtests.cancelledNoArtifacts') : t('backtests.stillRunning')) }}

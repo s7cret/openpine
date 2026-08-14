@@ -5,10 +5,18 @@ These are the public contract — API consumers depend on these shapes.
 
 from __future__ import annotations
 
+import json
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 # ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -45,11 +53,32 @@ class OrderStatus(str, Enum):
     REJECTED = "rejected"
 
 
+def _non_blank(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("must be a non-blank string")
+    return value
+
+
+NonBlankStr = Annotated[str, BeforeValidator(_non_blank)]
+
+
+def _object_json(value: str) -> str:
+    try:
+        parsed = json.loads(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("must be valid JSON") from exc
+    if not isinstance(parsed, dict):
+        raise ValueError("must encode a JSON object")
+    return value
+
+
 # ── Pine Sources ───────────────────────────────────────────────────────────────
 
 
 class PineSourceCreate(BaseModel):
     """Create a new Pine source file."""
+
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(..., min_length=1, max_length=256)
     source_text: str = Field(..., min_length=1)
@@ -57,14 +86,30 @@ class PineSourceCreate(BaseModel):
         default="strategy", pattern="^(strategy|indicator|library|unknown)$"
     )
 
+    _validate_non_blank = field_validator("name", "source_text")(_non_blank)
+
 
 class PineSourceUpdate(BaseModel):
     """Update an existing Pine source."""
 
-    name: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, max_length=256)
     source_text: str | None = None
-    source_type: str | None = None
+    source_type: str | None = Field(
+        default=None, pattern="^(strategy|indicator|library|unknown)$"
+    )
     archived: bool | None = None
+
+    _validate_non_blank = field_validator("name", "source_text")(_non_blank)
+
+    @model_validator(mode="after")
+    def validate_update(self) -> PineSourceUpdate:
+        if not self.model_fields_set:
+            raise ValueError("at least one update field is required")
+        if any(getattr(self, field_name) is None for field_name in self.model_fields_set):
+            raise ValueError("update fields must not be null")
+        return self
 
 
 class PineSourceResponse(BaseModel):
@@ -88,29 +133,53 @@ class PineSourceDetailResponse(PineSourceResponse):
 class StrategyCreate(BaseModel):
     """Create a new strategy instance from a compiled Pine source."""
 
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(..., min_length=1, max_length=256)
-    pine_id: str = Field(..., description="Pine source id (from /pine-sources)")
-    artifact_id: str = Field(..., description="Compiled artifact id")
+    pine_id: str = Field(
+        ..., min_length=1, description="Pine source id (from /pine-sources)"
+    )
+    artifact_id: str = Field(..., min_length=1, description="Compiled artifact id")
     symbol: str = Field(..., min_length=1, max_length=32)
     timeframe: str = Field(..., min_length=1, max_length=16)
-    exchange: str = Field(default="binance")
-    market_type: str = Field(default="spot")
+    exchange: str = Field(default="binance", min_length=1, max_length=64)
+    market_type: str = Field(default="spot", min_length=1, max_length=32)
     params_json: str = Field(default="{}")
     mode: StrategyMode = StrategyMode.PAPER
+
+    _validate_non_blank = field_validator(
+        "name", "pine_id", "artifact_id", "symbol", "timeframe", "exchange", "market_type"
+    )(_non_blank)
+    _validate_params_json = field_validator("params_json")(_object_json)
 
 
 class StrategyUpdate(BaseModel):
     """Partial update for a strategy."""
 
-    name: str | None = None
-    symbol: str | None = None
-    timeframe: str | None = None
-    exchange: str | None = None
-    market_type: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, max_length=256)
+    symbol: str | None = Field(default=None, max_length=32)
+    timeframe: str | None = Field(default=None, max_length=16)
+    exchange: str | None = Field(default=None, max_length=64)
+    market_type: str | None = Field(default=None, max_length=32)
     params_json: str | None = None
     mode: StrategyMode | None = None
     enabled: bool | None = None
     archived: bool | None = None
+
+    _validate_non_blank = field_validator(
+        "name", "symbol", "timeframe", "exchange", "market_type"
+    )(_non_blank)
+    _validate_params_json = field_validator("params_json")(_object_json)
+
+    @model_validator(mode="after")
+    def validate_update(self) -> StrategyUpdate:
+        if not self.model_fields_set:
+            raise ValueError("at least one update field is required")
+        if any(getattr(self, field_name) is None for field_name in self.model_fields_set):
+            raise ValueError("update fields must not be null")
+        return self
 
 
 class StrategyResponse(BaseModel):
@@ -145,14 +214,19 @@ class StrategyAction(BaseModel):
 class BacktestRunRequest(BaseModel):
     """Request to run a backtest."""
 
-    strategy_id: str
-    from_time: str = Field(..., description="ISO date or ms timestamp")
-    to_time: str = Field(..., description="ISO date or ms timestamp")
+    model_config = ConfigDict(extra="forbid")
+
+    strategy_id: str = Field(..., min_length=1)
+    from_time: str = Field(..., min_length=1, description="ISO date or ms timestamp")
+    to_time: str = Field(..., min_length=1, description="ISO date or ms timestamp")
     params_override: dict[str, Any] | None = None
-    warmup_bars: int = 0
+    warmup_bars: int = Field(default=0, ge=0)
     capture_plots: bool = False
     initial_capital: float | None = Field(
-        None, description="Override starting capital (defaults to strategy declaration)"
+        None,
+        gt=0,
+        allow_inf_nan=False,
+        description="Override starting capital (defaults to strategy declaration)",
     )
 
 
@@ -227,11 +301,13 @@ class BacktestEstimateResponse(BaseModel):
 
 
 class PaperStartRequest(BaseModel):
-    strategy_id: str
+    model_config = ConfigDict(extra="forbid")
+    strategy_id: NonBlankStr = Field(max_length=128)
 
 
 class LiveStartRequest(BaseModel):
-    strategy_id: str
+    model_config = ConfigDict(extra="forbid")
+    strategy_id: NonBlankStr = Field(max_length=128)
 
 
 class TradingStatusResponse(BaseModel):
@@ -247,12 +323,13 @@ class TradingStatusResponse(BaseModel):
 
 
 class DataBackfillRequest(BaseModel):
-    symbol: str
-    timeframe: str
-    from_time: str
-    to_time: str
-    exchange: str = "binance"
-    market_type: str = "spot"
+    model_config = ConfigDict(extra="forbid")
+    symbol: NonBlankStr = Field(max_length=32)
+    timeframe: NonBlankStr = Field(max_length=16)
+    from_time: NonBlankStr = Field(max_length=64)
+    to_time: NonBlankStr = Field(max_length=64)
+    exchange: NonBlankStr = Field(default="binance", max_length=64)
+    market_type: NonBlankStr = Field(default="spot", max_length=32)
 
 
 class DataCoverageResponse(BaseModel):
@@ -331,6 +408,7 @@ class DashboardResponse(BaseModel):
 
 
 class KillSwitchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     enabled: bool
 
 
@@ -357,7 +435,8 @@ class ProgressUpdate(BaseModel):
 
 
 class OptimizerDryRunRequest(BaseModel):
-    strategy_id: str
+    model_config = ConfigDict(extra="forbid")
+    strategy_id: NonBlankStr = Field(max_length=128)
     trials: int = Field(ge=1, le=10000)
 
 
@@ -374,8 +453,9 @@ class OptimizerDryRunResponse(BaseModel):
 class ReplayRequest(BaseModel):
     """Replay a strategy over a date range (re-run backtest on historical data)."""
 
-    from_date: str | None = None  # ISO date or timestamp
-    to_date: str | None = None
+    model_config = ConfigDict(extra="forbid")
+    from_date: NonBlankStr | None = Field(default=None, max_length=64)
+    to_date: NonBlankStr | None = Field(default=None, max_length=64)
 
 
 class ReplayResponse(BaseModel):
@@ -392,10 +472,11 @@ class ReplayResponse(BaseModel):
 class CompareTvRequest(BaseModel):
     """Compare OpenPine plots against TradingView chart export."""
 
-    openpine_plots_path: str  # path to OpenPine plots CSV
-    tv_chart_path: str  # path to TradingView chart CSV
-    abs_tol: float = 1e-6
-    rel_tol: float = 1e-9
+    model_config = ConfigDict(extra="forbid")
+    openpine_plots_path: NonBlankStr = Field(max_length=4096)
+    tv_chart_path: NonBlankStr = Field(max_length=4096)
+    abs_tol: float = Field(default=1e-6, ge=0, allow_inf_nan=False)
+    rel_tol: float = Field(default=1e-9, ge=0, allow_inf_nan=False)
     include_base_columns: bool = False
 
 

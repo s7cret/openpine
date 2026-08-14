@@ -140,7 +140,7 @@ def test_backtest_helpers_and_process_paths(monkeypatch):
         def is_alive(self):
             if self.alive: self.alive=False; return True
             return False
-        def join(self): pass
+        def join(self, timeout=None): pass
     class Ctx:
         def __init__(self, q): self.q=q
         def Queue(self): return self.q

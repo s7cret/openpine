@@ -9,14 +9,20 @@ import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
+from typing import cast
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from openpine import __version__
 from openpine._compat import structlog
 from openpine.gateway.config import GatewayConfig
 from openpine.gateway.deps import GatewayState
+from openpine.gateway.security import (
+    WebSocketAuditMiddleware,
+    api_auth_dependency,
+    audit_and_secure_request,
+)
 from openpine.gateway.routes import (
     accounts_data,
     achievements,
@@ -378,7 +384,11 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
         description="Web API for the OpenPine Pine stack — strategies, backtests, live trading, and market data.",
         version=__version__,
         lifespan=lifespan,
+        docs_url=None if cfg.environment == "production" else "/docs",
+        redoc_url=None if cfg.environment == "production" else "/redoc",
+        openapi_url=None if cfg.environment == "production" else "/openapi.json",
     )
+    app.state.gateway_config = cfg
 
     # CORS
     app.add_middleware(
@@ -388,23 +398,45 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.middleware("http")(audit_and_secure_request)
+    app.add_middleware(WebSocketAuditMiddleware)
 
     # Mount route modules under /api
     api_prefix = cfg.api_prefix
-    app.include_router(dashboard.router, prefix=api_prefix)
-    app.include_router(pine_sources.router, prefix=api_prefix)
-    app.include_router(pine_ops.router, prefix=api_prefix)
-    app.include_router(strategies.router, prefix=api_prefix)
-    app.include_router(backtest.router, prefix=api_prefix)
-    app.include_router(trading.router, prefix=api_prefix)
-    app.include_router(orders_positions.router, prefix=api_prefix)
-    app.include_router(events.router, prefix=api_prefix)
-    app.include_router(settings.router, prefix=api_prefix)
-    app.include_router(accounts_data.router, prefix=api_prefix)
-    app.include_router(optimizer.router, prefix=api_prefix)
-    app.include_router(tv_parity.router, prefix=api_prefix)
-    app.include_router(achievements.router, prefix=api_prefix)
-    app.include_router(version.router, prefix=api_prefix)
+    api_dependencies = [
+        Depends(api_auth_dependency(cfg.auth_token, cfg.auth_principal))
+    ]
+    app.include_router(dashboard.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(
+        pine_sources.router, prefix=api_prefix, dependencies=api_dependencies
+    )
+    app.include_router(pine_ops.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(strategies.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(backtest.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(trading.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(
+        orders_positions.router, prefix=api_prefix, dependencies=api_dependencies
+    )
+    app.include_router(events.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(settings.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(
+        accounts_data.router, prefix=api_prefix, dependencies=api_dependencies
+    )
+    app.include_router(optimizer.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(tv_parity.router, prefix=api_prefix, dependencies=api_dependencies)
+    app.include_router(
+        achievements.router, prefix=api_prefix, dependencies=api_dependencies
+    )
+    app.include_router(version.router, prefix=api_prefix, dependencies=api_dependencies)
+
+    generated_openapi = app.openapi
+
+    def openapi_with_websocket_contract() -> dict[str, object]:
+        schema = cast(dict[str, object], generated_openapi())
+        schema["x-openpine-websocket-paths"] = [f"{api_prefix}/ws/events"]
+        return schema
+
+    app.openapi = openapi_with_websocket_contract
 
     @app.get("/health")
     async def health() -> dict[str, object]:
@@ -421,19 +453,23 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
                 )
             )
         )
-        return {
+        response: dict[str, object] = {
             "status": "degraded" if degraded else "ok",
             "version": __version__,
-            "runtime": {"background_worker": worker},
         }
+        if cfg.environment != "production":
+            response["runtime"] = {"background_worker": worker}
+        return response
 
     @app.get("/")
     async def root() -> dict[str, str]:
-        return {
+        response = {
             "service": "OpenPine Gateway",
             "version": __version__,
-            "docs": "/docs",
             "api": api_prefix,
         }
+        if cfg.environment != "production":
+            response["docs"] = "/docs"
+        return response
 
     return app

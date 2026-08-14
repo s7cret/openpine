@@ -148,10 +148,12 @@ def test_runtime_snapshot_namespace_round_trips_without_pickle(tmp_path, monkeyp
     assert loaded == {"bar_index": 42, "runtime_state": {"x": 1}}
 
 
-def test_runtime_snapshot_pickle_save_requires_trusted_opt_in(tmp_path, monkeypatch) -> None:
+def test_runtime_snapshot_unsupported_object_requires_trusted_pickle_opt_in(
+    tmp_path, monkeypatch
+) -> None:
     monkeypatch.delenv("OPENPINE_ALLOW_PICKLE_STATE", raising=False)
     store = StateStore(tmp_path)
-    payload = {"unsupported": {1, 2}}
+    payload = {"unsupported": 1 + 2j}
 
     with pytest.raises(Exception, match="trusted local snapshots"):
         store.save_runtime_snapshot(
@@ -168,11 +170,16 @@ def test_runtime_snapshot_pickle_save_requires_trusted_opt_in(tmp_path, monkeypa
     assert store.list_snapshots("strategy-1") == []
 
 
-def test_state_store_msgpack_safe_rejects_unsupported_edges(monkeypatch) -> None:
-    assert StateStore._msgpack_safe((SimpleNamespace(x=1),)) == [{"x": 1}]
+def test_state_store_msgpack_safe_tags_container_types_and_rejects_objects(
+    monkeypatch,
+) -> None:
+    from openpine.state.codec import from_msgpack_safe
 
-    with pytest.raises(TypeError, match="unsupported msgpack key type"):
-        StateStore._msgpack_safe({("bad",): 1})
+    safe = StateStore._msgpack_safe((SimpleNamespace(x=1), {"seen": {1, 2}}))
+    assert from_msgpack_safe(safe) == ({"x": 1}, {"seen": {1, 2}})
+    mapping = StateStore._msgpack_safe({("compound", 1): "value"})
+    assert from_msgpack_safe(mapping) == {("compound", 1): "value"}
+
     with pytest.raises(TypeError, match="unsupported msgpack value type"):
         StateStore._msgpack_safe(object())
 
@@ -184,7 +191,7 @@ def test_state_store_msgpack_safe_rejects_unsupported_edges(monkeypatch) -> None
 def test_runtime_snapshot_round_trips_pickle_payload(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("OPENPINE_ALLOW_PICKLE_STATE", "1")
     store = StateStore(tmp_path)
-    payload = {"unsupported": {1, 2}}
+    payload = {"unsupported": 1 + 2j}
 
     meta = store.save_runtime_snapshot(
         strategy_id="strategy-1",
@@ -203,13 +210,13 @@ def test_runtime_snapshot_round_trips_pickle_payload(tmp_path, monkeypatch) -> N
         "strategy-1",
         data_fingerprint="bars-sha",
     )
-    assert loaded == {"unsupported": {1, 2}}
+    assert loaded == {"unsupported": 1 + 2j}
 
 
 def test_pickle_runtime_snapshot_requires_trusted_opt_in(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("OPENPINE_ALLOW_PICKLE_STATE", "1")
     store = StateStore(tmp_path)
-    payload = {"unsupported": {1, 2}}
+    payload = {"unsupported": 1 + 2j}
     store.save_runtime_snapshot(
         strategy_id="strategy-1",
         artifact_id="artifact-1",

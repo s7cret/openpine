@@ -51,7 +51,8 @@ class Store:
     def get_metrics(self, run_id): return {"metrics": {"total_trades": 2}}
     def list_runs(self, strategy_id, limit=1000): return [self.run]
     def delete_run(self, run_id): return self.deleted.get(run_id, False)
-    def list_trades(self, run_id): return [self.trade]
+    def list_trades(self, run_id, *, limit=500, offset=0):
+        return [self.trade][offset : offset + limit]
     def list_artifacts(self, run_id): return self.artifacts
 
 
@@ -91,7 +92,7 @@ async def test_backtest_routes_run_outputs_actions_and_progress(monkeypatch, tmp
     assert (await routes.run_action("run", "cancel", state))["accepted"] is False
     with pytest.raises(HTTPException): await routes.run_action("run", "bad", state)
     store.run.status = "running"
-    assert (await routes.run_action("run", "cancel", state))["accepted"] is True
+    assert (await routes.run_action("run", "cancel", state))["accepted"] is False
     with pytest.raises(HTTPException): await routes.run_action("missing", "cancel", state)
     trades = await routes.get_run_trades("run", state)
     assert trades[0].net_profit == 4.0

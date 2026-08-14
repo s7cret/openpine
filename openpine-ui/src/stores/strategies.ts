@@ -24,19 +24,25 @@ export const useStrategiesStore = defineStore('strategies', () => {
     }
   }
 
-  async function fetchOne(id: string) {
+  async function fetchOne(id: string, signal?: AbortSignal) {
+    current.value = null
+    error.value = ''
     try {
-      const { data } = await api.getStrategy(id)
+      const { data } = await api.getStrategy(id, signal)
+      if (signal?.aborted) return null
       current.value = data
       return data
     } catch (e: any) {
-      current.value = null
-      error.value = errorMessage(e, 'Strategy detail load failed')
+      if (!signal?.aborted) {
+        current.value = null
+        error.value = errorMessage(e, 'Strategy detail load failed')
+      }
       throw e
     }
   }
 
   async function control(id: string, action: string) {
+    error.value = ''
     try {
       await api.controlStrategy(id, action)
       // Optimistic: update local immediately
@@ -58,6 +64,7 @@ export const useStrategiesStore = defineStore('strategies', () => {
   }
 
   async function remove(id: string) {
+    error.value = ''
     try {
       const preview = await api.previewDeleteStrategy(id).then((r) => r.data).catch(() => null)
       if (preview) {
@@ -79,6 +86,7 @@ export const useStrategiesStore = defineStore('strategies', () => {
   }
 
   async function setArchived(id: string, archived: boolean) {
+    error.value = ''
     try {
       const { data } = archived ? await api.archiveStrategy(id) : await api.unarchiveStrategy(id)
       const idx = items.value.findIndex(s => getId(s) === id)

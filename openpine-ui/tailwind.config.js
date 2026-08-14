@@ -5,6 +5,10 @@ export default {
   theme: {
     extend: {
       colors: {
+        gray: {
+          500: '#9ca3af',
+          600: '#9ca3af',
+        },
         dark: {
           900: '#0a0a0f',
           800: '#12121a',
@@ -15,9 +19,9 @@ export default {
           300: '#5a5a6a',
         },
         accent: {
-          DEFAULT: '#6366f1',
+          DEFAULT: '#4f46e5',
           light: '#818cf8',
-          dark: '#4f46e5',
+          dark: '#4338ca',
         },
         success: '#22c55e',
         warning: '#f59e0b',

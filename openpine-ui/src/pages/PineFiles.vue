@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onBeforeUnmount, onMounted, ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePineFilesStore } from '@/stores/pineFiles'
 import { readPineFile, normalizePineFileName } from '@/lib/pineFileUpload'
+import { createTerminalPoller } from '@/lib/terminalPolling'
 
 const { t } = useI18n()
 const store = usePineFilesStore()
@@ -17,7 +18,26 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const uploadStatus = ref('')
 const uploadError = ref(false)
 
-onMounted(() => store.fetchAll())
+const compilePoller = createTerminalPoller({
+  intervalMs: 1_000,
+  poll: async () => {
+    await store.pollCompileOperations()
+    return { status: Object.keys(store.compileOperations).length ? 'running' : 'completed' }
+  },
+  getStatus: value => value.status,
+})
+
+onMounted(async () => {
+  await store.fetchAll()
+  if (Object.keys(store.compileOperations).length) compilePoller.start()
+})
+
+watch(
+  () => Object.keys(store.compileOperations).length,
+  count => { if (count) compilePoller.start() },
+)
+
+onBeforeUnmount(() => compilePoller.stop())
 
 /**
  * Wire the <input type="file"> picker to the same fields the manual
@@ -207,6 +227,8 @@ async function copyContent() {
             class="text-xs"
             :class="uploadError ? 'text-danger' : 'text-success'"
             data-testid="pine-file-status"
+            :role="uploadError ? 'alert' : 'status'"
+            aria-live="polite"
           >{{ uploadStatus }}</span>
         </div>
         <textarea
@@ -216,7 +238,7 @@ async function copyContent() {
           class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 font-mono placeholder-gray-500 focus:outline-none focus:border-accent resize-y"
         />
         <div class="flex gap-2 justify-end items-center">
-          <span v-if="createStatus" class="text-xs" :class="createStatus.startsWith('❌') ? 'text-danger' : 'text-success'">{{ createStatus }}</span>
+          <span v-if="createStatus" class="text-xs" :class="createStatus.startsWith('❌') ? 'text-danger' : 'text-success'" role="status" aria-live="polite">{{ createStatus }}</span>
           <button @click="showAdd = false; createStatus = ''" class="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200">{{ t('common.cancel') }}</button>
           <button @click="addFile" :disabled="createLoading" class="px-4 py-1.5 bg-accent hover:bg-accent-dark text-white text-sm rounded-lg disabled:opacity-50">
             {{ createLoading ? t('pineFiles.compiling') : t('common.save') }}
@@ -305,8 +327,11 @@ async function copyContent() {
                       {{ fileExt(file) }}
                     </span>
                     <span v-if="store.compiling.has(getId(file))" class="inline-flex shrink-0 items-center gap-1 text-xs text-accent">
-                      <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                      <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                       {{ t('pineFiles.compiling') }}
+                    </span>
+                    <span v-if="store.compileErrors[getId(file)]" class="min-w-0 truncate text-xs text-danger" role="alert" :title="store.compileErrors[getId(file)]">
+                      {{ store.compileErrors[getId(file)] }}
                     </span>
                   </div>
                   <div v-if="fileParentPath(file)" class="mt-0.5 truncate font-mono text-[10px] font-normal text-gray-500" :title="rawFileName(file)">

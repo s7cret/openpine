@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from openpine._compat import structlog
@@ -15,10 +17,11 @@ router = APIRouter(tags=["orders-positions"])
 async def list_orders(
     strategy_id: str | None = None,
     status: str | None = None,
-    limit: int = Query(100, ge=1, le=1000),
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    updated_after: Annotated[int | None, Query(ge=0)] = None,
     state: GatewayState = Depends(get_state),
 ) -> list[dict[str, object]]:
-    """List orders, optionally filtered by strategy_id and status."""
+    """List orders, optionally filtered or incremented by updated_at cursor."""
     where_clauses = []
     params: list[object] = []
     if strategy_id:
@@ -27,15 +30,19 @@ async def list_orders(
     if status:
         where_clauses.append("status = ?")
         params.append(status)
+    if updated_after is not None:
+        where_clauses.append("updated_at > ?")
+        params.append(updated_after)
 
     where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    order_sql = "updated_at ASC" if updated_after is not None else "created_at DESC"
     sql = f"""
         SELECT order_id, strategy_id, account_id, client_order_id,
                symbol, side, order_type, qty, limit_price, stop_price,
                take_profit_price, status, filled_quantity, avg_fill_price, error,
                created_at, updated_at
         FROM orders {where_sql}
-        ORDER BY created_at DESC LIMIT ?
+        ORDER BY {order_sql} LIMIT ?
     """
     params.append(limit)
 
@@ -131,8 +138,8 @@ async def list_positions(
             for r in rows
         ]
     except Exception as exc:
-        log.warning("positions_error", error=str(exc))
-        return []
+        log.error("positions_error", error=str(exc))
+        raise HTTPException(503, "Positions storage unavailable") from exc
 
 
 @router.get("/positions/{strategy_id}")
@@ -187,5 +194,5 @@ async def get_strategy_positions(
             ],
         }
     except Exception as exc:
-        log.warning("strategy_positions_error", strategy_id=strategy_id, error=str(exc))
-        return {"strategy_id": strategy_id, "positions": [], "recent_trades": []}
+        log.error("strategy_positions_error", strategy_id=strategy_id, error=str(exc))
+        raise HTTPException(503, "Strategy positions storage unavailable") from exc

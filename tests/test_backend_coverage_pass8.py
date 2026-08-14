@@ -259,6 +259,7 @@ class FakeBacktestStore:
             bars_processed=2,
         )
         self.trade = SimpleNamespace(trade_id="t1", entry_time=0, exit_time=60_000, direction="long", entry_price=1.0, exit_price=2.0, qty=1.0, net_pnl=1.0)
+        self.trade_queries: list[tuple[str, int | None, int]] = []
         report = tmp_path / "report.md"
         report.write_text("# report", encoding="utf-8")
         csv = tmp_path / "data.csv"
@@ -288,7 +289,8 @@ class FakeBacktestStore:
             return True
         return False
 
-    def list_trades(self, run_id: str):
+    def list_trades(self, run_id: str, *, limit: int | None = None, offset: int = 0):
+        self.trade_queries.append((run_id, limit, offset))
         return [self.trade]
 
     def list_artifacts(self, run_id: str):
@@ -322,8 +324,10 @@ def test_backtest_routes_listing_actions_progress_and_artifacts(tmp_path, monkey
     assert asyncio.run(backtest_routes.get_run("r1", state)).strategy_name == "Strategy"
     with pytest.raises(HTTPException):
         asyncio.run(backtest_routes.get_run("missing", state))
-    assert asyncio.run(backtest_routes.get_run_trades("r1", state))[0].trade_id == "t1"
-    assert asyncio.run(backtest_routes.run_action("r1", "cancel", state))["accepted"] is True
+    trades_page = asyncio.run(backtest_routes.get_run_trades("r1", state))
+    assert trades_page[0].trade_id == "t1"
+    assert state.backtest_store.trade_queries[-1] == ("r1", 500, 0)
+    assert asyncio.run(backtest_routes.run_action("r1", "cancel", state))["accepted"] is False
     with pytest.raises(HTTPException):
         asyncio.run(backtest_routes.run_action("r1", "bad", state))
     state.backtest_store.run.status = "completed"

@@ -23,7 +23,7 @@ from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_an
 
 log = structlog.get_logger(__name__)
 
-REQUIRED_MARKETDATA_PROVIDER_VERSION = "4.0.1"
+REQUIRED_MARKETDATA_PROVIDER_VERSION = "4.0.2"
 
 
 class RuntimeDataProviderAdapter:
@@ -239,7 +239,9 @@ def create_local_marketdata_provider_adapter(
     cfg = config or MarketDataConfig()
     if cache_dir is not None:
         cfg = replace(cfg, storage=replace(cfg.storage, cache_dir=Path(cache_dir)))
-    return create_provider(cfg)
+    provider = create_provider(cfg)
+    provider.persists_fetches = True
+    return provider
 
 
 def create_local_runtime_data_provider_adapter(

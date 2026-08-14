@@ -137,3 +137,7 @@ node_modules/
 /openpine-ui/node_modules/
 /node_modules/
 .vite/
+/openpine-ui/coverage/
+/openpine-ui/playwright-report/
+/openpine-ui/test-results/
+/openpine-ui/.contract/

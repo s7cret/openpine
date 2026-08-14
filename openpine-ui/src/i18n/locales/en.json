@@ -3,7 +3,17 @@
     "name": "OpenPine",
     "version": "OpenPine Gateway v4.0",
     "connected": "Connected",
-    "gatewayOnline": "Gateway online"
+    "gatewayOnline": "Gateway online",
+    "gatewayChecking": "Checking gateway",
+    "gatewayDegraded": "Gateway degraded",
+    "gatewayOffline": "Gateway offline",
+    "unlockTitle": "Unlock OpenPine control plane",
+    "unlockDescription": "Enter the private LAN API token. It is kept only for this browser session.",
+    "tokenLabel": "API token",
+    "tokenRequired": "Enter the API token.",
+    "unlockFailed": "The API token was rejected.",
+    "unlock": "Unlock",
+    "dismiss": "Not now"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -297,6 +307,7 @@
     "startRun": "🧪 Run",
     "initialCapital": "Initial capital",
     "initialCapitalPlaceholder": "Default (from strategy)",
+    "initialCapitalInvalid": "Initial capital must be greater than zero",
     "backtestStarted": "✅ Backtest started!",
     "selectStrategyFirst": "❌ Select a strategy",
     "archivedStrategyUnavailable": "❌ Archived strategy is not available for backtests",
@@ -453,9 +464,9 @@
       "downloadZip": "Download bundle (.zip)",
       "status": "Status",
       "trades": "Trades",
-      "maxDelta": "Max |Δ|",
-      "maxDeltaPrice": "Max |Δ| (price)",
-      "maxDeltaTime": "Max |Δ| (time)",
+      "maxDelta": "Max absolute Δ",
+      "maxDeltaPrice": "Max absolute Δ (price)",
+      "maxDeltaTime": "Max absolute Δ (time)",
       "failures": "Failures",
       "pnl": "Equity",
       "window": "Compare window",
@@ -559,7 +570,10 @@
     "price": "Price"
   },
   "candleChart": {
-    "loadFailed": "Chart data load failed"
+    "loadFailed": "Chart data load failed",
+    "loading": "Loading chart data…",
+    "retry": "Retry",
+    "rangeLimited": "Showing the latest {count} bars"
   },
   "dateRange": {
     "monthsFull": [

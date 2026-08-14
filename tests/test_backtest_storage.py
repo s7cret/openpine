@@ -154,6 +154,29 @@ def test_mark_cancelled_updates_run_status(store):
     assert run.finished_at is not None
 
 
+def test_recover_incomplete_runs_fails_only_nonterminal_rows(store):
+    request = BacktestRunRequest(
+        strategy_id="strat_1",
+        pine_id="pine_1",
+        artifact_id="art_1",
+        params_hash="ph_1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+    )
+    interrupted_id = store.create_run(request)
+    terminal_id = store.create_run(request)
+    store.mark_cancelled(terminal_id, "already terminal")
+
+    assert store.recover_incomplete_runs() == 1
+    interrupted = store.get_run(interrupted_id)
+    terminal = store.get_run(terminal_id)
+    assert interrupted is not None and interrupted.status == "failed"
+    assert interrupted.finished_at is not None
+    assert terminal is not None and terminal.status == "cancelled"
+
+    assert store.recover_incomplete_runs() == 0
+
+
 def test_save_result_updates_status_and_metrics(store):
     req = BacktestRunRequest(
         strategy_id="strat_1",
@@ -462,6 +485,10 @@ def test_save_result_inserts_trades(store):
     assert len(saved_trades) == 2
     assert saved_trades[0].direction == "long"
     assert saved_trades[1].direction == "short"
+    assert [trade.direction for trade in store.list_trades(run_id, limit=1)] == ["long"]
+    assert [
+        trade.direction for trade in store.list_trades(run_id, limit=1, offset=1)
+    ] == ["short"]
 
 
 def test_save_result_creates_artifacts(store):

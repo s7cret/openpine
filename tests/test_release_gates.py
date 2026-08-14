@@ -57,6 +57,13 @@ def test_release_gate_enforces_configured_ruff_policy() -> None:
     )
 
 
+def test_release_metadata_requires_security_fixed_starlette_range() -> None:
+    root = Path(__file__).resolve().parents[1]
+    policy = tomllib.loads((root / "pyproject.toml").read_text())
+
+    assert "starlette>=1.3.1,<1.7" in policy["project"]["dependencies"]
+
+
 def test_distribution_manifest_excludes_local_runtime_artifacts(tmp_path: Path) -> None:
     (tmp_path / ".env").write_text("SECRET=1\n", encoding="utf-8")
     (tmp_path / ".venv" / "bin").mkdir(parents=True)
@@ -135,7 +142,7 @@ def test_release_report_accepts_committed_sibling_4_0_1_release() -> None:
     _clean_release_artifacts(root)
     report = release_report(root)
 
-    assert __version__ == "4.0.1"
+    assert __version__ == "4.0.2"
     assert report.ok is True
     assert report.errors == ()
     assert report.checks["latest_migration"] >= 10
@@ -151,10 +158,10 @@ def test_release_report_proves_coherent_immutable_stack_lock() -> None:
     assert report.checks["stack_lock"]["refs_verified"] is True
     assert report.checks["stack_lock"]["valid"] is True
     assert report.checks["stack_lock"]["source_tree_matches"] is True
-    assert all(item["version"] == "4.0.1" for item in lock["components"])
+    assert all(item["version"] == "4.0.2" for item in lock["components"])
     workflow = (root / ".github" / "workflows" / "stack-ci.yml").read_text()
-    assert "expected 4.0.1" in workflow
-    assert "installed != '4.0.1'" in workflow
+    assert "expected 4.0.2" in workflow
+    assert "installed != '4.0.2'" in workflow
 
 
 def test_release_report_returns_structured_failure_for_mapping_components(
@@ -163,7 +170,7 @@ def test_release_report_returns_structured_failure_for_mapping_components(
     root = Path(__file__).resolve().parents[1]
     malformed_lock = {
         "schema": "openpine.stack-lock.v1",
-        "release": "4.0.1",
+        "release": "4.0.2",
         "components": {"openpine": {"name": "openpine"}},
     }
     monkeypatch.setattr("openpine.release.load_stack_lock", lambda _path: malformed_lock)

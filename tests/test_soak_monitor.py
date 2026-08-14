@@ -88,7 +88,7 @@ def _runtime_version_payload(
         "modules": [
             {
                 "name": "openpine",
-                "version": "4.0.1",
+                "version": "4.0.2",
                 "lock_identity": EXPECTED_SOURCE_TREE_SHA256,
                 "installed_identity": source_tree_sha256,
                 "conforms_to_lock": True,

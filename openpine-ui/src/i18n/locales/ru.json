@@ -3,7 +3,17 @@
     "name": "OpenPine",
     "version": "OpenPine Gateway v4.0",
     "connected": "Подключено",
-    "gatewayOnline": "Шлюз онлайн"
+    "gatewayOnline": "Шлюз онлайн",
+    "gatewayChecking": "Проверка шлюза",
+    "gatewayDegraded": "Шлюз работает с ошибками",
+    "gatewayOffline": "Шлюз недоступен",
+    "unlockTitle": "Разблокировать управление OpenPine",
+    "unlockDescription": "Введите приватный API-токен локальной сети. Он хранится только до закрытия сессии браузера.",
+    "tokenLabel": "API-токен",
+    "tokenRequired": "Введите API-токен.",
+    "unlockFailed": "API-токен отклонён.",
+    "unlock": "Разблокировать",
+    "dismiss": "Не сейчас"
   },
   "nav": {
     "dashboard": "Дашборд",
@@ -96,8 +106,8 @@
     "recentJobs": "🔄 Последние задачи",
     "agoShort": "{sec} с назад",
     "agoMin": "{m} мин назад",
-    "agoHour": "{ч} ч {м} мин назад",
-    "agoSec": "{с} с назад",
+    "agoHour": "{h} ч {m} мин назад",
+    "agoSec": "{s} с назад",
     "loadedCandles": "Загружено {count} баров"
   },
   "achievements": {
@@ -297,6 +307,7 @@
     "startRun": "🧪 Запустить",
     "initialCapital": "Стартовый капитал",
     "initialCapitalPlaceholder": "По умолчанию (из стратегии)",
+    "initialCapitalInvalid": "Стартовый капитал должен быть больше нуля",
     "backtestStarted": "✅ Бэктест запущен!",
     "selectStrategyFirst": "❌ Выберите стратегию",
     "archivedStrategyUnavailable": "❌ Архивная стратегия недоступна для бэктеста",
@@ -453,9 +464,9 @@
       "downloadZip": "Скачать бандл (.zip)",
       "status": "Статус",
       "trades": "Сделки",
-      "maxDelta": "Макс |Δ|",
-      "maxDeltaPrice": "Макс |Δ| (цена)",
-      "maxDeltaTime": "Макс |Δ| (время)",
+      "maxDelta": "Макс. модуль Δ",
+      "maxDeltaPrice": "Макс. модуль Δ (цена)",
+      "maxDeltaTime": "Макс. модуль Δ (время)",
       "failures": "Провалы",
       "pnl": "Эквити",
       "window": "Окно сравнения",
@@ -559,7 +570,10 @@
     "price": "Цена"
   },
   "candleChart": {
-    "loadFailed": "Загрузка данных графика не удалась"
+    "loadFailed": "Загрузка данных графика не удалась",
+    "loading": "Загрузка данных графика…",
+    "retry": "Повторить",
+    "rangeLimited": "Показаны последние {count} баров"
   },
   "dateRange": {
     "monthsFull": [

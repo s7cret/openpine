@@ -497,7 +497,11 @@ async def test_start_exception_after_child_becomes_live_is_contained_without_ret
     )
 
     supervisor.start()
-    await asyncio.sleep(0.02)
+    await _eventually(
+        lambda: bool(processes)
+        and processes[0].is_alive() is False
+        and fail_safe_calls == ["paused"]
+    )
 
     assert len(processes) == 1
     assert processes[0].terminate_called is True

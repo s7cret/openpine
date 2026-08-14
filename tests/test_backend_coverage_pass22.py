@@ -111,8 +111,8 @@ async def test_strategy_routes_crud_actions_preview_and_compare(tmp_path: Path):
     with pytest.raises(HTTPException):
         await routes.create_strategy(body, SimpleNamespace(strategy_registry=registry, pine_registry=PineRegistry(), artifact_store=ArtifactStore(True, "ERROR"), storage=Storage()))
 
-    unchanged = await routes.update_strategy("created", StrategyUpdate(), state)
-    assert unchanged.strategy_id == "created"
+    with pytest.raises(ValueError, match="at least one update field is required"):
+        StrategyUpdate()
     updated = await routes.update_strategy("created", StrategyUpdate(name="New", enabled=True, mode=StrategyMode.LIVE, params_json='{"b":3}'), state)
     assert updated.name == "New" and updated.enabled is True and updated.mode == "live"
     with pytest.raises(HTTPException):

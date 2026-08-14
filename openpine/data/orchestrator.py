@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import inspect
+import threading
 from collections.abc import Callable
-from dataclasses import replace
+from concurrent.futures import Future
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
@@ -33,7 +35,17 @@ from openpine.data.row_helpers import duplicate_timestamps
 class MarketDataProvider(Protocol):
     """Provider boundary used by OpenPine data orchestration."""
 
+    persists_fetches: bool
+
     def fetch_bars(self, query: BarQuery) -> BarSeries: ...
+
+
+@dataclass
+class _ProviderFlight:
+    """One in-flight provider request for a physical market-data series."""
+
+    query: BarQuery
+    future: Future[BarSeries]
 
 
 class DataCoverageError(RuntimeError):
@@ -82,9 +94,17 @@ class DataOrchestrator:
             if cache_enabled is None
             else cache_enabled
         )
+        self._provider_flights_guard = threading.Lock()
+        self._provider_flights: dict[tuple[str, str, str, str], _ProviderFlight] = {}
 
     def set_provider(self, provider: MarketDataProvider) -> None:
         self._provider = provider
+
+    @property
+    def provider_persists_fetches(self) -> bool:
+        """Whether the configured provider is the persistence owner for fetches."""
+
+        return bool(getattr(self._provider, "persists_fetches", False))
 
     def load_bars(
         self, query: BarQuery, progress_callback: Callable[..., None] | None = None
@@ -120,7 +140,7 @@ class DataOrchestrator:
             storage_series.coverage.missing_intervals,
             progress_callback=progress_callback,
         )
-        if provider_series.bars:
+        if provider_series.bars and not self.provider_persists_fetches:
             self._write_provider_series(provider_series)
         merged = _merge_series(query, storage_series, provider_series)
         merged = (
@@ -248,12 +268,44 @@ class DataOrchestrator:
     ) -> BarSeries:
         if self._provider is None:
             raise ProviderUnavailableError("market data provider is not configured")
-        fetch_bars = self._provider.fetch_bars
-        if progress_callback is not None and _accepts_progress_callback(fetch_bars):
-            series = fetch_bars(query, progress_callback=progress_callback)  # type: ignore[call-arg]
-        else:
-            series = fetch_bars(query)
-        self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
+        series_key = _provider_series_key(query)
+        while True:
+            with self._provider_flights_guard:
+                flight = self._provider_flights.get(series_key)
+                if flight is None:
+                    flight = _ProviderFlight(query=query, future=Future())
+                    self._provider_flights[series_key] = flight
+                    owns_flight = True
+                else:
+                    owns_flight = False
+            if owns_flight:
+                break
+            if flight.query == query:
+                return flight.future.result()
+            try:
+                flight.future.result()
+            except Exception:  # noqa: S110
+                # A different range still gets its own attempt after the
+                # active series flight finishes, even if that request failed.
+                pass
+
+        try:
+            fetch_bars = self._provider.fetch_bars
+            if progress_callback is not None and _accepts_progress_callback(fetch_bars):
+                series = fetch_bars(query, progress_callback=progress_callback)  # type: ignore[call-arg]
+            else:
+                series = fetch_bars(query)
+            self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
+        except BaseException as exc:
+            with self._provider_flights_guard:
+                if self._provider_flights.get(series_key) is flight:
+                    self._provider_flights.pop(series_key, None)
+            flight.future.set_exception(exc)
+            raise
+        with self._provider_flights_guard:
+            if self._provider_flights.get(series_key) is flight:
+                self._provider_flights.pop(series_key, None)
+        flight.future.set_result(series)
         return series
 
     def _load_missing_from_provider(
@@ -326,6 +378,15 @@ class BarSeriesValidator:
 
 def _source_name(coverage: CoverageReport) -> str:
     return coverage.source_mix[0] if coverage.source_mix else "unknown"
+
+
+def _provider_series_key(query: BarQuery) -> tuple[str, str, str, str]:
+    return (
+        query.instrument.exchange,
+        query.instrument.market,
+        query.instrument.symbol,
+        query.timeframe.canonical,
+    )
 
 
 def _accepts_progress_callback(fetch_bars: Callable[..., BarSeries]) -> bool:

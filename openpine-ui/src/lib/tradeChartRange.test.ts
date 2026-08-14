@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { dateInputFromMs, rangesOverlap, toTradeTimeMs, tradeBoundsMs } from './tradeChartRange'
+import { clampRangeToBarLimit, dateInputFromMs, rangesOverlap, toTradeTimeMs, tradeBoundsMs } from './tradeChartRange'
 
 describe('trade chart range helpers', () => {
   it('normalizes seconds, milliseconds, and ISO strings to milliseconds', () => {
@@ -33,5 +33,20 @@ describe('trade chart range helpers', () => {
       { fromMs: 1000, toMs: 2000 },
       { fromMs: 2500, toMs: 3000 },
     )).toBe(false)
+  })
+
+  it('keeps only the most recent 5k timeframe-aware bars from an oversized range', () => {
+    const minute = 60_000
+    expect(clampRangeToBarLimit(
+      { fromMs: 0, toMs: 10_000 * minute },
+      '1m',
+      5000,
+    )).toEqual({ fromMs: 5_000 * minute, toMs: 10_000 * minute })
+
+    expect(clampRangeToBarLimit(
+      { fromMs: 0, toMs: 1_000 * minute },
+      '1m',
+      5000,
+    )).toEqual({ fromMs: 0, toMs: 1_000 * minute })
   })
 })

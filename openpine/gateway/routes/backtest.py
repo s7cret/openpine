@@ -2,14 +2,23 @@
 
 from __future__ import annotations
 
+import ctypes
 import hashlib
+import json
 import multiprocessing as mp
+import os
 import queue
+import signal
+import threading
 import time
 import traceback
+import uuid
+from dataclasses import dataclass, field
+from multiprocessing.process import BaseProcess
 from pathlib import Path
+from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 
 from openpine._compat import structlog
 from openpine.exchange_metadata import (
@@ -33,9 +42,550 @@ log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 
 
+class _BacktestCancelled(RuntimeError):
+    """Raised only after the owned compute process tree has stopped."""
+
+
+@dataclass
+class _BacktestWorker:
+    process: BaseProcess
+    out: object
+    process_group: int | None
+    start_time: int | None
+    lock: threading.Lock = field(default_factory=threading.Lock)
+    cancel_requested: threading.Event = field(default_factory=threading.Event)
+
+
+@dataclass(frozen=True)
+class _ArtifactBacktestSpec:
+    pine_id: str
+    artifact_id: str
+    symbol: str
+    timeframe: str
+    cache_dir: str
+    exchange: str
+    market: str
+    prefetch_end_ms: int
+
+
+_ACTIVE_BACKTEST_WORKERS: dict[str, _BacktestWorker] = {}
+_ACTIVE_BACKTEST_WORKERS_LOCK = threading.Lock()
+_STARTING_BACKTEST_RUNS: set[str] = set()
+_BACKTEST_THREAD_CONTEXT = threading.local()
+_BACKTEST_ISOLATION_TIMEOUT_SECONDS = 15.0
+
+
+class _BacktestLease:
+    def __init__(self, limiter: "_BacktestAdmissionLimiter") -> None:
+        self._limiter = limiter
+        self._released = False
+        self._lock = threading.Lock()
+
+    def release(self) -> None:
+        with self._lock:
+            if self._released:
+                return
+            self._released = True
+        self._limiter.release()
+
+
+class _BacktestAdmissionLimiter:
+    def __init__(self, capacity: int) -> None:
+        self.capacity = capacity
+        self._semaphore = threading.BoundedSemaphore(capacity)
+
+    def try_acquire(self) -> _BacktestLease | None:
+        if not self._semaphore.acquire(blocking=False):
+            return None
+        return _BacktestLease(self)
+
+    def release(self) -> None:
+        self._semaphore.release()
+
+
+_ADMISSION_LIMITERS_LOCK = threading.Lock()
+_IDEMPOTENCY_LOCK = threading.Lock()
+_IDEMPOTENCY_PENDING_TTL_MS = 5 * 60 * 1000
+_IDEMPOTENCY_RESULT_TTL_MS = 7 * 24 * 60 * 60 * 1000
+
+
+@dataclass(frozen=True)
+class _IdempotencyClaim:
+    result_id: str | None
+    claim_token: str | None
+
+
+class _IdempotencyClaimSuperseded(RuntimeError):
+    pass
+
+
+def _backtest_request_hash(body: object) -> str:
+    model_dump = getattr(body, "model_dump", None)
+    if callable(model_dump):
+        payload = model_dump(mode="json")
+    else:
+        payload = vars(body)
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _claim_backtest_idempotency_storage(
+    state: GatewayState, idempotency_key: str, request_hash: str
+) -> _IdempotencyClaim:
+    with _IDEMPOTENCY_LOCK:
+        now = int(time.time() * 1000)
+        claim_token = uuid.uuid4().hex
+        state.storage.execute(
+            """
+            DELETE FROM api_idempotency
+            WHERE scope = ? AND result_id IS NULL AND updated_at < ?
+            """,
+            ("backtest.run", now - _IDEMPOTENCY_PENDING_TTL_MS),
+        )
+        state.storage.execute(
+            """
+            DELETE FROM api_idempotency
+            WHERE scope = ? AND result_id IS NOT NULL AND updated_at < ?
+            """,
+            ("backtest.run", now - _IDEMPOTENCY_RESULT_TTL_MS),
+        )
+        cursor = state.storage.execute(
+            """
+            INSERT OR IGNORE INTO api_idempotency
+                (scope, idempotency_key, request_hash, claim_token, result_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, NULL, ?, ?)
+            """,
+            ("backtest.run", idempotency_key, request_hash, claim_token, now, now),
+        )
+        state.storage.commit()
+        if cursor.rowcount == 1:
+            return _IdempotencyClaim(result_id=None, claim_token=claim_token)
+        row = state.storage.execute(
+            """
+            SELECT request_hash, result_id FROM api_idempotency
+            WHERE scope = ? AND idempotency_key = ?
+            """,
+            ("backtest.run", idempotency_key),
+        ).fetchone()
+        if row is None:
+            raise HTTPException(503, "Unable to resolve idempotent backtest request")
+        if row[0] != request_hash:
+            raise HTTPException(409, "Idempotency-Key was already used with a different request")
+        if not row[1]:
+            raise HTTPException(409, "The idempotent backtest request is still being scheduled")
+        return _IdempotencyClaim(result_id=str(row[1]), claim_token=None)
+
+
+def _claim_backtest_idempotency(
+    state: GatewayState, idempotency_key: str, request_hash: str
+) -> _IdempotencyClaim:
+    try:
+        return _claim_backtest_idempotency_storage(
+            state, idempotency_key, request_hash
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.error(
+            "backtest_idempotency_storage_unavailable",
+            operation="claim",
+            error_type=exc.__class__.__name__,
+        )
+        raise HTTPException(503, "Backtest idempotency storage is unavailable") from exc
+
+
+def _complete_backtest_idempotency_storage(
+    state: GatewayState,
+    idempotency_key: str,
+    request_hash: str,
+    claim_token: str,
+    run_id: str,
+) -> None:
+    with _IDEMPOTENCY_LOCK:
+        cursor = state.storage.execute(
+            """
+            UPDATE api_idempotency SET result_id = ?, updated_at = ?
+            WHERE scope = ? AND idempotency_key = ?
+              AND request_hash = ? AND claim_token = ? AND result_id IS NULL
+            """,
+            (
+                run_id,
+                int(time.time() * 1000),
+                "backtest.run",
+                idempotency_key,
+                request_hash,
+                claim_token,
+            ),
+        )
+        if cursor.rowcount != 1:
+            state.storage.rollback()
+            raise _IdempotencyClaimSuperseded
+        state.storage.commit()
+
+
+def _complete_backtest_idempotency(
+    state: GatewayState,
+    idempotency_key: str,
+    request_hash: str,
+    claim_token: str,
+    run_id: str,
+) -> None:
+    try:
+        _complete_backtest_idempotency_storage(
+            state, idempotency_key, request_hash, claim_token, run_id
+        )
+    except _IdempotencyClaimSuperseded as exc:
+        raise HTTPException(409, "Idempotency claim expired or was superseded") from exc
+    except Exception as exc:
+        log.error(
+            "backtest_idempotency_storage_unavailable",
+            operation="complete",
+            error_type=exc.__class__.__name__,
+        )
+        raise HTTPException(503, "Backtest idempotency storage is unavailable") from exc
+
+
+def _release_backtest_idempotency_storage(
+    state: GatewayState, idempotency_key: str, request_hash: str, claim_token: str
+) -> None:
+    with _IDEMPOTENCY_LOCK:
+        state.storage.execute(
+            """
+            DELETE FROM api_idempotency
+            WHERE scope = ? AND idempotency_key = ? AND request_hash = ?
+              AND claim_token = ? AND result_id IS NULL
+            """,
+            ("backtest.run", idempotency_key, request_hash, claim_token),
+        )
+        state.storage.commit()
+
+
+def _release_backtest_idempotency(
+    state: GatewayState, idempotency_key: str, request_hash: str, claim_token: str
+) -> None:
+    try:
+        _release_backtest_idempotency_storage(
+            state, idempotency_key, request_hash, claim_token
+        )
+    except Exception as exc:
+        log.error(
+            "backtest_idempotency_storage_unavailable",
+            operation="release",
+            error_type=exc.__class__.__name__,
+        )
+        raise HTTPException(503, "Backtest idempotency storage is unavailable") from exc
+
+
+def _backtest_admission_limiter(state: GatewayState) -> _BacktestAdmissionLimiter:
+    raw_limit = os.getenv("OPENPINE_BACKTEST_MAX_CONCURRENCY", "2")
+    try:
+        limit = max(1, min(32, int(raw_limit)))
+    except ValueError:
+        limit = 2
+    with _ADMISSION_LIMITERS_LOCK:
+        limiter = getattr(state, "_backtest_admission_limiter", None)
+        if limiter is None or limiter.capacity != limit:
+            limiter = _BacktestAdmissionLimiter(limit)
+            setattr(state, "_backtest_admission_limiter", limiter)
+        return limiter
+
+
+def _proc_identity(pid: int) -> tuple[str, int, int] | None:
+    try:
+        text = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    except (FileNotFoundError, PermissionError, ProcessLookupError):
+        return None
+    closing = text.rfind(")")
+    if closing < 0:
+        return None
+    fields = text[closing + 2 :].split()
+    if len(fields) <= 19:
+        return None
+    try:
+        return fields[0], int(fields[2]), int(fields[19])
+    except ValueError:
+        return None
+
+
+def _enable_child_subreaper() -> None:
+    """Keep escaped grandchildren owned by the backtest worker on Linux."""
+
+    if not Path("/proc/self/stat").exists():
+        return
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        if libc.prctl(36, 1, 0, 0, 0) != 0:  # PR_SET_CHILD_SUBREAPER
+            raise OSError(ctypes.get_errno(), "prctl(PR_SET_CHILD_SUBREAPER) failed")
+    except (AttributeError, OSError) as exc:
+        raise RuntimeError("unable to establish backtest child ownership") from exc
+
+
+def _descendant_process_identities(root_pid: int) -> dict[int, int]:
+    rows: dict[int, tuple[int, int, str]] = {}
+    for stat_path in Path("/proc").glob("[0-9]*/stat"):
+        try:
+            pid = int(stat_path.parent.name)
+            text = stat_path.read_text(encoding="utf-8")
+            closing = text.rfind(")")
+            fields = text[closing + 2 :].split()
+            rows[pid] = (int(fields[1]), int(fields[19]), fields[0])
+        except (FileNotFoundError, PermissionError, IndexError, ValueError):
+            continue
+    descendants: dict[int, int] = {}
+    frontier = {root_pid}
+    while frontier:
+        children = {
+            pid
+            for pid, (parent_pid, _start_time, state) in rows.items()
+            if parent_pid in frontier and state != "Z" and pid not in descendants
+        }
+        for pid in children:
+            descendants[pid] = rows[pid][1]
+        frontier = children
+    return descendants
+
+
+def _terminate_current_process_descendants(timeout: float = 2.0) -> None:
+    """Fail closed until all descendants of this worker have exited."""
+
+    root_pid = os.getpid()
+    owned: dict[int, int] = {}
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        owned.update(_descendant_process_identities(root_pid))
+        live = {
+            pid: start_time
+            for pid, start_time in owned.items()
+            if (identity := _proc_identity(pid)) is not None
+            and identity[0] != "Z"
+            and identity[2] == start_time
+        }
+        if not live:
+            return
+        for pid, start_time in live.items():
+            identity = _proc_identity(pid)
+            if identity is None or identity[2] != start_time:
+                continue
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        time.sleep(0.02)
+
+    owned.update(_descendant_process_identities(root_pid))
+    for pid, start_time in owned.items():
+        identity = _proc_identity(pid)
+        if identity is None or identity[0] == "Z" or identity[2] != start_time:
+            continue
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    final_deadline = time.monotonic() + 1.0
+    while time.monotonic() < final_deadline:
+        live_pids = [
+            pid
+            for pid, start_time in owned.items()
+            if (identity := _proc_identity(pid)) is not None
+            and identity[0] != "Z"
+            and identity[2] == start_time
+        ]
+        if not live_pids and not _descendant_process_identities(root_pid):
+            return
+        time.sleep(0.02)
+    raise RuntimeError("backtest worker descendants did not stop")
+
+
+def _put_backtest_process_result(out, result) -> None:
+    try:
+        _terminate_current_process_descendants()
+    except BaseException as cleanup_exc:
+        out.put(
+            (
+                "err",
+                cleanup_exc.__class__.__name__,
+                str(cleanup_exc),
+                traceback.format_exc(),
+            )
+        )
+        return
+    out.put(("ok", result))
+
+
+def _put_backtest_process_error(out, exc: BaseException) -> None:
+    original_traceback = traceback.format_exc()
+    try:
+        _terminate_current_process_descendants()
+    except BaseException as cleanup_exc:
+        out.put(
+            (
+                "err",
+                cleanup_exc.__class__.__name__,
+                f"{exc.__class__.__name__}: {exc}; cleanup failed: {cleanup_exc}",
+                traceback.format_exc(),
+            )
+        )
+        return
+    out.put(("err", exc.__class__.__name__, str(exc), original_traceback))
+
+
+def _process_group_has_live_members(process_group: int) -> bool:
+    for stat_path in Path("/proc").glob("[0-9]*/stat"):
+        try:
+            text = stat_path.read_text(encoding="utf-8")
+            closing = text.rfind(")")
+            fields = text[closing + 2 :].split()
+            state, pgrp = fields[0], int(fields[2])
+        except (FileNotFoundError, PermissionError, IndexError, ValueError):
+            continue
+        if pgrp == process_group and state != "Z":
+            return True
+    return False
+
+
+def _active_backtest_worker(run_id: str) -> _BacktestWorker | None:
+    with _ACTIVE_BACKTEST_WORKERS_LOCK:
+        return _ACTIVE_BACKTEST_WORKERS.get(run_id)
+
+
+def _backtest_worker_is_starting(run_id: str) -> bool:
+    with _ACTIVE_BACKTEST_WORKERS_LOCK:
+        return run_id in _STARTING_BACKTEST_RUNS
+
+
+def _set_backtest_worker_starting(run_id: str, starting: bool) -> None:
+    with _ACTIVE_BACKTEST_WORKERS_LOCK:
+        if starting:
+            _STARTING_BACKTEST_RUNS.add(run_id)
+        else:
+            _STARTING_BACKTEST_RUNS.discard(run_id)
+
+
+def _register_backtest_worker(run_id: str, worker: _BacktestWorker) -> None:
+    with _ACTIVE_BACKTEST_WORKERS_LOCK:
+        if run_id in _ACTIVE_BACKTEST_WORKERS:
+            raise RuntimeError(f"backtest worker already registered: {run_id}")
+        _ACTIVE_BACKTEST_WORKERS[run_id] = worker
+
+
+def _unregister_backtest_worker(run_id: str, worker: _BacktestWorker) -> None:
+    with _ACTIVE_BACKTEST_WORKERS_LOCK:
+        if _ACTIVE_BACKTEST_WORKERS.get(run_id) is worker:
+            _ACTIVE_BACKTEST_WORKERS.pop(run_id, None)
+
+
+def _terminate_backtest_worker(worker: _BacktestWorker, timeout: float = 3.0) -> bool:
+    """Freeze, identify, and stop the complete process tree owned by a run."""
+
+    with worker.lock:
+        pid = worker.process.pid
+        process_group = worker.process_group
+        identity = _proc_identity(pid) if pid is not None else None
+        owned: dict[int, int] = {}
+        if identity is not None and pid is not None:
+            _state, live_process_group, start_time = identity
+            if worker.start_time is not None and start_time != worker.start_time:
+                return False
+            if process_group is not None and live_process_group != process_group:
+                return False
+            process_group = live_process_group
+
+            try:
+                os.kill(pid, signal.SIGSTOP)
+            except ProcessLookupError:
+                identity = None
+            if identity is not None:
+                verified = _proc_identity(pid)
+                if verified is None or verified[2] != start_time:
+                    return False
+                owned[pid] = start_time
+                stable_scans = 0
+                while stable_scans < 3:
+                    descendants = _descendant_process_identities(pid)
+                    new_descendants = {
+                        child_pid: child_start
+                        for child_pid, child_start in descendants.items()
+                        if child_pid not in owned
+                    }
+                    for child_pid, child_start in new_descendants.items():
+                        child_identity = _proc_identity(child_pid)
+                        if child_identity is None or child_identity[2] != child_start:
+                            continue
+                        try:
+                            os.kill(child_pid, signal.SIGSTOP)
+                        except ProcessLookupError:
+                            continue
+                        if (
+                            (child_identity := _proc_identity(child_pid)) is not None
+                            and child_identity[2] == child_start
+                        ):
+                            owned[child_pid] = child_start
+                    stable_scans = stable_scans + 1 if not new_descendants else 0
+                    time.sleep(0.01)
+
+        def identity_live(owned_pid: int, owned_start: int) -> bool:
+            current = _proc_identity(owned_pid)
+            return (
+                current is not None
+                and current[0] != "Z"
+                and current[2] == owned_start
+            )
+
+        def any_owned_live() -> bool:
+            process_group_live = (
+                process_group is not None
+                and _process_group_has_live_members(process_group)
+            )
+            return process_group_live or any(
+                identity_live(owned_pid, owned_start)
+                for owned_pid, owned_start in owned.items()
+            )
+
+        if not any_owned_live():
+            worker.process.join(timeout=0)
+            return True
+
+        for owned_pid, owned_start in owned.items():
+            if not identity_live(owned_pid, owned_start):
+                continue
+            try:
+                os.kill(owned_pid, signal.SIGTERM)
+                os.kill(owned_pid, signal.SIGCONT)
+            except ProcessLookupError:
+                pass
+        if process_group is not None:
+            try:
+                os.killpg(process_group, signal.SIGTERM)
+                os.killpg(process_group, signal.SIGCONT)
+            except ProcessLookupError:
+                pass
+
+        deadline = time.monotonic() + max(0.1, timeout * 0.67)
+        while time.monotonic() < deadline and any_owned_live():
+            time.sleep(0.02)
+        if any_owned_live():
+            for owned_pid, owned_start in owned.items():
+                if not identity_live(owned_pid, owned_start):
+                    continue
+                try:
+                    os.kill(owned_pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            if process_group is not None:
+                try:
+                    os.killpg(process_group, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+        final_deadline = time.monotonic() + max(0.1, timeout * 0.33)
+        while time.monotonic() < final_deadline and any_owned_live():
+            time.sleep(0.02)
+        worker.process.join(timeout=0.1)
+        return not any_owned_live()
+
+
 def _parse_date_ms(value: str) -> int:
     """Parse ISO date or ms timestamp using the configured default timezone."""
-    return parse_timestamp_ms(value, 0)
+    return int(parse_timestamp_ms(value, 0))
 
 
 def _market_data_query_for_strategy(strategy, from_ms: int, to_ms: int):
@@ -138,6 +688,14 @@ def _bar_series_fingerprint(series) -> str:
 def _backtest_process_entry(
     out, adapter, strategy_class, bars, config, params, runtime_data_provider, effective_pre_bars=None
 ):
+    if hasattr(os, "setsid") and mp.parent_process() is not None:
+        try:
+            os.setsid()
+        except OSError as exc:
+            out.put(("err", exc.__class__.__name__, "unable to isolate backtest process group", traceback.format_exc()))
+            return
+    _enable_child_subreaper()
+
     def progress(done: int, total: int) -> None:
         try:
             out.put_nowait(("progress", int(done), int(total)))
@@ -158,9 +716,213 @@ def _backtest_process_entry(
             config,
             **run_kwargs,
         )
-        out.put(("ok", result))
+        _put_backtest_process_result(out, result)
     except BaseException as exc:
-        out.put(("err", exc.__class__.__name__, str(exc), traceback.format_exc()))
+        _put_backtest_process_error(out, exc)
+
+
+def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, config, params):
+    """Reconstruct unpicklable runtime objects inside a safe spawned worker."""
+
+    if hasattr(os, "setsid") and mp.parent_process() is not None:
+        try:
+            os.setsid()
+        except OSError as exc:
+            out.put(("err", exc.__class__.__name__, "unable to isolate backtest process group", traceback.format_exc()))
+            return
+    _enable_child_subreaper()
+
+    def progress(done: int, total: int) -> None:
+        try:
+            out.put_nowait(("progress", int(done), int(total)))
+        except Exception:
+            pass
+
+    try:
+        from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
+        from openpine.runtime.engine import BacktestEngineAdapter, load_strategy_class_from_artifact
+
+        strategy_class = load_strategy_class_from_artifact(
+            spec.pine_id,
+            spec.artifact_id,
+            symbol=spec.symbol,
+            timeframe=spec.timeframe,
+        )
+        runtime_data_provider = None
+        try:
+            runtime_data_provider = create_local_runtime_data_provider_adapter(
+                cache_dir=Path(spec.cache_dir),
+                exchange=spec.exchange,
+                market=spec.market,
+                prefetch_end_ms=spec.prefetch_end_ms,
+            )
+        except Exception as exc:
+            log.warning("runtime_data_provider_init_failed", error=str(exc))
+        result = BacktestEngineAdapter().run(
+            strategy_class,
+            bars,
+            config,
+            params=params,
+            progress_callback=progress,
+            runtime_data_provider=runtime_data_provider,
+        )
+        _put_backtest_process_result(out, result)
+    except BaseException as exc:
+        _put_backtest_process_error(out, exc)
+
+
+def _execute_backtest_process(
+    run_id: str,
+    cancel_requests: set[str],
+    process_target,
+    process_args: tuple,
+    progress_callback=None,
+    context_name: str = "spawn",
+):
+    ctx = cast(Any, mp.get_context(context_name))
+    out = ctx.Queue()
+    proc = ctx.Process(
+        target=process_target,
+        args=(out, *process_args),
+    )
+    _set_backtest_worker_starting(run_id, True)
+    try:
+        proc.start()
+    except BaseException:
+        _set_backtest_worker_starting(run_id, False)
+        out.close()
+        out.cancel_join_thread()
+        raise
+    isolation_deadline = time.monotonic() + _BACKTEST_ISOLATION_TIMEOUT_SECONDS
+    pid = getattr(proc, "pid", None)
+    identity = _proc_identity(pid) if pid is not None else None
+    while (
+        pid is not None
+        and proc.is_alive()
+        and identity is not None
+        and identity[1] != pid
+        and time.monotonic() < isolation_deadline
+    ):
+        time.sleep(0.005)
+        identity = _proc_identity(pid)
+    if pid is not None and proc.is_alive() and (identity is None or identity[1] != pid):
+        proc.terminate()
+        proc.join(timeout=1.0)
+        out.close()
+        out.cancel_join_thread()
+        _set_backtest_worker_starting(run_id, False)
+        raise RuntimeError("backtest worker failed to create an isolated process group")
+
+    verified_process_group = (
+        pid
+        if pid is not None
+        and (
+            (identity is not None and identity[1] == pid)
+            or _process_group_has_live_members(pid)
+        )
+        else None
+    )
+    worker = _BacktestWorker(
+        process=proc,
+        out=out,
+        process_group=verified_process_group,
+        start_time=identity[2] if identity is not None else None,
+    )
+    try:
+        _register_backtest_worker(run_id, worker)
+    except BaseException:
+        _terminate_backtest_worker(worker)
+        _set_backtest_worker_starting(run_id, False)
+        out.close()
+        out.cancel_join_thread()
+        raise
+    _set_backtest_worker_starting(run_id, False)
+    final: tuple | None = None
+    try:
+        while proc.is_alive() or final is None:
+            if run_id in cancel_requests or worker.cancel_requested.is_set():
+                if not _terminate_backtest_worker(worker):
+                    raise RuntimeError("backtest process tree did not stop within the cancellation deadline")
+                raise _BacktestCancelled("Cancelled during compute")
+            try:
+                status, *parts = out.get(timeout=0.1)
+            except queue.Empty:
+                if not proc.is_alive():
+                    if run_id in cancel_requests or worker.cancel_requested.is_set():
+                        raise _BacktestCancelled("Cancelled during compute")
+                    break
+                continue
+            if status == "progress":
+                if progress_callback is not None:
+                    progress_callback(int(parts[0]), int(parts[1]))
+                continue
+            final = (status, *parts)
+            break
+
+        if final is None:
+            while True:
+                try:
+                    status, *parts = out.get_nowait()
+                except queue.Empty:
+                    break
+                if status == "progress":
+                    if progress_callback is not None:
+                        progress_callback(int(parts[0]), int(parts[1]))
+                    continue
+                final = (status, *parts)
+                break
+        if final is None:
+            if proc.exitcode == 0:
+                raise RuntimeError("backtest worker exited without a result")
+            raise RuntimeError(f"backtest worker exited with code {proc.exitcode}")
+        status, *parts = final
+        if status == "ok":
+            return parts[0]
+        exc_name, message, tb = parts
+        raise RuntimeError(f"{exc_name}: {message}\n{tb}")
+    finally:
+        if proc.is_alive():
+            proc.join(timeout=1.0)
+        if proc.is_alive() or (
+            worker.process_group is not None
+            and _process_group_has_live_members(worker.process_group)
+        ):
+            _terminate_backtest_worker(worker)
+        else:
+            proc.join(timeout=0)
+        _unregister_backtest_worker(run_id, worker)
+        out.close()
+        out.cancel_join_thread()
+
+
+def _execute_backtest_run_in_thread(
+    run_id: str,
+    cancel_requests: set[str],
+    adapter,
+    strategy_class,
+    bars,
+    config,
+    params,
+    runtime_data_provider,
+    progress_callback=None,
+    effective_pre_bars=None,
+):
+    return _execute_backtest_process(
+        run_id,
+        cancel_requests,
+        _backtest_process_entry,
+        (
+            adapter,
+            strategy_class,
+            bars,
+            config,
+            params,
+            runtime_data_provider,
+            effective_pre_bars,
+        ),
+        progress_callback,
+        "spawn",
+    )
 
 
 def _run_backtest_in_process(
@@ -173,64 +935,60 @@ def _run_backtest_in_process(
     progress_callback=None,
     effective_pre_bars=None,
 ):
-    ctx = mp.get_context("fork")
-    out = ctx.Queue()
-    proc = ctx.Process(
-        target=_backtest_process_entry,
-        args=(
-            out,
+    run_id = getattr(_BACKTEST_THREAD_CONTEXT, "run_id", None)
+    cancel_requests = getattr(_BACKTEST_THREAD_CONTEXT, "cancel_requests", None)
+    owned_run_id = run_id or f"internal-{time.time_ns()}"
+    owned_cancel_requests = cancel_requests if cancel_requests is not None else set()
+    if isinstance(adapter, _ArtifactBacktestSpec):
+        return _execute_backtest_process(
+            owned_run_id,
+            owned_cancel_requests,
+            _artifact_backtest_process_entry,
+            (adapter, bars, config, params),
+            progress_callback,
+            "spawn",
+        )
+    return _execute_backtest_run_in_thread(
+        owned_run_id,
+        owned_cancel_requests,
+        adapter,
+        strategy_class,
+        bars,
+        config,
+        params,
+        runtime_data_provider,
+        progress_callback,
+        effective_pre_bars,
+    )
+
+
+def _run_owned_backtest(
+    run_id: str,
+    cancel_requests: set[str],
+    adapter,
+    strategy_class,
+    bars,
+    config,
+    params,
+    runtime_data_provider,
+    progress_callback=None,
+):
+    _BACKTEST_THREAD_CONTEXT.run_id = run_id
+    _BACKTEST_THREAD_CONTEXT.cancel_requests = cancel_requests
+    try:
+        return _run_backtest_in_process(
             adapter,
             strategy_class,
             bars,
             config,
             params,
             runtime_data_provider,
-            effective_pre_bars,
-        ),
-    )
-    proc.start()
-    final: tuple | None = None
-    while proc.is_alive() or final is None:
-        try:
-            status, *parts = out.get(timeout=0.5)
-        except queue.Empty:
-            if not proc.is_alive():
-                break
-            continue
-        if status == "progress":
-            if progress_callback is not None:
-                progress_callback(int(parts[0]), int(parts[1]))
-            continue
-        final = (status, *parts)
-        break
-    proc.join()
-    if final is None:
-        while True:
-            try:
-                status, *parts = out.get_nowait()
-            except queue.Empty:
-                break
-            if status == "progress":
-                if progress_callback is not None:
-                    progress_callback(int(parts[0]), int(parts[1]))
-                continue
-            final = (status, *parts)
-            break
-    try:
-        if final is None:
-            raise queue.Empty
-        status, *parts = final
-    except queue.Empty as exc:
-        if proc.exitcode == 0:
-            raise RuntimeError("backtest worker exited without a result") from exc
-        raise RuntimeError(f"backtest worker exited with code {proc.exitcode}") from exc
+            progress_callback,
+        )
     finally:
-        out.close()
-        out.cancel_join_thread()
-    if status == "ok":
-        return parts[0]
-    exc_name, message, tb = parts
-    raise RuntimeError(f"{exc_name}: {message}\n{tb}")
+        for name in ("run_id", "cancel_requests"):
+            if hasattr(_BACKTEST_THREAD_CONTEXT, name):
+                delattr(_BACKTEST_THREAD_CONTEXT, name)
 
 
 def _ensure_backtest_data_fingerprint_column(state: GatewayState) -> None:
@@ -262,9 +1020,8 @@ def _save_backtest_data_fingerprint(
 def _normalize_metrics_payload(metrics: dict | None) -> dict | None:
     if not isinstance(metrics, dict):
         return metrics
-    payload = (
-        metrics.get("metrics") if isinstance(metrics.get("metrics"), dict) else metrics
-    )
+    nested_metrics = metrics.get("metrics")
+    payload = nested_metrics if isinstance(nested_metrics, dict) else metrics
     normalized = dict(payload)
     if "trades_total" not in normalized and "total_trades" in normalized:
         normalized["trades_total"] = normalized["total_trades"]
@@ -283,6 +1040,7 @@ async def _run_backtest_background(
     warmup_bars: int,
     capture_plots: bool,
     initial_capital_override: float | None = None,
+    admission_lease: _BacktestLease | None = None,
 ) -> None:
     """Execute backtest in background, update progress via WebSocket."""
     import asyncio
@@ -327,7 +1085,7 @@ async def _run_backtest_background(
         )
 
         try:
-            strategy_class = load_strategy_class_from_artifact(
+            load_strategy_class_from_artifact(
                 strategy.pine_id,
                 strategy.artifact_id,
                 symbol=strategy.symbol,
@@ -529,23 +1287,24 @@ async def _run_backtest_background(
             capture_plots=capture_plots,
         )
 
-        # Run
-        from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
-        from openpine.runtime.engine import BacktestEngineAdapter
-
-        adapter = BacktestEngineAdapter()
-
-        # Create runtime data provider for request.security support
-        runtime_data_provider = None
-        try:
-            runtime_data_provider = create_local_runtime_data_provider_adapter(
-                cache_dir=(state.config.data_cache_root or (state.config.data_dir / "cache")) / "marketdata",
-                exchange=config.exchange,
-                market=config.market_type,
-                prefetch_end_ms=to_ms,
-            )
-        except Exception as exc:
-            log.warning("runtime_data_provider_init_failed", error=str(exc))
+        # Reconstruct unpicklable runtime objects inside a spawned worker.  This avoids
+        # forking the multithreaded API process while preserving process-tree cancellation.
+        state_config = getattr(state, "config", None)
+        configured_cache_root = getattr(state_config, "data_cache_root", None)
+        configured_data_dir = getattr(state_config, "data_dir", None) or Path(".")
+        cache_dir = (
+            configured_cache_root or (configured_data_dir / "cache")
+        ) / "marketdata"
+        artifact_spec = _ArtifactBacktestSpec(
+            pine_id=strategy.pine_id,
+            artifact_id=strategy.artifact_id,
+            symbol=strategy.symbol,
+            timeframe=strategy.timeframe,
+            cache_dir=str(cache_dir),
+            exchange=config.exchange,
+            market=config.market_type,
+            prefetch_end_ms=to_ms,
+        )
 
         def progress_callback(done: int, total: int) -> None:
             pct = _backtest_compute_pct(done, total)
@@ -565,13 +1324,15 @@ async def _run_backtest_background(
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: _run_backtest_in_process(
-                adapter,
-                strategy_class,
+            lambda: _run_owned_backtest(
+                run_id,
+                state.backtest_cancel_requests,
+                artifact_spec,
+                None,
                 bars,
                 config,
                 params,
-                runtime_data_provider,
+                None,
                 progress_callback,
             ),
         )
@@ -610,6 +1371,12 @@ async def _run_backtest_background(
         log.info("backtest_completed", run_id=run_id, bars=result.bars_processed)
         state.backtest_cancel_requests.discard(run_id)
 
+    except _BacktestCancelled as exc:
+        message = str(exc) or "Cancelled during compute"
+        state.backtest_store.mark_cancelled(run_id, message)
+        ws_manager.update_progress(run_id, "backtest", "cancelled", 0.0, message)
+        await ws_manager.broadcast_progress(run_id)
+        state.backtest_cancel_requests.discard(run_id)
     except Exception as exc:
         log.error("backtest_failed", run_id=run_id, error=str(exc))
         ws_manager.update_progress(run_id, "backtest", "failed", 0.0, str(exc))
@@ -619,6 +1386,9 @@ async def _run_backtest_background(
         except Exception:
             pass
         state.backtest_cancel_requests.discard(run_id)
+    finally:
+        if admission_lease is not None:
+            admission_lease.release()
 
 
 @router.post("/run", response_model=BacktestRunResponse)
@@ -626,6 +1396,10 @@ async def run_backtest(
     body: BacktestRunRequest,
     background_tasks: BackgroundTasks,
     state: GatewayState = Depends(get_state),
+    idempotency_key: Annotated[
+        str | None,
+        Header(alias="Idempotency-Key", min_length=8, max_length=128),
+    ] = None,
 ) -> BacktestRunResponse:
     """Start a backtest run (async, tracks progress via WebSocket)."""
     from_ms = _parse_date_ms(body.from_time)
@@ -651,24 +1425,122 @@ async def run_backtest(
     if estimate.effective_from >= estimate.effective_to:
         raise HTTPException(400, "No listed market data found in selected range")
 
+    idempotency_claimed = False
+    idempotency_request_hash: str | None = None
+    idempotency_claim_token: str | None = None
+    if idempotency_key is not None:
+        idempotency_request_hash = _backtest_request_hash(body)
+        idempotency_claim = _claim_backtest_idempotency(
+            state, idempotency_key, idempotency_request_hash
+        )
+        if idempotency_claim.result_id is not None:
+            existing_run = state.backtest_store.get_run(idempotency_claim.result_id)
+            if existing_run is None:
+                raise HTTPException(409, "The idempotent backtest result is no longer available")
+            return BacktestRunResponse(
+                run_id=existing_run.run_id,
+                strategy_id=existing_run.strategy_id,
+                status=existing_run.status,
+                started_at=existing_run.started_at,
+            )
+        idempotency_claimed = True
+        idempotency_claim_token = idempotency_claim.claim_token
+
     from openpine.storage.backtest_dto import BacktestRunRequest as BTRequest
 
-    run_id = state.backtest_store.create_run(
-        BTRequest(
-            strategy_id=body.strategy_id,
-            pine_id=strategy.pine_id,
-            artifact_id=strategy.artifact_id,
-            params_hash=strategy.params_hash,
-            exchange=strategy.exchange,
-            market_type=strategy.market_type,
-            symbol=strategy.symbol,
-            price_type="trade",
-            timeframe=strategy.timeframe,
-            from_time=estimate.effective_from,
-            to_time=estimate.effective_to,
-            warmup_bars=body.warmup_bars,
+    admission_lease = _backtest_admission_limiter(state).try_acquire()
+    if admission_lease is None:
+        if idempotency_claimed:
+            assert idempotency_key is not None
+            assert idempotency_request_hash is not None
+            assert idempotency_claim_token is not None
+            _release_backtest_idempotency(
+                state,
+                idempotency_key,
+                idempotency_request_hash,
+                idempotency_claim_token,
+            )
+        raise HTTPException(
+            429,
+            "Backtest capacity is saturated; retry after an active run finishes",
+            headers={"Retry-After": "5"},
         )
-    )
+    try:
+        run_id = state.backtest_store.create_run(
+            BTRequest(
+                strategy_id=body.strategy_id,
+                pine_id=strategy.pine_id,
+                artifact_id=strategy.artifact_id,
+                params_hash=strategy.params_hash,
+                exchange=strategy.exchange,
+                market_type=strategy.market_type,
+                symbol=strategy.symbol,
+                price_type="trade",
+                timeframe=strategy.timeframe,
+                from_time=estimate.effective_from,
+                to_time=estimate.effective_to,
+                warmup_bars=body.warmup_bars,
+            )
+        )
+    except BaseException as exc:
+        admission_lease.release()
+        if idempotency_claimed:
+            assert idempotency_key is not None
+            assert idempotency_request_hash is not None
+            assert idempotency_claim_token is not None
+            _release_backtest_idempotency(
+                state,
+                idempotency_key,
+                idempotency_request_hash,
+                idempotency_claim_token,
+            )
+        if isinstance(exc, Exception):
+            log.error(
+                "backtest_storage_unavailable",
+                operation="create_run",
+                error_type=exc.__class__.__name__,
+            )
+            raise HTTPException(503, "Backtest storage is unavailable") from exc
+        raise
+
+    if idempotency_claimed:
+        assert idempotency_key is not None
+        assert idempotency_request_hash is not None
+        assert idempotency_claim_token is not None
+        try:
+            _complete_backtest_idempotency(
+                state,
+                idempotency_key,
+                idempotency_request_hash,
+                idempotency_claim_token,
+                run_id,
+            )
+        except BaseException:
+            admission_lease.release()
+            try:
+                state.backtest_store.mark_failed(
+                    run_id, "Failed to persist idempotency mapping"
+                )
+            except Exception as cleanup_exc:
+                log.error(
+                    "backtest_idempotency_cleanup_failed",
+                    operation="mark_failed",
+                    error_type=cleanup_exc.__class__.__name__,
+                )
+            try:
+                _release_backtest_idempotency(
+                    state,
+                    idempotency_key,
+                    idempotency_request_hash,
+                    idempotency_claim_token,
+                )
+            except HTTPException as cleanup_exc:
+                log.error(
+                    "backtest_idempotency_cleanup_failed",
+                    operation="release_claim",
+                    status_code=cleanup_exc.status_code,
+                )
+            raise
 
     queued_message = "Backtest queued"
     if estimate.adjusted:
@@ -676,26 +1548,40 @@ async def run_backtest(
             f"Backtest queued. Range adjusted to listed data: "
             f"{estimate.estimated_bars:,} bars ({estimate.estimated_pages} pages)."
         )
-    ws_manager.update_progress(
-        run_id,
-        "backtest",
-        "queued",
-        0.0,
-        queued_message,
-        detail=estimate.model_dump(),
-    )
-    background_tasks.add_task(
-        _run_backtest_background,
-        state,
-        body.strategy_id,
-        run_id,
-        estimate.effective_from,
-        estimate.effective_to,
-        body.params_override,
-        body.warmup_bars,
-        body.capture_plots,
-        body.initial_capital,
-    )
+    try:
+        ws_manager.update_progress(
+            run_id,
+            "backtest",
+            "queued",
+            0.0,
+            queued_message,
+            detail=estimate.model_dump(),
+        )
+        background_tasks.add_task(
+            _run_backtest_background,
+            state,
+            body.strategy_id,
+            run_id,
+            estimate.effective_from,
+            estimate.effective_to,
+            body.params_override,
+            body.warmup_bars,
+            body.capture_plots,
+            body.initial_capital,
+            admission_lease,
+        )
+    except BaseException as exc:
+        admission_lease.release()
+        try:
+            state.backtest_store.mark_failed(run_id, "Failed to schedule backtest")
+        except Exception as cleanup_exc:
+            log.error(
+                "backtest_schedule_cleanup_failed",
+                error_type=cleanup_exc.__class__.__name__,
+            )
+        if isinstance(exc, Exception):
+            raise HTTPException(503, "Unable to schedule backtest") from exc
+        raise
 
     log.info("backtest_started", run_id=run_id, strategy_id=body.strategy_id)
     return BacktestRunResponse(
@@ -730,7 +1616,7 @@ async def estimate_backtest(
 @router.get("/runs", response_model=list[BacktestRunDetail])
 async def list_runs(
     strategy_id: str | None = None,
-    limit: int = 50,
+    limit: Annotated[int, Query(ge=1, le=500)] = 50,
     state: GatewayState = Depends(get_state),
 ) -> list[BacktestRunDetail]:
     """List backtest runs."""
@@ -846,7 +1732,7 @@ async def run_action(
     action: str,
     state: GatewayState = Depends(get_state),
 ) -> dict[str, object]:
-    """Control a backtest run. Cancel is cooperative and checked between heavy phases."""
+    """Cancel a run and wait for any owned compute process tree to stop."""
     run = state.backtest_store.get_run(run_id)
     if run is None:
         raise HTTPException(404, f"Run not found: {run_id}")
@@ -860,6 +1746,39 @@ async def run_action(
             "accepted": False,
         }
     state.backtest_cancel_requests.add(run_id)
+    worker = _active_backtest_worker(run_id)
+    if worker is None and _backtest_worker_is_starting(run_id):
+        import asyncio
+
+        registration_deadline = time.monotonic() + 5.5
+        while (
+            worker is None
+            and _backtest_worker_is_starting(run_id)
+            and time.monotonic() < registration_deadline
+        ):
+            await asyncio.sleep(0.01)
+            worker = _active_backtest_worker(run_id)
+    if worker is not None:
+        import asyncio
+
+        worker.cancel_requested.set()
+        stopped = await asyncio.to_thread(_terminate_backtest_worker, worker)
+        if not stopped:
+            raise HTTPException(503, "Backtest process tree did not stop")
+        message = "Cancelled during compute"
+        state.backtest_store.mark_cancelled(run_id, message)
+        state.backtest_cancel_requests.discard(run_id)
+        ws_manager.update_progress(
+            run_id, "backtest", "cancelled", 0.0, message
+        )
+        await ws_manager.broadcast_progress(run_id)
+        return {
+            "run_id": run_id,
+            "action": action,
+            "status": "cancelled",
+            "accepted": True,
+        }
+
     ws_manager.update_progress(
         run_id, "backtest", "cancelling", 0.0, "Cancel requested"
     )
@@ -868,7 +1787,7 @@ async def run_action(
         "run_id": run_id,
         "action": action,
         "status": "cancelling",
-        "accepted": True,
+        "accepted": False,
     }
 
 
@@ -876,12 +1795,14 @@ async def run_action(
 async def get_run_trades(
     run_id: str,
     state: GatewayState = Depends(get_state),
+    limit: Annotated[int, Query(ge=1, le=5000)] = 500,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[BacktestTradeResponse]:
-    """Get trade log for a backtest run."""
+    """Get one bounded trade-log page for a backtest run."""
     run = state.backtest_store.get_run(run_id)
     if run is None:
         raise HTTPException(404, f"Run not found: {run_id}")
-    trades = state.backtest_store.list_trades(run_id)
+    trades = state.backtest_store.list_trades(run_id, limit=limit, offset=offset)
     return [
         BacktestTradeResponse(
             trade_id=t.trade_id,
@@ -951,7 +1872,8 @@ async def get_progress(run_id: str) -> BacktestProgress | None:
 @router.get("/progress/{run_id}/detail")
 async def get_progress_detail(run_id: str) -> dict[str, object] | None:
     """Get detailed progress including error message."""
-    return ws_manager.get_progress(run_id)
+    progress = ws_manager.get_progress(run_id)
+    return dict(progress) if isinstance(progress, dict) else None
 
 
 # ── Backtest output routes ────────────────────────────────────────────────────
@@ -962,7 +1884,7 @@ def _read_parquet_as_csv(path: str) -> str:
     import pandas as pd
 
     df = pd.read_parquet(path)
-    return df.to_csv(index=False)
+    return str(df.to_csv(index=False))
 
 
 def _path_is_under(path: Path, root: Path) -> bool:

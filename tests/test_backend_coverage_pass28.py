@@ -39,7 +39,11 @@ def test_state_store_interval_invalid_delete_and_metadata_edges(tmp_path: Path):
     store.set_save_policy(SavePolicy.EVERY_BAR)
     meta2 = store.save_snapshot(_state(bar_time=30))
     assert meta2 is not None
-    assert meta1.status == "superseded" and meta2.status == "active"
+    statuses = {
+        item.snapshot_id: item.status for item in store.list_snapshots("s1")
+    }
+    assert statuses[meta1.snapshot_id] == "superseded"
+    assert statuses[meta2.snapshot_id] == "active"
     assert store.latest_snapshot_metadata("s1").snapshot_id == meta2.snapshot_id
     assert store.load_snapshot("s1").bar_time == 30
     assert store.load_latest_compatible("s1", artifact_id="a1", params_hash="h1").bar_time == 30

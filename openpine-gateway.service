@@ -11,10 +11,11 @@ WorkingDirectory=/opt/openpine
 Environment=OPENPINE_HOME=/var/lib/openpine
 Environment=OPENPINE_ROOT=/opt/openpine
 Environment=OPENPINE_PYTHON=/opt/openpine/.venv/bin/python
+Environment=OPENPINE_ENV=production
 Environment=OPENPINE_WORKER_MAX_RESTARTS=3
 Environment=OPENPINE_WORKER_RESTART_WINDOW_SECONDS=300
 Environment=OPENPINE_WORKER_RESTART_BACKOFF_MAX_SECONDS=30
-EnvironmentFile=-/opt/openpine/.env
+EnvironmentFile=/opt/openpine/.env
 ExecStart=/opt/openpine/scripts/run_gateway_systemd.sh
 Restart=on-failure
 RestartSec=5
