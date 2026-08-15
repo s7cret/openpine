@@ -1,0 +1,49 @@
+{
+  "schema": "openpine.stack-candidate.v1",
+  "id": "5.0.0-rc.1",
+  "not_a_release": true,
+  "identity_note": "Package versions stay 4.0.2. This is a feat-train pin, not v4.0.2 rewrite.",
+  "contracts_pin": "51e32ebaaf02eecb81443e8ca7e89b2543cb25a3",
+  "components": {
+    "openpine-contracts": {
+      "repo": "s7cret/openpine-contracts",
+      "ref": "feat/5.0-contracts",
+      "sha": "51e32ebaaf02eecb81443e8ca7e89b2543cb25a3"
+    },
+    "marketdata-provider": {
+      "repo": "s7cret/marketdata-provider",
+      "ref": "feat/5.0-bar-v2",
+      "sha": "db8d36ee1662ff3b94f7539dc59239b21ec73520"
+    },
+    "pinelib": {
+      "repo": "s7cret/pinelib",
+      "ref": "feat/5.0-intent-tape",
+      "sha": "27ffa51f1cff9fef50cf2571736878ebaf2bd099"
+    },
+    "backtest_engine": {
+      "repo": "s7cret/backtest_engine",
+      "ref": "feat/5.0-warmup-reset",
+      "sha": "9f7ef99ab9e05ca8943ba1a98978b445ec8f740d"
+    },
+    "pine2ast": {
+      "repo": "s7cret/pine2ast",
+      "ref": "feat/5.0-contracts-pin",
+      "sha": "ce1f504ef0e47764043024800ba406b7dae8a43f"
+    },
+    "ast2python": {
+      "repo": "s7cret/ast2python",
+      "ref": "feat/5.0-contracts-pin",
+      "sha": "949cfa63e33b4c516c5c954e62534112b34c7427"
+    },
+    "optimizer": {
+      "repo": "s7cret/optimizer",
+      "ref": "feat/5.0-contracts-pin",
+      "sha": "5c2d33b1f7641f0d09e389c0bfcec9bb8e2974e4"
+    },
+    "openpine": {
+      "repo": "s7cret/openpine",
+      "ref": "feat/5.0-isolated-worker",
+      "sha": "THIS_CHECKOUT"
+    }
+  }
+}
