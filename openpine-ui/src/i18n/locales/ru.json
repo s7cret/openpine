@@ -13,7 +13,9 @@
     "tokenRequired": "Введите API-токен.",
     "unlockFailed": "API-токен отклонён.",
     "unlock": "Разблокировать",
-    "dismiss": "Не сейчас"
+    "dismiss": "Не сейчас",
+    "notFoundTitle": "Страница не найдена",
+    "notFoundDescription": "Такого маршрута нет."
   },
   "nav": {
     "dashboard": "Дашборд",
@@ -23,7 +25,8 @@
     "tvParity": "TV-паритет",
     "data": "Данные",
     "achievements": "Достижения",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "jobs": "Задачи"
   },
   "common": {
     "refresh": "Обновить",

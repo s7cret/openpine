@@ -13,7 +13,9 @@
     "tokenRequired": "Enter the API token.",
     "unlockFailed": "The API token was rejected.",
     "unlock": "Unlock",
-    "dismiss": "Not now"
+    "dismiss": "Not now",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "This route does not exist."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -23,7 +25,8 @@
     "tvParity": "TV Parity",
     "data": "Data",
     "achievements": "Achievements",
-    "settings": "Settings"
+    "settings": "Settings",
+    "jobs": "Jobs"
   },
   "common": {
     "refresh": "Refresh",

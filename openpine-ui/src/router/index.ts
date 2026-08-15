@@ -10,6 +10,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/data', name: 'data', component: () => import('@/pages/Data.vue') },
   { path: '/achievements', name: 'achievements', component: () => import('@/pages/Achievements.vue') },
   { path: '/settings', name: 'settings', component: () => import('@/pages/Settings.vue') },
+  { path: '/jobs', name: 'jobs', component: () => import('@/pages/JobInbox.vue') },
+  { path: '/jobs/:jobId', name: 'job', component: () => import('@/pages/JobInbox.vue') },
+  { path: '/strategies/:strategyId', name: 'strategy', component: () => import('@/pages/Strategies.vue') },
+  { path: '/backtests/:runId', name: 'backtest', component: () => import('@/pages/Backtests.vue') },
+  { path: '/tv-parity/:runId', name: 'tv-parity-run', component: () => import('@/pages/TvParity.vue') },
+  { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/pages/NotFound.vue') },
 ]
 
 const router = createRouter({
