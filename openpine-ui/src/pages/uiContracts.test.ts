@@ -104,6 +104,8 @@ describe('global UI correctness contracts', () => {
     expect(jobsPage).toContain('job.job_id')
     expect(jobsPage).toContain('compareJobs')
     expect(jobsPage).toContain('jobs-compare-warning')
+    const generated = source('api/generated/openapi.ts')
+    expect(generated).toContain("/api/jobs/compare")
     expect(jobsPage).not.toContain('crypto.randomUUID')
     expect(detail).toContain('route.params.jobId')
     expect(detail).not.toContain('crypto.randomUUID')

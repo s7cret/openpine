@@ -92,8 +92,19 @@ def _isolation():
 def main() -> int:
     resource.setrlimit(resource.RLIMIT_CPU, (2, 2))
     resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
+    try:
+        resource.setrlimit(resource.RLIMIT_AS, (134217728, 134217728))
+        resource.setrlimit(resource.RLIMIT_FSIZE, (1048576, 1048576))
+    except (ValueError, resource.error):
+        pass
     raw = sys.stdin.read(1_000_000)
     request = json.loads(raw)
+    if request.get("stack_id") != "openpine-5.0":
+        json.dump({"ok": False, "error": "stack_id mismatch"}, sys.stdout)
+        return 2
+    if request.get("semantic_profile") not in {"legacy_4x", "strict_5x"}:
+        json.dump({"ok": False, "error": "semantic_profile required"}, sys.stdout)
+        return 2
     source = request["source"]
     tree = ast.parse(source)
     denied = _denied(tree)
@@ -205,14 +216,26 @@ def evaluate_artifact(
     source: bytes,
     *,
     timeout_s: float = 5.0,
+    stack_id: str = "openpine-5.0",
+    semantic_profile: str = "legacy_4x",
 ) -> dict[str, Any]:
     if len(source) > 500_000:
         raise IsolatedWorkerError("artifact source exceeds size limit")
+    if stack_id != "openpine-5.0":
+        raise IsolatedWorkerError("stack_id mismatch")
+    if semantic_profile not in {"legacy_4x", "strict_5x"}:
+        raise IsolatedWorkerError("semantic_profile required")
     try:
         # Immutable argv: trusted bwrap + /usr/bin/python3. No shell, no user path.
         completed = subprocess.run(  # noqa: S603
             _bwrap_argv(),
-            input=json.dumps({"source": source.decode("utf-8")}),
+            input=json.dumps(
+                {
+                    "source": source.decode("utf-8"),
+                    "stack_id": stack_id,
+                    "semantic_profile": semantic_profile,
+                }
+            ),
             capture_output=True,
             text=True,
             timeout=timeout_s,
@@ -220,6 +243,8 @@ def evaluate_artifact(
         )
     except subprocess.TimeoutExpired as exc:
         raise IsolatedWorkerError("timeout") from exc
+    if len(completed.stdout) > 1_000_000 or len(completed.stderr) > 1_000_000:
+        raise IsolatedWorkerError("excessive worker output")
     if completed.returncode != 0:
         detail = completed.stdout.strip() or completed.stderr.strip() or "worker failed"
         raise IsolatedWorkerError(detail)

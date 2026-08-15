@@ -135,3 +135,37 @@ def test_worker_rejects_huge_source_and_subprocess() -> None:
         evaluate_artifact(b"x = 1\n" * 100_000, timeout_s=5)
     with pytest.raises(IsolatedWorkerError, match="subprocess"):
         evaluate_artifact(b'__import__("subprocess")\n', timeout_s=5)
+
+
+def test_worker_argv_has_no_new_session() -> None:
+    from openpine.runtime.isolated_worker import IsolatedWorkerError, _bwrap_argv
+
+    argv: list[str]
+    try:
+        argv = _bwrap_argv()
+    except IsolatedWorkerError:
+        pytest.skip("bubblewrap missing")
+    assert "--new-session" not in argv
+    assert "--unshare-net" in argv
+    assert "--unshare-pid" in argv
+    assert "--die-with-parent" in argv
+    assert "--clearenv" in argv
+
+
+def test_worker_handshake_rejects_unknown_stack_and_profile() -> None:
+    with pytest.raises(IsolatedWorkerError, match="stack_id"):
+        evaluate_artifact(b"VALUE = 1\n", stack_id="wrong")
+    with pytest.raises(IsolatedWorkerError, match="semantic_profile"):
+        evaluate_artifact(b"VALUE = 1\n", semantic_profile="nope")
+
+
+def test_worker_kills_memory_bomb() -> None:
+    source = "x = []\nwhile True:\n    x.append('x' * 1048576)\n"
+    with pytest.raises(IsolatedWorkerError):
+        evaluate_artifact(source.encode("utf-8"), timeout_s=2)
+
+
+def test_worker_kills_fork_bomb() -> None:
+    source = "import os\nwhile True:\n    os.fork()\n"
+    with pytest.raises(IsolatedWorkerError):
+        evaluate_artifact(source.encode("utf-8"), timeout_s=2)
