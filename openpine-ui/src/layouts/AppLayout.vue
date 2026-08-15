@@ -23,8 +23,11 @@ const navItems = computed(() => [
   { path: '/pine-files',   label: t('nav.pineFiles'),    icon: '📄' },
   { path: '/strategies',   label: t('nav.strategies'),   icon: '⚡' },
   { path: '/backtests',    label: t('nav.backtests'),    icon: '🧪' },
+  { path: '/optimize',     label: t('nav.optimizer'),    icon: '🔎' },
+  { path: '/live',         label: t('nav.live'),         icon: '📡' },
   { path: '/tv-parity',    label: t('nav.tvParity'),     icon: '📺' },
   { path: '/data',         label: t('nav.data'),         icon: '💾' },
+  { path: '/jobs',         label: t('nav.jobs'),         icon: '📥' },
   { path: '/achievements', label: t('nav.achievements'), icon: '🏆' },
   { path: '/settings',     label: t('nav.settings'),     icon: '⚙️' },
 ])

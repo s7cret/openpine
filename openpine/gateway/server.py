@@ -29,6 +29,7 @@ from openpine.gateway.routes import (
     backtest,
     dashboard,
     events,
+    jobs,
     optimizer,
     orders_positions,
     pine_ops,
@@ -422,6 +423,7 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.include_router(
         accounts_data.router, prefix=api_prefix, dependencies=api_dependencies
     )
+    app.include_router(jobs.router, prefix=api_prefix, dependencies=api_dependencies)
     app.include_router(optimizer.router, prefix=api_prefix, dependencies=api_dependencies)
     app.include_router(tv_parity.router, prefix=api_prefix, dependencies=api_dependencies)
     app.include_router(

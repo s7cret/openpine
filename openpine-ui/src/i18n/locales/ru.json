@@ -13,7 +13,8 @@
     "tokenRequired": "Введите API-токен.",
     "unlockFailed": "API-токен отклонён.",
     "unlock": "Разблокировать",
-    "dismiss": "Не сейчас"
+    "dismiss": "Не сейчас",
+    "notFound": "Не найдено"
   },
   "nav": {
     "dashboard": "Дашборд",
@@ -23,7 +24,10 @@
     "tvParity": "TV-паритет",
     "data": "Данные",
     "achievements": "Достижения",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "jobs": "Задачи",
+    "optimizer": "Оптимизатор",
+    "live": "Live"
   },
   "common": {
     "refresh": "Обновить",
@@ -629,5 +633,15 @@
     "symbolLoading": "Загрузка с {exchange}...",
     "exchangeBadge": "◆ {name}",
     "exchangeBadgeDisabled": "◆ {name} — {reason}"
+  },
+  "optimizer": {
+    "placeholder": "Проверьте пространство параметров до запуска trials. Champion — отдельное действие.",
+    "selectStrategy": "Сначала выберите стратегию",
+    "trials": "Trials",
+    "validate": "Проверить конфиг"
+  },
+  "live": {
+    "placeholder": "Paper/live. Эта страница не стартует live при открытии.",
+    "stopped": "Запрошена остановка. Live остаётся deny-by-default."
   }
 }

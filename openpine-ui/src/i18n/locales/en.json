@@ -13,7 +13,8 @@
     "tokenRequired": "Enter the API token.",
     "unlockFailed": "The API token was rejected.",
     "unlock": "Unlock",
-    "dismiss": "Not now"
+    "dismiss": "Not now",
+    "notFound": "Not found"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -23,7 +24,10 @@
     "tvParity": "TV Parity",
     "data": "Data",
     "achievements": "Achievements",
-    "settings": "Settings"
+    "settings": "Settings",
+    "jobs": "Jobs",
+    "optimizer": "Optimizer",
+    "live": "Live"
   },
   "common": {
     "refresh": "Refresh",
@@ -629,5 +633,15 @@
     "symbolLoading": "Loading from {exchange}...",
     "exchangeBadge": "◆ {name}",
     "exchangeBadgeDisabled": "◆ {name} — {reason}"
+  },
+  "optimizer": {
+    "placeholder": "Validate a parameter search before launching trials. Champion promotion is a separate action.",
+    "selectStrategy": "Select a strategy first",
+    "trials": "Trials",
+    "validate": "Validate config"
+  },
+  "live": {
+    "placeholder": "Paper/live controls. This page never starts live on mount.",
+    "stopped": "Strategy stop requested. Live remains deny-by-default."
   }
 }

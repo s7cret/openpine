@@ -37,6 +37,16 @@ def _activate_registry_strategy(
     registry.set_enabled(strategy_id, True)
 
 
+@router.get("/live/status")
+async def live_status(state: GatewayState = Depends(get_state)) -> dict[str, Any]:
+    """Non-mutating live admission/status. Never starts trading."""
+    return {
+        "mode": "OFF",
+        "live_enabled": bool(getattr(state.config, "live_enabled", False)),
+        "mutating": False,
+    }
+
+
 @router.post("/paper/start", response_model=TradingStatusResponse)
 async def start_paper(
     body: PaperStartRequest,
