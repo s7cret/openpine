@@ -29,6 +29,7 @@ dependencies = [
     "backtest-engine @ git+https://github.com/s7cret/backtest_engine.git@329b9905bff2ea0b7b7f48662e4ce8b83d919c60",
     "marketdata-provider @ git+https://github.com/s7cret/marketdata-provider.git@b868ace65524f5c3bf62498f667db411e299a4ce",
     "optimizer @ git+https://github.com/s7cret/optimizer.git@73d67934d078cb97a4947cc7b0b12665c4086099",
+    "openpine-contracts @ git+https://github.com/s7cret/openpine-contracts.git@51e32ebaaf02eecb81443e8ca7e89b2543cb25a3",
 ]
 
 [project.urls]

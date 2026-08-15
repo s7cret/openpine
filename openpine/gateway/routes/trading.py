@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from openpine._compat import structlog
+from openpine.admission import DEFAULT_STACK_ID, admit_run
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.routes.activation_guard import (
     guarded_strategy_activation,
@@ -20,6 +21,7 @@ from openpine.registry.strategies import (
     ArchivedStrategyActivationError,
     WorkerCircuitOpenError,
 )
+from openpine_contracts import AdmitError
 
 log = structlog.get_logger(__name__)
 router = APIRouter(tags=["trading"])
@@ -43,6 +45,10 @@ async def start_paper(
     state: GatewayState = Depends(get_state),
 ) -> TradingStatusResponse:
     """Start paper trading for a strategy."""
+    try:
+        admit_run(mode="paper", stack_id=DEFAULT_STACK_ID)
+    except AdmitError as exc:
+        raise HTTPException(403, exc.message) from exc
     registry = state.strategy_registry
     try:
         s = registry.get_strategy(body.strategy_id)
@@ -105,6 +111,11 @@ async def start_live(
             403,
             "Live trading is disabled globally. Enable in config before starting live.",
         )
+
+    try:
+        admit_run(mode="live", stack_id=DEFAULT_STACK_ID)
+    except AdmitError as exc:
+        raise HTTPException(403, exc.message) from exc
 
     registry = state.strategy_registry
     try:

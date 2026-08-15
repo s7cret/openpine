@@ -23,6 +23,7 @@ from typing import Annotated, Any, cast
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 
 from openpine._compat import structlog
+from openpine.admission import DEFAULT_STACK_ID, admit_run
 from openpine.exchange_metadata import (
     default_price_tick,
     default_qty_rounding_mode,
@@ -2198,6 +2199,12 @@ async def run_backtest(
     ] = None,
 ) -> BacktestRunResponse:
     """Start a backtest run (async, tracks progress via WebSocket)."""
+    from openpine_contracts import AdmitError
+
+    try:
+        admit_run(mode="backtest", stack_id=DEFAULT_STACK_ID)
+    except AdmitError as exc:
+        raise HTTPException(403, exc.message) from exc
     from_ms = _parse_date_ms(body.from_time)
     to_ms = _parse_date_ms(body.to_time)
     if from_ms >= to_ms:
