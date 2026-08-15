@@ -100,6 +100,13 @@ async def start_live(
     state: GatewayState = Depends(get_state),
 ) -> TradingStatusResponse:
     """Start live trading for a strategy (requires global live_enabled)."""
+    from openpine.stack_lock import StackLockAdmissionError, admit_stack_lock
+    from fastapi import HTTPException
+
+    try:
+        admit_stack_lock(mode="LIVE")
+    except StackLockAdmissionError as exc:
+        raise HTTPException(409, f"stack lock admission failed: {exc}") from exc
     if not state.config.live_enabled:
         raise HTTPException(
             403,

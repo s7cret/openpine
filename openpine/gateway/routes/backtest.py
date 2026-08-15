@@ -2198,6 +2198,13 @@ async def run_backtest(
     ] = None,
 ) -> BacktestRunResponse:
     """Start a backtest run (async, tracks progress via WebSocket)."""
+    from openpine.stack_lock import StackLockAdmissionError, admit_stack_lock
+    from fastapi import HTTPException
+
+    try:
+        admit_stack_lock(mode="BACKTEST")
+    except StackLockAdmissionError as exc:
+        raise HTTPException(409, f"stack lock admission failed: {exc}") from exc
     from_ms = _parse_date_ms(body.from_time)
     to_ms = _parse_date_ms(body.to_time)
     if from_ms >= to_ms:

@@ -390,3 +390,76 @@ def stack_lock_summary(lock: Mapping[str, Any] | None = None) -> dict[str, Any]:
         "source_tree_matches": source_tree_sha256 == expected_tree_sha256,
         "components": components,
     }
+
+
+ADMISSION_MODES = frozenset(
+    {
+        "COMPILE",
+        "BACKTEST",
+        "OPTIMIZE",
+        "PARITY",
+        "PAPER",
+        "LIVE",
+        "BACKFILL",
+    }
+)
+
+
+class StackLockAdmissionError(RuntimeError):
+    def __init__(self, message: str, *, code: str, details: Mapping[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.details = dict(details or {})
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"code": self.code, "message": str(self), "details": self.details}
+
+
+def normalize_admission_mode(mode: str) -> str:
+    value = str(mode or "").strip().upper()
+    if value not in ADMISSION_MODES:
+        raise StackLockAdmissionError(
+            f"unknown admission mode: {mode}",
+            code="UNKNOWN_ADMISSION_MODE",
+            details={"mode": mode},
+        )
+    return value
+
+
+def local_dev_override_allowed(*, mode: str) -> bool:
+    profile = os.environ.get("OPENPINE_PROFILE", "")
+    flag = os.environ.get("OPENPINE_ALLOW_STACK_LOCK_DRIFT", "")
+    return (
+        mode not in {"LIVE", "PAPER"}
+        and profile == "local-dev"
+        and flag == "1"
+    )
+
+
+def evaluate_stack_lock(*, mode: str) -> dict[str, Any]:
+    resolved = normalize_admission_mode(mode)
+    lock = load_stack_lock()
+    errors = list(validate_stack_lock(lock))
+    override = local_dev_override_allowed(mode=resolved)
+    result = {
+        "admitted": not errors or override,
+        "code": "ADMIT_OK" if not errors else ("STACK_LOCK_DRIFT_OVERRIDE" if override else "STACK_LOCK_DENIED"),
+        "mode": resolved,
+        "sha256": stack_lock_identity(lock),
+        "release": lock.get("release"),
+        "errors": errors,
+        "override": override,
+        "reproducibility": "DEGRADED" if errors and override else "LOCKED",
+    }
+    return result
+
+
+def admit_stack_lock(*, mode: str) -> dict[str, Any]:
+    result = evaluate_stack_lock(mode=mode)
+    if not result["admitted"]:
+        raise StackLockAdmissionError(
+            "; ".join(result["errors"]) or "stack lock denied",
+            code=str(result["code"]),
+            details=result,
+        )
+    return result

@@ -405,6 +405,9 @@ def _prepare_strategy_backtest_inputs(
     perf_counter,
     console,
 ):
+    from openpine.stack_lock import admit_stack_lock
+
+    admit_stack_lock(mode="BACKTEST")
     start_ms, end_ms, capture_from_ms, capture_to_ms = (
         _parse_valid_strategy_backtest_window(
             from_date=from_date,

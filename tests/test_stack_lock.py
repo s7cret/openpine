@@ -10,8 +10,11 @@ from pathlib import Path, PurePosixPath
 
 from openpine.stack_lock import (
     EXPECTED_COMPONENTS,
+    StackLockAdmissionError,
     _github_repository_from_url,
     _transitive_pin_errors,
+    admit_stack_lock,
+    evaluate_stack_lock,
     load_stack_lock,
     package_tree_identity,
     stack_lock_identity,
@@ -108,6 +111,55 @@ def test_stack_lock_identity_is_canonical_and_tamper_evident() -> None:
     tampered = copy.deepcopy(lock)
     tampered["components"][1]["commit"] = "1" * 40
     assert stack_lock_identity(tampered) != identity
+
+
+def test_unknown_mode_is_hard_fail() -> None:
+    try:
+        admit_stack_lock(mode="maybe-live")
+    except StackLockAdmissionError as exc:
+        assert exc.code == "UNKNOWN_ADMISSION_MODE"
+    else:
+        raise AssertionError("unknown mode must fail closed")
+
+
+def test_live_never_allows_env_override(monkeypatch) -> None:
+    monkeypatch.setenv("OPENPINE_ALLOW_STACK_LOCK_DRIFT", "1")
+    monkeypatch.setenv("OPENPINE_PROFILE", "local-dev")
+    monkeypatch.setattr(
+        "openpine.stack_lock.validate_stack_lock",
+        lambda lock, root=None: ("stack lock release must match package version",),
+    )
+    try:
+        admit_stack_lock(mode="live")
+    except StackLockAdmissionError as exc:
+        assert exc.code == "STACK_LOCK_DENIED"
+    else:
+        raise AssertionError("live admission must fail closed")
+
+
+def test_backtest_override_requires_local_dev_profile(monkeypatch) -> None:
+    monkeypatch.setenv("OPENPINE_ALLOW_STACK_LOCK_DRIFT", "1")
+    monkeypatch.delenv("OPENPINE_PROFILE", raising=False)
+    monkeypatch.setattr(
+        "openpine.stack_lock.validate_stack_lock",
+        lambda lock, root=None: ("stack lock release must match package version",),
+    )
+    try:
+        admit_stack_lock(mode="BACKTEST")
+    except StackLockAdmissionError:
+        pass
+    else:
+        raise AssertionError("env flag alone must not override")
+    monkeypatch.setenv("OPENPINE_PROFILE", "local-dev")
+    result = admit_stack_lock(mode="BACKTEST")
+    assert result["override"] is True
+    assert result["reproducibility"] == "DEGRADED"
+    try:
+        evaluate_stack_lock(mode="CLI")
+    except StackLockAdmissionError as exc:
+        assert exc.code == "UNKNOWN_ADMISSION_MODE"
+    else:
+        raise AssertionError("CLI is not a valid admission mode")
 
 
 def test_stack_lock_validation_reports_component_and_sha_errors() -> None:
