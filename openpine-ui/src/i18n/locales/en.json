@@ -26,7 +26,9 @@
     "data": "Data",
     "achievements": "Achievements",
     "settings": "Settings",
-    "jobs": "Jobs"
+    "jobs": "Jobs",
+    "optimizer": "Optimizer",
+    "live": "Live"
   },
   "common": {
     "refresh": "Refresh",
@@ -632,5 +634,11 @@
     "symbolLoading": "Loading from {exchange}...",
     "exchangeBadge": "◆ {name}",
     "exchangeBadgeDisabled": "◆ {name} — {reason}"
+  },
+  "optimizer": {
+    "placeholder": "Search space, trials and champion promotion."
+  },
+  "live": {
+    "placeholder": "Paper/live controls. Default deny."
   }
 }

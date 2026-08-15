@@ -385,7 +385,9 @@ class OptimizerService:
 
     def validate_config(self, strategy_id: str, trials: int) -> DryRunValidationResult:
         """Validate optimizer CLI inputs without returning a production result."""
-        validation_reason = _validate_trials(trials)
+        validation_reason = _validate_trials(trials) or _validate_strategy_id(strategy_id)
+        if validation_reason is None:
+            validation_reason = _validate_strategy_exists(strategy_id)
         if validation_reason is not None:
             return DryRunValidationResult(
                 strategy_id=strategy_id,
@@ -397,10 +399,28 @@ class OptimizerService:
             strategy_id=strategy_id,
             trials_requested=trials,
             status="valid",
+            reason="dry-run only; parameter search is not started",
         )
 
 
 def _validate_trials(trials: int) -> str | None:
     if trials < 1:
         return "trials must be >= 1"
+    return None
+
+
+def _validate_strategy_id(strategy_id: str) -> str | None:
+    value = str(strategy_id or "").strip()
+    if not value or value in {"x", "__probe__"}:
+        return "strategy_id is missing or placeholder"
+    return None
+
+
+def _validate_strategy_exists(strategy_id: str) -> str | None:
+    try:
+        from openpine.registry.strategies import SqliteStrategyRegistry as StrategyRegistry
+
+        StrategyRegistry().get_strategy(strategy_id)
+    except Exception:
+        return "strategy not found"
     return None

@@ -8,7 +8,8 @@ import AuthUnlockDialog from '@/components/AuthUnlockDialog.vue'
 import TradeNotifications from '@/components/TradeNotifications.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
+const labelOr = (key: string, fallback: string) => (te(key) ? t(key) : fallback)
 const router = useRouter()
 const route = useRoute()
 const sidebarOpen = ref(false)
@@ -23,7 +24,9 @@ const navItems = computed(() => [
   { path: '/pine-files',   label: t('nav.pineFiles'),    icon: '📄' },
   { path: '/strategies',   label: t('nav.strategies'),   icon: '⚡' },
   { path: '/backtests',    label: t('nav.backtests'),    icon: '🧪' },
-  { path: '/jobs',         label: t('nav.jobs'),         icon: '📥' },
+  { path: '/optimize',     label: labelOr('nav.optimizer', 'Optimizer'), icon: '🎯' },
+  { path: '/live',         label: labelOr('nav.live', 'Live'),           icon: '📡' },
+  { path: '/jobs',         label: labelOr('nav.jobs', 'Jobs'),           icon: '📥' },
   { path: '/tv-parity',    label: t('nav.tvParity'),     icon: '📺' },
   { path: '/data',         label: t('nav.data'),         icon: '💾' },
   { path: '/achievements', label: t('nav.achievements'), icon: '🏆' },

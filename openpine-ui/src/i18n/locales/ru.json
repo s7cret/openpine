@@ -26,7 +26,9 @@
     "data": "Данные",
     "achievements": "Достижения",
     "settings": "Настройки",
-    "jobs": "Задачи"
+    "jobs": "Задачи",
+    "optimizer": "Оптимизатор",
+    "live": "Live"
   },
   "common": {
     "refresh": "Обновить",
@@ -632,5 +634,11 @@
     "symbolLoading": "Загрузка с {exchange}...",
     "exchangeBadge": "◆ {name}",
     "exchangeBadgeDisabled": "◆ {name} — {reason}"
+  },
+  "optimizer": {
+    "placeholder": "Пространство параметров, trials и promote чемпиона."
+  },
+  "live": {
+    "placeholder": "Paper/live. По умолчанию запрещено."
   }
 }
