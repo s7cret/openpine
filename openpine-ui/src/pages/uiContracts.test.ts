@@ -102,6 +102,8 @@ describe('global UI correctness contracts', () => {
     const detail = source('pages/JobDetail.vue')
     const store = source('stores/jobs.ts')
     expect(jobsPage).toContain('job.job_id')
+    expect(jobsPage).toContain('compareJobs')
+    expect(jobsPage).toContain('jobs-compare-warning')
     expect(jobsPage).not.toContain('crypto.randomUUID')
     expect(detail).toContain('route.params.jobId')
     expect(detail).not.toContain('crypto.randomUUID')

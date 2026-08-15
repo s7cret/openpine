@@ -638,7 +638,13 @@
     "empty": "No persisted jobs",
     "missing": "Job not found",
     "progress": "Progress",
-    "openResult": "Open result"
+    "openResult": "Open result",
+    "compareTitle": "Compare semantic profiles",
+    "compareLeft": "Left job",
+    "compareRight": "Right job",
+    "compareAction": "Compare",
+    "compareMismatch": "Different semantic profiles. This is not a silent mix.",
+    "compareMissing": "Both jobs need an explicit semantic profile."
   },
   "live": {
     "title": "Live admission",

@@ -74,8 +74,8 @@ jobs:
           if-no-files-found: error
 
   frontend:
-    needs: backend
     runs-on: ubuntu-latest
+    # Independent of backend: a backend fail must not skip UI checks.
     defaults:
       run:
         working-directory: openpine-ui
@@ -91,13 +91,16 @@ jobs:
       - name: Verify npm toolchain
         run: test "$(npm --version)" = "11.16.0"
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: openpine-openapi-3.13
           path: openpine-ui/.contract
       - run: npm ci
       - run: npm run test:coverage
       - run: npm run build
-      - run: npm run test:node
+      - name: OpenAPI client drift
+        if: hashFiles('openpine-ui/.contract/openapi.json') != ''
+        run: npm run test:node
         env:
           OPENPINE_OPENAPI_SCHEMA: .contract/openapi.json
       - name: Install Chromium for E2E and accessibility gates

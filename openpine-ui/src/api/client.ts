@@ -435,3 +435,16 @@ export const cancelJob = (jobId: string, idempotencyKey: string) =>
   })
 export const retryJob = (jobId: string) => api.post<JobV1>(`/jobs/${encodeURIComponent(jobId)}/retry`)
 
+export type JobCompareResult = {
+  ok: boolean
+  warning: boolean
+  code: string
+  message: string
+  left?: string | null
+  right?: string | null
+  left_job_id?: string
+  right_job_id?: string
+}
+export const compareJobs = (left: string, right: string) =>
+  api.get<JobCompareResult>('/jobs/compare', { params: { left, right } })
+

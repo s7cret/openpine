@@ -2314,7 +2314,10 @@ async def run_backtest(
                 kind="backtest",
                 actor="gateway",
                 idempotency_key=idempotency_key,
-                input_artifact_refs=[str(strategy.artifact_id)],
+                input_artifact_refs=[
+                    str(strategy.artifact_id),
+                    "semantic_profile:legacy_4x",
+                ],
             )
         except Exception as exc:
             log.warning("job_v1_persist_failed", run_id=run_id, error=str(exc))

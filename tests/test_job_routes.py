@@ -45,6 +45,28 @@ def test_http_list_detail_cancel_retry_and_events(tmp_path) -> None:
     assert events.json()["resync"] is True
 
 
+def test_compare_jobs_warns_on_profile_mismatch(tmp_path) -> None:
+    client, store = _client(tmp_path)
+    store.create(
+        job_id="job-legacy",
+        kind="backtest",
+        input_artifact_refs=["semantic_profile:legacy_4x"],
+    )
+    store.create(
+        job_id="job-strict",
+        kind="backtest",
+        input_artifact_refs=["semantic_profile:strict_5x"],
+    )
+    response = client.get(
+        "/api/jobs/compare", params={"left": "job-legacy", "right": "job-strict"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["warning"] is True
+    assert body["code"] == "SEMANTIC_PROFILE_MISMATCH"
+    assert body["ok"] is False
+
+
 def test_live_admission_is_get_and_non_mutating() -> None:
     from openpine.gateway.routes.trading import router as trading_router
 

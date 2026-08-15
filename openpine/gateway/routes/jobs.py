@@ -6,10 +6,30 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
+from openpine.compare import compare_semantic_profiles, profile_from_job
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.jobs.persist import JobV1Error
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
+
+@router.get("/compare")
+def compare_jobs(
+    left: str,
+    right: str,
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
+    try:
+        left_job = state.job_store.get(left)
+        right_job = state.job_store.get(right)
+    except JobV1Error as exc:
+        raise HTTPException(404, str(exc)) from exc
+    result = compare_semantic_profiles(
+        profile_from_job(left_job), profile_from_job(right_job)
+    )
+    result["left_job_id"] = left
+    result["right_job_id"] = right
+    return result
 
 
 @router.get("")

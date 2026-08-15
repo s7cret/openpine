@@ -638,7 +638,13 @@
     "empty": "Нет сохранённых задач",
     "missing": "Задача не найдена",
     "progress": "Прогресс",
-    "openResult": "Открыть результат"
+    "openResult": "Открыть результат",
+    "compareTitle": "Сравнить semantic profile",
+    "compareLeft": "Левая задача",
+    "compareRight": "Правая задача",
+    "compareAction": "Сравнить",
+    "compareMismatch": "Разные semantic profile. Это не тихое смешивание.",
+    "compareMissing": "У обеих задач должен быть явный semantic profile."
   },
   "live": {
     "title": "Live-допуск",

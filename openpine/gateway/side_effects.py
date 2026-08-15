@@ -25,8 +25,17 @@ def persist_gateway_job(state: object, **kwargs: Any) -> dict[str, Any] | None:
     store = getattr(state, "job_store", None)
     if store is None:
         return None
+    profile = kwargs.pop("semantic_profile", None)
+    if profile:
+        refs = list(kwargs.get("input_artifact_refs") or [])
+        token = f"semantic_profile:{profile}"
+        if token not in refs:
+            refs.append(token)
+        kwargs["input_artifact_refs"] = refs
     try:
         return store.create(**kwargs)
     except JobV1Error as exc:
-        log.warning("job_v1_persist_failed", error=str(exc), job_id=kwargs.get("job_id"))
+        log.warning(
+            "job_v1_persist_failed", error=str(exc), job_id=kwargs.get("job_id")
+        )
         return None
