@@ -136,7 +136,7 @@ def test_backtest_helpers_and_process_paths(monkeypatch):
         def cancel_join_thread(self): pass
     class FakeProc:
         def __init__(self, *a, **k):
-            self.pid = None
+            self.pid = 4242
             self.exitcode = 0
             self.alive = True
         def start(self): pass
@@ -145,10 +145,20 @@ def test_backtest_helpers_and_process_paths(monkeypatch):
             return False
         def join(self, timeout=None): pass
     class Ctx:
+        class Receiver:
+            def recv(self): return (4242, 7)
+            def close(self): pass
+        class Sender:
+            def close(self): pass
         def __init__(self, q): self.q=q
         def Queue(self): return self.q
         def Event(self): return SimpleNamespace(is_set=lambda: True)
+        def Pipe(self, duplex=False):
+            assert duplex is False
+            return self.Receiver(), self.Sender()
         def Process(self, **kw): return FakeProc()
+    monkeypatch.setattr(bt, "_proc_identity", lambda pid: ("S", pid, 7))
+    monkeypatch.setattr(bt, "_terminate_backtest_worker", lambda worker, timeout=3.0: True)
     monkeypatch.setattr(bt.mp, "get_context", lambda name: Ctx(FakeQueue([("progress", 1, 3), ("ok", "done")])) )
     progress=[]
     assert bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None, lambda d,t: progress.append((d,t))) == "done"

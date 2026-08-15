@@ -7,7 +7,7 @@
       "package": "openpine",
       "repository": "s7cret/openpine",
       "version": "4.0.2",
-      "tree_sha256": "5306b262c9cb7fa3cc0cdee674d1b66b909826ba35a1e141b331de59f9a13b7b",
+      "tree_sha256": "4d7cf6bedeef9980ad2236d12b0b8e9c2d38451e19e6ba93446d4e42e63facd3",
       "contracts": {
         "version_api": "openpine.version.v1"
       }

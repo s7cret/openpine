@@ -177,7 +177,7 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
 
     class FakeProc:
         def __init__(self, *, alive=(False,), exitcode=0):
-            self.pid = None
+            self.pid = 4242
             self.alive = list(alive)
             self.exitcode = exitcode
 
@@ -191,6 +191,20 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
             pass
 
     class Ctx:
+        class Receiver:
+            def __init__(self, proc):
+                self.proc = proc
+
+            def recv(self):
+                return (self.proc.pid, 7)
+
+            def close(self):
+                pass
+
+        class Sender:
+            def close(self):
+                pass
+
         def __init__(self, q, proc):
             self.q = q
             self.proc = proc
@@ -201,9 +215,15 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
         def Event(self):
             return SimpleNamespace(is_set=lambda: True)
 
+        def Pipe(self, duplex=False):
+            assert duplex is False
+            return self.Receiver(self.proc), self.Sender()
+
         def Process(self, **kwargs):
             return self.proc
 
+    monkeypatch.setattr(bt, "_proc_identity", lambda pid: ("S", pid, 7))
+    monkeypatch.setattr(bt, "_terminate_backtest_worker", lambda worker, timeout=3.0: True)
     monkeypatch.setattr(
         bt.mp,
         "get_context",

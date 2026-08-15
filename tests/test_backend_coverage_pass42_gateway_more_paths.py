@@ -345,7 +345,7 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
 
     class FakeProc:
         def __init__(self, *, exitcode=0, alive=(False,)):
-            self.pid = None
+            self.pid = 4242
             self.exitcode = exitcode
             self.alive = list(alive)
 
@@ -359,6 +359,20 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
             pass
 
     class Ctx:
+        class Receiver:
+            def __init__(self, proc):
+                self.proc = proc
+
+            def recv(self):
+                return (self.proc.pid, 7)
+
+            def close(self):
+                pass
+
+        class Sender:
+            def close(self):
+                pass
+
         def __init__(self, q, proc):
             self.q = q
             self.proc = proc
@@ -369,16 +383,22 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
         def Event(self):
             return SimpleNamespace(is_set=lambda: True)
 
+        def Pipe(self, duplex=False):
+            assert duplex is False
+            return self.Receiver(self.proc), self.Sender()
+
         def Process(self, **kwargs):
             return self.proc
 
+    monkeypatch.setattr(bt, "_proc_identity", lambda pid: ("S", pid, 7))
+    monkeypatch.setattr(bt, "_terminate_backtest_worker", lambda worker, timeout=3.0: True)
     progress = []
     monkeypatch.setattr(
         bt.mp,
         "get_context",
         lambda name: Ctx(
             FakeQueue([queue.Empty, ("ok", "done-after-empty")]),
-            FakeProc(alive=(True, True, False)),
+            FakeProc(alive=(True, True, True, True, False)),
         ),
     )
     assert bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None, lambda d, t: progress.append((d, t))) == "done-after-empty"
@@ -438,7 +458,8 @@ def test_backtest_background_cancel_progress_and_failure_mark_failed(monkeypatch
     for trigger, phase in [(2, "artifact load"), (3, "market data load"), (4, "backtest setup")]:
         store = _BacktestStore()
         state = _backtest_state(store=store, cancel=_CancelAfter(trigger))
-        asyncio.run(bt._run_backtest_background(state, "s1", "run-cancel", 0, 240_000, None, 0, False))
+        run_id = f"run-cancel-{trigger}"
+        asyncio.run(bt._run_backtest_background(state, "s1", run_id, 0, 240_000, None, 0, False))
         assert store.cancelled and phase in store.cancelled[-1][1]
 
     store = _BacktestStore()

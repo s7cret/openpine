@@ -49,9 +49,27 @@ class _Queue:
         raise AssertionError("unexpected queue drain")
 
 class _Context:
-    def __init__(self, process) -> None:
+    def __init__(self, process):
         self.process = process
         self.queue = _Queue(process)
+
+    class _StartupReceiver:
+        def __init__(self, process):
+            self.process = process
+
+        def recv(self):
+            return (self.process.pid, 7)
+
+        def close(self):
+            return None
+
+    class _StartupSender:
+        def close(self):
+            return None
+
+    def Pipe(self, duplex=False):
+        assert duplex is False
+        return self._StartupReceiver(self.process), self._StartupSender()
 
     def Queue(self):
         return self.queue
@@ -114,6 +132,22 @@ def test_queue_cancel_join_runs_when_close_raises():
         backtest._close_backtest_queue(out)
     assert out.closed is True
     assert out.cancelled is True
+
+
+def test_spawn_startup_identity_handshake_executes_and_unregisters():
+    run_id = "spawn-startup-handshake"
+
+    result = backtest._execute_backtest_process(
+        run_id,
+        set(),
+        _successful_entry,
+        ("handshake-ok",),
+        context_name="spawn",
+    )
+
+    assert result == "handshake-ok"
+    assert backtest._active_backtest_worker(run_id) is None
+    assert backtest._backtest_worker_is_starting(run_id) is False
 
 
 def test_linux_subreaper_setup_fails_closed_without_procfs(monkeypatch):
@@ -310,6 +344,105 @@ def test_descendant_pidfd_open_failure_preserves_supervisor_until_retry(monkeypa
     assert alive == set()
 
 
+def test_pidfd_is_not_owned_or_signalled_before_post_open_identity_proof(monkeypatch):
+    root_pid = os.getpid()
+    scans = 0
+    polls = 0
+    signals: list[int] = []
+    closed: list[int] = []
+
+    def descendants(_root):
+        nonlocal scans
+        scans += 1
+        return {200: 11} if scans == 1 else {}
+
+    def identity(pid):
+        if pid == root_pid:
+            return ("S", root_pid, 99)
+        if pid == 200:
+            return ("S", 1, 22)
+        return None
+
+    def has_exited(_descriptor):
+        nonlocal polls
+        polls += 1
+        return polls >= 2
+
+    monkeypatch.setattr(backtest, "_descendant_process_identities", descendants)
+    monkeypatch.setattr(backtest, "_proc_identity", identity)
+    monkeypatch.setattr(backtest, "_pidfd_open", lambda _pid: 1200)
+    monkeypatch.setattr(
+        backtest,
+        "_pidfd_send_signal",
+        lambda _descriptor, sig: signals.append(sig),
+    )
+    monkeypatch.setattr(backtest, "_pidfd_has_exited", has_exited)
+    monkeypatch.setattr(backtest.os, "close", closed.append)
+
+    backtest._terminate_current_process_descendants(timeout=0.1)
+
+    assert signals == []
+    assert closed == [1200]
+
+
+def test_cleanup_failure_poll_uncertainty_retains_supervisor_and_pidfd(monkeypatch):
+    root_pid = os.getpid()
+    alive = {200}
+    allow_poll = threading.Event()
+    poll_uncertain = threading.Event()
+    closed: list[int] = []
+    errors: list[BaseException] = []
+
+    monkeypatch.setattr(
+        backtest,
+        "_descendant_process_identities",
+        lambda _root: {pid: 11 for pid in alive},
+    )
+    monkeypatch.setattr(
+        backtest,
+        "_proc_identity",
+        lambda pid: ("S", root_pid if pid == root_pid else 1, 11),
+    )
+    monkeypatch.setattr(backtest, "_pidfd_open", lambda _pid: 1200)
+
+    def send_signal(_descriptor, sig):
+        if sig == signal.SIGSTOP:
+            raise RuntimeError("stop failed")
+
+    def has_exited(_descriptor):
+        poll_uncertain.set()
+        if not allow_poll.is_set():
+            raise OSError("poll unavailable")
+        alive.clear()
+        return True
+
+    monkeypatch.setattr(backtest, "_pidfd_send_signal", send_signal)
+    monkeypatch.setattr(backtest, "_pidfd_has_exited", has_exited)
+    monkeypatch.setattr(backtest.os, "close", closed.append)
+
+    def cleanup() -> None:
+        try:
+            backtest._terminate_current_process_descendants(timeout=0.05)
+        except Exception as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=cleanup)
+    thread.start()
+    assert poll_uncertain.wait(timeout=1.0)
+    assert thread.is_alive()
+    assert alive == {200}
+    assert closed == []
+
+    allow_poll.set()
+    thread.join(timeout=1.0)
+
+    assert not thread.is_alive()
+    assert len(errors) == 1
+    assert isinstance(errors[0], RuntimeError)
+    assert "stop failed" in str(errors[0])
+    assert closed == [1200]
+
+
 def test_descendant_cleanup_rescans_frozen_tree_to_fixed_point(monkeypatch):
     alive = {200, 300}
     frozen = set()
@@ -474,6 +607,74 @@ def test_partial_process_start_is_reaped_before_error_returns(monkeypatch):
     assert context.queue.cancelled is True
 
 
+def test_partial_process_start_retains_worker_when_cleanup_is_unproven(monkeypatch):
+    run_id = "partial-retained"
+    process = _PartialStartProcess()
+    context = _Context(process)
+    monkeypatch.setattr(backtest.mp, "get_context", lambda _name: context)
+    monkeypatch.setattr(backtest, "_terminate_backtest_worker", lambda _worker: False)
+
+    try:
+        with pytest.raises(RuntimeError, match="partially started backtest worker cleanup failed"):
+            backtest._execute_backtest_process(run_id, set(), object(), ())
+        retained = backtest._active_backtest_worker(run_id)
+        assert retained is not None
+        assert retained.process is process
+    finally:
+        retained = backtest._active_backtest_worker(run_id)
+        if retained is not None:
+            backtest._unregister_backtest_worker(run_id, retained)
+
+
+def test_start_exception_recovers_identity_before_process_pid_publication(monkeypatch):
+    class _UnknownPidStartedProcess:
+        pid = None
+
+        def __init__(self, *, target, args):
+            self.target = target
+            self.args = args
+
+        def start(self):
+            sender = self.args[-1]
+            sender.send((4242, 11))
+            sender.close()
+            raise RuntimeError("start failed after spawn")
+
+        def is_alive(self):
+            return True
+
+        def join(self, timeout=None):
+            del timeout
+
+        def close(self):
+            return None
+
+    class _Context:
+        Queue = _Queue
+        Process = _UnknownPidStartedProcess
+
+        @staticmethod
+        def Pipe(*, duplex=False):
+            import multiprocessing
+
+            return multiprocessing.Pipe(duplex=duplex)
+
+    monkeypatch.setattr(backtest.mp, "get_context", lambda _name: _Context())
+    monkeypatch.setattr(backtest, "_terminate_backtest_worker", lambda _worker: False)
+
+    with pytest.raises(RuntimeError, match="partially started backtest worker cleanup failed"):
+        backtest._execute_backtest_process("unknown-pid-retained", set(), object(), ())
+
+    retained = backtest._active_backtest_worker("unknown-pid-retained")
+    try:
+        assert retained is not None
+        assert retained.owned_pid == 4242
+        assert retained.start_time == 11
+    finally:
+        if retained is not None:
+            backtest._unregister_backtest_worker("unknown-pid-retained", retained)
+
+
 def test_process_group_handshake_failure_uses_verified_cleanup(monkeypatch):
     process = _Process()
     context = _Context(process)
@@ -576,7 +777,363 @@ def test_terminal_run_cancel_retries_retained_worker_cleanup(monkeypatch):
         backtest._unregister_backtest_worker(run_id, worker)
 
 
+def test_terminal_cancel_cleans_active_and_all_retained_workers(monkeypatch):
+    run_id = "terminal-cleanup-fixed-point"
+    active = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=4242, start_time=7
+    )
+    retained = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=4243, start_time=8
+    )
+    state = SimpleNamespace(
+        backtest_store=SimpleNamespace(
+            get_run=lambda requested: (
+                SimpleNamespace(status="failed") if requested == run_id else None
+            )
+        ),
+        backtest_cancel_requests=set(),
+    )
+    cleaned: list[backtest._BacktestWorker] = []
+
+    def cleanup(worker, timeout=3.0):
+        cleaned.append(worker)
+        return True
+
+    monkeypatch.setattr(backtest, "_terminate_backtest_worker", cleanup)
+    backtest._register_backtest_worker(run_id, active)
+    backtest._retain_backtest_worker_for_retry(run_id, retained)
+
+    try:
+        response = asyncio.run(backtest.run_action(run_id, "cancel", state))
+        assert response["accepted"] is False
+        assert response["status"] == "failed"
+        assert cleaned == [active, retained]
+        assert active.cancel_requested.is_set()
+        assert retained.cancel_requested.is_set()
+        assert backtest._backtest_workers(run_id) == ()
+    finally:
+        backtest._unregister_backtest_worker(run_id, active)
+        backtest._unregister_backtest_worker(run_id, retained)
+
+
+def test_terminal_cancel_seal_blocks_late_worker_start(monkeypatch):
+    run_id = "terminal-seal-blocks-start"
+    active = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=4242, start_time=7
+    )
+    cancelled: list[tuple[str, str]] = []
+    state = SimpleNamespace(
+        backtest_store=SimpleNamespace(
+            get_run=lambda requested: (
+                SimpleNamespace(status="running") if requested == run_id else None
+            ),
+            mark_cancelled=lambda requested, message: cancelled.append(
+                (requested, message)
+            ),
+        ),
+        backtest_cancel_requests=set(),
+    )
+
+    def cleanup(requested, worker, timeout=3.0):
+        del timeout
+        backtest._unregister_backtest_worker(requested, worker)
+        return True
+
+    class MustNotStartProcess(_Process):
+        def __init__(self) -> None:
+            super().__init__()
+            self.start_calls = 0
+
+        def start(self) -> None:
+            self.start_calls += 1
+            raise AssertionError("terminally sealed run started a new worker")
+
+    late_process = MustNotStartProcess()
+    context = _Context(late_process)
+    monkeypatch.setattr(backtest, "_cleanup_registered_backtest_worker", cleanup)
+    monkeypatch.setattr(backtest.mp, "get_context", lambda _name: context)
+    monkeypatch.setattr(backtest, "_terminate_backtest_worker", lambda _worker: True)
+    backtest._register_backtest_worker(run_id, active)
+
+    try:
+        response = asyncio.run(backtest.run_action(run_id, "cancel", state))
+        assert response["status"] == "cancelled"
+        assert cancelled == [(run_id, "Cancelled during compute")]
+        assert run_id not in state.backtest_cancel_requests
+
+        with pytest.raises(backtest._BacktestCancelled, match="before compute"):
+            backtest._execute_backtest_process(
+                run_id, state.backtest_cancel_requests, object(), ()
+            )
+        assert late_process.start_calls == 0
+        assert context.queue.closed is True
+        assert context.queue.cancelled is True
+    finally:
+        backtest._unregister_backtest_worker(run_id, active)
+        terminal_runs = getattr(backtest, "_TERMINAL_BACKTEST_RUNS", None)
+        if terminal_runs is not None:
+            with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+                terminal_runs.discard(run_id)
+
+
+def test_terminal_publication_failure_keeps_admission_fail_closed(monkeypatch):
+    run_id = "terminal-seal-db-failure"
+    active = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=4242, start_time=7
+    )
+
+    def fail_publication(_requested, _message):
+        raise RuntimeError("terminal publication failed")
+
+    state = SimpleNamespace(
+        backtest_store=SimpleNamespace(
+            get_run=lambda requested: (
+                SimpleNamespace(status="running") if requested == run_id else None
+            ),
+            mark_cancelled=fail_publication,
+        ),
+        backtest_cancel_requests=set(),
+    )
+
+    def cleanup(requested, worker, timeout=3.0):
+        del timeout
+        backtest._unregister_backtest_worker(requested, worker)
+        return True
+
+    class MustNotStartProcess(_Process):
+        def __init__(self) -> None:
+            super().__init__()
+            self.start_calls = 0
+
+        def start(self) -> None:
+            self.start_calls += 1
+            raise AssertionError("failed terminal publication reopened admission")
+
+    late_process = MustNotStartProcess()
+    context = _Context(late_process)
+    monkeypatch.setattr(backtest, "_cleanup_registered_backtest_worker", cleanup)
+    monkeypatch.setattr(backtest.mp, "get_context", lambda _name: context)
+    monkeypatch.setattr(backtest, "_terminate_backtest_worker", lambda _worker: True)
+    backtest._register_backtest_worker(run_id, active)
+
+    try:
+        with pytest.raises(RuntimeError, match="terminal publication failed"):
+            asyncio.run(backtest.run_action(run_id, "cancel", state))
+        assert run_id in state.backtest_cancel_requests
+
+        with pytest.raises(backtest._BacktestCancelled, match="before compute"):
+            backtest._execute_backtest_process(
+                run_id, state.backtest_cancel_requests, object(), ()
+            )
+        assert late_process.start_calls == 0
+    finally:
+        backtest._unregister_backtest_worker(run_id, active)
+        terminal_runs = getattr(backtest, "_TERMINAL_BACKTEST_RUNS", None)
+        if terminal_runs is not None:
+            with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+                terminal_runs.discard(run_id)
+
+
+def test_terminal_seal_is_atomic_with_worker_admission():
+    run_id = "terminal-seal-admission-race"
+    cancel_requests: set[str] = set()
+    worker = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=None, start_time=None
+    )
+    barrier = threading.Barrier(3)
+    result: dict[str, bool] = {}
+
+    def admit() -> None:
+        barrier.wait()
+        result["admitted"] = backtest._admit_backtest_worker_start(
+            run_id, cancel_requests, worker
+        )
+
+    def seal() -> None:
+        barrier.wait()
+        _workers, result["sealed"] = backtest._seal_backtest_terminal_if_quiescent(
+            run_id
+        )
+
+    admit_thread = threading.Thread(target=admit)
+    seal_thread = threading.Thread(target=seal)
+    admit_thread.start()
+    seal_thread.start()
+    barrier.wait()
+    admit_thread.join(timeout=1.0)
+    seal_thread.join(timeout=1.0)
+
+    try:
+        assert admit_thread.is_alive() is False
+        assert seal_thread.is_alive() is False
+        assert not (result["admitted"] and result["sealed"])
+    finally:
+        backtest._unregister_backtest_worker(run_id, worker)
+        backtest._set_backtest_worker_starting(run_id, False)
+        terminal_runs = getattr(backtest, "_TERMINAL_BACKTEST_RUNS", None)
+        if terminal_runs is not None:
+            with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+                terminal_runs.discard(run_id)
+
+
+def test_success_terminal_seal_is_atomic_with_cancel_admission():
+    run_id = "terminal-success-cancel-race"
+    cancel_requests: set[str] = set()
+    barrier = threading.Barrier(3)
+    result: dict[str, bool] = {}
+
+    def request_cancel() -> None:
+        barrier.wait()
+        result["cancel_admitted"] = backtest._request_backtest_cancel(
+            run_id, cancel_requests
+        )
+
+    def seal_success() -> None:
+        barrier.wait()
+        _workers, result["success_sealed"] = (
+            backtest._seal_backtest_success_if_quiescent(
+                run_id, cancel_requests
+            )
+        )
+
+    cancel_thread = threading.Thread(target=request_cancel)
+    success_thread = threading.Thread(target=seal_success)
+    cancel_thread.start()
+    success_thread.start()
+    barrier.wait()
+    cancel_thread.join(timeout=1.0)
+    success_thread.join(timeout=1.0)
+
+    try:
+        assert cancel_thread.is_alive() is False
+        assert success_thread.is_alive() is False
+        assert result["cancel_admitted"] != result["success_sealed"]
+    finally:
+        terminal_runs = getattr(backtest, "_TERMINAL_BACKTEST_RUNS", None)
+        if terminal_runs is not None:
+            with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+                terminal_runs.discard(run_id)
+
+
+def test_cancelled_terminal_outcome_cannot_be_resealed_as_success():
+    run_id = "terminal-cancel-then-success"
+    cancel_requests: set[str] = set()
+    try:
+        assert backtest._request_backtest_cancel(run_id, cancel_requests)
+        workers, cancelled_sealed = backtest._seal_backtest_terminal_if_quiescent(
+            run_id
+        )
+        assert workers == ()
+        assert cancelled_sealed
+        cancel_requests.discard(run_id)
+
+        workers, success_sealed = backtest._seal_backtest_success_if_quiescent(
+            run_id, cancel_requests
+        )
+
+        assert workers == ()
+        assert not success_sealed
+        assert backtest._backtest_terminal_outcome(run_id) == "cancelled"
+    finally:
+        with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+            backtest._TERMINAL_BACKTEST_RUNS.discard(run_id)
+            outcomes = getattr(backtest, "_TERMINAL_BACKTEST_OUTCOMES", None)
+            if outcomes is not None:
+                outcomes.pop(run_id, None)
+
+
+def test_cancel_attempts_cleanup_for_every_owned_worker(monkeypatch):
+    run_id = "cancel-all-owned-workers"
+    active = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=None, start_time=7
+    )
+    retained = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=None, start_time=8
+    )
+    state = SimpleNamespace(
+        backtest_store=SimpleNamespace(
+            get_run=lambda candidate: SimpleNamespace(status="running")
+            if candidate == run_id
+            else None,
+            mark_cancelled=lambda *_args: None,
+        ),
+        backtest_cancel_requests=set(),
+    )
+    attempts: list[backtest._BacktestWorker] = []
+
+    def cleanup(
+        candidate: str, worker: backtest._BacktestWorker, timeout: float = 3.0
+    ) -> bool:
+        assert candidate == run_id
+        attempts.append(worker)
+        if worker is active:
+            return False
+        backtest._unregister_backtest_worker(run_id, worker)
+        return True
+
+    backtest._register_backtest_worker(run_id, active)
+    backtest._retain_backtest_worker_for_retry(run_id, retained)
+    monkeypatch.setattr(backtest, "_cleanup_registered_backtest_worker", cleanup)
+    try:
+        with pytest.raises(backtest.HTTPException) as exc_info:
+            asyncio.run(backtest.run_action(run_id, "cancel", state))
+
+        assert exc_info.value.status_code == 503
+        assert attempts == [active, retained]
+        assert active.cancel_requested.is_set()
+        assert retained.cancel_requested.is_set()
+        assert backtest._backtest_workers(run_id) == (active,)
+    finally:
+        backtest._unregister_backtest_worker(run_id, active)
+        backtest._unregister_backtest_worker(run_id, retained)
+        state.backtest_cancel_requests.discard(run_id)
+        with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+            backtest._TERMINAL_BACKTEST_RUNS.discard(run_id)
+            outcomes = getattr(backtest, "_TERMINAL_BACKTEST_OUTCOMES", None)
+            if outcomes is not None:
+                outcomes.pop(run_id, None)
+
+
+def test_retained_worker_holds_admission_lease_until_unregister():
+    run_id = "retained-admission-lease"
+    limiter = backtest._BacktestAdmissionLimiter(1)
+    lease = limiter.try_acquire()
+    assert lease is not None
+    retained = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=None, start_time=7
+    )
+    late = backtest._BacktestWorker(
+        process=_Process(), out=_Queue(), process_group=None, start_time=8
+    )
+    replacement = None
+    backtest._retain_backtest_worker_for_retry(run_id, retained)
+    try:
+        assert not backtest._admit_backtest_worker_start(run_id, set(), late)
+        assert backtest._retain_backtest_admission_lease(run_id, lease)
+        assert limiter.try_acquire() is None
+
+        backtest._unregister_backtest_worker(run_id, retained)
+        replacement = limiter.try_acquire()
+        assert replacement is not None
+    finally:
+        backtest._unregister_backtest_worker(run_id, retained)
+        backtest._unregister_backtest_worker(run_id, late)
+        if replacement is not None:
+            replacement.release()
+        lease.release()
+        with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+            backtest._STARTING_BACKTEST_RUNS.discard(run_id)
+            backtest._TERMINAL_BACKTEST_RUNS.discard(run_id)
+            retained_leases = getattr(backtest, "_RETAINED_BACKTEST_LEASES", None)
+            if retained_leases is not None:
+                retained_leases.pop(run_id, None)
+            outcomes = getattr(backtest, "_TERMINAL_BACKTEST_OUTCOMES", None)
+            if outcomes is not None:
+                outcomes.pop(run_id, None)
+
+
 def test_registration_failure_fails_closed_when_cleanup_is_unproven(monkeypatch):
+    run_id = "registration"
     process = _Process()
     context = _Context(process)
     monkeypatch.setattr(backtest.mp, "get_context", lambda _name: context)
@@ -588,11 +1145,18 @@ def test_registration_failure_fails_closed_when_cleanup_is_unproven(monkeypatch)
     )
     monkeypatch.setattr(backtest, "_terminate_backtest_worker", lambda _worker: False)
 
-    with pytest.raises(RuntimeError, match="registration cleanup was not proven"):
-        backtest._execute_backtest_process("registration", set(), object(), ())
-
-    assert context.queue.closed is True
-    assert context.queue.cancelled is True
+    try:
+        with pytest.raises(RuntimeError, match="registration cleanup was not proven"):
+            backtest._execute_backtest_process(run_id, set(), object(), ())
+        assert context.queue.closed is True
+        assert context.queue.cancelled is True
+        retained = backtest._active_backtest_worker(run_id)
+        assert retained is not None
+        assert retained.process is process
+    finally:
+        retained = backtest._active_backtest_worker(run_id)
+        if retained is not None:
+            backtest._unregister_backtest_worker(run_id, retained)
 
 
 def test_unverified_process_group_is_never_signalled(monkeypatch):
@@ -693,6 +1257,30 @@ def test_post_start_identity_error_still_cleans_process_marker_and_queue(monkeyp
     assert backtest._backtest_worker_is_starting("post-start-error") is False
     assert context.queue.closed is True
     assert context.queue.cancelled is True
+
+
+def test_post_start_identity_error_retains_worker_when_cleanup_is_unproven(monkeypatch):
+    run_id = "post-start-retained"
+    process = _Process()
+    context = _Context(process)
+    monkeypatch.setattr(backtest.mp, "get_context", lambda _name: context)
+    monkeypatch.setattr(
+        backtest,
+        "_proc_identity",
+        lambda _pid: (_ for _ in ()).throw(RuntimeError("identity lookup failed")),
+    )
+    monkeypatch.setattr(backtest, "_terminate_backtest_worker", lambda _worker: False)
+
+    try:
+        with pytest.raises(RuntimeError, match="post-start cleanup was not proven"):
+            backtest._execute_backtest_process(run_id, set(), object(), ())
+        retained = backtest._active_backtest_worker(run_id)
+        assert retained is not None
+        assert retained.process is process
+    finally:
+        retained = backtest._active_backtest_worker(run_id)
+        if retained is not None:
+            backtest._unregister_backtest_worker(run_id, retained)
 
 
 def test_successful_supervisor_proof_is_recorded_as_idempotent(monkeypatch):

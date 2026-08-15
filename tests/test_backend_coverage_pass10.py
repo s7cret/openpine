@@ -159,6 +159,68 @@ def test_run_backtest_background_success_and_runtime_error(monkeypatch):
     assert any("compute failed" in msg for msg in state2.backtest_store.failed)
 
 
+def test_background_retains_lease_until_unproven_worker_unregisters(monkeypatch):
+    run_id = "retained-background-lease"
+    limiter = backtest_routes._BacktestAdmissionLimiter(1)
+    lease = limiter.try_acquire()
+    assert lease is not None
+    worker = backtest_routes._BacktestWorker(
+        process=SimpleNamespace(
+            pid=None,
+            is_alive=lambda: False,
+            join=lambda timeout=None: None,
+        ),
+        out=SimpleNamespace(
+            close=lambda: None,
+            cancel_join_thread=lambda: None,
+        ),
+        process_group=None,
+        start_time=None,
+    )
+    replacement = None
+    _patch_runtime(monkeypatch)
+
+    def fail_with_retained_worker(*args, **kwargs):
+        backtest_routes._retain_backtest_worker_for_retry(run_id, worker)
+        raise RuntimeError("cleanup unproven")
+
+    monkeypatch.setattr(
+        backtest_routes, "_run_backtest_in_process", fail_with_retained_worker
+    )
+    state = _state()
+    try:
+        asyncio.run(
+            backtest_routes._run_backtest_background(
+                state,
+                "s1",
+                run_id,
+                0,
+                120_000,
+                None,
+                0,
+                False,
+                admission_lease=lease,
+            )
+        )
+
+        assert state.backtest_store.failed == ["cleanup unproven"]
+        assert backtest_routes._backtest_terminal_outcome(run_id) == "failed"
+        assert limiter.try_acquire() is None
+
+        backtest_routes._unregister_backtest_worker(run_id, worker)
+        replacement = limiter.try_acquire()
+        assert replacement is not None
+    finally:
+        backtest_routes._unregister_backtest_worker(run_id, worker)
+        if replacement is not None:
+            replacement.release()
+        lease.release()
+        with backtest_routes._ACTIVE_BACKTEST_WORKERS_LOCK:
+            backtest_routes._TERMINAL_BACKTEST_RUNS.discard(run_id)
+            backtest_routes._TERMINAL_BACKTEST_OUTCOMES.pop(run_id, None)
+            backtest_routes._RETAINED_BACKTEST_LEASES.pop(run_id, None)
+
+
 def test_run_backtest_background_failure_and_cancel_paths(monkeypatch):
     _patch_runtime(monkeypatch, artifact_error=BacktestArtifactError("bad artifact"))
     state = _state()

@@ -148,8 +148,8 @@ class _Progress:
 
 
 class _RunStore:
-    def __init__(self, status: str = "running") -> None:
-        self.run = SimpleNamespace(run_id="run-owned", status=status)
+    def __init__(self, status: str = "running", run_id: str = "run-owned") -> None:
+        self.run = SimpleNamespace(run_id=run_id, status=status)
         self.cancelled: list[tuple[str, str]] = []
         self.created: list[object] = []
         self._counter = 0
@@ -382,8 +382,9 @@ def test_cancel_action_stops_owned_spawn_worker_tree_before_return(
 
     progress = _Progress()
     monkeypatch.setattr(backtest, "ws_manager", progress)
+    run_id = f"run-owned-{'detached' if detached else 'attached'}"
     cancel_requests: set[str] = set()
-    store = _RunStore()
+    store = _RunStore(run_id=run_id)
     state = SimpleNamespace(
         backtest_store=store,
         backtest_cancel_requests=cancel_requests,
@@ -394,7 +395,7 @@ def test_cancel_action_stops_owned_spawn_worker_tree_before_return(
     def run_worker() -> None:
         try:
             backtest._execute_backtest_run_in_thread(
-                "run-owned",
+                run_id,
                 cancel_requests,
                 _BlockingTreeAdapter(str(pid_file), detached=detached),
                 object,
@@ -417,7 +418,7 @@ def test_cancel_action_stops_owned_spawn_worker_tree_before_return(
         assert _pid_running(int(payload["child_pid"]), payload["child_start"])
 
         started = time.monotonic()
-        response = asyncio.run(backtest.run_action("run-owned", "cancel", state))
+        response = asyncio.run(backtest.run_action(run_id, "cancel", state))
         elapsed = time.monotonic() - started
 
         thread.join(timeout=4.0)
@@ -427,14 +428,16 @@ def test_cancel_action_stops_owned_spawn_worker_tree_before_return(
         assert not thread.is_alive()
         assert not _pid_running(int(payload["root_pid"]), payload["root_start"])
         assert not _pid_running(int(payload["child_pid"]), payload["child_start"])
-        assert store.cancelled == [("run-owned", "Cancelled during compute")]
-        assert backtest._active_backtest_worker("run-owned") is None
+        assert store.cancelled == [(run_id, "Cancelled during compute")]
+        assert backtest._active_backtest_worker(run_id) is None
         assert errors and errors[0].__class__.__name__ == "_BacktestCancelled"
     finally:
         if payload:
             _kill_owned_pid(int(payload["child_pid"]), payload["child_start"])
             _kill_owned_pid(int(payload["root_pid"]), payload["root_start"])
         thread.join(timeout=2.0)
+        with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+            backtest._TERMINAL_BACKTEST_RUNS.discard(run_id)
 
 
 def test_cancel_waits_for_starting_worker_registration(
@@ -494,6 +497,8 @@ def test_cancel_waits_for_starting_worker_registration(
         out.close()
         out.cancel_join_thread()
         registration.join(timeout=1.0)
+        with backtest._ACTIVE_BACKTEST_WORKERS_LOCK:
+            backtest._TERMINAL_BACKTEST_RUNS.discard("run-owned")
 
 
 @pytest.mark.asyncio
