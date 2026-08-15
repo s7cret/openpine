@@ -123,4 +123,12 @@ describe('global UI correctness contracts', () => {
     expect(live).toContain('/live/start')
     expect(live).not.toContain('__probe__')
   })
+
+  it('optimizer page is dry-run only and does not rank champions', () => {
+    const page = source('pages/Optimizer.vue')
+    expect(page).toContain('/optimizer/dry-run')
+    expect(page).toContain('optimizer-dry-run')
+    expect(page).not.toContain('champion')
+    expect(page).not.toContain('rank')
+  })
 })

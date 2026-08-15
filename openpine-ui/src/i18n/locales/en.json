@@ -659,6 +659,11 @@
   "optimizer": {
     "title": "Optimizer",
     "notComplete": "Optimizer UI is not a completed feature.",
-    "dryRunOnly": "Backend currently exposes dry-run validation only. Jobs are persisted when that endpoint is called."
+    "dryRunOnly": "Backend currently exposes dry-run validation only. Jobs are persisted when that endpoint is called.",
+    "strategyLabel": "Strategy",
+    "strategyRequired": "Strategy id is required",
+    "trialsLabel": "Trials",
+    "dryRun": "Validate dry-run",
+    "failed": "Dry-run failed"
   }
 }

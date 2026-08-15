@@ -659,6 +659,11 @@
   "optimizer": {
     "title": "Оптимизатор",
     "notComplete": "UI оптимизатора не является готовой фичей.",
-    "dryRunOnly": "Бэкенд сейчас только валидирует dry-run. Job пишется при вызове этого endpoint."
+    "dryRunOnly": "Бэкенд сейчас только валидирует dry-run. Job пишется при вызове этого endpoint.",
+    "strategyLabel": "Стратегия",
+    "strategyRequired": "Нужен strategy id",
+    "trialsLabel": "Trials",
+    "dryRun": "Проверить dry-run",
+    "failed": "Dry-run не удался"
   }
 }

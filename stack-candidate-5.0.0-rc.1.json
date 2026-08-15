@@ -18,12 +18,12 @@
     "pinelib": {
       "repo": "s7cret/pinelib",
       "ref": "feat/5.0-intent-tape",
-      "sha": "27ffa51f1cff9fef50cf2571736878ebaf2bd099"
+      "sha": "765ec2b50b88553781942896153a662ef3f0c037"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
       "ref": "feat/5.0-warmup-reset",
-      "sha": "9f7ef99ab9e05ca8943ba1a98978b445ec8f740d"
+      "sha": "80b7f54f6fd5519c284e17e92d54ca78b5692ee9"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
