@@ -81,3 +81,39 @@ def test_worker_rejects_malformed_and_nonzero_output(
     )
     with pytest.raises(IsolatedWorkerError, match="boom"):
         evaluate_artifact(b"VALUE = 1\n", timeout_s=1)
+
+
+def test_sandbox_blocks_network_and_host_filesystem() -> None:
+    source = textwrap.dedent("""
+        import os
+        HOME_VISIBLE = os.path.exists("/home/moltbot1")
+        SSH_VISIBLE = os.path.exists("/home/moltbot1/.ssh")
+        try:
+            open("/usr/bin/.openpine-write-probe", "w").write("x")
+            USR_WRITABLE = True
+        except Exception:
+            USR_WRITABLE = False
+        """)
+    result = evaluate_artifact(source.encode("utf-8"), timeout_s=5)
+    assert result["ok"] is True
+    assert result["namespace"]["HOME_VISIBLE"] is False
+    assert result["namespace"]["SSH_VISIBLE"] is False
+    assert result["namespace"]["USR_WRITABLE"] is False
+    assert result["isolation"]["network"] == "blocked"
+    assert result["isolation"]["usr_writable"] is False
+    assert "OPENPINE_SECRET" not in result["isolation"]["env"]
+    assert "VIRTUAL_ENV" not in result["isolation"]["env"]
+
+
+def test_dynamic_socket_import_is_denied() -> None:
+    with pytest.raises(IsolatedWorkerError, match="socket"):
+        evaluate_artifact(b'__import__("socket")\n', timeout_s=5)
+
+
+def test_in_process_generated_import_is_forbidden(tmp_path: Path) -> None:
+    from openpine.runtime.engine import BacktestArtifactError, _load_generated_module
+
+    path = tmp_path / "generated_strategy.py"
+    path.write_text("VALUE = 1\n", encoding="utf-8")
+    with pytest.raises(BacktestArtifactError, match="in-process"):
+        _load_generated_module(path, "src", "art")

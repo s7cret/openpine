@@ -87,6 +87,7 @@ def load_strategy_class_from_artifact(
     *,
     symbol: str,
     timeframe: str,
+    unsafe_in_process: bool = False,
 ) -> type:
     """Load the BacktestEngine-compatible strategy class from a compiled artifact."""
     from openpine.artifacts import ArtifactStore
@@ -110,7 +111,12 @@ def load_strategy_class_from_artifact(
             f"Recompile the Pine source with: openpine pine compile <pine-name>"
         )
 
-    module = _load_generated_module(strategy_path, source_id, artifact_id)
+    module = _load_generated_module(
+        strategy_path,
+        source_id,
+        artifact_id,
+        unsafe_in_process=unsafe_in_process,
+    )
     strategy_class = _select_strategy_class(module, artifact.get("compile_meta", {}))
     if getattr(strategy_class, "__name__", "") in (
         "GeneratedStrategy",
@@ -122,7 +128,12 @@ def load_strategy_class_from_artifact(
     return strategy_class
 
 
-def load_generated_class_from_artifact(source_id: str, artifact_id: str) -> type:
+def load_generated_class_from_artifact(
+    source_id: str,
+    artifact_id: str,
+    *,
+    unsafe_in_process: bool = False,
+) -> type:
     """Load the raw AST2Python generated class from a compiled artifact."""
     from openpine.artifacts import ArtifactStore
 
@@ -145,7 +156,12 @@ def load_generated_class_from_artifact(source_id: str, artifact_id: str) -> type
             f"Recompile the Pine source with: openpine pine compile <pine-name>"
         )
 
-    module = _load_generated_module(strategy_path, source_id, artifact_id)
+    module = _load_generated_module(
+        strategy_path,
+        source_id,
+        artifact_id,
+        unsafe_in_process=unsafe_in_process,
+    )
     return _select_strategy_class(module, artifact.get("compile_meta", {}))
 
 
@@ -167,7 +183,17 @@ def _validate_production_compile_artifact(
         )
 
 
-def _load_generated_module(path: Path, source_id: str, artifact_id: str) -> Any:
+def _load_generated_module(
+    path: Path,
+    source_id: str,
+    artifact_id: str,
+    *,
+    unsafe_in_process: bool = False,
+) -> Any:
+    if not unsafe_in_process:
+        raise BacktestArtifactError(
+            "in-process generated import is forbidden; use isolated worker"
+        )
     module_name = (
         "openpine_generated_"
         f"{source_id.replace('-', '_').replace(':', '_')}_"

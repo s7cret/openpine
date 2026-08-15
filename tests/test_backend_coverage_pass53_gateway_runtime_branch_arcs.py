@@ -585,7 +585,9 @@ def test_live_runner_mini_backtest_artifact_fallback_and_risk_branches(monkeypat
 def test_runtime_engine_generated_module_adapter_and_progress_false_branch(monkeypatch, tmp_path: Path):
     generated = tmp_path / "generated_strategy.py"
     generated.write_text("label = 'custom-label'\n", encoding="utf-8")
-    module = runtime_engine._load_generated_module(generated, "src-1", "art-1")
+    module = runtime_engine._load_generated_module(
+        generated, "src-1", "art-1", unsafe_in_process=True
+    )
     assert module.label == "custom-label"
     assert module.line.anything == "line.anything"
 

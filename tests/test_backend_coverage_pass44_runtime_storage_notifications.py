@@ -301,13 +301,15 @@ def test_runtime_engine_artifact_import_selection_and_adapter_edges(monkeypatch,
     original_adapt_generated_strategy = rt._adapt_generated_strategy
     monkeypatch.setattr(artifacts_mod, "ArtifactStore", GeneratedStore)
     monkeypatch.setattr(rt, "_adapt_generated_strategy", lambda cls, **kwargs: ("adapted", cls.__name__, kwargs))
-    adapted = rt.load_strategy_class_from_artifact("src", "art", symbol="BTC", timeframe="1m")
+    adapted = rt.load_strategy_class_from_artifact(
+        "src", "art", symbol="BTC", timeframe="1m", unsafe_in_process=True
+    )
     assert adapted[0] == "adapted"
     monkeypatch.setattr(rt, "_adapt_generated_strategy", original_adapt_generated_strategy)
 
     monkeypatch.setattr(rt.importlib.util, "spec_from_file_location", lambda *a, **k: None)
     with pytest.raises(rt.BacktestArtifactError):
-        rt._load_generated_module(tmp_path / "x.py", "src", "art")
+        rt._load_generated_module(tmp_path / "x.py", "src", "art", unsafe_in_process=True)
 
     External = type("External", (), {"__module__": "external", "_process_bar": lambda self: None})
     Local = type("Local", (), {"__module__": "mod", "_process_bar": lambda self: None})

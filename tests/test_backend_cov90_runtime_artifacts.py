@@ -40,9 +40,14 @@ def test_runtime_artifact_loading_edges(monkeypatch, tmp_path):
     import openpine.artifacts as artifacts
 
     monkeypatch.setattr(artifacts, "ArtifactStore", Store)
-    cls = rt.load_strategy_class_from_artifact("src", "ok", symbol="BTCUSDT", timeframe="1m")
+    cls = rt.load_strategy_class_from_artifact(
+        "src", "ok", symbol="BTCUSDT", timeframe="1m", unsafe_in_process=True
+    )
     assert cls.__name__ == "CustomStrategy"
-    assert rt.load_generated_class_from_artifact("src", "ok").__name__ == "CustomStrategy"
+    assert (
+        rt.load_generated_class_from_artifact("src", "ok", unsafe_in_process=True).__name__
+        == "CustomStrategy"
+    )
     for artifact_id in ["missing-artifact", "bad-status", "unsafe", "missing-file"]:
         with pytest.raises(rt.BacktestArtifactError):
             rt.load_generated_class_from_artifact("src", artifact_id)
@@ -51,7 +56,12 @@ def test_runtime_artifact_loading_edges(monkeypatch, tmp_path):
     bad_dir.mkdir()
     (bad_dir / "generated_strategy.py").write_text("x = 1\n", encoding="utf-8")
     with pytest.raises(rt.BacktestArtifactError):
-        rt._select_strategy_class(rt._load_generated_module(bad_dir / "generated_strategy.py", "s", "a"), {})
+        rt._select_strategy_class(
+            rt._load_generated_module(
+                bad_dir / "generated_strategy.py", "s", "a", unsafe_in_process=True
+            ),
+            {},
+        )
 
 
 def test_runtime_adapter_run_and_progress(monkeypatch):

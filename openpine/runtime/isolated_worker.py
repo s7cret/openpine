@@ -1,38 +1,56 @@
-"""OS-process isolated execution of generated artifact bytes.
+"""OS-isolated execution of generated artifact bytes.
 
-The gateway/parent process must never import generated modules. The child
-receives already-captured bytes on stdin (no second path read).
+Threat model: generated code is untrusted. The parent/gateway process never
+imports it. The child receives already-captured bytes on stdin (no path reread).
+Isolation is bubblewrap: new net/pid namespaces, read-only /usr, empty tmpfs
+scratch, cleared environment. There is no in-process fallback.
 """
 
 from __future__ import annotations
 
 import json
 import subprocess
-import sys
-import tempfile
+from pathlib import Path
 from typing import Any
 
-# Child bootstrap is stdlib-only. Host env is not inherited.
+BWRAP = "/usr/bin/bwrap"
+SANDBOX_PYTHON = "/usr/bin/python3"
+TMPFS_BYTES = 16 * 1024 * 1024
+
+# Child bootstrap is stdlib-only. Host env and host home are not visible.
 _BOOTSTRAP = r"""
 import ast
 import json
+import os
 import resource
+import socket
 import sys
 
-FORBIDDEN = {"socket", "subprocess", "ctypes", "multiprocessing"}
+FORBIDDEN = {"socket", "subprocess", "ctypes", "multiprocessing", "pathlib"}
+ALLOWED = {
+    "os", "math", "json", "decimal", "datetime", "collections", "typing",
+    "abc", "enum", "dataclasses", "functools", "itertools", "operator",
+    "re", "copy", "numbers", "pinelib", "openpine_contracts",
+}
 
 def _denied(tree: ast.AST) -> str | None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".", 1)[0]
-                if root in FORBIDDEN:
+                if root in FORBIDDEN or root not in ALLOWED:
                     return root
         elif isinstance(node, ast.ImportFrom) and node.module:
             root = node.module.split(".", 1)[0]
-            if root in FORBIDDEN:
+            if root in FORBIDDEN or root not in ALLOWED:
                 return root
     return None
+
+def _guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+    root = name.split(".", 1)[0]
+    if root in FORBIDDEN or (level == 0 and root not in ALLOWED):
+        raise ImportError(f"forbidden import: {root}")
+    return _REAL_IMPORT(name, globals, locals, fromlist, level)
 
 def _safe(value):
     if value is None or isinstance(value, (bool, int, str)):
@@ -45,6 +63,31 @@ def _safe(value):
         return {str(key): _safe(item) for key, item in value.items()}
     return None
 
+def _isolation():
+    network = "blocked"
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.settimeout(0.2)
+        probe.connect(("1.1.1.1", 53))
+        network = "open"
+        probe.close()
+    except OSError:
+        network = "blocked"
+    usr_writable = False
+    try:
+        with open("/usr/bin/.openpine-write-probe", "w") as handle:
+            handle.write("x")
+        usr_writable = True
+    except OSError:
+        usr_writable = False
+    return {
+        "uid": os.getuid(),
+        "home_visible": os.path.exists("/home/moltbot1"),
+        "usr_writable": usr_writable,
+        "env": sorted(os.environ),
+        "network": network,
+    }
+
 def main() -> int:
     resource.setrlimit(resource.RLIMIT_CPU, (2, 2))
     resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
@@ -56,16 +99,26 @@ def main() -> int:
     if denied:
         json.dump({"ok": False, "error": f"forbidden import: {denied}"}, sys.stdout)
         return 2
-    namespace = {}
-    exec(compile(tree, "<artifact>", "exec"), namespace, namespace)
+    namespace = {"__builtins__": __builtins__}
+    if isinstance(__builtins__, dict):
+        namespace["__builtins__"] = dict(__builtins__)
+        namespace["__builtins__"]["__import__"] = _guarded_import
+    else:
+        namespace["__builtins__"].__import__ = _guarded_import
+    try:
+        exec(compile(tree, "<artifact>", "exec"), namespace, namespace)
+    except ImportError as exc:
+        json.dump({"ok": False, "error": str(exc)}, sys.stdout)
+        return 2
     public = {
         key: _safe(value)
         for key, value in namespace.items()
         if not key.startswith("_")
     }
-    json.dump({"ok": True, "namespace": public}, sys.stdout)
+    json.dump({"ok": True, "namespace": public, "isolation": _isolation()}, sys.stdout)
     return 0
 
+_REAL_IMPORT = __import__
 if __name__ == "__main__":
     raise SystemExit(main())
 """
@@ -75,31 +128,76 @@ class IsolatedWorkerError(RuntimeError):
     """Typed failure from the isolated generated-code worker."""
 
 
+def _bwrap_argv() -> list[str]:
+    if not Path(BWRAP).is_file():
+        raise IsolatedWorkerError("bubblewrap is required for isolated execution")
+    if not Path(SANDBOX_PYTHON).is_file():
+        raise IsolatedWorkerError("sandbox python is missing")
+    return [
+        BWRAP,
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--ro-bind",
+        "/lib",
+        "/lib",
+        "--size",
+        str(TMPFS_BYTES),
+        "--tmpfs",
+        "/tmp",
+        "--proc",
+        "/proc",
+        "--dev",
+        "/dev",
+        "--unshare-net",
+        "--unshare-pid",
+        "--die-with-parent",
+        "--clearenv",
+        "--setenv",
+        "PATH",
+        "/usr/bin:/bin",
+        "--setenv",
+        "HOME",
+        "/tmp",
+        "--setenv",
+        "TZ",
+        "UTC",
+        "--setenv",
+        "LANG",
+        "C.UTF-8",
+        "--setenv",
+        "LC_ALL",
+        "C.UTF-8",
+        "--setenv",
+        "PYTHONHASHSEED",
+        "0",
+        "--setenv",
+        "PYTHONDONTWRITEBYTECODE",
+        "1",
+        "--chdir",
+        "/tmp",
+        SANDBOX_PYTHON,
+        "-I",
+        "-c",
+        _BOOTSTRAP,
+    ]
+
+
 def evaluate_artifact(
     source: bytes,
     *,
     timeout_s: float = 5.0,
 ) -> dict[str, Any]:
-    scratch = tempfile.mkdtemp(prefix="openpine-worker-")
-    env = {
-        "PATH": "/usr/bin:/bin",
-        "LANG": "C.UTF-8",
-        "LC_ALL": "C.UTF-8",
-        "TZ": "UTC",
-        "PYTHONHASHSEED": "0",
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "HOME": scratch,
-    }
+    if len(source) > 500_000:
+        raise IsolatedWorkerError("artifact source exceeds size limit")
     try:
-        # Fixed argv: current interpreter + isolated bootstrap. No shell, no user path.
+        # Immutable argv: trusted bwrap + /usr/bin/python3. No shell, no user path.
         completed = subprocess.run(  # noqa: S603
-            [sys.executable, "-I", "-c", _BOOTSTRAP],
+            _bwrap_argv(),
             input=json.dumps({"source": source.decode("utf-8")}),
             capture_output=True,
             text=True,
             timeout=timeout_s,
-            env=env,
-            cwd=scratch,
             check=False,
         )
     except subprocess.TimeoutExpired as exc:

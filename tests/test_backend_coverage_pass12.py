@@ -293,7 +293,7 @@ def test_runtime_engine_adapter_and_artifact_helpers(monkeypatch, tmp_path):
         "    def _process_bar(self, bar): return None\n",
         encoding="utf-8",
     )
-    mod = rt._load_generated_module(module_file, "src:id", "art:id")
+    mod = rt._load_generated_module(module_file, "src:id", "art:id", unsafe_in_process=True)
     assert mod.label.foo == "label.foo"
     cls = rt._select_strategy_class(mod, {"class_name": "GeneratedStrategy"})
     assert cls.__name__ == "GeneratedStrategy"
@@ -301,7 +301,7 @@ def test_runtime_engine_adapter_and_artifact_helpers(monkeypatch, tmp_path):
     bad_file = tmp_path / "bad_strategy.py"
     bad_file.write_text("raise RuntimeError('import failed')\n", encoding="utf-8")
     with pytest.raises(rt.BacktestArtifactError):
-        rt._load_generated_module(bad_file, "s", "a")
+        rt._load_generated_module(bad_file, "s", "a", unsafe_in_process=True)
     empty = types.SimpleNamespace(__name__="empty")
     with pytest.raises(rt.BacktestArtifactError):
         rt._select_strategy_class(empty, {})
