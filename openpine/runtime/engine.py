@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
-import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +10,7 @@ from typing import Any
 from marketdata_provider.contracts import Bar
 
 from openpine.integrations import import_library
+from openpine.runtime.isolated_worker import IsolatedWorkerError, make_isolated_adapter
 
 
 @dataclass(frozen=True)
@@ -110,20 +109,11 @@ def load_strategy_class_from_artifact(
             f"Recompile the Pine source with: openpine pine compile <pine-name>"
         )
 
-    module = _load_generated_module(strategy_path, source_id, artifact_id)
-    strategy_class = _select_strategy_class(module, artifact.get("compile_meta", {}))
-    if getattr(strategy_class, "__name__", "") in (
-        "GeneratedStrategy",
-        "GeneratedIndicator",
-    ):
-        return _adapt_generated_strategy(
-            strategy_class, symbol=symbol, timeframe=timeframe
-        )
-    return strategy_class
+    return make_isolated_adapter(strategy_path)
 
 
 def load_generated_class_from_artifact(source_id: str, artifact_id: str) -> type:
-    """Load the raw AST2Python generated class from a compiled artifact."""
+    """Generated classes stay in the isolated worker. Gateway cannot import them."""
     from openpine.artifacts import ArtifactStore
 
     store = ArtifactStore()
@@ -145,8 +135,9 @@ def load_generated_class_from_artifact(source_id: str, artifact_id: str) -> type
             f"Recompile the Pine source with: openpine pine compile <pine-name>"
         )
 
-    module = _load_generated_module(strategy_path, source_id, artifact_id)
-    return _select_strategy_class(module, artifact.get("compile_meta", {}))
+    raise IsolatedWorkerError(
+        "generated Python cannot be imported in the gateway process"
+    )
 
 
 def _validate_production_compile_artifact(
@@ -167,85 +158,10 @@ def _validate_production_compile_artifact(
         )
 
 
-def _load_generated_module(path: Path, source_id: str, artifact_id: str) -> Any:
-    module_name = (
-        "openpine_generated_"
-        f"{source_id.replace('-', '_').replace(':', '_')}_"
-        f"{artifact_id.replace('-', '_').replace(':', '_')}"
-    )
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise BacktestArtifactError(
-            f"Cannot import generated strategy artifact: {path}"
-        )
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    try:
-        spec.loader.exec_module(module)
-    except Exception as exc:
-        raise BacktestArtifactError(
-            f"Failed to import generated strategy artifact {path}: {exc}"
-        ) from exc
-    for namespace in ("label", "line", "box", "table", "position", "size"):
-        if not hasattr(module, namespace):
-            setattr(module, namespace, _PineConstantNamespace(namespace))
-    return module
-
-
-def _select_strategy_class(module: Any, compile_meta: dict[str, Any]) -> type:
-    candidates = [
-        compile_meta.get("class_name"),
-        "GeneratedStrategy",
-        "GeneratedIndicator",
-        "Strategy",
-    ]
-    for name in candidates:
-        if isinstance(name, str):
-            value = getattr(module, name, None)
-            if isinstance(value, type) and callable(
-                getattr(value, "_process_bar", None)
-            ):
-                return value
-
-    for value in vars(module).values():
-        if isinstance(value, type) and callable(getattr(value, "_process_bar", None)):
-            # Skip imported base classes that are not defined in this module
-            if value.__module__ != getattr(module, "__name__", None):
-                continue
-            return value
-
-    raise BacktestArtifactError(
-        "Generated artifact does not expose a strategy class. "
-        "Expected GeneratedStrategy or a class with _process_bar()."
-    )
-
-
-def _adapt_generated_strategy(
-    generated_strategy_class: type,
-    *,
-    symbol: str,
-    timeframe: str,
-) -> type:
-    try:
-        import_library("backtest_engine")
-        from backtest_engine.adapters.generated_strategy import (
-            GeneratedStrategyAdapterOptions,
-            make_generated_strategy_adapter,
-        )
-    except Exception as exc:
-        raise BacktestArtifactError(
-            "BacktestEngine generated-strategy adapter is unavailable. "
-            "Install/repair the local backtest_engine package."
-        ) from exc
-
-    options = GeneratedStrategyAdapterOptions(symbol=symbol, timeframe=timeframe)
-    return make_generated_strategy_adapter(generated_strategy_class, options=options)
-
-
 class _DataBackedRuntime:
     """Lightweight runtime that provides data_provider for request.security.
 
-    This is used when run_native_strategy() reads engine.config.runtime —
+    This is used when run_native_strategy() reads engine.config.runtime -
     without it, the fallback NoopRuntime has no data_provider and
     request.security raises PineRequestError.
     """

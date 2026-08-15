@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openpine"
-version = "4.0.2"
+version = "5.0.0rc1"
 description = "OpenPine product orchestration boundary for the Pine stack"
 readme = "README.md"
 requires-python = ">=3.11"
