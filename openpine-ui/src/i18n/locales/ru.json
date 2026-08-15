@@ -648,8 +648,13 @@
   },
   "live": {
     "title": "Live-допуск",
-    "readonlyHint": "Страница только читает admission. Торговлю не запускает.",
-    "loadFailed": "Не удалось загрузить live admission"
+    "readonlyHint": "При открытии только читает admission. Старт — только после preview и ввода LIVE.",
+    "loadFailed": "Не удалось загрузить live admission",
+    "strategyLabel": "Стратегия",
+    "strategyRequired": "Нужен strategy id",
+    "review": "Показать preview",
+    "typeLive": "Введите LIVE для подтверждения",
+    "start": "Запустить live"
   },
   "optimizer": {
     "title": "Оптимизатор",

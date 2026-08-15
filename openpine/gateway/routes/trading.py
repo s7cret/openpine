@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from openpine._compat import structlog
 from openpine.admission import DEFAULT_STACK_ID, admit_run
@@ -16,6 +16,11 @@ from openpine.gateway.schemas import (
     LiveStartRequest,
     PaperStartRequest,
     TradingStatusResponse,
+)
+from openpine.live_preview import (
+    LiveConfirmError,
+    make_live_preview,
+    require_live_confirmation,
 )
 from openpine.registry.strategies import (
     ArchivedStrategyActivationError,
@@ -106,6 +111,20 @@ async def start_live(
     state: GatewayState = Depends(get_state),
 ) -> TradingStatusResponse:
     """Start live trading for a strategy (requires global live_enabled)."""
+    import time
+
+    try:
+        require_live_confirmation(
+            strategy_id=body.strategy_id,
+            preview_hash_value=body.preview_hash,
+            confirmation=body.confirmation,
+            expires_at_utc_ms=body.expires_at_utc_ms,
+            now_ms=int(time.time() * 1000),
+        )
+    except LiveConfirmError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    if not body.idempotency_key:
+        raise HTTPException(400, "idempotency_key required")
     if not state.config.live_enabled:
         raise HTTPException(
             403,
@@ -184,6 +203,16 @@ async def live_admission() -> dict[str, object]:
             "mutating": False,
         }
     return {**result.to_dict(), "mutating": False}
+
+
+@router.get("/live/admission/preview")
+async def live_admission_preview(
+    strategy_id: str = Query(..., min_length=1),
+) -> dict[str, object]:
+    """Immutable start preview. Does not start trading."""
+    import time
+
+    return make_live_preview(strategy_id, now_ms=int(time.time() * 1000))
 
 
 @router.get("/trading/status/{strategy_id}", response_model=TradingStatusResponse)

@@ -1378,8 +1378,19 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
         PaperStartRequest(strategy_id="s1"), state=cast(Any, state)
     )
     strategy.enabled = False
+    from openpine.live_preview import make_live_preview
+    import time
+
+    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
     await trading.start_live(
-        trading.LiveStartRequest(strategy_id="s1"), state=cast(Any, state)
+        trading.LiveStartRequest(
+            strategy_id="s1",
+            preview_hash=preview["preview_hash"],
+            confirmation="LIVE",
+            idempotency_key="live-s1",
+            expires_at_utc_ms=preview["expires_at_utc_ms"],
+        ),
+        state=cast(Any, state),
     )
 
 

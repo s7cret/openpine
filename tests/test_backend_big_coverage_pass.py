@@ -797,11 +797,26 @@ def test_events_websocket_and_old_schema_event_listing():
 
 
 def test_additional_strategy_and_trading_edge_paths(tmp_path):
+    import time
+
     from openpine.gateway.schemas import LiveStartRequest, StrategyCreate, StrategyUpdate
+    from openpine.live_preview import make_live_preview
 
     state = FakeState(tmp_path)
     state.config.live_enabled = True
-    live = asyncio.run(trading.start_live(LiveStartRequest(strategy_id="s1"), state))
+    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
+    live = asyncio.run(
+        trading.start_live(
+            LiveStartRequest(
+                strategy_id="s1",
+                preview_hash=preview["preview_hash"],
+                confirmation="LIVE",
+                idempotency_key="live-s1",
+                expires_at_utc_ms=preview["expires_at_utc_ms"],
+            ),
+            state,
+        )
+    )
     assert live.mode == "live"
     assert asyncio.run(trading.stop_live(LiveStartRequest(strategy_id="s1"), state))["status"] == "stopped"
     with pytest.raises(HTTPException):

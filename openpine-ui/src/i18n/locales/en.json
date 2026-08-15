@@ -648,8 +648,13 @@
   },
   "live": {
     "title": "Live admission",
-    "readonlyHint": "This page only reads admission. It never starts trading.",
-    "loadFailed": "Failed to load live admission"
+    "readonlyHint": "Mount only reads admission. Live start requires a preview and typed LIVE.",
+    "loadFailed": "Failed to load live admission",
+    "strategyLabel": "Strategy",
+    "strategyRequired": "Strategy id is required",
+    "review": "Review start preview",
+    "typeLive": "Type LIVE to confirm",
+    "start": "Start live"
   },
   "optimizer": {
     "title": "Optimizer",

@@ -36,6 +36,7 @@ export type OpenApiOperation =
   | { method: 'GET'; path: '/api/jobs/events' } |
   | { method: 'GET'; path: '/api/jobs/{job_id}' } |
   | { method: 'GET'; path: '/api/live/admission' } |
+  | { method: 'GET'; path: '/api/live/admission/preview' } |
   | { method: 'GET'; path: '/api/orders' } |
   | { method: 'GET'; path: '/api/orders/{order_id}' } |
   | { method: 'GET'; path: '/api/pine-sources' } |
@@ -97,5 +98,5 @@ export type OpenApiOperation =
   | { method: 'PUT'; path: '/api/strategies/{strategy_id}/archive' } |
   | { method: 'PUT'; path: '/api/strategies/{strategy_id}/unarchive' }
 
-export const OPENAPI_OPERATION_COUNT = 96
+export const OPENAPI_OPERATION_COUNT = 97
 

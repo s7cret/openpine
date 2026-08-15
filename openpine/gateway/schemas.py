@@ -308,6 +308,10 @@ class PaperStartRequest(BaseModel):
 class LiveStartRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     strategy_id: NonBlankStr = Field(max_length=128)
+    preview_hash: str = ""
+    confirmation: str = ""
+    idempotency_key: str = ""
+    expires_at_utc_ms: int | None = None
 
 
 class TradingStatusResponse(BaseModel):

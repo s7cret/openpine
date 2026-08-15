@@ -113,10 +113,14 @@ describe('global UI correctness contracts', () => {
     expect(store).not.toContain('crypto.randomUUID')
   })
 
-  it('live page never posts start on mount', () => {
+  it('live page never posts start on mount and requires typed LIVE', () => {
     const live = source('pages/Live.vue')
+    const mount = live.split('onMounted')[1] ?? ''
     expect(live).toContain('/live/admission')
-    expect(live).not.toContain('/live/start')
+    expect(live).toContain('live-typed-confirm')
+    expect(live).toContain("confirmation.value === 'LIVE'")
+    expect(mount).not.toContain('/live/start')
+    expect(live).toContain('/live/start')
     expect(live).not.toContain('__probe__')
   })
 })

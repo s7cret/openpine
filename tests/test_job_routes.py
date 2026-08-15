@@ -79,3 +79,19 @@ def test_live_admission_is_get_and_non_mutating() -> None:
     assert body["mutating"] is False
     assert "admitted" in body
     assert client.post("/live/admission").status_code == 405
+
+
+def test_live_start_without_typed_confirm_is_400() -> None:
+    from openpine.gateway.routes.trading import router as trading_router
+
+    app = FastAPI()
+    app.include_router(trading_router)
+    app.dependency_overrides[get_state] = lambda: SimpleNamespace(
+        config=SimpleNamespace(live_enabled=True)
+    )
+    client = TestClient(app)
+    preview = client.get("/live/admission/preview", params={"strategy_id": "s1"})
+    assert preview.status_code == 200
+    assert preview.json()["mutating"] is False
+    denied = client.post("/live/start", json={"strategy_id": "s1"})
+    assert denied.status_code == 400
