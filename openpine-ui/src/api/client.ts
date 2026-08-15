@@ -391,3 +391,47 @@ export type VersionManifest = {
 }
 
 export const getVersionManifest = () => api.get<VersionManifest>('/version')
+
+export const JOB_KINDS = ['backtest', 'backfill', 'compile', 'optimize', 'parity', 'report'] as const
+export type JobKind = (typeof JOB_KINDS)[number]
+export type JobState =
+  | 'QUEUED'
+  | 'RUNNING'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'CANCELED'
+  | 'RETRY_WAIT'
+  | 'LOST'
+
+export type JobV1 = {
+  job_id: string
+  kind: JobKind | string
+  state: JobState | string
+  progress?: number | null
+  created_at_utc_ms: number
+  updated_at_utc_ms?: number | null
+  started_at_utc_ms?: number | null
+  finished_at_utc_ms?: number | null
+  actor?: string | null
+  error_code?: string | null
+  input_artifact_refs?: string[]
+  result_artifact_refs?: string[]
+  parent_job_id?: string | null
+  child_job_ids?: string[]
+  event_cursor?: string | null
+  run_id?: string | null
+}
+
+export const getJobs = (params?: { cursor?: string; kind?: string; state?: string; limit?: number }) =>
+  api.get<{ items: JobV1[]; cursor: string | null }>('/jobs', { params })
+export const getJob = (jobId: string) => api.get<JobV1>(`/jobs/${encodeURIComponent(jobId)}`)
+export const getJobEvents = (after = '') =>
+  api.get<{ items: Array<{ event_id: string; type: string; job_id: string }>; resync: boolean }>('/jobs/events', {
+    params: { after },
+  })
+export const cancelJob = (jobId: string, idempotencyKey: string) =>
+  api.post<JobV1>(`/jobs/${encodeURIComponent(jobId)}/cancel`, null, {
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+export const retryJob = (jobId: string) => api.post<JobV1>(`/jobs/${encodeURIComponent(jobId)}/retry`)
+

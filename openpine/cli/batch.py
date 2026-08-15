@@ -11,8 +11,14 @@ def batch() -> None:
 
 
 def _run_batch_phase(ctx: click.Context, phase: str) -> None:
+    from openpine.admission import DEFAULT_STACK_ID, admit_run
     from openpine.batch.runner import main as batch_main
+    from openpine_contracts import AdmitError
 
+    try:
+        admit_run(mode="backtest", stack_id=DEFAULT_STACK_ID)
+    except AdmitError as exc:
+        raise click.ClickException(str(exc)) from exc
     argv = [*ctx.args, "--phase", phase]
     raise SystemExit(batch_main(argv))
 

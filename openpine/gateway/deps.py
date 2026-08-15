@@ -74,6 +74,9 @@ class GatewayState:
             )
             self.event_bus = None  # type: ignore[assignment]
         self.scheduler = JobScheduler()
+        from openpine.jobs.persist import JobV1Store
+
+        self.job_store = JobV1Store(self.config.data_dir / "jobs-v1.sqlite")
         self.artifact_store = ArtifactStore()
         self.state_store = StateStore(self.config.data_dir / "state")
         # Set up data orchestrator with canonical marketdata-provider runtime.
@@ -139,6 +142,9 @@ class GatewayState:
         self.storage.close()
         self.pine_registry.close()
         self.strategy_registry.close()
+        closer = getattr(self.job_store, "close", None)
+        if callable(closer):
+            closer()
 
 
 def get_state(request: Request) -> GatewayState:

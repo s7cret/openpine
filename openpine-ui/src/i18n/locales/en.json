@@ -20,6 +20,7 @@
     "pineFiles": "Pine Files",
     "strategies": "Strategies",
     "backtests": "Backtests",
+    "jobs": "Jobs",
     "tvParity": "TV Parity",
     "data": "Data",
     "achievements": "Achievements",
@@ -629,5 +630,12 @@
     "symbolLoading": "Loading from {exchange}...",
     "exchangeBadge": "◆ {name}",
     "exchangeBadgeDisabled": "◆ {name} — {reason}"
+  },
+  "jobs": {
+    "title": "Jobs",
+    "empty": "No persisted jobs",
+    "missing": "Job not found",
+    "progress": "Progress",
+    "openResult": "Open result"
   }
 }

@@ -2306,6 +2306,19 @@ async def run_backtest(
             raise HTTPException(503, "Backtest storage is unavailable") from exc
         raise
 
+    job_store = getattr(state, "job_store", None)
+    if job_store is not None:
+        try:
+            job_store.create(
+                job_id=str(run_id),
+                kind="backtest",
+                actor="gateway",
+                idempotency_key=idempotency_key,
+                input_artifact_refs=[str(strategy.artifact_id)],
+            )
+        except Exception as exc:
+            log.warning("job_v1_persist_failed", run_id=run_id, error=str(exc))
+
     if idempotency_claimed:
         assert idempotency_key is not None
         assert idempotency_request_hash is not None

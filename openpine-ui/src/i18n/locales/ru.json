@@ -20,6 +20,7 @@
     "pineFiles": "Pine-файлы",
     "strategies": "Стратегии",
     "backtests": "Бэктесты",
+    "jobs": "Задачи",
     "tvParity": "TV-паритет",
     "data": "Данные",
     "achievements": "Достижения",
@@ -629,5 +630,12 @@
     "symbolLoading": "Загрузка с {exchange}...",
     "exchangeBadge": "◆ {name}",
     "exchangeBadgeDisabled": "◆ {name} — {reason}"
+  },
+  "jobs": {
+    "title": "Задачи",
+    "empty": "Нет сохранённых задач",
+    "missing": "Задача не найдена",
+    "progress": "Прогресс",
+    "openResult": "Открыть результат"
   }
 }
