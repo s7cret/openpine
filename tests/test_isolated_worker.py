@@ -117,3 +117,14 @@ def test_in_process_generated_import_is_forbidden(tmp_path: Path) -> None:
     path.write_text("VALUE = 1\n", encoding="utf-8")
     with pytest.raises(BacktestArtifactError, match="in-process"):
         _load_generated_module(path, "src", "art")
+
+
+def test_sandbox_drops_to_openpine_worker_when_host_allows() -> None:
+    from openpine.runtime.isolated_worker import worker_user_available
+
+    result = evaluate_artifact(b"VALUE = 1\n", timeout_s=5)
+    if worker_user_available():
+        assert result["isolation"]["uid"] != 1000
+        assert result["isolation"]["uid"] > 0
+    else:
+        assert result["isolation"]["uid"] > 0

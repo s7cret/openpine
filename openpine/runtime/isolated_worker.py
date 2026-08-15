@@ -15,6 +15,7 @@ from typing import Any
 
 BWRAP = "/usr/bin/bwrap"
 SANDBOX_PYTHON = "/usr/bin/python3"
+WORKER_USER = "openpine-worker"
 TMPFS_BYTES = 16 * 1024 * 1024
 
 # Child bootstrap is stdlib-only. Host env and host home are not visible.
@@ -128,12 +129,29 @@ class IsolatedWorkerError(RuntimeError):
     """Typed failure from the isolated generated-code worker."""
 
 
+def worker_user_available() -> bool:
+    try:
+        probe = subprocess.run(  # noqa: S603
+            ["/usr/bin/sudo", "-n", "-u", WORKER_USER, "--", "/usr/bin/id", "-u"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return probe.returncode == 0 and probe.stdout.strip().isdigit()
+
+
 def _bwrap_argv() -> list[str]:
     if not Path(BWRAP).is_file():
         raise IsolatedWorkerError("bubblewrap is required for isolated execution")
     if not Path(SANDBOX_PYTHON).is_file():
         raise IsolatedWorkerError("sandbox python is missing")
-    return [
+    prefix: list[str] = []
+    if worker_user_available():
+        prefix = ["/usr/bin/sudo", "-n", "-u", WORKER_USER, "--"]
+    return prefix + [
         BWRAP,
         "--ro-bind",
         "/usr",
