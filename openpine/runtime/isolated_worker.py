@@ -77,3 +77,41 @@ def require_isolated_or_scan(path: Path) -> IsolatedAdmission:
         # gate is the first control; the worker process is the next step.
         return admission
     return admission
+
+
+_WORKER_SNIPPET = r'''
+import ast, json, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+tree = ast.parse(source, filename=str(path))
+classes = [n.name for n in tree.body if isinstance(n, ast.ClassDef)]
+print(json.dumps({"ok": True, "classes": classes}))
+'''
+
+
+def inspect_generated_in_process(path: Path, *, timeout_sec: float = 5.0) -> dict[str, object]:
+    import subprocess
+    import sys
+
+    admit_generated_source(path)
+    completed = subprocess.run(
+        [sys.executable, "-I", "-c", _WORKER_SNIPPET, str(path)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=timeout_sec,
+        env={
+            "PYTHONHASHSEED": "0",
+            "OPENPINE_WORKER": "1",
+            "PATH": "",
+        },
+    )
+    if completed.returncode != 0:
+        raise IsolatedWorkerError(completed.stderr.strip() or "isolated worker failed")
+    import json
+
+    payload = json.loads(completed.stdout)
+    if payload.get("ok") is not True:
+        raise IsolatedWorkerError("isolated worker returned unsuccessful payload")
+    return payload
