@@ -141,3 +141,4 @@ node_modules/
 /openpine-ui/playwright-report/
 /openpine-ui/test-results/
 /openpine-ui/.contract/
+wheelhouse/
