@@ -121,12 +121,22 @@ async def compile_pine(
     state: GatewayState = Depends(get_state),
 ) -> dict[str, str]:
     """Compile a Pine source into an artifact (async with progress)."""
+    from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
+
+    require_http_admit("compile")
     try:
         src = state.pine_registry.get_source(source_id)
     except KeyError:
         raise HTTPException(404, f"Pine source not found: {source_id}")
 
     operation_id = f"compile_{source_id}_{int(__import__('time').time() * 1000)}"
+    persist_gateway_job(
+        state,
+        job_id=operation_id,
+        kind="compile",
+        actor="gateway",
+        input_artifact_refs=[source_id],
+    )
 
     async def _run_compile():
         try:

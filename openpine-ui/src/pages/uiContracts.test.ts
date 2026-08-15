@@ -93,6 +93,8 @@ describe('global UI correctness contracts', () => {
     expect(Object.keys(en.tvParity).sort()).toEqual(Object.keys(ru.tvParity).sort())
     expect(Object.keys(en.nav).sort()).toEqual(Object.keys(ru.nav).sort())
     expect(Object.keys(en.jobs).sort()).toEqual(Object.keys(ru.jobs).sort())
+    expect(Object.keys(en.live).sort()).toEqual(Object.keys(ru.live).sort())
+    expect(Object.keys(en.optimizer).sort()).toEqual(Object.keys(ru.optimizer).sort())
   })
 
   it('loads persisted jobs by stable id and never synthesizes identity', () => {
@@ -105,5 +107,12 @@ describe('global UI correctness contracts', () => {
     expect(detail).not.toContain('crypto.randomUUID')
     expect(store).toContain('job_id required')
     expect(store).not.toContain('crypto.randomUUID')
+  })
+
+  it('live page never posts start on mount', () => {
+    const live = source('pages/Live.vue')
+    expect(live).toContain('/live/admission')
+    expect(live).not.toContain('/live/start')
+    expect(live).not.toContain('__probe__')
   })
 })

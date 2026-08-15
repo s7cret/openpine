@@ -983,9 +983,11 @@ async def run_tv_parity(
     state: GatewayState = Depends(get_state),
 ) -> dict[str, Any]:
     """Queue a real backtest replay using uploaded TradingView candles."""
-
+    from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
     from openpine.storage.backtest_dto import BacktestRunRequest as StoreBacktestRunRequest
     from openpine.timezones import parse_timestamp_ms
+
+    require_http_admit("parity")
 
     try:
         strategy = state.strategy_registry.get_strategy(strategy_id)
@@ -1092,6 +1094,13 @@ async def run_tv_parity(
             to_time=parsed.summary["to_time"],
             warmup_bars=warmup_bars,
         )
+    )
+    persist_gateway_job(
+        state,
+        job_id=str(run_id),
+        kind="parity",
+        actor="gateway",
+        input_artifact_refs=[str(strategy.artifact_id)],
     )
     run_root = _run_root(state, run_id)
     if run_root.exists():

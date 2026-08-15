@@ -21,6 +21,8 @@
     "strategies": "Стратегии",
     "backtests": "Бэктесты",
     "jobs": "Задачи",
+    "live": "Live",
+    "optimize": "Оптимизатор",
     "tvParity": "TV-паритет",
     "data": "Данные",
     "achievements": "Достижения",
@@ -637,5 +639,15 @@
     "missing": "Задача не найдена",
     "progress": "Прогресс",
     "openResult": "Открыть результат"
+  },
+  "live": {
+    "title": "Live-допуск",
+    "readonlyHint": "Страница только читает admission. Торговлю не запускает.",
+    "loadFailed": "Не удалось загрузить live admission"
+  },
+  "optimizer": {
+    "title": "Оптимизатор",
+    "notComplete": "UI оптимизатора не является готовой фичей.",
+    "dryRunOnly": "Бэкенд сейчас только валидирует dry-run. Job пишется при вызове этого endpoint."
   }
 }

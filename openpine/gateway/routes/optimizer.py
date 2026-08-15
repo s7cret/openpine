@@ -21,12 +21,22 @@ async def optimizer_dry_run(
     state: GatewayState = Depends(get_state),
 ) -> OptimizerDryRunResponse:
     """Validate optimizer configuration without launching optimization."""
+    from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
+
+    require_http_admit("optimize")
     try:
         from openpine.optimizer import OptimizerService
 
         result = OptimizerService().validate_config(
             strategy_id=req.strategy_id,
             trials=req.trials,
+        )
+        persist_gateway_job(
+            state,
+            job_id=f"opt-dry-{req.strategy_id}",
+            kind="optimize",
+            actor="gateway",
+            idempotency_key=f"opt-dry-{req.strategy_id}",
         )
         return OptimizerDryRunResponse(
             strategy_id=result.strategy_id,

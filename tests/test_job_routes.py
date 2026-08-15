@@ -43,3 +43,17 @@ def test_http_list_detail_cancel_retry_and_events(tmp_path) -> None:
     assert retried.json()["state"] == "QUEUED"
     events = client.get("/api/jobs/events", params={"after": "nope"})
     assert events.json()["resync"] is True
+
+
+def test_live_admission_is_get_and_non_mutating() -> None:
+    from openpine.gateway.routes.trading import router as trading_router
+
+    app = FastAPI()
+    app.include_router(trading_router)
+    client = TestClient(app)
+    response = client.get("/live/admission")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mutating"] is False
+    assert "admitted" in body
+    assert client.post("/live/admission").status_code == 405

@@ -128,3 +128,10 @@ def test_sandbox_drops_to_openpine_worker_when_host_allows() -> None:
         assert result["isolation"]["uid"] > 0
     else:
         assert result["isolation"]["uid"] > 0
+
+
+def test_worker_rejects_huge_source_and_subprocess() -> None:
+    with pytest.raises(IsolatedWorkerError, match="size limit"):
+        evaluate_artifact(b"x = 1\n" * 100_000, timeout_s=5)
+    with pytest.raises(IsolatedWorkerError, match="subprocess"):
+        evaluate_artifact(b'__import__("subprocess")\n', timeout_s=5)

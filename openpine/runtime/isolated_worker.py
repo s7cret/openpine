@@ -83,7 +83,7 @@ def _isolation():
         usr_writable = False
     return {
         "uid": os.getuid(),
-        "home_visible": os.path.exists("/home/moltbot1"),
+        "home_visible": os.path.isdir("/home") and bool(os.listdir("/home")),
         "usr_writable": usr_writable,
         "env": sorted(os.environ),
         "network": network,

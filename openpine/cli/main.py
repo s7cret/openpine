@@ -772,8 +772,15 @@ def pine_add(name: str, source_path: str) -> None:
 )
 def pine_compile(name: str, force: bool) -> None:
     """Compile a Pine source and produce a CompileArtifact."""
+    from openpine.admission import DEFAULT_STACK_ID, admit_run
     from openpine.compile import SubprocessCompilerAdapter, compile_pipeline
     from openpine.pine.registry import SQLitePineSourceRegistry
+    from openpine_contracts import AdmitError
+
+    try:
+        admit_run(mode="compile", stack_id=DEFAULT_STACK_ID)
+    except AdmitError as exc:
+        raise click.ClickException(str(exc)) from exc
 
     registry = SQLitePineSourceRegistry()
     try:

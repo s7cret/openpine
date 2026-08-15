@@ -24,6 +24,8 @@ const navItems = computed(() => [
   { path: '/strategies',   label: t('nav.strategies'),   icon: '⚡' },
   { path: '/backtests',    label: t('nav.backtests'),    icon: '🧪' },
   { path: '/jobs',         label: t('nav.jobs'),         icon: '📋' },
+  { path: '/live',         label: t('nav.live'),         icon: '📡' },
+  { path: '/optimize',     label: t('nav.optimize'),     icon: '🔎' },
   { path: '/tv-parity',    label: t('nav.tvParity'),     icon: '📺' },
   { path: '/data',         label: t('nav.data'),         icon: '💾' },
   { path: '/achievements', label: t('nav.achievements'), icon: '🏆' },

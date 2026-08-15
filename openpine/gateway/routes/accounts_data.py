@@ -758,7 +758,10 @@ async def data_backfill(
     state: GatewayState = Depends(get_state),
 ) -> dict[str, object]:
     """Start a data backfill job."""
+    from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
     from openpine.jobs import Job, JobType
+
+    require_http_admit("backfill")
 
     from_ms = _parse_date_ms(body.from_time)
     to_ms = _parse_date_ms(body.to_time)
@@ -788,6 +791,13 @@ async def data_backfill(
         },
     )
     job = state.scheduler.enqueue(candidate)
+    persist_gateway_job(
+        state,
+        job_id=str(job.id),
+        kind="backfill",
+        actor="gateway",
+        idempotency_key=job.idempotency_key,
+    )
     if job.id == candidate.id and job.status == JobStatus.PENDING:
         message = (
             f"Queued large candle backfill for {body.symbol.upper()} {body.timeframe} "

@@ -20,7 +20,14 @@ def optimizer() -> None:
 @click.option("--trials", required=True, type=int, help="Number of trials to plan")
 def optimizer_dry_run(strategy_id: str, trials: int) -> None:
     """Validate optimizer routing without launching external work."""
+    from openpine.admission import DEFAULT_STACK_ID, admit_run
     from openpine.optimizer import OptimizerService
+    from openpine_contracts import AdmitError
+
+    try:
+        admit_run(mode="optimize", stack_id=DEFAULT_STACK_ID)
+    except AdmitError as exc:
+        raise click.ClickException(str(exc)) from exc
 
     if trials < 1:
         console.print("[red]--trials must be >= 1[/red]")

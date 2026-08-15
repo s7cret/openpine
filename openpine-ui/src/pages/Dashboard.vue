@@ -2,15 +2,20 @@
 import { onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDashboardStore } from '@/stores/dashboard'
+import { useJobsStore } from '@/stores/jobs'
+import { formatUtcMs } from '@/lib/utcMs'
 import { summarizeDataHealth } from '@/lib/dataHealth'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { createVisibilityPoller } from '@/lib/visibilityPoller'
 
 const { t } = useI18n()
 const store = useDashboardStore()
+const jobsStore = useJobsStore()
 const router = useRouter()
 const dashboardPoller = createVisibilityPoller({
-  poll: async () => { await store.fetchAll() },
+  poll: async () => {
+    await Promise.all([store.fetchAll(), jobsStore.fetchList()])
+  },
   intervalMs: 15_000,
 })
 
@@ -20,7 +25,7 @@ onMounted(() => {
 onUnmounted(() => dashboardPoller.stop())
 
 const strategies = computed(() => store.stats?.strategies ?? [])
-const jobs = computed(() => store.stats?.jobs ?? {})
+const recentJobs = computed(() => jobsStore.items.slice(0, 5))
 const uptime = computed(() => {
   const s = store.stats?.uptime_seconds ?? 0
   if (s < 60) return `${Math.floor(s)}s`
@@ -54,29 +59,6 @@ function healthClass(status?: string) {
   if (status === 'ok') return 'text-success'
   if (status === 'stale' || status === 'runner_off') return 'text-warning'
   return 'text-danger'
-}
-
-function jobTitle(job: any) {
-  if (job.type === 'backfill') {
-    const input = job.input ?? job.progress?.detail ?? job.result ?? {}
-    return `Candles ${input.symbol ?? ''} ${input.timeframe ?? ''}`.trim()
-  }
-  return job.type
-}
-
-function jobSubtitle(job: any) {
-  if (job.type === 'backfill') {
-    const progress = job.progress
-    if (progress?.message) return progress.message
-    const result = job.result
-    if (result?.bars_loaded != null) return t('dashboard.loadedCandles', { count: Number(result.bars_loaded).toLocaleString() })
-  }
-  return job.strategy_id ?? '—'
-}
-
-function jobPct(job: any) {
-  const pct = Number(job.progress?.pct ?? (job.status === 'done' ? 1 : 0))
-  return Math.max(0, Math.min(100, Math.round(pct * 100)))
 }
 
 function agoShort(sec: number) {
@@ -306,35 +288,21 @@ function agoShort(sec: number) {
       <!-- Recent Jobs -->
       <div class="bg-dark-800 rounded-xl border border-dark-500 p-4">
         <h2 class="text-sm font-semibold text-gray-300 mb-3">{{ t('dashboard.recentJobs') }}</h2>
-        <div v-if="!jobs.recent?.length" class="text-gray-500 text-sm text-center py-4">{{ t('dashboard.noJobs') }}</div>
+        <div v-if="!recentJobs.length" class="text-gray-500 text-sm text-center py-4">{{ t('dashboard.noJobs') }}</div>
         <div v-else class="space-y-2">
-          <div
-            v-for="job in (jobs.recent ?? []).slice(0, 5)"
-            :key="job.id"
-            class="py-2 border-b border-dark-600/30 last:border-0"
+          <RouterLink
+            v-for="job in recentJobs"
+            :key="job.job_id"
+            :to="{ name: 'job-detail', params: { jobId: job.job_id } }"
+            class="py-2 border-b border-dark-600/30 last:border-0 block"
           >
             <div class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)_auto] items-center gap-2 text-xs">
-              <span class="text-gray-300">{{ jobTitle(job) }}</span>
-              <span class="min-w-0 truncate text-gray-500 font-mono">{{ jobSubtitle(job) }}</span>
-              <span
-                :class="[
-                  job.status === 'done' ? 'text-success' :
-                  job.status === 'running' ? 'text-accent-light' :
-                  job.status === 'failed' ? 'text-danger' :
-                  'text-gray-400',
-                  'font-medium'
-                ]"
-              >
-                {{ job.status }}
-              </span>
+              <span class="text-gray-300">{{ job.kind }}</span>
+              <span class="min-w-0 truncate text-gray-500 font-mono">{{ job.job_id }}</span>
+              <span class="font-medium text-gray-200">{{ job.state }}</span>
             </div>
-            <div v-if="job.type === 'backfill' && (job.status === 'running' || job.status === 'pending')" class="mt-2">
-              <div class="h-1.5 overflow-hidden rounded-full bg-dark-600">
-                <div class="h-full rounded-full bg-accent transition-all" :style="{ width: `${jobPct(job)}%` }" />
-              </div>
-              <div class="mt-1 text-right font-mono text-[10px] text-gray-500">{{ jobPct(job) }}%</div>
-            </div>
-          </div>
+            <div class="mt-1 text-right font-mono text-[10px] text-gray-500">{{ formatUtcMs(job.created_at_utc_ms) }}</div>
+          </RouterLink>
         </div>
       </div>
     </div>

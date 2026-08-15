@@ -168,6 +168,24 @@ async def stop_live(
     return {"strategy_id": body.strategy_id, "status": "stopped"}
 
 
+@router.get("/live/admission")
+async def live_admission() -> dict[str, object]:
+    """Non-mutating live admission preview. Never starts trading."""
+    from openpine.admission import DEFAULT_STACK_ID, admit_run
+    from openpine_contracts import AdmitError
+
+    try:
+        result = admit_run(mode="live", stack_id=DEFAULT_STACK_ID)
+    except AdmitError as exc:
+        return {
+            "admitted": False,
+            "code": exc.code,
+            "message": exc.message,
+            "mutating": False,
+        }
+    return {**result.to_dict(), "mutating": False}
+
+
 @router.get("/trading/status/{strategy_id}", response_model=TradingStatusResponse)
 async def get_trading_status(
     strategy_id: str,

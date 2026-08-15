@@ -104,3 +104,19 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm audit --omit=dev --audit-level=high
+
+  frontend-unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openpine-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
