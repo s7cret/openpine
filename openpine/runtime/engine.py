@@ -12,6 +12,7 @@ from typing import Any
 from marketdata_provider.contracts import Bar
 
 from openpine.integrations import import_library
+from openpine.runtime.isolated_worker import IsolatedWorkerError, require_isolated_or_scan
 
 
 @dataclass(frozen=True)
@@ -168,6 +169,10 @@ def _validate_production_compile_artifact(
 
 
 def _load_generated_module(path: Path, source_id: str, artifact_id: str) -> Any:
+    try:
+        require_isolated_or_scan(path)
+    except IsolatedWorkerError as exc:
+        raise BacktestArtifactError(str(exc)) from exc
     module_name = (
         "openpine_generated_"
         f"{source_id.replace('-', '_').replace(':', '_')}_"
