@@ -10,6 +10,7 @@ from openpine_contracts import (
     AdmitRequest,
     AdmitResult,
     RunMode,
+    SemanticProfile,
     admit,
 )
 
@@ -68,6 +69,45 @@ def admit_run(
         allow_stack_override=allow_stack_override,
     )
     return admit(request, policy)
+
+
+def admit_semantic_profile(
+    *,
+    profile: object | None,
+    source: str,
+    allow_legacy: bool = False,
+) -> SemanticProfile:
+    if profile is None:
+        if source in {"generated_artifact.v2", "live", "paper"}:
+            raise AdmitError(
+                "semantic profile required",
+                code="SEMANTIC_PROFILE_REQUIRED",
+                details={"source": source},
+            )
+        return SemanticProfile.LEGACY_4X
+    try:
+        resolved = (
+            profile
+            if isinstance(profile, SemanticProfile)
+            else SemanticProfile(str(profile))
+        )
+    except ValueError as exc:
+        raise AdmitError(
+            "unknown semantic profile",
+            code="UNKNOWN_SEMANTIC_PROFILE",
+            details={"profile": str(profile)},
+        ) from exc
+    if (
+        resolved is SemanticProfile.LEGACY_4X
+        and source in {"live", "paper"}
+        and not allow_legacy
+    ):
+        raise AdmitError(
+            "legacy semantic profile is not allowed without explicit policy",
+            code="LEGACY_PROFILE_NOT_ALLOWED",
+            details={"source": source},
+        )
+    return resolved
 
 
 def require_admitted(**kwargs: Any) -> AdmitResult:

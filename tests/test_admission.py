@@ -68,3 +68,26 @@ def test_admission_module_does_not_read_drift_env() -> None:
 
     text = Path("openpine/admission.py").read_text(encoding="utf-8")
     assert "OPENPINE_ALLOW" not in text
+
+
+def test_semantic_profile_admission_fail_closed() -> None:
+    from openpine.admission import admit_semantic_profile
+    from openpine_contracts import SemanticProfile
+
+    assert (
+        admit_semantic_profile(profile="strict_5x", source="generated_artifact.v2")
+        is SemanticProfile.STRICT_5X
+    )
+    with pytest.raises(AdmitError, match="semantic profile required") as missing:
+        admit_semantic_profile(profile=None, source="live")
+    assert missing.value.code == "SEMANTIC_PROFILE_REQUIRED"
+    with pytest.raises(AdmitError, match="unknown semantic profile") as unknown:
+        admit_semantic_profile(profile="nope", source="backtest")
+    assert unknown.value.code == "UNKNOWN_SEMANTIC_PROFILE"
+    with pytest.raises(AdmitError, match="legacy") as live:
+        admit_semantic_profile(profile="legacy_4x", source="live")
+    assert live.value.code == "LEGACY_PROFILE_NOT_ALLOWED"
+    assert (
+        admit_semantic_profile(profile="legacy_4x", source="live", allow_legacy=True)
+        is SemanticProfile.LEGACY_4X
+    )
