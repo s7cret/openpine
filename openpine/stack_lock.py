@@ -390,3 +390,32 @@ def stack_lock_summary(lock: Mapping[str, Any] | None = None) -> dict[str, Any]:
         "source_tree_matches": source_tree_sha256 == expected_tree_sha256,
         "components": components,
     }
+
+
+class StackLockAdmissionError(RuntimeError):
+    pass
+
+
+def stack_lock_override_allowed() -> bool:
+    return os.environ.get("OPENPINE_ALLOW_STACK_LOCK_DRIFT") == "1"
+
+
+def admit_stack_lock(*, mode: str = "backtest") -> dict[str, Any]:
+    """Fail-closed stack lock check for backtest/live admission.
+
+    Local override is explicit via OPENPINE_ALLOW_STACK_LOCK_DRIFT=1 and is
+    forbidden for live regardless of the flag.
+    """
+
+    lock = load_stack_lock()
+    errors = list(validate_stack_lock(lock))
+    summary = {
+        "sha256": stack_lock_identity(lock),
+        "release": lock.get("release"),
+        "errors": errors,
+    }
+    if not errors:
+        return summary
+    if mode == "live" or not stack_lock_override_allowed():
+        raise StackLockAdmissionError("; ".join(errors))
+    return summary

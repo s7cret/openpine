@@ -10,8 +10,10 @@ from pathlib import Path, PurePosixPath
 
 from openpine.stack_lock import (
     EXPECTED_COMPONENTS,
+    StackLockAdmissionError,
     _github_repository_from_url,
     _transitive_pin_errors,
+    admit_stack_lock,
     load_stack_lock,
     package_tree_identity,
     stack_lock_identity,
@@ -108,6 +110,30 @@ def test_stack_lock_identity_is_canonical_and_tamper_evident() -> None:
     tampered = copy.deepcopy(lock)
     tampered["components"][1]["commit"] = "1" * 40
     assert stack_lock_identity(tampered) != identity
+
+
+def test_admit_stack_lock_live_never_allows_override(monkeypatch) -> None:
+    monkeypatch.setenv("OPENPINE_ALLOW_STACK_LOCK_DRIFT", "1")
+    monkeypatch.setattr(
+        "openpine.stack_lock.validate_stack_lock",
+        lambda lock, root=None: ("stack lock release must match package version",),
+    )
+    try:
+        admit_stack_lock(mode="live")
+    except StackLockAdmissionError as exc:
+        assert "release" in str(exc)
+    else:
+        raise AssertionError("live admission must fail closed")
+
+
+def test_admit_stack_lock_backtest_override(monkeypatch) -> None:
+    monkeypatch.setenv("OPENPINE_ALLOW_STACK_LOCK_DRIFT", "1")
+    monkeypatch.setattr(
+        "openpine.stack_lock.validate_stack_lock",
+        lambda lock, root=None: ("stack lock release must match package version",),
+    )
+    summary = admit_stack_lock(mode="backtest")
+    assert summary["errors"]
 
 
 def test_stack_lock_validation_reports_component_and_sha_errors() -> None:
