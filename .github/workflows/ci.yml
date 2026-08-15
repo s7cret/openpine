@@ -90,23 +90,36 @@ jobs:
         run: npm install --global npm@11.16.0
       - name: Verify npm toolchain
         run: test "$(npm --version)" = "11.16.0"
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: openpine-openapi-3.13
-          path: openpine-ui/.contract
       - run: npm ci
       - run: npm run test:coverage
       - run: npm run build
-      - name: OpenAPI client drift
-        if: hashFiles('openpine-ui/.contract/openapi.json') != ''
-        run: npm run test:node
-        env:
-          OPENPINE_OPENAPI_SCHEMA: .contract/openapi.json
       - name: Install Chromium for E2E and accessibility gates
         run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm audit --omit=dev --audit-level=high
+
+  openapi-drift:
+    needs: backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: openpine-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: openpine-openapi-3.13
+          path: openpine-ui/.contract
+      - run: test -s .contract/openapi.json
+      - run: npm ci
+      - run: npm run test:node
+        env:
+          OPENPINE_OPENAPI_SCHEMA: .contract/openapi.json
 
   frontend-unit:
     runs-on: ubuntu-latest
