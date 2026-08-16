@@ -133,4 +133,12 @@ describe('global UI correctness contracts', () => {
     expect(page).not.toContain('champion')
     expect(page).not.toContain('rank')
   })
+
+  it('backtest start sends an explicit semantic profile', () => {
+    const page = source('pages/Backtests.vue')
+    expect(page).toContain('backtest-semantic-profile')
+    expect(page).toContain('semantic_profile')
+    expect(page).toContain('allow_legacy')
+    expect(page).toContain("t('backtests.semanticProfileRequired')")
+  })
 })
