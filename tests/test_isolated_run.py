@@ -144,3 +144,20 @@ def test_run_isolated_from_store_captures_then_replays(
     result = run_isolated_from_store("src", "art", bars=_bars(), config=_cfg())
     assert result["intent_tape"][0]["kind"] == "entry"
     assert result["score_ledger_hash"]
+
+
+def test_isolated_indicator_returns_plot_tuples() -> None:
+    from openpine.runtime.isolated_run import run_isolated_indicator
+
+    source = (
+        "class GeneratedStrategy:\n"
+        "    def __init__(self, params=None, runtime=None):\n"
+        "        self.rt = runtime\n"
+        "    def _process_bar(self, bar, i=0):\n"
+        "        self.rt.plot_recorder.record_plot(int(bar.time), int(i), bar.close, 'close')\n"
+    )
+    result = run_isolated_indicator(source.encode("utf-8"), _bars()[:2])
+    assert result.plots
+    assert result.plots[0][3] == "close"
+    assert result.plots[0][0] == 1000
+    assert isinstance(result.plots[0][2], str)

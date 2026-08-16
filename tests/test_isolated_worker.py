@@ -306,3 +306,36 @@ def test_isolated_worker_runs_real_generated_contract() -> None:
 
     assert _TRUSTED_STAGE is not None
     assert (_TRUSTED_STAGE / "ast2python").is_dir()
+
+
+PLOT_SOURCE = textwrap.dedent(
+    """
+    class GeneratedStrategy:
+        def __init__(self, params=None, runtime=None):
+            self.rt = runtime
+        def _process_bar(self, bar, i=0):
+            rec = getattr(self.rt, "plot_recorder", None)
+            if rec is None:
+                return
+            rec.record_plot(int(bar.time), int(i), bar.close, "close")
+    """
+).strip()
+
+
+def test_isolated_worker_emits_plot_records() -> None:
+    bars = [
+        {"time": 1000, "open": 100, "high": 101, "low": 99, "close": 100, "volume": 1},
+        {"time": 1001, "open": 100, "high": 101, "low": 99, "close": 101, "volume": 1},
+    ]
+    result = evaluate_artifact(
+        PLOT_SOURCE.encode("utf-8"),
+        bars=bars,
+        timeout_s=8,
+    )
+    plots = result["plots"]
+    assert plots
+    assert plots[0]["title"] == "close"
+    assert plots[0]["bar_time"] == 1000
+    assert plots[0]["bar_index"] == 0
+    assert isinstance(plots[0]["value"], str)
+    assert plots[0]["value"] == "100"

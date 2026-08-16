@@ -863,7 +863,7 @@ def pine_run_plots(
         now_ms=int(_time_module.time() * 1000),
         registry_cls=deps.SQLitePineSourceRegistry,
         parse_time_ms_func=deps.parse_time_ms,
-        load_generated_class=deps.load_generated_class_from_artifact,
+        load_generated_class=deps.capture_generated_source,
         artifact_error_cls=deps.BacktestArtifactError,
         bar_query_cls=deps.BarQuery,
         instrument_key_cls=deps.InstrumentKey,

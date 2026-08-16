@@ -108,23 +108,20 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
     )
     monkeypatch.setattr(runner, "_infer_tv_bar_index_offset", lambda chart, bars: (0, None))
 
-    pine_runtime_mod = types.ModuleType("backtest_engine.execution_backends.pine_runtime")
-
-    class PineRuntimeBackend:
-        def execute(self, generated_class, bars, **kwargs):
-            assert kwargs["is_indicator"] is True
-            return SimpleNamespace(plots=[(60_000, 0, 10.0, "plot"), (120_000, 1, 11.0, "plot")])
-
-    pine_runtime_mod.PineRuntimeBackend = PineRuntimeBackend  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "backtest_engine.execution_backends.pine_runtime", pine_runtime_mod)
-
-    import openpine.runtime.engine as engine_mod
-    import openpine.data.provider_adapter as provider_mod
     import openpine.artifacts as artifacts_mod
     import openpine.export as export_mod
+    import openpine.runtime.engine as engine_mod
 
-    monkeypatch.setattr(engine_mod, "load_generated_class_from_artifact", lambda *a, **k: type("Indicator", (), {}))
-    monkeypatch.setattr(provider_mod, "create_local_runtime_data_provider_adapter", lambda **kwargs: SimpleNamespace(_provider="provider"))
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"src",
+    )
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.run_isolated_indicator",
+        lambda source, bars: SimpleNamespace(
+            plots=[(60_000, 0, 10.0, "plot"), (120_000, 1, 11.0, "plot")]
+        ),
+    )
 
     indicator_entry = _entry(tmp_path, kind="indicator", export_id=10)
     indicator_out = tmp_path / "indicator_out"

@@ -235,7 +235,7 @@ def test_cli_indicator_compare_streams_state_and_plugins_more(monkeypatch, tmp_p
         timings={"load": 0.1}, source=SimpleNamespace(id="pine", active_artifact_id="art"),
         start_ms=1, end_ms=2, compare_from_ms=None, compare_to_ms=None, bars_total=1,
     )
-    monkeypatch.setattr(cli_main, "_indicator_plot_dependencies", lambda: SimpleNamespace(SQLitePineSourceRegistry=object, parse_time_ms=lambda value: 1, load_generated_class_from_artifact=lambda *a, **k: object(), BacktestArtifactError=RuntimeError, BarQuery=object, InstrumentKey=object, parse_timeframe=lambda value: value, DataOrchestrator=object, create_local_marketdata_provider_adapter=lambda: object()))
+    monkeypatch.setattr(cli_main, "_indicator_plot_dependencies", lambda: SimpleNamespace(SQLitePineSourceRegistry=object, parse_time_ms=lambda value: 1, capture_generated_source=lambda *a, **k: b"src", BacktestArtifactError=RuntimeError, BarQuery=object, InstrumentKey=object, parse_timeframe=lambda value: value, DataOrchestrator=object, create_local_marketdata_provider_adapter=lambda: object()))
     monkeypatch.setattr(cli_main, "_prepare_indicator_plot_inputs", lambda **kw: prepared)
     monkeypatch.setattr(cli_main, "_print_indicator_plot_header", lambda **kw: None)
     monkeypatch.setattr(cli_main, "_write_indicator_plot_run_outputs", lambda **kw: None)

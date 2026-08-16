@@ -756,18 +756,22 @@ def _indicator_plot_dependencies():
     from openpine.pine.registry import SQLitePineSourceRegistry
     from openpine.runtime.engine import (
         BacktestArtifactError,
-        load_generated_class_from_artifact,
     )
+    from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
+
+    def _capture_indicator_source(source_id, artifact_id, **_kwargs):
+        return capture_generated_source(source_id, artifact_id)
 
     return SimpleNamespace(
         BacktestArtifactError=BacktestArtifactError,
+        IsolatedRunError=IsolatedRunError,
         BarQuery=BarQuery,
         DataOrchestrator=DataOrchestrator,
         InstrumentKey=InstrumentKey,
         SQLitePineSourceRegistry=SQLitePineSourceRegistry,
         create_local_marketdata_provider_adapter=create_local_marketdata_provider_adapter,
         export_plot_records=export_plot_records,
-        load_generated_class_from_artifact=load_generated_class_from_artifact,
+        capture_generated_source=_capture_indicator_source,
         parse_time_ms=parse_time_ms,
         parse_timeframe=parse_timeframe,
         write_json=write_json,
@@ -861,6 +865,11 @@ def _run_indicator_plot_runtime(
     perf_counter,
 ) -> tuple[object, float]:
     t0 = perf_counter()
+    if isinstance(generated_class, (bytes, bytearray)):
+        from openpine.runtime.isolated_run import run_isolated_indicator
+
+        backend_result = run_isolated_indicator(bytes(generated_class), bars)
+        return backend_result, perf_counter() - t0
     config = _build_indicator_plot_config(
         symbol=symbol,
         timeframe=timeframe,

@@ -91,3 +91,40 @@ def run_isolated_from_store(
         bars=bars,
         config=config,
     )
+
+
+class IsolatedPlotResult:
+    def __init__(self, plots: list[tuple]) -> None:
+        self.plots = plots
+
+
+def run_isolated_indicator(source: bytes, bars: list[Any]) -> IsolatedPlotResult:
+    bar_payloads = [
+        {
+            "time": int(getattr(bar, "time") if not isinstance(bar, dict) else bar["time"]),
+            "open": float(getattr(bar, "open") if not isinstance(bar, dict) else bar["open"]),
+            "high": float(getattr(bar, "high") if not isinstance(bar, dict) else bar["high"]),
+            "low": float(getattr(bar, "low") if not isinstance(bar, dict) else bar["low"]),
+            "close": float(getattr(bar, "close") if not isinstance(bar, dict) else bar["close"]),
+            "volume": float(
+                (getattr(bar, "volume", 0) if not isinstance(bar, dict) else bar.get("volume"))
+                or 0
+            ),
+        }
+        for bar in bars
+    ]
+    try:
+        payload = evaluate_artifact(source, bars=bar_payloads)
+    except IsolatedWorkerError as exc:
+        raise IsolatedRunError(str(exc)) from exc
+    records: list[tuple] = []
+    for item in payload.get("plots") or []:
+        records.append(
+            (
+                int(item["bar_time"]),
+                int(item["bar_index"]),
+                item["value"],
+                item["title"],
+            )
+        )
+    return IsolatedPlotResult(plots=records)

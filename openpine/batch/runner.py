@@ -28,7 +28,6 @@ import time
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import pandas as pd
@@ -630,67 +629,27 @@ def run_indicator(
     out_dir: Path,
     args: argparse.Namespace,
 ) -> dict[str, Any]:
-    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
-
-    from openpine.data.provider_adapter import (
-        create_local_runtime_data_provider_adapter,
-    )
     from openpine.export import export_plot_records
-    from openpine.runtime.engine import load_generated_class_from_artifact
+    from openpine.runtime.isolated_run import (
+        capture_generated_source,
+        run_isolated_indicator,
+    )
 
     timings: dict[str, float] = {}
     bars, data_meta = load_calculation_bars(entry, chart, args, timings)
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
-    generated_class = timed_call(
+    source_bytes = timed_call(
         timings,
         "load_artifact_sec",
-        load_generated_class_from_artifact,
+        capture_generated_source,
         source.id,
         artifact_id,
-    )
-    runtime_data_provider = create_local_runtime_data_provider_adapter(
-        exchange=args.exchange,
-        market=args.market_type,
-        prefetch_end_ms=data_meta["calculation_to"],
-    )
-    config = SimpleNamespace(
-        symbol=args.symbol,
-        timeframe=chart.timeframe,
-        parity_mode=None,
-        process_orders_on_close=None,
-        calc_on_order_fills=None,
-        calc_on_every_tick=None,
-        mintick=0.01,
-        currency="USD",
-        data_provider=runtime_data_provider,
-        exchange=args.exchange.lower(),
-        market_type=args.market_type.lower(),
     )
     bar_index_offset, bar_index_alignment = _infer_tv_bar_index_offset(chart, bars)
     data_meta["bar_index_alignment"] = bar_index_alignment
     data_meta["bar_index_offset"] = bar_index_offset
-    progress = build_progress_callback(
-        f"{entry.export_id:04d}/{chart.timeframe}", args.progress_every
-    )
     t0 = time.perf_counter()
-    backend_result = PineRuntimeBackend().execute(
-        generated_class,
-        bars,
-        config=config,
-        execution_window=None,
-        runtime_kwargs={
-            "symbol": args.symbol,
-            "timeframe": chart.timeframe,
-            "data_provider": runtime_data_provider,
-            "intrabar_provider": runtime_data_provider,
-            "plot_from_ms": compare_from,
-            "plot_to_ms": compare_to,
-            "bar_index_offset": bar_index_offset,
-            "progress_callback": progress,
-        },
-        params={},
-        is_indicator=True,
-    )
+    backend_result = run_isolated_indicator(source_bytes, bars)
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     plots_csv = out_dir / "plots.csv"
     t0 = time.perf_counter()

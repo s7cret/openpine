@@ -61,3 +61,12 @@ def test_strategy_cli_and_batch_do_not_call_class_loader() -> None:
         if "load_strategy_class_from_artifact" in text:
             offenders.append(rel)
     assert offenders == []
+
+
+def test_indicator_cli_and_batch_do_not_call_generated_class_loader() -> None:
+    offenders: list[str] = []
+    for rel in _STRATEGY_CLASS_LOADERS:
+        text = (PKG / rel).read_text(encoding="utf-8")
+        if "load_generated_class_from_artifact" in text:
+            offenders.append(rel)
+    assert offenders == []

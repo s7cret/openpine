@@ -75,6 +75,21 @@ def _safe(value):
         return {str(key): _safe(item) for key, item in value.items()}
     return None
 
+def _plot_value(value):
+    current = getattr(value, "_current", value)
+    if current is None or isinstance(current, (bool, int, str)):
+        return current
+    try:
+        from decimal import Decimal
+        if isinstance(current, Decimal):
+            return format(current, "f")
+    except Exception:
+        pass
+    if isinstance(current, float):
+        text = format(current, "f").rstrip("0").rstrip(".")
+        return text or "0"
+    return str(current)
+
 def _isolation():
     network = "blocked"
     try:
@@ -215,7 +230,26 @@ def main() -> int:
             raw = getattr(tape, "events", None) if tape is not None else None
             if raw:
                 events = [_safe(dict(item)) for item in raw]
-    json.dump({"ok": True, "namespace": public, "isolation": _isolation(), "intent_tape": events}, sys.stdout)
+    plots = []
+    rec = locals().get("rt")
+    recorder = getattr(rec, "plot_recorder", None) if rec is not None else None
+    raw_plots = recorder.get_records() if recorder is not None else []
+    for item in raw_plots:
+        if isinstance(item, tuple) and len(item) >= 4:
+            plots.append({
+                "bar_time": int(item[0]),
+                "bar_index": int(item[1]),
+                "value": _plot_value(item[2]),
+                "title": str(item[3]),
+            })
+            continue
+        plots.append({
+            "bar_time": int(getattr(item, "bar_time", 0)),
+            "bar_index": int(getattr(item, "bar_index", 0) or 0),
+            "value": _plot_value(getattr(item, "value", None)),
+            "title": str(getattr(item, "title", "")),
+        })
+    json.dump({"ok": True, "namespace": public, "isolation": _isolation(), "intent_tape": events, "plots": plots}, sys.stdout)
     return 0
 
 _REAL_IMPORT = __import__
