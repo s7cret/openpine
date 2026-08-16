@@ -789,7 +789,9 @@ def run_strategy(
         config_cls=BacktestRunConfig,
     )
     t0 = time.perf_counter()
-    result = BacktestEngineAdapter().run_isolated(source_bytes, bars, config)
+    result = BacktestEngineAdapter().run_isolated(
+        source_bytes, bars, config, htf_bars=getattr(args, "htf_bars", None)
+    )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     raw = result.raw_result
     t0 = time.perf_counter()
