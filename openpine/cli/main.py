@@ -2789,8 +2789,8 @@ def strategy_replay(
         BacktestArtifactError,
         BacktestEngineAdapter,
         BacktestRunConfig,
-        load_strategy_class_from_artifact,
     )
+    from openpine.runtime.isolated_run import capture_generated_source
 
     registry = SQLiteStrategyRegistry()
     try:
@@ -2823,7 +2823,9 @@ def strategy_replay(
             to_date=to_date,
             now_ms=int(_time_module.time() * 1000),
             registry=registry,
-            load_strategy_class=load_strategy_class_from_artifact,
+            load_strategy_class=lambda source_id, artifact_id, **_kwargs: capture_generated_source(
+                source_id, artifact_id
+            ),
             artifact_error_cls=BacktestArtifactError,
             artifact_store_cls=ArtifactStore,
             bar_query_cls=BarQuery,
@@ -2836,11 +2838,10 @@ def strategy_replay(
         )
         registry.update_status(strategy_id, "running")
         try:
-            result = BacktestEngineAdapter().run(
+            result = BacktestEngineAdapter().run_isolated(
                 prepared.strategy_class,
                 prepared.bars,
                 prepared.config,
-                params=prepared.params,
             )
         except Exception as exc:
             registry.update_status(strategy_id, "error")

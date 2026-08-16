@@ -775,27 +775,22 @@ def run_strategy(
     args: argparse.Namespace,
 ) -> dict[str, Any]:
     from openpine.artifacts import ArtifactStore
-    from openpine.data.provider_adapter import (
-        create_local_runtime_data_provider_adapter,
-    )
     from openpine.export import ExportWindow, export_strategy_result
     from openpine.runtime.engine import (
         BacktestEngineAdapter,
         BacktestRunConfig,
-        load_strategy_class_from_artifact,
     )
+    from openpine.runtime.isolated_run import capture_generated_source
 
     timings: dict[str, float] = {}
     bars, data_meta = load_calculation_bars(entry, chart, args, timings)
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
-    strategy_class = timed_call(
+    source_bytes = timed_call(
         timings,
         "load_artifact_sec",
-        load_strategy_class_from_artifact,
+        capture_generated_source,
         source.id,
         artifact_id,
-        symbol=args.symbol,
-        timeframe=chart.timeframe,
     )
     artifact = timed_call(
         timings,
@@ -817,26 +812,8 @@ def run_strategy(
         decl_args=decl_args,
         config_cls=BacktestRunConfig,
     )
-    runtime_data_provider = create_local_runtime_data_provider_adapter(
-        exchange=args.exchange,
-        market=args.market_type,
-        prefetch_end_ms=data_meta["calculation_to"],
-    )
-    strategy_class.runtime_data_provider = runtime_data_provider
-    strategy_class.runtime_intrabar_provider = runtime_data_provider
-    progress = build_progress_callback(
-        f"{entry.export_id:04d}/{chart.timeframe}", args.progress_every
-    )
     t0 = time.perf_counter()
-    result = BacktestEngineAdapter().run(
-        strategy_class,
-        bars,
-        config,
-        params={},
-        execution_backend=None,
-        progress_callback=progress,
-        runtime_data_provider=runtime_data_provider,
-    )
+    result = BacktestEngineAdapter().run_isolated(source_bytes, bars, config)
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     raw = result.raw_result
     t0 = time.perf_counter()

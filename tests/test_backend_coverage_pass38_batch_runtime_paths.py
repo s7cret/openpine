@@ -163,9 +163,9 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
             self.kwargs = kwargs
 
     class BacktestEngineAdapter:
-        def run(self, strategy_class, bars, config, **kwargs):
+        def run_isolated(self, source, bars, config, **kwargs):
             assert config.kwargs["commission_type"] == "fixed_per_order"
-            assert getattr(strategy_class, "runtime_data_provider")._provider == "provider"
+            assert source == b"src"
             return SimpleNamespace(
                 status="ok",
                 bars_processed=len(bars),
@@ -175,7 +175,10 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
     monkeypatch.setattr(artifacts_mod, "ArtifactStore", ArtifactStore)
     monkeypatch.setattr(engine_mod, "BacktestRunConfig", BacktestRunConfig)
     monkeypatch.setattr(engine_mod, "BacktestEngineAdapter", BacktestEngineAdapter)
-    monkeypatch.setattr(engine_mod, "load_strategy_class_from_artifact", lambda *a, **k: type("Strategy", (), {}))
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"src",
+    )
     monkeypatch.setattr(
         export_mod,
         "export_strategy_result",

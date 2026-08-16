@@ -18,6 +18,7 @@ from openpine.exchange_metadata import (
     default_qty_rounding_mode as metadata_default_qty_rounding_mode,
 )
 from openpine.exchange_metadata import default_qty_step
+from openpine.runtime.isolated_run import IsolatedRunError
 from openpine.timezones import parse_timestamp_ms
 
 
@@ -321,7 +322,7 @@ def _load_strategy_backtest_class_or_exit(
             load_strategy_class=load_strategy_class,
             perf_counter=perf_counter,
         )
-    except artifact_error_cls as exc:
+    except (artifact_error_cls, IsolatedRunError) as exc:
         console.print(f"[red]{exc}[/red]")
         registry.update_status(strategy_id, "paused")
         sys.exit(1)
@@ -443,7 +444,7 @@ def _prepare_strategy_backtest_inputs(
             strategy=strategy,
             strategy_id=strategy_id,
             registry=registry,
-            load_strategy_class=deps.load_strategy_class_from_artifact,
+            load_strategy_class=deps.capture_generated_source,
             artifact_error_cls=deps.BacktestArtifactError,
             perf_counter=perf_counter,
             console=console,
@@ -547,7 +548,7 @@ def _prepare_strategy_replay_inputs(
             load_strategy_class=load_strategy_class,
             perf_counter=perf_counter,
         )
-    except artifact_error_cls as exc:
+    except (artifact_error_cls, IsolatedRunError) as exc:
         console.print(f"[red]{exc}[/red]")
         registry.update_status(strategy_id, "paused")
         sys.exit(1)
@@ -722,13 +723,17 @@ def _strategy_backtest_dependencies():
         BacktestArtifactError,
         BacktestEngineAdapter,
         BacktestRunConfig,
-        load_strategy_class_from_artifact,
     )
+    from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
     from openpine.storage import BacktestResultStore, BacktestRunRequest
+
+    def _capture_strategy_source(source_id, artifact_id, **_kwargs):
+        return capture_generated_source(source_id, artifact_id)
 
     return SimpleNamespace(
         ArtifactStore=ArtifactStore,
         BacktestArtifactError=BacktestArtifactError,
+        IsolatedRunError=IsolatedRunError,
         BacktestEngineAdapter=BacktestEngineAdapter,
         BacktestResultStore=BacktestResultStore,
         BacktestRunConfig=BacktestRunConfig,
@@ -737,7 +742,7 @@ def _strategy_backtest_dependencies():
         DataOrchestrator=DataOrchestrator,
         InstrumentKey=InstrumentKey,
         create_local_marketdata_provider_adapter=create_local_marketdata_provider_adapter,
-        load_strategy_class_from_artifact=load_strategy_class_from_artifact,
+        capture_generated_source=_capture_strategy_source,
         parse_timeframe=parse_timeframe,
     )
 
@@ -1058,7 +1063,7 @@ def _prepare_indicator_plot_inputs(
             load_generated_class=load_generated_class,
             perf_counter=perf_counter,
         )
-    except artifact_error_cls as exc:
+    except (artifact_error_cls, IsolatedRunError) as exc:
         console.print(f"[red]{exc}[/red]")
         sys.exit(1)
 
@@ -1416,18 +1421,22 @@ def _run_strategy_backtest_adapter(
         console,
     )
     t0 = perf_counter()
-    result = adapter_cls().run(
-        selected_strategy_class,
-        bars,
-        config,
-        params=params,
-        execution_backend=backend,
-        progress_callback=_build_progress_callback(
-            bars_total=len(bars), console=console
-        ),
-        runtime_data_provider=getattr(provider, "_provider", None),
-        effective_pre_bars=effective_pre_bars,
-    )
+    adapter = adapter_cls()
+    if isinstance(selected_strategy_class, (bytes, bytearray)):
+        result = adapter.run_isolated(bytes(selected_strategy_class), bars, config)
+    else:
+        result = adapter.run(
+            selected_strategy_class,
+            bars,
+            config,
+            params=params,
+            execution_backend=backend,
+            progress_callback=_build_progress_callback(
+                bars_total=len(bars), console=console
+            ),
+            runtime_data_provider=getattr(provider, "_provider", None),
+            effective_pre_bars=effective_pre_bars,
+        )
     return result, perf_counter() - t0
 
 

@@ -158,6 +158,7 @@ def _deps(**overrides):
             _provider=SimpleNamespace(last_fetch_info={"source": "test"})
         ),
         load_strategy_class_from_artifact=lambda *args, **kwargs: type("GeneratedStrategy", (), {}),
+        capture_generated_source=lambda *args, **kwargs: type("GeneratedStrategy", (), {}),
         BacktestRunConfig=Config,
     )
     values.update(overrides)

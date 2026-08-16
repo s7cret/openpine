@@ -38,11 +38,26 @@ _LEFTOVER_CLASS_LOADERS = (
     "workers/strategy_job_executor.py",
 )
 
+_STRATEGY_CLASS_LOADERS = (
+    "batch/runner.py",
+    "cli/main.py",
+    "cli/runtime_helpers.py",
+)
+
 
 def test_leftover_exec_paths_do_not_call_class_loader() -> None:
     offenders: list[str] = []
     for rel in _LEFTOVER_CLASS_LOADERS:
         text = (PKG / rel).read_text(encoding="utf-8")
         if "load_strategy_class_from_artifact" in text or "load_generated_class_from_artifact" in text:
+            offenders.append(rel)
+    assert offenders == []
+
+
+def test_strategy_cli_and_batch_do_not_call_class_loader() -> None:
+    offenders: list[str] = []
+    for rel in _STRATEGY_CLASS_LOADERS:
+        text = (PKG / rel).read_text(encoding="utf-8")
+        if "load_strategy_class_from_artifact" in text:
             offenders.append(rel)
     assert offenders == []

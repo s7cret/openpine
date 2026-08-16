@@ -558,6 +558,7 @@ def test_runtime_helper_warmup_replay_dependency_and_indicator_runtime_edges(mon
     deps = SimpleNamespace(
         parse_timeframe=lambda _tf: SimpleNamespace(duration_ms=10),
         load_strategy_class_from_artifact=object(),
+        capture_generated_source=object(),
         BacktestArtifactError=RuntimeError,
         BarQuery=object,
         InstrumentKey=object,

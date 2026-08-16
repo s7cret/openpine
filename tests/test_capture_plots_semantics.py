@@ -675,7 +675,7 @@ def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
     ) as MockArtifactStore, patch(
         "openpine.storage.BacktestResultStore"
     ), patch(
-        "openpine.runtime.engine.load_strategy_class_from_artifact",
+        "openpine.runtime.isolated_run.capture_generated_source",
         return_value=mock_strategy_class,
     ):
 
@@ -762,7 +762,7 @@ def test_no_generated_ref_no_backend():
     ) as MockArtifactStore, patch(
         "openpine.storage.BacktestResultStore"
     ), patch(
-        "openpine.runtime.engine.load_strategy_class_from_artifact",
+        "openpine.runtime.isolated_run.capture_generated_source",
         return_value=mock_strategy_class,
     ):
 
