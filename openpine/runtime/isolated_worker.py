@@ -375,7 +375,7 @@ def evaluate_artifact(
     *,
     timeout_s: float = 5.0,
     stack_id: str = "openpine-5.0",
-    semantic_profile: str = "legacy_4x",
+    semantic_profile: str = "",
     cgroup_dir: str | Path | None = None,
     bars: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:

@@ -10,9 +10,14 @@ import pytest
 from openpine.runtime.isolated_worker import IsolatedWorkerError, evaluate_artifact
 
 
+def _eval(source: bytes, **kwargs):
+    kwargs.setdefault("semantic_profile", "legacy_4x")
+    return evaluate_artifact(source, **kwargs)
+
+
 def test_parent_does_not_import_generated_module() -> None:
     source = "VALUE = 42\n"
-    result = evaluate_artifact(source.encode("utf-8"), timeout_s=5)
+    result = _eval(source.encode("utf-8"), timeout_s=5)
     assert result["ok"] is True
     assert not any(name.startswith("openpine_generated_") for name in sys.modules)
 
@@ -26,7 +31,7 @@ def test_worker_does_not_inherit_host_secrets() -> None:
         VENV = os.environ.get("VIRTUAL_ENV")
         """)
     try:
-        result = evaluate_artifact(source.encode("utf-8"), timeout_s=5)
+        result = _eval(source.encode("utf-8"), timeout_s=5)
     finally:
         os.environ.pop("OPENPINE_SECRET", None)
         os.environ.pop("VIRTUAL_ENV", None)
@@ -40,7 +45,7 @@ def test_worker_executes_captured_bytes_not_later_path(tmp_path: Path) -> None:
     path.write_text("VALUE = 1\n", encoding="utf-8")
     payload = path.read_bytes()
     path.write_text("VALUE = 999\n", encoding="utf-8")
-    result = evaluate_artifact(payload, timeout_s=5)
+    result = _eval(payload, timeout_s=5)
     assert result["ok"] is True
     assert result["namespace"]["VALUE"] == 1
 
@@ -48,13 +53,13 @@ def test_worker_executes_captured_bytes_not_later_path(tmp_path: Path) -> None:
 def test_worker_rejects_socket_import() -> None:
     source = "import socket\n"
     with pytest.raises(IsolatedWorkerError, match="socket"):
-        evaluate_artifact(source.encode("utf-8"), timeout_s=5)
+        _eval(source.encode("utf-8"), timeout_s=5)
 
 
 def test_worker_times_out_infinite_loop() -> None:
     source = "while True:\n    pass\n"
     with pytest.raises(IsolatedWorkerError, match="timeout"):
-        evaluate_artifact(source.encode("utf-8"), timeout_s=0.4)
+        _eval(source.encode("utf-8"), timeout_s=0.4)
 
 
 def test_worker_rejects_malformed_and_nonzero_output(
@@ -78,7 +83,7 @@ def test_worker_rejects_malformed_and_nonzero_output(
 
     monkeypatch.setattr(worker.subprocess, "Popen", _popen_malformed)
     with pytest.raises(IsolatedWorkerError, match="malformed"):
-        evaluate_artifact(b"VALUE = 1\n", timeout_s=1)
+        _eval(b"VALUE = 1\n", timeout_s=1)
 
     def _popen_boom(cmd, *args, **kwargs):
         if isinstance(cmd, list) and worker.BWRAP in cmd:
@@ -92,7 +97,7 @@ def test_worker_rejects_malformed_and_nonzero_output(
 
     monkeypatch.setattr(worker.subprocess, "Popen", _popen_boom)
     with pytest.raises(IsolatedWorkerError, match="boom"):
-        evaluate_artifact(b"VALUE = 1\n", timeout_s=1)
+        _eval(b"VALUE = 1\n", timeout_s=1)
 
 
 def test_sandbox_blocks_network_and_host_filesystem() -> None:
@@ -106,7 +111,7 @@ def test_sandbox_blocks_network_and_host_filesystem() -> None:
         except Exception:
             USR_WRITABLE = False
         """)
-    result = evaluate_artifact(source.encode("utf-8"), timeout_s=5)
+    result = _eval(source.encode("utf-8"), timeout_s=5)
     assert result["ok"] is True
     assert result["namespace"]["HOME_VISIBLE"] is False
     assert result["namespace"]["SSH_VISIBLE"] is False
@@ -119,7 +124,7 @@ def test_sandbox_blocks_network_and_host_filesystem() -> None:
 
 def test_dynamic_socket_import_is_denied() -> None:
     with pytest.raises(IsolatedWorkerError, match="socket"):
-        evaluate_artifact(b'__import__("socket")\n', timeout_s=5)
+        _eval(b'__import__("socket")\n', timeout_s=5)
 
 
 def test_in_process_generated_import_is_forbidden(tmp_path: Path) -> None:
@@ -134,7 +139,7 @@ def test_in_process_generated_import_is_forbidden(tmp_path: Path) -> None:
 def test_sandbox_drops_to_openpine_worker_when_host_allows() -> None:
     from openpine.runtime.isolated_worker import worker_user_available
 
-    result = evaluate_artifact(b"VALUE = 1\n", timeout_s=5)
+    result = _eval(b"VALUE = 1\n", timeout_s=5)
     if worker_user_available():
         assert result["isolation"]["uid"] != 1000
         assert result["isolation"]["uid"] > 0
@@ -144,9 +149,9 @@ def test_sandbox_drops_to_openpine_worker_when_host_allows() -> None:
 
 def test_worker_rejects_huge_source_and_subprocess() -> None:
     with pytest.raises(IsolatedWorkerError, match="size limit"):
-        evaluate_artifact(b"x = 1\n" * 100_000, timeout_s=5)
+        _eval(b"x = 1\n" * 100_000, timeout_s=5)
     with pytest.raises(IsolatedWorkerError, match="subprocess"):
-        evaluate_artifact(b'__import__("subprocess")\n', timeout_s=5)
+        _eval(b'__import__("subprocess")\n', timeout_s=5)
 
 
 def test_worker_argv_has_no_new_session() -> None:
@@ -171,16 +176,21 @@ def test_worker_handshake_rejects_unknown_stack_and_profile() -> None:
         evaluate_artifact(b"VALUE = 1\n", semantic_profile="nope")
 
 
+def test_evaluate_artifact_requires_semantic_profile() -> None:
+    with pytest.raises(IsolatedWorkerError, match="semantic_profile"):
+        evaluate_artifact(b"VALUE = 1\n")
+
+
 def test_worker_kills_memory_bomb() -> None:
     source = "x = []\nwhile True:\n    x.append('x' * 1048576)\n"
     with pytest.raises(IsolatedWorkerError):
-        evaluate_artifact(source.encode("utf-8"), timeout_s=2)
+        _eval(source.encode("utf-8"), timeout_s=2)
 
 
 def test_worker_kills_fork_bomb() -> None:
     source = "import os\nwhile True:\n    os.fork()\n"
     with pytest.raises(IsolatedWorkerError):
-        evaluate_artifact(source.encode("utf-8"), timeout_s=2)
+        _eval(source.encode("utf-8"), timeout_s=2)
 
 
 def test_isolated_worker_emits_live_intent_tape() -> None:
@@ -191,7 +201,7 @@ def test_isolated_worker_emits_live_intent_tape() -> None:
         ctx.entry("L", "long", qty=1)
         """
     )
-    result = evaluate_artifact(source.encode("utf-8"), timeout_s=8)
+    result = _eval(source.encode("utf-8"), timeout_s=8)
     tape = result["intent_tape"]
     assert tape
     event = tape[0]
@@ -251,7 +261,7 @@ def _bar_dicts() -> list[dict]:
 
 
 def test_isolated_worker_drives_generated_process_bar() -> None:
-    result = evaluate_artifact(
+    result = _eval(
         CLASS_SOURCE.encode("utf-8"),
         bars=_bar_dicts(),
         timeout_s=8,
@@ -292,7 +302,7 @@ REAL_SOURCE = textwrap.dedent(
 
 
 def test_isolated_worker_runs_real_generated_contract() -> None:
-    result = evaluate_artifact(
+    result = _eval(
         REAL_SOURCE.encode("utf-8"),
         bars=_bar_dicts(),
         timeout_s=8,
@@ -327,7 +337,7 @@ def test_isolated_worker_emits_plot_records() -> None:
         {"time": 1000, "open": 100, "high": 101, "low": 99, "close": 100, "volume": 1},
         {"time": 1001, "open": 100, "high": 101, "low": 99, "close": 101, "volume": 1},
     ]
-    result = evaluate_artifact(
+    result = _eval(
         PLOT_SOURCE.encode("utf-8"),
         bars=bars,
         timeout_s=8,
@@ -342,7 +352,7 @@ def test_isolated_worker_emits_plot_records() -> None:
 
 
 def test_isolated_worker_echoes_semantic_profile() -> None:
-    result = evaluate_artifact(
+    result = _eval(
         b"VALUE = 1\n",
         semantic_profile="strict_5x",
         timeout_s=5,

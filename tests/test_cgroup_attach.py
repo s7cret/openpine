@@ -49,7 +49,7 @@ def test_evaluate_artifact_attaches_child_pid(tmp_path: Path) -> None:
 
     (tmp_path / "cgroup.procs").write_text("", encoding="ascii")
     (tmp_path / "memory.max").write_text("max\n", encoding="ascii")
-    result = evaluate_artifact(b"VALUE = 1\n", timeout_s=5, cgroup_dir=tmp_path)
+    result = evaluate_artifact(b"VALUE = 1\n", timeout_s=5, cgroup_dir=tmp_path, semantic_profile="legacy_4x")
     assert result["ok"] is True
     pids = (tmp_path / "cgroup.procs").read_text(encoding="ascii").split()
     assert pids
