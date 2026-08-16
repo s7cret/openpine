@@ -55,7 +55,7 @@ class BacktestRunConfig:
     capture_plots: bool = False
     plot_from_ms: int | None = None
     plot_to_ms: int | None = None
-    semantic_profile: str = "legacy_4x"
+    semantic_profile: str = ""
 
 
 @dataclass(frozen=True)
@@ -474,7 +474,7 @@ class BacktestEngineAdapter:
             content_hash_enabled=config.content_hash_enabled,
             collect_events=config.collect_events,
             collect_order_lifecycle=config.collect_order_lifecycle,
-            semantic_profile=getattr(config, "semantic_profile", "legacy_4x"),
+            semantic_profile=getattr(config, "semantic_profile", None),
         )
         engine_config.exchange = config.exchange
         engine_config.market_type = config.market_type
@@ -487,8 +487,10 @@ class BacktestEngineAdapter:
         config: BacktestRunConfig,
         resume_state: Any | None = None,
     ) -> BacktestRunResult:
-        from openpine.runtime.isolated_run import run_isolated_artifact
+        from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_artifact
 
+        if not str(getattr(config, "semantic_profile", "") or "").strip():
+            raise IsolatedRunError("semantic_profile is required")
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
         isolated = run_isolated_artifact(
             source,
