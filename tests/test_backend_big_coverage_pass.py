@@ -96,6 +96,7 @@ class FakeStrategy:
     status: str = "paused"
     created_at: int = 1
     updated_at: int = 2
+    semantic_profile: str | None = None
 
 
 class FakeStrategyRegistry:
@@ -689,6 +690,7 @@ def test_strategy_crud_compare_and_dashboard_full_paths(tmp_path):
                 market_type="spot",
                 params_json='{"len": 14}',
                 mode=StrategyMode.PAPER,
+                semantic_profile="strict_5x",
             ),
             state,
         )
@@ -718,7 +720,7 @@ def test_strategy_crud_compare_and_dashboard_full_paths(tmp_path):
     with pytest.raises(HTTPException):
         asyncio.run(
             strategies.create_strategy(
-                StrategyCreate(name="bad", pine_id="missing", artifact_id="art1", symbol="BTCUSDT", timeframe="1m"),
+                StrategyCreate(name="bad", pine_id="missing", artifact_id="art1", symbol="BTCUSDT", timeframe="1m", semantic_profile="strict_5x"),
                 state,
             )
         )
@@ -838,7 +840,7 @@ def test_additional_strategy_and_trading_edge_paths(tmp_path):
     with pytest.raises(HTTPException):
         asyncio.run(
             strategies.create_strategy(
-                StrategyCreate(name="bad-art", pine_id="p1", artifact_id="missing", symbol="BTCUSDT", timeframe="1m"),
+                StrategyCreate(name="bad-art", pine_id="p1", artifact_id="missing", symbol="BTCUSDT", timeframe="1m", semantic_profile="strict_5x"),
                 state,
             )
         )
@@ -851,7 +853,7 @@ def test_additional_strategy_and_trading_edge_paths(tmp_path):
     with pytest.raises(HTTPException):
         asyncio.run(
             strategies.create_strategy(
-                StrategyCreate(name="bad-compile", pine_id="p1", artifact_id="art1", symbol="BTCUSDT", timeframe="1m"),
+                StrategyCreate(name="bad-compile", pine_id="p1", artifact_id="art1", symbol="BTCUSDT", timeframe="1m", semantic_profile="strict_5x"),
                 state,
             )
         )

@@ -300,6 +300,8 @@
     "settingsUnavailable": "Settings unavailable: {error}",
     "strategyLoadFailed": "Strategy detail load failed",
     "tradesLoadFailed": "Trades load failed",
+    "semanticProfile": "Semantic profile",
+    "semanticProfileRequired": "Choose a semantic profile",
     "cancel": "Cancel"
   },
   "backtests": {

@@ -300,6 +300,8 @@
     "settingsUnavailable": "Настройки недоступны: {error}",
     "strategyLoadFailed": "Не удалось загрузить детали стратегии",
     "tradesLoadFailed": "Не удалось загрузить сделки",
+    "semanticProfile": "Семантический профиль",
+    "semanticProfileRequired": "Выберите семантический профиль",
     "cancel": "Отмена"
   },
   "backtests": {

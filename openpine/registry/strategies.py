@@ -389,6 +389,7 @@ class SQLiteStrategyRegistry:
         params_json: str = "{}",
         params_hash: str | None = None,
         mode: str = "paper",
+        semantic_profile: str | None = None,
     ) -> StrategyInstance:
         """Create a new strategy instance (gateway-facing API)."""
         import hashlib
@@ -411,13 +412,15 @@ class SQLiteStrategyRegistry:
             mode=mode,
             created_at=now,
             updated_at=now,
+            semantic_profile=semantic_profile,
         )
         self._conn.execute(
             """INSERT INTO strategy_instances
                (id, strategy_id, name, pine_id, artifact_id, params_json, params_hash,
                 symbol, exchange, market_type, price_type, timeframe, data_provider,
-                execution_provider, mode, enabled, archived, status, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                execution_provider, mode, enabled, archived, status, created_at, updated_at,
+                semantic_profile)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 strategy_id,
                 si.strategy_id,
@@ -439,6 +442,7 @@ class SQLiteStrategyRegistry:
                 si.status,
                 si.created_at,
                 si.updated_at,
+                si.semantic_profile,
             ),
         )
         self._conn.commit()

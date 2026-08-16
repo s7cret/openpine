@@ -98,7 +98,7 @@ async def test_strategy_routes_crud_actions_preview_and_compare(tmp_path: Path):
 
     listed = await routes.list_strategies(registry)
     assert len(listed) >= 2
-    body = StrategyCreate(name="Created", pine_id="pine", artifact_id="artifact", symbol="ETHUSDT", timeframe="5m", exchange="binance", market_type="spot", params_json='{"a":2}', mode=StrategyMode.PAPER)
+    body = StrategyCreate(name="Created", pine_id="pine", artifact_id="artifact", symbol="ETHUSDT", timeframe="5m", exchange="binance", market_type="spot", params_json='{"a":2}', mode=StrategyMode.PAPER, semantic_profile="strict_5x")
     created = await routes.create_strategy(body, state)
     assert created.strategy_id == "created" and created.symbol == "ETHUSDT"
     assert (await routes.get_strategy("created", registry)).name == "Created"

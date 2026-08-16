@@ -432,6 +432,7 @@ def test_strategy_create_rejects_non_object_params_json(params_json: str) -> Non
             symbol="BTCUSDT",
             timeframe="1m",
             params_json=params_json,
+            semantic_profile="strict_5x",
         )
 
 

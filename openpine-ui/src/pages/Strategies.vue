@@ -857,6 +857,22 @@ function exitBadgeClass(exitId: string | null | undefined): string {
           </div>
         </div>
 
+        <div class="space-y-1">
+          <label class="text-[10px] uppercase tracking-wide text-gray-500" for="strategy-semantic-profile">
+            {{ t('strategies.semanticProfile') }}
+          </label>
+          <select
+            id="strategy-semantic-profile"
+            v-model="form.semantic_profile"
+            data-testid="strategy-semantic-profile"
+            class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
+          >
+            <option value="">{{ t('strategies.semanticProfileRequired') }}</option>
+            <option value="strict_5x">strict_5x</option>
+            <option value="legacy_4x">legacy_4x</option>
+          </select>
+        </div>
+
         <!-- Actions -->
         <div class="flex flex-wrap gap-2 justify-end items-center">
           <!-- Live validation hint: shown whenever Create is disabled and no

@@ -70,6 +70,7 @@ async def test_pine_source_archive_roundtrip_and_blocks_strategy_create(tmp_path
                 artifact_id="artifact_1",
                 symbol="SOLUSDT",
                 timeframe="1D",
+                semantic_profile="strict_5x",
             ),
             state=state,
         )

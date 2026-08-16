@@ -8,6 +8,7 @@ export type StrategyFormDraft = {
   market_type: string
   params_json: string
   mode: string
+  semantic_profile: string
 }
 
 export type SymbolOption = { symbol: string; baseAsset?: string; quoteAsset?: string }
@@ -32,6 +33,7 @@ export function newStrategyForm(
     market_type: marketType || 'spot',
     params_json: '{}',
     mode: 'paper',
+    semantic_profile: '',
   }
 }
 
@@ -65,6 +67,7 @@ export function strategyValidationMessage(form: StrategyFormDraft): string {
   if (missingNameOrSymbol && missingCompiledSource) return '❌ Fill required fields: name and symbol. No compiled Pine source is available.'
   if (missingNameOrSymbol) return '❌ Fill required fields: name and symbol.'
   if (missingCompiledSource) return '❌ Select a compiled Pine source before creating the strategy.'
+  if (!form.semantic_profile) return '❌ Choose a semantic profile.'
   return ''
 }
 

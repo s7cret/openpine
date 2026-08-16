@@ -279,7 +279,7 @@ async def test_strategy_route_uncovered_status_preview_and_compare_edges(tmp_pat
         )
 
     created = await strategies.create_strategy(
-        StrategyCreate(name="new", pine_id="pine", artifact_id="artifact", symbol="ETHUSDT", timeframe="5m", mode=StrategyMode.PAPER),
+        StrategyCreate(name="new", pine_id="pine", artifact_id="artifact", symbol="ETHUSDT", timeframe="5m", mode=StrategyMode.PAPER, semantic_profile="strict_5x"),
         SimpleNamespace(
             strategy_registry=registry,
             pine_registry=SimpleNamespace(get_source=lambda source_id: SimpleNamespace(id=source_id)),

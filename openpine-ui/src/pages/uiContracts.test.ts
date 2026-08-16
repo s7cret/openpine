@@ -157,4 +157,11 @@ describe('global UI correctness contracts', () => {
     expect(page).toContain('allowLegacy: allowLegacy.value')
     expect(page).toContain("t('tvParity.semanticProfileRequired')")
   })
+
+  it('strategy create requires an explicit semantic profile', () => {
+    const page = source('pages/Strategies.vue')
+    expect(page).toContain('strategy-semantic-profile')
+    expect(page).toContain('v-model="form.semantic_profile"')
+    expect(page).toContain("t('strategies.semanticProfileRequired')")
+  })
 })

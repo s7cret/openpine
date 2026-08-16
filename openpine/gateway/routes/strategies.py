@@ -105,6 +105,7 @@ def _to_response(s) -> StrategyResponse:
         status=s.status,
         created_at=s.created_at,
         updated_at=s.updated_at,
+        semantic_profile=getattr(s, "semantic_profile", None),
     )
 
 
@@ -147,6 +148,17 @@ async def create_strategy(
             f"(status={compile_meta.get('compile_status')!r}). Recompile first.",
         )
 
+    from openpine_contracts import AdmitError
+    from openpine.admission import admit_semantic_profile
+
+    try:
+        admitted = admit_semantic_profile(
+            profile=body.semantic_profile,
+            source="generated_artifact.v2",
+        )
+    except AdmitError as exc:
+        raise HTTPException(403, str(exc)) from exc
+
     import hashlib
 
     params_hash = hashlib.sha256(body.params_json.encode()).hexdigest()[:16]
@@ -162,6 +174,7 @@ async def create_strategy(
         params_json=body.params_json,
         params_hash=params_hash,
         mode=body.mode.value if hasattr(body.mode, "value") else body.mode,
+        semantic_profile=admitted.value,
     )
     log.info("strategy_created", strategy_id=strategy.strategy_id, name=body.name)
     return _to_response(strategy)

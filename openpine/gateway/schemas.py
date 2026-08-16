@@ -146,6 +146,7 @@ class StrategyCreate(BaseModel):
     market_type: str = Field(default="spot", min_length=1, max_length=32)
     params_json: str = Field(default="{}")
     mode: StrategyMode = StrategyMode.PAPER
+    semantic_profile: str = Field(..., min_length=1)
 
     _validate_non_blank = field_validator(
         "name", "pine_id", "artifact_id", "symbol", "timeframe", "exchange", "market_type"
@@ -200,6 +201,7 @@ class StrategyResponse(BaseModel):
     created_at: int
     updated_at: int
     health: dict[str, Any] | None = None
+    semantic_profile: str | None = None
 
 
 class StrategyAction(BaseModel):
