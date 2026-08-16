@@ -30,6 +30,12 @@ class _ReplayLive:
     def _process_bar(self, bar: Any, bar_index: int) -> None:
         apply_live_intents_for_bar(self.ctx, self.tape, bar_index)
 
+    def export_state(self) -> dict[str, Any]:
+        return {"replay": True}
+
+    def restore_state(self, state: Any) -> None:
+        return
+
 
 def run_isolated_artifact(
     source: bytes,

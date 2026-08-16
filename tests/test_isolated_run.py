@@ -194,3 +194,43 @@ def test_isolated_run_honors_resume_state_without_double_entry() -> None:
     )
     assert second["score_ledger_hash"]
     assert getattr(second["raw_result"], "resume_state", None) is not None
+
+
+def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+
+    applied: list[int] = []
+    real = isolated_run.apply_live_intents_for_bar
+
+    def _capture(ctx, tape, bar_index):
+        applied.append(int(bar_index))
+        return real(ctx, tape, bar_index)
+
+    monkeypatch.setattr(isolated_run, "apply_live_intents_for_bar", _capture)
+    cfg = BacktestConfig(
+        symbol="S",
+        timeframe="1m",
+        start_time=1_000,
+        end_time=1_010,
+        commission_type="none",
+        initial_capital=10_000,
+        score_start_time=1_000,
+        score_end_time=1_010,
+        export_resume_state=True,
+        resume_validation_policy="diagnostic",
+    )
+    first = run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars()[:3], config=cfg)
+    resume = first["raw_result"].resume_state
+    assert resume is not None
+    warnings = [getattr(item, "code", "") for item in (first["raw_result"].warnings or [])]
+    assert "RESUME_STRATEGY_STATE_UNAVAILABLE" not in warnings
+    applied.clear()
+    run_isolated_artifact(
+        SOURCE.encode("utf-8"),
+        bars=_bars(),
+        config=cfg,
+        resume_state=resume,
+    )
+    assert applied
+    assert min(applied) > int(resume.bar_index)
+    assert 0 not in applied
