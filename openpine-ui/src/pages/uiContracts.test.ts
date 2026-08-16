@@ -134,6 +134,14 @@ describe('global UI correctness contracts', () => {
     expect(page).not.toContain('rank')
   })
 
+  it('optimizer dry-run sends an explicit semantic profile', () => {
+    const page = source('pages/Optimizer.vue')
+    expect(page).toContain('optimizer-semantic-profile')
+    expect(page).toContain('semantic_profile: semanticProfile.value')
+    expect(page).toContain('allow_legacy: allowLegacy.value')
+    expect(page).toContain("t('optimizer.semanticProfileRequired')")
+  })
+
   it('backtest start sends an explicit semantic profile', () => {
     const page = source('pages/Backtests.vue')
     expect(page).toContain('backtest-semantic-profile')

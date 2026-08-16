@@ -675,6 +675,10 @@
     "strategyRequired": "Нужен strategy id",
     "trialsLabel": "Trials",
     "dryRun": "Проверить dry-run",
-    "failed": "Dry-run не удался"
+    "failed": "Dry-run не удался",
+    "semanticProfile": "Семантический профиль",
+    "semanticProfileRequired": "Выберите семантический профиль",
+    "allowLegacy": "Разрешить legacy_4x для optimizer dry-run",
+    "allowLegacyRequired": "Разрешите legacy_4x, чтобы проверить этот профиль"
   }
 }

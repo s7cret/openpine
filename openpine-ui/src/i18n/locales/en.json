@@ -675,6 +675,10 @@
     "strategyRequired": "Strategy id is required",
     "trialsLabel": "Trials",
     "dryRun": "Validate dry-run",
-    "failed": "Dry-run failed"
+    "failed": "Dry-run failed",
+    "semanticProfile": "Semantic profile",
+    "semanticProfileRequired": "Choose a semantic profile",
+    "allowLegacy": "Allow legacy_4x on optimizer dry-run",
+    "allowLegacyRequired": "Allow legacy_4x to validate with that profile"
   }
 }
