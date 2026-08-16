@@ -36,6 +36,7 @@ def run_isolated_artifact(
     *,
     bars: list[Any],
     config: Any,
+    resume_state: Any | None = None,
 ) -> dict[str, Any]:
     try:
         bar_payloads = [
@@ -55,7 +56,12 @@ def run_isolated_artifact(
 
     from backtest_engine import BacktestEngine
 
-    result = BacktestEngine(config).run(_ReplayLive, {"tape": tape}, bars=bars)
+    result = BacktestEngine(config).run(
+        _ReplayLive,
+        {"tape": tape},
+        bars=bars,
+        resume_state=resume_state,
+    )
     return {
         "ok": True,
         "intent_tape": tape,

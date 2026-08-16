@@ -483,6 +483,7 @@ class BacktestEngineAdapter:
         source: bytes,
         bars: list[Bar],
         config: BacktestRunConfig,
+        resume_state: Any | None = None,
     ) -> BacktestRunResult:
         from openpine.runtime.isolated_run import run_isolated_artifact
 
@@ -491,6 +492,7 @@ class BacktestEngineAdapter:
             source,
             bars=engine_bars,
             config=self._to_engine_config(config),
+            resume_state=resume_state,
         )
         raw = isolated["raw_result"]
         return BacktestRunResult(

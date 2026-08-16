@@ -75,6 +75,7 @@ class RuntimeAdapter(Protocol):
         source: bytes,
         bars: list[Bar],
         config: BacktestRunConfig,
+        resume_state: Any | None = None,
     ) -> Any: ...
 
 
@@ -233,7 +234,9 @@ class StrategyJobExecutor:
         params = _strategy_params(strategy)
         if self.strategy_loader is None:
             source = capture_generated_source(strategy.pine_id, strategy.artifact_id)
-            return self.runtime_adapter.run_isolated(source, [bar], config)
+            return self.runtime_adapter.run_isolated(
+                source, [bar], config, resume_state=resume_state
+            )
         strategy_class = self.strategy_loader(strategy)
         runtime_data_provider = self.runtime_data_provider
         if runtime_data_provider is None:

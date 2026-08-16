@@ -161,3 +161,36 @@ def test_isolated_indicator_returns_plot_tuples() -> None:
     assert result.plots[0][3] == "close"
     assert result.plots[0][0] == 1000
     assert isinstance(result.plots[0][2], str)
+
+
+def _resume_cfg() -> BacktestConfig:
+    return BacktestConfig(
+        symbol="S",
+        timeframe="1m",
+        start_time=1_000,
+        end_time=1_005,
+        commission_type="none",
+        initial_capital=10_000,
+        score_start_time=1_000,
+        score_end_time=1_005,
+        export_resume_state=True,
+        resume_validation_policy="diagnostic",
+    )
+
+
+def test_isolated_run_honors_resume_state_without_double_entry() -> None:
+    first = run_isolated_artifact(
+        SOURCE.encode("utf-8"),
+        bars=_bars(),
+        config=_resume_cfg(),
+    )
+    resume = getattr(first["raw_result"], "resume_state", None)
+    assert resume is not None
+    second = run_isolated_artifact(
+        SOURCE.encode("utf-8"),
+        bars=_bars(),
+        config=_resume_cfg(),
+        resume_state=resume,
+    )
+    assert second["score_ledger_hash"]
+    assert getattr(second["raw_result"], "resume_state", None) is not None

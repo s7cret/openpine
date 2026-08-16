@@ -450,6 +450,7 @@ class LiveStrategyRunner:
                     source,
                     bars,
                     config,
+                    resume_state=resume_state,
                 )
             except IsolatedRunError:
                 raise
@@ -486,6 +487,7 @@ class LiveStrategyRunner:
                     source,
                     bars,
                     config,
+                    resume_state=None,
                 )
 
             new_orders = self._extract_new_orders(result.raw_result, up_to_bar_time_ms)
