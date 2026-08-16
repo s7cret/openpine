@@ -77,6 +77,7 @@ class _ArtifactBacktestSpec:
     exchange: str
     market: str
     prefetch_end_ms: int
+    source: bytes
 
 
 _ACTIVE_BACKTEST_WORKERS: dict[str, _BacktestWorker] = {}
@@ -1122,9 +1123,10 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
 
     try:
         from openpine.runtime.engine import BacktestEngineAdapter
-        from openpine.runtime.isolated_run import capture_generated_source
 
-        source = capture_generated_source(spec.pine_id, spec.artifact_id)
+        source = spec.source
+        if not source:
+            raise RuntimeError("captured artifact source is missing")
         result = BacktestEngineAdapter().run_isolated(source, bars, config)
         _put_backtest_process_result(out, result)
     except BaseException as exc:
@@ -1808,7 +1810,7 @@ async def _run_backtest_background(
         from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
 
         try:
-            capture_generated_source(
+            generated_source = capture_generated_source(
                 strategy.pine_id,
                 strategy.artifact_id,
             )
@@ -2029,6 +2031,7 @@ async def _run_backtest_background(
             exchange=config.exchange,
             market=config.market_type,
             prefetch_end_ms=to_ms,
+            source=generated_source,
         )
 
         def progress_callback(done: int, total: int) -> None:

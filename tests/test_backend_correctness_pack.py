@@ -327,6 +327,7 @@ def test_artifact_backtest_uses_spawn_context(
         exchange="binance",
         market="spot",
         prefetch_end_ms=60_000,
+        source=b"STAMPED",
     )
 
     result = backtest._run_backtest_in_process(
