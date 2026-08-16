@@ -742,10 +742,10 @@ async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: P
     monkeypatch.setattr(tv_parity, "ws_manager", FakeWs())
     monkeypatch.setattr(tv_parity, "_bar_series_fingerprint", lambda series: "fp_1")
     monkeypatch.setattr(tv_parity, "_save_backtest_data_fingerprint", lambda *args: saved.setdefault("fingerprint_saved", True))
-    monkeypatch.setattr(tv_parity, "_run_backtest_in_process", fake_run)
+    monkeypatch.setattr(tv_parity, "_run_isolated_tv_replay", fake_run)
     monkeypatch.setattr(
-        "openpine.runtime.engine.load_strategy_class_from_artifact",
-        lambda *args, **kwargs: object,
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *args, **kwargs: b"VALUE = 1\n",
     )
     monkeypatch.setattr(
         "openpine.data.provider_adapter.create_local_runtime_data_provider_adapter",
@@ -805,7 +805,7 @@ async def test_background_marks_artifact_load_failures(tmp_path: Path, monkeypat
 
     monkeypatch.setattr(tv_parity, "ws_manager", FakeWs())
     monkeypatch.setattr(
-        "openpine.runtime.engine.load_strategy_class_from_artifact",
+        "openpine.runtime.isolated_run.capture_generated_source",
         lambda *args, **kwargs: (_ for _ in ()).throw(BacktestArtifactError("artifact missing")),
     )
     state = SimpleNamespace(
@@ -1210,10 +1210,10 @@ async def test_background_passes_effective_pre_bars_to_worker(tmp_path: Path, mo
         return SimpleNamespace(raw_result=raw_result, bars_processed=2)
 
     monkeypatch.setattr(tv_parity, "ws_manager", FakeWs())
-    monkeypatch.setattr(tv_parity, "_run_backtest_in_process", fake_run)
+    monkeypatch.setattr(tv_parity, "_run_isolated_tv_replay", fake_run)
     monkeypatch.setattr(tv_parity, "_bar_series_fingerprint", lambda series: "fp")
     monkeypatch.setattr(tv_parity, "_save_backtest_data_fingerprint", lambda *args: None)
-    monkeypatch.setattr("openpine.runtime.engine.load_strategy_class_from_artifact", lambda *args, **kwargs: object)
+    monkeypatch.setattr("openpine.runtime.isolated_run.capture_generated_source", lambda *args, **kwargs: b"VALUE = 1\n")
     monkeypatch.setattr("openpine.data.provider_adapter.create_local_runtime_data_provider_adapter", lambda **kwargs: "runtime_provider")
     monkeypatch.setattr(tv_parity, "write_tv_parity_exports_and_comparison", lambda **kwargs: {"run_id": kwargs["run_id"], "comparison": {}, "outputs": {}})
     state = SimpleNamespace(
@@ -1550,14 +1550,14 @@ async def test_background_success_handles_params_override_and_runtime_provider_f
     monkeypatch.setattr(tv_parity, "ws_manager", Ws())
     monkeypatch.setattr(tv_parity, "_bar_series_fingerprint", lambda series: "fp")
     monkeypatch.setattr(tv_parity, "_save_backtest_data_fingerprint", lambda *args: None)
-    monkeypatch.setattr("openpine.runtime.engine.load_strategy_class_from_artifact", lambda *args, **kwargs: object)
+    monkeypatch.setattr("openpine.runtime.isolated_run.capture_generated_source", lambda *args, **kwargs: b"VALUE = 1\n")
     monkeypatch.setattr(
         "openpine.data.provider_adapter.create_local_runtime_data_provider_adapter",
         lambda **kwargs: (_ for _ in ()).throw(RuntimeError("provider down")),
     )
     monkeypatch.setattr(
         tv_parity,
-        "_run_backtest_in_process",
+        "_run_isolated_tv_replay",
         lambda *args: SimpleNamespace(raw_result=SimpleNamespace(trades=[], equity_curve=[], plots=[])),
     )
     monkeypatch.setattr(tv_parity, "write_tv_parity_exports_and_comparison", lambda **kwargs: {"outputs": {}, "comparison": None})

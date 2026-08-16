@@ -342,7 +342,10 @@ def test_live_runner_mini_backtest_success_and_resume_fallback(monkeypatch):
             return {"compile_meta": {"translation_metadata": {"declaration": {"arguments": {"initial_capital": 2000, "commission_type": "cash_per_order", "commission_value": 1, "close_entries_rule": "any"}}}}}
     import openpine.runtime.engine as runtime_engine
     import openpine.data.direct_data_provider as direct_data_provider
-    monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Strategy", (), {}))
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"src",
+    )
     class FakeConfig:
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
@@ -355,10 +358,8 @@ def test_live_runner_mini_backtest_success_and_resume_fallback(monkeypatch):
     class Adapter:
         def __init__(self):
             self.calls = 0
-        def run(self, *args, **kwargs):
+        def run_isolated(self, *args, **kwargs):
             self.calls += 1
-            if kwargs.get("resume_state") is not None:
-                raise RuntimeError("resume content hash mismatch")
             return FakeResult()
     monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
     monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", Adapter)
@@ -366,7 +367,6 @@ def test_live_runner_mini_backtest_success_and_resume_fallback(monkeypatch):
     runner = LiveStrategyRunner(RunnerConfig(lookback_bars=5), orchestrator=Orchestrator(), artifact_store=ArtifactStore(), state_store=state_store)
     orders = runner._run_mini_backtest(strategy, 120000)
     assert orders and orders[0]["entry_price"] == 10
-    assert state_store.invalidated == [("s1", 60000)]
     assert state_store.saved
 
 

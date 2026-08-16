@@ -29,3 +29,20 @@ def test_production_source_never_enables_in_process_import() -> None:
         if "unsafe_in_process=True" in text:
             offenders.append(str(path.relative_to(PKG)))
     assert offenders == []
+
+
+_LEFTOVER_CLASS_LOADERS = (
+    "gateway/live_runner.py",
+    "gateway/routes/tv_parity.py",
+    "gateway/routes/strategies.py",
+    "workers/strategy_job_executor.py",
+)
+
+
+def test_leftover_exec_paths_do_not_call_class_loader() -> None:
+    offenders: list[str] = []
+    for rel in _LEFTOVER_CLASS_LOADERS:
+        text = (PKG / rel).read_text(encoding="utf-8")
+        if "load_strategy_class_from_artifact" in text or "load_generated_class_from_artifact" in text:
+            offenders.append(rel)
+    assert offenders == []

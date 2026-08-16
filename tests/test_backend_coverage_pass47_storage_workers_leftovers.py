@@ -522,19 +522,6 @@ def test_strategy_job_executor_load_bar_runtime_and_ledger_leftovers(
 
 
 def test_strategy_job_executor_artifact_helpers(monkeypatch) -> None:
-    monkeypatch.setattr(
-        job_exec_mod,
-        "load_strategy_class_from_artifact",
-        lambda pine_id, artifact_id, **kwargs: (pine_id, artifact_id, kwargs),
-    )
-
-    loaded = job_exec_mod._load_strategy_class(_strategy())
-
-    assert loaded == (
-        "pine-1",
-        "artifact-1",
-        {"symbol": "BTCUSDT", "timeframe": "15m"},
-    )
     assert job_exec_mod._artifact_declaration_args(_strategy(pine_id="")) == {}
 
     class _ArtifactStore:

@@ -69,19 +69,23 @@ def test_strategy_replay_success_and_failure(monkeypatch):
     monkeypatch.setitem(sys.modules, "openpine.data.orchestrator", data_orch)
 
     rt = types.ModuleType("openpine.runtime.engine")
-    rt.load_strategy_class_from_artifact = lambda strategy_id: (object, SimpleNamespace(path="artifact", declaration_args={"x": 1}))
+    rt.capture_generated_source = lambda *a, **k: b"src"
 
     class BacktestRunConfig:
         def __init__(self, **kw):
             self.__dict__.update(kw)
 
     class BacktestEngineAdapter:
-        def run(self, *a, **k):
+        def run_isolated(self, *a, **k):
             return SimpleNamespace(bars_processed=7)
 
     rt.BacktestRunConfig = BacktestRunConfig
     rt.BacktestEngineAdapter = BacktestEngineAdapter
     monkeypatch.setitem(sys.modules, "openpine.runtime.engine", rt)
+
+    iso = types.ModuleType("openpine.runtime.isolated_run")
+    iso.capture_generated_source = lambda *a, **k: b"src"
+    monkeypatch.setitem(sys.modules, "openpine.runtime.isolated_run", iso)
 
     reg = Registry()
     async def _call(strategy_id, registry):
@@ -97,7 +101,7 @@ def test_strategy_replay_success_and_failure(monkeypatch):
     assert broadcasts[-1].status == "completed"
 
     # Error branch inside background replay.
-    rt.load_strategy_class_from_artifact = lambda strategy_id: (_ for _ in ()).throw(RuntimeError("boom"))
+    iso.capture_generated_source = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom"))
     reg2 = Registry()
     response = asyncio.run(_call("s1", reg2))
     assert response["status"] == "started"

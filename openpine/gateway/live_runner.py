@@ -304,15 +304,12 @@ class LiveStrategyRunner:
             from openpine.runtime.engine import (
                 BacktestEngineAdapter,
                 BacktestRunConfig,
-                load_strategy_class_from_artifact,
             )
+            from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
 
-            # Load strategy class
-            strategy_class = load_strategy_class_from_artifact(
+            source = capture_generated_source(
                 strategy.pine_id,
                 strategy.artifact_id,
-                symbol=strategy.symbol,
-                timeframe=strategy.timeframe,
             )
 
             # Load recent bars
@@ -446,29 +443,16 @@ class LiveStrategyRunner:
                 capture_plots=False,
             )
 
-            # Run backtest
-            from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
-
             adapter = BacktestEngineAdapter()
-            runtime_data_provider = None
-            try:
-                runtime_data_provider = create_local_runtime_data_provider_adapter(
-                    exchange=config.exchange,
-                    market=config.market_type,
-                    prefetch_end_ms=end_ms,
-                )
-            except Exception:
-                pass
 
             try:
-                result = adapter.run(
-                    strategy_class,
+                result = adapter.run_isolated(
+                    source,
                     bars,
                     config,
-                    params={},
-                    resume_state=resume_state,
-                    runtime_data_provider=runtime_data_provider,
                 )
+            except IsolatedRunError:
+                raise
             except Exception as exc:
                 if resume_state is None or not self._is_resume_replay_error(exc):
                     raise
@@ -498,13 +482,10 @@ class LiveStrategyRunner:
                 config = BacktestRunConfig(
                     **{**config.__dict__, "start_time": start_ms}
                 )
-                result = adapter.run(
-                    strategy_class,
+                result = adapter.run_isolated(
+                    source,
                     bars,
                     config,
-                    params={},
-                    resume_state=None,
-                    runtime_data_provider=runtime_data_provider,
                 )
 
             new_orders = self._extract_new_orders(result.raw_result, up_to_bar_time_ms)

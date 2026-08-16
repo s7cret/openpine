@@ -38,13 +38,26 @@ from openpine.export import ExportWindow, export_strategy_result
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.routes.backtest import (
     _bar_series_fingerprint,
-    _run_backtest_in_process,
     _save_backtest_data_fingerprint,
 )
 from openpine.gateway.ws_manager import ws_manager
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/tv-parity", tags=["tv-parity"])
+
+
+def _run_isolated_tv_replay(
+    adapter,
+    source,
+    bars,
+    config,
+    params,
+    runtime_data_provider,
+    progress_callback=None,
+    effective_pre_bars=None,
+):
+    del params, runtime_data_provider, progress_callback, effective_pre_bars
+    return adapter.run_isolated(source, bars, config)
 
 
 @dataclass(frozen=True, slots=True)
@@ -717,17 +730,15 @@ async def _run_tv_parity_background(
         from openpine.runtime.engine import (
             BacktestArtifactError,
             BacktestEngineAdapter,
-            load_strategy_class_from_artifact,
         )
+        from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
 
         try:
-            strategy_class = load_strategy_class_from_artifact(
+            source = capture_generated_source(
                 strategy.pine_id,
                 strategy.artifact_id,
-                symbol=strategy.symbol,
-                timeframe=strategy.timeframe,
             )
-        except BacktestArtifactError as exc:
+        except (BacktestArtifactError, IsolatedRunError) as exc:
             state.backtest_store.mark_failed(run_id, str(exc))
             failure = {
                 "run_id": run_id,
@@ -802,7 +813,7 @@ async def _run_tv_parity_background(
         run_effective_pre_bars = effective_pre_bars if effective_pre_bars > 0 else None
         run_args = (
             BacktestEngineAdapter(),
-            strategy_class,
+            source,
             list(parsed.bars),
             config,
             params or {},
@@ -810,9 +821,9 @@ async def _run_tv_parity_background(
             progress_callback,
         )
         run_callable = (
-            partial(_run_backtest_in_process, *run_args, run_effective_pre_bars)
+            partial(_run_isolated_tv_replay, *run_args, run_effective_pre_bars)
             if run_effective_pre_bars is not None
-            else partial(_run_backtest_in_process, *run_args)
+            else partial(_run_isolated_tv_replay, *run_args)
         )
 
         loop = asyncio.get_event_loop()

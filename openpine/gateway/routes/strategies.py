@@ -480,14 +480,13 @@ async def strategy_replay(
             from openpine.runtime.engine import (
                 BacktestEngineAdapter,
                 BacktestRunConfig,
-                load_strategy_class_from_artifact,
             )
+            from openpine.runtime.isolated_run import capture_generated_source
 
-            strategy_class, artifact = load_strategy_class_from_artifact(strategy_id)
+            source = capture_generated_source(s.pine_id, s.artifact_id)
 
             tf = parse_timeframe(s.timeframe)
             symbol = str(s.symbol).upper()
-            account_id = getattr(s, "account_id", "default") or "default"
             key = InstrumentKey(
                 exchange=str(s.exchange).lower(),
                 market=str(s.market_type).lower(),
@@ -509,20 +508,17 @@ async def strategy_replay(
 
             run_id = f"replay_{strategy_id}_{int(_time_module.time() * 1000)}"
             config = BacktestRunConfig(
-                run_id=run_id,
-                strategy_id=strategy_id,
-                account_id=account_id,
-                artifact_path=artifact.path,
+                symbol=symbol,
+                timeframe=str(s.timeframe),
+                start_time=start_ms,
+                end_time=end_ms,
+                exchange=str(s.exchange).lower(),
+                market_type=str(s.market_type).lower(),
                 capture_plots=True,
                 initial_capital=10_000.0,
             )
 
-            result = BacktestEngineAdapter().run(
-                strategy_class,
-                bars,
-                config,
-                params=getattr(artifact, "declaration_args", None),
-            )
+            result = BacktestEngineAdapter().run_isolated(source, bars, config)
 
             registry.update_status(strategy_id, "paused")
             await ws_manager.broadcast(

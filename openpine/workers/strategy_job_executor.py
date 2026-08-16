@@ -21,8 +21,8 @@ from openpine.runtime.declaration_args import normalize_strategy_declaration_arg
 from openpine.runtime.engine import (
     BacktestEngineAdapter,
     BacktestRunConfig,
-    load_strategy_class_from_artifact,
 )
+from openpine.runtime.isolated_run import capture_generated_source
 from openpine.state.store import StateStore
 from openpine.storage.strategy_ledger import (
     LedgerSource,
@@ -70,6 +70,13 @@ class RuntimeAdapter(Protocol):
         effective_pre_bars: int | None = None,
     ) -> Any: ...
 
+    def run_isolated(
+        self,
+        source: bytes,
+        bars: list[Bar],
+        config: BacktestRunConfig,
+    ) -> Any: ...
+
 
 StrategyClassLoader = Callable[[StrategyInstance], type]
 
@@ -102,7 +109,7 @@ class StrategyJobExecutor:
         self.state_store = state_store
         self.ledger = ledger
         self.runtime_adapter = runtime_adapter or BacktestEngineAdapter()
-        self.strategy_loader = strategy_loader or _load_strategy_class
+        self.strategy_loader = strategy_loader
         self.runtime_data_provider = runtime_data_provider
 
     def process(self, job: Job) -> StrategyJobExecutionResult:
@@ -222,9 +229,12 @@ class StrategyJobExecutor:
     def _run_strategy(
         self, strategy: StrategyInstance, bar: Bar, resume_state: Any | None
     ) -> Any:
-        strategy_class = self.strategy_loader(strategy)
         config = _build_bar_run_config(strategy, bar)
         params = _strategy_params(strategy)
+        if self.strategy_loader is None:
+            source = capture_generated_source(strategy.pine_id, strategy.artifact_id)
+            return self.runtime_adapter.run_isolated(source, [bar], config)
+        strategy_class = self.strategy_loader(strategy)
         runtime_data_provider = self.runtime_data_provider
         if runtime_data_provider is None:
             runtime_data_provider = create_local_runtime_data_provider_adapter(
@@ -358,15 +368,6 @@ class StrategyJobExecutor:
             )
             recorded += 1
         return recorded
-
-
-def _load_strategy_class(strategy: StrategyInstance) -> type:
-    return load_strategy_class_from_artifact(
-        strategy.pine_id,
-        strategy.artifact_id,
-        symbol=strategy.symbol,
-        timeframe=strategy.timeframe,
-    )
 
 
 def _job_payload(job: Job) -> dict[str, Any]:
