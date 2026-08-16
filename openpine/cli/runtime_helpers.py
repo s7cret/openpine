@@ -1447,6 +1447,7 @@ def _run_strategy_backtest_adapter(
     effective_pre_bars: int | None = None,
     console,
     perf_counter,
+    htf_bars=None,
 ):
     selected_strategy_class, backend = _prepare_strategy_backtest_runtime(
         strategy_class,
@@ -1455,7 +1456,9 @@ def _run_strategy_backtest_adapter(
     t0 = perf_counter()
     adapter = adapter_cls()
     if isinstance(selected_strategy_class, (bytes, bytearray)):
-        result = adapter.run_isolated(bytes(selected_strategy_class), bars, config)
+        result = adapter.run_isolated(
+            bytes(selected_strategy_class), bars, config, htf_bars=htf_bars
+        )
     else:
         result = adapter.run(
             selected_strategy_class,
@@ -1494,6 +1497,7 @@ def _run_strategy_backtest_or_exit(
             ),
             console=console,
             perf_counter=perf_counter,
+            htf_bars=getattr(prepared, "htf_bars", None),
         )
     except Exception as exc:
         registry.update_status(strategy_id, "error")

@@ -9,6 +9,7 @@ from openpine.cli.runtime_helpers import (
     _build_strategy_backtest_config,
     _build_strategy_replay_config,
     _run_indicator_plot_runtime,
+    _run_strategy_backtest_adapter,
 )
 from openpine.runtime.engine import BacktestRunConfig
 
@@ -126,3 +127,44 @@ def test_cli_isolated_indicator_rejects_unknown_profile() -> None:
             perf_counter=lambda: 0.0,
             semantic_profile="nope",
         )
+
+
+def test_cli_isolated_strategy_forwards_confirmed_htf_bars(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        }
+    ]
+
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._prepare_strategy_backtest_runtime",
+        lambda strategy_class, console: (b"STAMPED", None),
+    )
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, **kwargs):
+            captured["htf_bars"] = kwargs.get("htf_bars")
+            return SimpleNamespace(ok=True)
+
+    result, _elapsed = _run_strategy_backtest_adapter(
+        adapter_cls=Adapter,
+        strategy_class=b"STAMPED",
+        bars=[],
+        config=object(),
+        params={},
+        provider=SimpleNamespace(),
+        console=SimpleNamespace(),
+        perf_counter=lambda: 0.0,
+        htf_bars=htf_bars,
+    )
+    assert result.ok is True
+    assert captured["htf_bars"] == htf_bars
