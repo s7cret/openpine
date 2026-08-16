@@ -659,6 +659,7 @@ def run_indicator(
         source_bytes,
         bars,
         semantic_profile=admitted.value,
+        htf_bars=getattr(args, "htf_bars", None),
     )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     plots_csv = out_dir / "plots.csv"

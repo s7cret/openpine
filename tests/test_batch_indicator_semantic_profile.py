@@ -76,7 +76,7 @@ def test_batch_indicator_requires_semantic_profile(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None):
+    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -117,7 +117,7 @@ def test_batch_indicator_forwards_admitted_profile(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None):
+    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -164,3 +164,57 @@ def test_batch_indicator_rejects_unknown_profile(
             tmp_path / "out",
             _args(semantic_profile="nope"),
         )
+
+
+def test_batch_indicator_forwards_confirmed_htf_bars(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, object] = {}
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        }
+    ]
+
+    monkeypatch.setattr(
+        "openpine.batch.runner.load_calculation_bars",
+        lambda *a, **k: ([], {}),
+    )
+    monkeypatch.setattr(
+        "openpine.batch.runner.timed_call",
+        lambda timings, name, fn, *a, **k: b"src",
+    )
+    monkeypatch.setattr(
+        "openpine.batch.runner._infer_tv_bar_index_offset",
+        lambda chart, bars: (0, None),
+    )
+
+    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+        captured["htf_bars"] = htf_bars
+        return SimpleNamespace(plots=())
+
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.run_isolated_indicator", fake_run
+    )
+    monkeypatch.setattr(
+        "openpine.export.export_plot_records",
+        lambda *a, **k: 0,
+    )
+    status = run_indicator(
+        _entry(tmp_path),
+        SimpleNamespace(id="pine"),
+        "art",
+        _entry(tmp_path).charts[0],
+        tmp_path / "out",
+        _args(semantic_profile="legacy_4x", htf_bars=htf_bars),
+    )
+    assert status["status"] == "ok"
+    assert captured["htf_bars"] == htf_bars
