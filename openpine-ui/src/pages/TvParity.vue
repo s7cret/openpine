@@ -35,6 +35,8 @@ const lockedPeriod = ref<{ from_time: number; to_time: number } | null>(null)
 const loading = ref(false)
 const runLoading = ref(false)
 const status = ref('')
+const semanticProfile = ref('')
+const allowLegacy = ref(false)
 
 const runPoller = createTerminalPoller({
   intervalMs: 1_500,
@@ -236,7 +238,13 @@ function apiErrorMessage(error: any, fallback: string) {
   return error?.response?.data?.detail ?? error?.message ?? fallback
 }
 
-const canRun = computed(() => (isExchangeDataSource.value ? true : !!candlesFile.value))
+const canRun = computed(() => {
+  const hasData = isExchangeDataSource.value ? true : !!candlesFile.value
+  const hasProfile =
+    Boolean(semanticProfile.value) &&
+    (semanticProfile.value !== 'legacy_4x' || allowLegacy.value)
+  return hasData && hasProfile
+})
 const candlesMissing = computed(() => !isExchangeDataSource.value && !candlesFile.value)
 
 const detectedFileChips = computed(() => {
@@ -369,6 +377,14 @@ async function queueRun() {
     status.value = t('tvParity.exchangeDataRequiresRange')
     return
   }
+  if (!semanticProfile.value) {
+    status.value = t('tvParity.semanticProfileRequired')
+    return
+  }
+  if (semanticProfile.value === 'legacy_4x' && !allowLegacy.value) {
+    status.value = t('tvParity.allowLegacyRequired')
+    return
+  }
   runLoading.value = true
   status.value = t('tvParity.queueingMessage')
   try {
@@ -388,6 +404,8 @@ async function queueRun() {
       absTol: form.value.absTol,
       relTol: form.value.relTol,
       includeBaseColumns: form.value.includeBaseColumns,
+      semanticProfile: semanticProfile.value,
+      allowLegacy: allowLegacy.value,
     })
     result.value = data
     lockedPeriod.value = data.locked_period ?? lockedPeriod.value
@@ -551,6 +569,23 @@ async function downloadArtifact(artifact: any) {
                 {{ strategy.name ?? strategy.strategy_id ?? strategy.id }} · {{ strategy.symbol }} {{ strategy.timeframe }}
               </option>
             </select>
+          </label>
+          <label class="space-y-1 text-xs text-gray-400">
+            {{ t('tvParity.semanticProfile') }}
+            <select
+              id="tv-parity-semantic-profile"
+              v-model="semanticProfile"
+              data-testid="tv-parity-semantic-profile"
+              class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200"
+            >
+              <option value="">{{ t('tvParity.semanticProfileRequired') }}</option>
+              <option value="strict_5x">strict_5x</option>
+              <option value="legacy_4x">legacy_4x</option>
+            </select>
+          </label>
+          <label v-if="semanticProfile === 'legacy_4x'" class="flex items-center gap-2 text-xs text-gray-300">
+            <input id="tv-parity-allow-legacy" v-model="allowLegacy" type="checkbox" data-testid="tv-parity-allow-legacy" />
+            {{ t('tvParity.allowLegacy') }}
           </label>
           <div class="md:col-span-2 space-y-2">
             <div

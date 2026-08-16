@@ -149,6 +149,8 @@ export type TvParityRunRequest = {
   absTol?: number
   relTol?: number
   includeBaseColumns?: boolean
+  semanticProfile?: string
+  allowLegacy?: boolean
 }
 
 const multipartConfig = { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -191,6 +193,8 @@ export function runTvParity(request: TvParityRunRequest) {
   appendFormValue(form, 'abs_tol', request.absTol)
   appendFormValue(form, 'rel_tol', request.relTol)
   appendFormValue(form, 'include_base_columns', request.includeBaseColumns)
+  appendFormValue(form, 'semantic_profile', request.semanticProfile)
+  appendFormValue(form, 'allow_legacy', request.allowLegacy)
   return api.post('/tv-parity/run', form, multipartConfig)
 }
 

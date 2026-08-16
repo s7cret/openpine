@@ -61,6 +61,8 @@ describe('TV Parity API and UI contracts', () => {
       warmupBars: 50,
       absTol: 0.01,
       relTol: 0.001,
+      semanticProfile: 'strict_5x',
+      allowLegacy: false,
     })
 
     expect(spy).toHaveBeenCalledWith(
@@ -79,6 +81,8 @@ describe('TV Parity API and UI contracts', () => {
     expect(form.get('capture_plots')).toBe('true')
     expect(form.get('warmup_bars')).toBe('50')
     expect(form.get('abs_tol')).toBe('0.01')
+    expect(form.get('semantic_profile')).toBe('strict_5x')
+    expect(form.get('allow_legacy')).toBe('false')
     spy.mockRestore()
   })
 

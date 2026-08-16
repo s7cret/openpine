@@ -141,4 +141,12 @@ describe('global UI correctness contracts', () => {
     expect(page).toContain('allow_legacy')
     expect(page).toContain("t('backtests.semanticProfileRequired')")
   })
+
+  it('tv parity start sends an explicit semantic profile', () => {
+    const page = source('pages/TvParity.vue')
+    expect(page).toContain('tv-parity-semantic-profile')
+    expect(page).toContain('semanticProfile: semanticProfile.value')
+    expect(page).toContain('allowLegacy: allowLegacy.value')
+    expect(page).toContain("t('tvParity.semanticProfileRequired')")
+  })
 })
