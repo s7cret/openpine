@@ -685,6 +685,8 @@ def _build_strategy_run_config(
     config_cls: Any,
 ) -> Any:
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
+    from openpine.admission import admit_semantic_profile
+
     decl_args = normalize_strategy_declaration_args(decl_args)
     commission_type = {
         "cash_per_order": "fixed_per_order",
@@ -722,6 +724,10 @@ def _build_strategy_run_config(
         capture_plots=True,
         plot_from_ms=compare_from,
         plot_to_ms=compare_to,
+        semantic_profile=admit_semantic_profile(
+            profile="strict_5x",
+            source="generated_artifact.v2",
+        ).value,
     )
 
 
