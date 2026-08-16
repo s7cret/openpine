@@ -358,3 +358,30 @@ def test_isolated_worker_echoes_semantic_profile() -> None:
         timeout_s=5,
     )
     assert result["semantic_profile"] == "strict_5x"
+
+
+def test_isolated_request_security_without_htf_is_fail_closed() -> None:
+    source = textwrap.dedent(
+        """
+        from pinelib.request.security import security
+
+        class GeneratedStrategy:
+            def __init__(self, params=None, runtime=None):
+                self.rt = runtime
+
+            def _process_bar(self, bar, bar_index=None):
+                security(
+                    "BTCUSDT",
+                    "1D",
+                    lambda ctx: 1,
+                    runtime=self.rt,
+                    state_id="htf",
+                    ignore_invalid_symbol=True,
+                )
+        """
+    )
+    bars = [
+        {"time": 1000, "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1},
+    ]
+    with pytest.raises(IsolatedWorkerError, match="request.security"):
+        _eval(source.encode("utf-8"), bars=bars, timeout_s=8)

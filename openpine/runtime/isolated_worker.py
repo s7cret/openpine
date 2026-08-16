@@ -187,6 +187,10 @@ def main() -> int:
                     timeframe=TimeframeInfo(value="1m", interval_ms=60000, isminutes=True, multiplier=1),
                     config=RuntimeConfig(semantic_profile=request.get("semantic_profile")),
                 )
+                class _NoHtfProvider:
+                    def get_bars(self, *a, **k):
+                        raise RuntimeError("request.security requires confirmed HTF bars")
+                rt.data_provider = _NoHtfProvider()
             except Exception as exc:
                 json.dump({"ok": False, "error": f"pine runtime: {exc}"}, sys.stdout)
                 return 2
@@ -219,7 +223,14 @@ def main() -> int:
                 try:
                     inst._process_bar(bar, i)
                 except TypeError:
-                    inst._process_bar(bar)
+                    try:
+                        inst._process_bar(bar)
+                    except Exception as exc:
+                        json.dump({"ok": False, "error": str(exc)}, sys.stdout)
+                        return 2
+                except Exception as exc:
+                    json.dump({"ok": False, "error": str(exc)}, sys.stdout)
+                    return 2
                 end_bar = getattr(rt, "end_bar", None)
                 if callable(end_bar):
                     try:
