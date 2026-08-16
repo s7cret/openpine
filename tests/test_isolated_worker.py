@@ -385,3 +385,61 @@ def test_isolated_request_security_without_htf_is_fail_closed() -> None:
     ]
     with pytest.raises(IsolatedWorkerError, match="request.security"):
         _eval(source.encode("utf-8"), bars=bars, timeout_s=8)
+
+
+def test_isolated_request_security_uses_stamped_htf_bars() -> None:
+    source = textwrap.dedent(
+        """
+        from pinelib.request.security import security
+
+        class GeneratedStrategy:
+            def __init__(self, params=None, runtime=None):
+                self.rt = runtime
+
+            def _process_bar(self, bar, i=0):
+                value = security(
+                    "BTCUSDT",
+                    "1D",
+                    [42],
+                    runtime=self.rt,
+                    state_id="htf",
+                )
+                rec = getattr(self.rt, "plot_recorder", None)
+                if rec is None:
+                    return
+                rec.record_plot(int(bar.time), int(i), value, "htf")
+        """
+    )
+    chart_bars = [
+        {
+            "time": 86_400_000,
+            "open": 1,
+            "high": 1,
+            "low": 1,
+            "close": 1,
+            "volume": 1,
+        },
+    ]
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        },
+    ]
+    result = _eval(
+        source.encode("utf-8"),
+        bars=chart_bars,
+        htf_bars=htf_bars,
+        timeout_s=8,
+    )
+    plots = result["plots"]
+    assert plots
+    assert plots[0]["title"] == "htf"
+    assert plots[0]["value"] == 42

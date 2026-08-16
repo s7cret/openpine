@@ -190,7 +190,28 @@ def main() -> int:
                 class _NoHtfProvider:
                     def get_bars(self, *a, **k):
                         raise RuntimeError("request.security requires confirmed HTF bars")
-                rt.data_provider = _NoHtfProvider()
+                stamped = request.get("htf_bars") or []
+                if stamped:
+                    from pinelib.request.providers import InMemoryDataProvider
+                    keyed = {}
+                    for item in stamped:
+                        if not isinstance(item, dict) or item.get("time_close") is None:
+                            raise RuntimeError("request.security requires confirmed HTF bars")
+                        key = (str(item.get("symbol") or ""), str(item.get("timeframe") or ""))
+                        keyed.setdefault(key, []).append(
+                            PineBar(
+                                time=int(item.get("time", 0)),
+                                open=float(item.get("open", 0)),
+                                high=float(item.get("high", 0)),
+                                low=float(item.get("low", 0)),
+                                close=float(item.get("close", 0)),
+                                volume=float(item.get("volume") or 0),
+                                time_close=int(item["time_close"]),
+                            )
+                        )
+                    rt.data_provider = InMemoryDataProvider(keyed)
+                else:
+                    rt.data_provider = _NoHtfProvider()
             except Exception as exc:
                 json.dump({"ok": False, "error": f"pine runtime: {exc}"}, sys.stdout)
                 return 2
@@ -389,6 +410,7 @@ def evaluate_artifact(
     semantic_profile: str = "",
     cgroup_dir: str | Path | None = None,
     bars: list[dict[str, Any]] | None = None,
+    htf_bars: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if len(source) > 500_000:
         raise IsolatedWorkerError("artifact source exceeds size limit")
@@ -407,6 +429,7 @@ def evaluate_artifact(
             "stack_id": stack_id,
             "semantic_profile": semantic_profile,
             "bars": bars or [],
+            "htf_bars": htf_bars or [],
         }
     )
     try:
