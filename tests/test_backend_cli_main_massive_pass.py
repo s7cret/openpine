@@ -239,7 +239,7 @@ def test_cli_indicator_compare_streams_state_and_plugins_more(monkeypatch, tmp_p
     monkeypatch.setattr(cli_main, "_prepare_indicator_plot_inputs", lambda **kw: prepared)
     monkeypatch.setattr(cli_main, "_print_indicator_plot_header", lambda **kw: None)
     monkeypatch.setattr(cli_main, "_write_indicator_plot_run_outputs", lambda **kw: None)
-    res = runner.invoke(cli_main.cli, ["pine", "run-plots", "src", "--symbol", "BTCUSDT", "--timeframe", "1m", "--from", "2026-01-01", "--output", str(tmp_path / "plots")])
+    res = runner.invoke(cli_main.cli, ["pine", "run-plots", "src", "--symbol", "BTCUSDT", "--timeframe", "1m", "--from", "2026-01-01", "--output", str(tmp_path / "plots"), "--semantic-profile", "strict_5x"])
     assert res.exit_code == 0, res.output
 
     # indicator TV compare with match and failure-style status

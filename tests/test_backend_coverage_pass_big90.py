@@ -315,7 +315,7 @@ def test_runtime_helper_error_and_indicator_output_paths(tmp_path, monkeypatch):
         data_fetch_info={"source": "test"},
     )
     monkeypatch.setattr(rh, "_run_indicator_plot_runtime", lambda **kw: (SimpleNamespace(plots=[1, 2]), 0.1))
-    rh._write_indicator_plot_run_outputs(deps=Deps(), prepared=prepared, name="pine", symbol="BTCUSDT", timeframe="1m", exchange="binance", market_type="spot", output_dir=str(tmp_path / "out"), progress_every=0, timings=timings, start_total=0.0, perf_counter=lambda: 1.0, console=console)
+    rh._write_indicator_plot_run_outputs(deps=Deps(), prepared=prepared, name="pine", symbol="BTCUSDT", timeframe="1m", exchange="binance", market_type="spot", output_dir=str(tmp_path / "out"), progress_every=0, timings=timings, start_total=0.0, perf_counter=lambda: 1.0, console=console, semantic_profile="strict_5x")
     assert (tmp_path / "out" / "plots.csv").exists()
     assert (tmp_path / "out" / "run_meta.json").exists()
 

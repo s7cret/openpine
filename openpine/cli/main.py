@@ -830,6 +830,12 @@ def pine_compile(name: str, force: bool) -> None:
     show_default=True,
     help="Progress print interval in bars",
 )
+@click.option(
+    "--semantic-profile",
+    required=True,
+    type=click.Choice(["strict_5x", "legacy_4x"], case_sensitive=True),
+    help="Admitted semantic profile for isolated indicator run",
+)
 def pine_run_plots(
     name: str,
     symbol: str,
@@ -842,6 +848,7 @@ def pine_run_plots(
     compare_from: str | None,
     compare_to: str | None,
     progress_every: int,
+    semantic_profile: str,
 ) -> None:
     """Run an indicator Pine source and export normalized plot CSV."""
     import time as _time
@@ -901,6 +908,7 @@ def pine_run_plots(
         start_total=start_total,
         perf_counter=_time.perf_counter,
         console=console,
+        semantic_profile=semantic_profile,
     )
 
 

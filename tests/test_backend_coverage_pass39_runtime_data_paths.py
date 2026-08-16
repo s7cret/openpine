@@ -396,6 +396,7 @@ def test_indicator_runtime_and_strategy_persistence_error_edges(monkeypatch, tmp
         progress_every=1,
         console=console,
         perf_counter=lambda: 2.0,
+        semantic_profile="strict_5x",
     )
     assert result.plots == []
     assert elapsed == 0

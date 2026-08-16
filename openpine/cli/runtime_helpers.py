@@ -873,7 +873,14 @@ def _run_indicator_plot_runtime(
     progress_every: int,
     console,
     perf_counter,
+    semantic_profile: object,
 ) -> tuple[object, float]:
+    from openpine.admission import admit_semantic_profile
+
+    admitted = admit_semantic_profile(
+        profile=semantic_profile,
+        source="generated_artifact.v2",
+    )
     t0 = perf_counter()
     if isinstance(generated_class, (bytes, bytearray)):
         from openpine.runtime.isolated_run import run_isolated_indicator
@@ -881,7 +888,7 @@ def _run_indicator_plot_runtime(
         backend_result = run_isolated_indicator(
             bytes(generated_class),
             bars,
-            semantic_profile="strict_5x",
+            semantic_profile=admitted.value,
         )
         return backend_result, perf_counter() - t0
     config = _build_indicator_plot_config(
@@ -990,6 +997,7 @@ def _write_indicator_plot_run_outputs(
     start_total: float,
     perf_counter,
     console,
+    semantic_profile: object,
 ) -> None:
     output_path = _ensure_output_dir(output_dir)
     backend_result, timings["runtime_sec"] = _run_indicator_plot_runtime(
@@ -1005,6 +1013,7 @@ def _write_indicator_plot_run_outputs(
         progress_every=progress_every,
         console=console,
         perf_counter=perf_counter,
+        semantic_profile=semantic_profile,
     )
     plots_csv, plots_rows, timings["export_sec"] = _write_indicator_plot_outputs(
         backend_result=backend_result,
