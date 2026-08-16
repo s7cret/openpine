@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
-import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -199,32 +197,9 @@ def _load_generated_module(
     *,
     unsafe_in_process: bool = False,
 ) -> Any:
-    if not unsafe_in_process:
-        raise BacktestArtifactError(
-            "in-process generated import is forbidden; use isolated worker"
-        )
-    module_name = (
-        "openpine_generated_"
-        f"{source_id.replace('-', '_').replace(':', '_')}_"
-        f"{artifact_id.replace('-', '_').replace(':', '_')}"
+    raise BacktestArtifactError(
+        "in-process generated import is forbidden; use isolated worker"
     )
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise BacktestArtifactError(
-            f"Cannot import generated strategy artifact: {path}"
-        )
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    try:
-        spec.loader.exec_module(module)
-    except Exception as exc:
-        raise BacktestArtifactError(
-            f"Failed to import generated strategy artifact {path}: {exc}"
-        ) from exc
-    for namespace in ("label", "line", "box", "table", "position", "size"):
-        if not hasattr(module, namespace):
-            setattr(module, namespace, _PineConstantNamespace(namespace))
-    return module
 
 
 def _select_strategy_class(module: Any, compile_meta: dict[str, Any]) -> type:

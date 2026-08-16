@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import types
 from types import SimpleNamespace
+import importlib.util
 
 import pytest
 
@@ -40,12 +41,12 @@ def test_runtime_artifact_loading_edges(monkeypatch, tmp_path):
     import openpine.artifacts as artifacts
 
     monkeypatch.setattr(artifacts, "ArtifactStore", Store)
-    module = rt._load_generated_module(
-        artifact_dir / "generated_strategy.py",
-        "src",
-        "ok",
-        unsafe_in_process=True,
+    spec = importlib.util.spec_from_file_location(
+        "generated_strategy", artifact_dir / "generated_strategy.py"
     )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     cls = rt._select_strategy_class(module, artifact.get("compile_meta", {}))
     assert cls.__name__ == "CustomStrategy"
     with pytest.raises(rt.BacktestArtifactError, match="in-process"):
@@ -61,13 +62,14 @@ def test_runtime_artifact_loading_edges(monkeypatch, tmp_path):
     bad_dir = tmp_path / "bad"
     bad_dir.mkdir()
     (bad_dir / "generated_strategy.py").write_text("x = 1\n", encoding="utf-8")
+    spec = importlib.util.spec_from_file_location(
+        "bad_strategy", bad_dir / "generated_strategy.py"
+    )
+    assert spec is not None and spec.loader is not None
+    bad_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bad_module)
     with pytest.raises(rt.BacktestArtifactError):
-        rt._select_strategy_class(
-            rt._load_generated_module(
-                bad_dir / "generated_strategy.py", "s", "a", unsafe_in_process=True
-            ),
-            {},
-        )
+        rt._select_strategy_class(bad_module, {})
 
 
 def test_runtime_adapter_run_and_progress(monkeypatch):

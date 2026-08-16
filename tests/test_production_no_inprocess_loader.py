@@ -6,6 +6,7 @@ import pytest
 
 from openpine.runtime.engine import (
     BacktestArtifactError,
+    _load_generated_module,
     load_generated_class_from_artifact,
     load_strategy_class_from_artifact,
 )
@@ -20,6 +21,13 @@ def test_production_loaders_reject_in_process_flag() -> None:
         load_strategy_class_from_artifact(
             "src", "art", symbol="BTCUSDT", timeframe="1m", unsafe_in_process=True
         )
+
+
+def test_private_loader_rejects_in_process_flag(tmp_path: Path) -> None:
+    path = tmp_path / "generated_strategy.py"
+    path.write_text("VALUE = 1\n", encoding="utf-8")
+    with pytest.raises(BacktestArtifactError, match="in-process"):
+        _load_generated_module(path, "src", "art", unsafe_in_process=True)
 
 
 def test_production_source_never_enables_in_process_import() -> None:

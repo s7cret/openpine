@@ -305,19 +305,18 @@ def test_runtime_engine_artifact_import_selection_and_adapter_edges(monkeypatch,
         rt.load_strategy_class_from_artifact(
             "src", "art", symbol="BTC", timeframe="1m", unsafe_in_process=True
         )
-    module = rt._load_generated_module(
-        artifact_dir / "generated_strategy.py",
-        "src",
-        "art",
-        unsafe_in_process=True,
+    spec = importlib.util.spec_from_file_location(
+        "generated_strategy", artifact_dir / "generated_strategy.py"
     )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     selected = rt._select_strategy_class(module, {"compile_status": "OK"})
     adapted = rt._adapt_generated_strategy(selected, symbol="BTC", timeframe="1m")
     assert adapted[0] == "adapted"
     monkeypatch.setattr(rt, "_adapt_generated_strategy", original_adapt_generated_strategy)
 
-    monkeypatch.setattr(rt.importlib.util, "spec_from_file_location", lambda *a, **k: None)
-    with pytest.raises(rt.BacktestArtifactError):
+    with pytest.raises(rt.BacktestArtifactError, match="in-process"):
         rt._load_generated_module(tmp_path / "x.py", "src", "art", unsafe_in_process=True)
 
     External = type("External", (), {"__module__": "external", "_process_bar": lambda self: None})

@@ -293,8 +293,10 @@ def test_runtime_engine_adapter_and_artifact_helpers(monkeypatch, tmp_path):
         "    def _process_bar(self, bar): return None\n",
         encoding="utf-8",
     )
-    mod = rt._load_generated_module(module_file, "src:id", "art:id", unsafe_in_process=True)
-    assert mod.label.foo == "label.foo"
+    spec = importlib.util.spec_from_file_location("generated_strategy", module_file)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
     cls = rt._select_strategy_class(mod, {"class_name": "GeneratedStrategy"})
     assert cls.__name__ == "GeneratedStrategy"
 
