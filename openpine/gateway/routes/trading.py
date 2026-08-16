@@ -51,10 +51,14 @@ def _require_semantic_profile(*, profile: object | None, source: str, allow_lega
         raise HTTPException(403, exc.message) from exc
 
 
-def _stamp_strategy_profile(strategy: Any, admitted: Any) -> None:
+def _stamp_strategy_profile(strategy: Any, admitted: Any, registry: Any | None = None) -> None:
     if strategy is None or admitted is None:
         return
-    setattr(strategy, "semantic_profile", getattr(admitted, "value", admitted))
+    value = getattr(admitted, "value", admitted)
+    setattr(strategy, "semantic_profile", value)
+    persist = getattr(registry, "set_semantic_profile", None)
+    if callable(persist) and getattr(strategy, "strategy_id", None):
+        persist(strategy.strategy_id, value)
 
 
 @router.post("/paper/start", response_model=TradingStatusResponse)
@@ -92,7 +96,7 @@ async def start_paper(
     except ArchivedStrategyActivationError as exc:
         raise HTTPException(400, str(exc)) from exc
 
-    _stamp_strategy_profile(s, admitted)
+    _stamp_strategy_profile(s, admitted, registry)
     log.info("paper_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
         strategy_id=body.strategy_id,
@@ -180,7 +184,7 @@ async def start_live(
     except ArchivedStrategyActivationError as exc:
         raise HTTPException(400, str(exc)) from exc
 
-    _stamp_strategy_profile(s, admitted)
+    _stamp_strategy_profile(s, admitted, registry)
     log.info("live_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
         strategy_id=body.strategy_id,

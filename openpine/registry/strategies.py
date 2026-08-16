@@ -50,6 +50,7 @@ class StrategyInstance:
     status: str = "pending"
     created_at: int = field(default_factory=lambda: int(time.time() * 1000))
     updated_at: int = field(default_factory=lambda: int(time.time() * 1000))
+    semantic_profile: str | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -70,6 +71,7 @@ class StrategyInstance:
             "status": self.status,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "semantic_profile": self.semantic_profile,
         }
 
     @classmethod
@@ -92,6 +94,7 @@ class StrategyInstance:
             status=data.get("status", "pending"),
             created_at=data.get("created_at", int(time.time() * 1000)),
             updated_at=data.get("updated_at", int(time.time() * 1000)),
+            semantic_profile=data.get("semantic_profile"),
         )
 
 
@@ -187,6 +190,7 @@ class SQLiteStrategyRegistry:
                 live_enabled INTEGER NOT NULL DEFAULT 0,
                 risk_profile_id TEXT,
                 status TEXT NOT NULL DEFAULT 'pending',
+                semantic_profile TEXT,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
                 FOREIGN KEY (pine_id) REFERENCES pine_sources(id),
@@ -200,6 +204,10 @@ class SQLiteStrategyRegistry:
         if "archived" not in columns:
             self._conn.execute(
                 "ALTER TABLE strategy_instances ADD COLUMN archived INTEGER NOT NULL DEFAULT 0"
+            )
+        if "semantic_profile" not in columns:
+            self._conn.execute(
+                "ALTER TABLE strategy_instances ADD COLUMN semantic_profile TEXT"
             )
         self._conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_strategy_instances_pine_id
@@ -235,7 +243,7 @@ class SQLiteStrategyRegistry:
         rows = self._conn.execute(
             """SELECT strategy_id, name, pine_id, artifact_id, params_json, params_hash,
                       symbol, timeframe, exchange, market_type, price_type, mode, enabled, archived, status,
-                      created_at, updated_at
+                      created_at, updated_at, semantic_profile
                FROM strategy_instances
                WHERE strategy_id IS NOT NULL"""
         ).fetchall()
@@ -258,6 +266,7 @@ class SQLiteStrategyRegistry:
                 status=row[14],
                 created_at=row[15],
                 updated_at=row[16],
+                semantic_profile=row[17],
             )
             for row in rows
         }
@@ -718,6 +727,18 @@ class SQLiteStrategyRegistry:
         self._conn.execute(
             "UPDATE strategy_instances SET mode = ?, updated_at = ? WHERE strategy_id = ?",
             (mode, si.updated_at, strategy_id),
+        )
+        self._conn.commit()
+
+    @_serialized_connection
+    def set_semantic_profile(self, strategy_id: str, semantic_profile: str) -> None:
+        """Persist the admitted semantic profile across reload and restart."""
+        si = self.get_strategy(strategy_id)
+        si.semantic_profile = semantic_profile
+        si.updated_at = int(time.time() * 1000)
+        self._conn.execute(
+            "UPDATE strategy_instances SET semantic_profile = ?, updated_at = ? WHERE strategy_id = ?",
+            (semantic_profile, si.updated_at, strategy_id),
         )
         self._conn.commit()
 

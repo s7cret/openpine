@@ -79,6 +79,7 @@ ACHIEVEMENTS_COMPAT_COLUMNS: dict[str, tuple[ColumnSpec, ...]] = {
     # whether the strategy used user-defined types. Default 0.
     "strategy_instances": (
         ColumnSpec("uses_udt", "INTEGER NOT NULL DEFAULT 0"),
+        ColumnSpec("semantic_profile", "TEXT"),
     ),
     # achievements: inverted flag for "smaller-is-better" metrics like
     # drawdown. 0 = default (value >= target), 1 = inverted (value <= target).
