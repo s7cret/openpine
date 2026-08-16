@@ -27,7 +27,7 @@ def _semantic_profile(config: Any) -> str:
 
     raw = getattr(config, "semantic_profile", None)
     if raw is None or str(raw).strip() == "":
-        return SemanticProfile.LEGACY_4X.value
+        raise IsolatedRunError("semantic_profile is required")
     if isinstance(raw, SemanticProfile):
         return raw.value
     try:

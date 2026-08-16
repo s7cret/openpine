@@ -30,8 +30,8 @@ def _bars() -> list[Bar]:
     ]
 
 
-def _cfg() -> BacktestConfig:
-    return BacktestConfig(
+def _cfg(*, semantic_profile: str = "legacy_4x") -> BacktestConfig:
+    cfg = BacktestConfig(
         symbol="S",
         timeframe="1m",
         start_time=1_000,
@@ -41,6 +41,8 @@ def _cfg() -> BacktestConfig:
         score_start_time=1_000,
         score_end_time=1_005,
     )
+    cfg.semantic_profile = semantic_profile
+    return cfg
 
 
 def test_isolated_run_replays_live_tape_without_importing_generated() -> None:
@@ -164,7 +166,7 @@ def test_isolated_indicator_returns_plot_tuples() -> None:
 
 
 def _resume_cfg() -> BacktestConfig:
-    return BacktestConfig(
+    cfg = BacktestConfig(
         symbol="S",
         timeframe="1m",
         start_time=1_000,
@@ -176,6 +178,8 @@ def _resume_cfg() -> BacktestConfig:
         export_resume_state=True,
         resume_validation_policy="diagnostic",
     )
+    cfg.semantic_profile = "legacy_4x"
+    return cfg
 
 
 def test_isolated_run_honors_resume_state_without_double_entry() -> None:
@@ -219,6 +223,7 @@ def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyP
         export_resume_state=True,
         resume_validation_policy="diagnostic",
     )
+    cfg.semantic_profile = "legacy_4x"
     first = run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars()[:3], config=cfg)
     resume = first["raw_result"].resume_state
     assert resume is not None
@@ -234,6 +239,26 @@ def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyP
     assert applied
     assert min(applied) > int(resume.bar_index)
     assert 0 not in applied
+
+
+def test_isolated_run_requires_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+    from openpine.runtime.isolated_worker import IsolatedWorkerError
+
+    seen: dict[str, object] = {}
+
+    def _capture(source, **kwargs):
+        seen["semantic_profile"] = kwargs.get("semantic_profile")
+        raise IsolatedWorkerError("stop")
+
+    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    with pytest.raises(IsolatedRunError, match="semantic_profile"):
+        run_isolated_artifact(
+            SOURCE.encode("utf-8"),
+            bars=_bars(),
+            config=_cfg(semantic_profile=""),
+        )
+    assert "semantic_profile" not in seen
 
 
 def test_isolated_run_forwards_config_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
