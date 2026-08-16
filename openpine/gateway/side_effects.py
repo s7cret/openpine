@@ -28,11 +28,22 @@ def persist_gateway_job(state: object, **kwargs: Any) -> dict[str, Any] | None:
     kind = kwargs.get("kind")
     profile = kwargs.pop("semantic_profile", None)
     if not profile:
-        profile = (
-            SemanticProfile.STRICT_5X
-            if kind == "compile"
-            else SemanticProfile.LEGACY_4X
-        )
+        if kind in {"backtest", "optimize", "parity"}:
+            log.warning(
+                "job_v1_persist_missing_semantic_profile",
+                error="semantic_profile required",
+                job_id=kwargs.get("job_id"),
+            )
+            return None
+        if kind != "compile":
+            try:
+                return store.create(**kwargs)
+            except JobV1Error as exc:
+                log.warning(
+                    "job_v1_persist_failed", error=str(exc), job_id=kwargs.get("job_id")
+                )
+                return None
+        profile = SemanticProfile.STRICT_5X
     if isinstance(profile, SemanticProfile):
         profile = profile.value
     refs = list(kwargs.get("input_artifact_refs") or [])

@@ -124,7 +124,13 @@ def test_persist_gateway_job_stamps_semantic_profile(tmp_path) -> None:
 
     store = JobV1Store(tmp_path / "jobs.sqlite")
     state = SimpleNamespace(job_store=store)
-    persist_gateway_job(state, job_id="opt-1", kind="optimize", actor="gateway")
+    persist_gateway_job(
+        state,
+        job_id="opt-1",
+        kind="optimize",
+        actor="gateway",
+        semantic_profile="legacy_4x",
+    )
     persist_gateway_job(state, job_id="cmp-1", kind="compile", actor="gateway")
     persist_gateway_job(
         state,
@@ -137,3 +143,19 @@ def test_persist_gateway_job_stamps_semantic_profile(tmp_path) -> None:
     assert "semantic_profile:strict_5x" in store.get("cmp-1")["input_artifact_refs"]
     assert "semantic_profile:strict_5x" in store.get("bt-1")["input_artifact_refs"]
     assert "semantic_profile:legacy_4x" not in store.get("bt-1")["input_artifact_refs"]
+
+
+def test_persist_gateway_job_does_not_silent_legacy(tmp_path) -> None:
+    from types import SimpleNamespace
+
+    from openpine.gateway.side_effects import persist_gateway_job
+    from openpine.jobs.persist import JobV1Error
+
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    state = SimpleNamespace(job_store=store)
+    persist_gateway_job(state, job_id="opt-silent", kind="optimize", actor="gateway")
+    persist_gateway_job(state, job_id="fill-1", kind="backfill", actor="gateway")
+    with pytest.raises(JobV1Error, match="not found"):
+        store.get("opt-silent")
+    refs = store.get("fill-1")["input_artifact_refs"]
+    assert not any(str(item).startswith("semantic_profile:") for item in refs)
