@@ -23,13 +23,14 @@ from typing import Annotated, Any, cast
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 
 from openpine._compat import structlog
-from openpine.admission import DEFAULT_STACK_ID, admit_run
+from openpine.admission import DEFAULT_STACK_ID, admit_run, admit_semantic_profile
 from openpine.exchange_metadata import (
     default_price_tick,
     default_qty_rounding_mode,
     default_qty_step,
 )
 from openpine.gateway.deps import GatewayState, get_state
+from openpine.gateway.side_effects import persist_gateway_job
 from openpine.gateway.schemas import (
     BacktestEstimateResponse,
     BacktestProgress,
@@ -1749,6 +1750,7 @@ async def _run_backtest_background(
     capture_plots: bool,
     initial_capital_override: float | None = None,
     admission_lease: _BacktestLease | None = None,
+    semantic_profile: str | None = None,
 ) -> None:
     """Execute backtest in background, update progress via WebSocket."""
     import asyncio
@@ -2004,6 +2006,10 @@ async def _run_backtest_background(
             collect_events=True,
             collect_order_lifecycle=True,
             capture_plots=capture_plots,
+            semantic_profile=admit_semantic_profile(
+                profile=semantic_profile or getattr(strategy, "semantic_profile", None),
+                source="backtest",
+            ).value,
         )
 
         # Reconstruct unpicklable runtime objects inside a spawned worker.  This avoids
@@ -2192,6 +2198,16 @@ async def run_backtest(
             400, "Strategy has no pine_id or artifact_id. Compile first."
         )
 
+    try:
+        admitted_profile = admit_semantic_profile(
+            profile=getattr(body, "semantic_profile", None)
+            or getattr(strategy, "semantic_profile", None),
+            source="backtest",
+            allow_legacy=bool(getattr(body, "allow_legacy", False)),
+        )
+    except AdmitError as exc:
+        raise HTTPException(403, exc.message) from exc
+
     estimate = _estimate_backtest_market_data(strategy, from_ms, to_ms)
     if estimate.effective_from >= estimate.effective_to:
         raise HTTPException(400, "No listed market data found in selected range")
@@ -2274,21 +2290,15 @@ async def run_backtest(
             raise HTTPException(503, "Backtest storage is unavailable") from exc
         raise
 
-    job_store = getattr(state, "job_store", None)
-    if job_store is not None:
-        try:
-            job_store.create(
-                job_id=str(run_id),
-                kind="backtest",
-                actor="gateway",
-                idempotency_key=idempotency_key,
-                input_artifact_refs=[
-                    str(strategy.artifact_id),
-                    "semantic_profile:legacy_4x",
-                ],
-            )
-        except Exception as exc:
-            log.warning("job_v1_persist_failed", run_id=run_id, error=str(exc))
+    persist_gateway_job(
+        state,
+        job_id=str(run_id),
+        kind="backtest",
+        actor="gateway",
+        idempotency_key=idempotency_key,
+        input_artifact_refs=[str(strategy.artifact_id)],
+        semantic_profile=admitted_profile.value,
+    )
 
     if idempotency_claimed:
         assert idempotency_key is not None
@@ -2356,6 +2366,7 @@ async def run_backtest(
             body.capture_plots,
             body.initial_capital,
             admission_lease,
+            semantic_profile=admitted_profile.value,
         )
     except BaseException as exc:
         admission_lease.release()

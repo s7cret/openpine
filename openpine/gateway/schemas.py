@@ -228,6 +228,8 @@ class BacktestRunRequest(BaseModel):
         allow_inf_nan=False,
         description="Override starting capital (defaults to strategy declaration)",
     )
+    semantic_profile: str | None = None
+    allow_legacy: bool = False
 
 
 class BacktestRunResponse(BaseModel):
