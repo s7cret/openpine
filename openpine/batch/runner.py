@@ -649,7 +649,11 @@ def run_indicator(
     data_meta["bar_index_alignment"] = bar_index_alignment
     data_meta["bar_index_offset"] = bar_index_offset
     t0 = time.perf_counter()
-    backend_result = run_isolated_indicator(source_bytes, bars)
+    backend_result = run_isolated_indicator(
+        source_bytes,
+        bars,
+        semantic_profile="strict_5x",
+    )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     plots_csv = out_dir / "plots.csv"
     t0 = time.perf_counter()

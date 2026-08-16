@@ -118,7 +118,7 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
     )
     monkeypatch.setattr(
         "openpine.runtime.isolated_run.run_isolated_indicator",
-        lambda source, bars: SimpleNamespace(
+        lambda source, bars, **kwargs: SimpleNamespace(
             plots=[(60_000, 0, 10.0, "plot"), (120_000, 1, 11.0, "plot")]
         ),
     )

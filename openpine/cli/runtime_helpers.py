@@ -92,6 +92,7 @@ def _build_strategy_backtest_config(
     capture_to_ms: int | None,
     config_cls,
 ):
+    from openpine.admission import admit_semantic_profile
     from openpine.runtime.declaration_args import normalize_strategy_declaration_args
 
     decl_args = normalize_strategy_declaration_args(decl_args)
@@ -151,6 +152,10 @@ def _build_strategy_backtest_config(
         "capture_plots": capture_plots,
         "plot_from_ms": capture_from_ms if capture_plots else None,
         "plot_to_ms": capture_to_ms if capture_plots else None,
+        "semantic_profile": admit_semantic_profile(
+            profile=getattr(strategy, "semantic_profile", None),
+            source="backtest",
+        ).value,
     }
     supported = set(inspect.signature(config_cls).parameters)
     return config_cls(
@@ -868,7 +873,11 @@ def _run_indicator_plot_runtime(
     if isinstance(generated_class, (bytes, bytearray)):
         from openpine.runtime.isolated_run import run_isolated_indicator
 
-        backend_result = run_isolated_indicator(bytes(generated_class), bars)
+        backend_result = run_isolated_indicator(
+            bytes(generated_class),
+            bars,
+            semantic_profile="strict_5x",
+        )
         return backend_result, perf_counter() - t0
     config = _build_indicator_plot_config(
         symbol=symbol,
