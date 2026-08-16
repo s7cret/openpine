@@ -181,3 +181,30 @@ def test_worker_kills_fork_bomb() -> None:
     source = "import os\nwhile True:\n    os.fork()\n"
     with pytest.raises(IsolatedWorkerError):
         evaluate_artifact(source.encode("utf-8"), timeout_s=2)
+
+
+def test_isolated_worker_emits_live_intent_tape() -> None:
+    source = textwrap.dedent(
+        """
+        from pinelib.strategy.context import StrategyContext
+        ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+        ctx.entry("L", "long", qty=1)
+        """
+    )
+    result = evaluate_artifact(source.encode("utf-8"), timeout_s=8)
+    tape = result["intent_tape"]
+    assert tape
+    event = tape[0]
+    assert event["schema_id"] == "openpine.intent.v2"
+    assert event["kind"] == "entry"
+    assert event["qty"] == "1"
+    assert event["origin_command_kind"] == "entry.long"
+    assert event["content_hash"]
+    from openpine.runtime.isolated_worker import _TRUSTED_STAGE, _bwrap_argv
+
+    argv = _bwrap_argv()
+    assert all("/home/" not in item for item in argv)
+    assert any(item.endswith("dist-packages") for item in argv)
+    assert _TRUSTED_STAGE is not None
+    assert (_TRUSTED_STAGE / "pinelib").is_dir()
+    assert (_TRUSTED_STAGE / "openpine_contracts").is_dir()

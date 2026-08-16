@@ -8,8 +8,13 @@ scratch, cleared environment. There is no in-process fallback.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import shutil
+import stat
 import subprocess
+import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +55,10 @@ def _denied(tree: ast.AST) -> str | None:
     return None
 
 def _guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+    caller = str((globals or {}).get("__name__") or "")
     root = name.split(".", 1)[0]
+    if caller and caller != "__artifact__":
+        return _REAL_IMPORT(name, globals, locals, fromlist, level)
     if root in FORBIDDEN or (level == 0 and root not in ALLOWED):
         raise ImportError(f"forbidden import: {root}")
     return _REAL_IMPORT(name, globals, locals, fromlist, level)
@@ -113,12 +121,19 @@ def main() -> int:
     if denied:
         json.dump({"ok": False, "error": f"forbidden import: {denied}"}, sys.stdout)
         return 2
-    namespace = {"__builtins__": __builtins__}
-    if isinstance(__builtins__, dict):
-        namespace["__builtins__"] = dict(__builtins__)
-        namespace["__builtins__"]["__import__"] = _guarded_import
+    namespace = {"__name__": "__artifact__"}
+    raw_builtins = __builtins__
+    if isinstance(raw_builtins, dict):
+        ns_builtins = dict(raw_builtins)
     else:
-        namespace["__builtins__"].__import__ = _guarded_import
+        ns_builtins = {
+            name: getattr(raw_builtins, name)
+            for name in dir(raw_builtins)
+            if not name.startswith("_")
+        }
+    ns_builtins["__import__"] = _guarded_import
+    namespace["__builtins__"] = ns_builtins
+    namespace["__import__"] = _guarded_import
     try:
         exec(compile(tree, "<artifact>", "exec"), namespace, namespace)
     except ImportError as exc:
@@ -129,7 +144,15 @@ def main() -> int:
         for key, value in namespace.items()
         if not key.startswith("_")
     }
-    json.dump({"ok": True, "namespace": public, "isolation": _isolation()}, sys.stdout)
+    events = []
+    for value in list(namespace.values()):
+        tape = getattr(value, "intent_tape", None)
+        raw = getattr(tape, "events", None) if tape is not None else None
+        if not raw:
+            continue
+        for item in raw:
+            events.append(_safe(dict(item)))
+    json.dump({"ok": True, "namespace": public, "isolation": _isolation(), "intent_tape": events}, sys.stdout)
     return 0
 
 _REAL_IMPORT = __import__
@@ -140,6 +163,37 @@ if __name__ == "__main__":
 
 class IsolatedWorkerError(RuntimeError):
     """Typed failure from the isolated generated-code worker."""
+
+
+_TRUSTED_STAGE: Path | None = None
+_TRUSTED_NAMES = ("pinelib", "openpine_contracts")
+
+
+def _chmod_tree(root: Path) -> None:
+    root.chmod(0o755)
+    for path in root.rglob("*"):
+        mode = 0o755 if path.is_dir() else 0o644
+        path.chmod(mode | stat.S_IROTH | (stat.S_IXOTH if path.is_dir() else 0))
+
+
+def _stage_trusted_packages() -> list[tuple[str, str]]:
+    global _TRUSTED_STAGE
+    dest_root = Path(
+        f"/usr/local/lib/python{sys.version_info.major}.{sys.version_info.minor}/dist-packages"
+    )
+    if _TRUSTED_STAGE is None:
+        stage = Path(tempfile.mkdtemp(prefix="openpine-trusted-"))
+        stage.chmod(0o755)
+        for name in _TRUSTED_NAMES:
+            spec = importlib.util.find_spec(name)
+            if spec is None or not spec.origin:
+                continue
+            src = Path(spec.origin).resolve().parent
+            target = stage / name
+            shutil.copytree(src, target)
+            _chmod_tree(target)
+        _TRUSTED_STAGE = stage
+    return [(str(_TRUSTED_STAGE), str(dest_root))]
 
 
 def worker_user_available() -> bool:
@@ -164,7 +218,7 @@ def _bwrap_argv() -> list[str]:
     prefix: list[str] = []
     if worker_user_available():
         prefix = ["/usr/bin/sudo", "-n", "-u", WORKER_USER, "--"]
-    return prefix + [
+    argv = prefix + [
         BWRAP,
         "--ro-bind",
         "/usr",
@@ -172,6 +226,10 @@ def _bwrap_argv() -> list[str]:
         "--ro-bind",
         "/lib",
         "/lib",
+    ]
+    for src, dest in _stage_trusted_packages():
+        argv.extend(["--ro-bind", src, dest])
+    return argv + [
         "--size",
         str(TMPFS_BYTES),
         "--tmpfs",
