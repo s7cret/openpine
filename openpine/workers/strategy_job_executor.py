@@ -77,6 +77,7 @@ class RuntimeAdapter(Protocol):
         bars: list[Bar],
         config: BacktestRunConfig,
         resume_state: Any | None = None,
+        htf_bars: list[dict[str, Any]] | None = None,
     ) -> Any: ...
 
 
@@ -104,6 +105,7 @@ class StrategyJobExecutor:
         runtime_adapter: RuntimeAdapter | None = None,
         strategy_loader: StrategyClassLoader | None = None,
         runtime_data_provider: Any | None = None,
+        htf_bars: list[dict[str, Any]] | None = None,
     ) -> None:
         self.registry = registry
         self.orchestrator = orchestrator
@@ -113,6 +115,7 @@ class StrategyJobExecutor:
         self.runtime_adapter = runtime_adapter or BacktestEngineAdapter()
         self.strategy_loader = strategy_loader
         self.runtime_data_provider = runtime_data_provider
+        self.htf_bars = htf_bars
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
     def process(self, job: Job) -> StrategyJobExecutionResult:
@@ -248,7 +251,7 @@ class StrategyJobExecutor:
         if self.strategy_loader is None:
             source = self._stamped_artifact_source(strategy)
             return self.runtime_adapter.run_isolated(
-                source, [bar], config, resume_state=resume_state
+                source, [bar], config, resume_state=resume_state, htf_bars=self.htf_bars
             )
         strategy_class = self.strategy_loader(strategy)
         runtime_data_provider = self.runtime_data_provider
