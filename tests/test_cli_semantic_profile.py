@@ -56,7 +56,7 @@ def test_cli_replay_config_uses_strategy_semantic_profile() -> None:
 def test_cli_isolated_indicator_requires_semantic_profile(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_run(source, bars, *, semantic_profile=None):
+    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -85,7 +85,7 @@ def test_cli_isolated_indicator_requires_semantic_profile(monkeypatch) -> None:
 def test_cli_isolated_indicator_forwards_admitted_profile(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_run(source, bars, *, semantic_profile=None):
+    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -167,4 +167,46 @@ def test_cli_isolated_strategy_forwards_confirmed_htf_bars(monkeypatch) -> None:
         htf_bars=htf_bars,
     )
     assert result.ok is True
+    assert captured["htf_bars"] == htf_bars
+
+
+def test_cli_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        }
+    ]
+
+    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+        captured["htf_bars"] = htf_bars
+        return SimpleNamespace(plots=())
+
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.run_isolated_indicator", fake_run
+    )
+    _run_indicator_plot_runtime(
+        generated_class=b"VALUE = 1\n",
+        bars=[],
+        symbol="BTCUSDT",
+        timeframe="1m",
+        exchange="binance",
+        market_type="spot",
+        provider=SimpleNamespace(),
+        compare_from_ms=None,
+        compare_to_ms=None,
+        progress_every=1,
+        console=SimpleNamespace(),
+        perf_counter=lambda: 0.0,
+        semantic_profile="strict_5x",
+        htf_bars=htf_bars,
+    )
     assert captured["htf_bars"] == htf_bars

@@ -874,6 +874,7 @@ def _run_indicator_plot_runtime(
     console,
     perf_counter,
     semantic_profile: object,
+    htf_bars=None,
 ) -> tuple[object, float]:
     from openpine.admission import admit_semantic_profile
 
@@ -889,6 +890,7 @@ def _run_indicator_plot_runtime(
             bytes(generated_class),
             bars,
             semantic_profile=admitted.value,
+            htf_bars=htf_bars,
         )
         return backend_result, perf_counter() - t0
     config = _build_indicator_plot_config(
@@ -1014,6 +1016,7 @@ def _write_indicator_plot_run_outputs(
         console=console,
         perf_counter=perf_counter,
         semantic_profile=semantic_profile,
+        htf_bars=getattr(prepared, "htf_bars", None),
     )
     plots_csv, plots_rows, timings["export_sec"] = _write_indicator_plot_outputs(
         backend_result=backend_result,
