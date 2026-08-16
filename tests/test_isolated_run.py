@@ -234,3 +234,21 @@ def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyP
     assert applied
     assert min(applied) > int(resume.bar_index)
     assert 0 not in applied
+
+
+def test_isolated_run_forwards_config_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+    from openpine.runtime.isolated_worker import IsolatedWorkerError
+
+    seen: dict[str, object] = {}
+
+    def _capture(source, **kwargs):
+        seen["semantic_profile"] = kwargs.get("semantic_profile")
+        raise IsolatedWorkerError("stop")
+
+    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    cfg = _cfg()
+    cfg.semantic_profile = "strict_5x"
+    with pytest.raises(IsolatedRunError, match="stop"):
+        run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars(), config=cfg)
+    assert seen["semantic_profile"] == "strict_5x"

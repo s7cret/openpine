@@ -181,10 +181,11 @@ def main() -> int:
         if cls is not None:
             try:
                 from pinelib.core import Bar as PineBar, PineRuntime
-                from pinelib.core.types import SymbolInfo, TimeframeInfo
+                from pinelib.core.types import RuntimeConfig, SymbolInfo, TimeframeInfo
                 rt = PineRuntime(
                     symbol_info=SymbolInfo(tickerid="S"),
                     timeframe=TimeframeInfo(value="1m", interval_ms=60000, isminutes=True, multiplier=1),
+                    config=RuntimeConfig(semantic_profile=request.get("semantic_profile")),
                 )
             except Exception as exc:
                 json.dump({"ok": False, "error": f"pine runtime: {exc}"}, sys.stdout)
@@ -249,7 +250,7 @@ def main() -> int:
             "value": _plot_value(getattr(item, "value", None)),
             "title": str(getattr(item, "title", "")),
         })
-    json.dump({"ok": True, "namespace": public, "isolation": _isolation(), "intent_tape": events, "plots": plots}, sys.stdout)
+    json.dump({"ok": True, "namespace": public, "isolation": _isolation(), "intent_tape": events, "plots": plots, "semantic_profile": request.get("semantic_profile")}, sys.stdout)
     return 0
 
 _REAL_IMPORT = __import__

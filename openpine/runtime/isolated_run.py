@@ -22,6 +22,20 @@ class IsolatedRunError(RuntimeError):
     """Isolated artifact run could not produce a replayable live tape."""
 
 
+def _semantic_profile(config: Any) -> str:
+    from openpine_contracts import SemanticProfile
+
+    raw = getattr(config, "semantic_profile", None)
+    if raw is None or str(raw).strip() == "":
+        return SemanticProfile.LEGACY_4X.value
+    if isinstance(raw, SemanticProfile):
+        return raw.value
+    try:
+        return SemanticProfile(str(raw)).value
+    except ValueError as exc:
+        raise IsolatedRunError(f"semantic_profile {raw!r} is unknown") from exc
+
+
 class _ReplayLive:
     def __init__(self, params: dict[str, Any], runtime: Any, ctx: Any) -> None:
         self.ctx = ctx
@@ -55,7 +69,11 @@ def run_isolated_artifact(
             }
             for bar in bars
         ]
-        payload = evaluate_artifact(source, bars=bar_payloads)
+        payload = evaluate_artifact(
+            source,
+            bars=bar_payloads,
+            semantic_profile=_semantic_profile(config),
+        )
         tape = require_live_tape(list(payload.get("intent_tape") or []))
     except (IsolatedWorkerError, IntentReplayError) as exc:
         raise IsolatedRunError(str(exc)) from exc

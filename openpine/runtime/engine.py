@@ -55,6 +55,7 @@ class BacktestRunConfig:
     capture_plots: bool = False
     plot_from_ms: int | None = None
     plot_to_ms: int | None = None
+    semantic_profile: str = "legacy_4x"
 
 
 @dataclass(frozen=True)
@@ -473,6 +474,7 @@ class BacktestEngineAdapter:
             content_hash_enabled=config.content_hash_enabled,
             collect_events=config.collect_events,
             collect_order_lifecycle=config.collect_order_lifecycle,
+            semantic_profile=getattr(config, "semantic_profile", "legacy_4x"),
         )
         engine_config.exchange = config.exchange
         engine_config.market_type = config.market_type

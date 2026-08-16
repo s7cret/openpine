@@ -339,3 +339,12 @@ def test_isolated_worker_emits_plot_records() -> None:
     assert plots[0]["bar_index"] == 0
     assert isinstance(plots[0]["value"], str)
     assert plots[0]["value"] == "100"
+
+
+def test_isolated_worker_echoes_semantic_profile() -> None:
+    result = evaluate_artifact(
+        b"VALUE = 1\n",
+        semantic_profile="strict_5x",
+        timeout_s=5,
+    )
+    assert result["semantic_profile"] == "strict_5x"
