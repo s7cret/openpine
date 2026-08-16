@@ -301,9 +301,18 @@ def test_runtime_engine_artifact_import_selection_and_adapter_edges(monkeypatch,
     original_adapt_generated_strategy = rt._adapt_generated_strategy
     monkeypatch.setattr(artifacts_mod, "ArtifactStore", GeneratedStore)
     monkeypatch.setattr(rt, "_adapt_generated_strategy", lambda cls, **kwargs: ("adapted", cls.__name__, kwargs))
-    adapted = rt.load_strategy_class_from_artifact(
-        "src", "art", symbol="BTC", timeframe="1m", unsafe_in_process=True
+    with pytest.raises(rt.BacktestArtifactError, match="in-process"):
+        rt.load_strategy_class_from_artifact(
+            "src", "art", symbol="BTC", timeframe="1m", unsafe_in_process=True
+        )
+    module = rt._load_generated_module(
+        artifact_dir / "generated_strategy.py",
+        "src",
+        "art",
+        unsafe_in_process=True,
     )
+    selected = rt._select_strategy_class(module, {"compile_status": "OK"})
+    adapted = rt._adapt_generated_strategy(selected, symbol="BTC", timeframe="1m")
     assert adapted[0] == "adapted"
     monkeypatch.setattr(rt, "_adapt_generated_strategy", original_adapt_generated_strategy)
 

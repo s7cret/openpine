@@ -90,6 +90,10 @@ def load_strategy_class_from_artifact(
     unsafe_in_process: bool = False,
 ) -> type:
     """Load the BacktestEngine-compatible strategy class from a compiled artifact."""
+    if unsafe_in_process:
+        raise BacktestArtifactError(
+            "in-process generated import is forbidden; use isolated worker"
+        )
     from openpine.artifacts import ArtifactStore
 
     store = ArtifactStore()
@@ -135,6 +139,10 @@ def load_generated_class_from_artifact(
     unsafe_in_process: bool = False,
 ) -> type:
     """Load the raw AST2Python generated class from a compiled artifact."""
+    if unsafe_in_process:
+        raise BacktestArtifactError(
+            "in-process generated import is forbidden; use isolated worker"
+        )
     from openpine.artifacts import ArtifactStore
 
     store = ArtifactStore()

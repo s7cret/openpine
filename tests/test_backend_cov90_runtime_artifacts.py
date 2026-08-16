@@ -40,14 +40,20 @@ def test_runtime_artifact_loading_edges(monkeypatch, tmp_path):
     import openpine.artifacts as artifacts
 
     monkeypatch.setattr(artifacts, "ArtifactStore", Store)
-    cls = rt.load_strategy_class_from_artifact(
-        "src", "ok", symbol="BTCUSDT", timeframe="1m", unsafe_in_process=True
+    module = rt._load_generated_module(
+        artifact_dir / "generated_strategy.py",
+        "src",
+        "ok",
+        unsafe_in_process=True,
     )
+    cls = rt._select_strategy_class(module, artifact.get("compile_meta", {}))
     assert cls.__name__ == "CustomStrategy"
-    assert (
-        rt.load_generated_class_from_artifact("src", "ok", unsafe_in_process=True).__name__
-        == "CustomStrategy"
-    )
+    with pytest.raises(rt.BacktestArtifactError, match="in-process"):
+        rt.load_strategy_class_from_artifact(
+            "src", "ok", symbol="BTCUSDT", timeframe="1m", unsafe_in_process=True
+        )
+    with pytest.raises(rt.BacktestArtifactError, match="in-process"):
+        rt.load_generated_class_from_artifact("src", "ok", unsafe_in_process=True)
     for artifact_id in ["missing-artifact", "bad-status", "unsafe", "missing-file"]:
         with pytest.raises(rt.BacktestArtifactError):
             rt.load_generated_class_from_artifact("src", artifact_id)
