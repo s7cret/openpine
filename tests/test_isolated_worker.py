@@ -262,3 +262,47 @@ def test_isolated_worker_drives_generated_process_bar() -> None:
     assert tape[0]["kind"] == "entry"
     assert tape[0]["bar_index"] == 2
     assert tape[0]["qty"] == "1"
+
+
+REAL_SOURCE = textwrap.dedent(
+    """
+    from __future__ import annotations
+    from ast2python.errors import RuntimeContractError
+    from pinelib.strategy.context import StrategyContext
+
+    REQUIRED_RUNTIME_CONTRACT = "1.4"
+
+    class GeneratedStrategy:
+        def __init__(self, params=None, runtime=None):
+            self.params = params or {}
+            self.rt = runtime
+            if self.rt is None:
+                raise RuntimeContractError("runtime is required for generated modules")
+            if getattr(self.rt, "contract_version", None) != REQUIRED_RUNTIME_CONTRACT:
+                raise RuntimeContractError("contract mismatch")
+            self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+            self.ctx.attach_runtime(self.rt)
+
+        def _process_bar(self, bar):
+            if getattr(bar, "time", None) != 1002:
+                return
+            self.ctx.entry("L", "long", qty=1)
+    """
+)
+
+
+def test_isolated_worker_runs_real_generated_contract() -> None:
+    result = evaluate_artifact(
+        REAL_SOURCE.encode("utf-8"),
+        bars=_bar_dicts(),
+        timeout_s=8,
+    )
+    tape = result["intent_tape"]
+    assert tape
+    assert tape[0]["schema_id"] == "openpine.intent.v2"
+    assert tape[0]["kind"] == "entry"
+    assert tape[0]["qty"] == "1"
+    from openpine.runtime.isolated_worker import _TRUSTED_STAGE
+
+    assert _TRUSTED_STAGE is not None
+    assert (_TRUSTED_STAGE / "ast2python").is_dir()

@@ -39,6 +39,7 @@ ALLOWED = {
     "os", "math", "json", "decimal", "datetime", "collections", "typing",
     "abc", "enum", "dataclasses", "functools", "itertools", "operator",
     "re", "copy", "numbers", "pinelib", "openpine_contracts",
+    "__future__", "ast2python",
 }
 
 def _denied(tree: ast.AST) -> str | None:
@@ -163,27 +164,52 @@ def main() -> int:
                 cls = value
                 break
         if cls is not None:
-            class _RT:
-                def __init__(self):
-                    self.bar_index = -1
-                    self.current_bar = None
-            rt = _RT()
+            try:
+                from pinelib.core import Bar as PineBar, PineRuntime
+                from pinelib.core.types import SymbolInfo, TimeframeInfo
+                rt = PineRuntime(
+                    symbol_info=SymbolInfo(tickerid="S"),
+                    timeframe=TimeframeInfo(value="1m", interval_ms=60000, isminutes=True, multiplier=1),
+                )
+            except Exception as exc:
+                json.dump({"ok": False, "error": f"pine runtime: {exc}"}, sys.stdout)
+                return 2
             try:
                 inst = cls(params={}, runtime=rt)
             except TypeError:
                 inst = cls()
+            except Exception as exc:
+                json.dump({"ok": False, "error": str(exc)}, sys.stdout)
+                return 2
             events = []
             for i, raw_bar in enumerate(bars):
-                bar = type("Bar", (), dict(raw_bar))()
-                rt.bar_index = i
-                rt.current_bar = bar
+                try:
+                    bar = PineBar(
+                        time=int(raw_bar.get("time", 0)),
+                        open=float(raw_bar.get("open", 0)),
+                        high=float(raw_bar.get("high", 0)),
+                        low=float(raw_bar.get("low", 0)),
+                        close=float(raw_bar.get("close", 0)),
+                        volume=float(raw_bar.get("volume") or 0),
+                    )
+                    rt.begin_bar(bar)
+                except Exception:
+                    bar = type("Bar", (), dict(raw_bar))()
+                    rt.bar_index = i
+                    rt.current_bar = bar
                 ctx = getattr(inst, "ctx", None)
-                if ctx is not None:
+                if ctx is not None and getattr(ctx, "_runtime", None) is None:
                     ctx._runtime = rt
                 try:
                     inst._process_bar(bar, i)
                 except TypeError:
                     inst._process_bar(bar)
+                end_bar = getattr(rt, "end_bar", None)
+                if callable(end_bar):
+                    try:
+                        end_bar()
+                    except Exception:
+                        pass
             ctx = getattr(inst, "ctx", None)
             tape = getattr(ctx, "intent_tape", None)
             raw = getattr(tape, "events", None) if tape is not None else None
@@ -203,7 +229,7 @@ class IsolatedWorkerError(RuntimeError):
 
 
 _TRUSTED_STAGE: Path | None = None
-_TRUSTED_NAMES = ("pinelib", "openpine_contracts")
+_TRUSTED_NAMES = ("pinelib", "openpine_contracts", "ast2python")
 
 
 def _chmod_tree(root: Path) -> None:
