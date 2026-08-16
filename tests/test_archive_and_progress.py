@@ -25,6 +25,7 @@ async def test_strategy_archive_disables_and_blocks_start_enable(tmp_path):
         artifact_id="artifact_1",
         symbol="SOLUSDT",
         timeframe="1D",
+        semantic_profile="strict_5x",
     )
     registry.set_enabled(strategy.strategy_id, True)
     registry.update_status(strategy.strategy_id, "running")

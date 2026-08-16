@@ -28,6 +28,16 @@ log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/strategies", tags=["strategies"])
 
 
+def _require_admitted_semantic_profile(strategy: object) -> None:
+    from openpine_contracts import AdmitError
+    from openpine.admission import require_strategy_semantic_profile
+
+    try:
+        require_strategy_semantic_profile(strategy)
+    except AdmitError as exc:
+        raise HTTPException(403, str(exc)) from exc
+
+
 def _activate_registry_strategy(
     registry: SQLiteStrategyRegistry,
     strategy_id: str,
@@ -233,6 +243,18 @@ async def update_strategy(
             ).value
         except AdmitError as exc:
             raise HTTPException(403, str(exc)) from exc
+    if updates.get("enabled"):
+        from types import SimpleNamespace
+
+        _require_admitted_semantic_profile(
+            SimpleNamespace(
+                mode=updates.get("mode", getattr(s, "mode", None)),
+                semantic_profile=updates.get(
+                    "semantic_profile", getattr(s, "semantic_profile", None)
+                ),
+                allow_legacy=getattr(s, "allow_legacy", False),
+            )
+        )
     atomic_patch = getattr(registry, "patch_strategy_atomic", None)
     if callable(atomic_patch):
         try:
@@ -325,6 +347,9 @@ async def strategy_action(
             raise HTTPException(
                 400, "Cannot start strategy in error state. Clear error first."
             )
+    if action in {"start", "enable"}:
+        _require_admitted_semantic_profile(s)
+    if action == "start":
         try:
             with guarded_strategy_activation(state):
                 _activate_registry_strategy(registry, strategy_id, status="running")
@@ -718,11 +743,13 @@ async def strategy_enable(
                 strategy = registry.get_strategy(strategy_id)
                 if getattr(strategy, "archived", False):
                     raise HTTPException(400, "Archived strategy cannot be enabled")
+                _require_admitted_semantic_profile(strategy)
                 _activate_registry_strategy(registry, strategy_id)
         else:
             strategy = registry.get_strategy(strategy_id)
             if getattr(strategy, "archived", False):
                 raise HTTPException(400, "Archived strategy cannot be enabled")
+            _require_admitted_semantic_profile(strategy)
             _activate_registry_strategy(registry, strategy_id)
         log.info("strategy_enabled", strategy_id=strategy_id)
         return {"strategy_id": strategy_id, "enabled": "true", "status": "ok"}

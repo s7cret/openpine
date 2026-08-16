@@ -794,7 +794,7 @@ async def test_dashboard_metadata_failure_is_explicitly_degraded() -> None:
 @pytest.mark.asyncio
 async def test_strategy_start_and_enable_are_blocked_while_worker_is_unready() -> None:
     calls: list[tuple[str, object]] = []
-    strategy = SimpleNamespace(strategy_id="s1", archived=False, status="paused")
+    strategy = SimpleNamespace(strategy_id="s1", archived=False, status="paused", mode="paper", semantic_profile="strict_5x")
 
     class Registry:
         def get_strategy(self, _strategy_id):
@@ -834,7 +834,7 @@ async def test_strategy_start_and_enable_are_blocked_while_worker_is_unready() -
 @pytest.mark.asyncio
 async def test_strategy_patch_enabled_true_cannot_bypass_worker_guard() -> None:
     calls: list[tuple[str, object]] = []
-    strategy = SimpleNamespace(strategy_id="s1", archived=False, enabled=False, status="paused")
+    strategy = SimpleNamespace(strategy_id="s1", archived=False, enabled=False, status="paused", mode="paper", semantic_profile="strict_5x")
 
     class Registry:
         def get_strategy(self, _strategy_id):
@@ -895,6 +895,7 @@ def test_enable_race_cannot_win_after_worker_fail_safe(tmp_path: Path, monkeypat
         artifact_id="artifact-1",
         symbol="BTCUSDT",
         timeframe="1m",
+        semantic_profile="strict_5x",
     )
     guard_passed = threading.Event()
     release_guard = threading.Event()
@@ -1270,7 +1271,7 @@ def test_legacy_unsupervised_worker_fails_closed_without_child_health_evidence()
 
 @pytest.mark.asyncio
 async def test_dedicated_enable_translates_late_circuit_race_to_http_503() -> None:
-    strategy = SimpleNamespace(strategy_id="s1", archived=False, status="paused")
+    strategy = SimpleNamespace(strategy_id="s1", archived=False, status="paused", mode="paper", semantic_profile="strict_5x")
 
     class Registry:
         def get_strategy(self, _strategy_id):
@@ -1320,6 +1321,7 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
         params_json="{}",
         params_hash="hash",
         mode="paper",
+        semantic_profile="strict_5x",
         enabled=False,
         archived=False,
         status="paused",

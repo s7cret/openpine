@@ -29,6 +29,7 @@ def _strategy(strategy_id: str = "s1", *, status: str = "paused", enabled: bool 
         enabled=enabled,
         created_at=1,
         updated_at=2,
+        semantic_profile="strict_5x",
     )
 
 

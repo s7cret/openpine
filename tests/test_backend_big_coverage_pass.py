@@ -96,7 +96,7 @@ class FakeStrategy:
     status: str = "paused"
     created_at: int = 1
     updated_at: int = 2
-    semantic_profile: str | None = None
+    semantic_profile: str | None = "strict_5x"
 
 
 class FakeStrategyRegistry:
