@@ -64,12 +64,36 @@ class _ReplayLive:
         return
 
 
+def _stamp_confirmed_htf_bars(htf_bars: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    if not htf_bars:
+        return []
+    stamped: list[dict[str, Any]] = []
+    for item in htf_bars:
+        if not isinstance(item, dict) or item.get("time_close") is None:
+            raise IsolatedRunError("request.security requires confirmed HTF bars")
+        stamped.append(
+            {
+                "symbol": str(item.get("symbol") or ""),
+                "timeframe": str(item.get("timeframe") or ""),
+                "time": int(item.get("time", 0)),
+                "time_close": int(item["time_close"]),
+                "open": float(item.get("open", 0)),
+                "high": float(item.get("high", 0)),
+                "low": float(item.get("low", 0)),
+                "close": float(item.get("close", 0)),
+                "volume": float(item.get("volume") or 0),
+            }
+        )
+    return stamped
+
+
 def run_isolated_artifact(
     source: bytes,
     *,
     bars: list[Any],
     config: Any,
     resume_state: Any | None = None,
+    htf_bars: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     try:
         bar_payloads = [
@@ -86,6 +110,7 @@ def run_isolated_artifact(
             source,
             bars=bar_payloads,
             semantic_profile=_semantic_profile(config),
+            htf_bars=_stamp_confirmed_htf_bars(htf_bars),
         )
         tape = require_live_tape(list(payload.get("intent_tape") or []))
     except (IsolatedWorkerError, IntentReplayError) as exc:
@@ -128,11 +153,13 @@ def run_isolated_from_store(
     *,
     bars: list[Any],
     config: Any,
+    htf_bars: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return run_isolated_artifact(
         capture_generated_source(source_id, artifact_id),
         bars=bars,
         config=config,
+        htf_bars=htf_bars,
     )
 
 
