@@ -566,6 +566,7 @@ class SQLiteStrategyRegistry:
             "market_type",
             "params_json",
             "params_hash",
+            "semantic_profile",
         }
         unknown = set(updates) - allowed
         if unknown:

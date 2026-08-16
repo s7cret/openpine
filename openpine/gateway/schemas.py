@@ -168,6 +168,7 @@ class StrategyUpdate(BaseModel):
     mode: StrategyMode | None = None
     enabled: bool | None = None
     archived: bool | None = None
+    semantic_profile: str | None = None
 
     _validate_non_blank = field_validator(
         "name", "symbol", "timeframe", "exchange", "market_type"

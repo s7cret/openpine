@@ -222,6 +222,17 @@ async def update_strategy(
         updates["params_hash"] = hashlib.sha256(
             updates["params_json"].encode()
         ).hexdigest()[:16]
+    if "semantic_profile" in updates:
+        from openpine_contracts import AdmitError
+        from openpine.admission import admit_semantic_profile
+
+        try:
+            updates["semantic_profile"] = admit_semantic_profile(
+                profile=updates["semantic_profile"],
+                source="generated_artifact.v2",
+            ).value
+        except AdmitError as exc:
+            raise HTTPException(403, str(exc)) from exc
     atomic_patch = getattr(registry, "patch_strategy_atomic", None)
     if callable(atomic_patch):
         try:
@@ -269,6 +280,7 @@ async def update_strategy(
         "exchange",
         "market_type",
         "params_json",
+        "semantic_profile",
     ):
         if field in updates:
             simple_fields[field] = updates[field]
