@@ -64,21 +64,33 @@ def test_worker_rejects_malformed_and_nonzero_output(
 
     import openpine.runtime.isolated_worker as worker
 
-    monkeypatch.setattr(
-        worker.subprocess,
-        "run",
-        lambda *args, **kwargs: SimpleNamespace(
-            returncode=0, stdout="not-json", stderr=""
-        ),
-    )
+    real_popen = worker.subprocess.Popen
+
+    def _popen_malformed(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and worker.BWRAP in cmd:
+            return SimpleNamespace(
+                pid=0,
+                returncode=0,
+                communicate=lambda input=None, timeout=None: ("not-json", ""),
+                kill=lambda: None,
+            )
+        return real_popen(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(worker.subprocess, "Popen", _popen_malformed)
     with pytest.raises(IsolatedWorkerError, match="malformed"):
         evaluate_artifact(b"VALUE = 1\n", timeout_s=1)
 
-    monkeypatch.setattr(
-        worker.subprocess,
-        "run",
-        lambda *args, **kwargs: SimpleNamespace(returncode=1, stdout="", stderr="boom"),
-    )
+    def _popen_boom(cmd, *args, **kwargs):
+        if isinstance(cmd, list) and worker.BWRAP in cmd:
+            return SimpleNamespace(
+                pid=0,
+                returncode=1,
+                communicate=lambda input=None, timeout=None: ("", "boom"),
+                kill=lambda: None,
+            )
+        return real_popen(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(worker.subprocess, "Popen", _popen_boom)
     with pytest.raises(IsolatedWorkerError, match="boom"):
         evaluate_artifact(b"VALUE = 1\n", timeout_s=1)
 

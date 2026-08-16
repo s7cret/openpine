@@ -13,6 +13,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from openpine.runtime.cgroup import CgroupError, attach_worker_tree, prepare_worker_cgroup
+
 BWRAP = "/usr/bin/bwrap"
 SANDBOX_PYTHON = "/usr/bin/python3"
 WORKER_USER = "openpine-worker"
@@ -218,6 +220,7 @@ def evaluate_artifact(
     timeout_s: float = 5.0,
     stack_id: str = "openpine-5.0",
     semantic_profile: str = "legacy_4x",
+    cgroup_dir: str | Path | None = None,
 ) -> dict[str, Any]:
     if len(source) > 500_000:
         raise IsolatedWorkerError("artifact source exceeds size limit")
@@ -225,35 +228,53 @@ def evaluate_artifact(
         raise IsolatedWorkerError("stack_id mismatch")
     if semantic_profile not in {"legacy_4x", "strict_5x"}:
         raise IsolatedWorkerError("semantic_profile required")
+    if cgroup_dir is not None:
+        try:
+            prepare_worker_cgroup(cgroup_dir)
+        except CgroupError as exc:
+            raise IsolatedWorkerError(str(exc)) from exc
+    payload = json.dumps(
+        {
+            "source": source.decode("utf-8"),
+            "stack_id": stack_id,
+            "semantic_profile": semantic_profile,
+        }
+    )
     try:
         # Immutable argv: trusted bwrap + /usr/bin/python3. No shell, no user path.
-        completed = subprocess.run(  # noqa: S603
+        proc = subprocess.Popen(  # noqa: S603
             _bwrap_argv(),
-            input=json.dumps(
-                {
-                    "source": source.decode("utf-8"),
-                    "stack_id": stack_id,
-                    "semantic_profile": semantic_profile,
-                }
-            ),
-            capture_output=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout_s,
-            check=False,
         )
+    except OSError as exc:
+        raise IsolatedWorkerError("worker spawn failed") from exc
+    if cgroup_dir is not None:
+        try:
+            attach_worker_tree(cgroup_dir, proc.pid)
+        except CgroupError as exc:
+            proc.kill()
+            proc.communicate()
+            raise IsolatedWorkerError(str(exc)) from exc
+    try:
+        stdout, stderr = proc.communicate(input=payload, timeout=timeout_s)
     except subprocess.TimeoutExpired as exc:
+        proc.kill()
+        proc.communicate()
         raise IsolatedWorkerError("timeout") from exc
-    if len(completed.stdout) > 1_000_000 or len(completed.stderr) > 1_000_000:
+    completed_stdout = stdout or ""
+    completed_stderr = stderr or ""
+    if len(completed_stdout) > 1_000_000 or len(completed_stderr) > 1_000_000:
         raise IsolatedWorkerError("excessive worker output")
-    if completed.returncode != 0:
-        detail = completed.stdout.strip() or completed.stderr.strip() or "worker failed"
+    if proc.returncode != 0:
+        detail = completed_stdout.strip() or completed_stderr.strip() or "worker failed"
         raise IsolatedWorkerError(detail)
     try:
-        payload = json.loads(completed.stdout)
+        result = json.loads(completed_stdout)
     except json.JSONDecodeError as exc:
         raise IsolatedWorkerError("malformed worker output") from exc
-    if not payload.get("ok"):
-        raise IsolatedWorkerError(
-            str(payload.get("error") or "worker rejected artifact")
-        )
-    return payload
+    if not result.get("ok"):
+        raise IsolatedWorkerError(str(result.get("error") or "worker rejected artifact"))
+    return result
