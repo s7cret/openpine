@@ -140,7 +140,8 @@ def test_persist_gateway_job_stamps_semantic_profile(tmp_path) -> None:
         semantic_profile="strict_5x",
     )
     assert "semantic_profile:legacy_4x" in store.get("opt-1")["input_artifact_refs"]
-    assert "semantic_profile:strict_5x" in store.get("cmp-1")["input_artifact_refs"]
+    compile_refs = store.get("cmp-1")["input_artifact_refs"]
+    assert not any(str(item).startswith("semantic_profile:") for item in compile_refs)
     assert "semantic_profile:strict_5x" in store.get("bt-1")["input_artifact_refs"]
     assert "semantic_profile:legacy_4x" not in store.get("bt-1")["input_artifact_refs"]
 
