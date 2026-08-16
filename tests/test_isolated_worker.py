@@ -208,3 +208,57 @@ def test_isolated_worker_emits_live_intent_tape() -> None:
     assert _TRUSTED_STAGE is not None
     assert (_TRUSTED_STAGE / "pinelib").is_dir()
     assert (_TRUSTED_STAGE / "openpine_contracts").is_dir()
+
+
+CLASS_SOURCE = textwrap.dedent(
+    """
+    from pinelib.strategy.context import StrategyContext
+
+    class GeneratedStrategy:
+        def __init__(self, params=None, runtime=None):
+            self.params = params or {}
+            self.rt = runtime
+            self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+
+        def _process_bar(self, bar, bar_index=None):
+            idx = self.rt.bar_index if bar_index is None else bar_index
+            if idx != 2:
+                return
+            self.ctx._runtime = type(
+                "RT",
+                (),
+                {
+                    "bar_index": 2,
+                    "current_bar": type("B", (), {"time": getattr(bar, "time", 1002)})(),
+                },
+            )()
+            self.ctx.entry("L", "long", qty=1)
+    """
+)
+
+
+def _bar_dicts() -> list[dict]:
+    return [
+        {
+            "time": 1_000 + i,
+            "open": 10.0 + i,
+            "high": 11.0 + i,
+            "low": 9.0 + i,
+            "close": 10.5 + i,
+        }
+        for i in range(6)
+    ]
+
+
+def test_isolated_worker_drives_generated_process_bar() -> None:
+    result = evaluate_artifact(
+        CLASS_SOURCE.encode("utf-8"),
+        bars=_bar_dicts(),
+        timeout_s=8,
+    )
+    tape = result["intent_tape"]
+    assert tape
+    assert tape[0]["schema_id"] == "openpine.intent.v2"
+    assert tape[0]["kind"] == "entry"
+    assert tape[0]["bar_index"] == 2
+    assert tape[0]["qty"] == "1"

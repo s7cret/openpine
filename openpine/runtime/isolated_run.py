@@ -38,7 +38,17 @@ def run_isolated_artifact(
     config: Any,
 ) -> dict[str, Any]:
     try:
-        payload = evaluate_artifact(source)
+        bar_payloads = [
+            {
+                "time": int(getattr(bar, "time")),
+                "open": float(getattr(bar, "open")),
+                "high": float(getattr(bar, "high")),
+                "low": float(getattr(bar, "low")),
+                "close": float(getattr(bar, "close")),
+            }
+            for bar in bars
+        ]
+        payload = evaluate_artifact(source, bars=bar_payloads)
         tape = require_live_tape(list(payload.get("intent_tape") or []))
     except (IsolatedWorkerError, IntentReplayError) as exc:
         raise IsolatedRunError(str(exc)) from exc

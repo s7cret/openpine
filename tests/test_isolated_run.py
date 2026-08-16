@@ -67,6 +67,38 @@ def test_isolated_run_rejects_artifact_without_tape() -> None:
         run_isolated_artifact(b"VALUE = 1\n", bars=_bars(), config=_cfg())
 
 
+def test_isolated_run_drives_generated_class_to_same_hash() -> None:
+    source = (
+        "from pinelib.strategy.context import StrategyContext\n"
+        "class GeneratedStrategy:\n"
+        "    def __init__(self, params=None, runtime=None):\n"
+        "        self.rt = runtime\n"
+        "        self.ctx = StrategyContext(intent_run_id='run', intent_strategy_id='s')\n"
+        "    def _process_bar(self, bar, bar_index=None):\n"
+        "        idx = self.rt.bar_index if bar_index is None else bar_index\n"
+        "        if idx != 2:\n"
+        "            return\n"
+        "        self.ctx._runtime = type('RT', (), {"
+        "'bar_index': 2, "
+        "'current_bar': type('B', (), {'time': getattr(bar, 'time', 1002)})()"
+        "})()\n"
+        "        self.ctx.entry('L', 'long', qty=1)\n"
+    )
+    result = run_isolated_artifact(source.encode("utf-8"), bars=_bars(), config=_cfg())
+    assert result["intent_tape"][0]["bar_index"] == 2
+
+    class LiveEntry:
+        def __init__(self, params, runtime, ctx):
+            self.ctx = ctx
+
+        def _process_bar(self, bar, bar_index):
+            if bar_index == 2:
+                self.ctx.entry("L", "long", qty=1.0)
+
+    live = BacktestEngine(_cfg()).run(LiveEntry, bars=_bars())
+    assert result["score_ledger_hash"] == live.score_ledger_hash
+
+
 def test_capture_generated_source_uses_bytes_not_later_path(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ) -> None:

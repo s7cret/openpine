@@ -131,6 +131,9 @@ def main() -> int:
             for name in dir(raw_builtins)
             if not name.startswith("_")
         }
+        for name in ("__build_class__", "__name__"):
+            if hasattr(raw_builtins, name):
+                ns_builtins[name] = getattr(raw_builtins, name)
     ns_builtins["__import__"] = _guarded_import
     namespace["__builtins__"] = ns_builtins
     namespace["__import__"] = _guarded_import
@@ -152,6 +155,40 @@ def main() -> int:
             continue
         for item in raw:
             events.append(_safe(dict(item)))
+    bars = request.get("bars") or []
+    if bars:
+        cls = None
+        for value in namespace.values():
+            if isinstance(value, type) and callable(getattr(value, "_process_bar", None)):
+                cls = value
+                break
+        if cls is not None:
+            class _RT:
+                def __init__(self):
+                    self.bar_index = -1
+                    self.current_bar = None
+            rt = _RT()
+            try:
+                inst = cls(params={}, runtime=rt)
+            except TypeError:
+                inst = cls()
+            events = []
+            for i, raw_bar in enumerate(bars):
+                bar = type("Bar", (), dict(raw_bar))()
+                rt.bar_index = i
+                rt.current_bar = bar
+                ctx = getattr(inst, "ctx", None)
+                if ctx is not None:
+                    ctx._runtime = rt
+                try:
+                    inst._process_bar(bar, i)
+                except TypeError:
+                    inst._process_bar(bar)
+            ctx = getattr(inst, "ctx", None)
+            tape = getattr(ctx, "intent_tape", None)
+            raw = getattr(tape, "events", None) if tape is not None else None
+            if raw:
+                events = [_safe(dict(item)) for item in raw]
     json.dump({"ok": True, "namespace": public, "isolation": _isolation(), "intent_tape": events}, sys.stdout)
     return 0
 
@@ -279,6 +316,7 @@ def evaluate_artifact(
     stack_id: str = "openpine-5.0",
     semantic_profile: str = "legacy_4x",
     cgroup_dir: str | Path | None = None,
+    bars: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if len(source) > 500_000:
         raise IsolatedWorkerError("artifact source exceeds size limit")
@@ -296,6 +334,7 @@ def evaluate_artifact(
             "source": source.decode("utf-8"),
             "stack_id": stack_id,
             "semantic_profile": semantic_profile,
+            "bars": bars or [],
         }
     )
     try:
