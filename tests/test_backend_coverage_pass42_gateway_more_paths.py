@@ -47,6 +47,7 @@ def _strategy(**overrides):
         params_json='{"length": 7}',
         enabled=True,
         status="running",
+        semantic_profile="strict_5x",
     )
     values.update(overrides)
     return SimpleNamespace(**values)

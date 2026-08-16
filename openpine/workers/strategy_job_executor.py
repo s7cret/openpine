@@ -14,6 +14,7 @@ from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_ti
 
 from openpine.data.orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
+from openpine.admission import require_strategy_semantic_profile
 from openpine.exchange_metadata import default_qty_rounding_mode, default_qty_step
 from openpine.jobs import Job, JobScheduler, JobType
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
@@ -459,6 +460,7 @@ def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunCo
         "content_hash_enabled": False,
         "collect_events": False,
         "collect_order_lifecycle": False,
+        "semantic_profile": require_strategy_semantic_profile(strategy).value,
     }
     supported = set(inspect.signature(BacktestRunConfig).parameters)
     return BacktestRunConfig(

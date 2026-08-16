@@ -105,6 +105,7 @@ def _strategy(**overrides):
         status="running",
         created_at=1,
         updated_at=2,
+        semantic_profile="strict_5x",
     )
     values.update(overrides)
     return SimpleNamespace(**values)

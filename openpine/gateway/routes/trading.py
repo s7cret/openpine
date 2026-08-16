@@ -44,11 +44,17 @@ def _activate_registry_strategy(
     registry.set_enabled(strategy_id, True)
 
 
-def _require_semantic_profile(*, profile: object | None, source: str, allow_legacy: bool = False) -> None:
+def _require_semantic_profile(*, profile: object | None, source: str, allow_legacy: bool = False):
     try:
-        admit_semantic_profile(profile=profile, source=source, allow_legacy=allow_legacy)
+        return admit_semantic_profile(profile=profile, source=source, allow_legacy=allow_legacy)
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc
+
+
+def _stamp_strategy_profile(strategy: Any, admitted: Any) -> None:
+    if strategy is None or admitted is None:
+        return
+    setattr(strategy, "semantic_profile", getattr(admitted, "value", admitted))
 
 
 @router.post("/paper/start", response_model=TradingStatusResponse)
@@ -61,7 +67,7 @@ async def start_paper(
         admit_run(mode="paper", stack_id=DEFAULT_STACK_ID)
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc
-    _require_semantic_profile(
+    admitted = _require_semantic_profile(
         profile=getattr(body, "semantic_profile", None),
         source="paper",
         allow_legacy=bool(getattr(body, "allow_legacy", False)),
@@ -86,6 +92,7 @@ async def start_paper(
     except ArchivedStrategyActivationError as exc:
         raise HTTPException(400, str(exc)) from exc
 
+    _stamp_strategy_profile(s, admitted)
     log.info("paper_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
         strategy_id=body.strategy_id,
@@ -147,7 +154,7 @@ async def start_live(
         admit_run(mode="live", stack_id=DEFAULT_STACK_ID)
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc
-    _require_semantic_profile(
+    admitted = _require_semantic_profile(
         profile=getattr(body, "semantic_profile", None),
         source="live",
         allow_legacy=bool(getattr(body, "allow_legacy", False)),
@@ -173,6 +180,7 @@ async def start_live(
     except ArchivedStrategyActivationError as exc:
         raise HTTPException(400, str(exc)) from exc
 
+    _stamp_strategy_profile(s, admitted)
     log.info("live_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
         strategy_id=body.strategy_id,

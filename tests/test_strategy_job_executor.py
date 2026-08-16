@@ -20,7 +20,7 @@ class _DummyStrategy:
 
 
 def _strategy() -> StrategyInstance:
-    return StrategyInstance(
+    strategy = StrategyInstance(
         strategy_id="strategy-1",
         name="strategy-1",
         pine_id="pine-1",
@@ -35,6 +35,8 @@ def _strategy() -> StrategyInstance:
         mode="paper",
         enabled=True,
     )
+    strategy.semantic_profile = "strict_5x"
+    return strategy
 
 
 def _bar(open_time: int = 0) -> Bar:

@@ -301,11 +301,23 @@ class LiveStrategyRunner:
                 parse_timeframe,
             )
 
+            from openpine.admission import require_strategy_semantic_profile
             from openpine.runtime.engine import (
                 BacktestEngineAdapter,
                 BacktestRunConfig,
             )
             from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
+            from openpine_contracts import AdmitError
+
+            try:
+                admitted_profile = require_strategy_semantic_profile(strategy)
+            except AdmitError as exc:
+                log.error(
+                    "live_runner.semantic_profile_denied",
+                    strategy_id=strategy.strategy_id,
+                    error=str(exc),
+                )
+                return None
 
             source = capture_generated_source(
                 strategy.pine_id,
@@ -441,6 +453,7 @@ class LiveStrategyRunner:
                 collect_events=True,
                 collect_order_lifecycle=True,
                 capture_plots=False,
+                semantic_profile=admitted_profile.value,
             )
 
             adapter = BacktestEngineAdapter()

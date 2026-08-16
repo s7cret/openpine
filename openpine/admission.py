@@ -110,5 +110,15 @@ def admit_semantic_profile(
     return resolved
 
 
+def require_strategy_semantic_profile(strategy: Any) -> SemanticProfile:
+    mode = str(getattr(strategy, "mode", "") or "")
+    source = mode if mode in {"live", "paper"} else "backtest"
+    return admit_semantic_profile(
+        profile=getattr(strategy, "semantic_profile", None),
+        source=source,
+        allow_legacy=bool(getattr(strategy, "allow_legacy", False)),
+    )
+
+
 def require_admitted(**kwargs: Any) -> AdmitResult:
     return admit_run(**kwargs)

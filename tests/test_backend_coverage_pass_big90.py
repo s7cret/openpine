@@ -30,6 +30,7 @@ def _strategy(**kw):
         enabled=True,
         status="running",
         params_json="{}",
+        semantic_profile="strict_5x",
     )
     base.update(kw)
     return SimpleNamespace(**base)

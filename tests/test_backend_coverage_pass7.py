@@ -156,6 +156,7 @@ class _FakeStrategy:
     name = "Strategy"
     enabled = True
     status = "running"
+    semantic_profile = "strict_5x"
 
 
 def test_live_runner_helpers_and_order_processing(monkeypatch):
