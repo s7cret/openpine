@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from openpine.admission import DEFAULT_STACK_ID, admit_run
 from openpine._compat import structlog
 from openpine.jobs.persist import JobV1Error
-from openpine_contracts import AdmitError
+from openpine_contracts import AdmitError, SemanticProfile
 
 log = structlog.get_logger(__name__)
 
@@ -25,13 +25,21 @@ def persist_gateway_job(state: object, **kwargs: Any) -> dict[str, Any] | None:
     store = getattr(state, "job_store", None)
     if store is None:
         return None
+    kind = kwargs.get("kind")
     profile = kwargs.pop("semantic_profile", None)
-    if profile:
-        refs = list(kwargs.get("input_artifact_refs") or [])
-        token = f"semantic_profile:{profile}"
-        if token not in refs:
-            refs.append(token)
-        kwargs["input_artifact_refs"] = refs
+    if not profile:
+        profile = (
+            SemanticProfile.STRICT_5X
+            if kind == "compile"
+            else SemanticProfile.LEGACY_4X
+        )
+    if isinstance(profile, SemanticProfile):
+        profile = profile.value
+    refs = list(kwargs.get("input_artifact_refs") or [])
+    token = f"semantic_profile:{profile}"
+    if token not in refs:
+        refs.append(token)
+    kwargs["input_artifact_refs"] = refs
     try:
         return store.create(**kwargs)
     except JobV1Error as exc:

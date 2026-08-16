@@ -115,3 +115,25 @@ def test_events_are_ordered_duplicate_safe_and_gap_resyncs(tmp_path) -> None:
     assert gap == []
     assert store.needs_resync(after="999") is True
     assert store.needs_resync(after=events[0]["event_id"]) is False
+
+
+def test_persist_gateway_job_stamps_semantic_profile(tmp_path) -> None:
+    from types import SimpleNamespace
+
+    from openpine.gateway.side_effects import persist_gateway_job
+
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    state = SimpleNamespace(job_store=store)
+    persist_gateway_job(state, job_id="opt-1", kind="optimize", actor="gateway")
+    persist_gateway_job(state, job_id="cmp-1", kind="compile", actor="gateway")
+    persist_gateway_job(
+        state,
+        job_id="bt-1",
+        kind="backtest",
+        actor="gateway",
+        semantic_profile="strict_5x",
+    )
+    assert "semantic_profile:legacy_4x" in store.get("opt-1")["input_artifact_refs"]
+    assert "semantic_profile:strict_5x" in store.get("cmp-1")["input_artifact_refs"]
+    assert "semantic_profile:strict_5x" in store.get("bt-1")["input_artifact_refs"]
+    assert "semantic_profile:legacy_4x" not in store.get("bt-1")["input_artifact_refs"]
