@@ -36,6 +36,19 @@ def _semantic_profile(config: Any) -> str:
         raise IsolatedRunError(f"semantic_profile {raw!r} is unknown") from exc
 
 
+def _generated_semantic_profile(value: object | None) -> str:
+    from openpine_contracts import SemanticProfile
+
+    if value is None or str(value).strip() == "":
+        return SemanticProfile.STRICT_5X.value
+    if isinstance(value, SemanticProfile):
+        return value.value
+    try:
+        return SemanticProfile(str(value)).value
+    except ValueError as exc:
+        raise IsolatedRunError(f"semantic_profile {value!r} is unknown") from exc
+
+
 class _ReplayLive:
     def __init__(self, params: dict[str, Any], runtime: Any, ctx: Any) -> None:
         self.ctx = ctx
@@ -128,7 +141,12 @@ class IsolatedPlotResult:
         self.plots = plots
 
 
-def run_isolated_indicator(source: bytes, bars: list[Any]) -> IsolatedPlotResult:
+def run_isolated_indicator(
+    source: bytes,
+    bars: list[Any],
+    *,
+    semantic_profile: object | None = None,
+) -> IsolatedPlotResult:
     bar_payloads = [
         {
             "time": int(getattr(bar, "time") if not isinstance(bar, dict) else bar["time"]),
@@ -144,7 +162,11 @@ def run_isolated_indicator(source: bytes, bars: list[Any]) -> IsolatedPlotResult
         for bar in bars
     ]
     try:
-        payload = evaluate_artifact(source, bars=bar_payloads)
+        payload = evaluate_artifact(
+            source,
+            bars=bar_payloads,
+            semantic_profile=_generated_semantic_profile(semantic_profile),
+        )
     except IsolatedWorkerError as exc:
         raise IsolatedRunError(str(exc)) from exc
     records: list[tuple] = []

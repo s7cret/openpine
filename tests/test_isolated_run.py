@@ -252,3 +252,43 @@ def test_isolated_run_forwards_config_semantic_profile(monkeypatch: pytest.Monke
     with pytest.raises(IsolatedRunError, match="stop"):
         run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars(), config=cfg)
     assert seen["semantic_profile"] == "strict_5x"
+
+
+def test_isolated_indicator_forwards_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+    from openpine.runtime.isolated_run import run_isolated_indicator
+    from openpine.runtime.isolated_worker import IsolatedWorkerError
+
+    seen: dict[str, object] = {}
+
+    def _capture(source, **kwargs):
+        seen["semantic_profile"] = kwargs.get("semantic_profile")
+        raise IsolatedWorkerError("stop")
+
+    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    with pytest.raises(IsolatedRunError, match="stop"):
+        run_isolated_indicator(b"VALUE = 1\n", _bars(), semantic_profile="strict_5x")
+    assert seen["semantic_profile"] == "strict_5x"
+
+
+def test_isolated_indicator_defaults_to_strict_5x(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+    from openpine.runtime.isolated_run import IsolatedPlotResult, run_isolated_indicator
+
+    seen: dict[str, object] = {}
+
+    def _ok(source, **kwargs):
+        seen["semantic_profile"] = kwargs.get("semantic_profile")
+        return {"ok": True, "plots": []}
+
+    monkeypatch.setattr(isolated_run, "evaluate_artifact", _ok)
+    result = run_isolated_indicator(b"VALUE = 1\n", _bars())
+    assert isinstance(result, IsolatedPlotResult)
+    assert seen["semantic_profile"] == "strict_5x"
+
+
+def test_isolated_indicator_rejects_unknown_profile() -> None:
+    from openpine.runtime.isolated_run import run_isolated_indicator
+
+    with pytest.raises(IsolatedRunError, match="semantic_profile"):
+        run_isolated_indicator(b"VALUE = 1\n", _bars(), semantic_profile="nope")
