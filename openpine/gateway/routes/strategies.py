@@ -457,19 +457,36 @@ async def strategy_replay(
 ) -> dict[str, object]:
     """Replay a strategy over historical data (async backtest)."""
     import asyncio
+    import time as _time_module
 
+    from openpine.admission import admit_semantic_profile
     from openpine.gateway.schemas import ProgressUpdate
+    from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
     from openpine.gateway.ws_manager import ws_manager
 
+    require_http_admit("backtest")
     try:
         s = registry.get_strategy(strategy_id)
     except KeyError:
         raise HTTPException(404, f"Strategy not found: {strategy_id}")
 
+    admitted = admit_semantic_profile(
+        profile=getattr(s, "semantic_profile", None),
+        source="backtest",
+    )
+    operation_id = f"replay_{strategy_id}_{int(_time_module.time() * 1000)}"
+    persist_gateway_job(
+        state,
+        job_id=operation_id,
+        kind="backtest",
+        actor="gateway",
+        input_artifact_refs=[strategy_id],
+        semantic_profile=admitted.value,
+    )
+
     async def _run_replay():
         try:
             registry.update_status(strategy_id, "running")
-            import time as _time_module
 
             from marketdata_provider.contracts import (
                 BarQuery,
@@ -477,7 +494,6 @@ async def strategy_replay(
                 parse_timeframe,
             )
 
-            from openpine.admission import admit_semantic_profile
             from openpine.runtime.engine import (
                 BacktestEngineAdapter,
                 BacktestRunConfig,
@@ -507,7 +523,7 @@ async def strategy_replay(
                 )
             )
 
-            run_id = f"replay_{strategy_id}_{int(_time_module.time() * 1000)}"
+            run_id = operation_id
             config = BacktestRunConfig(
                 symbol=symbol,
                 timeframe=str(s.timeframe),
@@ -517,10 +533,7 @@ async def strategy_replay(
                 market_type=str(s.market_type).lower(),
                 capture_plots=True,
                 initial_capital=10_000.0,
-                semantic_profile=admit_semantic_profile(
-                    profile=getattr(s, "semantic_profile", None),
-                    source="backtest",
-                ).value,
+                semantic_profile=admitted.value,
             )
 
             result = BacktestEngineAdapter().run_isolated(source, bars, config)
@@ -553,6 +566,7 @@ async def strategy_replay(
     return {
         "status": "started",
         "strategy_id": strategy_id,
+        "job_id": operation_id,
         "message": "Replay started. Monitor progress via WebSocket /api/ws/events.",
     }
 
