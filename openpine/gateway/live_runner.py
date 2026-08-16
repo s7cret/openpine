@@ -60,6 +60,7 @@ class LiveStrategyRunner:
         order_store=None,
         artifact_store=None,
         state_store=None,
+        htf_bars: list[dict[str, Any]] | None = None,
     ) -> None:
         self.config = config or RunnerConfig()
         self.registry = registry
@@ -68,6 +69,7 @@ class LiveStrategyRunner:
         self.order_store = order_store
         self.artifact_store = artifact_store
         self.state_store = state_store or self._default_state_store()
+        self.htf_bars = htf_bars
 
         self._running = False
         self._task: asyncio.Task | None = None
@@ -475,6 +477,7 @@ class LiveStrategyRunner:
                     bars,
                     config,
                     resume_state=resume_state,
+                    htf_bars=self.htf_bars,
                 )
             except IsolatedRunError:
                 raise
@@ -512,6 +515,7 @@ class LiveStrategyRunner:
                     bars,
                     config,
                     resume_state=None,
+                    htf_bars=self.htf_bars,
                 )
 
             new_orders = self._extract_new_orders(result.raw_result, up_to_bar_time_ms)

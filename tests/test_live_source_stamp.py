@@ -45,7 +45,7 @@ def test_live_runner_stamps_source_once_across_ticks(monkeypatch) -> None:
         return b"STAMPED"
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
             seen.append(source)
             return SimpleNamespace(
                 raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
@@ -64,3 +64,42 @@ def test_live_runner_stamps_source_once_across_ticks(monkeypatch) -> None:
     assert runner._run_mini_backtest(strategy, 180000) == []
     assert captures == [(("p1", "a1"), {})]
     assert seen == [b"STAMPED", b"STAMPED"]
+
+
+def test_live_runner_forwards_confirmed_htf_bars(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        }
+    ]
+    seen: dict[str, object] = {}
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["htf_bars"] = htf_bars
+            return SimpleNamespace(
+                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
+                resume_state=None,
+            )
+
+    monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
+    runner = LiveStrategyRunner(
+        RunnerConfig(lookback_bars=2),
+        orchestrator=SimpleNamespace(load_bars=lambda query: _series(query.start_ms, query.end_ms)),
+        state_store=None,
+        htf_bars=htf_bars,
+    )
+    assert runner._run_mini_backtest(_Strategy(), 120000) == []
+    assert seen["htf_bars"] == htf_bars

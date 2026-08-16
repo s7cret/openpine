@@ -61,7 +61,7 @@ def test_live_runner_forwards_admitted_semantic_profile(monkeypatch) -> None:
     seen: dict[str, object] = {}
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
             seen["semantic_profile"] = getattr(config, "semantic_profile", None)
             return SimpleNamespace(raw_result=SimpleNamespace(trades=[], order_lifecycle=[]), resume_state=None)
 
