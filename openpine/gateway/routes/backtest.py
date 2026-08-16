@@ -1646,30 +1646,17 @@ def _run_backtest_in_process(
     progress_callback=None,
     effective_pre_bars=None,
 ):
+    if not isinstance(adapter, _ArtifactBacktestSpec):
+        raise RuntimeError("in-process backtest requires stamped artifact source")
     run_id = getattr(_BACKTEST_THREAD_CONTEXT, "run_id", None)
     cancel_requests = getattr(_BACKTEST_THREAD_CONTEXT, "cancel_requests", None)
-    owned_run_id = run_id or f"internal-{time.time_ns()}"
-    owned_cancel_requests = cancel_requests if cancel_requests is not None else set()
-    if isinstance(adapter, _ArtifactBacktestSpec):
-        return _execute_backtest_process(
-            owned_run_id,
-            owned_cancel_requests,
-            _artifact_backtest_process_entry,
-            (adapter, bars, config, params),
-            progress_callback,
-            "spawn",
-        )
-    return _execute_backtest_run_in_thread(
-        owned_run_id,
-        owned_cancel_requests,
-        adapter,
-        strategy_class,
-        bars,
-        config,
-        params,
-        runtime_data_provider,
+    return _execute_backtest_process(
+        run_id or f"internal-{time.time_ns()}",
+        cancel_requests if cancel_requests is not None else set(),
+        _artifact_backtest_process_entry,
+        (adapter, bars, config, params),
         progress_callback,
-        effective_pre_bars,
+        "spawn",
     )
 
 

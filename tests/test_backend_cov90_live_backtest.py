@@ -161,9 +161,9 @@ def test_backtest_helpers_and_process_paths(monkeypatch):
     monkeypatch.setattr(bt, "_terminate_backtest_worker", lambda worker, timeout=3.0: True)
     monkeypatch.setattr(bt.mp, "get_context", lambda name: Ctx(FakeQueue([("progress", 1, 3), ("ok", "done")])) )
     progress=[]
-    assert bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None, lambda d,t: progress.append((d,t))) == "done"
+    assert bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None, lambda d,t: progress.append((d,t))) == "done"
     assert progress == [(1,3)]
     monkeypatch.setattr(bt.mp, "get_context", lambda name: Ctx(FakeQueue([("err", "ValueError", "no", "tb")])) )
-    with pytest.raises(RuntimeError): bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None)
+    with pytest.raises(RuntimeError): bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None)
     monkeypatch.setattr(bt.mp, "get_context", lambda name: Ctx(FakeQueue([])) )
-    with pytest.raises(RuntimeError): bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None)
+    with pytest.raises(RuntimeError): bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None)

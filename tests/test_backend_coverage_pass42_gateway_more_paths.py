@@ -402,7 +402,7 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
             FakeProc(alive=(True, True, True, True, False)),
         ),
     )
-    assert bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None, lambda d, t: progress.append((d, t))) == "done-after-empty"
+    assert bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None, lambda d, t: progress.append((d, t))) == "done-after-empty"
 
     drained = []
     monkeypatch.setattr(
@@ -413,7 +413,7 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
             FakeProc(alive=(False, False)),
         ),
     )
-    assert bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None, lambda d, t: drained.append((d, t))) == "late-ok"
+    assert bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None, lambda d, t: drained.append((d, t))) == "late-ok"
     assert drained == [(2, 4)]
 
     monkeypatch.setattr(
@@ -422,7 +422,7 @@ def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
         lambda name: Ctx(FakeQueue([]), FakeProc(exitcode=9, alive=(False, False))),
     )
     with pytest.raises(RuntimeError, match="code 9"):
-        bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None)
+        bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None)
 
 
 def test_backtest_progress_source_label_uses_strategy_exchange_market():

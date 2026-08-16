@@ -234,7 +234,7 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
         ),
     )
     assert (
-        bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None)
+        bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None)
         == "progress-without-callback"
     )
 
@@ -246,7 +246,7 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
             FakeProc(alive=(False, False)),
         ),
     )
-    assert bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None) == "late-no-callback"
+    assert bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None) == "late-no-callback"
 
     class ExitBeforeLoopProc(FakeProc):
         def is_alive(self):
@@ -259,7 +259,7 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
         "get_context",
         lambda name: Ctx(FakeQueue(), ExitBeforeLoopProc(alive=())),
     )
-    assert bt._run_backtest_in_process(Adapter(), object, [], object(), {}, None) == "forced-loop-exit"
+    assert bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None) == "forced-loop-exit"
 
 
 def test_backtest_routes_and_background_remaining_branches(monkeypatch):
