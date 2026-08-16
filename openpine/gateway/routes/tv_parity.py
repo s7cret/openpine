@@ -55,9 +55,10 @@ def _run_isolated_tv_replay(
     runtime_data_provider,
     progress_callback=None,
     effective_pre_bars=None,
+    htf_bars=None,
 ):
     del params, runtime_data_provider, progress_callback, effective_pre_bars
-    return adapter.run_isolated(source, bars, config)
+    return adapter.run_isolated(source, bars, config, htf_bars=htf_bars)
 
 
 @dataclass(frozen=True, slots=True)
