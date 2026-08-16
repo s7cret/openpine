@@ -1684,6 +1684,8 @@ def _run_owned_backtest(
     runtime_data_provider,
     progress_callback=None,
 ):
+    if not isinstance(adapter, _ArtifactBacktestSpec):
+        raise RuntimeError("owned backtest requires stamped artifact source")
     _BACKTEST_THREAD_CONTEXT.run_id = run_id
     _BACKTEST_THREAD_CONTEXT.cancel_requests = cancel_requests
     try:
