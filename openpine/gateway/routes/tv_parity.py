@@ -632,7 +632,9 @@ def _backtest_config_for_tv_replay(
     compare_from_ms: int | None = None,
     compare_to_ms: int | None = None,
     effective_pre_bars: int = 0,
+    semantic_profile: object | None = None,
 ) -> Any:
+    from openpine.admission import admit_semantic_profile
     from openpine.exchange_metadata import (
         default_price_tick,
         default_qty_rounding_mode,
@@ -690,6 +692,10 @@ def _backtest_config_for_tv_replay(
         plot_from_ms=compare_from_ms if capture_plots else None,
         plot_to_ms=compare_to_ms if capture_plots else None,
         capture_plots=capture_plots,
+        semantic_profile=admit_semantic_profile(
+            profile=semantic_profile or getattr(strategy, "semantic_profile", None),
+            source="backtest",
+        ).value,
     )
 
 
@@ -709,6 +715,7 @@ async def _run_tv_parity_background(
     abs_tol: float,
     rel_tol: float,
     include_base_columns: bool,
+    semantic_profile: str | None = None,
 ) -> None:
     """Execute TV-candle replay and optional comparison in the background."""
 
@@ -786,6 +793,7 @@ async def _run_tv_parity_background(
             compare_from_ms=compare_from_ms,
             compare_to_ms=compare_to_ms,
             effective_pre_bars=effective_pre_bars,
+            semantic_profile=semantic_profile,
         )
         runtime_data_provider = None
         try:
@@ -991,6 +999,8 @@ async def run_tv_parity(
     abs_tol: float = Form(1e-6),
     rel_tol: float = Form(1e-9),
     include_base_columns: bool = Form(False),
+    semantic_profile: str | None = Form(None),
+    allow_legacy: bool = Form(False),
     state: GatewayState = Depends(get_state),
 ) -> dict[str, Any]:
     """Queue a real backtest replay using uploaded TradingView candles."""
@@ -1006,6 +1016,25 @@ async def run_tv_parity(
         raise HTTPException(404, f"Strategy not found: {strategy_id}") from exc
     if not strategy.pine_id or not strategy.artifact_id:
         raise HTTPException(400, "Strategy has no pine_id or artifact_id. Compile first.")
+    from pydantic.fields import FieldInfo
+
+    from openpine.admission import admit_semantic_profile
+    from openpine_contracts import AdmitError
+
+    requested_profile = (
+        semantic_profile.default if isinstance(semantic_profile, FieldInfo) else semantic_profile
+    )
+    requested_allow_legacy = (
+        allow_legacy.default if isinstance(allow_legacy, FieldInfo) else allow_legacy
+    )
+    try:
+        admitted_profile = admit_semantic_profile(
+            profile=requested_profile or getattr(strategy, "semantic_profile", None),
+            source="backtest",
+            allow_legacy=bool(requested_allow_legacy),
+        )
+    except AdmitError as exc:
+        raise HTTPException(403, exc.message) from exc
     params_override = None
     if params_override_json:
         try:
@@ -1112,6 +1141,7 @@ async def run_tv_parity(
         kind="parity",
         actor="gateway",
         input_artifact_refs=[str(strategy.artifact_id)],
+        semantic_profile=admitted_profile.value,
     )
     run_root = _run_root(state, run_id)
     if run_root.exists():
@@ -1181,6 +1211,7 @@ async def run_tv_parity(
         abs_tol=abs_tol,
         rel_tol=rel_tol,
         include_base_columns=include_base_columns,
+        semantic_profile=admitted_profile.value,
     )
     return {
         "run_id": run_id,
