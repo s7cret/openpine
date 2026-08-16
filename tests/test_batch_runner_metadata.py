@@ -240,6 +240,7 @@ def test_strategy_run_config_uses_declaration_values() -> None:
         market_type="spot",
         qty_step=0.001,
         qty_rounding_mode="truncate",
+        semantic_profile="strict_5x",
     )
     data_meta = {
         "calculation_from": 1_699_000_000_000,

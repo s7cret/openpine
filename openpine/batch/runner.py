@@ -731,7 +731,7 @@ def _build_strategy_run_config(
         plot_from_ms=compare_from,
         plot_to_ms=compare_to,
         semantic_profile=admit_semantic_profile(
-            profile="strict_5x",
+            profile=getattr(args, "semantic_profile", None),
             source="generated_artifact.v2",
         ).value,
     )

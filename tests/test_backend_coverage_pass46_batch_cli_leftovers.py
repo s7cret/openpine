@@ -93,6 +93,7 @@ def _runner_args(tmp_path: Path, **overrides) -> argparse.Namespace:
         skip_completed=False,
         phase="run",
         stop_on_error=False,
+        semantic_profile="strict_5x",
     )
     values.update(overrides)
     return argparse.Namespace(**values)
