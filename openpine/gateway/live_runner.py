@@ -73,6 +73,7 @@ class LiveStrategyRunner:
         self._task: asyncio.Task | None = None
         self._executor_futures: set[asyncio.Future[Any]] = set()
         self._strategy_states: dict[str, StrategyBarState] = {}
+        self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
     def start(self) -> None:
         """Start the live runner as an async task."""
@@ -292,6 +293,19 @@ class LiveStrategyRunner:
             )
             return 0
 
+    def _stamped_artifact_source(self, strategy) -> bytes:
+        key = (str(strategy.pine_id), str(strategy.artifact_id))
+        stamped = self._stamped_sources.get(key)
+        if stamped:
+            return stamped
+        from openpine.runtime.isolated_run import capture_generated_source
+
+        stamped = capture_generated_source(strategy.pine_id, strategy.artifact_id)
+        if not stamped:
+            raise RuntimeError("captured artifact source is missing")
+        self._stamped_sources[key] = stamped
+        return stamped
+
     def _run_mini_backtest(self, strategy, up_to_bar_time_ms: int) -> list[dict] | None:
         """Run a mini-backtest on recent bars to detect new order signals."""
         try:
@@ -306,7 +320,7 @@ class LiveStrategyRunner:
                 BacktestEngineAdapter,
                 BacktestRunConfig,
             )
-            from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
+            from openpine.runtime.isolated_run import IsolatedRunError
             from openpine_contracts import AdmitError
 
             try:
@@ -319,10 +333,7 @@ class LiveStrategyRunner:
                 )
                 return None
 
-            source = capture_generated_source(
-                strategy.pine_id,
-                strategy.artifact_id,
-            )
+            source = self._stamped_artifact_source(strategy)
 
             # Load recent bars
             tf = parse_timeframe(strategy.timeframe)
