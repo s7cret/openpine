@@ -377,6 +377,7 @@ def test_batch_arg_parser_exposes_run_defaults() -> None:
     assert args.exchange == "binance"
     assert args.market_type == "spot"
     assert args.progress_every == 10_000
+    assert args.semantic_profile is None
 
 
 def test_write_timeframe_summary_csv_writes_run_rows(tmp_path: Path) -> None:

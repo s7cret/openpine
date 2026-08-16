@@ -648,11 +648,17 @@ def run_indicator(
     bar_index_offset, bar_index_alignment = _infer_tv_bar_index_offset(chart, bars)
     data_meta["bar_index_alignment"] = bar_index_alignment
     data_meta["bar_index_offset"] = bar_index_offset
+    from openpine.admission import admit_semantic_profile
+
+    admitted = admit_semantic_profile(
+        profile=getattr(args, "semantic_profile", None),
+        source="generated_artifact.v2",
+    )
     t0 = time.perf_counter()
     backend_result = run_isolated_indicator(
         source_bytes,
         bars,
-        semantic_profile="strict_5x",
+        semantic_profile=admitted.value,
     )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     plots_csv = out_dir / "plots.csv"
@@ -1377,6 +1383,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--qty-step", type=float, default=None)
     parser.add_argument("--qty-rounding-mode", default="truncate")
+    parser.add_argument(
+        "--semantic-profile",
+        choices=["strict_5x", "legacy_4x"],
+        default=None,
+        help="Admitted semantic profile for isolated indicator/strategy runs. Required for --phase run.",
+    )
     return parser
 
 
