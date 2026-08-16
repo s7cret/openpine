@@ -432,7 +432,7 @@ def test_main_strategy_replay_success_readiness_and_engine_failure(monkeypatch):
     class Adapter:
         fail = False
 
-        def run(self, strategy_class, bars, config, params):
+        def run_isolated(self, strategy_class, bars, config, **kwargs):
             if type(self).fail:
                 raise RuntimeError("engine boom")
             return SimpleNamespace(status="ok", bars_processed=len(bars), uses_backtest_engine=True)

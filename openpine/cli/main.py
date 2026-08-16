@@ -2850,6 +2850,7 @@ def strategy_replay(
                 prepared.strategy_class,
                 prepared.bars,
                 prepared.config,
+                htf_bars=getattr(prepared, "htf_bars", None),
             )
         except Exception as exc:
             registry.update_status(strategy_id, "error")

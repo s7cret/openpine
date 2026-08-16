@@ -210,3 +210,61 @@ def test_cli_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch) -> None
         htf_bars=htf_bars,
     )
     assert captured["htf_bars"] == htf_bars
+
+
+def test_cli_strategy_replay_forwards_confirmed_htf_bars(monkeypatch) -> None:
+    import importlib
+
+    from click.testing import CliRunner
+
+    cli_main = importlib.import_module("openpine.cli.main")
+
+    captured: dict[str, object] = {}
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        }
+    ]
+
+    class Registry:
+        def get_strategy(self, strategy_id):
+            return SimpleNamespace(strategy_id=strategy_id)
+
+        def update_status(self, strategy_id, status):
+            return None
+
+        def close(self):
+            return None
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, **kwargs):
+            captured["htf_bars"] = kwargs.get("htf_bars")
+            return SimpleNamespace(status="ok", bars_processed=1, uses_backtest_engine=True)
+
+    monkeypatch.setattr("openpine.registry.SQLiteStrategyRegistry", Registry)
+    monkeypatch.setattr(cli_main, "_get_strategy_or_exit", lambda **kwargs: SimpleNamespace())
+    monkeypatch.setattr(cli_main, "_print_strategy_command_header", lambda **kwargs: None)
+    monkeypatch.setattr(cli_main, "_strategy_backtest_readiness_error", lambda strategy: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_prepare_strategy_replay_inputs",
+        lambda **kwargs: SimpleNamespace(
+            strategy_class=b"STAMPED",
+            bars=[],
+            config=object(),
+            htf_bars=htf_bars,
+        ),
+    )
+    monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
+
+    result = CliRunner().invoke(cli_main.cli, ["strategy", "replay", "s1"])
+    assert result.exit_code == 0, result.output
+    assert captured["htf_bars"] == htf_bars
