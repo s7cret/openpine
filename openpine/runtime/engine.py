@@ -330,6 +330,20 @@ class BacktestEngineAdapter:
         effective_pre_bars: int | None = None,
     ) -> BacktestRunResult:
         """Run a strategy through the external BacktestEngine."""
+        from openpine.admission import admit_semantic_profile
+        from openpine.runtime.isolated_run import IsolatedRunError
+        from openpine_contracts import AdmitError
+
+        raw_profile = getattr(config, "semantic_profile", None)
+        if raw_profile is None or not str(raw_profile).strip():
+            raise IsolatedRunError("semantic_profile is required")
+        try:
+            admitted = admit_semantic_profile(
+                profile=raw_profile,
+                source="generated_artifact.v2",
+            )
+        except AdmitError as exc:
+            raise IsolatedRunError(str(exc)) from exc
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
         qty_rounding = (
             "floor"
@@ -369,6 +383,7 @@ class BacktestEngineAdapter:
             content_hash_enabled=config.content_hash_enabled,
             collect_events=config.collect_events,
             collect_order_lifecycle=config.collect_order_lifecycle,
+            semantic_profile=admitted.value,
         )
         engine_config.exchange = config.exchange
         engine_config.market_type = config.market_type

@@ -356,7 +356,7 @@ def test_runtime_engine_adapter_and_artifact_helpers(monkeypatch, tmp_path):
     result = adapter.run(
         type("Strategy", (), {}),
         [bar],
-        rt.BacktestRunConfig(symbol="BTCUSDT", timeframe="1m", start_time=0, end_time=60_000, qty_rounding_mode="truncate", capture_plots=True),
+        rt.BacktestRunConfig(symbol="BTCUSDT", timeframe="1m", start_time=0, end_time=60_000, qty_rounding_mode="truncate", capture_plots=True, semantic_profile="strict_5x"),
         params={"a": 1},
         progress_callback=lambda *_: None,
         runtime_data_provider="provider",

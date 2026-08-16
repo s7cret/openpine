@@ -616,7 +616,7 @@ def test_runtime_engine_generated_module_adapter_and_progress_false_branch(monke
     result = adapter.run(
         Strategy,
         [_bar(0)],
-        runtime_engine.BacktestRunConfig(symbol="BTCUSDT", timeframe="1m", start_time=0, end_time=60_000),
+        runtime_engine.BacktestRunConfig(symbol="BTCUSDT", timeframe="1m", start_time=0, end_time=60_000, semantic_profile="strict_5x"),
         params=None,
         progress_callback=None,
         runtime_data_provider=None,

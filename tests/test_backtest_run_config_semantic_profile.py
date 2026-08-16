@@ -25,3 +25,26 @@ def test_run_isolated_rejects_default_backtest_run_config() -> None:
     )
     with pytest.raises(IsolatedRunError, match="semantic_profile"):
         BacktestEngineAdapter().run_isolated(b"VALUE = 1\n", [], config)
+
+
+def test_adapter_run_rejects_missing_semantic_profile() -> None:
+    config = BacktestRunConfig(
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_time=0,
+        end_time=60_000,
+    )
+    with pytest.raises(IsolatedRunError, match="semantic_profile"):
+        BacktestEngineAdapter().run(type("Strategy", (), {}), [], config)
+
+
+def test_adapter_run_rejects_unknown_semantic_profile() -> None:
+    config = BacktestRunConfig(
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_time=0,
+        end_time=60_000,
+        semantic_profile="nope",
+    )
+    with pytest.raises(IsolatedRunError, match="unknown semantic profile"):
+        BacktestEngineAdapter().run(type("Strategy", (), {}), [], config)

@@ -115,7 +115,7 @@ def test_runtime_adapter_run_and_progress(monkeypatch):
     monkeypatch.setattr(rt.BacktestEngineAdapter, "_to_engine_bar", lambda self, bar: bar)
     adapter = rt.BacktestEngineAdapter()
     progress = []
-    config = rt.BacktestRunConfig(symbol="BTCUSDT", timeframe="1m", start_time=1, end_time=2, capture_plots=True)
+    config = rt.BacktestRunConfig(symbol="BTCUSDT", timeframe="1m", start_time=1, end_time=2, capture_plots=True, semantic_profile="strict_5x")
     class Strategy:
         pass
     result = adapter.run(Strategy, [SimpleNamespace(time=1), SimpleNamespace(time=2)], config, params={"p": 1}, progress_callback=lambda d, t: progress.append((d, t)), runtime_data_provider=object(), effective_pre_bars=1)

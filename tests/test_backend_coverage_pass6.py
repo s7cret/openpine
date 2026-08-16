@@ -192,7 +192,7 @@ def test_runtime_engine_helpers_and_adapter(monkeypatch, tmp_path):
     monkeypatch.setattr(runtime_engine, "import_library", lambda name: FakeModule)
     adapter = runtime_engine.BacktestEngineAdapter()
     seen: list[tuple[int, int]] = []
-    config = BacktestRunConfig("BTCUSDT", "1m", 0, 60_000, qty_rounding_mode="truncate", capture_plots=True)
+    config = BacktestRunConfig("BTCUSDT", "1m", 0, 60_000, qty_rounding_mode="truncate", capture_plots=True, semantic_profile="strict_5x")
     result = adapter.run(type("Strategy", (), {}), [_bar()], config, params={"x": 1}, progress_callback=lambda done, total: seen.append((done, total)), runtime_data_provider="dp", resume_state={"r": 1}, effective_pre_bars=3)
     assert result.status == "ok" and result.resume_state == {"bar": 1}
     assert seen == [(1, 1)]
