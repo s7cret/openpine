@@ -62,3 +62,47 @@ def test_artifact_spec_requires_captured_source() -> None:
             market="spot",
             prefetch_end_ms=60_000,
         )
+
+
+def test_artifact_worker_forwards_confirmed_htf_bars(monkeypatch) -> None:
+    seen: dict[str, object] = {}
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        }
+    ]
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, **kwargs):
+            seen["htf_bars"] = kwargs.get("htf_bars")
+            return SimpleNamespace(ok=True)
+
+    monkeypatch.setattr(
+        "openpine.runtime.engine.BacktestEngineAdapter", lambda: Adapter()
+    )
+    monkeypatch.setattr(routes, "_put_backtest_process_result", lambda out, result: None)
+    monkeypatch.setattr(routes, "_put_backtest_process_error", lambda out, exc: seen.setdefault("error", exc))
+
+    spec = routes._ArtifactBacktestSpec(
+        pine_id="pine-1",
+        artifact_id="art-1",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        cache_dir="/tmp",
+        exchange="binance",
+        market="spot",
+        prefetch_end_ms=60_000,
+        source=b"STAMPED",
+        htf_bars=htf_bars,
+    )
+    routes._artifact_backtest_process_entry(object(), spec, [], object(), {})
+    assert "error" not in seen
+    assert seen["htf_bars"] == htf_bars

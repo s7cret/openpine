@@ -78,6 +78,7 @@ class _ArtifactBacktestSpec:
     market: str
     prefetch_end_ms: int
     source: bytes
+    htf_bars: list[dict[str, Any]] | None = None
 
 
 _ACTIVE_BACKTEST_WORKERS: dict[str, _BacktestWorker] = {}
@@ -1127,7 +1128,9 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
         source = spec.source
         if not source:
             raise RuntimeError("captured artifact source is missing")
-        result = BacktestEngineAdapter().run_isolated(source, bars, config)
+        result = BacktestEngineAdapter().run_isolated(
+            source, bars, config, htf_bars=spec.htf_bars
+        )
         _put_backtest_process_result(out, result)
     except BaseException as exc:
         _put_backtest_process_error(out, exc)
