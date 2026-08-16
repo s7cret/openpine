@@ -16,6 +16,7 @@ vi.mock('@/api/client', () => ({
   deleteStrategy: vi.fn(),
   archiveStrategy: vi.fn(),
   unarchiveStrategy: vi.fn(),
+  updateStrategy: vi.fn(),
 }))
 
 describe('strategies store detail lifecycle', () => {
@@ -26,6 +27,7 @@ describe('strategies store detail lifecycle', () => {
     vi.mocked(api.controlStrategy).mockReset()
     vi.mocked(api.archiveStrategy).mockReset()
     vi.mocked(api.unarchiveStrategy).mockReset()
+    vi.mocked(api.updateStrategy).mockReset()
   })
 
   it('clears stale current strategy and surfaces detail load failures', async () => {
@@ -88,6 +90,25 @@ describe('strategies store detail lifecycle', () => {
     await store.control('strat-1', 'start')
 
     expect(store.error).toBe('gateway refused start')
+  })
+
+  it('patches admitted semantic profile through updateStrategy', async () => {
+    const store = useStrategiesStore()
+    store.items = [{ strategy_id: 'strat-1', name: 'Demo', semantic_profile: 'legacy_4x' }]
+    store.current = { strategy_id: 'strat-1', name: 'Demo', semantic_profile: 'legacy_4x' }
+
+    vi.mocked(api.updateStrategy).mockResolvedValueOnce({
+      data: { strategy_id: 'strat-1', name: 'Demo', semantic_profile: 'strict_5x' },
+    } as any)
+    vi.mocked(api.getStrategies).mockResolvedValueOnce({
+      data: [{ strategy_id: 'strat-1', name: 'Demo', semantic_profile: 'strict_5x' }],
+    } as any)
+
+    await store.update('strat-1', { semantic_profile: 'strict_5x' })
+
+    expect(api.updateStrategy).toHaveBeenCalledWith('strat-1', { semantic_profile: 'strict_5x' })
+    expect(store.current?.semantic_profile).toBe('strict_5x')
+    expect(store.items[0].semantic_profile).toBe('strict_5x')
   })
 
   it('renders store/action errors and an accessible dismissible detail dialog', () => {

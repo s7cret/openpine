@@ -100,5 +100,15 @@ export const useStrategiesStore = defineStore('strategies', () => {
     }
   }
 
-  return { items, current, loading, error, fetchAll, fetchOne, control, create, remove, setArchived }
+  async function update(id: string, data: Record<string, unknown>) {
+    error.value = ''
+    const { data: result } = await api.updateStrategy(id, data)
+    const idx = items.value.findIndex(s => getId(s) === id)
+    if (idx !== -1) items.value[idx] = result
+    if (getId(current.value) === id) current.value = result
+    await fetchAll()
+    return result
+  }
+
+  return { items, current, loading, error, fetchAll, fetchOne, control, create, remove, setArchived, update }
 })

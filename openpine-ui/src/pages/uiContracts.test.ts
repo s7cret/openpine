@@ -164,4 +164,11 @@ describe('global UI correctness contracts', () => {
     expect(page).toContain('v-model="form.semantic_profile"')
     expect(page).toContain("t('strategies.semanticProfileRequired')")
   })
+
+  it('strategy detail can PATCH semantic profile', () => {
+    const page = source('pages/Strategies.vue')
+    expect(page).toContain('strategy-detail-semantic-profile')
+    expect(page).toContain('updateSemanticProfile')
+    expect(page).toContain('semantic_profile:')
+  })
 })
