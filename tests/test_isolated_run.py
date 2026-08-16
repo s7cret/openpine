@@ -5,7 +5,22 @@ import sys
 import pytest
 from backtest_engine import BacktestConfig, BacktestEngine, Bar
 
-from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_artifact
+from openpine.runtime.isolated_run import (
+    IsolatedRunError,
+    capture_generated_source,
+    run_isolated_artifact,
+    run_isolated_from_store,
+)
+
+SOURCE = (
+    "from pinelib.strategy.context import StrategyContext\n"
+    "ctx = StrategyContext(intent_run_id='run', intent_strategy_id='s')\n"
+    "ctx._runtime = type('RT', (), {"
+    "'bar_index': 2, "
+    "'current_bar': type('B', (), {'time': 1002})()"
+    "})()\n"
+    "ctx.entry('L', 'long', qty=1)\n"
+)
 
 
 def _bars() -> list[Bar]:
@@ -29,16 +44,7 @@ def _cfg() -> BacktestConfig:
 
 
 def test_isolated_run_replays_live_tape_without_importing_generated() -> None:
-    source = (
-        "from pinelib.strategy.context import StrategyContext\n"
-        "ctx = StrategyContext(intent_run_id='run', intent_strategy_id='s')\n"
-        "ctx._runtime = type('RT', (), {"
-        "'bar_index': 2, "
-        "'current_bar': type('B', (), {'time': 1002})()"
-        "})()\n"
-        "ctx.entry('L', 'long', qty=1)\n"
-    )
-    result = run_isolated_artifact(source.encode("utf-8"), bars=_bars(), config=_cfg())
+    result = run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars(), config=_cfg())
     assert result["intent_tape"][0]["schema_id"] == "openpine.intent.v2"
     assert result["intent_tape"][0]["kind"] == "entry"
     assert result["score_ledger_hash"]
@@ -59,3 +65,50 @@ def test_isolated_run_replays_live_tape_without_importing_generated() -> None:
 def test_isolated_run_rejects_artifact_without_tape() -> None:
     with pytest.raises(IsolatedRunError, match="live pinelib tape"):
         run_isolated_artifact(b"VALUE = 1\n", bars=_bars(), config=_cfg())
+
+
+def test_capture_generated_source_uses_bytes_not_later_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    artifact_dir = tmp_path / "art"
+    artifact_dir.mkdir()
+    path = artifact_dir / "generated_strategy.py"
+    path.write_text(SOURCE, encoding="utf-8")
+
+    class Store:
+        def get_artifact(self, artifact_id: str, source_id: str) -> dict:
+            return {
+                "artifact_dir": str(artifact_dir),
+                "compile_meta": {"compile_status": "OK"},
+            }
+
+    import openpine.artifacts as artifacts
+
+    monkeypatch.setattr(artifacts, "ArtifactStore", Store)
+    captured = capture_generated_source("src", "art")
+    path.write_text("VALUE = 999\n", encoding="utf-8")
+    assert captured == SOURCE.encode("utf-8")
+    result = run_isolated_artifact(captured, bars=_bars(), config=_cfg())
+    assert result["intent_tape"][0]["qty"] == "1"
+
+
+def test_run_isolated_from_store_captures_then_replays(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    artifact_dir = tmp_path / "art"
+    artifact_dir.mkdir()
+    (artifact_dir / "generated_strategy.py").write_text(SOURCE, encoding="utf-8")
+
+    class Store:
+        def get_artifact(self, artifact_id: str, source_id: str) -> dict:
+            return {
+                "artifact_dir": str(artifact_dir),
+                "compile_meta": {"compile_status": "OK"},
+            }
+
+    import openpine.artifacts as artifacts
+
+    monkeypatch.setattr(artifacts, "ArtifactStore", Store)
+    result = run_isolated_from_store("src", "art", bars=_bars(), config=_cfg())
+    assert result["intent_tape"][0]["kind"] == "entry"
+    assert result["score_ledger_hash"]

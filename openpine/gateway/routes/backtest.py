@@ -1119,40 +1119,12 @@ def _backtest_process_entry(
 def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, config, params):
     """Reconstruct unpicklable runtime objects inside a safe spawned worker."""
 
-    def progress(done: int, total: int) -> None:
-        try:
-            out.put_nowait(("progress", int(done), int(total)))
-        except Exception:
-            pass
-
     try:
-        from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
-        from openpine.runtime.engine import BacktestEngineAdapter, load_strategy_class_from_artifact
+        from openpine.runtime.engine import BacktestEngineAdapter
+        from openpine.runtime.isolated_run import capture_generated_source
 
-        strategy_class = load_strategy_class_from_artifact(
-            spec.pine_id,
-            spec.artifact_id,
-            symbol=spec.symbol,
-            timeframe=spec.timeframe,
-        )
-        runtime_data_provider = None
-        try:
-            runtime_data_provider = create_local_runtime_data_provider_adapter(
-                cache_dir=Path(spec.cache_dir),
-                exchange=spec.exchange,
-                market=spec.market,
-                prefetch_end_ms=spec.prefetch_end_ms,
-            )
-        except Exception as exc:
-            log.warning("runtime_data_provider_init_failed", error=str(exc))
-        result = BacktestEngineAdapter().run(
-            strategy_class,
-            bars,
-            config,
-            params=params,
-            progress_callback=progress,
-            runtime_data_provider=runtime_data_provider,
-        )
+        source = capture_generated_source(spec.pine_id, spec.artifact_id)
+        result = BacktestEngineAdapter().run_isolated(source, bars, config)
         _put_backtest_process_result(out, result)
     except BaseException as exc:
         _put_backtest_process_error(out, exc)
@@ -1830,19 +1802,15 @@ async def _run_backtest_background(
         )
         await ws_manager.broadcast_progress(run_id)
 
-        from openpine.runtime.engine import (
-            BacktestArtifactError,
-            load_strategy_class_from_artifact,
-        )
+        from openpine.runtime.engine import BacktestArtifactError
+        from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
 
         try:
-            load_strategy_class_from_artifact(
+            capture_generated_source(
                 strategy.pine_id,
                 strategy.artifact_id,
-                symbol=strategy.symbol,
-                timeframe=strategy.timeframe,
             )
-        except BacktestArtifactError as exc:
+        except (BacktestArtifactError, IsolatedRunError) as exc:
             ws_manager.update_progress(run_id, "backtest", "failed", 0.1, str(exc))
             await ws_manager.broadcast_progress(run_id)
             state.backtest_store.mark_failed(run_id, str(exc))

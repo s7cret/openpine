@@ -6,6 +6,7 @@ fail-closed; this is the side-by-side 5.0 execution path.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from backtest_engine.core.intent_replay import (
@@ -52,3 +53,31 @@ def run_isolated_artifact(
         "raw_result": result,
         "isolation": payload.get("isolation"),
     }
+
+
+def capture_generated_source(source_id: str, artifact_id: str) -> bytes:
+    from openpine.artifacts import ArtifactStore
+    from openpine.runtime.engine import BacktestArtifactError
+
+    try:
+        artifact = ArtifactStore().get_artifact(artifact_id, source_id)
+    except (FileNotFoundError, BacktestArtifactError) as exc:
+        raise IsolatedRunError(str(exc)) from exc
+    path = Path(str(artifact["artifact_dir"])) / "generated_strategy.py"
+    if not path.is_file():
+        raise IsolatedRunError(f"Artifact {artifact_id} has no generated_strategy.py")
+    return path.read_bytes()
+
+
+def run_isolated_from_store(
+    source_id: str,
+    artifact_id: str,
+    *,
+    bars: list[Any],
+    config: Any,
+) -> dict[str, Any]:
+    return run_isolated_artifact(
+        capture_generated_source(source_id, artifact_id),
+        bars=bars,
+        config=config,
+    )

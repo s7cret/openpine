@@ -434,6 +434,73 @@ class BacktestEngineAdapter:
             resume_state=getattr(result, "resume_state", None),
         )
 
+    def _to_engine_config(self, config: BacktestRunConfig) -> Any:
+        qty_rounding = (
+            "floor"
+            if getattr(config, "qty_rounding_mode", None) == "truncate"
+            else getattr(config, "qty_rounding_mode", None) or "floor"
+        )
+        engine_config = self._module.BacktestConfig(
+            symbol=config.symbol,
+            timeframe=config.timeframe,
+            start_time=config.start_time,
+            end_time=config.end_time,
+            initial_capital=config.initial_capital,
+            default_qty_type=config.default_qty_type,
+            default_qty_value=config.default_qty_value,
+            commission_type=config.commission_type,
+            commission_value=config.commission_value,
+            slippage=config.slippage,
+            slippage_type=config.slippage_type,
+            exit_matching=config.exit_matching,
+            pyramiding=config.pyramiding,
+            margin_long=config.margin_long,
+            margin_short=config.margin_short,
+            process_orders_on_close=config.process_orders_on_close,
+            calc_on_order_fills=config.calc_on_order_fills,
+            calc_on_every_tick=config.calc_on_every_tick,
+            use_bar_magnifier=config.use_bar_magnifier,
+            qty_step=config.qty_step,
+            qty_rounding=qty_rounding,
+            mintick=config.mintick,
+            max_bars_back=config.max_bars_back,
+            score_start_time=config.score_start_time,
+            score_end_time=config.score_end_time,
+            max_pre_bars=config.max_pre_bars,
+            warmup_metadata=config.warmup_metadata,
+            export_resume_state=config.export_resume_state,
+            resume_validation_policy=config.resume_validation_policy,
+            content_hash_enabled=config.content_hash_enabled,
+            collect_events=config.collect_events,
+            collect_order_lifecycle=config.collect_order_lifecycle,
+        )
+        engine_config.exchange = config.exchange
+        engine_config.market_type = config.market_type
+        return engine_config
+
+    def run_isolated(
+        self,
+        source: bytes,
+        bars: list[Bar],
+        config: BacktestRunConfig,
+    ) -> BacktestRunResult:
+        from openpine.runtime.isolated_run import run_isolated_artifact
+
+        engine_bars = [self._to_engine_bar(bar) for bar in bars]
+        isolated = run_isolated_artifact(
+            source,
+            bars=engine_bars,
+            config=self._to_engine_config(config),
+        )
+        raw = isolated["raw_result"]
+        return BacktestRunResult(
+            status=getattr(raw, "status", "ok"),
+            bars_processed=len(engine_bars),
+            raw_result=raw,
+            process_next_bar_available=self.process_next_bar_available,
+            resume_state=getattr(raw, "resume_state", None),
+        )
+
     @staticmethod
     def _progress_callbacks(progress_callback: Any, total: int) -> Any:
         from backtest_engine.models.callbacks import BacktestCallbacks
