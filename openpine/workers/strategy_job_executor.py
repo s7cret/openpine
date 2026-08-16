@@ -113,6 +113,7 @@ class StrategyJobExecutor:
         self.runtime_adapter = runtime_adapter or BacktestEngineAdapter()
         self.strategy_loader = strategy_loader
         self.runtime_data_provider = runtime_data_provider
+        self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
     def process(self, job: Job) -> StrategyJobExecutionResult:
         """Process one queued strategy bar job and update scheduler status."""
@@ -228,13 +229,24 @@ class StrategyJobExecutor:
             )
         return bars[0]
 
+    def _stamped_artifact_source(self, strategy: StrategyInstance) -> bytes:
+        key = (str(strategy.pine_id), str(strategy.artifact_id))
+        stamped = self._stamped_sources.get(key)
+        if stamped:
+            return stamped
+        stamped = capture_generated_source(strategy.pine_id, strategy.artifact_id)
+        if not stamped:
+            raise RuntimeError("captured artifact source is missing")
+        self._stamped_sources[key] = stamped
+        return stamped
+
     def _run_strategy(
         self, strategy: StrategyInstance, bar: Bar, resume_state: Any | None
     ) -> Any:
         config = _build_bar_run_config(strategy, bar)
         params = _strategy_params(strategy)
         if self.strategy_loader is None:
-            source = capture_generated_source(strategy.pine_id, strategy.artifact_id)
+            source = self._stamped_artifact_source(strategy)
             return self.runtime_adapter.run_isolated(
                 source, [bar], config, resume_state=resume_state
             )
