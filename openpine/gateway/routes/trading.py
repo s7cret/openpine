@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from openpine._compat import structlog
-from openpine.admission import DEFAULT_STACK_ID, admit_run
+from openpine.admission import DEFAULT_STACK_ID, admit_run, admit_semantic_profile
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.routes.activation_guard import (
     guarded_strategy_activation,
@@ -44,6 +44,13 @@ def _activate_registry_strategy(
     registry.set_enabled(strategy_id, True)
 
 
+def _require_semantic_profile(*, profile: object | None, source: str, allow_legacy: bool = False) -> None:
+    try:
+        admit_semantic_profile(profile=profile, source=source, allow_legacy=allow_legacy)
+    except AdmitError as exc:
+        raise HTTPException(403, exc.message) from exc
+
+
 @router.post("/paper/start", response_model=TradingStatusResponse)
 async def start_paper(
     body: PaperStartRequest,
@@ -54,6 +61,11 @@ async def start_paper(
         admit_run(mode="paper", stack_id=DEFAULT_STACK_ID)
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc
+    _require_semantic_profile(
+        profile=getattr(body, "semantic_profile", None),
+        source="paper",
+        allow_legacy=bool(getattr(body, "allow_legacy", False)),
+    )
     registry = state.strategy_registry
     try:
         s = registry.get_strategy(body.strategy_id)
@@ -135,6 +147,11 @@ async def start_live(
         admit_run(mode="live", stack_id=DEFAULT_STACK_ID)
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc
+    _require_semantic_profile(
+        profile=getattr(body, "semantic_profile", None),
+        source="live",
+        allow_legacy=bool(getattr(body, "allow_legacy", False)),
+    )
 
     registry = state.strategy_registry
     try:

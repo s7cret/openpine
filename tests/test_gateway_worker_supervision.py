@@ -1241,7 +1241,7 @@ async def test_paper_start_uses_single_atomic_registry_activation() -> None:
     )
 
     result = await trading.start_paper(
-        PaperStartRequest(strategy_id="s1"), state=cast(Any, state)
+        PaperStartRequest(strategy_id="s1", semantic_profile="strict_5x"), state=cast(Any, state)
     )
 
     assert result.status == "running"
@@ -1375,7 +1375,7 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
     await strategies.strategy_action("s1", state=cast(Any, state), action="start")
     strategy.enabled = False
     await trading.start_paper(
-        PaperStartRequest(strategy_id="s1"), state=cast(Any, state)
+        PaperStartRequest(strategy_id="s1", semantic_profile="strict_5x"), state=cast(Any, state)
     )
     strategy.enabled = False
     from openpine.live_preview import make_live_preview
@@ -1389,6 +1389,7 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
             confirmation="LIVE",
             idempotency_key="live-s1",
             expires_at_utc_ms=preview["expires_at_utc_ms"],
+            semantic_profile="strict_5x",
         ),
         state=cast(Any, state),
     )
@@ -1714,7 +1715,7 @@ async def test_trading_start_routes_reject_archived_strategy() -> None:
     )
 
     with pytest.raises(HTTPException) as paper_exc:
-        await trading.start_paper(PaperStartRequest(strategy_id="archived"), state)
+        await trading.start_paper(PaperStartRequest(strategy_id="archived", semantic_profile="strict_5x"), state)
     assert paper_exc.value.status_code == 400
 
     with pytest.raises(HTTPException) as live_exc:

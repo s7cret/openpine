@@ -303,6 +303,8 @@ class BacktestEstimateResponse(BaseModel):
 class PaperStartRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     strategy_id: NonBlankStr = Field(max_length=128)
+    semantic_profile: str | None = None
+    allow_legacy: bool = False
 
 
 class LiveStartRequest(BaseModel):
@@ -312,6 +314,8 @@ class LiveStartRequest(BaseModel):
     confirmation: str = ""
     idempotency_key: str = ""
     expires_at_utc_ms: int | None = None
+    semantic_profile: str | None = None
+    allow_legacy: bool = False
 
 
 class TradingStatusResponse(BaseModel):

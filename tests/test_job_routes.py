@@ -95,3 +95,42 @@ def test_live_start_without_typed_confirm_is_400() -> None:
     assert preview.json()["mutating"] is False
     denied = client.post("/live/start", json={"strategy_id": "s1"})
     assert denied.status_code == 400
+
+
+def test_live_and_paper_start_require_semantic_profile() -> None:
+    import time
+
+    from openpine.gateway.routes.trading import router as trading_router
+    from openpine.live_preview import make_live_preview
+
+    strategy = SimpleNamespace(status="paused", archived=False, mode="paper")
+    registry = SimpleNamespace(
+        get_strategy=lambda strategy_id: strategy,
+        activate_strategy=lambda *args, **kwargs: None,
+    )
+    app = FastAPI()
+    app.include_router(trading_router)
+    app.dependency_overrides[get_state] = lambda: SimpleNamespace(
+        config=SimpleNamespace(live_enabled=True),
+        strategy_registry=registry,
+    )
+    client = TestClient(app)
+    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
+    live_payload = {
+        "strategy_id": "s1",
+        "preview_hash": preview["preview_hash"],
+        "confirmation": "LIVE",
+        "idempotency_key": "live-s1",
+        "expires_at_utc_ms": preview["expires_at_utc_ms"],
+    }
+    missing = client.post("/live/start", json=live_payload)
+    assert missing.status_code == 403
+    assert "semantic profile" in missing.json()["detail"].lower()
+    legacy = client.post("/live/start", json={**live_payload, "semantic_profile": "legacy_4x"})
+    assert legacy.status_code == 403
+    assert "legacy" in legacy.json()["detail"].lower()
+    paper_missing = client.post("/paper/start", json={"strategy_id": "s1"})
+    assert paper_missing.status_code == 403
+    ok = client.post("/live/start", json={**live_payload, "semantic_profile": "strict_5x"})
+    assert ok.status_code == 200
+    assert ok.json()["mode"] == "live"

@@ -654,7 +654,10 @@
     "strategyRequired": "Strategy id is required",
     "review": "Review start preview",
     "typeLive": "Type LIVE to confirm",
-    "start": "Start live"
+    "start": "Start live",
+    "semanticProfile": "Semantic profile",
+    "semanticProfileRequired": "Choose a semantic profile",
+    "allowLegacy": "Allow legacy_4x on live"
   },
   "optimizer": {
     "title": "Optimizer",

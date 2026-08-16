@@ -118,6 +118,8 @@ describe('global UI correctness contracts', () => {
     const mount = live.split('onMounted')[1] ?? ''
     expect(live).toContain('/live/admission')
     expect(live).toContain('live-typed-confirm')
+    expect(live).toContain('live-semantic-profile')
+    expect(live).toContain('semantic_profile: semanticProfile.value')
     expect(live).toContain("confirmation.value === 'LIVE'")
     expect(mount).not.toContain('/live/start')
     expect(live).toContain('/live/start')

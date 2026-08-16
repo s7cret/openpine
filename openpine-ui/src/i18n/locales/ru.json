@@ -654,7 +654,10 @@
     "strategyRequired": "Нужен strategy id",
     "review": "Показать preview",
     "typeLive": "Введите LIVE для подтверждения",
-    "start": "Запустить live"
+    "start": "Запустить live",
+    "semanticProfile": "Семантический профиль",
+    "semanticProfileRequired": "Выберите семантический профиль",
+    "allowLegacy": "Разрешить legacy_4x для live"
   },
   "optimizer": {
     "title": "Оптимизатор",

@@ -321,7 +321,7 @@ def test_gateway_simple_routes_and_dashboard_helpers():
     with pytest.raises(HTTPException):
         asyncio.run(strategies.get_strategy("missing", state.strategy_registry))
     assert asyncio.run(strategies.strategy_action("s1", state, action="start"))["status"] == "ok"
-    assert asyncio.run(trading.start_paper(SimpleNamespace(strategy_id="s1"), state)).status == "running"
+    assert asyncio.run(trading.start_paper(SimpleNamespace(strategy_id="s1", semantic_profile="strict_5x"), state)).status == "running"
     assert asyncio.run(trading.stop_paper(SimpleNamespace(strategy_id="s1"), state))["status"] == "stopped"
     assert asyncio.run(trading.get_trading_status("s1", state)).position_side == "long"
     assert dashboard._count_jobs([{"status": "done"}, {"status": "running"}], "done") == 1
@@ -513,7 +513,7 @@ def test_gateway_trading_and_strategy_error_paths():
     with pytest.raises(HTTPException):
         asyncio.run(strategies.strategy_action("s1", state, action="unknown"))
     with pytest.raises(HTTPException):
-        asyncio.run(trading.start_live(SimpleNamespace(strategy_id="missing"), state))
+        asyncio.run(trading.start_live(SimpleNamespace(strategy_id="missing", preview_hash="", confirmation="", idempotency_key="", expires_at_utc_ms=None), state))
     with pytest.raises(HTTPException):
         asyncio.run(trading.stop_live(SimpleNamespace(strategy_id="missing"), state))
 
@@ -813,6 +813,7 @@ def test_additional_strategy_and_trading_edge_paths(tmp_path):
                 confirmation="LIVE",
                 idempotency_key="live-s1",
                 expires_at_utc_ms=preview["expires_at_utc_ms"],
+                semantic_profile="strict_5x",
             ),
             state,
         )
