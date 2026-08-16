@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from openpine.cli.runtime_helpers import (
     _build_strategy_backtest_config,
+    _build_strategy_replay_config,
     _run_indicator_plot_runtime,
 )
 from openpine.runtime.engine import BacktestRunConfig
@@ -25,6 +26,24 @@ def test_cli_backtest_config_uses_strategy_semantic_profile() -> None:
         capture_plots=False,
         capture_from_ms=None,
         capture_to_ms=None,
+        config_cls=BacktestRunConfig,
+    )
+    assert config.semantic_profile == "strict_5x"
+
+
+def test_cli_replay_config_uses_strategy_semantic_profile() -> None:
+    strategy = SimpleNamespace(
+        symbol="BTCUSDT",
+        timeframe="1m",
+        exchange="binance",
+        market_type="spot",
+        semantic_profile="strict_5x",
+    )
+    config = _build_strategy_replay_config(
+        strategy=strategy,
+        decl_args={},
+        start_ms=0,
+        end_ms=60_000,
         config_cls=BacktestRunConfig,
     )
     assert config.semantic_profile == "strict_5x"

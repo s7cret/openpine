@@ -477,6 +477,7 @@ async def strategy_replay(
                 parse_timeframe,
             )
 
+            from openpine.admission import admit_semantic_profile
             from openpine.runtime.engine import (
                 BacktestEngineAdapter,
                 BacktestRunConfig,
@@ -516,6 +517,10 @@ async def strategy_replay(
                 market_type=str(s.market_type).lower(),
                 capture_plots=True,
                 initial_capital=10_000.0,
+                semantic_profile=admit_semantic_profile(
+                    profile=getattr(s, "semantic_profile", None),
+                    source="backtest",
+                ).value,
             )
 
             result = BacktestEngineAdapter().run_isolated(source, bars, config)

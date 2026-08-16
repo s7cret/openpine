@@ -171,6 +171,7 @@ def _build_strategy_replay_config(
     end_ms: int,
     config_cls,
 ):
+    from openpine.admission import admit_semantic_profile
     from openpine.runtime.declaration_args import normalize_strategy_declaration_args
 
     decl_args = normalize_strategy_declaration_args(decl_args)
@@ -192,6 +193,10 @@ def _build_strategy_replay_config(
         qty_rounding_mode=_default_qty_rounding_mode(
             strategy.exchange, strategy.market_type, strategy.symbol
         ),
+        semantic_profile=admit_semantic_profile(
+            profile=getattr(strategy, "semantic_profile", None),
+            source="backtest",
+        ).value,
     )
 
 
