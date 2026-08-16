@@ -448,6 +448,8 @@ class OptimizerDryRunRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     strategy_id: NonBlankStr = Field(max_length=128)
     trials: int = Field(ge=1, le=10000)
+    semantic_profile: str | None = None
+    allow_legacy: bool = False
 
 
 class OptimizerDryRunResponse(BaseModel):
