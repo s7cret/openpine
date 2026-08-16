@@ -158,7 +158,11 @@ def test_isolated_indicator_returns_plot_tuples() -> None:
         "    def _process_bar(self, bar, i=0):\n"
         "        self.rt.plot_recorder.record_plot(int(bar.time), int(i), bar.close, 'close')\n"
     )
-    result = run_isolated_indicator(source.encode("utf-8"), _bars()[:2])
+    result = run_isolated_indicator(
+        source.encode("utf-8"),
+        _bars()[:2],
+        semantic_profile="strict_5x",
+    )
     assert result.plots
     assert result.plots[0][3] == "close"
     assert result.plots[0][0] == 1000
@@ -296,9 +300,9 @@ def test_isolated_indicator_forwards_semantic_profile(monkeypatch: pytest.Monkey
     assert seen["semantic_profile"] == "strict_5x"
 
 
-def test_isolated_indicator_defaults_to_strict_5x(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_isolated_indicator_requires_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     import openpine.runtime.isolated_run as isolated_run
-    from openpine.runtime.isolated_run import IsolatedPlotResult, run_isolated_indicator
+    from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_indicator
 
     seen: dict[str, object] = {}
 
@@ -307,9 +311,9 @@ def test_isolated_indicator_defaults_to_strict_5x(monkeypatch: pytest.MonkeyPatc
         return {"ok": True, "plots": []}
 
     monkeypatch.setattr(isolated_run, "evaluate_artifact", _ok)
-    result = run_isolated_indicator(b"VALUE = 1\n", _bars())
-    assert isinstance(result, IsolatedPlotResult)
-    assert seen["semantic_profile"] == "strict_5x"
+    with pytest.raises(IsolatedRunError, match="semantic_profile"):
+        run_isolated_indicator(b"VALUE = 1\n", _bars())
+    assert "semantic_profile" not in seen
 
 
 def test_isolated_indicator_rejects_unknown_profile() -> None:

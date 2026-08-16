@@ -40,7 +40,7 @@ def _generated_semantic_profile(value: object | None) -> str:
     from openpine_contracts import SemanticProfile
 
     if value is None or str(value).strip() == "":
-        return SemanticProfile.STRICT_5X.value
+        raise IsolatedRunError("semantic_profile is required")
     if isinstance(value, SemanticProfile):
         return value.value
     try:
