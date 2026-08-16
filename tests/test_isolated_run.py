@@ -386,3 +386,70 @@ def test_isolated_run_rejects_unconfirmed_htf_bars(monkeypatch: pytest.MonkeyPat
             ],
         )
     assert "called" not in seen
+
+
+def test_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+    from openpine.runtime.isolated_run import run_isolated_indicator
+    from openpine.runtime.isolated_worker import IsolatedWorkerError
+
+    seen: dict[str, object] = {}
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40,
+            "high": 43,
+            "low": 39,
+            "close": 42,
+            "volume": 1,
+        }
+    ]
+
+    def _capture(source, **kwargs):
+        seen["htf_bars"] = kwargs.get("htf_bars")
+        raise IsolatedWorkerError("stop")
+
+    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    with pytest.raises(IsolatedRunError, match="stop"):
+        run_isolated_indicator(
+            b"VALUE = 1\n",
+            _bars(),
+            semantic_profile="strict_5x",
+            htf_bars=htf_bars,
+        )
+    assert seen["htf_bars"] == htf_bars
+
+
+def test_isolated_indicator_rejects_unconfirmed_htf_bars(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+    from openpine.runtime.isolated_run import run_isolated_indicator
+
+    seen: dict[str, object] = {}
+
+    def _capture(source, **kwargs):
+        seen["called"] = True
+        return {"ok": True, "plots": []}
+
+    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    with pytest.raises(IsolatedRunError, match="confirmed HTF"):
+        run_isolated_indicator(
+            b"VALUE = 1\n",
+            _bars(),
+            semantic_profile="strict_5x",
+            htf_bars=[
+                {
+                    "symbol": "BTCUSDT",
+                    "timeframe": "1D",
+                    "time": 0,
+                    "open": 40,
+                    "high": 43,
+                    "low": 39,
+                    "close": 42,
+                    "volume": 1,
+                }
+            ],
+        )
+    assert "called" not in seen

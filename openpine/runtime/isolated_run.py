@@ -173,6 +173,7 @@ def run_isolated_indicator(
     bars: list[Any],
     *,
     semantic_profile: object | None = None,
+    htf_bars: list[dict[str, Any]] | None = None,
 ) -> IsolatedPlotResult:
     bar_payloads = [
         {
@@ -193,6 +194,7 @@ def run_isolated_indicator(
             source,
             bars=bar_payloads,
             semantic_profile=_generated_semantic_profile(semantic_profile),
+            htf_bars=_stamp_confirmed_htf_bars(htf_bars),
         )
     except IsolatedWorkerError as exc:
         raise IsolatedRunError(str(exc)) from exc
