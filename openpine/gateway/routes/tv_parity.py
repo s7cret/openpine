@@ -39,6 +39,7 @@ from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.routes.backtest import (
     _bar_series_fingerprint,
     _save_backtest_data_fingerprint,
+    _confirmed_htf_bars_for_backtest,
 )
 from openpine.gateway.ws_manager import ws_manager
 
@@ -56,15 +57,18 @@ def _run_isolated_tv_replay(
     progress_callback=None,
     effective_pre_bars=None,
     htf_bars=None,
+    htf_timeframe=None,
 ):
     del params, runtime_data_provider, progress_callback, effective_pre_bars
-    if htf_bars is None:
+    requested = htf_timeframe
+    chart_tf = str(getattr(config, "timeframe", ""))
+    if htf_bars is None and not (requested and str(requested) != chart_tf):
         from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
 
         htf_bars = _confirmed_htf_bars_from_provider_bars(
             bars,
             symbol=str(getattr(config, "symbol", "")),
-            timeframe=str(getattr(config, "timeframe", "")),
+            timeframe=chart_tf,
         )
     return adapter.run_isolated(source, bars, config, htf_bars=htf_bars)
 
@@ -725,6 +729,7 @@ async def _run_tv_parity_background(
     rel_tol: float,
     include_base_columns: bool,
     semantic_profile: str | None = None,
+    htf_timeframe: str | None = None,
 ) -> None:
     """Execute TV-candle replay and optional comparison in the background."""
 
@@ -828,6 +833,14 @@ async def _run_tv_parity_background(
             )
 
         run_effective_pre_bars = effective_pre_bars if effective_pre_bars > 0 else None
+        stamped_htf = _confirmed_htf_bars_for_backtest(
+            list(parsed.bars),
+            strategy=strategy,
+            requested_timeframe=htf_timeframe,
+            load_bars=state.orchestrator.load_bars,
+            from_ms=int(parsed.summary["from_time"]),
+            to_ms=int(parsed.summary["to_time"]),
+        )
         run_args = (
             BacktestEngineAdapter(),
             source,
@@ -837,10 +850,12 @@ async def _run_tv_parity_background(
             runtime_data_provider,
             progress_callback,
         )
-        run_callable = (
-            partial(_run_isolated_tv_replay, *run_args, run_effective_pre_bars)
-            if run_effective_pre_bars is not None
-            else partial(_run_isolated_tv_replay, *run_args)
+        run_callable = partial(
+            _run_isolated_tv_replay,
+            *run_args,
+            effective_pre_bars=run_effective_pre_bars,
+            htf_bars=stamped_htf,
+            htf_timeframe=htf_timeframe,
         )
 
         loop = asyncio.get_event_loop()
@@ -1010,6 +1025,7 @@ async def run_tv_parity(
     include_base_columns: bool = Form(False),
     semantic_profile: str | None = Form(None),
     allow_legacy: bool = Form(False),
+    htf_timeframe: str | None = Form(None),
     state: GatewayState = Depends(get_state),
 ) -> dict[str, Any]:
     """Queue a real backtest replay using uploaded TradingView candles."""
@@ -1221,6 +1237,7 @@ async def run_tv_parity(
         rel_tol=rel_tol,
         include_base_columns=include_base_columns,
         semantic_profile=admitted_profile.value,
+        htf_timeframe=htf_timeframe,
     )
     return {
         "run_id": run_id,

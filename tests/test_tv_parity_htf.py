@@ -100,3 +100,46 @@ def test_isolated_tv_replay_does_not_invent_time_close() -> None:
     )
     assert result.ok is True
     assert seen["htf_bars"] is None
+
+
+def test_isolated_tv_replay_keeps_none_when_other_htf_unconfirmed() -> None:
+    seen: dict[str, object] = {}
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, **kwargs):
+            seen["htf_bars"] = kwargs.get("htf_bars")
+            return SimpleNamespace(ok=True)
+
+    result = _run_isolated_tv_replay(
+        Adapter(),
+        b"STAMPED",
+        [
+            SimpleNamespace(
+                time=0,
+                time_close=59_999,
+                open=1,
+                high=2,
+                low=0.5,
+                close=1.5,
+                volume=3,
+            )
+        ],
+        SimpleNamespace(symbol="BTCUSDT", timeframe="1m"),
+        {},
+        None,
+        htf_timeframe="1D",
+    )
+    assert result.ok is True
+    assert seen["htf_bars"] is None
+
+
+def test_tv_parity_run_wires_explicit_htf_timeframe() -> None:
+    import inspect
+
+    from openpine.gateway.routes import tv_parity
+
+    source = inspect.getsource(tv_parity.run_tv_parity)
+    assert "htf_timeframe" in source
+    bg = inspect.getsource(tv_parity._run_tv_parity_background)
+    assert "_confirmed_htf_bars_for_backtest" in bg
+    assert "htf_bars=stamped_htf" in bg
