@@ -118,6 +118,17 @@ class StrategyJobExecutor:
         self.htf_bars = htf_bars
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
+    def _confirmed_htf_bars(self, strategy: StrategyInstance, bar: Bar):
+        if self.htf_bars is not None:
+            return self.htf_bars
+        from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+
+        return _confirmed_htf_bars_from_provider_bars(
+            [bar],
+            symbol=str(strategy.symbol).upper(),
+            timeframe=str(strategy.timeframe),
+        )
+
     def process(self, job: Job) -> StrategyJobExecutionResult:
         """Process one queued strategy bar job and update scheduler status."""
 
@@ -251,7 +262,11 @@ class StrategyJobExecutor:
         if self.strategy_loader is None:
             source = self._stamped_artifact_source(strategy)
             return self.runtime_adapter.run_isolated(
-                source, [bar], config, resume_state=resume_state, htf_bars=self.htf_bars
+                source,
+                [bar],
+                config,
+                resume_state=resume_state,
+                htf_bars=self._confirmed_htf_bars(strategy, bar),
             )
         strategy_class = self.strategy_loader(strategy)
         runtime_data_provider = self.runtime_data_provider

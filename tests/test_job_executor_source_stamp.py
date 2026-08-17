@@ -114,3 +114,63 @@ def test_job_executor_forwards_confirmed_htf_bars(monkeypatch) -> None:
     )
     executor._run_strategy(_strategy(), _bar(0), None)
     assert seen["htf_bars"] == htf_bars
+
+
+def test_job_executor_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.workers.strategy_job_executor.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    seen: dict[str, object] = {}
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["htf_bars"] = htf_bars
+            return SimpleNamespace(ok=True)
+
+    executor = StrategyJobExecutor(
+        registry=SimpleNamespace(),
+        orchestrator=SimpleNamespace(),
+        scheduler=SimpleNamespace(),
+        state_store=SimpleNamespace(),
+        runtime_adapter=Adapter(),
+    )
+    executor._run_strategy(_strategy(), _bar(0), None)
+    assert seen["htf_bars"] == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "15m",
+            "time": 0,
+            "time_close": 900_000,
+            "open": 100.0,
+            "high": 110.0,
+            "low": 90.0,
+            "close": 105.0,
+            "volume": 42.0,
+        }
+    ]
+
+
+def test_job_executor_does_not_invent_time_close(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.workers.strategy_job_executor.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    seen: dict[str, object] = {}
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["htf_bars"] = htf_bars
+            return SimpleNamespace(ok=True)
+
+    executor = StrategyJobExecutor(
+        registry=SimpleNamespace(),
+        orchestrator=SimpleNamespace(),
+        scheduler=SimpleNamespace(),
+        state_store=SimpleNamespace(),
+        runtime_adapter=Adapter(),
+    )
+    bar = _bar(0)
+    object.__setattr__(bar, "time_close", None)
+    executor._run_strategy(_strategy(), bar, None)
+    assert seen["htf_bars"] is None
