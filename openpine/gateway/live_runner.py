@@ -77,6 +77,17 @@ class LiveStrategyRunner:
         self._strategy_states: dict[str, StrategyBarState] = {}
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
+    def _confirmed_htf_bars(self, strategy, bars):
+        if self.htf_bars is not None:
+            return self.htf_bars
+        from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+
+        return _confirmed_htf_bars_from_provider_bars(
+            bars,
+            symbol=str(strategy.symbol).upper(),
+            timeframe=str(strategy.timeframe),
+        )
+
     def start(self) -> None:
         """Start the live runner as an async task."""
         if self._running:
@@ -477,7 +488,7 @@ class LiveStrategyRunner:
                     bars,
                     config,
                     resume_state=resume_state,
-                    htf_bars=self.htf_bars,
+                    htf_bars=self._confirmed_htf_bars(strategy, bars),
                 )
             except IsolatedRunError:
                 raise
@@ -515,7 +526,7 @@ class LiveStrategyRunner:
                     bars,
                     config,
                     resume_state=None,
-                    htf_bars=self.htf_bars,
+                    htf_bars=self._confirmed_htf_bars(strategy, bars),
                 )
 
             new_orders = self._extract_new_orders(result.raw_result, up_to_bar_time_ms)
