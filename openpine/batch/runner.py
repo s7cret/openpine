@@ -756,7 +756,10 @@ def run_strategy(
         BacktestEngineAdapter,
         BacktestRunConfig,
     )
-    from openpine.runtime.isolated_run import capture_generated_source
+    from openpine.runtime.isolated_run import (
+        _confirmed_htf_bars_from_provider_bars,
+        capture_generated_source,
+    )
 
     timings: dict[str, float] = {}
     bars, data_meta = load_calculation_bars(entry, chart, args, timings)
@@ -789,8 +792,15 @@ def run_strategy(
         config_cls=BacktestRunConfig,
     )
     t0 = time.perf_counter()
+    htf_bars = getattr(args, "htf_bars", None)
+    if htf_bars is None:
+        htf_bars = _confirmed_htf_bars_from_provider_bars(
+            bars,
+            symbol=str(args.symbol),
+            timeframe=str(chart.timeframe),
+        )
     result = BacktestEngineAdapter().run_isolated(
-        source_bytes, bars, config, htf_bars=getattr(args, "htf_bars", None)
+        source_bytes, bars, config, htf_bars=htf_bars
     )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     raw = result.raw_result
