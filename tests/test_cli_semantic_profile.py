@@ -8,6 +8,7 @@ from openpine_contracts import AdmitError
 from openpine.cli.runtime_helpers import (
     _build_strategy_backtest_config,
     _build_strategy_replay_config,
+    _prepare_strategy_replay_inputs,
     _run_indicator_plot_runtime,
     _run_strategy_backtest_adapter,
 )
@@ -268,3 +269,119 @@ def test_cli_strategy_replay_forwards_confirmed_htf_bars(monkeypatch) -> None:
     result = CliRunner().invoke(cli_main.cli, ["strategy", "replay", "s1"])
     assert result.exit_code == 0, result.output
     assert captured["htf_bars"] == htf_bars
+
+
+def test_prepare_strategy_replay_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
+    bars = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._parse_strategy_backtest_window",
+        lambda **kwargs: (0, 60_000, None, None),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_class",
+        lambda **kwargs: (b"STAMPED", 0.0),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_bars",
+        lambda **kwargs: (bars, 0.0, None, None),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._exit_if_no_strategy_bars",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._strategy_backtest_declaration_args",
+        lambda **kwargs: {},
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._build_strategy_replay_config",
+        lambda **kwargs: object(),
+    )
+    prepared = _prepare_strategy_replay_inputs(
+        strategy=SimpleNamespace(symbol="BTCUSDT", timeframe="1m", params_json="{}"),
+        strategy_id="s1",
+        from_date=None,
+        to_date=None,
+        now_ms=0,
+        registry=SimpleNamespace(),
+        load_strategy_class=None,
+        artifact_error_cls=Exception,
+        artifact_store_cls=None,
+        bar_query_cls=None,
+        instrument_key_cls=None,
+        parse_timeframe_func=None,
+        orchestrator_cls=None,
+        config_cls=None,
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+    )
+    assert prepared.htf_bars == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1m",
+            "time": 0,
+            "time_close": 59_999,
+            "open": 1.0,
+            "high": 2.0,
+            "low": 0.5,
+            "close": 1.5,
+            "volume": 3.0,
+        }
+    ]
+
+
+def test_prepare_strategy_replay_does_not_invent_time_close(monkeypatch) -> None:
+    bars = [SimpleNamespace(time=1, open=1, high=1, low=1, close=1, volume=1)]
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._parse_strategy_backtest_window",
+        lambda **kwargs: (0, 60_000, None, None),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_class",
+        lambda **kwargs: (b"STAMPED", 0.0),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_bars",
+        lambda **kwargs: (bars, 0.0, None, None),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._exit_if_no_strategy_bars",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._strategy_backtest_declaration_args",
+        lambda **kwargs: {},
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._build_strategy_replay_config",
+        lambda **kwargs: object(),
+    )
+    prepared = _prepare_strategy_replay_inputs(
+        strategy=SimpleNamespace(symbol="BTCUSDT", timeframe="1m", params_json="{}"),
+        strategy_id="s1",
+        from_date=None,
+        to_date=None,
+        now_ms=0,
+        registry=SimpleNamespace(),
+        load_strategy_class=None,
+        artifact_error_cls=Exception,
+        artifact_store_cls=None,
+        bar_query_cls=None,
+        instrument_key_cls=None,
+        parse_timeframe_func=None,
+        orchestrator_cls=None,
+        config_cls=None,
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+    )
+    assert prepared.htf_bars is None

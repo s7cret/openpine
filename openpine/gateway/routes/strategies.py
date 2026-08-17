@@ -23,6 +23,7 @@ from openpine.registry.strategies import (
     SQLiteStrategyRegistry,
     WorkerCircuitOpenError,
 )
+from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/strategies", tags=["strategies"])
@@ -501,45 +502,6 @@ async def delete_strategy_preview(
 
 def _run_isolated_strategy_replay(adapter, source, bars, config, htf_bars=None):
     return adapter.run_isolated(source, bars, config, htf_bars=htf_bars)
-
-
-def _confirmed_htf_bars_from_provider_bars(bars, *, symbol: str, timeframe: str):
-    if not bars:
-        return None
-    stamped: list[dict[str, object]] = []
-    for bar in bars:
-        if isinstance(bar, dict):
-            time_close = bar.get("time_close")
-            time = bar.get("time", 0)
-            open_ = bar.get("open", 0)
-            high = bar.get("high", 0)
-            low = bar.get("low", 0)
-            close = bar.get("close", 0)
-            volume = bar.get("volume") or 0
-        else:
-            time_close = getattr(bar, "time_close", None)
-            time = getattr(bar, "time", 0)
-            open_ = getattr(bar, "open", 0)
-            high = getattr(bar, "high", 0)
-            low = getattr(bar, "low", 0)
-            close = getattr(bar, "close", 0)
-            volume = getattr(bar, "volume", 0) or 0
-        if time_close is None:
-            return None
-        stamped.append(
-            {
-                "symbol": str(symbol),
-                "timeframe": str(timeframe),
-                "time": int(time),
-                "time_close": int(time_close),
-                "open": float(open_),
-                "high": float(high),
-                "low": float(low),
-                "close": float(close),
-                "volume": float(volume),
-            }
-        )
-    return stamped
 
 
 @router.post("/{strategy_id}/replay")

@@ -18,7 +18,7 @@ from openpine.exchange_metadata import (
     default_qty_rounding_mode as metadata_default_qty_rounding_mode,
 )
 from openpine.exchange_metadata import default_qty_step
-from openpine.runtime.isolated_run import IsolatedRunError
+from openpine.runtime.isolated_run import IsolatedRunError, _confirmed_htf_bars_from_provider_bars
 from openpine.timezones import parse_timestamp_ms
 
 
@@ -605,6 +605,11 @@ def _prepare_strategy_replay_inputs(
         bars=bars,
         params=params,
         config=config,
+        htf_bars=_confirmed_htf_bars_from_provider_bars(
+            bars,
+            symbol=str(strategy.symbol),
+            timeframe=str(strategy.timeframe),
+        ),
     )
 
 
