@@ -324,3 +324,125 @@ def test_batch_indicator_does_not_invent_time_close(
     )
     assert status["status"] == "ok"
     assert captured["htf_bars"] is None
+
+
+def test_batch_indicator_fetches_explicit_htf_timeframe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, object] = {}
+    loaded: list[str] = []
+    chart_bars = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    fetched = [
+        SimpleNamespace(
+            time=0,
+            time_close=86_399_999,
+            open=40,
+            high=43,
+            low=39,
+            close=42,
+            volume=1,
+        )
+    ]
+
+    def load_bars(entry, chart, args, timings):
+        loaded.append(str(chart.timeframe))
+        bars = fetched if chart.timeframe == "1D" else chart_bars
+        return bars, {}
+
+    monkeypatch.setattr("openpine.batch.runner.load_calculation_bars", load_bars)
+    monkeypatch.setattr(
+        "openpine.batch.runner.timed_call",
+        lambda timings, name, fn, *a, **k: b"src",
+    )
+    monkeypatch.setattr(
+        "openpine.batch.runner._infer_tv_bar_index_offset",
+        lambda chart, bars: (0, None),
+    )
+
+    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+        captured["htf_bars"] = htf_bars
+        return SimpleNamespace(plots=())
+
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.run_isolated_indicator", fake_run
+    )
+    monkeypatch.setattr("openpine.export.export_plot_records", lambda *a, **k: 0)
+    status = run_indicator(
+        _entry(tmp_path),
+        SimpleNamespace(id="pine"),
+        "art",
+        _entry(tmp_path).charts[0],
+        tmp_path / "out",
+        _args(semantic_profile="strict_5x", htf_timeframe="1D"),
+    )
+    assert status["status"] == "ok"
+    assert loaded == ["1m", "1D"]
+    assert captured["htf_bars"] == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40.0,
+            "high": 43.0,
+            "low": 39.0,
+            "close": 42.0,
+            "volume": 1.0,
+        }
+    ]
+
+
+def test_batch_indicator_same_htf_timeframe_does_not_refetch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    loaded: list[str] = []
+    bars = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+
+    def load_bars(entry, chart, args, timings):
+        loaded.append(str(chart.timeframe))
+        return bars, {}
+
+    monkeypatch.setattr("openpine.batch.runner.load_calculation_bars", load_bars)
+    monkeypatch.setattr(
+        "openpine.batch.runner.timed_call",
+        lambda timings, name, fn, *a, **k: b"src",
+    )
+    monkeypatch.setattr(
+        "openpine.batch.runner._infer_tv_bar_index_offset",
+        lambda chart, bars: (0, None),
+    )
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.run_isolated_indicator",
+        lambda *a, **k: SimpleNamespace(plots=()),
+    )
+    monkeypatch.setattr("openpine.export.export_plot_records", lambda *a, **k: 0)
+    status = run_indicator(
+        _entry(tmp_path),
+        SimpleNamespace(id="pine"),
+        "art",
+        _entry(tmp_path).charts[0],
+        tmp_path / "out",
+        _args(semantic_profile="strict_5x", htf_timeframe="1m"),
+    )
+    assert status["status"] == "ok"
+    assert loaded == ["1m"]
