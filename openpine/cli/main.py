@@ -2790,8 +2790,16 @@ def strategy_backtest(
 @click.argument("strategy_id")
 @click.option("--from", "from_date")
 @click.option("--to", "to_date")
+@click.option(
+    "--htf-timeframe",
+    default=None,
+    help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
+)
 def strategy_replay(
-    strategy_id: str, from_date: str | None, to_date: str | None
+    strategy_id: str,
+    from_date: str | None,
+    to_date: str | None,
+    htf_timeframe: str | None,
 ) -> None:
     """Run replay for a strategy."""
     import time as _time_module
@@ -2850,6 +2858,7 @@ def strategy_replay(
             config_cls=BacktestRunConfig,
             perf_counter=_time_module.perf_counter,
             console=console,
+            htf_timeframe=htf_timeframe,
         )
         registry.update_status(strategy_id, "running")
         try:

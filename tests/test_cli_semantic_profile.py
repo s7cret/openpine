@@ -390,6 +390,178 @@ def test_prepare_strategy_replay_does_not_invent_time_close(monkeypatch) -> None
     assert prepared.htf_bars is None
 
 
+def test_prepare_strategy_replay_fetches_explicit_htf_timeframe(monkeypatch) -> None:
+    chart = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    fetched = [
+        SimpleNamespace(
+            time=0,
+            time_close=86_399_999,
+            open=40,
+            high=43,
+            low=39,
+            close=42,
+            volume=1,
+        )
+    ]
+    loaded: list[str] = []
+
+    def load_bars(**kwargs):
+        timeframe = str(kwargs["strategy"].timeframe)
+        loaded.append(timeframe)
+        bars = fetched if timeframe == "1D" else chart
+        return bars, None, None, 0.0
+
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._parse_strategy_backtest_window",
+        lambda **kwargs: (0, 60_000, None, None),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_class",
+        lambda **kwargs: (b"STAMPED", 0.0),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_bars",
+        load_bars,
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._exit_if_no_strategy_bars",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._strategy_backtest_declaration_args",
+        lambda **kwargs: {},
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._build_strategy_replay_config",
+        lambda **kwargs: object(),
+    )
+    prepared = _prepare_strategy_replay_inputs(
+        strategy=SimpleNamespace(
+            symbol="BTCUSDT",
+            timeframe="1m",
+            params_json="{}",
+            exchange="binance",
+            market_type="spot",
+        ),
+        strategy_id="s1",
+        from_date=None,
+        to_date=None,
+        now_ms=0,
+        registry=SimpleNamespace(),
+        load_strategy_class=None,
+        artifact_error_cls=Exception,
+        artifact_store_cls=None,
+        bar_query_cls=None,
+        instrument_key_cls=None,
+        parse_timeframe_func=None,
+        orchestrator_cls=None,
+        config_cls=None,
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+        htf_timeframe="1D",
+    )
+    assert loaded == ["1m", "1D"]
+    assert prepared.htf_bars == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40.0,
+            "high": 43.0,
+            "low": 39.0,
+            "close": 42.0,
+            "volume": 1.0,
+        }
+    ]
+
+
+def test_prepare_strategy_replay_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
+    bars = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    loaded: list[str] = []
+
+    def load_bars(**kwargs):
+        loaded.append(str(kwargs["strategy"].timeframe))
+        return bars, None, None, 0.0
+
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._parse_strategy_backtest_window",
+        lambda **kwargs: (0, 60_000, None, None),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_class",
+        lambda **kwargs: (b"STAMPED", 0.0),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_bars",
+        load_bars,
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._exit_if_no_strategy_bars",
+        lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._strategy_backtest_declaration_args",
+        lambda **kwargs: {},
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._build_strategy_replay_config",
+        lambda **kwargs: object(),
+    )
+    prepared = _prepare_strategy_replay_inputs(
+        strategy=SimpleNamespace(symbol="BTCUSDT", timeframe="1m", params_json="{}"),
+        strategy_id="s1",
+        from_date=None,
+        to_date=None,
+        now_ms=0,
+        registry=SimpleNamespace(),
+        load_strategy_class=None,
+        artifact_error_cls=Exception,
+        artifact_store_cls=None,
+        bar_query_cls=None,
+        instrument_key_cls=None,
+        parse_timeframe_func=None,
+        orchestrator_cls=None,
+        config_cls=None,
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+        htf_timeframe="1m",
+    )
+    assert loaded == ["1m"]
+    assert prepared.htf_bars[0]["timeframe"] == "1m"
+
+
+def test_cli_replay_help_lists_htf_timeframe() -> None:
+    import importlib
+
+    from click.testing import CliRunner
+
+    cli_main = importlib.import_module("openpine.cli.main")
+    result = CliRunner().invoke(cli_main.cli, ["strategy", "replay", "--help"])
+    assert result.exit_code == 0, result.output
+    assert "--htf-timeframe" in result.output
+
+
 def _backtest_prepare_deps() -> SimpleNamespace:
     return SimpleNamespace(
         capture_generated_source=object(),

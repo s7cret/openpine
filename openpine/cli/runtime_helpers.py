@@ -570,6 +570,7 @@ def _prepare_strategy_replay_inputs(
     config_cls,
     perf_counter,
     console,
+    htf_timeframe: str | None = None,
 ):
     start_ms, end_ms, _, _ = _parse_strategy_backtest_window(
         from_date=from_date,
@@ -631,15 +632,35 @@ def _prepare_strategy_replay_inputs(
         end_ms=end_ms,
         config_cls=config_cls,
     )
+    fetched_htf_bars = None
+    if htf_timeframe and str(htf_timeframe) != str(strategy.timeframe):
+        fetched_htf_bars, _, _, _ = _load_strategy_backtest_bars(
+            strategy=SimpleNamespace(
+                symbol=strategy.symbol,
+                exchange=strategy.exchange,
+                market_type=strategy.market_type,
+                timeframe=htf_timeframe,
+            ),
+            start_ms=start_ms,
+            end_ms=end_ms,
+            bar_query_cls=bar_query_cls,
+            instrument_key_cls=instrument_key_cls,
+            parse_timeframe_func=parse_timeframe_func,
+            orchestrator_cls=orchestrator_cls,
+            provider_factory=lambda: None,
+            console=console,
+        )
     return SimpleNamespace(
         strategy_class=strategy_class,
         bars=bars,
         params=params,
         config=config,
-        htf_bars=_confirmed_htf_bars_from_provider_bars(
-            bars,
+        htf_bars=_confirmed_htf_bars_for_timeframe(
+            chart_bars=bars,
             symbol=str(strategy.symbol),
-            timeframe=str(strategy.timeframe),
+            chart_timeframe=str(strategy.timeframe),
+            requested_timeframe=htf_timeframe,
+            fetched_htf_bars=fetched_htf_bars,
         ),
     )
 
