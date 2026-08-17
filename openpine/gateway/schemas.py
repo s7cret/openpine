@@ -233,6 +233,7 @@ class BacktestRunRequest(BaseModel):
     )
     semantic_profile: str | None = None
     allow_legacy: bool = False
+    htf_timeframe: str | None = Field(default=None, max_length=16)
 
 
 class BacktestRunResponse(BaseModel):

@@ -79,6 +79,7 @@ class _ArtifactBacktestSpec:
     prefetch_end_ms: int
     source: bytes
     htf_bars: list[dict[str, Any]] | None = None
+    htf_timeframe: str | None = None
 
 
 _ACTIVE_BACKTEST_WORKERS: dict[str, _BacktestWorker] = {}
@@ -994,7 +995,7 @@ def _parse_date_ms(value: str) -> int:
     return int(parse_timestamp_ms(value, 0))
 
 
-def _market_data_query_for_strategy(strategy, from_ms: int, to_ms: int):
+def _market_data_query_for_strategy(strategy, from_ms: int, to_ms: int, timeframe: str | None = None):
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
     return BarQuery(
@@ -1003,10 +1004,35 @@ def _market_data_query_for_strategy(strategy, from_ms: int, to_ms: int):
             market=strategy.market_type.lower(),
             symbol=strategy.symbol.upper(),
         ),
-        timeframe=parse_timeframe(strategy.timeframe),
+        timeframe=parse_timeframe(timeframe or strategy.timeframe),
         start_ms=from_ms,
         end_ms=to_ms,
         gap_policy="allow_with_metadata",
+    )
+
+
+def _confirmed_htf_bars_for_backtest(
+    chart_bars,
+    *,
+    strategy,
+    requested_timeframe: str | None,
+    load_bars,
+    from_ms: int,
+    to_ms: int,
+):
+    from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+
+    fetched = None
+    if requested_timeframe and str(requested_timeframe) != str(strategy.timeframe):
+        query = _market_data_query_for_strategy(strategy, from_ms, to_ms, timeframe=str(requested_timeframe))
+        series = load_bars(query)
+        fetched = list(getattr(series, "bars", series))
+    return _confirmed_htf_bars_for_timeframe(
+        chart_bars=chart_bars,
+        symbol=str(strategy.symbol).upper(),
+        chart_timeframe=str(strategy.timeframe),
+        requested_timeframe=requested_timeframe,
+        fetched_htf_bars=fetched,
     )
 
 
@@ -1129,7 +1155,10 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
         if not source:
             raise RuntimeError("captured artifact source is missing")
         htf_bars = spec.htf_bars
-        if htf_bars is None:
+        requested = spec.htf_timeframe
+        if htf_bars is None and not (
+            requested and str(requested) != str(spec.timeframe)
+        ):
             from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
 
             htf_bars = _confirmed_htf_bars_from_provider_bars(
@@ -1754,6 +1783,7 @@ async def _run_backtest_background(
     initial_capital_override: float | None = None,
     admission_lease: _BacktestLease | None = None,
     semantic_profile: str | None = None,
+    htf_timeframe: str | None = None,
 ) -> None:
     """Execute backtest in background, update progress via WebSocket."""
     import asyncio
@@ -2023,6 +2053,14 @@ async def _run_backtest_background(
         cache_dir = (
             configured_cache_root or (configured_data_dir / "cache")
         ) / "marketdata"
+        stamped_htf = _confirmed_htf_bars_for_backtest(
+            bars,
+            strategy=strategy,
+            requested_timeframe=htf_timeframe,
+            load_bars=state.orchestrator.load_bars,
+            from_ms=from_ms,
+            to_ms=to_ms,
+        )
         artifact_spec = _ArtifactBacktestSpec(
             pine_id=strategy.pine_id,
             artifact_id=strategy.artifact_id,
@@ -2033,6 +2071,8 @@ async def _run_backtest_background(
             market=config.market_type,
             prefetch_end_ms=to_ms,
             source=generated_source,
+            htf_bars=stamped_htf,
+            htf_timeframe=htf_timeframe,
         )
 
         def progress_callback(done: int, total: int) -> None:
@@ -2371,6 +2411,7 @@ async def run_backtest(
             body.initial_capital,
             admission_lease,
             semantic_profile=admitted_profile.value,
+            htf_timeframe=getattr(body, "htf_timeframe", None),
         )
     except BaseException as exc:
         admission_lease.release()
