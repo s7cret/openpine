@@ -499,6 +499,10 @@ async def delete_strategy_preview(
 # ── Replay ────────────────────────────────────────────────────────────────────
 
 
+def _run_isolated_strategy_replay(adapter, source, bars, config, htf_bars=None):
+    return adapter.run_isolated(source, bars, config, htf_bars=htf_bars)
+
+
 @router.post("/{strategy_id}/replay")
 async def strategy_replay(
     strategy_id: str,
@@ -586,7 +590,13 @@ async def strategy_replay(
                 semantic_profile=admitted.value,
             )
 
-            result = BacktestEngineAdapter().run_isolated(source, bars, config)
+            result = _run_isolated_strategy_replay(
+                BacktestEngineAdapter(),
+                source,
+                bars,
+                config,
+                htf_bars=None,
+            )
 
             registry.update_status(strategy_id, "paused")
             await ws_manager.broadcast(
