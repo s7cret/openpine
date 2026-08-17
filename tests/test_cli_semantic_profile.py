@@ -8,6 +8,7 @@ from openpine_contracts import AdmitError
 from openpine.cli.runtime_helpers import (
     _build_strategy_backtest_config,
     _build_strategy_replay_config,
+    _prepare_indicator_plot_inputs,
     _prepare_strategy_backtest_inputs,
     _prepare_strategy_replay_inputs,
     _run_indicator_plot_runtime,
@@ -493,6 +494,111 @@ def test_prepare_strategy_backtest_does_not_invent_time_close(monkeypatch) -> No
         now_ms=0,
         registry=SimpleNamespace(),
         deps=_backtest_prepare_deps(),
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+    )
+    assert prepared.htf_bars is None
+
+
+def _patch_indicator_prepare(monkeypatch, bars) -> None:
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_pine_source_or_exit",
+        lambda **kwargs: SimpleNamespace(id="pine"),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._require_active_pine_artifact",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._parse_indicator_plot_window",
+        lambda **kwargs: (0, 60_000, None, None),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_generated_class_timed",
+        lambda **kwargs: (b"STAMPED", 0.0),
+    )
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_indicator_plot_bars",
+        lambda **kwargs: (bars, SimpleNamespace(), None, 0.0),
+    )
+
+
+def test_prepare_indicator_plot_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
+    bars = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    _patch_indicator_prepare(monkeypatch, bars)
+    prepared = _prepare_indicator_plot_inputs(
+        name="pine",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        exchange="binance",
+        market_type="spot",
+        from_date="1",
+        to_date="2",
+        compare_from=None,
+        compare_to=None,
+        now_ms=0,
+        registry_cls=object,
+        parse_time_ms_func=int,
+        load_generated_class=object(),
+        artifact_error_cls=Exception,
+        bar_query_cls=object,
+        instrument_key_cls=object,
+        parse_timeframe_func=object(),
+        orchestrator_cls=object,
+        provider_factory=object(),
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+    )
+    assert prepared.htf_bars == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1m",
+            "time": 0,
+            "time_close": 59_999,
+            "open": 1.0,
+            "high": 2.0,
+            "low": 0.5,
+            "close": 1.5,
+            "volume": 3.0,
+        }
+    ]
+
+
+def test_prepare_indicator_plot_does_not_invent_time_close(monkeypatch) -> None:
+    _patch_indicator_prepare(
+        monkeypatch,
+        [SimpleNamespace(time=1, open=1, high=1, low=1, close=1, volume=1)],
+    )
+    prepared = _prepare_indicator_plot_inputs(
+        name="pine",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        exchange="binance",
+        market_type="spot",
+        from_date="1",
+        to_date="2",
+        compare_from=None,
+        compare_to=None,
+        now_ms=0,
+        registry_cls=object,
+        parse_time_ms_func=int,
+        load_generated_class=object(),
+        artifact_error_cls=Exception,
+        bar_query_cls=object,
+        instrument_key_cls=object,
+        parse_timeframe_func=object(),
+        orchestrator_cls=object,
+        provider_factory=object(),
         perf_counter=lambda: 0.0,
         console=SimpleNamespace(),
     )

@@ -1144,6 +1144,11 @@ def _prepare_indicator_plot_inputs(
             "load_artifact_sec": load_artifact_sec,
             "data_load_sec": data_load_sec,
         },
+        htf_bars=_confirmed_htf_bars_from_provider_bars(
+            bars,
+            symbol=str(symbol),
+            timeframe=str(timeframe),
+        ),
     )
 
 
