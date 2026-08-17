@@ -472,6 +472,7 @@ class ReplayRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     from_date: NonBlankStr | None = Field(default=None, max_length=64)
     to_date: NonBlankStr | None = Field(default=None, max_length=64)
+    htf_timeframe: str | None = Field(default=None, max_length=16)
 
 
 class ReplayResponse(BaseModel):

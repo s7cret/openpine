@@ -14,6 +14,7 @@ from openpine.gateway.routes.activation_guard import (
 )
 from openpine.gateway.schemas import (
     CompareTvRequest,
+    ReplayRequest,
     StrategyCreate,
     StrategyResponse,
     StrategyUpdate,
@@ -23,7 +24,7 @@ from openpine.registry.strategies import (
     SQLiteStrategyRegistry,
     WorkerCircuitOpenError,
 )
-from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/strategies", tags=["strategies"])
@@ -504,9 +505,42 @@ def _run_isolated_strategy_replay(adapter, source, bars, config, htf_bars=None):
     return adapter.run_isolated(source, bars, config, htf_bars=htf_bars)
 
 
+def _confirmed_htf_bars_for_replay(
+    bars,
+    *,
+    symbol: str,
+    chart_timeframe: str,
+    requested_timeframe: str | None,
+    load_bars,
+    instrument,
+    start_ms: int,
+    end_ms: int,
+):
+    fetched = None
+    if requested_timeframe and str(requested_timeframe) != str(chart_timeframe):
+        from marketdata_provider.contracts import BarQuery, parse_timeframe
+
+        fetched = load_bars(
+            BarQuery(
+                instrument=instrument,
+                timeframe=parse_timeframe(str(requested_timeframe)),
+                start_ms=start_ms,
+                end_ms=end_ms,
+            )
+        )
+    return _confirmed_htf_bars_for_timeframe(
+        chart_bars=bars,
+        symbol=symbol,
+        chart_timeframe=chart_timeframe,
+        requested_timeframe=requested_timeframe,
+        fetched_htf_bars=fetched,
+    )
+
+
 @router.post("/{strategy_id}/replay")
 async def strategy_replay(
     strategy_id: str,
+    body: ReplayRequest | None = None,
     state: GatewayState = Depends(get_state),
     registry: SQLiteStrategyRegistry = Depends(get_strategy_registry),
 ) -> dict[str, object]:
@@ -596,8 +630,15 @@ async def strategy_replay(
                 source,
                 bars,
                 config,
-                htf_bars=_confirmed_htf_bars_from_provider_bars(
-                    bars, symbol=symbol, timeframe=str(s.timeframe)
+                htf_bars=_confirmed_htf_bars_for_replay(
+                    bars,
+                    symbol=symbol,
+                    chart_timeframe=str(s.timeframe),
+                    requested_timeframe=getattr(body, "htf_timeframe", None) if body is not None else None,
+                    load_bars=state.orchestrator.get_bars,
+                    instrument=key,
+                    start_ms=start_ms,
+                    end_ms=end_ms,
                 ),
             )
 
