@@ -836,6 +836,11 @@ def pine_compile(name: str, force: bool) -> None:
     type=click.Choice(["strict_5x", "legacy_4x"], case_sensitive=True),
     help="Admitted semantic profile for isolated indicator run",
 )
+@click.option(
+    "--htf-timeframe",
+    default=None,
+    help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
+)
 def pine_run_plots(
     name: str,
     symbol: str,
@@ -849,6 +854,7 @@ def pine_run_plots(
     compare_to: str | None,
     progress_every: int,
     semantic_profile: str,
+    htf_timeframe: str | None,
 ) -> None:
     """Run an indicator Pine source and export normalized plot CSV."""
     import time as _time
@@ -879,6 +885,7 @@ def pine_run_plots(
         provider_factory=deps.create_local_marketdata_provider_adapter,
         perf_counter=_time.perf_counter,
         console=console,
+        htf_timeframe=htf_timeframe,
     )
     timings.update(prepared.timings)
 

@@ -778,6 +778,144 @@ def test_prepare_indicator_plot_does_not_invent_time_close(monkeypatch) -> None:
     assert prepared.htf_bars is None
 
 
+def test_prepare_indicator_plot_fetches_explicit_htf_timeframe(monkeypatch) -> None:
+    chart = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    fetched = [
+        SimpleNamespace(
+            time=0,
+            time_close=86_399_999,
+            open=40,
+            high=43,
+            low=39,
+            close=42,
+            volume=1,
+        )
+    ]
+    loaded: list[str] = []
+
+    def load_bars(**kwargs):
+        timeframe = str(kwargs["timeframe"])
+        loaded.append(timeframe)
+        bars = fetched if timeframe == "1D" else chart
+        return bars, SimpleNamespace(), None, 0.0
+
+    _patch_indicator_prepare(monkeypatch, chart)
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_indicator_plot_bars",
+        load_bars,
+    )
+    prepared = _prepare_indicator_plot_inputs(
+        name="pine",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        exchange="binance",
+        market_type="spot",
+        from_date="1",
+        to_date="2",
+        compare_from=None,
+        compare_to=None,
+        now_ms=0,
+        registry_cls=object,
+        parse_time_ms_func=int,
+        load_generated_class=object(),
+        artifact_error_cls=Exception,
+        bar_query_cls=object,
+        instrument_key_cls=object,
+        parse_timeframe_func=object(),
+        orchestrator_cls=object,
+        provider_factory=object(),
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+        htf_timeframe="1D",
+    )
+    assert loaded == ["1m", "1D"]
+    assert prepared.htf_bars == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40.0,
+            "high": 43.0,
+            "low": 39.0,
+            "close": 42.0,
+            "volume": 1.0,
+        }
+    ]
+
+
+def test_prepare_indicator_plot_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
+    bars = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    loaded: list[str] = []
+
+    def load_bars(**kwargs):
+        loaded.append(str(kwargs["timeframe"]))
+        return bars, SimpleNamespace(), None, 0.0
+
+    _patch_indicator_prepare(monkeypatch, bars)
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_indicator_plot_bars",
+        load_bars,
+    )
+    prepared = _prepare_indicator_plot_inputs(
+        name="pine",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        exchange="binance",
+        market_type="spot",
+        from_date="1",
+        to_date="2",
+        compare_from=None,
+        compare_to=None,
+        now_ms=0,
+        registry_cls=object,
+        parse_time_ms_func=int,
+        load_generated_class=object(),
+        artifact_error_cls=Exception,
+        bar_query_cls=object,
+        instrument_key_cls=object,
+        parse_timeframe_func=object(),
+        orchestrator_cls=object,
+        provider_factory=object(),
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+        htf_timeframe="1m",
+    )
+    assert loaded == ["1m"]
+    assert prepared.htf_bars[0]["timeframe"] == "1m"
+
+
+def test_cli_run_plots_help_lists_htf_timeframe() -> None:
+    import importlib
+
+    from click.testing import CliRunner
+
+    cli_main = importlib.import_module("openpine.cli.main")
+    result = CliRunner().invoke(cli_main.cli, ["pine", "run-plots", "--help"])
+    assert result.exit_code == 0, result.output
+    assert "--htf-timeframe" in result.output
+
+
 def test_confirmed_htf_selector_uses_fetched_series_for_other_timeframe() -> None:
     chart = [SimpleNamespace(time=0, time_close=59_999, open=1, high=1, low=1, close=1, volume=1)]
     fetched = [

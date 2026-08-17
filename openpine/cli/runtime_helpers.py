@@ -21,7 +21,6 @@ from openpine.exchange_metadata import default_qty_step
 from openpine.runtime.isolated_run import (
     IsolatedRunError,
     _confirmed_htf_bars_for_timeframe,
-    _confirmed_htf_bars_from_provider_bars,
 )
 from openpine.timezones import parse_timestamp_ms
 
@@ -1129,6 +1128,7 @@ def _prepare_indicator_plot_inputs(
     provider_factory,
     perf_counter,
     console,
+    htf_timeframe: str | None = None,
 ):
     source = _load_pine_source_or_exit(
         registry_cls=registry_cls,
@@ -1177,6 +1177,22 @@ def _prepare_indicator_plot_inputs(
         console.print(f"[red]No candle data found for {symbol} {timeframe}[/red]")
         sys.exit(1)
 
+    fetched_htf_bars = None
+    if htf_timeframe and str(htf_timeframe) != str(timeframe):
+        fetched_htf_bars, _, _, _ = _load_indicator_plot_bars(
+            symbol=symbol,
+            exchange=exchange,
+            market_type=market_type,
+            timeframe=htf_timeframe,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            bar_query_cls=bar_query_cls,
+            instrument_key_cls=instrument_key_cls,
+            parse_timeframe_func=parse_timeframe_func,
+            orchestrator_cls=orchestrator_cls,
+            provider_factory=provider_factory,
+            console=console,
+        )
     return SimpleNamespace(
         source=source,
         start_ms=start_ms,
@@ -1191,10 +1207,12 @@ def _prepare_indicator_plot_inputs(
             "load_artifact_sec": load_artifact_sec,
             "data_load_sec": data_load_sec,
         },
-        htf_bars=_confirmed_htf_bars_from_provider_bars(
-            bars,
+        htf_bars=_confirmed_htf_bars_for_timeframe(
+            chart_bars=bars,
             symbol=str(symbol),
-            timeframe=str(timeframe),
+            chart_timeframe=str(timeframe),
+            requested_timeframe=htf_timeframe,
+            fetched_htf_bars=fetched_htf_bars,
         ),
     )
 
