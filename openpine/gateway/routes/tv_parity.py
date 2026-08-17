@@ -58,6 +58,14 @@ def _run_isolated_tv_replay(
     htf_bars=None,
 ):
     del params, runtime_data_provider, progress_callback, effective_pre_bars
+    if htf_bars is None:
+        from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+
+        htf_bars = _confirmed_htf_bars_from_provider_bars(
+            bars,
+            symbol=str(getattr(config, "symbol", "")),
+            timeframe=str(getattr(config, "timeframe", "")),
+        )
     return adapter.run_isolated(source, bars, config, htf_bars=htf_bars)
 
 
