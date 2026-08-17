@@ -106,6 +106,7 @@ class StrategyJobExecutor:
         strategy_loader: StrategyClassLoader | None = None,
         runtime_data_provider: Any | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
+        htf_timeframe: str | None = None,
     ) -> None:
         self.registry = registry
         self.orchestrator = orchestrator
@@ -116,18 +117,54 @@ class StrategyJobExecutor:
         self.strategy_loader = strategy_loader
         self.runtime_data_provider = runtime_data_provider
         self.htf_bars = htf_bars
+        self.htf_timeframe = htf_timeframe
+        self._job_htf_timeframe = None
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
+
+    def _requested_htf_timeframe(self) -> str | None:
+        if self._job_htf_timeframe is not None:
+            return self._job_htf_timeframe
+        return self.htf_timeframe
 
     def _confirmed_htf_bars(self, strategy: StrategyInstance, bar: Bar):
         if self.htf_bars is not None:
             return self.htf_bars
-        from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+        from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
 
-        return _confirmed_htf_bars_from_provider_bars(
-            [bar],
+        requested = self._requested_htf_timeframe()
+        fetched = None
+        if requested and str(requested) != str(strategy.timeframe):
+            fetched = self._load_htf_provider_bars(strategy, bar, str(requested))
+        return _confirmed_htf_bars_for_timeframe(
+            chart_bars=[bar],
             symbol=str(strategy.symbol).upper(),
-            timeframe=str(strategy.timeframe),
+            chart_timeframe=str(strategy.timeframe),
+            requested_timeframe=requested,
+            fetched_htf_bars=fetched,
         )
+
+    def _load_htf_provider_bars(self, strategy: StrategyInstance, bar: Bar, timeframe: str):
+        start_ms = int(bar.time)
+        end_ms = getattr(bar, "time_close", None)
+        tf = parse_timeframe(timeframe)
+        if end_ms is None:
+            end_ms = start_ms + (tf.duration_ms or 60_000)
+        query = BarQuery(
+            instrument=InstrumentKey(
+                exchange=strategy.exchange.lower(),
+                market=strategy.market_type.lower(),
+                symbol=strategy.symbol.upper(),
+            ),
+            timeframe=tf,
+            start_ms=start_ms,
+            end_ms=int(end_ms),
+            gap_policy="allow_with_metadata",
+        )
+        load_bars = getattr(self.orchestrator, "load_bars", None)
+        if callable(load_bars):
+            series = load_bars(query)
+            return list(getattr(series, "bars", series))
+        return list(self.orchestrator.get_bars(query))
 
     def process(self, job: Job) -> StrategyJobExecutionResult:
         """Process one queued strategy bar job and update scheduler status."""
@@ -135,6 +172,8 @@ class StrategyJobExecutor:
         try:
             self._validate_job(job)
             payload = _job_payload(job)
+            requested = payload.get("htf_timeframe")
+            self._job_htf_timeframe = str(requested) if requested else None
             strategy = self.registry.get_strategy(payload["strategy_id"])
             bar = self._load_target_bar(strategy, payload)
             state_key = _state_key(strategy, bar)
@@ -208,6 +247,8 @@ class StrategyJobExecutor:
                 status=StrategyJobStatus.FAILED,
                 error=error,
             )
+        finally:
+            self._job_htf_timeframe = None
 
     def _validate_job(self, job: Job) -> None:
         if job.job_type not in {

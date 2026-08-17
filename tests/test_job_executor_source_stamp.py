@@ -174,3 +174,82 @@ def test_job_executor_does_not_invent_time_close(monkeypatch) -> None:
     object.__setattr__(bar, "time_close", None)
     executor._run_strategy(_strategy(), bar, None)
     assert seen["htf_bars"] is None
+
+
+def test_job_executor_fetches_explicit_htf_timeframe(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.workers.strategy_job_executor.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    seen: dict[str, object] = {}
+    loaded: list[str] = []
+    fetched = [
+        SimpleNamespace(
+            time=0,
+            time_close=86_399_999,
+            open=40,
+            high=43,
+            low=39,
+            close=42,
+            volume=1,
+        )
+    ]
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["htf_bars"] = htf_bars
+            return SimpleNamespace(ok=True)
+
+    def load_bars(query):
+        loaded.append(str(getattr(query.timeframe, "canonical", query.timeframe)))
+        return SimpleNamespace(bars=fetched)
+
+    executor = StrategyJobExecutor(
+        registry=SimpleNamespace(),
+        orchestrator=SimpleNamespace(load_bars=load_bars),
+        scheduler=SimpleNamespace(),
+        state_store=SimpleNamespace(),
+        runtime_adapter=Adapter(),
+        htf_timeframe="1D",
+    )
+    executor._run_strategy(_strategy(), _bar(0), None)
+    assert "1D" in loaded
+    assert seen["htf_bars"] == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40.0,
+            "high": 43.0,
+            "low": 39.0,
+            "close": 42.0,
+            "volume": 1.0,
+        }
+    ]
+
+
+def test_job_executor_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.workers.strategy_job_executor.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    seen: dict[str, object] = {}
+    loaded: list[object] = []
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["htf_bars"] = htf_bars
+            return SimpleNamespace(ok=True)
+
+    executor = StrategyJobExecutor(
+        registry=SimpleNamespace(),
+        orchestrator=SimpleNamespace(load_bars=lambda query: loaded.append(query)),
+        scheduler=SimpleNamespace(),
+        state_store=SimpleNamespace(),
+        runtime_adapter=Adapter(),
+        htf_timeframe="15m",
+    )
+    executor._run_strategy(_strategy(), _bar(0), None)
+    assert loaded == []
+    assert seen["htf_bars"][0]["timeframe"] == "15m"
