@@ -185,6 +185,10 @@ async def start_live(
         raise HTTPException(400, str(exc)) from exc
 
     _stamp_strategy_profile(s, admitted, registry)
+    runner = getattr(state, "_live_runner", None)
+    setter = getattr(runner, "set_strategy_htf_timeframe", None)
+    if callable(setter):
+        setter(body.strategy_id, getattr(body, "htf_timeframe", None))
     log.info("live_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
         strategy_id=body.strategy_id,

@@ -258,3 +258,106 @@ def test_live_runner_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
     assert runner._run_mini_backtest(_Strategy(), 120000) == []
     assert loaded
     assert all(tf == "1m" for tf in loaded)
+
+
+def test_live_runner_per_strategy_htf_timeframe_does_not_leak(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    seen: dict[str, object] = {}
+    loaded: list[str] = []
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["htf_bars"] = htf_bars
+            return SimpleNamespace(
+                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
+                resume_state=None,
+            )
+
+    def load_bars(query):
+        loaded.append(str(query.timeframe.canonical))
+        if str(query.timeframe.canonical) == "1D":
+            inst = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
+            tf = parse_timeframe("1D")
+            bar = Bar(inst, tf, 0, 86_399_999, 40.0, 43.0, 39.0, 42.0, 1.0, True)
+            report = CoverageReport(query.start_ms, query.end_ms, 0, 86_399_999, source_mix=("test",))
+            return BarSeries(query, (bar,), report)
+        return _series(query.start_ms, query.end_ms)
+
+    monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
+    runner = LiveStrategyRunner(
+        RunnerConfig(lookback_bars=2),
+        orchestrator=SimpleNamespace(load_bars=load_bars),
+        state_store=None,
+    )
+    runner.set_strategy_htf_timeframe("s1", "1D")
+    other = _Strategy()
+    other.strategy_id = "s2"
+    assert runner._run_mini_backtest(other, 120000) == []
+    assert loaded
+    assert "1D" not in loaded
+    assert {item["timeframe"] for item in seen["htf_bars"]} == {"1m"}
+    loaded.clear()
+    assert runner._run_mini_backtest(_Strategy(), 120000) == []
+    assert "1D" in loaded
+    assert seen["htf_bars"][0]["timeframe"] == "1D"
+
+
+def test_start_live_sets_per_strategy_htf_timeframe(monkeypatch) -> None:
+    import asyncio
+    import time
+
+    from openpine.gateway.routes import trading
+    from openpine.gateway.schemas import LiveStartRequest
+    from openpine.live_preview import make_live_preview
+
+    monkeypatch.setattr("openpine.gateway.routes.trading.admit_run", lambda **k: None)
+    monkeypatch.setattr(
+        "openpine.gateway.routes.activation_guard.require_worker_ready",
+        lambda state: None,
+    )
+    runner = LiveStrategyRunner(RunnerConfig(lookback_bars=2), state_store=None)
+    strategy = _Strategy()
+    registry = SimpleNamespace(
+        get_strategy=lambda sid: strategy,
+        activate_strategy=lambda *a, **k: None,
+    )
+    state = SimpleNamespace(
+        config=SimpleNamespace(live_enabled=True),
+        strategy_registry=registry,
+        _live_runner=runner,
+    )
+    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
+    result = asyncio.run(
+        trading.start_live(
+            LiveStartRequest(
+                strategy_id="s1",
+                preview_hash=preview["preview_hash"],
+                confirmation="LIVE",
+                idempotency_key="live-htf",
+                expires_at_utc_ms=preview["expires_at_utc_ms"],
+                semantic_profile="strict_5x",
+                htf_timeframe="1D",
+            ),
+            state,
+        )
+    )
+    assert result.status == "running"
+    assert runner._htf_timeframe_by_strategy["s1"] == "1D"
+    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
+    asyncio.run(
+        trading.start_live(
+            LiveStartRequest(
+                strategy_id="s1",
+                preview_hash=preview["preview_hash"],
+                confirmation="LIVE",
+                idempotency_key="live-htf-clear",
+                expires_at_utc_ms=preview["expires_at_utc_ms"],
+                semantic_profile="strict_5x",
+            ),
+            state,
+        )
+    )
+    assert "s1" not in runner._htf_timeframe_by_strategy

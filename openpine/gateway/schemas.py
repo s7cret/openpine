@@ -321,6 +321,7 @@ class LiveStartRequest(BaseModel):
     expires_at_utc_ms: int | None = None
     semantic_profile: str | None = None
     allow_legacy: bool = False
+    htf_timeframe: str | None = Field(default=None, max_length=16)
 
 
 class TradingStatusResponse(BaseModel):

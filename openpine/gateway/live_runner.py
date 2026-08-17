@@ -72,6 +72,7 @@ class LiveStrategyRunner:
         self.state_store = state_store or self._default_state_store()
         self.htf_bars = htf_bars
         self.htf_timeframe = htf_timeframe
+        self._htf_timeframe_by_strategy: dict[str, str] = {}
 
         self._running = False
         self._task: asyncio.Task | None = None
@@ -79,12 +80,25 @@ class LiveStrategyRunner:
         self._strategy_states: dict[str, StrategyBarState] = {}
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
+    def set_strategy_htf_timeframe(self, strategy_id: str, timeframe: str | None) -> None:
+        key = str(strategy_id)
+        if timeframe is None or str(timeframe) == "":
+            self._htf_timeframe_by_strategy.pop(key, None)
+            return
+        self._htf_timeframe_by_strategy[key] = str(timeframe)
+
+    def _requested_htf_timeframe(self, strategy) -> str | None:
+        key = str(getattr(strategy, "strategy_id", ""))
+        if key in self._htf_timeframe_by_strategy:
+            return self._htf_timeframe_by_strategy[key]
+        return self.htf_timeframe
+
     def _confirmed_htf_bars(self, strategy, bars):
         if self.htf_bars is not None:
             return self.htf_bars
         from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
 
-        requested = self.htf_timeframe
+        requested = self._requested_htf_timeframe(strategy)
         fetched = None
         if requested and str(requested) != str(strategy.timeframe) and bars:
             fetched = self._load_htf_provider_bars(strategy, bars, str(requested))
