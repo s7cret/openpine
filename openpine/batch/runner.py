@@ -631,6 +631,7 @@ def run_indicator(
 ) -> dict[str, Any]:
     from openpine.export import export_plot_records
     from openpine.runtime.isolated_run import (
+        _confirmed_htf_bars_from_provider_bars,
         capture_generated_source,
         run_isolated_indicator,
     )
@@ -655,11 +656,18 @@ def run_indicator(
         source="generated_artifact.v2",
     )
     t0 = time.perf_counter()
+    htf_bars = getattr(args, "htf_bars", None)
+    if htf_bars is None:
+        htf_bars = _confirmed_htf_bars_from_provider_bars(
+            bars,
+            symbol=str(args.symbol),
+            timeframe=str(chart.timeframe),
+        )
     backend_result = run_isolated_indicator(
         source_bytes,
         bars,
         semantic_profile=admitted.value,
-        htf_bars=getattr(args, "htf_bars", None),
+        htf_bars=htf_bars,
     )
     timings["runtime_sec"] = round(time.perf_counter() - t0, 3)
     plots_csv = out_dir / "plots.csv"
