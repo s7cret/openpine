@@ -518,6 +518,11 @@ def _prepare_strategy_backtest_inputs(
         requested_start_ms=requested_start_ms,
         effective_pre_bars=effective_pre_bars,
         timings=timings,
+        htf_bars=_confirmed_htf_bars_from_provider_bars(
+            bars,
+            symbol=str(strategy.symbol),
+            timeframe=str(strategy.timeframe),
+        ),
     )
 
 
