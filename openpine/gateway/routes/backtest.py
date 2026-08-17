@@ -1128,8 +1128,17 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
         source = spec.source
         if not source:
             raise RuntimeError("captured artifact source is missing")
+        htf_bars = spec.htf_bars
+        if htf_bars is None:
+            from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+
+            htf_bars = _confirmed_htf_bars_from_provider_bars(
+                bars,
+                symbol=str(spec.symbol),
+                timeframe=str(spec.timeframe),
+            )
         result = BacktestEngineAdapter().run_isolated(
-            source, bars, config, htf_bars=spec.htf_bars
+            source, bars, config, htf_bars=htf_bars
         )
         _put_backtest_process_result(out, result)
     except BaseException as exc:
