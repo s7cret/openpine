@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import time
 import traceback
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -750,6 +751,40 @@ def _default_qty_step(exchange: str, market_type: str, symbol: str) -> float | N
     return default_qty_step(exchange, market_type, symbol)
 
 
+def _confirmed_htf_bars_for_batch(
+    *,
+    entry: ExportEntry,
+    chart: ChartExport,
+    bars,
+    args: argparse.Namespace,
+    timings: dict[str, float],
+):
+    from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+
+    explicit = getattr(args, "htf_bars", None)
+    if explicit is not None:
+        return explicit
+    requested = getattr(args, "htf_timeframe", None)
+    fetched = None
+    if requested and str(requested) != str(chart.timeframe):
+        htf_args = argparse.Namespace(**vars(args))
+        htf_args.tv_authoritative_bars = False
+        htf_args.provider_only_bars = True
+        fetched, _ = load_calculation_bars(
+            entry,
+            replace(chart, timeframe=str(requested)),
+            htf_args,
+            timings,
+        )
+    return _confirmed_htf_bars_for_timeframe(
+        chart_bars=bars,
+        symbol=str(args.symbol),
+        chart_timeframe=str(chart.timeframe),
+        requested_timeframe=requested,
+        fetched_htf_bars=fetched,
+    )
+
+
 def run_strategy(
     entry: ExportEntry,
     source: Any,
@@ -765,7 +800,6 @@ def run_strategy(
         BacktestRunConfig,
     )
     from openpine.runtime.isolated_run import (
-        _confirmed_htf_bars_from_provider_bars,
         capture_generated_source,
     )
 
@@ -800,13 +834,13 @@ def run_strategy(
         config_cls=BacktestRunConfig,
     )
     t0 = time.perf_counter()
-    htf_bars = getattr(args, "htf_bars", None)
-    if htf_bars is None:
-        htf_bars = _confirmed_htf_bars_from_provider_bars(
-            bars,
-            symbol=str(args.symbol),
-            timeframe=str(chart.timeframe),
-        )
+    htf_bars = _confirmed_htf_bars_for_batch(
+        entry=entry,
+        chart=chart,
+        bars=bars,
+        args=args,
+        timings=timings,
+    )
     result = BacktestEngineAdapter().run_isolated(
         source_bytes, bars, config, htf_bars=htf_bars
     )
@@ -1409,6 +1443,11 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         choices=["strict_5x", "legacy_4x"],
         default=None,
         help="Admitted semantic profile for isolated indicator/strategy runs. Required for --phase run.",
+    )
+    parser.add_argument(
+        "--htf-timeframe",
+        default=None,
+        help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
     )
     return parser
 
