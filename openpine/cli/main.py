@@ -2689,6 +2689,11 @@ def strategy_remove(strategy_id: str) -> None:
     type=click.Choice(["fail", "allow_with_metadata"]),
     help="Market data coverage policy",
 )
+@click.option(
+    "--htf-timeframe",
+    default=None,
+    help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
+)
 def strategy_backtest(
     strategy_id: str,
     from_date: str | None,
@@ -2699,6 +2704,7 @@ def strategy_backtest(
     history_from: str | None,
     warmup_bars: int,
     gap_policy: str,
+    htf_timeframe: str | None,
 ) -> None:
     """Run backtest for a strategy."""
     import time as _time
@@ -2748,6 +2754,7 @@ def strategy_backtest(
             deps=deps,
             perf_counter=_time.perf_counter,
             console=console,
+            htf_timeframe=htf_timeframe,
         )
         timings.update(prepared.timings)
         registry.update_status(strategy_id, "running")

@@ -18,7 +18,11 @@ from openpine.exchange_metadata import (
     default_qty_rounding_mode as metadata_default_qty_rounding_mode,
 )
 from openpine.exchange_metadata import default_qty_step
-from openpine.runtime.isolated_run import IsolatedRunError, _confirmed_htf_bars_from_provider_bars
+from openpine.runtime.isolated_run import (
+    IsolatedRunError,
+    _confirmed_htf_bars_for_timeframe,
+    _confirmed_htf_bars_from_provider_bars,
+)
 from openpine.timezones import parse_timestamp_ms
 
 
@@ -415,6 +419,7 @@ def _prepare_strategy_backtest_inputs(
     deps,
     perf_counter,
     console,
+    htf_timeframe: str | None = None,
 ):
     start_ms, end_ms, capture_from_ms, capture_to_ms = (
         _parse_valid_strategy_backtest_window(
@@ -506,6 +511,25 @@ def _prepare_strategy_backtest_inputs(
         capture_to_ms=capture_to_ms,
         config_cls=deps.BacktestRunConfig,
     )
+    fetched_htf_bars = None
+    if htf_timeframe and str(htf_timeframe) != str(strategy.timeframe):
+        fetched_htf_bars, _, _, _ = _load_strategy_backtest_bars(
+            strategy=SimpleNamespace(
+                symbol=strategy.symbol,
+                exchange=strategy.exchange,
+                market_type=strategy.market_type,
+                timeframe=htf_timeframe,
+            ),
+            start_ms=start_ms,
+            end_ms=end_ms,
+            bar_query_cls=deps.BarQuery,
+            instrument_key_cls=deps.InstrumentKey,
+            parse_timeframe_func=deps.parse_timeframe,
+            orchestrator_cls=deps.DataOrchestrator,
+            provider_factory=deps.create_local_marketdata_provider_adapter,
+            gap_policy=gap_policy,
+            console=console,
+        )
     return SimpleNamespace(
         start_ms=start_ms,
         end_ms=end_ms,
@@ -518,10 +542,12 @@ def _prepare_strategy_backtest_inputs(
         requested_start_ms=requested_start_ms,
         effective_pre_bars=effective_pre_bars,
         timings=timings,
-        htf_bars=_confirmed_htf_bars_from_provider_bars(
-            bars,
+        htf_bars=_confirmed_htf_bars_for_timeframe(
+            chart_bars=bars,
             symbol=str(strategy.symbol),
-            timeframe=str(strategy.timeframe),
+            chart_timeframe=str(strategy.timeframe),
+            requested_timeframe=htf_timeframe,
+            fetched_htf_bars=fetched_htf_bars,
         ),
     )
 

@@ -126,6 +126,27 @@ def _confirmed_htf_bars_from_provider_bars(bars, *, symbol: str, timeframe: str)
     return stamped
 
 
+def _confirmed_htf_bars_for_timeframe(
+    *,
+    chart_bars,
+    symbol: str,
+    chart_timeframe: str,
+    requested_timeframe: str | None,
+    fetched_htf_bars=None,
+):
+    if requested_timeframe and str(requested_timeframe) != str(chart_timeframe):
+        return _confirmed_htf_bars_from_provider_bars(
+            fetched_htf_bars,
+            symbol=str(symbol),
+            timeframe=str(requested_timeframe),
+        )
+    return _confirmed_htf_bars_from_provider_bars(
+        chart_bars,
+        symbol=str(symbol),
+        timeframe=str(chart_timeframe),
+    )
+
+
 def run_isolated_artifact(
     source: bytes,
     *,
