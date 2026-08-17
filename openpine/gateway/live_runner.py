@@ -61,6 +61,7 @@ class LiveStrategyRunner:
         artifact_store=None,
         state_store=None,
         htf_bars: list[dict[str, Any]] | None = None,
+        htf_timeframe: str | None = None,
     ) -> None:
         self.config = config or RunnerConfig()
         self.registry = registry
@@ -70,6 +71,7 @@ class LiveStrategyRunner:
         self.artifact_store = artifact_store
         self.state_store = state_store or self._default_state_store()
         self.htf_bars = htf_bars
+        self.htf_timeframe = htf_timeframe
 
         self._running = False
         self._task: asyncio.Task | None = None
@@ -80,13 +82,52 @@ class LiveStrategyRunner:
     def _confirmed_htf_bars(self, strategy, bars):
         if self.htf_bars is not None:
             return self.htf_bars
-        from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+        from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
 
-        return _confirmed_htf_bars_from_provider_bars(
-            bars,
+        requested = self.htf_timeframe
+        fetched = None
+        if requested and str(requested) != str(strategy.timeframe) and bars:
+            fetched = self._load_htf_provider_bars(strategy, bars, str(requested))
+        return _confirmed_htf_bars_for_timeframe(
+            chart_bars=bars,
             symbol=str(strategy.symbol).upper(),
-            timeframe=str(strategy.timeframe),
+            chart_timeframe=str(strategy.timeframe),
+            requested_timeframe=requested,
+            fetched_htf_bars=fetched,
         )
+
+    def _load_htf_provider_bars(self, strategy, bars, timeframe: str):
+        from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
+        first = bars[0]
+        last = bars[-1]
+        start_ms = first.get("time", 0) if isinstance(first, dict) else getattr(first, "time", 0)
+        end_ms = (
+            last.get("time_close")
+            if isinstance(last, dict)
+            else getattr(last, "time_close", None)
+        )
+        tf = parse_timeframe(timeframe)
+        if end_ms is None:
+            last_time = last.get("time", 0) if isinstance(last, dict) else getattr(last, "time", 0)
+            end_ms = int(last_time) + (tf.duration_ms or 60_000)
+        query = BarQuery(
+            instrument=InstrumentKey(
+                exchange=strategy.exchange.lower(),
+                market=strategy.market_type.lower(),
+                symbol=strategy.symbol.upper(),
+            ),
+            timeframe=tf,
+            start_ms=int(start_ms),
+            end_ms=int(end_ms),
+            gap_policy="allow_with_metadata",
+        )
+        series = (
+            self.orchestrator.load_bars(query)
+            if self.orchestrator is not None
+            else self._fetch_direct(query)
+        )
+        return list(series.bars)
 
     def start(self) -> None:
         """Start the live runner as an async task."""

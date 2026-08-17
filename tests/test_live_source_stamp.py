@@ -178,3 +178,83 @@ def test_live_runner_does_not_invent_time_close(monkeypatch) -> None:
     )
     assert runner._run_mini_backtest(_Strategy(), 120000) == []
     assert seen["htf_bars"] is None
+
+
+def test_live_runner_fetches_explicit_htf_timeframe(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    seen: dict[str, object] = {}
+    loaded: list[str] = []
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["htf_bars"] = htf_bars
+            return SimpleNamespace(
+                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
+                resume_state=None,
+            )
+
+    def load_bars(query):
+        loaded.append(str(query.timeframe.canonical))
+        if str(query.timeframe.canonical) == "1D":
+            inst = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
+            tf = parse_timeframe("1D")
+            bar = Bar(inst, tf, 0, 86_399_999, 40.0, 43.0, 39.0, 42.0, 1.0, True)
+            report = CoverageReport(query.start_ms, query.end_ms, 0, 86_399_999, source_mix=("test",))
+            return BarSeries(query, (bar,), report)
+        return _series(query.start_ms, query.end_ms)
+
+    monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
+    runner = LiveStrategyRunner(
+        RunnerConfig(lookback_bars=2),
+        orchestrator=SimpleNamespace(load_bars=load_bars),
+        state_store=None,
+        htf_timeframe="1D",
+    )
+    assert runner._run_mini_backtest(_Strategy(), 120000) == []
+    assert "1D" in loaded
+    assert seen["htf_bars"] == [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 40.0,
+            "high": 43.0,
+            "low": 39.0,
+            "close": 42.0,
+            "volume": 1.0,
+        }
+    ]
+
+
+def test_live_runner_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+    loaded: list[str] = []
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            return SimpleNamespace(
+                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
+                resume_state=None,
+            )
+
+    def load_bars(query):
+        loaded.append(str(query.timeframe.canonical))
+        return _series(query.start_ms, query.end_ms)
+
+    monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
+    runner = LiveStrategyRunner(
+        RunnerConfig(lookback_bars=2),
+        orchestrator=SimpleNamespace(load_bars=load_bars),
+        state_store=None,
+        htf_timeframe="1m",
+    )
+    assert runner._run_mini_backtest(_Strategy(), 120000) == []
+    assert loaded
+    assert all(tf == "1m" for tf in loaded)
