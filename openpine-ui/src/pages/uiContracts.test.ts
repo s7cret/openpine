@@ -135,6 +135,22 @@ describe('global UI correctness contracts', () => {
     expect(page).not.toContain('/optimizer/dry-run')
   })
 
+  it('wires explicit multi-series MTF admission across product run surfaces', () => {
+    const pages = [
+      source('pages/Backtests.vue'),
+      source('pages/Live.vue'),
+      source('pages/Optimizer.vue'),
+      source('pages/TvParity.vue'),
+    ]
+    for (const page of pages) {
+      expect(page).toContain('MtfSeriesEditor')
+      expect(page).toContain('mtfSeriesValidationKey')
+      expect(page).toContain('toMtfSeriesRequests')
+    }
+    expect(source('api/client.ts')).toContain("'mtf_series_json'")
+    expect(source('components/MtfSeriesEditor.vue')).toContain('data-testid="mtf-series-row"')
+  })
+
   it('optimizer search sends an explicit semantic profile and mirrors validation', () => {
     const page = source('pages/Optimizer.vue')
     expect(page).toContain('optimizer-semantic-profile')

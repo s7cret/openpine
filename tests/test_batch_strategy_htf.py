@@ -380,6 +380,59 @@ def test_batch_strategy_same_htf_timeframe_does_not_refetch(tmp_path: Path, monk
     assert loaded == ["1m"]
 
 
+def test_batch_fetches_two_explicit_mtf_series(tmp_path: Path, monkeypatch) -> None:
+    from openpine.batch.runner import _confirmed_htf_bars_for_batch
+
+    loaded: list[tuple[str, str]] = []
+
+    def load_bars(entry, chart, args, timings):
+        loaded.append((str(args.symbol), str(chart.timeframe)))
+        duration = 86_400_000 if str(chart.timeframe) == "1D" else 14_400_000
+        return [
+            SimpleNamespace(
+                time=0,
+                time_close=duration - 1,
+                open=2,
+                high=3,
+                low=1,
+                close=2,
+                volume=1,
+            )
+        ], {}
+
+    monkeypatch.setattr("openpine.batch.runner.load_calculation_bars", load_bars)
+    stamped = _confirmed_htf_bars_for_batch(
+        entry=_entry(tmp_path),
+        chart=_chart(tmp_path),
+        bars=[],
+        args=_args(
+            htf_timeframe=None,
+            mtf_series=["BTCUSDT:1D", "ETHUSDT:4h"],
+        ),
+        timings={},
+    )
+
+    assert loaded == [("BTCUSDT", "1D"), ("ETHUSDT", "4h")]
+    assert {(item["symbol"], item["timeframe"]) for item in stamped} == {
+        ("BTCUSDT", "1D"),
+        ("ETHUSDT", "4h"),
+    }
+
+
+def test_batch_parser_lists_mtf_series() -> None:
+    from openpine.batch.runner import _build_arg_parser
+
+    args = _build_arg_parser().parse_args(
+        [
+            "--mtf-series",
+            "BTCUSDT:1D",
+            "--mtf-series",
+            "ETHUSDT:4h",
+        ]
+    )
+    assert args.mtf_series == ["BTCUSDT:1D", "ETHUSDT:4h"]
+
+
 def test_batch_parser_lists_htf_timeframe() -> None:
     from openpine.batch.runner import _build_arg_parser
 

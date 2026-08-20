@@ -19,6 +19,7 @@ def _strategy(
     timeframe: str = "15m",
     mode: str = "paper",
     enabled: bool = True,
+    mtf_series_json: str = "[]",
 ) -> StrategyInstance:
     return StrategyInstance(
         strategy_id=strategy_id,
@@ -34,6 +35,7 @@ def _strategy(
         price_type="trade",
         mode=mode,
         enabled=enabled,
+        mtf_series_json=mtf_series_json,
     )
 
 
@@ -148,6 +150,33 @@ def test_strategy_fanout_persists_source_and_enqueues_target_jobs() -> None:
     persisted = {(item[2], item[3]) for item in orchestrator.closed}
     assert ("1m", "live") in persisted
     assert ("15m", "aggregate") in persisted
+
+
+def test_strategy_fanout_snapshots_durable_mtf_series_into_delegated_job() -> None:
+    registry = _Registry(
+        [
+            _strategy(
+                "btc-mtf",
+                timeframe="1m",
+                mode="live",
+                mtf_series_json=(
+                    '[{"symbol":"BTCUSDT","timeframe":"1D"},'
+                    '{"symbol":"ETHUSDT","timeframe":"4h"}]'
+                ),
+            )
+        ]
+    )
+    scheduler = JobScheduler()
+    result = StrategyBarFanout(
+        registry=registry,
+        orchestrator=_Orchestrator(),
+        scheduler=scheduler,
+    ).process_source_bar(_bar(0))
+
+    assert result.jobs[0].input["mtf_series"] == [
+        {"symbol": "BTCUSDT", "timeframe": "1D"},
+        {"symbol": "ETHUSDT", "timeframe": "4h"},
+    ]
 
 
 def test_strategy_fanout_dedupes_repeated_bar_jobs() -> None:

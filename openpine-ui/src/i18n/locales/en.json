@@ -656,6 +656,19 @@
     "compareMismatch": "Different semantic profiles. This is not a silent mix.",
     "compareMissing": "Both jobs need an explicit semantic profile."
   },
+  "mtf": {
+    "title": "Requested MTF series",
+    "hint": "Explicit request.security data only. OpenPine does not infer requests from Pine source.",
+    "add": "Add series",
+    "empty": "No additional series requested",
+    "symbol": "Symbol",
+    "symbolPlaceholder": "BTCUSDT",
+    "timeframe": "Timeframe",
+    "timeframePlaceholder": "1D",
+    "remove": "Remove",
+    "required": "Every MTF row requires a symbol and timeframe",
+    "duplicate": "MTF series must be unique"
+  },
   "live": {
     "title": "Live admission",
     "readonlyHint": "Mount only reads admission. Live start requires a preview and typed LIVE.",

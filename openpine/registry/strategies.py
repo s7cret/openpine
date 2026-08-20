@@ -51,6 +51,13 @@ class StrategyInstance:
     created_at: int = field(default_factory=lambda: int(time.time() * 1000))
     updated_at: int = field(default_factory=lambda: int(time.time() * 1000))
     semantic_profile: str | None = None
+    mtf_series_json: str = "[]"
+
+    @property
+    def mtf_series(self) -> list[dict[str, str]]:
+        from openpine.runtime.mtf import mtf_requests_from_json
+
+        return [item.to_dict() for item in mtf_requests_from_json(self.mtf_series_json)]
 
     def to_dict(self) -> dict:
         return {
@@ -72,6 +79,7 @@ class StrategyInstance:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "semantic_profile": self.semantic_profile,
+            "mtf_series": self.mtf_series,
         }
 
     @classmethod
@@ -95,6 +103,7 @@ class StrategyInstance:
             created_at=data.get("created_at", int(time.time() * 1000)),
             updated_at=data.get("updated_at", int(time.time() * 1000)),
             semantic_profile=data.get("semantic_profile"),
+            mtf_series_json=data.get("mtf_series_json", "[]"),
         )
 
 
@@ -191,6 +200,7 @@ class SQLiteStrategyRegistry:
                 risk_profile_id TEXT,
                 status TEXT NOT NULL DEFAULT 'pending',
                 semantic_profile TEXT,
+                mtf_series_json TEXT NOT NULL DEFAULT '[]',
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL,
                 FOREIGN KEY (pine_id) REFERENCES pine_sources(id),
@@ -208,6 +218,11 @@ class SQLiteStrategyRegistry:
         if "semantic_profile" not in columns:
             self._conn.execute(
                 "ALTER TABLE strategy_instances ADD COLUMN semantic_profile TEXT"
+            )
+        if "mtf_series_json" not in columns:
+            self._conn.execute(
+                "ALTER TABLE strategy_instances ADD COLUMN mtf_series_json "
+                "TEXT NOT NULL DEFAULT '[]'"
             )
         self._conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_strategy_instances_pine_id
@@ -243,7 +258,7 @@ class SQLiteStrategyRegistry:
         rows = self._conn.execute(
             """SELECT strategy_id, name, pine_id, artifact_id, params_json, params_hash,
                       symbol, timeframe, exchange, market_type, price_type, mode, enabled, archived, status,
-                      created_at, updated_at, semantic_profile
+                      created_at, updated_at, semantic_profile, mtf_series_json
                FROM strategy_instances
                WHERE strategy_id IS NOT NULL"""
         ).fetchall()
@@ -267,6 +282,7 @@ class SQLiteStrategyRegistry:
                 created_at=row[15],
                 updated_at=row[16],
                 semantic_profile=row[17],
+                mtf_series_json=row[18],
             )
             for row in rows
         }
@@ -746,6 +762,23 @@ class SQLiteStrategyRegistry:
             (semantic_profile, si.updated_at, strategy_id),
         )
         self._conn.commit()
+
+    @_serialized_connection
+    def set_mtf_series(self, strategy_id: str, mtf_series: list[dict[str, str]]) -> None:
+        """Persist canonical MTF admission for spawned worker processes."""
+        from openpine.runtime.mtf import mtf_requests_json
+
+        si = self.get_strategy(strategy_id)
+        payload = mtf_requests_json(mtf_series)
+        updated_at = int(time.time() * 1000)
+        self._conn.execute(
+            "UPDATE strategy_instances SET mtf_series_json = ?, updated_at = ? "
+            "WHERE strategy_id = ?",
+            (payload, updated_at, strategy_id),
+        )
+        self._conn.commit()
+        si.mtf_series_json = payload
+        si.updated_at = updated_at
 
     @_serialized_connection
     def delete_strategy(self, strategy_id: str) -> None:

@@ -298,3 +298,66 @@ def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(
         )
     finally:
         storage.close()
+
+
+def test_delegated_job_loads_all_mtf_series_from_payload(monkeypatch, tmp_path) -> None:
+    bar = _bar()
+    job = _job(bar)
+    assert job.input is not None
+    job.input["mtf_series"] = [
+        {"symbol": "BTCUSDT", "timeframe": "1D"},
+        {"symbol": "ETHUSDT", "timeframe": "4h"},
+    ]
+    scheduler = JobScheduler()
+    job = scheduler.enqueue(job)
+    loaded: list[tuple[str, str]] = []
+    seen: dict[str, object] = {}
+
+    class Orchestrator(_Orchestrator):
+        def load_bars(self, query: BarQuery):
+            key = (query.instrument.symbol, query.timeframe.canonical)
+            loaded.append(key)
+            duration = query.timeframe.duration_ms or 60_000
+            mtf_bar = Bar(
+                instrument=query.instrument,
+                timeframe=query.timeframe,
+                time=0,
+                time_close=duration - 1,
+                open=2,
+                high=3,
+                low=1,
+                close=2,
+                volume=1,
+                closed=True,
+            )
+            return SimpleNamespace(bars=(mtf_bar,))
+
+    class Adapter:
+        def run_isolated(
+            self, source, bars, config, resume_state=None, htf_bars=None
+        ):
+            seen["source"] = source
+            seen["htf_bars"] = htf_bars
+            return _runtime_result(bar)
+
+    monkeypatch.setattr(
+        "openpine.workers.strategy_job_executor.capture_generated_source",
+        lambda *args, **kwargs: b"STAMPED",
+    )
+    executor = StrategyJobExecutor(
+        registry=_Registry(_strategy()),
+        orchestrator=Orchestrator(bar),
+        scheduler=scheduler,
+        state_store=StateStore(tmp_path / "state"),
+        runtime_adapter=Adapter(),
+    )
+
+    result = executor.process(job)
+
+    assert result.status == StrategyJobStatus.DONE
+    assert loaded == [("BTCUSDT", "1D"), ("ETHUSDT", "4h")]
+    assert seen["source"] == b"STAMPED"
+    assert {
+        (item["symbol"], item["timeframe"])
+        for item in seen["htf_bars"]
+    } == {("BTCUSDT", "1D"), ("ETHUSDT", "4h")}

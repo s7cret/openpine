@@ -140,6 +140,37 @@ def test_tv_parity_run_wires_explicit_htf_timeframe() -> None:
 
     source = inspect.getsource(tv_parity.run_tv_parity)
     assert "htf_timeframe" in source
+    assert "mtf_series_json" in source
     bg = inspect.getsource(tv_parity._run_tv_parity_background)
     assert "_confirmed_htf_bars_for_backtest" in bg
     assert "htf_bars=stamped_htf" in bg
+    assert "mtf_series=mtf_series" in bg
+
+
+def test_tv_parity_mtf_form_parser_is_strict_and_canonical() -> None:
+    import pytest
+    from fastapi import HTTPException
+
+    from openpine.gateway.routes.tv_parity import _parse_mtf_series_form
+
+    assert _parse_mtf_series_form(
+        '[{"symbol":"btcusdt","timeframe":"1d"},'
+        '{"symbol":"ethusdt","timeframe":"4H"}]',
+        chart_symbol="BTCUSDT",
+        htf_timeframe=None,
+    ) == [
+        {"symbol": "BTCUSDT", "timeframe": "1D"},
+        {"symbol": "ETHUSDT", "timeframe": "4h"},
+    ]
+    with pytest.raises(HTTPException, match="must decode to an array"):
+        _parse_mtf_series_form(
+            '{"symbol":"BTCUSDT"}',
+            chart_symbol="BTCUSDT",
+            htf_timeframe=None,
+        )
+    with pytest.raises(HTTPException, match="cannot be combined"):
+        _parse_mtf_series_form(
+            '[{"symbol":"BTCUSDT","timeframe":"4h"}]',
+            chart_symbol="BTCUSDT",
+            htf_timeframe="1D",
+        )

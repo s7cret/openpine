@@ -47,6 +47,33 @@ log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/tv-parity", tags=["tv-parity"])
 
 
+def _parse_mtf_series_form(
+    raw: str | None,
+    *,
+    chart_symbol: str,
+    htf_timeframe: str | None,
+) -> list[dict[str, str]]:
+    from openpine.runtime.mtf import admitted_mtf_requests
+
+    payload = None
+    if raw:
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(400, f"mtf_series_json is invalid JSON: {exc}") from exc
+        if not isinstance(payload, list):
+            raise HTTPException(400, "mtf_series_json must decode to an array")
+    try:
+        requests = admitted_mtf_requests(
+            chart_symbol=chart_symbol,
+            htf_timeframe=htf_timeframe,
+            mtf_series=payload,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    return [item.to_dict() for item in requests]
+
+
 def _run_isolated_tv_replay(
     adapter,
     source,
@@ -730,6 +757,7 @@ async def _run_tv_parity_background(
     include_base_columns: bool,
     semantic_profile: str | None = None,
     htf_timeframe: str | None = None,
+    mtf_series: list[dict[str, str]] | None = None,
 ) -> None:
     """Execute TV-candle replay and optional comparison in the background."""
 
@@ -837,6 +865,7 @@ async def _run_tv_parity_background(
             list(parsed.bars),
             strategy=strategy,
             requested_timeframe=htf_timeframe,
+            mtf_series=mtf_series,
             load_bars=state.orchestrator.load_bars,
             from_ms=int(parsed.summary["from_time"]),
             to_ms=int(parsed.summary["to_time"]),
@@ -1026,6 +1055,7 @@ async def run_tv_parity(
     semantic_profile: str | None = Form(None),
     allow_legacy: bool = Form(False),
     htf_timeframe: str | None = Form(None),
+    mtf_series_json: str | None = Form(None),
     state: GatewayState = Depends(get_state),
 ) -> dict[str, Any]:
     """Queue a real backtest replay using uploaded TradingView candles."""
@@ -1051,6 +1081,17 @@ async def run_tv_parity(
     )
     requested_allow_legacy = (
         allow_legacy.default if isinstance(allow_legacy, FieldInfo) else allow_legacy
+    )
+    requested_htf_timeframe = (
+        htf_timeframe.default if isinstance(htf_timeframe, FieldInfo) else htf_timeframe
+    )
+    requested_mtf_json = (
+        mtf_series_json.default if isinstance(mtf_series_json, FieldInfo) else mtf_series_json
+    )
+    admitted_mtf_series = _parse_mtf_series_form(
+        requested_mtf_json,
+        chart_symbol=strategy.symbol,
+        htf_timeframe=requested_htf_timeframe,
     )
     try:
         admitted_profile = admit_semantic_profile(
@@ -1189,6 +1230,7 @@ async def run_tv_parity(
         "abs_tol": abs_tol,
         "rel_tol": rel_tol,
         "include_base_columns": include_base_columns,
+        "mtf_series": admitted_mtf_series,
         "compare_from": compare_from_ms,
         "compare_to": compare_to_ms,
         "requested_from_ms": requested_from,
@@ -1237,7 +1279,8 @@ async def run_tv_parity(
         rel_tol=rel_tol,
         include_base_columns=include_base_columns,
         semantic_profile=admitted_profile.value,
-        htf_timeframe=htf_timeframe,
+        htf_timeframe=requested_htf_timeframe,
+        mtf_series=admitted_mtf_series,
     )
     return {
         "run_id": run_id,

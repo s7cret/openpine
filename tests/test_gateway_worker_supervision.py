@@ -1217,6 +1217,7 @@ def test_registry_patch_rolls_back_every_field_on_database_failure(tmp_path: Pat
 @pytest.mark.asyncio
 async def test_paper_start_uses_single_atomic_registry_activation() -> None:
     calls: list[tuple[str, str | None, str | None]] = []
+    events: list[str] = []
     strategy = SimpleNamespace(strategy_id="s1", status="paused")
 
     class Registry:
@@ -1224,7 +1225,11 @@ async def test_paper_start_uses_single_atomic_registry_activation() -> None:
             return strategy
 
         def activate_strategy(self, strategy_id, *, status=None, mode=None):
+            events.append("activate")
             calls.append((strategy_id, status, mode))
+
+        def set_mtf_series(self, strategy_id, series):
+            events.append("persist")
 
         def update_status(self, *_args):
             raise AssertionError("non-atomic status update")
@@ -1246,6 +1251,7 @@ async def test_paper_start_uses_single_atomic_registry_activation() -> None:
     )
 
     assert result.status == "running"
+    assert events == ["persist", "activate"]
     assert calls == [("s1", "running", "paper")]
 
 

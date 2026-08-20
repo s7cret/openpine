@@ -2,6 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '@/api/client'
+import MtfSeriesEditor from '@/components/MtfSeriesEditor.vue'
+import {
+  mtfSeriesValidationKey,
+  toMtfSeriesRequests,
+  type MtfSeriesRow,
+} from '@/lib/mtfSeries'
 
 const { t } = useI18n()
 const admission = ref<Record<string, unknown> | null>(null)
@@ -12,6 +18,11 @@ const semanticProfile = ref('')
 const allowLegacy = ref(false)
 const error = ref('')
 const startResult = ref('')
+const mtfSeries = ref<MtfSeriesRow[]>([])
+const mtfValidationMessage = computed(() => {
+  const key = mtfSeriesValidationKey(mtfSeries.value)
+  return key ? t(key) : ''
+})
 
 const canStart = computed(
   () =>
@@ -19,7 +30,8 @@ const canStart = computed(
     confirmation.value === 'LIVE' &&
     Boolean(strategyId.value) &&
     Boolean(semanticProfile.value) &&
-    (semanticProfile.value !== 'legacy_4x' || allowLegacy.value),
+    (semanticProfile.value !== 'legacy_4x' || allowLegacy.value) &&
+    !mtfValidationMessage.value,
 )
 
 onMounted(async () => {
@@ -54,6 +66,7 @@ async function startLive() {
     expires_at_utc_ms: preview.value.expires_at_utc_ms,
     semantic_profile: semanticProfile.value,
     allow_legacy: allowLegacy.value,
+    mtf_series: toMtfSeriesRequests(mtfSeries.value),
   })
   startResult.value = JSON.stringify(data)
 }
@@ -80,6 +93,10 @@ async function startLive() {
         <input id="live-allow-legacy" v-model="allowLegacy" type="checkbox" data-testid="live-allow-legacy" />
         {{ t('live.allowLegacy') }}
       </label>
+      <MtfSeriesEditor v-model="mtfSeries" />
+      <p v-if="mtfValidationMessage" class="text-sm text-warning" role="status">
+        {{ mtfValidationMessage }}
+      </p>
       <label class="text-sm text-gray-300" for="live-confirm">{{ t('live.typeLive') }}</label>
       <input id="live-confirm" v-model="confirmation" class="bg-dark-700 text-gray-100 text-sm px-2 py-1 rounded" data-testid="live-typed-confirm" />
       <button class="text-sm" type="button" :disabled="!canStart" @click="startLive">{{ t('live.start') }}</button>

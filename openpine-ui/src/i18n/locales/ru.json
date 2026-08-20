@@ -656,6 +656,19 @@
     "compareMismatch": "Разные semantic profile. Это не тихое смешивание.",
     "compareMissing": "У обеих задач должен быть явный semantic profile."
   },
+  "mtf": {
+    "title": "Запрашиваемые MTF-серии",
+    "hint": "Только явные данные request.security. OpenPine не извлекает запросы из Pine-кода.",
+    "add": "Добавить серию",
+    "empty": "Дополнительные серии не запрошены",
+    "symbol": "Символ",
+    "symbolPlaceholder": "BTCUSDT",
+    "timeframe": "Таймфрейм",
+    "timeframePlaceholder": "1D",
+    "remove": "Удалить",
+    "required": "В каждой MTF-строке нужны символ и таймфрейм",
+    "duplicate": "MTF-серии не должны повторяться"
+  },
   "live": {
     "title": "Live-допуск",
     "readonlyHint": "При открытии только читает admission. Старт — только после preview и ввода LIVE.",

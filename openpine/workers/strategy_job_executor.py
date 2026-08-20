@@ -118,7 +118,8 @@ class StrategyJobExecutor:
         self.runtime_data_provider = runtime_data_provider
         self.htf_bars = htf_bars
         self.htf_timeframe = htf_timeframe
-        self._job_htf_timeframe = None
+        self._job_htf_timeframe: str | None = None
+        self._job_mtf_series: tuple[Any, ...] | None = None
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
     def _requested_htf_timeframe(self) -> str | None:
@@ -130,8 +131,28 @@ class StrategyJobExecutor:
         if self.htf_bars is not None:
             return self.htf_bars
         from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+        from openpine.runtime.mtf import (
+            admitted_mtf_requests,
+            confirmed_mtf_bars_for_requests,
+        )
 
         requested = self._requested_htf_timeframe()
+        requests = self._job_mtf_series
+        if requests is None:
+            requests = admitted_mtf_requests(
+                chart_symbol=strategy.symbol,
+                htf_timeframe=requested,
+            )
+        if requests:
+            return confirmed_mtf_bars_for_requests(
+                chart_bars=[bar],
+                chart_symbol=strategy.symbol,
+                chart_timeframe=strategy.timeframe,
+                requests=requests,
+                load_bars=lambda symbol, timeframe: self._load_mtf_provider_bars(
+                    strategy, bar, symbol, timeframe
+                ),
+            )
         fetched = None
         if requested and str(requested) != str(strategy.timeframe):
             fetched = self._load_htf_provider_bars(strategy, bar, str(requested))
@@ -144,6 +165,17 @@ class StrategyJobExecutor:
         )
 
     def _load_htf_provider_bars(self, strategy: StrategyInstance, bar: Bar, timeframe: str):
+        return self._load_mtf_provider_bars(
+            strategy, bar, strategy.symbol, timeframe
+        )
+
+    def _load_mtf_provider_bars(
+        self,
+        strategy: StrategyInstance,
+        bar: Bar,
+        symbol: str,
+        timeframe: str,
+    ):
         start_ms = int(bar.time)
         end_ms = getattr(bar, "time_close", None)
         tf = parse_timeframe(timeframe)
@@ -153,7 +185,7 @@ class StrategyJobExecutor:
             instrument=InstrumentKey(
                 exchange=strategy.exchange.lower(),
                 market=strategy.market_type.lower(),
-                symbol=strategy.symbol.upper(),
+                symbol=str(symbol).upper(),
             ),
             timeframe=tf,
             start_ms=start_ms,
@@ -175,6 +207,14 @@ class StrategyJobExecutor:
             requested = payload.get("htf_timeframe")
             self._job_htf_timeframe = str(requested) if requested else None
             strategy = self.registry.get_strategy(payload["strategy_id"])
+            if "mtf_series" in payload:
+                from openpine.runtime.mtf import admitted_mtf_requests
+
+                self._job_mtf_series = admitted_mtf_requests(
+                    chart_symbol=strategy.symbol,
+                    htf_timeframe=self._job_htf_timeframe,
+                    mtf_series=payload.get("mtf_series"),
+                )
             bar = self._load_target_bar(strategy, payload)
             state_key = _state_key(strategy, bar)
 
@@ -249,6 +289,7 @@ class StrategyJobExecutor:
             )
         finally:
             self._job_htf_timeframe = None
+            self._job_mtf_series = None
 
     def _validate_job(self, job: Job) -> None:
         if job.job_type not in {

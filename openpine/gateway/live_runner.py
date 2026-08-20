@@ -73,6 +73,7 @@ class LiveStrategyRunner:
         self.htf_bars = htf_bars
         self.htf_timeframe = htf_timeframe
         self._htf_timeframe_by_strategy: dict[str, str] = {}
+        self._mtf_series_by_strategy: dict[str, tuple[Any, ...]] = {}
 
         self._running = False
         self._task: asyncio.Task | None = None
@@ -87,6 +88,16 @@ class LiveStrategyRunner:
             return
         self._htf_timeframe_by_strategy[key] = str(timeframe)
 
+    def set_strategy_mtf_series(self, strategy_id: str, series) -> None:
+        from openpine.runtime.mtf import normalize_mtf_requests
+
+        key = str(strategy_id)
+        normalized = normalize_mtf_requests(series)
+        if not normalized:
+            self._mtf_series_by_strategy.pop(key, None)
+            return
+        self._mtf_series_by_strategy[key] = normalized
+
     def _requested_htf_timeframe(self, strategy) -> str | None:
         key = str(getattr(strategy, "strategy_id", ""))
         if key in self._htf_timeframe_by_strategy:
@@ -97,8 +108,29 @@ class LiveStrategyRunner:
         if self.htf_bars is not None:
             return self.htf_bars
         from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+        from openpine.runtime.mtf import (
+            admitted_mtf_requests,
+            confirmed_mtf_bars_for_requests,
+        )
 
         requested = self._requested_htf_timeframe(strategy)
+        strategy_key = str(getattr(strategy, "strategy_id", ""))
+        requests = self._mtf_series_by_strategy.get(strategy_key)
+        if requests is None:
+            requests = admitted_mtf_requests(
+                chart_symbol=strategy.symbol,
+                htf_timeframe=requested,
+            )
+        if requests:
+            return confirmed_mtf_bars_for_requests(
+                chart_bars=bars,
+                chart_symbol=strategy.symbol,
+                chart_timeframe=strategy.timeframe,
+                requests=requests,
+                load_bars=lambda symbol, timeframe: self._load_mtf_provider_bars(
+                    strategy, bars, symbol, timeframe
+                ),
+            )
         fetched = None
         if requested and str(requested) != str(strategy.timeframe) and bars:
             fetched = self._load_htf_provider_bars(strategy, bars, str(requested))
@@ -111,6 +143,11 @@ class LiveStrategyRunner:
         )
 
     def _load_htf_provider_bars(self, strategy, bars, timeframe: str):
+        return self._load_mtf_provider_bars(
+            strategy, bars, strategy.symbol, timeframe
+        )
+
+    def _load_mtf_provider_bars(self, strategy, bars, symbol: str, timeframe: str):
         from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
         first = bars[0]
@@ -129,7 +166,7 @@ class LiveStrategyRunner:
             instrument=InstrumentKey(
                 exchange=strategy.exchange.lower(),
                 market=strategy.market_type.lower(),
-                symbol=strategy.symbol.upper(),
+                symbol=str(symbol).upper(),
             ),
             timeframe=tf,
             start_ms=int(start_ms),

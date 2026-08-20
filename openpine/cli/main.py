@@ -841,6 +841,12 @@ def pine_compile(name: str, force: bool) -> None:
     default=None,
     help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
 )
+@click.option(
+    "--mtf-series",
+    multiple=True,
+    metavar="SYMBOL:TIMEFRAME",
+    help="Repeat for each explicit request.security provider series",
+)
 def pine_run_plots(
     name: str,
     symbol: str,
@@ -855,6 +861,7 @@ def pine_run_plots(
     progress_every: int,
     semantic_profile: str,
     htf_timeframe: str | None,
+    mtf_series: tuple[str, ...],
 ) -> None:
     """Run an indicator Pine source and export normalized plot CSV."""
     import time as _time
@@ -886,6 +893,7 @@ def pine_run_plots(
         perf_counter=_time.perf_counter,
         console=console,
         htf_timeframe=htf_timeframe,
+        mtf_series=mtf_series,
     )
     timings.update(prepared.timings)
 
@@ -2701,6 +2709,12 @@ def strategy_remove(strategy_id: str) -> None:
     default=None,
     help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
 )
+@click.option(
+    "--mtf-series",
+    multiple=True,
+    metavar="SYMBOL:TIMEFRAME",
+    help="Repeat for each explicit request.security provider series",
+)
 def strategy_backtest(
     strategy_id: str,
     from_date: str | None,
@@ -2712,6 +2726,7 @@ def strategy_backtest(
     warmup_bars: int,
     gap_policy: str,
     htf_timeframe: str | None,
+    mtf_series: tuple[str, ...],
 ) -> None:
     """Run backtest for a strategy."""
     import time as _time
@@ -2762,6 +2777,7 @@ def strategy_backtest(
             perf_counter=_time.perf_counter,
             console=console,
             htf_timeframe=htf_timeframe,
+            mtf_series=mtf_series,
         )
         timings.update(prepared.timings)
         registry.update_status(strategy_id, "running")
@@ -2802,11 +2818,18 @@ def strategy_backtest(
     default=None,
     help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
 )
+@click.option(
+    "--mtf-series",
+    multiple=True,
+    metavar="SYMBOL:TIMEFRAME",
+    help="Repeat for each explicit request.security provider series",
+)
 def strategy_replay(
     strategy_id: str,
     from_date: str | None,
     to_date: str | None,
     htf_timeframe: str | None,
+    mtf_series: tuple[str, ...],
 ) -> None:
     """Run replay for a strategy."""
     import time as _time_module
@@ -2866,6 +2889,7 @@ def strategy_replay(
             perf_counter=_time_module.perf_counter,
             console=console,
             htf_timeframe=htf_timeframe,
+            mtf_series=mtf_series,
         )
         registry.update_status(strategy_id, "running")
         try:

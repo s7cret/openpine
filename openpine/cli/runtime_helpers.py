@@ -22,6 +22,11 @@ from openpine.runtime.isolated_run import (
     IsolatedRunError,
     _confirmed_htf_bars_for_timeframe,
 )
+from openpine.runtime.mtf import (
+    admitted_mtf_requests,
+    confirmed_mtf_bars_for_requests,
+    parse_mtf_series_args,
+)
 from openpine.timezones import parse_timestamp_ms
 
 
@@ -419,6 +424,7 @@ def _prepare_strategy_backtest_inputs(
     perf_counter,
     console,
     htf_timeframe: str | None = None,
+    mtf_series: tuple[str, ...] = (),
 ):
     start_ms, end_ms, capture_from_ms, capture_to_ms = (
         _parse_valid_strategy_backtest_window(
@@ -510,14 +516,19 @@ def _prepare_strategy_backtest_inputs(
         capture_to_ms=capture_to_ms,
         config_cls=deps.BacktestRunConfig,
     )
-    fetched_htf_bars = None
-    if htf_timeframe and str(htf_timeframe) != str(strategy.timeframe):
-        fetched_htf_bars, _, _, _ = _load_strategy_backtest_bars(
+    requests = admitted_mtf_requests(
+        chart_symbol=strategy.symbol,
+        htf_timeframe=htf_timeframe,
+        mtf_series=parse_mtf_series_args(mtf_series),
+    )
+
+    def load_requested(symbol: str, requested_timeframe: str):
+        fetched, _, _, _ = _load_strategy_backtest_bars(
             strategy=SimpleNamespace(
-                symbol=strategy.symbol,
+                symbol=symbol,
                 exchange=strategy.exchange,
                 market_type=strategy.market_type,
-                timeframe=htf_timeframe,
+                timeframe=requested_timeframe,
             ),
             start_ms=start_ms,
             end_ms=end_ms,
@@ -529,6 +540,25 @@ def _prepare_strategy_backtest_inputs(
             gap_policy=gap_policy,
             console=console,
         )
+        return fetched
+
+    confirmed_mtf = (
+        confirmed_mtf_bars_for_requests(
+            chart_bars=bars,
+            chart_symbol=strategy.symbol,
+            chart_timeframe=strategy.timeframe,
+            requests=requests,
+            load_bars=load_requested,
+        )
+        if requests
+        else _confirmed_htf_bars_for_timeframe(
+            chart_bars=bars,
+            symbol=str(strategy.symbol),
+            chart_timeframe=str(strategy.timeframe),
+            requested_timeframe=None,
+            fetched_htf_bars=None,
+        )
+    )
     return SimpleNamespace(
         start_ms=start_ms,
         end_ms=end_ms,
@@ -541,13 +571,7 @@ def _prepare_strategy_backtest_inputs(
         requested_start_ms=requested_start_ms,
         effective_pre_bars=effective_pre_bars,
         timings=timings,
-        htf_bars=_confirmed_htf_bars_for_timeframe(
-            chart_bars=bars,
-            symbol=str(strategy.symbol),
-            chart_timeframe=str(strategy.timeframe),
-            requested_timeframe=htf_timeframe,
-            fetched_htf_bars=fetched_htf_bars,
-        ),
+        htf_bars=confirmed_mtf,
     )
 
 
@@ -570,6 +594,7 @@ def _prepare_strategy_replay_inputs(
     perf_counter,
     console,
     htf_timeframe: str | None = None,
+    mtf_series: tuple[str, ...] = (),
 ):
     start_ms, end_ms, _, _ = _parse_strategy_backtest_window(
         from_date=from_date,
@@ -631,14 +656,19 @@ def _prepare_strategy_replay_inputs(
         end_ms=end_ms,
         config_cls=config_cls,
     )
-    fetched_htf_bars = None
-    if htf_timeframe and str(htf_timeframe) != str(strategy.timeframe):
-        fetched_htf_bars, _, _, _ = _load_strategy_backtest_bars(
+    requests = admitted_mtf_requests(
+        chart_symbol=strategy.symbol,
+        htf_timeframe=htf_timeframe,
+        mtf_series=parse_mtf_series_args(mtf_series),
+    )
+
+    def load_requested(symbol: str, requested_timeframe: str):
+        fetched, _, _, _ = _load_strategy_backtest_bars(
             strategy=SimpleNamespace(
-                symbol=strategy.symbol,
+                symbol=symbol,
                 exchange=strategy.exchange,
                 market_type=strategy.market_type,
-                timeframe=htf_timeframe,
+                timeframe=requested_timeframe,
             ),
             start_ms=start_ms,
             end_ms=end_ms,
@@ -649,18 +679,31 @@ def _prepare_strategy_replay_inputs(
             provider_factory=lambda: None,
             console=console,
         )
+        return fetched
+
+    confirmed_mtf = (
+        confirmed_mtf_bars_for_requests(
+            chart_bars=bars,
+            chart_symbol=strategy.symbol,
+            chart_timeframe=strategy.timeframe,
+            requests=requests,
+            load_bars=load_requested,
+        )
+        if requests
+        else _confirmed_htf_bars_for_timeframe(
+            chart_bars=bars,
+            symbol=str(strategy.symbol),
+            chart_timeframe=str(strategy.timeframe),
+            requested_timeframe=None,
+            fetched_htf_bars=None,
+        )
+    )
     return SimpleNamespace(
         strategy_class=strategy_class,
         bars=bars,
         params=params,
         config=config,
-        htf_bars=_confirmed_htf_bars_for_timeframe(
-            chart_bars=bars,
-            symbol=str(strategy.symbol),
-            chart_timeframe=str(strategy.timeframe),
-            requested_timeframe=htf_timeframe,
-            fetched_htf_bars=fetched_htf_bars,
-        ),
+        htf_bars=confirmed_mtf,
     )
 
 
@@ -1129,6 +1172,7 @@ def _prepare_indicator_plot_inputs(
     perf_counter,
     console,
     htf_timeframe: str | None = None,
+    mtf_series: tuple[str, ...] = (),
 ):
     source = _load_pine_source_or_exit(
         registry_cls=registry_cls,
@@ -1177,13 +1221,18 @@ def _prepare_indicator_plot_inputs(
         console.print(f"[red]No candle data found for {symbol} {timeframe}[/red]")
         sys.exit(1)
 
-    fetched_htf_bars = None
-    if htf_timeframe and str(htf_timeframe) != str(timeframe):
-        fetched_htf_bars, _, _, _ = _load_indicator_plot_bars(
-            symbol=symbol,
+    requests = admitted_mtf_requests(
+        chart_symbol=symbol,
+        htf_timeframe=htf_timeframe,
+        mtf_series=parse_mtf_series_args(mtf_series),
+    )
+
+    def load_requested(request_symbol: str, requested_timeframe: str):
+        fetched, _, _, _ = _load_indicator_plot_bars(
+            symbol=request_symbol,
             exchange=exchange,
             market_type=market_type,
-            timeframe=htf_timeframe,
+            timeframe=requested_timeframe,
             start_ms=start_ms,
             end_ms=end_ms,
             bar_query_cls=bar_query_cls,
@@ -1193,6 +1242,25 @@ def _prepare_indicator_plot_inputs(
             provider_factory=provider_factory,
             console=console,
         )
+        return fetched
+
+    confirmed_mtf = (
+        confirmed_mtf_bars_for_requests(
+            chart_bars=bars,
+            chart_symbol=symbol,
+            chart_timeframe=timeframe,
+            requests=requests,
+            load_bars=load_requested,
+        )
+        if requests
+        else _confirmed_htf_bars_for_timeframe(
+            chart_bars=bars,
+            symbol=str(symbol),
+            chart_timeframe=str(timeframe),
+            requested_timeframe=None,
+            fetched_htf_bars=None,
+        )
+    )
     return SimpleNamespace(
         source=source,
         start_ms=start_ms,
@@ -1207,13 +1275,7 @@ def _prepare_indicator_plot_inputs(
             "load_artifact_sec": load_artifact_sec,
             "data_load_sec": data_load_sec,
         },
-        htf_bars=_confirmed_htf_bars_for_timeframe(
-            chart_bars=bars,
-            symbol=str(symbol),
-            chart_timeframe=str(timeframe),
-            requested_timeframe=htf_timeframe,
-            fetched_htf_bars=fetched_htf_bars,
-        ),
+        htf_bars=confirmed_mtf,
     )
 
 

@@ -211,6 +211,7 @@ class StrategyBarFanout:
                 "bar_time": bar.time,
                 "bar_close_time": bar.time_close,
                 "source": self.config.source,
+                "mtf_series": strategy.mtf_series,
             },
         )
         return self.scheduler.enqueue(job)

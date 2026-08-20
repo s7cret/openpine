@@ -3,6 +3,12 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import api from '@/api/client'
+import MtfSeriesEditor from '@/components/MtfSeriesEditor.vue'
+import {
+  mtfSeriesValidationKey,
+  toMtfSeriesRequests,
+  type MtfSeriesRow,
+} from '@/lib/mtfSeries'
 
 interface ParameterRow {
   id: number
@@ -34,6 +40,7 @@ const allowLegacy = ref(false)
 const error = ref('')
 const result = ref<OptimizerSearchResult | null>(null)
 const running = ref(false)
+const mtfSeries = ref<MtfSeriesRow[]>([])
 let nextParameterId = 2
 const parameterRows = ref<ParameterRow[]>([
   { id: 1, name: '', type: 'int', default: 1, min: 1, max: 10, step: 1 },
@@ -71,6 +78,8 @@ function optimizerValidationMessage(): string {
   if (semanticProfile.value === 'legacy_4x' && !allowLegacy.value) {
     return t('optimizer.allowLegacyRequired')
   }
+  const mtfError = mtfSeriesValidationKey(mtfSeries.value)
+  if (mtfError) return t(mtfError)
   return ''
 }
 
@@ -120,6 +129,7 @@ async function runSearch() {
       parameters,
       semantic_profile: semanticProfile.value,
       allow_legacy: allowLegacy.value,
+      mtf_series: toMtfSeriesRequests(mtfSeries.value),
     })
     result.value = data
   } catch (exc: unknown) {
@@ -211,6 +221,8 @@ async function runSearch() {
           </button>
         </div>
       </div>
+
+      <MtfSeriesEditor v-model="mtfSeries" />
 
       <p v-if="validationMessage" class="text-sm text-warning" role="status">{{ validationMessage }}</p>
       <button

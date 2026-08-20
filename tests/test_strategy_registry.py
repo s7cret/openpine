@@ -96,3 +96,39 @@ def test_sqlite_strategy_registry_persists_semantic_profile(tmp_path) -> None:
     assert loaded.mode == "live"
     assert loaded.semantic_profile == "strict_5x"
 
+
+def test_sqlite_strategy_registry_persists_mtf_series_for_delegated_worker(tmp_path) -> None:
+    db_path = tmp_path / "openpine.sqlite"
+    registry = SQLiteStrategyRegistry(db_path=db_path)
+    strategy = registry.register_strategy(
+        artifact_id="artifact-1",
+        symbol="BTCUSDT",
+        timeframe="15m",
+        params={},
+        name="mtf-live-strategy",
+        mode="paper",
+    )
+    registry.set_mtf_series(
+        strategy.strategy_id,
+        [
+            {"symbol": "BTCUSDT", "timeframe": "1D"},
+            {"symbol": "ETHUSDT", "timeframe": "4h"},
+        ],
+    )
+    registry.close()
+
+    reloaded = SQLiteStrategyRegistry(db_path=db_path)
+    try:
+        loaded = reloaded.get_strategy(strategy.strategy_id)
+    finally:
+        reloaded.close()
+
+    assert loaded.mtf_series_json == (
+        '[{"symbol":"BTCUSDT","timeframe":"1D"},'
+        '{"symbol":"ETHUSDT","timeframe":"4h"}]'
+    )
+    assert loaded.to_dict()["mtf_series"] == [
+        {"symbol": "BTCUSDT", "timeframe": "1D"},
+        {"symbol": "ETHUSDT", "timeframe": "4h"},
+    ]
+

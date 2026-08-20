@@ -18,6 +18,12 @@ import { downloadApiResource } from '@/api/auth'
 import { EMPTY_MARKET_METADATA, exchangeLabel } from '@/lib/marketMetadata'
 import { createTerminalPoller } from '@/lib/terminalPolling'
 import TvParityVisualization from '@/components/TvParityVisualization.vue'
+import MtfSeriesEditor from '@/components/MtfSeriesEditor.vue'
+import {
+  mtfSeriesValidationKey,
+  toMtfSeriesRequests,
+  type MtfSeriesRow,
+} from '@/lib/mtfSeries'
 
 const { t } = useI18n()
 const strategies = ref<any[]>([])
@@ -37,6 +43,11 @@ const runLoading = ref(false)
 const status = ref('')
 const semanticProfile = ref('')
 const allowLegacy = ref(false)
+const mtfSeries = ref<MtfSeriesRow[]>([])
+const mtfValidationMessage = computed(() => {
+  const key = mtfSeriesValidationKey(mtfSeries.value)
+  return key ? t(key) : ''
+})
 
 const runPoller = createTerminalPoller({
   intervalMs: 1_500,
@@ -243,7 +254,7 @@ const canRun = computed(() => {
   const hasProfile =
     Boolean(semanticProfile.value) &&
     (semanticProfile.value !== 'legacy_4x' || allowLegacy.value)
-  return hasData && hasProfile
+  return hasData && hasProfile && !mtfValidationMessage.value
 })
 const candlesMissing = computed(() => !isExchangeDataSource.value && !candlesFile.value)
 
@@ -385,6 +396,10 @@ async function queueRun() {
     status.value = t('tvParity.allowLegacyRequired')
     return
   }
+  if (mtfValidationMessage.value) {
+    status.value = mtfValidationMessage.value
+    return
+  }
   runLoading.value = true
   status.value = t('tvParity.queueingMessage')
   try {
@@ -406,6 +421,7 @@ async function queueRun() {
       includeBaseColumns: form.value.includeBaseColumns,
       semanticProfile: semanticProfile.value,
       allowLegacy: allowLegacy.value,
+      mtfSeries: toMtfSeriesRequests(mtfSeries.value),
     })
     result.value = data
     lockedPeriod.value = data.locked_period ?? lockedPeriod.value
@@ -587,6 +603,12 @@ async function downloadArtifact(artifact: any) {
             <input id="tv-parity-allow-legacy" v-model="allowLegacy" type="checkbox" data-testid="tv-parity-allow-legacy" />
             {{ t('tvParity.allowLegacy') }}
           </label>
+          <div class="md:col-span-2">
+            <MtfSeriesEditor v-model="mtfSeries" />
+            <p v-if="mtfValidationMessage" class="mt-2 text-xs text-warning" role="status">
+              {{ mtfValidationMessage }}
+            </p>
+          </div>
           <div class="md:col-span-2 space-y-2">
             <div
               class="relative cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors"

@@ -759,28 +759,48 @@ def _confirmed_htf_bars_for_batch(
     timings: dict[str, float],
 ):
     from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+    from openpine.runtime.mtf import (
+        admitted_mtf_requests,
+        confirmed_mtf_bars_for_requests,
+        parse_mtf_series_args,
+    )
 
     explicit = getattr(args, "htf_bars", None)
     if explicit is not None:
         return explicit
     requested = getattr(args, "htf_timeframe", None)
-    fetched = None
-    if requested and str(requested) != str(chart.timeframe):
-        htf_args = argparse.Namespace(**vars(args))
-        htf_args.tv_authoritative_bars = False
-        htf_args.provider_only_bars = True
-        fetched, _ = load_calculation_bars(
-            entry,
-            replace(chart, timeframe=str(requested)),
-            htf_args,
-            timings,
+    requests = admitted_mtf_requests(
+        chart_symbol=str(args.symbol),
+        htf_timeframe=requested,
+        mtf_series=parse_mtf_series_args(getattr(args, "mtf_series", None)),
+    )
+    if requests:
+        def load_requested(symbol: str, timeframe: str):
+            mtf_args = argparse.Namespace(**vars(args))
+            mtf_args.symbol = symbol
+            mtf_args.tv_authoritative_bars = False
+            mtf_args.provider_only_bars = True
+            fetched, _ = load_calculation_bars(
+                entry,
+                replace(chart, timeframe=timeframe),
+                mtf_args,
+                timings,
+            )
+            return fetched
+
+        return confirmed_mtf_bars_for_requests(
+            chart_bars=bars,
+            chart_symbol=str(args.symbol),
+            chart_timeframe=str(chart.timeframe),
+            requests=requests,
+            load_bars=load_requested,
         )
     return _confirmed_htf_bars_for_timeframe(
         chart_bars=bars,
         symbol=str(args.symbol),
         chart_timeframe=str(chart.timeframe),
-        requested_timeframe=requested,
-        fetched_htf_bars=fetched,
+        requested_timeframe=None,
+        fetched_htf_bars=None,
     )
 
 
@@ -1447,6 +1467,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--htf-timeframe",
         default=None,
         help="Fetch confirmed HTF bars for request.security; omitted keeps chart series",
+    )
+    parser.add_argument(
+        "--mtf-series",
+        action="append",
+        default=[],
+        metavar="SYMBOL:TIMEFRAME",
+        help="Repeat for each explicit request.security provider series",
     )
     return parser
 

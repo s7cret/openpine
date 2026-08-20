@@ -61,6 +61,28 @@ def _stamp_strategy_profile(strategy: Any, admitted: Any, registry: Any | None =
         persist(strategy.strategy_id, value)
 
 
+def _stamp_strategy_mtf(strategy: Any, body: Any, registry: Any, runner: Any = None) -> None:
+    from openpine.runtime.mtf import admitted_mtf_requests, mtf_requests_json
+
+    requests = admitted_mtf_requests(
+        chart_symbol=getattr(strategy, "symbol", ""),
+        htf_timeframe=getattr(body, "htf_timeframe", None),
+        mtf_series=getattr(body, "mtf_series", None),
+    )
+    payload = [item.to_dict() for item in requests]
+    durable_payload = mtf_requests_json(payload)
+    persist = getattr(registry, "set_mtf_series", None)
+    if callable(persist):
+        persist(strategy.strategy_id, payload)
+    strategy.mtf_series_json = durable_payload
+    setter = getattr(runner, "set_strategy_mtf_series", None)
+    if callable(setter):
+        setter(strategy.strategy_id, payload)
+    legacy_setter = getattr(runner, "set_strategy_htf_timeframe", None)
+    if callable(legacy_setter):
+        legacy_setter(strategy.strategy_id, getattr(body, "htf_timeframe", None))
+
+
 @router.post("/paper/start", response_model=TradingStatusResponse)
 async def start_paper(
     body: PaperStartRequest,
@@ -86,6 +108,8 @@ async def start_paper(
         raise HTTPException(400, "Cannot start paper: strategy is in error state.")
     if getattr(s, "archived", False):
         raise HTTPException(400, "Archived strategy cannot be started")
+    _stamp_strategy_profile(s, admitted, registry)
+    _stamp_strategy_mtf(s, body, registry, getattr(state, "_live_runner", None))
     try:
         with guarded_strategy_activation(state):
             _activate_registry_strategy(
@@ -96,7 +120,6 @@ async def start_paper(
     except ArchivedStrategyActivationError as exc:
         raise HTTPException(400, str(exc)) from exc
 
-    _stamp_strategy_profile(s, admitted, registry)
     log.info("paper_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
         strategy_id=body.strategy_id,
@@ -174,6 +197,9 @@ async def start_live(
         raise HTTPException(400, "Cannot start live: strategy is in error state.")
     if getattr(s, "archived", False):
         raise HTTPException(400, "Archived strategy cannot be started")
+    _stamp_strategy_profile(s, admitted, registry)
+    runner = getattr(state, "_live_runner", None)
+    _stamp_strategy_mtf(s, body, registry, runner)
     try:
         with guarded_strategy_activation(state):
             _activate_registry_strategy(
@@ -184,11 +210,6 @@ async def start_live(
     except ArchivedStrategyActivationError as exc:
         raise HTTPException(400, str(exc)) from exc
 
-    _stamp_strategy_profile(s, admitted, registry)
-    runner = getattr(state, "_live_runner", None)
-    setter = getattr(runner, "set_strategy_htf_timeframe", None)
-    if callable(setter):
-        setter(body.strategy_id, getattr(body, "htf_timeframe", None))
     log.info("live_started", strategy_id=body.strategy_id)
     return TradingStatusResponse(
         strategy_id=body.strategy_id,

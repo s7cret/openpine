@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import math
 from enum import Enum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, TypeVar
 
 from pydantic import (
     BaseModel,
@@ -215,6 +215,47 @@ class StrategyAction(BaseModel):
 # ── Backtest ───────────────────────────────────────────────────────────────────
 
 
+class MtfSeriesRequest(BaseModel):
+    """One explicitly admitted request.security provider series."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    symbol: str = Field(..., min_length=1, max_length=64)
+    timeframe: str = Field(..., min_length=1, max_length=16)
+
+    @field_validator("symbol")
+    @classmethod
+    def canonical_symbol(cls, value: str) -> str:
+        symbol = value.strip().upper()
+        if not symbol:
+            raise ValueError("MTF series symbol is required")
+        return symbol
+
+    @field_validator("timeframe")
+    @classmethod
+    def canonical_timeframe(cls, value: str) -> str:
+        from marketdata_provider.contracts import parse_timeframe
+
+        try:
+            return str(parse_timeframe(value.strip()).canonical)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"MTF timeframe {value!r} is invalid") from exc
+
+
+_MtfModel = TypeVar("_MtfModel")
+
+
+def _validate_mtf_admission(model: _MtfModel) -> _MtfModel:
+    legacy = str(getattr(model, "htf_timeframe", None) or "").strip()
+    series = list(getattr(model, "mtf_series", None) or [])
+    if legacy and series:
+        raise ValueError("htf_timeframe and mtf_series cannot be combined")
+    keys = [(item.symbol, item.timeframe) for item in series]
+    if len(keys) != len(set(keys)):
+        raise ValueError("duplicate MTF series")
+    return model
+
+
 class BacktestRunRequest(BaseModel):
     """Request to run a backtest."""
 
@@ -235,6 +276,11 @@ class BacktestRunRequest(BaseModel):
     semantic_profile: str | None = None
     allow_legacy: bool = False
     htf_timeframe: str | None = Field(default=None, max_length=16)
+    mtf_series: list[MtfSeriesRequest] = Field(default_factory=list, max_length=16)
+
+    @model_validator(mode="after")
+    def validate_mtf_admission(self) -> BacktestRunRequest:
+        return _validate_mtf_admission(self)
 
 
 class BacktestRunResponse(BaseModel):
@@ -312,6 +358,12 @@ class PaperStartRequest(BaseModel):
     strategy_id: NonBlankStr = Field(max_length=128)
     semantic_profile: str | None = None
     allow_legacy: bool = False
+    htf_timeframe: str | None = Field(default=None, max_length=16)
+    mtf_series: list[MtfSeriesRequest] = Field(default_factory=list, max_length=16)
+
+    @model_validator(mode="after")
+    def validate_mtf_admission(self) -> PaperStartRequest:
+        return _validate_mtf_admission(self)
 
 
 class LiveStartRequest(BaseModel):
@@ -324,6 +376,11 @@ class LiveStartRequest(BaseModel):
     semantic_profile: str | None = None
     allow_legacy: bool = False
     htf_timeframe: str | None = Field(default=None, max_length=16)
+    mtf_series: list[MtfSeriesRequest] = Field(default_factory=list, max_length=16)
+
+    @model_validator(mode="after")
+    def validate_mtf_admission(self) -> LiveStartRequest:
+        return _validate_mtf_admission(self)
 
 
 class TradingStatusResponse(BaseModel):
@@ -518,13 +575,14 @@ class OptimizerSearchRequest(BaseModel):
     semantic_profile: str | None = None
     allow_legacy: bool = False
     htf_timeframe: str | None = Field(default=None, max_length=16)
+    mtf_series: list[MtfSeriesRequest] = Field(default_factory=list, max_length=16)
 
     @model_validator(mode="after")
     def validate_parameter_names(self) -> OptimizerSearchRequest:
         names = [parameter.name for parameter in self.parameters]
         if len(names) != len(set(names)):
             raise ValueError("duplicate optimizer parameter names")
-        return self
+        return _validate_mtf_admission(self)
 
 
 class OptimizerChampion(BaseModel):
@@ -563,6 +621,11 @@ class ReplayRequest(BaseModel):
     from_date: NonBlankStr | None = Field(default=None, max_length=64)
     to_date: NonBlankStr | None = Field(default=None, max_length=64)
     htf_timeframe: str | None = Field(default=None, max_length=16)
+    mtf_series: list[MtfSeriesRequest] = Field(default_factory=list, max_length=16)
+
+    @model_validator(mode="after")
+    def validate_mtf_admission(self) -> ReplayRequest:
+        return _validate_mtf_admission(self)
 
 
 class ReplayResponse(BaseModel):

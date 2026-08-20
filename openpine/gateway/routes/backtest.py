@@ -995,14 +995,20 @@ def _parse_date_ms(value: str) -> int:
     return int(parse_timestamp_ms(value, 0))
 
 
-def _market_data_query_for_strategy(strategy, from_ms: int, to_ms: int, timeframe: str | None = None):
+def _market_data_query_for_strategy(
+    strategy,
+    from_ms: int,
+    to_ms: int,
+    timeframe: str | None = None,
+    symbol: str | None = None,
+):
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
     return BarQuery(
         instrument=InstrumentKey(
             exchange=strategy.exchange.lower(),
             market=strategy.market_type.lower(),
-            symbol=strategy.symbol.upper(),
+            symbol=str(symbol or strategy.symbol).upper(),
         ),
         timeframe=parse_timeframe(timeframe or strategy.timeframe),
         start_ms=from_ms,
@@ -1016,11 +1022,41 @@ def _confirmed_htf_bars_for_backtest(
     *,
     strategy,
     requested_timeframe: str | None,
+    mtf_series=None,
     load_bars,
     from_ms: int,
     to_ms: int,
 ):
     from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+    from openpine.runtime.mtf import (
+        admitted_mtf_requests,
+        confirmed_mtf_bars_for_requests,
+    )
+
+    requests = admitted_mtf_requests(
+        chart_symbol=strategy.symbol,
+        htf_timeframe=requested_timeframe,
+        mtf_series=mtf_series,
+    )
+    if requests:
+        def load_requested(symbol: str, timeframe: str):
+            query = _market_data_query_for_strategy(
+                strategy,
+                from_ms,
+                to_ms,
+                timeframe=timeframe,
+                symbol=symbol,
+            )
+            series = load_bars(query)
+            return list(getattr(series, "bars", series))
+
+        return confirmed_mtf_bars_for_requests(
+            chart_bars=chart_bars,
+            chart_symbol=strategy.symbol,
+            chart_timeframe=strategy.timeframe,
+            requests=requests,
+            load_bars=load_requested,
+        )
 
     fetched = None
     if requested_timeframe and str(requested_timeframe) != str(strategy.timeframe):
@@ -1784,6 +1820,7 @@ async def _run_backtest_background(
     admission_lease: _BacktestLease | None = None,
     semantic_profile: str | None = None,
     htf_timeframe: str | None = None,
+    mtf_series: list[dict[str, str]] | None = None,
 ) -> None:
     """Execute backtest in background, update progress via WebSocket."""
     import asyncio
@@ -2057,6 +2094,7 @@ async def _run_backtest_background(
             bars,
             strategy=strategy,
             requested_timeframe=htf_timeframe,
+            mtf_series=mtf_series,
             load_bars=state.orchestrator.load_bars,
             from_ms=from_ms,
             to_ms=to_ms,
@@ -2412,6 +2450,10 @@ async def run_backtest(
             admission_lease,
             semantic_profile=admitted_profile.value,
             htf_timeframe=getattr(body, "htf_timeframe", None),
+            mtf_series=[
+                item.model_dump()
+                for item in (getattr(body, "mtf_series", None) or [])
+            ],
         )
     except BaseException as exc:
         admission_lease.release()

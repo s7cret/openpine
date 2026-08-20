@@ -151,6 +151,7 @@ export type TvParityRunRequest = {
   includeBaseColumns?: boolean
   semanticProfile?: string
   allowLegacy?: boolean
+  mtfSeries?: Array<{ symbol: string; timeframe: string }>
 }
 
 const multipartConfig = { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -195,6 +196,7 @@ export function runTvParity(request: TvParityRunRequest) {
   appendFormValue(form, 'include_base_columns', request.includeBaseColumns)
   appendFormValue(form, 'semantic_profile', request.semanticProfile)
   appendFormValue(form, 'allow_legacy', request.allowLegacy)
+  appendFormValue(form, 'mtf_series_json', JSON.stringify(request.mtfSeries ?? []))
   return api.post('/tv-parity/run', form, multipartConfig)
 }
 

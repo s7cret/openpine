@@ -560,6 +560,7 @@ def test_cli_replay_help_lists_htf_timeframe() -> None:
     result = CliRunner().invoke(cli_main.cli, ["strategy", "replay", "--help"])
     assert result.exit_code == 0, result.output
     assert "--htf-timeframe" in result.output
+    assert "--mtf-series" in result.output
 
 
 def _backtest_prepare_deps() -> SimpleNamespace:
@@ -914,6 +915,7 @@ def test_cli_run_plots_help_lists_htf_timeframe() -> None:
     result = CliRunner().invoke(cli_main.cli, ["pine", "run-plots", "--help"])
     assert result.exit_code == 0, result.output
     assert "--htf-timeframe" in result.output
+    assert "--mtf-series" in result.output
 
 
 def test_confirmed_htf_selector_uses_fetched_series_for_other_timeframe() -> None:
@@ -1039,6 +1041,80 @@ def test_prepare_strategy_backtest_fetches_explicit_htf_timeframe(monkeypatch) -
     ]
 
 
+def test_prepare_strategy_backtest_fetches_two_mtf_series(monkeypatch) -> None:
+    chart = [
+        SimpleNamespace(
+            time=0,
+            time_close=59_999,
+            open=1,
+            high=2,
+            low=0.5,
+            close=1.5,
+            volume=3,
+        )
+    ]
+    loaded: list[tuple[str, str]] = []
+
+    def load_bars(**kwargs):
+        strategy = kwargs["strategy"]
+        key = (str(strategy.symbol), str(strategy.timeframe))
+        loaded.append(key)
+        if key == ("BTCUSDT", "1m"):
+            return chart, SimpleNamespace(), None, 0.0
+        duration = 86_400_000 if key[1] == "1D" else 14_400_000
+        return [
+            SimpleNamespace(
+                time=0,
+                time_close=duration - 1,
+                open=2,
+                high=3,
+                low=1,
+                close=2,
+                volume=1,
+            )
+        ], SimpleNamespace(), None, 0.0
+
+    _patch_backtest_prepare(monkeypatch, chart)
+    monkeypatch.setattr(
+        "openpine.cli.runtime_helpers._load_strategy_backtest_bars",
+        load_bars,
+    )
+    prepared = _prepare_strategy_backtest_inputs(
+        strategy=SimpleNamespace(
+            symbol="BTCUSDT",
+            timeframe="1m",
+            params_json="{}",
+            exchange="binance",
+            market_type="spot",
+        ),
+        strategy_id="s1",
+        from_date=None,
+        to_date=None,
+        capture_plots=False,
+        capture_from=None,
+        capture_to=None,
+        history_from=None,
+        warmup_bars=0,
+        gap_policy="fail",
+        now_ms=0,
+        registry=SimpleNamespace(),
+        deps=_backtest_prepare_deps(),
+        perf_counter=lambda: 0.0,
+        console=SimpleNamespace(),
+        mtf_series=("BTCUSDT:1D", "ETHUSDT:4h"),
+    )
+
+    assert loaded == [
+        ("BTCUSDT", "1m"),
+        ("BTCUSDT", "1D"),
+        ("ETHUSDT", "4h"),
+    ]
+    assert {(item["symbol"], item["timeframe"]) for item in prepared.htf_bars} == {
+        ("BTCUSDT", "1D"),
+        ("ETHUSDT", "4h"),
+    }
+
+
 def test_prepare_strategy_backtest_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
     bars = [
         SimpleNamespace(
@@ -1093,3 +1169,4 @@ def test_cli_backtest_help_lists_htf_timeframe() -> None:
     result = CliRunner().invoke(cli_main.cli, ["strategy", "backtest", "--help"])
     assert result.exit_code == 0, result.output
     assert "--htf-timeframe" in result.output
+    assert "--mtf-series" in result.output

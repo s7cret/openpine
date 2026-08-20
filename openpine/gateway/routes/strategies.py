@@ -25,6 +25,10 @@ from openpine.registry.strategies import (
     WorkerCircuitOpenError,
 )
 from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+from openpine.runtime.mtf import (
+    admitted_mtf_requests,
+    confirmed_mtf_bars_for_requests,
+)
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/strategies", tags=["strategies"])
@@ -511,11 +515,45 @@ def _confirmed_htf_bars_for_replay(
     symbol: str,
     chart_timeframe: str,
     requested_timeframe: str | None,
+    mtf_series=None,
     load_bars,
     instrument,
     start_ms: int,
     end_ms: int,
 ):
+    requests = admitted_mtf_requests(
+        chart_symbol=symbol,
+        htf_timeframe=requested_timeframe,
+        mtf_series=mtf_series,
+    )
+    if requests:
+        from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
+
+        def load_requested(request_symbol: str, timeframe: str):
+            request_instrument = instrument
+            if request_symbol.upper() != str(symbol).upper():
+                request_instrument = InstrumentKey(
+                    exchange=instrument.exchange,
+                    market=instrument.market,
+                    symbol=request_symbol,
+                )
+            return load_bars(
+                BarQuery(
+                    instrument=request_instrument,
+                    timeframe=parse_timeframe(timeframe),
+                    start_ms=start_ms,
+                    end_ms=end_ms,
+                )
+            )
+
+        return confirmed_mtf_bars_for_requests(
+            chart_bars=bars,
+            chart_symbol=symbol,
+            chart_timeframe=chart_timeframe,
+            requests=requests,
+            load_bars=load_requested,
+        )
+
     fetched = None
     if requested_timeframe and str(requested_timeframe) != str(chart_timeframe):
         from marketdata_provider.contracts import BarQuery, parse_timeframe
@@ -635,6 +673,7 @@ async def strategy_replay(
                     symbol=symbol,
                     chart_timeframe=str(s.timeframe),
                     requested_timeframe=getattr(body, "htf_timeframe", None) if body is not None else None,
+                    mtf_series=getattr(body, "mtf_series", None) if body is not None else None,
                     load_bars=state.orchestrator.get_bars,
                     instrument=key,
                     start_ms=start_ms,

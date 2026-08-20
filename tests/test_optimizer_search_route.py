@@ -93,6 +93,7 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
         for index in range(4)
     ]
     captured: dict[str, object] = {"source_calls": 0}
+    loaded: list[tuple[str, str]] = []
 
     def capture_source(source_id: str, artifact_id: str) -> bytes:
         captured["source_calls"] = int(captured["source_calls"]) + 1
@@ -157,9 +158,13 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
         def mark_failed(self, job_id, *, error_code):
             captured["job_failed"] = (job_id, error_code)
 
+    def load_bars(query):
+        loaded.append((query.instrument.symbol, query.timeframe.canonical))
+        return SimpleNamespace(bars=bars)
+
     state = SimpleNamespace(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
-        orchestrator=SimpleNamespace(load_bars=lambda query: SimpleNamespace(bars=bars)),
+        orchestrator=SimpleNamespace(load_bars=load_bars),
         artifact_store=SimpleNamespace(
             get_artifact=lambda artifact_id, pine_id: {"compile_meta": {}}
         ),
@@ -185,6 +190,10 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
                 }
             ],
             semantic_profile="strict_5x",
+            mtf_series=[
+                {"symbol": "BTCUSDT", "timeframe": "1D"},
+                {"symbol": "ETHUSDT", "timeframe": "4h"},
+            ],
         ),
         state,
     )
@@ -202,6 +211,19 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
     assert isinstance(config.runner, IsolatedOptimizerRunner)
     assert config.runner.source == b"CAPTURED"
     assert config.runner.base_params == {"fee_buffer": 1}
+    assert loaded == [
+        ("BTCUSDT", "1m"),
+        ("BTCUSDT", "1D"),
+        ("ETHUSDT", "4h"),
+    ]
+    assert {
+        (item["symbol"], item["timeframe"])
+        for item in config.runner.htf_bars
+    } == {("BTCUSDT", "1D"), ("ETHUSDT", "4h")}
+    assert config.data_query["mtf_series"] == [
+        {"symbol": "BTCUSDT", "timeframe": "1D"},
+        {"symbol": "ETHUSDT", "timeframe": "4h"},
+    ]
     assert config.parameters[0]["name"] == "qty"
     assert config.data_query["from_time"] == start_ms
     assert captured["job"]["job_id"] == "opt-1"

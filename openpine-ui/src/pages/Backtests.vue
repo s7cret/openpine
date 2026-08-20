@@ -8,6 +8,12 @@ import { formatDateTime } from '@/utils/time'
 import { confirmBacktestDelete, shouldStopBacktestPolling } from '@/lib/backtestUi'
 import { downloadApiResource } from '@/api/auth'
 import { createVisibilityPoller } from '@/lib/visibilityPoller'
+import MtfSeriesEditor from '@/components/MtfSeriesEditor.vue'
+import {
+  mtfSeriesValidationKey,
+  toMtfSeriesRequests,
+  type MtfSeriesRow,
+} from '@/lib/mtfSeries'
 
 const { t } = useI18n()
 const btStore = useBacktestsStore()
@@ -36,6 +42,7 @@ const progressPoller = createVisibilityPoller({
 const form = ref({ strategy_id: '', from_time: '', to_time: '', initial_capital: '' })
 const semanticProfile = ref('')
 const allowLegacy = ref(false)
+const mtfSeries = ref<MtfSeriesRow[]>([])
 const allAvailableFrom = computed(() => msToDate(availability.value?.earliest_available ?? availability.value?.effective_from))
 const selectableStrategies = computed(() => stStore.items.filter((item: any) => !item.archived))
 const selectedStrategy = computed(() => stStore.items.find((item: any) => (item.strategy_id ?? item.id) === form.value.strategy_id) ?? null)
@@ -46,6 +53,8 @@ const runValidationMessage = computed(() => {
   if (form.value.initial_capital !== '' && Number(form.value.initial_capital) <= 0) return t('backtests.initialCapitalInvalid')
   if (!semanticProfile.value) return t('backtests.semanticProfileRequired')
   if (semanticProfile.value === 'legacy_4x' && !allowLegacy.value) return t('backtests.allowLegacyRequired')
+  const mtfError = mtfSeriesValidationKey(mtfSeries.value)
+  if (mtfError) return t(mtfError)
   return ''
 })
 const runDisabled = computed(() => runLoading.value || Boolean(runValidationMessage.value))
@@ -87,6 +96,7 @@ async function runBacktest() {
   }
   payload.semantic_profile = semanticProfile.value
   payload.allow_legacy = allowLegacy.value
+  payload.mtf_series = toMtfSeriesRequests(mtfSeries.value)
   const result = await btStore.run(payload)
   runLoading.value = false
   if (result?.run_id) {
@@ -321,6 +331,7 @@ function effectiveRange(e: any) {
             {{ t('backtests.allowLegacy') }}
           </label>
         </div>
+        <MtfSeriesEditor v-model="mtfSeries" />
         <div class="rounded-lg border px-3 py-3 text-xs" :class="availabilityTone(estimate ?? availability)">
           <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
