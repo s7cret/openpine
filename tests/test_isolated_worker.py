@@ -155,9 +155,14 @@ def test_worker_rejects_huge_source_and_subprocess() -> None:
 
 
 def test_worker_argv_has_no_new_session() -> None:
-    from openpine.runtime.isolated_worker import IsolatedWorkerError, _bwrap_argv
+    from openpine.runtime.isolated_worker import (
+        IsolatedWorkerError,
+        TRUSTED_DEST,
+        _BOOTSTRAP,
+        _bwrap_argv,
+    )
 
-    argv: list[str]
+    argv: list[str] = []
     try:
         argv = _bwrap_argv()
     except IsolatedWorkerError:
@@ -167,6 +172,16 @@ def test_worker_argv_has_no_new_session() -> None:
     assert "--unshare-pid" in argv
     assert "--die-with-parent" in argv
     assert "--clearenv" in argv
+    trusted_dest = TRUSTED_DEST
+    assert trusted_dest in argv
+    tmpfs_index = argv.index("--tmpfs")
+    trusted_dest_index = argv.index(trusted_dest)
+    assert argv[tmpfs_index : tmpfs_index + 2] == ["--tmpfs", "/tmp"]
+    assert argv[trusted_dest_index - 2] == "--ro-bind"
+    assert Path(argv[trusted_dest_index - 1]).name.startswith("openpine-trusted-")
+    assert tmpfs_index < trusted_dest_index
+    assert f"sys.path.insert(0, {trusted_dest!r})" in _BOOTSTRAP
+    assert not any(item.endswith("dist-packages") for item in argv)
 
 
 def test_worker_handshake_rejects_unknown_stack_and_profile() -> None:
@@ -214,7 +229,7 @@ def test_isolated_worker_emits_live_intent_tape() -> None:
 
     argv = _bwrap_argv()
     assert all("/home/" not in item for item in argv)
-    assert any(item.endswith("dist-packages") for item in argv)
+    assert "/tmp/openpine-trusted" in argv
     assert _TRUSTED_STAGE is not None
     assert (_TRUSTED_STAGE / "pinelib").is_dir()
     assert (_TRUSTED_STAGE / "openpine_contracts").is_dir()

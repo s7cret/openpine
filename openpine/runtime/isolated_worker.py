@@ -13,7 +13,6 @@ import json
 import shutil
 import stat
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -24,15 +23,17 @@ BWRAP = "/usr/bin/bwrap"
 SANDBOX_PYTHON = "/usr/bin/python3"
 WORKER_USER = "openpine-worker"
 TMPFS_BYTES = 16 * 1024 * 1024
+TRUSTED_DEST = "/tmp/openpine-trusted"
 
 # Child bootstrap is stdlib-only. Host env and host home are not visible.
-_BOOTSTRAP = r"""
+_BOOTSTRAP = (
+    f"import sys\nsys.path.insert(0, {TRUSTED_DEST!r})\n"
+    + r"""
 import ast
 import json
 import os
 import resource
 import socket
-import sys
 
 FORBIDDEN = {"socket", "subprocess", "ctypes", "multiprocessing", "pathlib"}
 ALLOWED = {
@@ -289,6 +290,7 @@ _REAL_IMPORT = __import__
 if __name__ == "__main__":
     raise SystemExit(main())
 """
+)
 
 
 class IsolatedWorkerError(RuntimeError):
@@ -308,9 +310,7 @@ def _chmod_tree(root: Path) -> None:
 
 def _stage_trusted_packages() -> list[tuple[str, str]]:
     global _TRUSTED_STAGE
-    dest_root = Path(
-        f"/usr/local/lib/python{sys.version_info.major}.{sys.version_info.minor}/dist-packages"
-    )
+    dest_root = Path(TRUSTED_DEST)
     if _TRUSTED_STAGE is None:
         stage = Path(tempfile.mkdtemp(prefix="openpine-trusted-"))
         stage.chmod(0o755)
@@ -356,14 +356,14 @@ def _bwrap_argv() -> list[str]:
         "--ro-bind",
         "/lib",
         "/lib",
-    ]
-    for src, dest in _stage_trusted_packages():
-        argv.extend(["--ro-bind", src, dest])
-    return argv + [
         "--size",
         str(TMPFS_BYTES),
         "--tmpfs",
         "/tmp",
+    ]
+    for src, dest in _stage_trusted_packages():
+        argv.extend(["--ro-bind", src, dest])
+    return argv + [
         "--proc",
         "/proc",
         "--dev",
