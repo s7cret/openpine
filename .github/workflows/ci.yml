@@ -14,46 +14,83 @@ jobs:
         python-version: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Resolve active stack candidate
+        id: stack
+        run: python scripts/resolve_stack_candidate.py --root . --github-output "$GITHUB_OUTPUT"
+      - name: Checkout OpenPine Contracts candidate
+        if: ${{ steps.stack.outputs.mode == 'candidate' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.stack.outputs.openpine_contracts_repo }}
+          ref: ${{ steps.stack.outputs.openpine_contracts_sha }}
+          path: stack/openpine-contracts
       - name: Checkout Pine2AST
         uses: actions/checkout@v4
         with:
-          repository: s7cret/pine2ast
-          ref: c57323351a1e638e0337e1be247883da2570ab28
+          repository: ${{ steps.stack.outputs.pine2ast_repo || 's7cret/pine2ast' }}
+          ref: ${{ steps.stack.outputs.pine2ast_sha || 'c57323351a1e638e0337e1be247883da2570ab28' }}
           path: stack/pine2ast
       - name: Checkout AST2Python
         uses: actions/checkout@v4
         with:
-          repository: s7cret/ast2python
-          ref: b3013b13a32a6e3eb68edc111390e35f206323fc
+          repository: ${{ steps.stack.outputs.ast2python_repo || 's7cret/ast2python' }}
+          ref: ${{ steps.stack.outputs.ast2python_sha || 'b3013b13a32a6e3eb68edc111390e35f206323fc' }}
           path: stack/ast2python
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
-          repository: s7cret/pinelib
-          ref: fcf9c0f92213313db39bc42c83f676786c85400c
+          repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || 'fcf9c0f92213313db39bc42c83f676786c85400c' }}
           path: stack/pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
-          repository: s7cret/backtest_engine
-          ref: 329b9905bff2ea0b7b7f48662e4ce8b83d919c60
+          repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '329b9905bff2ea0b7b7f48662e4ce8b83d919c60' }}
           path: stack/backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
-          repository: s7cret/marketdata-provider
-          ref: b868ace65524f5c3bf62498f667db411e299a4ce
+          repository: ${{ steps.stack.outputs.marketdata_provider_repo || 's7cret/marketdata-provider' }}
+          ref: ${{ steps.stack.outputs.marketdata_provider_sha || 'b868ace65524f5c3bf62498f667db411e299a4ce' }}
           path: stack/marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
-          repository: s7cret/optimizer
-          ref: 73d67934d078cb97a4947cc7b0b12665c4086099
+          repository: ${{ steps.stack.outputs.optimizer_repo || 's7cret/optimizer' }}
+          ref: ${{ steps.stack.outputs.optimizer_sha || '73d67934d078cb97a4947cc7b0b12665c4086099' }}
           path: stack/optimizer
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - run: python -m pip install -e '.[dev]'
+      - name: Verify candidate checkout identities
+        if: ${{ steps.stack.outputs.mode == 'candidate' }}
+        run: |
+          python scripts/build_candidate_wheelhouse.py \
+            --candidate "${{ steps.stack.outputs.candidate_path }}" \
+            --outdir "$RUNNER_TEMP/openpine-candidate-verification" \
+            --checkout openpine-contracts=stack/openpine-contracts \
+            --checkout marketdata-provider=stack/marketdata-provider \
+            --checkout pinelib=stack/pinelib \
+            --checkout backtest_engine=stack/backtest_engine \
+            --checkout pine2ast=stack/pine2ast \
+            --checkout ast2python=stack/ast2python \
+            --checkout optimizer=stack/optimizer \
+            --checkout openpine=.
+      - name: Install OpenPine and exact stack checkouts
+        env:
+          STACK_MODE: ${{ steps.stack.outputs.mode }}
+        run: |
+          python -m pip install -e '.[dev]'
+          if [[ "$STACK_MODE" == "candidate" ]]; then
+            python -m pip install --no-deps -e stack/openpine-contracts
+          fi
+          python -m pip install --no-deps -e stack/marketdata-provider
+          python -m pip install --no-deps -e stack/pinelib
+          python -m pip install --no-deps -e stack/pine2ast
+          python -m pip install --no-deps -e stack/ast2python
+          python -m pip install --no-deps -e stack/backtest_engine
+          python -m pip install --no-deps -e stack/optimizer
       - run: bash scripts/release_gate.sh
       - name: Type-check hardened API boundary
         run: >-
@@ -106,6 +143,9 @@ jobs:
         working-directory: openpine-ui
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -116,6 +156,9 @@ jobs:
           name: openpine-openapi-3.13
           path: openpine-ui/.contract
       - run: test -s .contract/openapi.json
+      - run: python ../scripts/generate_openapi_ts.py .contract/openapi.json .contract/openapi.ts
+      - name: Verify generated OpenAPI client is current
+        run: python -c "from pathlib import Path; assert Path('.contract/openapi.ts').read_bytes() == Path('src/api/generated/openapi.ts').read_bytes(), 'generated OpenAPI client drift'"
       - run: npm ci
       - run: npm run test:node
         env:

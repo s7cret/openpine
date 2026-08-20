@@ -197,6 +197,7 @@ def _run_row(run_id="r1", *, strategy_id="s1", status="done", started_at=1):
 def _patch_backtest_runtime(monkeypatch, *, run_error=None, provider_error=None):
     import openpine.data.direct_data_provider as direct_data_provider
     import openpine.runtime.engine as runtime_engine
+    import openpine.runtime.isolated_run as isolated_run
 
     class FakeConfig:
         def __init__(self, **kwargs):
@@ -220,6 +221,7 @@ def _patch_backtest_runtime(monkeypatch, *, run_error=None, provider_error=None)
             raw_result=SimpleNamespace(trades=[], equity_curve=None), bars_processed=4
         )
 
+    monkeypatch.setattr(isolated_run, "capture_generated_source", lambda *a, **k: b"generated-source")
     monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Generated", (), {}))
     monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
     monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", FakeAdapter)
@@ -700,14 +702,20 @@ def test_live_runner_loop_process_strategy_and_small_helpers(monkeypatch):
 def _patch_live_runtime(monkeypatch, adapter_cls, *, provider=None):
     import openpine.data.provider_adapter as provider_adapter
     import openpine.runtime.engine as runtime_engine
+    import openpine.runtime.isolated_run as isolated_run
 
     class FakeConfig:
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
+    class IsolatedAdapter:
+        def run_isolated(self, *args, **kwargs):
+            return adapter_cls().run(*args, **kwargs)
+
+    monkeypatch.setattr(isolated_run, "capture_generated_source", lambda *a, **k: b"generated-source")
     monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Generated", (), {}))
     monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
-    monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", adapter_cls)
+    monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", IsolatedAdapter)
     monkeypatch.setattr(
         provider_adapter,
         "create_local_runtime_data_provider_adapter",

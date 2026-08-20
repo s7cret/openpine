@@ -671,6 +671,7 @@ def test_strategy_job_executor_helper_branches(monkeypatch):
         exchange="BINANCE",
         market_type="SPOT",
         price_type="TRADE",
+        semantic_profile="strict_5x",
     )
     job = Job(
         JobType.PAPER_BAR_PROCESS,
@@ -795,7 +796,10 @@ def test_strategy_job_executor_process_done_skip_and_fail(monkeypatch):
     from openpine.jobs.models import Job, JobType
     from openpine.workers import strategy_job_executor as worker
 
-    strategy = StrategyInstance("s1", "S", "pine", "art", "{}", "h", "BTCUSDT", "1m")
+    strategy = StrategyInstance(
+        "s1", "S", "pine", "art", "{}", "h", "BTCUSDT", "1m",
+        semantic_profile="strict_5x",
+    )
     registry = SimpleNamespace(get_strategy=lambda _sid: strategy)
     bar = _bar(0)
     payload = {"strategy_id": "s1", "instrument_key": "binance:spot:BTCUSDT", "timeframe": "1m", "bar_time": 0}

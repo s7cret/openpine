@@ -332,7 +332,7 @@ def test_live_runner_mini_backtest_success_resume_and_fallback(monkeypatch):
 
     class FakeAdapter:
         calls = 0
-        def run(self, strategy_class, bars, config, params, resume_state=None, runtime_data_provider=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
             type(self).calls += 1
             if resume_state and type(self).calls == 1:
                 raw = SimpleNamespace(trades=[], order_lifecycle=[])
@@ -344,6 +344,10 @@ def test_live_runner_mini_backtest_success_resume_and_fallback(monkeypatch):
             return SimpleNamespace(raw_result=raw, resume_state={"runtime_state": {"x": 1}, "bar_index": 2})
 
     monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Generated", (), {}))
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"generated-source",
+    )
     monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
     monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", FakeAdapter)
     monkeypatch.setattr(direct_data_provider, "DirectBinanceDataProvider", lambda *a, **k: object())
@@ -379,11 +383,11 @@ def test_live_runner_mini_backtest_success_resume_and_fallback(monkeypatch):
     # resume replay error triggers full-window retry branch
     class RetryAdapter(FakeAdapter):
         calls = 0
-        def run(self, strategy_class, bars, config, params, resume_state=None, runtime_data_provider=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
             type(self).calls += 1
             if resume_state is not None and type(self).calls == 1:
                 raise RuntimeError("resume config hash mismatch")
-            return super().run(strategy_class, bars, config, params, resume_state=None, runtime_data_provider=runtime_data_provider)
+            return super().run_isolated(source, bars, config, resume_state=None, htf_bars=htf_bars)
     monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", RetryAdapter)
     store2 = Store(SimpleNamespace(bar_time=60_000, state_data={"runtime_state": {"old": 1}, "bar_index": 1}))
     runner2 = lr.LiveStrategyRunner(orchestrator=runner.orchestrator, artifact_store=ArtifactStore(), state_store=store2, storage=_OrderStorage())

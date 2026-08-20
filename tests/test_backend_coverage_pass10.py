@@ -37,6 +37,7 @@ class FakeRegistry:
             symbol="BTCUSDT",
             timeframe="1m",
             params_json='{"len": 7}',
+            semantic_profile="strict_5x",
         )
         self.fail = fail
 
@@ -121,11 +122,17 @@ def _state(**kwargs):
 def _patch_runtime(monkeypatch, *, result=None, artifact_error: Exception | None = None, run_error: Exception | None = None, provider_error: Exception | None = None):
     import openpine.runtime.engine as runtime_engine
     import openpine.data.direct_data_provider as direct_data_provider
+    import openpine.runtime.isolated_run as isolated_run
 
     def load_strategy(*args, **kwargs):
         if artifact_error:
             raise artifact_error
         return type("Strategy", (), {})
+
+    def capture_source(*args, **kwargs):
+        if artifact_error:
+            raise artifact_error
+        return b"generated-source"
 
     class Adapter:
         pass
@@ -141,6 +148,7 @@ def _patch_runtime(monkeypatch, *, result=None, artifact_error: Exception | None
         return result or SimpleNamespace(raw_result=SimpleNamespace(trades=[], equity_curve=None), bars_processed=2)
 
     monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", load_strategy)
+    monkeypatch.setattr(isolated_run, "capture_generated_source", capture_source)
     monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", Adapter)
     monkeypatch.setattr(direct_data_provider, "DirectBinanceDataProvider", Provider)
     monkeypatch.setattr(backtest_routes, "_run_backtest_in_process", run_in_process)

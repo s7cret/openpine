@@ -80,6 +80,10 @@ def test_gateway_backtest_config_uses_exchange_market_metadata(monkeypatch):
         "load_strategy_class_from_artifact",
         lambda *args, **kwargs: type("GeneratedStrategy", (), {}),
     )
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *args, **kwargs: b"generated-source",
+    )
     monkeypatch.setattr(provider_adapter, "create_local_runtime_data_provider_adapter", lambda **kwargs: None)
 
     def run_in_process(adapter, strategy_class, bars, config, params, runtime_data_provider, progress_callback=None):
@@ -98,6 +102,7 @@ def test_gateway_backtest_config_uses_exchange_market_metadata(monkeypatch):
         symbol="SOLUSDT",
         timeframe="1d",
         params_json="{}",
+        semantic_profile="strict_5x",
     )
     state = SimpleNamespace(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: strategy),

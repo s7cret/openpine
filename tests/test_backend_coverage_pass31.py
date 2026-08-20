@@ -40,6 +40,7 @@ class FakeRegistry:
             exchange="binance",
             market_type="spot",
             params_json='{"x": 1}',
+            semantic_profile="strict_5x",
         )
         self.fail = fail
     def get_strategy(self, strategy_id):
@@ -82,9 +83,10 @@ def test_backtest_background_strategy_and_artifact_failures(monkeypatch):
     assert store.failed == [("run1", "Strategy not found")]
 
     import openpine.runtime.engine as rt
+    import openpine.runtime.isolated_run as isolated_run
     def bad_loader(*args, **kwargs):
         raise rt.BacktestArtifactError("bad artifact")
-    monkeypatch.setattr(rt, "load_strategy_class_from_artifact", bad_loader)
+    monkeypatch.setattr(isolated_run, "capture_generated_source", bad_loader)
     store = FakeStore()
     asyncio.run(bt._run_backtest_background(_state(store=store), "s1", "run2", 1, 2, None, 0, False))
     assert store.failed and "bad artifact" in store.failed[-1][1]
@@ -95,7 +97,9 @@ def test_backtest_background_data_error_empty_and_cancel(monkeypatch):
     monkeypatch.setattr(bt, "ws_manager", ws)
     monkeypatch.setattr(bt, "_estimate_backtest_market_data", lambda strategy, from_ms, to_ms: SimpleNamespace(estimated_bars=10, estimated_pages=2, effective_from=from_ms, adjusted=False))
     import openpine.runtime.engine as rt
+    import openpine.runtime.isolated_run as isolated_run
     monkeypatch.setattr(rt, "load_strategy_class_from_artifact", lambda *args, **kwargs: object)
+    monkeypatch.setattr(isolated_run, "capture_generated_source", lambda *a, **k: b"generated-source")
 
     store = FakeStore()
     state = _state(store=store, orchestrator=SimpleNamespace(load_bars=lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no data"))))
@@ -119,7 +123,9 @@ def test_backtest_background_success_and_helpers(monkeypatch):
     monkeypatch.setattr(bt, "ws_manager", ws)
     monkeypatch.setattr(bt, "_estimate_backtest_market_data", lambda strategy, from_ms, to_ms: SimpleNamespace(estimated_bars=1, estimated_pages=1, effective_from=from_ms, adjusted=False, earliest_available=from_ms))
     import openpine.runtime.engine as rt
+    import openpine.runtime.isolated_run as isolated_run
     monkeypatch.setattr(rt, "load_strategy_class_from_artifact", lambda *args, **kwargs: object)
+    monkeypatch.setattr(isolated_run, "capture_generated_source", lambda *a, **k: b"generated-source")
     import openpine.data.direct_data_provider as ddp
     monkeypatch.setattr(ddp, "DirectBinanceDataProvider", lambda market="spot": SimpleNamespace(market=market))
     monkeypatch.setattr(bt, "_run_backtest_in_process", lambda *args, **kwargs: SimpleNamespace(raw_result=SimpleNamespace(trades=[1], equity_curve=[1]), bars_processed=1))

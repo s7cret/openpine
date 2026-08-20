@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-PYTHON=${PYTHON:-python}
+export PYTHON=${PYTHON:-python}
 export PYTHONPATH="${PYTHONPATH:-}:$(pwd)"
 export DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-false}
 
@@ -12,7 +12,12 @@ rm -rf .coverage .pytest_cache .ruff_cache .mypy_cache .openpine
 $PYTHON -m openpine.quality duplicates openpine
 $PYTHON -m openpine.quality architecture openpine --max-lines 4000
 $PYTHON -m openpine.distribution manifest --root .
-$PYTHON -m openpine.release --root .
+candidate_manifest=$($PYTHON scripts/resolve_stack_candidate.py --root .)
+if [[ -n "$candidate_manifest" ]]; then
+    $PYTHON -m pytest -q tests/test_stack_candidate.py
+else
+    $PYTHON -m openpine.release --root .
+fi
 $PYTHON - <<'PY'
 from pathlib import Path
 from tempfile import NamedTemporaryFile

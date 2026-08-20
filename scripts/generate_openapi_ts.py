@@ -20,13 +20,13 @@ def operations(schema: dict) -> list[tuple[str, str]]:
 
 
 def render(rows: list[tuple[str, str]]) -> str:
-    lines = [
-        "/* Generated from OpenAPI. Do not edit by hand. */",
-        "export type OpenApiOperation =",
-    ]
-    for index, (method, path) in enumerate(rows):
-        suffix = "" if index == len(rows) - 1 else " |"
-        lines.append(f"  | {{ method: '{method}'; path: '{path}' }}{suffix}")
+    lines = ["/* Generated from OpenAPI. Do not edit by hand. */"]
+    if rows:
+        lines.append("export type OpenApiOperation =")
+        for method, path in rows:
+            lines.append(f"  | {{ method: '{method}'; path: '{path}' }}")
+    else:
+        lines.append("export type OpenApiOperation = never")
     lines.append("")
     lines.append("export const OPENAPI_OPERATION_COUNT = " + str(len(rows)))
     lines.append("")

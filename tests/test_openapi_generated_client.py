@@ -34,3 +34,26 @@ def test_generator_counts_unique_operations() -> None:
     assert ("GET", "/api/jobs/compare") in rows
     assert ("POST", "/api/jobs") in rows
     assert "OPENAPI_OPERATION_COUNT = 3" in gen.render(rows)
+
+
+def test_generator_renders_valid_typescript_union() -> None:
+    gen = _gen()
+
+    text = gen.render(
+        [
+            ("GET", "/api/jobs"),
+            ("POST", "/api/jobs"),
+        ]
+    )
+
+    assert "} |" not in text
+    assert "export type OpenApiOperation =\n  | { method: 'GET'" in text
+    assert "\n  | { method: 'POST'" in text
+
+
+def test_generator_renders_empty_operation_set_as_never() -> None:
+    gen = _gen()
+
+    text = gen.render([])
+
+    assert "export type OpenApiOperation = never" in text

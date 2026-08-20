@@ -95,7 +95,9 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     assert "commit" not in self_identity
     assert re.fullmatch(r"(?!0{64})[0-9a-f]{64}", self_identity["tree_sha256"])
     root = Path(__file__).resolve().parents[1]
-    assert self_identity["tree_sha256"] == package_tree_identity(root / "openpine")
+    # The production 4.0.2 lock stays frozen while this checkout is a 5.0 candidate.
+    assert self_identity["tree_sha256"] != package_tree_identity(root / "openpine")
+    assert (root / "stack-candidate-5.0.0-rc.2.json").is_file()
     assert validate_stack_lock(lock) == ()
 
 

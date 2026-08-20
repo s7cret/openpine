@@ -186,16 +186,29 @@ def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
         except OSError as exc:
             return [f"stack lock {label} refs unavailable: {type(exc).__name__}: {exc}"]
 
-    workflow_refs = {
-        label: {
-            repository: commit
-            for repository, commit in re.findall(
-                r"repository:\s*([^\s]+)\s*\n\s*ref:\s*([0-9a-f]{40})",
-                workflow,
+    workflow_refs: dict[str, dict[str, str]] = {}
+    checkout_pattern = re.compile(
+        r"repository:\s*(.+?)\s*\n\s*ref:\s*(.+?)\s*(?:\n|$)"
+    )
+    fallback_pattern = re.compile(r"\|\|\s*'([^']+)'\s*\}\}")
+    for label, workflow in workflows.items():
+        refs: dict[str, str] = {}
+        for repository_expr, commit_expr in checkout_pattern.findall(workflow):
+            repository_fallback = fallback_pattern.search(repository_expr)
+            commit_fallback = fallback_pattern.search(commit_expr)
+            repository = (
+                repository_fallback.group(1)
+                if repository_fallback is not None
+                else repository_expr.strip(" '\"")
             )
-        }
-        for label, workflow in workflows.items()
-    }
+            commit = (
+                commit_fallback.group(1)
+                if commit_fallback is not None
+                else commit_expr.strip(" '\"")
+            )
+            if re.fullmatch(r"[0-9a-f]{40}", commit):
+                refs[repository] = commit
+        workflow_refs[label] = refs
     if re.search(
         r"PINE_STACK_ROOT:\s*\$\{\{\s*github\.workspace\s*\}\}/stack",
         workflows["backend-ci"],

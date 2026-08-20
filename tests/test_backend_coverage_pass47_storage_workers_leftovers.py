@@ -116,6 +116,7 @@ def _strategy(
         price_type=price_type,
         mode=mode,
         enabled=enabled,
+        semantic_profile="strict_5x",
     )
 
 

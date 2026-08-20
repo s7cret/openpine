@@ -464,6 +464,7 @@ def test_periodic_fetcher_and_strategy_executor_remaining_branches(monkeypatch):
         params_json="{}",
         created_at=1,
         updated_at=1,
+        semantic_profile="strict_5x",
     )
 
     class Registry:

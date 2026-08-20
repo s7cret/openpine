@@ -733,7 +733,7 @@ async def _run_tv_parity_background(
 ) -> None:
     """Execute TV-candle replay and optional comparison in the background."""
 
-    source = str(parsed.summary.get("source", "tradingview_csv"))
+    source_label = str(parsed.summary.get("source", "tradingview_csv"))
     effective_pre_bars = int(parsed.summary.get("effective_pre_bars", 0) or 0)
     try:
         import asyncio
@@ -755,7 +755,7 @@ async def _run_tv_parity_background(
         from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
 
         try:
-            source = capture_generated_source(
+            generated_source = capture_generated_source(
                 strategy.pine_id,
                 strategy.artifact_id,
             )
@@ -765,7 +765,7 @@ async def _run_tv_parity_background(
                 "run_id": run_id,
                 "strategy_id": strategy_id,
                 "status": "failed",
-                "source": source,
+                "source": source_label,
                 "candle_summary": parsed.summary,
                 "uploads": _public_path_map(uploads, run_root),
                 "error": str(exc),
@@ -789,7 +789,7 @@ async def _run_tv_parity_background(
                 "bars_processed": 0,
                 "total_bars": len(parsed.bars),
                 "data_fingerprint": fingerprint,
-                "source": source,
+                "source": source_label,
             },
         )
         await ws_manager.broadcast_progress(run_id)
@@ -843,7 +843,7 @@ async def _run_tv_parity_background(
         )
         run_args = (
             BacktestEngineAdapter(),
-            source,
+            generated_source,
             list(parsed.bars),
             config,
             params or {},
@@ -885,7 +885,7 @@ async def _run_tv_parity_background(
         payload.update(
             {
                 "status": "done",
-                "source": source,
+                "source": source_label,
                 "candle_summary": parsed.summary,
                 "uploads": _public_path_map(uploads, run_root),
                 "artifacts": _artifact_catalog(run_id, run_root),
@@ -904,7 +904,7 @@ async def _run_tv_parity_background(
                 "bars_processed": getattr(result, "bars_processed", len(parsed.bars)),
                 "total_bars": len(parsed.bars),
                 "data_fingerprint": fingerprint,
-                "source": source,
+                "source": source_label,
             },
         )
         await ws_manager.broadcast_progress(run_id)
@@ -918,7 +918,7 @@ async def _run_tv_parity_background(
             "run_id": run_id,
             "strategy_id": strategy_id,
             "status": "failed",
-            "source": source,
+            "source": source_label,
             "candle_summary": parsed.summary,
             "uploads": _public_path_map(uploads, run_root),
             "error": str(exc),

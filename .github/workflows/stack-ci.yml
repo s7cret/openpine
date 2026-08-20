@@ -15,49 +15,79 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: openpine
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Resolve active stack candidate
+        id: stack
+        working-directory: openpine
+        run: python scripts/resolve_stack_candidate.py --root . --github-output "$GITHUB_OUTPUT"
+      - name: Checkout OpenPine Contracts candidate
+        if: ${{ steps.stack.outputs.mode == 'candidate' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.stack.outputs.openpine_contracts_repo }}
+          ref: ${{ steps.stack.outputs.openpine_contracts_sha }}
+          path: openpine-contracts
       - name: Checkout Pine2AST
         uses: actions/checkout@v4
         with:
-          repository: s7cret/pine2ast
-          ref: c57323351a1e638e0337e1be247883da2570ab28
+          repository: ${{ steps.stack.outputs.pine2ast_repo || 's7cret/pine2ast' }}
+          ref: ${{ steps.stack.outputs.pine2ast_sha || 'c57323351a1e638e0337e1be247883da2570ab28' }}
           path: pine2ast
       - name: Checkout AST2Python
         uses: actions/checkout@v4
         with:
-          repository: s7cret/ast2python
-          ref: b3013b13a32a6e3eb68edc111390e35f206323fc
+          repository: ${{ steps.stack.outputs.ast2python_repo || 's7cret/ast2python' }}
+          ref: ${{ steps.stack.outputs.ast2python_sha || 'b3013b13a32a6e3eb68edc111390e35f206323fc' }}
           path: ast2python
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
-          repository: s7cret/pinelib
-          ref: fcf9c0f92213313db39bc42c83f676786c85400c
+          repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || 'fcf9c0f92213313db39bc42c83f676786c85400c' }}
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
-          repository: s7cret/backtest_engine
-          ref: 329b9905bff2ea0b7b7f48662e4ce8b83d919c60
+          repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '329b9905bff2ea0b7b7f48662e4ce8b83d919c60' }}
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
-          repository: s7cret/marketdata-provider
-          ref: b868ace65524f5c3bf62498f667db411e299a4ce
+          repository: ${{ steps.stack.outputs.marketdata_provider_repo || 's7cret/marketdata-provider' }}
+          ref: ${{ steps.stack.outputs.marketdata_provider_sha || 'b868ace65524f5c3bf62498f667db411e299a4ce' }}
           path: marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
-          repository: s7cret/optimizer
-          ref: 73d67934d078cb97a4947cc7b0b12665c4086099
+          repository: ${{ steps.stack.outputs.optimizer_repo || 's7cret/optimizer' }}
+          ref: ${{ steps.stack.outputs.optimizer_sha || '73d67934d078cb97a4947cc7b0b12665c4086099' }}
           path: optimizer
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Verify candidate checkout identities
+        if: ${{ steps.stack.outputs.mode == 'candidate' }}
+        run: |
+          python openpine/scripts/build_candidate_wheelhouse.py \
+            --candidate "openpine/${{ steps.stack.outputs.candidate_path }}" \
+            --outdir "$RUNNER_TEMP/openpine-candidate-verification" \
+            --checkout openpine-contracts=openpine-contracts \
+            --checkout marketdata-provider=marketdata-provider \
+            --checkout pinelib=pinelib \
+            --checkout backtest_engine=backtest_engine \
+            --checkout pine2ast=pine2ast \
+            --checkout ast2python=ast2python \
+            --checkout optimizer=optimizer \
+            --checkout openpine=openpine
       - name: Install stack
+        env:
+          STACK_MODE: ${{ steps.stack.outputs.mode }}
         run: |
           python -m pip install -U pip
           python -m pip install -e './openpine[dev]'
+          if [[ "$STACK_MODE" == "candidate" ]]; then
+            python -m pip install --no-deps -e ./openpine-contracts
+          fi
           python -m pip install --no-deps -e ./marketdata-provider
           python -m pip install --no-deps -e ./pinelib
           python -m pip install --no-deps -e ./pine2ast
@@ -65,23 +95,30 @@ jobs:
           python -m pip install --no-deps -e ./backtest_engine
           python -m pip install --no-deps -e ./optimizer
       - name: Verify installed stack versions
+        env:
+          STACK_MODE: ${{ steps.stack.outputs.mode }}
         run: |
           python - <<'PY'
+          import os
           from importlib.metadata import version
 
-          distributions = (
-              'openpine',
-              'pine2ast',
-              'ast2python',
-              'pinelib',
-              'backtest-engine',
-              'marketdata-provider',
-              'optimizer',
-          )
-          for distribution in distributions:
+          expected = {
+              'openpine': '4.0.2',
+              'pine2ast': '4.0.2',
+              'ast2python': '4.0.2',
+              'pinelib': '4.0.2',
+              'backtest-engine': '4.0.2',
+              'marketdata-provider': '4.0.2',
+              'optimizer': '4.0.2',
+          }
+          if os.environ['STACK_MODE'] == 'candidate':
+              expected['openpine-contracts'] = '1.0.0rc1'
+          for distribution, wanted in expected.items():
               installed = version(distribution)
-              if installed != '4.0.2':
-                  raise SystemExit(f'{distribution}: expected 4.0.2, got {installed!r}')
+              if installed != wanted:
+                  raise SystemExit(
+                      f'{distribution}: expected {wanted}, got {installed!r}'
+                  )
               print(distribution, installed)
           PY
       - name: Cross-project compiler/runtime E2E
@@ -89,9 +126,16 @@ jobs:
           PINE_STACK_ROOT: ${{ github.workspace }}
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: python -m pytest -q ast2python/tests/integration/test_v1_0_cross_project_e2e.py
-      - name: Seven-library release reports
+      - name: OpenPine production release report
+        if: ${{ steps.stack.outputs.mode == 'production' }}
+        run: (cd openpine && python -m openpine.release --root .)
+      - name: OpenPine feature candidate report
+        if: ${{ steps.stack.outputs.mode == 'candidate' }}
+        working-directory: openpine
+        run: python -m pytest -q tests/test_stack_candidate.py
+      - name: Production sibling release reports
+        if: ${{ steps.stack.outputs.mode == 'production' }}
         run: |
-          (cd openpine && python -m openpine.release --root .)
           (cd pine2ast && python -m pine2ast.release --root .)
           (cd ast2python && python -m ast2python.release --root .)
           (cd pinelib && python -m pinelib.release --root .)

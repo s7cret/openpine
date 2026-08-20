@@ -713,6 +713,7 @@ async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: P
         exchange="binance",
         market_type="spot",
         params_json='{"length": 14}',
+        semantic_profile="strict_5x",
     )
     saved = {}
 
@@ -730,7 +731,8 @@ async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: P
         async def broadcast_progress(self, run_id):
             saved.setdefault("broadcast", []).append(run_id)
 
-    def fake_run(*args):
+    def fake_run(*args, **kwargs):
+        saved["worker_source"] = args[1]
         args[-1](1, 1)
         raw_result = SimpleNamespace(
             trades=[FakeTrade(id="T1", direction="long", entry_time=1, entry_price=1, qty=1)],
@@ -761,6 +763,7 @@ async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: P
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: strategy),
         artifact_store=SimpleNamespace(get_artifact=lambda *args: {}),
         backtest_store=FakeBacktestStore(),
+        orchestrator=SimpleNamespace(load_bars=lambda *args, **kwargs: parsed.series),
     )
 
     await tv_parity._run_tv_parity_background(
@@ -782,6 +785,8 @@ async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: P
 
     payload = json.loads((tmp_path / "run_1" / "tv_parity_result.json").read_text(encoding="utf-8"))
     assert payload["status"] == "done"
+    assert payload["source"] == "tradingview_csv"
+    assert saved["worker_source"] == b"VALUE = 1\n"
     assert payload["bars_processed"] == 1
     assert saved["fingerprint_saved"] is True
     assert saved["plots"] == [(1, 0, 1.0, "plot")]
@@ -912,6 +917,7 @@ def _strategy(**overrides):
         "symbol": "BTCUSDT",
         "timeframe": "1m",
         "params_json": None,
+        "semantic_profile": "strict_5x",
     }
     data.update(overrides)
     return SimpleNamespace(**data)
@@ -1204,8 +1210,8 @@ async def test_background_passes_effective_pre_bars_to_worker(tmp_path: Path, mo
         async def broadcast_progress(self, run_id):
             pass
 
-    def fake_run(*args):
-        captured["effective_pre_bars"] = args[-1]
+    def fake_run(*args, **kwargs):
+        captured["effective_pre_bars"] = kwargs["effective_pre_bars"]
         raw_result = SimpleNamespace(trades=[], equity_curve=[], plots=[])
         return SimpleNamespace(raw_result=raw_result, bars_processed=2)
 
@@ -1220,6 +1226,7 @@ async def test_background_passes_effective_pre_bars_to_worker(tmp_path: Path, mo
         config=SimpleNamespace(data_dir=tmp_path, data_cache_root=tmp_path / "cache"),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         backtest_store=FakeStore(),
+        orchestrator=SimpleNamespace(load_bars=lambda *args, **kwargs: parsed.series),
     )
 
     await tv_parity._run_tv_parity_background(
@@ -1558,7 +1565,7 @@ async def test_background_success_handles_params_override_and_runtime_provider_f
     monkeypatch.setattr(
         tv_parity,
         "_run_isolated_tv_replay",
-        lambda *args: SimpleNamespace(raw_result=SimpleNamespace(trades=[], equity_curve=[], plots=[])),
+        lambda *args, **kwargs: SimpleNamespace(raw_result=SimpleNamespace(trades=[], equity_curve=[], plots=[])),
     )
     monkeypatch.setattr(tv_parity, "write_tv_parity_exports_and_comparison", lambda **kwargs: {"outputs": {}, "comparison": None})
     state = SimpleNamespace(
@@ -1566,6 +1573,7 @@ async def test_background_success_handles_params_override_and_runtime_provider_f
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy(params_json='{"ignored": true}')),
         artifact_store=SimpleNamespace(get_artifact=lambda *args: {}),
         backtest_store=SimpleNamespace(save_result=lambda **kwargs: saved.update(kwargs), mark_failed=lambda *args: None),
+        orchestrator=SimpleNamespace(load_bars=lambda *args, **kwargs: parsed.series),
     )
 
     await tv_parity._run_tv_parity_background(

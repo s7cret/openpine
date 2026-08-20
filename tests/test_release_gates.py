@@ -137,31 +137,35 @@ def test_distribution_manifest_and_zip_are_deterministic(tmp_path: Path) -> None
     assert output.stat().st_size > 0
 
 
-def test_release_report_accepts_committed_sibling_4_0_1_release() -> None:
+def test_release_report_rejects_feature_tree_against_frozen_4_0_2_lock() -> None:
     root = Path(__file__).resolve().parents[1]
     _clean_release_artifacts(root)
     report = release_report(root)
 
     assert __version__ == "4.0.2"
-    assert report.ok is True
-    assert report.errors == ()
+    assert report.ok is False
+    assert report.errors == (
+        "stack lock OpenPine tree_sha256 does not match package sources",
+    )
     assert report.checks["latest_migration"] >= 10
 
 
-def test_release_report_proves_coherent_immutable_stack_lock() -> None:
+def test_frozen_stack_lock_stays_valid_but_not_coherent_with_feature_tree() -> None:
     root = Path(__file__).resolve().parents[1]
     report = release_report(root)
     lock = load_stack_lock(root / "openpine" / "stack-lock.json")
+    stack_checks = report.checks["stack_lock"]
 
-    assert report.ok is True
-    assert report.checks["stack_lock"]["coherent"] is True
-    assert report.checks["stack_lock"]["refs_verified"] is True
-    assert report.checks["stack_lock"]["valid"] is True
-    assert report.checks["stack_lock"]["source_tree_matches"] is True
+    assert isinstance(stack_checks, dict)
+    assert report.ok is False
+    assert stack_checks["coherent"] is False
+    assert stack_checks["refs_verified"] is True
+    assert stack_checks["valid"] is True
+    assert stack_checks["source_tree_matches"] is False
     assert all(item["version"] == "4.0.2" for item in lock["components"])
     workflow = (root / ".github" / "workflows" / "stack-ci.yml").read_text()
-    assert "expected 4.0.2" in workflow
-    assert "installed != '4.0.2'" in workflow
+    assert "'openpine': '4.0.2'" in workflow
+    assert "expected['openpine-contracts'] = '1.0.0rc1'" in workflow
 
 
 def test_release_report_returns_structured_failure_for_mapping_components(
@@ -210,6 +214,9 @@ def test_release_cli_writes_json(tmp_path: Path) -> None:
     output = tmp_path / "release.json"
 
     _clean_release_artifacts(root)
-    assert main(["--root", str(root), "--json", str(output)]) == 0
+    assert main(["--root", str(root), "--json", str(output)]) == 1
     payload = json.loads(output.read_text(encoding="utf-8"))
-    assert payload["ok"] is True
+    assert payload["ok"] is False
+    assert payload["errors"] == [
+        "stack lock OpenPine tree_sha256 does not match package sources"
+    ]

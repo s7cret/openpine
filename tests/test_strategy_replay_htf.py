@@ -10,9 +10,9 @@ from openpine.gateway.routes import strategies
 from openpine.gateway.schemas import ReplayRequest
 from openpine.gateway.routes.strategies import (
     _confirmed_htf_bars_for_replay,
-    _confirmed_htf_bars_from_provider_bars,
     _run_isolated_strategy_replay,
 )
+from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
 
 
 def test_isolated_strategy_replay_forwards_confirmed_htf_bars() -> None:

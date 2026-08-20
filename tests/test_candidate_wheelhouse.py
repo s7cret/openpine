@@ -1,9 +1,14 @@
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+GIT = shutil.which("git")
+if GIT is None:
+    raise RuntimeError("git executable not found")
 
 
 def _load():
@@ -20,7 +25,9 @@ def _load():
 
 
 def _git(path: Path, *args: str) -> str:
-    return subprocess.check_output(["git", *args], cwd=path, text=True).strip()
+    return subprocess.check_output(  # noqa: S603
+        [GIT, *args], cwd=path, text=True
+    ).strip()
 
 
 def _repo(tmp_path: Path, name: str) -> Path:
@@ -71,3 +78,25 @@ def test_dirty_tree_is_fail_closed(tmp_path: Path) -> None:
     candidate = {"components": {"pinelib": {"sha": _git(repo, "rev-parse", "HEAD")}}}
     with pytest.raises(mod.CandidateError, match="dirty"):
         mod.verify_checkouts(candidate, {"pinelib": repo})
+
+
+def test_build_wheel_uses_running_python(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mod = _load()
+    calls: list[list[str]] = []
+    monkeypatch.setattr(mod.subprocess, "check_call", lambda argv: calls.append(argv))
+
+    mod.build_wheel(tmp_path / "source", tmp_path / "wheelhouse")
+
+    assert calls == [
+        [
+            sys.executable,
+            "-m",
+            "build",
+            "--wheel",
+            "--outdir",
+            str(tmp_path / "wheelhouse"),
+            str(tmp_path / "source"),
+        ]
+    ]

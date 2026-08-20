@@ -303,7 +303,7 @@ async def test_dashboard_and_strategy_route_edges(tmp_path):
             return FakeCursor(rows=[])
     class Reg:
         def __init__(self):
-            self.s = SimpleNamespace(strategy_id="s1", id="s1", name="S", pine_id="p", artifact_id="a", symbol="BTCUSDT", timeframe="1m", exchange="binance", market_type="spot", params_json="{}", params_hash="h", mode="paper", enabled=False, status="paused", created_at=1, updated_at=2)
+            self.s = SimpleNamespace(strategy_id="s1", id="s1", name="S", pine_id="p", artifact_id="a", symbol="BTCUSDT", timeframe="1m", exchange="binance", market_type="spot", params_json="{}", params_hash="h", mode="paper", enabled=False, status="paused", created_at=1, updated_at=2, semantic_profile="strict_5x")
         def list_strategies(self):
             return [self.s]
         def get_strategy(self, sid):

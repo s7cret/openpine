@@ -655,101 +655,10 @@ def test_doctor_writable_dir_helper_reports_success_and_failure(tmp_path):
     assert "Blocked dir" in messages[-1][0]
 
 
-def test_generated_strategy_adapter_is_not_unwrapped_to_runtime_backend():
-    """CLI backtest must keep the BacktestEngine adapter selected by the loader."""
+def test_capture_plots_keeps_stamped_isolated_execution_path():
+    """Plot capture must not switch source identity or runtime path."""
 
-    # Mock strategy class with generated_strategy_class_ref
-    mock_generated_class = MagicMock()
-    mock_strategy_class = MagicMock()
-    mock_strategy_class.generated_strategy_class_ref = mock_generated_class
-
-    # Patch at the source modules where imports come from
-    with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, patch(
-        "openpine.registry.SQLiteStrategyRegistry"
-    ) as MockRegistry, patch(
-        "openpine.data.orchestrator.DataOrchestrator"
-    ) as MockOrch, patch(
-        "openpine.data.provider_adapter.create_local_marketdata_provider_adapter"
-    ), patch(
-        "openpine.artifacts.ArtifactStore"
-    ) as MockArtifactStore, patch(
-        "openpine.storage.BacktestResultStore"
-    ), patch(
-        "openpine.runtime.isolated_run.capture_generated_source",
-        return_value=mock_strategy_class,
-    ):
-
-        # Set up mocks
-        mock_registry = MockRegistry.return_value
-        mock_registry.get_strategy.return_value = MagicMock(
-            strategy_id="test",
-            pine_id="pine_test",
-            artifact_id="art_test",
-            params_hash="ph_test",
-            symbol="BTCUSDT",
-            timeframe="1h",
-            exchange="binance",
-            market_type="spot",
-            params_json="{}",
-        )
-
-        mock_orch = MockOrch.return_value
-        mock_orch.get_bars.return_value = [MagicMock()]
-
-        mock_artifact = MockArtifactStore.return_value
-        mock_artifact.get_artifact.return_value = {"compile_meta": {}}
-
-        mock_instance = MockAdapter.return_value
-        mock_result = MagicMock()
-        mock_result.raw_result = MagicMock()
-        mock_result.raw_result.trades = []
-        mock_result.raw_result.open_trades = []
-        mock_result.resume_state = None
-        mock_result.status = "completed"
-        mock_result.bars_processed = 1
-        mock_result.uses_backtest_engine = True
-        mock_instance.run.return_value = mock_result
-
-        # Test A: without capture_plots
-        from openpine.cli import strategy_backtest
-        from click.testing import CliRunner
-
-        runner = CliRunner()
-
-        runner.invoke(
-            strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02"]
-        )
-
-        # Get the call args for run A
-        call_args_a = mock_instance.run.call_args
-        backend_a = call_args_a.kwargs.get("execution_backend") if call_args_a else None
-        strategy_class_a = call_args_a.args[0] if call_args_a else None
-
-        # Reset mock
-        mock_instance.run.reset_mock()
-
-        # Test B: with capture_plots
-        runner.invoke(
-            strategy_backtest,
-            ["test", "--from", "2024-01-01", "--to", "2024-01-02", "--capture-plots"],
-        )
-
-        call_args_b = mock_instance.run.call_args
-        backend_b = call_args_b.kwargs.get("execution_backend") if call_args_b else None
-        strategy_class_b = call_args_b.args[0] if call_args_b else None
-
-        assert backend_a is None
-        assert backend_b is None
-        assert strategy_class_a is mock_strategy_class
-        assert strategy_class_b is mock_strategy_class
-
-
-def test_no_generated_ref_no_backend():
-    """When strategy has NO generated_strategy_class_ref, no backend is used
-    regardless of --capture-plots flag."""
-
-    mock_strategy_class = MagicMock()
-    # No generated_strategy_class_ref attribute
+    generated_source = b"VALUE = 1\n"
 
     with patch("openpine.runtime.engine.BacktestEngineAdapter") as MockAdapter, patch(
         "openpine.registry.SQLiteStrategyRegistry"
@@ -763,9 +672,8 @@ def test_no_generated_ref_no_backend():
         "openpine.storage.BacktestResultStore"
     ), patch(
         "openpine.runtime.isolated_run.capture_generated_source",
-        return_value=mock_strategy_class,
+        return_value=generated_source,
     ):
-
         mock_registry = MockRegistry.return_value
         mock_registry.get_strategy.return_value = MagicMock(
             strategy_id="test",
@@ -777,53 +685,69 @@ def test_no_generated_ref_no_backend():
             exchange="binance",
             market_type="spot",
             params_json="{}",
+            semantic_profile="strict_5x",
         )
 
-        mock_orch = MockOrch.return_value
-        mock_orch.get_bars.return_value = [MagicMock()]
-
-        mock_artifact = MockArtifactStore.return_value
-        mock_artifact.get_artifact.return_value = {"compile_meta": {}}
+        MockOrch.return_value.get_bars.return_value = [MagicMock()]
+        MockArtifactStore.return_value.get_artifact.return_value = {
+            "compile_meta": {}
+        }
 
         mock_instance = MockAdapter.return_value
-        mock_result = MagicMock()
-        mock_result.raw_result = MagicMock()
-        mock_result.raw_result.trades = []
-        mock_result.raw_result.open_trades = []
-        mock_result.resume_state = None
-        mock_result.status = "completed"
-        mock_result.bars_processed = 1
-        mock_result.uses_backtest_engine = True
-        mock_instance.run.return_value = mock_result
+        mock_result = MagicMock(
+            raw_result=MagicMock(trades=[], open_trades=[]),
+            resume_state=None,
+            status="completed",
+            bars_processed=1,
+        )
+        mock_instance.run_isolated.return_value = mock_result
 
-        from openpine.cli import strategy_backtest
         from click.testing import CliRunner
+        from openpine.cli import strategy_backtest
 
         runner = CliRunner()
-
-        # Test A: without capture_plots
-        runner.invoke(
-            strategy_backtest, ["test", "--from", "2024-01-01", "--to", "2024-01-02"]
-        )
-
-        call_args_a = mock_instance.run.call_args
-        backend_a = call_args_a.kwargs.get("execution_backend") if call_args_a else None
-
-        mock_instance.run.reset_mock()
-
-        # Test B: with capture_plots
-        runner.invoke(
+        plain = runner.invoke(
             strategy_backtest,
-            ["test", "--from", "2024-01-01", "--to", "2024-01-02", "--capture-plots"],
+            ["test", "--from", "2024-01-01", "--to", "2024-01-02"],
         )
+        assert plain.exit_code == 0, plain.output
+        call_args_a = mock_instance.run_isolated.call_args
+        assert call_args_a is not None
 
-        call_args_b = mock_instance.run.call_args
-        backend_b = call_args_b.kwargs.get("execution_backend") if call_args_b else None
+        mock_instance.run_isolated.reset_mock()
+        captured = runner.invoke(
+            strategy_backtest,
+            [
+                "test",
+                "--from",
+                "2024-01-01",
+                "--to",
+                "2024-01-02",
+                "--capture-plots",
+            ],
+        )
+        assert captured.exit_code == 0, captured.output
+        call_args_b = mock_instance.run_isolated.call_args
+        assert call_args_b is not None
 
-        # Assertions: no backend in either case
-        assert (
-            backend_a is None
-        ), f"Expected no backend without capture_plots, got {backend_a}"
-        assert (
-            backend_b is None
-        ), f"Expected no backend with capture_plots, got {backend_b}"
+        assert call_args_a.args[0] == generated_source
+        assert call_args_b.args[0] == generated_source
+        assert call_args_a.args[2].capture_plots is False
+        assert call_args_b.args[2].capture_plots is True
+        mock_instance.run.assert_not_called()
+
+
+def test_plain_internal_class_does_not_invent_execution_backend():
+    """Internal test doubles stay backend-neutral without affecting CLI isolation."""
+    from openpine.cli.runtime_helpers import _prepare_strategy_backtest_runtime
+
+    class PlainStrategy:
+        pass
+
+    selected, backend = _prepare_strategy_backtest_runtime(
+        PlainStrategy,
+        SimpleNamespace(print=lambda *args, **kwargs: None),
+    )
+
+    assert selected is PlainStrategy
+    assert backend is None

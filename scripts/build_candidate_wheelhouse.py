@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -13,10 +15,17 @@ class CandidateError(RuntimeError):
     """Candidate checkout does not match the manifest."""
 
 
+def _git_executable() -> str:
+    executable = shutil.which("git")
+    if executable is None:
+        raise CandidateError("git executable not found")
+    return executable
+
+
 def _git(path: Path, *args: str) -> str:
-    return subprocess.check_output(
-        ["git", *args], cwd=path, text=True
-    ).strip()  # noqa: S603,S607
+    return subprocess.check_output(  # noqa: S603
+        [_git_executable(), *args], cwd=path, text=True
+    ).strip()
 
 
 def parse_checkouts(values: list[str]) -> dict[str, Path]:
@@ -59,14 +68,14 @@ def verify_checkouts(candidate: dict, checkouts: dict[str, Path]) -> dict[str, s
 def build_wheel(src: Path, outdir: Path) -> None:
     subprocess.check_call(  # noqa: S603
         [
-            "python3",
+            sys.executable,
             "-m",
             "build",
             "--wheel",
             "--outdir",
             str(outdir),
             str(src),
-        ]  # noqa: S607
+        ]
     )
 
 

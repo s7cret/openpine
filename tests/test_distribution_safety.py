@@ -292,9 +292,14 @@ def test_stack_ci_pins_every_sibling_checkout_to_an_immutable_sha() -> None:
         encoding="utf-8"
     )
 
-    refs = re.findall(r"^\s+ref:\s+([^\s#]+)", workflow, flags=re.MULTILINE)
+    refs = re.findall(
+        r"^\s+ref:\s+\$\{\{.*?\|\|\s*'([0-9a-f]{40})'\s*\}\}",
+        workflow,
+        flags=re.MULTILINE,
+    )
     assert len(refs) == 6
     assert all(re.fullmatch(r"[0-9a-f]{40}", ref) for ref in refs)
+    assert "steps.stack.outputs.openpine_contracts_sha" in workflow
 
 
 def test_backend_ci_covers_every_supported_python_minor() -> None:

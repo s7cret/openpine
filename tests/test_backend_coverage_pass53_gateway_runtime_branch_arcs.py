@@ -368,6 +368,10 @@ def test_backtest_routes_and_background_remaining_branches(monkeypatch):
         captured["params"] = params
         return SimpleNamespace(raw_result=SimpleNamespace(trades=[], equity_curve=[]), bars_processed=len(bars))
 
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"generated-source",
+    )
     monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Generated", (), {}))
     monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
     monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", lambda: object())
@@ -506,9 +510,17 @@ def _patch_live_runtime(monkeypatch, adapter_cls):
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
+    class IsolatedAdapter:
+        def run_isolated(self, *args, **kwargs):
+            return adapter_cls().run(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "openpine.runtime.isolated_run.capture_generated_source",
+        lambda *a, **k: b"generated-source",
+    )
     monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Generated", (), {}))
     monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
-    monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", adapter_cls)
+    monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", IsolatedAdapter)
     monkeypatch.setattr(direct_data_provider, "DirectBinanceDataProvider", lambda *a, **k: object())
 
 
