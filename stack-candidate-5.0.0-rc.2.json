@@ -13,7 +13,7 @@
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
       "ref": "feat/5.0-bar-v2",
-      "sha": "4710da99d0320e6fd1ddba6e4ae64b6d7ba68848"
+      "sha": "0b6209ae161bfe79ecb6c5f756a160a05d3a4c28"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
@@ -23,22 +23,22 @@
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
       "ref": "feat/5.0-warmup-reset",
-      "sha": "16cc46134a71a66f007782bab4bc5d8114b8a9dd"
+      "sha": "1a01b50f83080c2e8204fbda855be7dffb1ad779"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "4a3dd35b5b2d4385f09eed04b82804d689c080e8"
+      "sha": "4b930ea0b7c658297738f2ab16f23152b047f94f"
     },
     "ast2python": {
       "repo": "s7cret/ast2python",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "2438e88d5730de6d01828de5f86dc13197b83991"
+      "sha": "5b0cd4e6ea9bca2ee779a44882ddc321c628fed1"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "2699d0aef8263bc4b74dac36d52db0b36c940d4e"
+      "sha": "2b2ad26b47090252911fd7037f72e5c6bc7cbcb7"
     },
     "openpine": {
       "repo": "s7cret/openpine",

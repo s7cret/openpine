@@ -164,7 +164,7 @@ def test_candidate_resolver_emits_manifest_identity() -> None:
     assert outputs["mode"] == "candidate"
     assert outputs["candidate_path"] == MANIFEST.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
-    assert outputs["pine2ast_sha"] == "4a3dd35b5b2d4385f09eed04b82804d689c080e8"
+    assert outputs["pine2ast_sha"] == "4b930ea0b7c658297738f2ab16f23152b047f94f"
     assert outputs["openpine_sha"] == "THIS_CHECKOUT"
 
 
