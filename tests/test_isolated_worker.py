@@ -100,11 +100,28 @@ def test_worker_rejects_malformed_and_nonzero_output(
         _eval(b"VALUE = 1\n", timeout_s=1)
 
 
-def test_sandbox_blocks_network_and_host_filesystem() -> None:
-    source = textwrap.dedent("""
+def test_sandbox_blocks_network_and_host_filesystem(tmp_path: Path) -> None:
+    sentinel = tmp_path / "host-secret.sqlite"
+    sentinel.write_text("host-only", encoding="utf-8")
+    source = textwrap.dedent(f"""
         import os
         HOME_VISIBLE = os.path.exists("/home/moltbot1")
         SSH_VISIBLE = os.path.exists("/home/moltbot1/.ssh")
+        ETC_VISIBLE = os.path.exists("/etc/passwd")
+        VAR_VISIBLE = os.path.exists("/var/lib")
+        HOST_SECRET_VISIBLE = os.path.exists({str(sentinel)!r})
+        VISIBLE_PIDS = sorted(int(item) for item in os.listdir("/proc") if item.isdigit())
+        stat = os.statvfs("/tmp")
+        SCRATCH_BYTES = stat.f_frsize * stat.f_blocks
+        def writable(path):
+            try:
+                open(path, "w").write("x")
+                return True
+            except OSError:
+                return False
+        ROOT_WRITABLE = writable("/.openpine-write-probe")
+        TRUSTED_WRITABLE = writable("/tmp/openpine-trusted/.openpine-write-probe")
+        SCRATCH_WRITABLE = writable("/tmp/.openpine-write-probe")
         try:
             open("/usr/bin/.openpine-write-probe", "w").write("x")
             USR_WRITABLE = True
@@ -115,6 +132,15 @@ def test_sandbox_blocks_network_and_host_filesystem() -> None:
     assert result["ok"] is True
     assert result["namespace"]["HOME_VISIBLE"] is False
     assert result["namespace"]["SSH_VISIBLE"] is False
+    assert result["namespace"]["ETC_VISIBLE"] is False
+    assert result["namespace"]["VAR_VISIBLE"] is False
+    assert result["namespace"]["HOST_SECRET_VISIBLE"] is False
+    assert result["namespace"]["ROOT_WRITABLE"] is False
+    assert result["namespace"]["TRUSTED_WRITABLE"] is False
+    assert result["namespace"]["SCRATCH_WRITABLE"] is True
+    assert result["namespace"]["SCRATCH_BYTES"] <= 16 * 1024 * 1024
+    assert 1 in result["namespace"]["VISIBLE_PIDS"]
+    assert len(result["namespace"]["VISIBLE_PIDS"]) <= 2
     assert result["namespace"]["USR_WRITABLE"] is False
     assert result["isolation"]["network"] == "blocked"
     assert result["isolation"]["usr_writable"] is False
@@ -136,15 +162,20 @@ def test_in_process_generated_import_is_forbidden(tmp_path: Path) -> None:
         _load_generated_module(path, "src", "art")
 
 
-def test_sandbox_drops_to_openpine_worker_when_host_allows() -> None:
-    from openpine.runtime.isolated_worker import worker_user_available
+def test_sandbox_requires_dedicated_openpine_worker() -> None:
+    from openpine.runtime.isolated_worker import worker_user_available, worker_user_uid
 
+    assert worker_user_available() is True
     result = _eval(b"VALUE = 1\n", timeout_s=5)
-    if worker_user_available():
-        assert result["isolation"]["uid"] != 1000
-        assert result["isolation"]["uid"] > 0
-    else:
-        assert result["isolation"]["uid"] > 0
+    assert result["isolation"]["uid"] == worker_user_uid()
+
+
+def test_worker_has_no_current_user_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_worker as worker
+
+    monkeypatch.setattr(worker, "worker_user_uid", lambda: None)
+    with pytest.raises(IsolatedWorkerError, match="dedicated openpine-worker"):
+        worker._bwrap_argv()
 
 
 def test_worker_rejects_huge_source_and_subprocess() -> None:
@@ -172,6 +203,9 @@ def test_worker_argv_has_no_new_session() -> None:
     assert "--unshare-pid" in argv
     assert "--die-with-parent" in argv
     assert "--clearenv" in argv
+    remount_index = argv.index("--remount-ro")
+    assert argv[remount_index : remount_index + 2] == ["--remount-ro", "/"]
+    assert remount_index > argv.index("--dev")
     trusted_dest = TRUSTED_DEST
     assert trusted_dest in argv
     tmpfs_index = argv.index("--tmpfs")

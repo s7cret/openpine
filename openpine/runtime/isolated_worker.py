@@ -182,6 +182,12 @@ def _isolation():
         "usr_writable": usr_writable,
         "env": sorted(os.environ),
         "network": network,
+        "rlimits": {
+            "address_space": list(resource.getrlimit(resource.RLIMIT_AS)),
+            "cpu": list(resource.getrlimit(resource.RLIMIT_CPU)),
+            "file_size": list(resource.getrlimit(resource.RLIMIT_FSIZE)),
+            "processes": list(resource.getrlimit(resource.RLIMIT_NPROC)),
+        },
     }
 
 def main() -> int:
@@ -404,7 +410,7 @@ def _stage_trusted_packages() -> list[tuple[str, str]]:
     return [(str(_TRUSTED_STAGE), str(dest_root))]
 
 
-def worker_user_available() -> bool:
+def worker_user_uid() -> int | None:
     try:
         probe = subprocess.run(  # noqa: S603
             ["/usr/bin/sudo", "-n", "-u", WORKER_USER, "--", "/usr/bin/id", "-u"],
@@ -414,8 +420,15 @@ def worker_user_available() -> bool:
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
-        return False
-    return probe.returncode == 0 and probe.stdout.strip().isdigit()
+        return None
+    if probe.returncode != 0 or not probe.stdout.strip().isdigit():
+        return None
+    uid = int(probe.stdout.strip())
+    return uid if uid > 0 else None
+
+
+def worker_user_available() -> bool:
+    return worker_user_uid() is not None
 
 
 def _runtime_ro_bind_args() -> list[str]:
@@ -431,9 +444,9 @@ def _bwrap_argv() -> list[str]:
         raise IsolatedWorkerError("bubblewrap is required for isolated execution")
     if not Path(SANDBOX_PYTHON).is_file():
         raise IsolatedWorkerError("sandbox python is missing")
-    prefix: list[str] = []
-    if worker_user_available():
-        prefix = ["/usr/bin/sudo", "-n", "-u", WORKER_USER, "--"]
+    if worker_user_uid() is None:
+        raise IsolatedWorkerError("dedicated openpine-worker user is required")
+    prefix = ["/usr/bin/sudo", "-n", "-u", WORKER_USER, "--"]
     argv = prefix + [
         BWRAP,
         *_runtime_ro_bind_args(),
@@ -449,6 +462,8 @@ def _bwrap_argv() -> list[str]:
         "/proc",
         "--dev",
         "/dev",
+        "--remount-ro",
+        "/",
         "--unshare-net",
         "--unshare-pid",
         "--die-with-parent",

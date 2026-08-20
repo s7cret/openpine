@@ -12,6 +12,7 @@ rm -rf .coverage .pytest_cache .ruff_cache .mypy_cache .openpine
 $PYTHON -m openpine.quality duplicates openpine
 $PYTHON -m openpine.quality architecture openpine --max-lines 4000
 $PYTHON -m openpine.distribution manifest --root .
+$PYTHON scripts/verify_v5_sec_001.py
 candidate_manifest=$($PYTHON scripts/resolve_stack_candidate.py --root .)
 if [[ -n "$candidate_manifest" ]]; then
     $PYTHON -m pytest -q tests/test_stack_candidate.py

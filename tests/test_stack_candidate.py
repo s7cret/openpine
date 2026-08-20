@@ -100,6 +100,9 @@ def test_backend_ci_installs_required_sandbox_runtime() -> None:
     assert "/usr/share/apparmor/extra-profiles/bwrap-userns-restrict" in workflow
     assert "apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict" in workflow
     assert "--unshare-net -- /usr/bin/true" in workflow
+    assert "useradd --system --no-create-home" in workflow
+    assert "--shell /usr/sbin/nologin openpine-worker" in workflow
+    assert "sudo -n -u openpine-worker -- /usr/bin/id -u" in workflow
 
 
 def test_backend_ci_fetches_history_for_frozen_ref_verification() -> None:

@@ -25,6 +25,10 @@ jobs:
             /usr/share/apparmor/extra-profiles/bwrap-userns-restrict \
             /etc/apparmor.d/bwrap-userns-restrict
           sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          if ! getent passwd openpine-worker >/dev/null; then
+            sudo useradd --system --no-create-home --shell /usr/sbin/nologin openpine-worker
+          fi
+          sudo -n -u openpine-worker -- /usr/bin/id -u
           /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
       - name: Resolve active stack candidate
         id: stack
