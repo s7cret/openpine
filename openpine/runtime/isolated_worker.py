@@ -43,6 +43,74 @@ ALLOWED = {
     "__future__", "ast2python",
 }
 
+def _validated_ohlc_bar(raw_bar, label):
+    if not isinstance(raw_bar, dict):
+        raise RuntimeError(f"{label} must be an object")
+    for name in ("time", "open", "high", "low", "close"):
+        if name not in raw_bar or raw_bar[name] is None:
+            raise RuntimeError(f"{label} required field {name} is missing")
+    try:
+        return (
+            int(raw_bar["time"]),
+            float(raw_bar["open"]),
+            float(raw_bar["high"]),
+            float(raw_bar["low"]),
+            float(raw_bar["close"]),
+        )
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(f"{label} numeric fields are invalid") from exc
+
+def _validated_htf_bar(raw_bar):
+    values = _validated_ohlc_bar(raw_bar, "HTF bar")
+    for name in ("symbol", "timeframe", "time_close"):
+        if name not in raw_bar or raw_bar[name] is None or (
+            name in {"symbol", "timeframe"} and not str(raw_bar[name]).strip()
+        ):
+            detail = f"HTF bar required field {name} is missing"
+            if name == "time_close":
+                detail += "; confirmed HTF bars require time_close"
+            raise RuntimeError(detail)
+    try:
+        return values + (int(raw_bar["time_close"]),)
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError("HTF bar numeric fields are invalid") from exc
+
+def _chart_timeframe_value(raw_bars, require_confirmed=False):
+    intervals = []
+    missing_time_close = False
+    for raw_bar in raw_bars:
+        time_close = raw_bar.get("time_close")
+        if time_close is None:
+            missing_time_close = True
+            continue
+        try:
+            interval_ms = int(time_close) - int(raw_bar["time"]) + 1
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError("chart bars require numeric time and time_close") from exc
+        if interval_ms <= 0:
+            raise RuntimeError("chart timeframe has non-positive inclusive duration")
+        week_ms = 7 * 86_400_000
+        if interval_ms % week_ms == 0:
+            value = f"{interval_ms // week_ms}W"
+        elif interval_ms % 86_400_000 == 0:
+            value = f"{interval_ms // 86_400_000}D"
+        elif interval_ms % 60_000 == 0:
+            value = str(interval_ms // 60_000)
+        elif interval_ms % 1_000 == 0:
+            value = f"{interval_ms // 1_000}S"
+        else:
+            raise RuntimeError("chart timeframe has unsupported inclusive duration")
+        intervals.append((interval_ms, value))
+    if require_confirmed and (missing_time_close or not intervals):
+        raise RuntimeError("request.security requires confirmed chart bars")
+    if intervals and missing_time_close:
+        raise RuntimeError("chart bars have partial time_close values")
+    if intervals and any(interval != intervals[0][0] for interval, _value in intervals[1:]):
+        raise RuntimeError("chart timeframe is inconsistent across bars")
+    if intervals:
+        return intervals[0][1]
+    return "1"
+
 def _denied(tree: ast.AST) -> str | None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -183,31 +251,34 @@ def main() -> int:
             try:
                 from pinelib.core import Bar as PineBar, PineRuntime
                 from pinelib.core.types import RuntimeConfig, SymbolInfo, TimeframeInfo
+                stamped = request.get("htf_bars") or []
+                for raw_bar in bars:
+                    _validated_ohlc_bar(raw_bar, "chart bar")
                 rt = PineRuntime(
                     symbol_info=SymbolInfo(tickerid="S"),
-                    timeframe=TimeframeInfo(value="1m", interval_ms=60000, isminutes=True, multiplier=1),
+                    timeframe=TimeframeInfo.from_string(
+                        _chart_timeframe_value(bars, require_confirmed=bool(stamped))
+                    ),
                     config=RuntimeConfig(semantic_profile=request.get("semantic_profile")),
                 )
                 class _NoHtfProvider:
                     def get_bars(self, *a, **k):
                         raise RuntimeError("request.security requires confirmed HTF bars")
-                stamped = request.get("htf_bars") or []
                 if stamped:
                     from pinelib.request.providers import InMemoryDataProvider
                     keyed = {}
                     for item in stamped:
-                        if not isinstance(item, dict) or item.get("time_close") is None:
-                            raise RuntimeError("request.security requires confirmed HTF bars")
-                        key = (str(item.get("symbol") or ""), str(item.get("timeframe") or ""))
+                        time, open_, high, low, close, time_close = _validated_htf_bar(item)
+                        key = (str(item["symbol"]), str(item["timeframe"]))
                         keyed.setdefault(key, []).append(
                             PineBar(
-                                time=int(item.get("time", 0)),
-                                open=float(item.get("open", 0)),
-                                high=float(item.get("high", 0)),
-                                low=float(item.get("low", 0)),
-                                close=float(item.get("close", 0)),
+                                time=time,
+                                open=open_,
+                                high=high,
+                                low=low,
+                                close=close,
                                 volume=float(item.get("volume") or 0),
-                                time_close=int(item["time_close"]),
+                                time_close=time_close,
                             )
                         )
                     rt.data_provider = InMemoryDataProvider(keyed)
@@ -226,13 +297,19 @@ def main() -> int:
             events = []
             for i, raw_bar in enumerate(bars):
                 try:
+                    time, open_, high, low, close = _validated_ohlc_bar(raw_bar, "chart bar")
                     bar = PineBar(
-                        time=int(raw_bar.get("time", 0)),
-                        open=float(raw_bar.get("open", 0)),
-                        high=float(raw_bar.get("high", 0)),
-                        low=float(raw_bar.get("low", 0)),
-                        close=float(raw_bar.get("close", 0)),
+                        time=time,
+                        open=open_,
+                        high=high,
+                        low=low,
+                        close=close,
                         volume=float(raw_bar.get("volume") or 0),
+                        time_close=(
+                            int(raw_bar["time_close"])
+                            if raw_bar.get("time_close") is not None
+                            else None
+                        ),
                     )
                     rt.begin_bar(bar)
                 except Exception:

@@ -399,6 +399,80 @@ def test_isolated_worker_echoes_semantic_profile() -> None:
     assert result["semantic_profile"] == "strict_5x"
 
 
+@pytest.mark.parametrize("missing", ["time", "open", "high", "low", "close"])
+def test_evaluate_artifact_rejects_missing_required_chart_field(missing: str) -> None:
+    source = textwrap.dedent(
+        """
+        class GeneratedStrategy:
+            def __init__(self, params=None, runtime=None):
+                self.rt = runtime
+
+            def _process_bar(self, bar, bar_index=None):
+                return None
+        """
+    )
+    bar = {
+        "time": 0,
+        "time_close": 59_999,
+        "open": 1,
+        "high": 1,
+        "low": 1,
+        "close": 1,
+        "volume": 1,
+    }
+    del bar[missing]
+
+    with pytest.raises(IsolatedWorkerError, match=f"chart bar required field {missing}"):
+        _eval(source.encode("utf-8"), bars=[bar], timeout_s=8)
+
+
+@pytest.mark.parametrize(
+    "missing",
+    ["symbol", "timeframe", "time", "time_close", "open", "high", "low", "close"],
+)
+def test_evaluate_artifact_rejects_missing_required_htf_field(missing: str) -> None:
+    source = textwrap.dedent(
+        """
+        class GeneratedStrategy:
+            def __init__(self, params=None, runtime=None):
+                self.rt = runtime
+
+            def _process_bar(self, bar, bar_index=None):
+                return None
+        """
+    )
+    htf_bar = {
+        "symbol": "BTCUSDT",
+        "timeframe": "1D",
+        "time": 0,
+        "time_close": 86_399_999,
+        "open": 1,
+        "high": 1,
+        "low": 1,
+        "close": 1,
+        "volume": 1,
+    }
+    del htf_bar[missing]
+
+    with pytest.raises(IsolatedWorkerError, match=f"HTF bar required field {missing}"):
+        _eval(
+            source.encode("utf-8"),
+            bars=[
+                {
+                    "time": 0,
+                    "time_close": 59_999,
+                    "open": 1,
+                    "high": 1,
+                    "low": 1,
+                    "close": 1,
+                    "volume": 1,
+                }
+            ],
+            htf_bars=[htf_bar],
+            timeout_s=8,
+        )
+
+
 def test_isolated_request_security_without_htf_is_fail_closed() -> None:
     source = textwrap.dedent(
         """
@@ -452,6 +526,7 @@ def test_isolated_request_security_uses_stamped_htf_bars() -> None:
     chart_bars = [
         {
             "time": 86_400_000,
+            "time_close": 86_459_999,
             "open": 1,
             "high": 1,
             "low": 1,

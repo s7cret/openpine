@@ -69,21 +69,33 @@ def _stamp_confirmed_htf_bars(htf_bars: list[dict[str, Any]] | None) -> list[dic
         return []
     stamped: list[dict[str, Any]] = []
     for item in htf_bars:
-        if not isinstance(item, dict) or item.get("time_close") is None:
-            raise IsolatedRunError("request.security requires confirmed HTF bars")
-        stamped.append(
-            {
-                "symbol": str(item.get("symbol") or ""),
-                "timeframe": str(item.get("timeframe") or ""),
-                "time": int(item.get("time", 0)),
-                "time_close": int(item["time_close"]),
-                "open": float(item.get("open", 0)),
-                "high": float(item.get("high", 0)),
-                "low": float(item.get("low", 0)),
-                "close": float(item.get("close", 0)),
-                "volume": float(item.get("volume") or 0),
-            }
-        )
+        if not isinstance(item, dict):
+            raise IsolatedRunError("HTF bar must be an object")
+        required = ("symbol", "timeframe", "time", "time_close", "open", "high", "low", "close")
+        for name in required:
+            if name not in item or item[name] is None or (
+                name in {"symbol", "timeframe"} and not str(item[name]).strip()
+            ):
+                detail = f"HTF bar required field {name} is missing"
+                if name == "time_close":
+                    detail += "; confirmed HTF bars require time_close"
+                raise IsolatedRunError(detail)
+        try:
+            stamped.append(
+                {
+                    "symbol": str(item["symbol"]),
+                    "timeframe": str(item["timeframe"]),
+                    "time": int(item["time"]),
+                    "time_close": int(item["time_close"]),
+                    "open": float(item["open"]),
+                    "high": float(item["high"]),
+                    "low": float(item["low"]),
+                    "close": float(item["close"]),
+                    "volume": float(item.get("volume") or 0),
+                }
+            )
+        except (TypeError, ValueError) as exc:
+            raise IsolatedRunError("HTF bar numeric fields are invalid") from exc
     return stamped
 
 
@@ -147,6 +159,42 @@ def _confirmed_htf_bars_for_timeframe(
     )
 
 
+def _chart_bar_payload(bar: Any) -> dict[str, int | float]:
+    def required_field(name: str) -> Any:
+        if isinstance(bar, dict):
+            if name not in bar or bar[name] is None:
+                raise IsolatedRunError(f"chart bar required field {name} is missing")
+            return bar[name]
+        value = getattr(bar, name, None)
+        if value is None:
+            raise IsolatedRunError(f"chart bar required field {name} is missing")
+        return value
+
+    def optional_field(name: str, default: Any = None) -> Any:
+        if isinstance(bar, dict):
+            return bar.get(name, default)
+        return getattr(bar, name, default)
+
+    try:
+        payload: dict[str, int | float] = {
+            "time": int(required_field("time")),
+            "open": float(required_field("open")),
+            "high": float(required_field("high")),
+            "low": float(required_field("low")),
+            "close": float(required_field("close")),
+            "volume": float(optional_field("volume", 0) or 0),
+        }
+    except (TypeError, ValueError) as exc:
+        raise IsolatedRunError("chart bar required fields must be numeric") from exc
+    time_close = optional_field("time_close")
+    if time_close is not None:
+        try:
+            payload["time_close"] = int(time_close)
+        except (TypeError, ValueError) as exc:
+            raise IsolatedRunError("chart bar time_close must be numeric") from exc
+    return payload
+
+
 def run_isolated_artifact(
     source: bytes,
     *,
@@ -156,16 +204,7 @@ def run_isolated_artifact(
     htf_bars: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     try:
-        bar_payloads = [
-            {
-                "time": int(getattr(bar, "time")),
-                "open": float(getattr(bar, "open")),
-                "high": float(getattr(bar, "high")),
-                "low": float(getattr(bar, "low")),
-                "close": float(getattr(bar, "close")),
-            }
-            for bar in bars
-        ]
+        bar_payloads = [_chart_bar_payload(bar) for bar in bars]
         payload = evaluate_artifact(
             source,
             bars=bar_payloads,
@@ -235,20 +274,7 @@ def run_isolated_indicator(
     semantic_profile: object | None = None,
     htf_bars: list[dict[str, Any]] | None = None,
 ) -> IsolatedPlotResult:
-    bar_payloads = [
-        {
-            "time": int(getattr(bar, "time") if not isinstance(bar, dict) else bar["time"]),
-            "open": float(getattr(bar, "open") if not isinstance(bar, dict) else bar["open"]),
-            "high": float(getattr(bar, "high") if not isinstance(bar, dict) else bar["high"]),
-            "low": float(getattr(bar, "low") if not isinstance(bar, dict) else bar["low"]),
-            "close": float(getattr(bar, "close") if not isinstance(bar, dict) else bar["close"]),
-            "volume": float(
-                (getattr(bar, "volume", 0) if not isinstance(bar, dict) else bar.get("volume"))
-                or 0
-            ),
-        }
-        for bar in bars
-    ]
+    bar_payloads = [_chart_bar_payload(bar) for bar in bars]
     try:
         payload = evaluate_artifact(
             source,

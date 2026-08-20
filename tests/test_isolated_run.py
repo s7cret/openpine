@@ -10,6 +10,7 @@ from openpine.runtime.isolated_run import (
     capture_generated_source,
     run_isolated_artifact,
     run_isolated_from_store,
+    run_isolated_indicator,
 )
 
 SOURCE = (
@@ -67,6 +68,506 @@ def test_isolated_run_replays_live_tape_without_importing_generated() -> None:
 def test_isolated_run_rejects_artifact_without_tape() -> None:
     with pytest.raises(IsolatedRunError, match="live pinelib tape"):
         run_isolated_artifact(b"VALUE = 1\n", bars=_bars(), config=_cfg())
+
+
+def test_isolated_indicator_exposes_htf_close_on_last_confirmed_child_bar() -> None:
+    source = b"""
+from pinelib.request.security import security
+
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+
+    def _process_bar(self, bar, bar_index=None):
+        value = security(
+            "BTCUSDT",
+            "1D",
+            [10.0, 20.0],
+            runtime=self.rt,
+            state_id="daily_close",
+            gaps="barmerge.gaps_off",
+            lookahead="barmerge.lookahead_off",
+        )
+        self.rt.plot_recorder.record_plot(
+            int(bar.time), int(bar_index or 0), value, "daily_close"
+        )
+"""
+    chart_bars = [
+        {
+            "time": 171_000_000,
+            "time_close": 171_899_999,
+            "open": 1,
+            "high": 1,
+            "low": 1,
+            "close": 1,
+            "volume": 7,
+        },
+        {
+            "time": 171_900_000,
+            "time_close": 172_799_999,
+            "open": 1,
+            "high": 1,
+            "low": 1,
+            "close": 1,
+            "volume": 8,
+        },
+        {
+            "time": 172_800_000,
+            "time_close": 173_699_999,
+            "open": 1,
+            "high": 1,
+            "low": 1,
+            "close": 1,
+            "volume": 9,
+        },
+    ]
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 0,
+            "time_close": 86_399_999,
+            "open": 10,
+            "high": 10,
+            "low": 10,
+            "close": 10,
+            "volume": 1,
+        },
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": 86_400_000,
+            "time_close": 172_799_999,
+            "open": 20,
+            "high": 20,
+            "low": 20,
+            "close": 20,
+            "volume": 1,
+        },
+    ]
+
+    result = run_isolated_indicator(
+        source,
+        chart_bars,
+        semantic_profile="strict_5x",
+        htf_bars=htf_bars,
+    )
+
+    assert [plot[2] for plot in result.plots] == ["na", "10", "20"]
+
+
+def test_isolated_indicator_derives_chart_timeframe_from_confirmed_bar_clock() -> None:
+    source = b"""
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+
+    def _process_bar(self, bar, bar_index=None):
+        self.rt.plot_recorder.record_plot(
+            int(bar.time), int(bar_index or 0), self.rt.timeframe.interval_ms, "chart_interval"
+        )
+"""
+
+    result = run_isolated_indicator(
+        source,
+        [
+            {
+                "time": 0,
+                "time_close": 899_999,
+                "open": 1,
+                "high": 1,
+                "low": 1,
+                "close": 1,
+                "volume": 1,
+            }
+        ],
+        semantic_profile="strict_5x",
+    )
+
+    assert result.plots[0][2] == 900_000
+
+
+def test_isolated_indicator_preserves_pinelib_gaps_lookahead_matrix() -> None:
+    source = b"""
+from pinelib.request.security import security
+
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+
+    def _process_bar(self, bar, bar_index=None):
+        modes = (
+            ("off_off", "barmerge.gaps_off", "barmerge.lookahead_off"),
+            ("on_off", "barmerge.gaps_on", "barmerge.lookahead_off"),
+            ("off_on", "barmerge.gaps_off", "barmerge.lookahead_on"),
+            ("on_on", "barmerge.gaps_on", "barmerge.lookahead_on"),
+        )
+        for title, gaps, lookahead in modes:
+            value = security(
+                "BTCUSDT",
+                "1D",
+                [10.0, 20.0],
+                runtime=self.rt,
+                state_id=title,
+                gaps=gaps,
+                lookahead=lookahead,
+            )
+            self.rt.plot_recorder.record_plot(
+                int(bar.time), int(bar_index or 0), value, title
+            )
+"""
+    chart_bars = [
+        {
+            "time": time,
+            "time_close": time + 899_999,
+            "open": 1,
+            "high": 1,
+            "low": 1,
+            "close": 1,
+            "volume": 1,
+        }
+        for time in (171_000_000, 171_900_000, 172_800_000, 173_700_000)
+    ]
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": time,
+            "time_close": time_close,
+            "open": value,
+            "high": value,
+            "low": value,
+            "close": value,
+            "volume": 1,
+        }
+        for time, time_close, value in (
+            (0, 86_399_999, 10),
+            (86_400_000, 172_799_999, 20),
+        )
+    ]
+
+    result = run_isolated_indicator(
+        source,
+        chart_bars,
+        semantic_profile="strict_5x",
+        htf_bars=htf_bars,
+    )
+    values_by_title: dict[str, list[object]] = {}
+    for _time, _index, value, title in result.plots:
+        values_by_title.setdefault(title, []).append(value)
+
+    assert values_by_title == {
+        "off_off": ["na", "10", "20", "20"],
+        "on_off": ["na", "na", "20", "na"],
+        "off_on": ["na", "20", "20", "20"],
+        "on_on": ["na", "na", "na", "na"],
+    }
+
+
+def test_isolated_indicator_lookahead_off_does_not_repaint_common_prefix() -> None:
+    source = b"""
+from pinelib.request.security import security
+
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+
+    def _process_bar(self, bar, bar_index=None):
+        value = security(
+            "BTCUSDT",
+            "1D",
+            lambda child: child.close[0],
+            runtime=self.rt,
+            state_id="daily_close",
+            gaps="barmerge.gaps_off",
+            lookahead="barmerge.lookahead_off",
+        )
+        self.rt.plot_recorder.record_plot(
+            int(bar.time), int(bar_index or 0), value, "daily_close"
+        )
+"""
+    chart_bars = [
+        {
+            "time": time,
+            "time_close": time + 899_999,
+            "open": 1,
+            "high": 1,
+            "low": 1,
+            "close": 1,
+            "volume": 1,
+        }
+        for time in (
+            171_000_000,
+            171_900_000,
+            172_800_000,
+            258_300_000,
+            259_200_000,
+        )
+    ]
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": time,
+            "time_close": time + 86_399_999,
+            "open": value,
+            "high": value,
+            "low": value,
+            "close": value,
+            "volume": 1,
+        }
+        for time, value in ((0, 10), (86_400_000, 20), (172_800_000, 30))
+    ]
+
+    prefix = run_isolated_indicator(
+        source,
+        chart_bars[:3],
+        semantic_profile="strict_5x",
+        htf_bars=htf_bars[:2],
+    )
+    full = run_isolated_indicator(
+        source,
+        chart_bars,
+        semantic_profile="strict_5x",
+        htf_bars=htf_bars,
+    )
+
+    prefix_values = [plot[2] for plot in prefix.plots]
+    full_prefix_values = [plot[2] for plot in full.plots[: len(prefix.plots)]]
+    assert prefix_values == ["na", "10", "20"]
+    assert full_prefix_values == prefix_values
+
+
+def test_isolated_indicator_gaps_on_lookahead_on_emits_at_htf_open() -> None:
+    source = b"""
+from pinelib.request.security import security
+
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+
+    def _process_bar(self, bar, bar_index=None):
+        value = security(
+            "BTCUSDT",
+            "1D",
+            [10.0, 20.0],
+            runtime=self.rt,
+            state_id="daily_open",
+            gaps="barmerge.gaps_on",
+            lookahead="barmerge.lookahead_on",
+        )
+        self.rt.plot_recorder.record_plot(
+            int(bar.time), int(bar_index or 0), value, "daily_open"
+        )
+"""
+    chart_bars = [
+        {
+            "time": time,
+            "time_close": time + 899_999,
+            "open": 1,
+            "high": 1,
+            "low": 1,
+            "close": 1,
+            "volume": 1,
+        }
+        for time in (86_400_000, 87_300_000)
+    ]
+    htf_bars = [
+        {
+            "symbol": "BTCUSDT",
+            "timeframe": "1D",
+            "time": time,
+            "time_close": time + 86_399_999,
+            "open": value,
+            "high": value,
+            "low": value,
+            "close": value,
+            "volume": 1,
+        }
+        for time, value in ((0, 10), (86_400_000, 20))
+    ]
+
+    result = run_isolated_indicator(
+        source,
+        chart_bars,
+        semantic_profile="strict_5x",
+        htf_bars=htf_bars,
+    )
+
+    assert [plot[2] for plot in result.plots] == ["na", "20"]
+
+
+def test_isolated_indicator_rejects_htf_without_confirmed_chart_clock() -> None:
+    source = b"""
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+
+    def _process_bar(self, bar, bar_index=None):
+        return None
+"""
+
+    with pytest.raises(IsolatedRunError, match="confirmed chart bars"):
+        run_isolated_indicator(
+            source,
+            [{"time": 0, "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}],
+            semantic_profile="strict_5x",
+            htf_bars=[
+                {
+                    "symbol": "BTCUSDT",
+                    "timeframe": "1D",
+                    "time": 0,
+                    "time_close": 86_399_999,
+                    "open": 1,
+                    "high": 1,
+                    "low": 1,
+                    "close": 1,
+                    "volume": 1,
+                }
+            ],
+        )
+
+
+@pytest.mark.parametrize(
+    "chart_bars",
+    [
+        [
+            {
+                "time": 0,
+                "time_close": 899_999,
+                "open": 1,
+                "high": 1,
+                "low": 1,
+                "close": 1,
+            },
+            {"time": 900_000, "open": 1, "high": 1, "low": 1, "close": 1},
+        ],
+        [
+            {
+                "time": 1_000,
+                "time_close": 999,
+                "open": 1,
+                "high": 1,
+                "low": 1,
+                "close": 1,
+            }
+        ],
+        [
+            {
+                "time": 0,
+                "time_close": 899_999,
+                "open": 1,
+                "high": 1,
+                "low": 1,
+                "close": 1,
+            },
+            {
+                "time": 900_000,
+                "time_close": 1_199_999,
+                "open": 1,
+                "high": 1,
+                "low": 1,
+                "close": 1,
+            },
+        ],
+        [
+            {
+                "time": 0,
+                "time_close": 900_000,
+                "open": 1,
+                "high": 1,
+                "low": 1,
+                "close": 1,
+            }
+        ],
+    ],
+    ids=("partial", "nonpositive", "mixed", "exclusive_close"),
+)
+def test_isolated_indicator_rejects_invalid_confirmed_chart_clock(chart_bars) -> None:
+    source = b"""
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+
+    def _process_bar(self, bar, bar_index=None):
+        return None
+"""
+    with pytest.raises(IsolatedRunError, match="chart (bars|timeframe)"):
+        run_isolated_indicator(
+            source,
+            chart_bars,
+            semantic_profile="strict_5x",
+            htf_bars=[
+                {
+                    "symbol": "BTCUSDT",
+                    "timeframe": "1D",
+                    "time": 0,
+                    "time_close": 86_399_999,
+                    "open": 1,
+                    "high": 1,
+                    "low": 1,
+                    "close": 1,
+                    "volume": 1,
+                }
+            ],
+        )
+
+
+@pytest.mark.parametrize("missing", ["time", "open", "high", "low", "close"])
+def test_isolated_indicator_rejects_missing_required_chart_field(missing: str) -> None:
+    bar = {
+        "time": 0,
+        "time_close": 59_999,
+        "open": 1,
+        "high": 1,
+        "low": 1,
+        "close": 1,
+    }
+    del bar[missing]
+
+    with pytest.raises(IsolatedRunError, match=f"required field {missing}"):
+        run_isolated_indicator(
+            b"VALUE = 1\n",
+            [bar],
+            semantic_profile="strict_5x",
+        )
+
+
+@pytest.mark.parametrize(
+    "missing",
+    ["symbol", "timeframe", "time", "time_close", "open", "high", "low", "close"],
+)
+def test_isolated_indicator_rejects_missing_required_htf_field(missing: str) -> None:
+    htf_bar = {
+        "symbol": "BTCUSDT",
+        "timeframe": "1D",
+        "time": 0,
+        "time_close": 86_399_999,
+        "open": 1,
+        "high": 1,
+        "low": 1,
+        "close": 1,
+        "volume": 1,
+    }
+    del htf_bar[missing]
+
+    with pytest.raises(IsolatedRunError, match=f"HTF bar required field {missing}"):
+        run_isolated_indicator(
+            b"VALUE = 1\n",
+            [
+                {
+                    "time": 0,
+                    "time_close": 59_999,
+                    "open": 1,
+                    "high": 1,
+                    "low": 1,
+                    "close": 1,
+                    "volume": 1,
+                }
+            ],
+            semantic_profile="strict_5x",
+            htf_bars=[htf_bar],
+        )
 
 
 def test_isolated_run_drives_generated_class_to_same_hash() -> None:
