@@ -4,6 +4,7 @@ import json
 import re
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "stack-candidate-5.0.0-rc.2.json"
@@ -99,6 +100,22 @@ def test_backend_ci_installs_required_sandbox_runtime() -> None:
     assert "/usr/share/apparmor/extra-profiles/bwrap-userns-restrict" in workflow
     assert "apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict" in workflow
     assert "--unshare-net -- /usr/bin/true" in workflow
+
+
+def test_backend_ci_fetches_history_for_frozen_ref_verification() -> None:
+    workflow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    )
+    steps = workflow["jobs"]["backend"]["steps"]
+    sibling_checkouts = [
+        step
+        for step in steps
+        if step.get("uses") == "actions/checkout@v4"
+        and str(step.get("with", {}).get("path", "")).startswith("stack/")
+    ]
+
+    assert len(sibling_checkouts) == 7
+    assert all(step["with"].get("fetch-depth") == 0 for step in sibling_checkouts)
 
 
 def test_candidate_resolver_requires_zero_or_one_manifest(tmp_path: Path) -> None:

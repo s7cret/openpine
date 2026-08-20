@@ -36,42 +36,49 @@ jobs:
           repository: ${{ steps.stack.outputs.openpine_contracts_repo }}
           ref: ${{ steps.stack.outputs.openpine_contracts_sha }}
           path: stack/openpine-contracts
+          fetch-depth: 0
       - name: Checkout Pine2AST
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pine2ast_repo || 's7cret/pine2ast' }}
           ref: ${{ steps.stack.outputs.pine2ast_sha || 'c57323351a1e638e0337e1be247883da2570ab28' }}
           path: stack/pine2ast
+          fetch-depth: 0
       - name: Checkout AST2Python
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.ast2python_repo || 's7cret/ast2python' }}
           ref: ${{ steps.stack.outputs.ast2python_sha || 'b3013b13a32a6e3eb68edc111390e35f206323fc' }}
           path: stack/ast2python
+          fetch-depth: 0
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
           ref: ${{ steps.stack.outputs.pinelib_sha || 'fcf9c0f92213313db39bc42c83f676786c85400c' }}
           path: stack/pinelib
+          fetch-depth: 0
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
           ref: ${{ steps.stack.outputs.backtest_engine_sha || '329b9905bff2ea0b7b7f48662e4ce8b83d919c60' }}
           path: stack/backtest_engine
+          fetch-depth: 0
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.marketdata_provider_repo || 's7cret/marketdata-provider' }}
           ref: ${{ steps.stack.outputs.marketdata_provider_sha || 'b868ace65524f5c3bf62498f667db411e299a4ce' }}
           path: stack/marketdata-provider
+          fetch-depth: 0
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.optimizer_repo || 's7cret/optimizer' }}
           ref: ${{ steps.stack.outputs.optimizer_sha || '73d67934d078cb97a4947cc7b0b12665c4086099' }}
           path: stack/optimizer
+          fetch-depth: 0
       - name: Verify candidate checkout identities
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
         run: |
