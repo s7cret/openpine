@@ -299,6 +299,7 @@ class IsolatedWorkerError(RuntimeError):
 
 _TRUSTED_STAGE: Path | None = None
 _TRUSTED_NAMES = ("pinelib", "openpine_contracts", "ast2python")
+_RUNTIME_ROOTS = ("/usr", "/lib", "/lib64")
 
 
 def _chmod_tree(root: Path) -> None:
@@ -340,6 +341,14 @@ def worker_user_available() -> bool:
     return probe.returncode == 0 and probe.stdout.strip().isdigit()
 
 
+def _runtime_ro_bind_args() -> list[str]:
+    argv: list[str] = []
+    for root in _RUNTIME_ROOTS:
+        if Path(root).exists():
+            argv.extend(["--ro-bind", root, root])
+    return argv
+
+
 def _bwrap_argv() -> list[str]:
     if not Path(BWRAP).is_file():
         raise IsolatedWorkerError("bubblewrap is required for isolated execution")
@@ -350,12 +359,7 @@ def _bwrap_argv() -> list[str]:
         prefix = ["/usr/bin/sudo", "-n", "-u", WORKER_USER, "--"]
     argv = prefix + [
         BWRAP,
-        "--ro-bind",
-        "/usr",
-        "/usr",
-        "--ro-bind",
-        "/lib",
-        "/lib",
+        *_runtime_ro_bind_args(),
         "--size",
         str(TMPFS_BYTES),
         "--tmpfs",

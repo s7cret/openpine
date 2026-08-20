@@ -184,6 +184,30 @@ def test_worker_argv_has_no_new_session() -> None:
     assert not any(item.endswith("dist-packages") for item in argv)
 
 
+def test_worker_argv_mounts_optional_lib64_read_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    from openpine.runtime.isolated_worker import _runtime_ro_bind_args
+
+    monkeypatch.setattr(
+        Path,
+        "exists",
+        lambda self: str(self) in {"/usr", "/lib", "/lib64"},
+    )
+
+    argv = _runtime_ro_bind_args()
+
+    assert argv == [
+        "--ro-bind",
+        "/usr",
+        "/usr",
+        "--ro-bind",
+        "/lib",
+        "/lib",
+        "--ro-bind",
+        "/lib64",
+        "/lib64",
+    ]
+
+
 def test_worker_handshake_rejects_unknown_stack_and_profile() -> None:
     with pytest.raises(IsolatedWorkerError, match="stack_id"):
         evaluate_artifact(b"VALUE = 1\n", stack_id="wrong")
