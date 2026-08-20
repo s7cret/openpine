@@ -70,6 +70,30 @@ def test_isolated_run_rejects_artifact_without_tape() -> None:
         run_isolated_artifact(b"VALUE = 1\n", bars=_bars(), config=_cfg())
 
 
+def test_isolated_run_forwards_trial_params_into_generated_strategy() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.qty = (params or {})["qty"]
+        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+
+    def _process_bar(self, bar, bar_index=None):
+        if bar_index == 2:
+            self.ctx.entry("L", "long", qty=self.qty)
+"""
+
+    result = run_isolated_artifact(
+        source,
+        bars=_bars(),
+        config=_cfg(),
+        params={"qty": 3},
+    )
+
+    assert result["intent_tape"][0]["qty"] == "3"
+
+
 def test_isolated_indicator_exposes_htf_close_on_last_confirmed_child_bar() -> None:
     source = b"""
 from pinelib.request.security import security

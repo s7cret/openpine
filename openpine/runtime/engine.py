@@ -477,19 +477,31 @@ class BacktestEngineAdapter:
         config: BacktestRunConfig,
         resume_state: Any | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
+        params: dict[str, Any] | None = None,
     ) -> BacktestRunResult:
         from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_artifact
 
         if not str(getattr(config, "semantic_profile", "") or "").strip():
             raise IsolatedRunError("semantic_profile is required")
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
-        isolated = run_isolated_artifact(
-            source,
-            bars=engine_bars,
-            config=self._to_engine_config(config),
-            resume_state=resume_state,
-            htf_bars=htf_bars,
-        )
+        engine_config = self._to_engine_config(config)
+        if params is None:
+            isolated = run_isolated_artifact(
+                source,
+                bars=engine_bars,
+                config=engine_config,
+                resume_state=resume_state,
+                htf_bars=htf_bars,
+            )
+        else:
+            isolated = run_isolated_artifact(
+                source,
+                bars=engine_bars,
+                config=engine_config,
+                resume_state=resume_state,
+                htf_bars=htf_bars,
+                params=params,
+            )
         raw = isolated["raw_result"]
         return BacktestRunResult(
             status=getattr(raw, "status", "ok"),

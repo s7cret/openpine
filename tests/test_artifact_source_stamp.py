@@ -23,6 +23,7 @@ def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
     class Adapter:
         def run_isolated(self, source, bars, config, **kwargs):
             seen["source"] = source
+            seen["params"] = kwargs.get("params")
             return SimpleNamespace(ok=True)
 
     monkeypatch.setattr(
@@ -42,10 +43,13 @@ def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
         prefetch_end_ms=60_000,
         source=b"STAMPED",
     )
-    routes._artifact_backtest_process_entry(object(), spec, [], object(), {})
+    routes._artifact_backtest_process_entry(
+        object(), spec, [], object(), {"qty": 3}
+    )
 
     assert recaptures == []
     assert seen["source"] == b"STAMPED"
+    assert seen["params"] == {"qty": 3}
     assert getattr(seen["result"], "ok", None) is True
     assert "error" not in seen
 

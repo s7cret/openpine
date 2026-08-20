@@ -254,6 +254,15 @@ def test_evaluate_artifact_requires_semantic_profile() -> None:
         evaluate_artifact(b"VALUE = 1\n")
 
 
+def test_evaluate_artifact_rejects_non_object_params() -> None:
+    with pytest.raises(IsolatedWorkerError, match="params must be an object"):
+        evaluate_artifact(
+            b"VALUE = 1\n",
+            semantic_profile="strict_5x",
+            params=[],  # type: ignore[arg-type]
+        )
+
+
 def test_worker_kills_memory_bomb() -> None:
     source = "x = []\nwhile True:\n    x.append('x' * 1048576)\n"
     with pytest.raises(IsolatedWorkerError):

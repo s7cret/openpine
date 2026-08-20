@@ -202,6 +202,7 @@ def run_isolated_artifact(
     config: Any,
     resume_state: Any | None = None,
     htf_bars: list[dict[str, Any]] | None = None,
+    params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     try:
         bar_payloads = [_chart_bar_payload(bar) for bar in bars]
@@ -210,6 +211,7 @@ def run_isolated_artifact(
             bars=bar_payloads,
             semantic_profile=_semantic_profile(config),
             htf_bars=_stamp_confirmed_htf_bars(htf_bars),
+            params=params,
         )
         tape = require_live_tape(list(payload.get("intent_tape") or []))
     except (IsolatedWorkerError, IntentReplayError) as exc:
@@ -253,12 +255,14 @@ def run_isolated_from_store(
     bars: list[Any],
     config: Any,
     htf_bars: list[dict[str, Any]] | None = None,
+    params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return run_isolated_artifact(
         capture_generated_source(source_id, artifact_id),
         bars=bars,
         config=config,
         htf_bars=htf_bars,
+        params=params,
     )
 
 

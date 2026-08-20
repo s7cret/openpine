@@ -6,8 +6,9 @@ These are the public contract — API consumers depend on these shapes.
 from __future__ import annotations
 
 import json
+import math
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -462,6 +463,94 @@ class OptimizerDryRunResponse(BaseModel):
     trials_requested: int
     status: str
     reason: str | None = None
+
+
+class OptimizerParameterSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z_][A-Za-z0-9_]*$")
+    type: Literal["int", "float", "bool", "string", "enum"]
+    default: Any
+    min: int | float | None = None
+    max: int | float | None = None
+    step: int | float | None = None
+    options: list[Any] | None = Field(default=None, min_length=1, max_length=1000)
+
+    @model_validator(mode="after")
+    def validate_parameter(self) -> OptimizerParameterSpec:
+        if self.type in {"int", "float"}:
+            values = (self.default, self.min, self.max, self.step)
+            if any(value is None or isinstance(value, bool) for value in values):
+                raise ValueError("numeric parameters require numeric default/min/max/step")
+            if self.type == "int" and not all(isinstance(value, int) for value in values):
+                raise ValueError("int parameter values must be integers")
+            minimum = self.min
+            maximum = self.max
+            step = self.step
+            assert minimum is not None and maximum is not None and step is not None
+            numeric_values = (self.default, minimum, maximum, step)
+            if not all(math.isfinite(float(value)) for value in numeric_values):
+                raise ValueError("numeric parameter values must be finite")
+            if float(step) <= 0:
+                raise ValueError("parameter step must be positive")
+            if float(maximum) < float(minimum):
+                raise ValueError("parameter max must be >= min")
+        elif self.type == "bool":
+            if not isinstance(self.default, bool):
+                raise ValueError("bool parameter default must be boolean")
+        else:
+            if not self.options or self.default not in self.options:
+                raise ValueError("string/enum default must be present in options")
+        return self
+
+
+class OptimizerSearchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    strategy_id: NonBlankStr = Field(max_length=128)
+    from_time: NonBlankStr = Field(max_length=64)
+    to_time: NonBlankStr = Field(max_length=64)
+    trials: int = Field(ge=1, le=100)
+    objective: Literal[
+        "net_profit", "profit_factor", "sharpe_ratio", "max_drawdown_percent"
+    ] = "net_profit"
+    parameters: list[OptimizerParameterSpec] = Field(min_length=1, max_length=64)
+    semantic_profile: str | None = None
+    allow_legacy: bool = False
+    htf_timeframe: str | None = Field(default=None, max_length=16)
+
+    @model_validator(mode="after")
+    def validate_parameter_names(self) -> OptimizerSearchRequest:
+        names = [parameter.name for parameter in self.parameters]
+        if len(names) != len(set(names)):
+            raise ValueError("duplicate optimizer parameter names")
+        return self
+
+
+class OptimizerChampion(BaseModel):
+    params: dict[str, Any]
+    metrics: dict[str, float]
+
+
+class OptimizerTrialSummary(BaseModel):
+    id: int | None = None
+    status: str | None = None
+    objective_value: float | None = None
+    params_hash: str | None = None
+    result_content_hash: str | None = None
+
+
+class OptimizerSearchResponse(BaseModel):
+    optimization_id: str
+    strategy_id: str
+    objective: str
+    status: str
+    trials_requested: int
+    trials_completed: int
+    champion: OptimizerChampion | None = None
+    trial_status_counts: dict[str, int] = Field(default_factory=dict)
+    trials: list[OptimizerTrialSummary] = Field(default_factory=list)
+    uses_backtest_engine_path: bool
 
 
 # ── Replay ────────────────────────────────────────────────────────────────────

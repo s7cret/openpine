@@ -247,6 +247,12 @@ def main() -> int:
         for item in raw:
             events.append(_safe(dict(item)))
     bars = request.get("bars") or []
+    params = request.get("params")
+    if params is None:
+        params = {}
+    if not isinstance(params, dict):
+        json.dump({"ok": False, "error": "params must be an object"}, sys.stdout)
+        return 2
     if bars:
         cls = None
         for value in namespace.values():
@@ -294,7 +300,7 @@ def main() -> int:
                 json.dump({"ok": False, "error": f"pine runtime: {exc}"}, sys.stdout)
                 return 2
             try:
-                inst = cls(params={}, runtime=rt)
+                inst = cls(params=params, runtime=rt)
             except TypeError:
                 inst = cls()
             except Exception as exc:
@@ -507,6 +513,7 @@ def evaluate_artifact(
     cgroup_dir: str | Path | None = None,
     bars: list[dict[str, Any]] | None = None,
     htf_bars: list[dict[str, Any]] | None = None,
+    params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if len(source) > 500_000:
         raise IsolatedWorkerError("artifact source exceeds size limit")
@@ -526,6 +533,7 @@ def evaluate_artifact(
             "semantic_profile": semantic_profile,
             "bars": bars or [],
             "htf_bars": htf_bars or [],
+            "params": {} if params is None else params,
         }
     )
     try:

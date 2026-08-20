@@ -27,6 +27,7 @@ class OptimizerRunConfig:
     params_hash: str | None = None
     data_query: dict | None = None
     parameters: tuple[dict[str, Any], ...] = ()
+    runner: Any | None = None
     engine_factory: Callable[[], Any] | None = None
     strategy: Any | None = None
     bars: tuple[Any, ...] = ()
@@ -199,7 +200,9 @@ class LocalOptimizerAdapter:
                 config,
                 "production optimization requires a non-empty parameter space",
             )
-        if config.engine_factory is None or config.strategy is None or not config.bars:
+        if config.runner is None and (
+            config.engine_factory is None or config.strategy is None or not config.bars
+        ):
             return self._failed_result(
                 optimization_id,
                 config,
@@ -222,12 +225,14 @@ class LocalOptimizerAdapter:
                 )
                 for spec in config.parameters
             ]
-            runner = module.BacktestEngineRunnerAdapter(
-                engine_factory=config.engine_factory,
-                strategy=config.strategy,
-                bars=config.bars,
-                static_params=config.static_params,
-            )
+            runner = config.runner
+            if runner is None:
+                runner = module.BacktestEngineRunnerAdapter(
+                    engine_factory=config.engine_factory,
+                    strategy=config.strategy,
+                    bars=config.bars,
+                    static_params=config.static_params,
+                )
             optimizer_config = module.OptimizerConfig(
                 output_dir=Path(config.output_dir or "optimizer_results")
                 / optimization_id,
@@ -235,6 +240,8 @@ class LocalOptimizerAdapter:
                 objective=config.objective,
                 max_trials=config.trials,
                 use_profile_auto_constraints=False,
+                report_profiles=False,
+                timeout_per_trial_sec=0,
             )
             raw_result = module.optimize(parameters, runner, optimizer_config)
             return self._normalize_optimizer_result(

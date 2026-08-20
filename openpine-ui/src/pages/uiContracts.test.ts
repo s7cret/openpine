@@ -126,20 +126,24 @@ describe('global UI correctness contracts', () => {
     expect(live).not.toContain('__probe__')
   })
 
-  it('optimizer page is dry-run only and does not rank champions', () => {
+  it('optimizer page runs real search and renders a champion', () => {
     const page = source('pages/Optimizer.vue')
-    expect(page).toContain('/optimizer/dry-run')
-    expect(page).toContain('optimizer-dry-run')
-    expect(page).not.toContain('champion')
-    expect(page).not.toContain('rank')
+    expect(page).toContain('/optimizer/search')
+    expect(page).toContain('optimizer-search')
+    expect(page).toContain('champion')
+    expect(page).toContain('parameterRows')
+    expect(page).not.toContain('/optimizer/dry-run')
   })
 
-  it('optimizer dry-run sends an explicit semantic profile', () => {
+  it('optimizer search sends an explicit semantic profile and mirrors validation', () => {
     const page = source('pages/Optimizer.vue')
     expect(page).toContain('optimizer-semantic-profile')
     expect(page).toContain('semantic_profile: semanticProfile.value')
     expect(page).toContain('allow_legacy: allowLegacy.value')
     expect(page).toContain("t('optimizer.semanticProfileRequired')")
+    expect(page).toContain('optimizerValidationMessage')
+    expect(page).toContain('isSearchDisabled')
+    expect(page).toContain(':disabled="isSearchDisabled"')
   })
 
   it('backtest start sends an explicit semantic profile', () => {

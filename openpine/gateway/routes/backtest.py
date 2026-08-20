@@ -1167,7 +1167,7 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
                 timeframe=str(spec.timeframe),
             )
         result = BacktestEngineAdapter().run_isolated(
-            source, bars, config, htf_bars=htf_bars
+            source, bars, config, htf_bars=htf_bars, params=params
         )
         _put_backtest_process_result(out, result)
     except BaseException as exc:

@@ -79,6 +79,7 @@ export type OpenApiOperation =
   | { method: 'POST'; path: '/api/live/start' }
   | { method: 'POST'; path: '/api/live/stop' }
   | { method: 'POST'; path: '/api/optimizer/dry-run' }
+  | { method: 'POST'; path: '/api/optimizer/search' }
   | { method: 'POST'; path: '/api/paper/start' }
   | { method: 'POST'; path: '/api/paper/stop' }
   | { method: 'POST'; path: '/api/pine-sources' }
@@ -98,5 +99,5 @@ export type OpenApiOperation =
   | { method: 'PUT'; path: '/api/strategies/{strategy_id}/archive' }
   | { method: 'PUT'; path: '/api/strategies/{strategy_id}/unarchive' }
 
-export const OPENAPI_OPERATION_COUNT = 97
+export const OPENAPI_OPERATION_COUNT = 98
 
