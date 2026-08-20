@@ -17,10 +17,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Bubblewrap test dependency
+      - name: Install Bubblewrap sandbox runtime
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y bubblewrap
+          sudo apt-get install --no-install-recommends -y apparmor-profiles apparmor-utils bubblewrap
+          sudo install -m 0644 \
+            /usr/share/apparmor/extra-profiles/bwrap-userns-restrict \
+            /etc/apparmor.d/bwrap-userns-restrict
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
       - name: Resolve active stack candidate
         id: stack
         run: python scripts/resolve_stack_candidate.py --root . --github-output "$GITHUB_OUTPUT"

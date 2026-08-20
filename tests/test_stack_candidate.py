@@ -91,8 +91,14 @@ def test_backend_ci_installs_required_sandbox_runtime() -> None:
         encoding="utf-8"
     )
 
-    assert "Install Bubblewrap test dependency" in workflow
-    assert "apt-get install --no-install-recommends -y bubblewrap" in workflow
+    assert "Install Bubblewrap sandbox runtime" in workflow
+    assert (
+        "apt-get install --no-install-recommends -y "
+        "apparmor-profiles apparmor-utils bubblewrap"
+    ) in workflow
+    assert "/usr/share/apparmor/extra-profiles/bwrap-userns-restrict" in workflow
+    assert "apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict" in workflow
+    assert "--unshare-net -- /usr/bin/true" in workflow
 
 
 def test_candidate_resolver_requires_zero_or_one_manifest(tmp_path: Path) -> None:
