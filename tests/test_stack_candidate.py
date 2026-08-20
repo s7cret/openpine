@@ -86,6 +86,15 @@ def test_backend_release_gate_separates_candidate_from_production_lock() -> None
     assert "export PYTHON=${PYTHON:-python}" in release_gate
 
 
+def test_backend_ci_installs_required_sandbox_runtime() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Install Bubblewrap test dependency" in workflow
+    assert "apt-get install --no-install-recommends -y bubblewrap" in workflow
+
+
 def test_candidate_resolver_requires_zero_or_one_manifest(tmp_path: Path) -> None:
     resolver = _resolver()
     assert resolver.resolve_candidate(tmp_path) is None
