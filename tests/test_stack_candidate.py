@@ -118,6 +118,20 @@ def test_backend_ci_fetches_history_for_frozen_ref_verification() -> None:
     assert all(step["with"].get("fetch-depth") == 0 for step in sibling_checkouts)
 
 
+def test_openapi_drift_builds_ui_before_node_packaging_tests() -> None:
+    workflow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    )
+    commands = [
+        step["run"]
+        for step in workflow["jobs"]["openapi-drift"]["steps"]
+        if "run" in step
+    ]
+
+    assert commands.index("npm ci") < commands.index("npm run build")
+    assert commands.index("npm run build") < commands.index("npm run test:node")
+
+
 def test_candidate_resolver_requires_zero_or_one_manifest(tmp_path: Path) -> None:
     resolver = _resolver()
     assert resolver.resolve_candidate(tmp_path) is None

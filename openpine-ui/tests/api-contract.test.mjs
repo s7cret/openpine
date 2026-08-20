@@ -12,12 +12,14 @@ test('collects literal and apiPath axios operations with normalized parameters',
   const operations = collectAxiosOperations(`
     const a = () => api.get('/items')
     const b = (itemId: string) => api.delete(apiPath('/items', itemId))
+    const c = (jobId: string) => api.get(\`/jobs/\${encodeURIComponent(jobId)}\`)
   `)
   assert.deepEqual(
     operations.map(({ method, path }) => ({ method, path })),
     [
       { method: 'GET', path: '/items' },
       { method: 'DELETE', path: '/items/{}' },
+      { method: 'GET', path: '/jobs/{}' },
     ],
   )
 })

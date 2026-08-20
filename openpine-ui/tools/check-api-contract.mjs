@@ -33,6 +33,15 @@ function evaluatePath(node) {
   if (
     ts.isCallExpression(node)
     && ts.isIdentifier(node.expression)
+    && node.expression.text === 'encodeURIComponent'
+    && node.arguments.length === 1
+    && ts.isIdentifier(node.arguments[0])
+  ) {
+    return evaluatePath(node.arguments[0])
+  }
+  if (
+    ts.isCallExpression(node)
+    && ts.isIdentifier(node.expression)
     && node.expression.text === 'apiPath'
   ) {
     return cartesian(node.arguments.map((argument, index) =>

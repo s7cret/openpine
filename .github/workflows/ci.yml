@@ -176,6 +176,7 @@ jobs:
       - name: Verify generated OpenAPI client is current
         run: python -c "from pathlib import Path; assert Path('.contract/openapi.ts').read_bytes() == Path('src/api/generated/openapi.ts').read_bytes(), 'generated OpenAPI client drift'"
       - run: npm ci
+      - run: npm run build
       - run: npm run test:node
         env:
           OPENPINE_OPENAPI_SCHEMA: .contract/openapi.json
