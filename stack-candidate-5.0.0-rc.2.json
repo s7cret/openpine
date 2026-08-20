@@ -3,42 +3,42 @@
   "id": "5.0.0-rc.2",
   "not_a_release": true,
   "identity_note": "Package versions stay 4.0.2. This is a feat-train pin, not v4.0.2 rewrite.",
-  "contracts_pin": "51e32ebaaf02eecb81443e8ca7e89b2543cb25a3",
+  "contracts_pin": "af9ecbc455e9af83cdc609f6b6ff85c40fb6c8bb",
   "components": {
     "openpine-contracts": {
       "repo": "s7cret/openpine-contracts",
       "ref": "feat/5.0-contracts",
-      "sha": "51e32ebaaf02eecb81443e8ca7e89b2543cb25a3"
+      "sha": "af9ecbc455e9af83cdc609f6b6ff85c40fb6c8bb"
     },
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
       "ref": "feat/5.0-bar-v2",
-      "sha": "db8d36ee1662ff3b94f7539dc59239b21ec73520"
+      "sha": "4710da99d0320e6fd1ddba6e4ae64b6d7ba68848"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
       "ref": "feat/5.0-intent-tape",
-      "sha": "765ec2b50b88553781942896153a662ef3f0c037"
+      "sha": "801b908e0ba53d1387cfd032cb6d29aa53ba0ca0"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
       "ref": "feat/5.0-warmup-reset",
-      "sha": "ace23bf35d7ecd59b217b520ffc2b06ee4aa86cd"
+      "sha": "16cc46134a71a66f007782bab4bc5d8114b8a9dd"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "ce1f504ef0e47764043024800ba406b7dae8a43f"
+      "sha": "4a3dd35b5b2d4385f09eed04b82804d689c080e8"
     },
     "ast2python": {
       "repo": "s7cret/ast2python",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "949cfa63e33b4c516c5c954e62534112b34c7427"
+      "sha": "2438e88d5730de6d01828de5f86dc13197b83991"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "5c2d33b1f7641f0d09e389c0bfcec9bb8e2974e4"
+      "sha": "2699d0aef8263bc4b74dac36d52db0b36c940d4e"
     },
     "openpine": {
       "repo": "s7cret/openpine",

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from openpine_contracts import list_schema_ids
 
-PIN = "51e32ebaaf02eecb81443e8ca7e89b2543cb25a3"
+PIN = "af9ecbc455e9af83cdc609f6b6ff85c40fb6c8bb"
 
 
 def test_contracts_pin_and_catalog() -> None:

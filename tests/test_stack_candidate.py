@@ -8,7 +8,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "stack-candidate-5.0.0-rc.2.json"
-PIN = "51e32ebaaf02eecb81443e8ca7e89b2543cb25a3"
+PIN = "af9ecbc455e9af83cdc609f6b6ff85c40fb6c8bb"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
     "openpine-contracts",
@@ -164,7 +164,7 @@ def test_candidate_resolver_emits_manifest_identity() -> None:
     assert outputs["mode"] == "candidate"
     assert outputs["candidate_path"] == MANIFEST.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
-    assert outputs["pine2ast_sha"] == "ce1f504ef0e47764043024800ba406b7dae8a43f"
+    assert outputs["pine2ast_sha"] == "4a3dd35b5b2d4385f09eed04b82804d689c080e8"
     assert outputs["openpine_sha"] == "THIS_CHECKOUT"
 
 
