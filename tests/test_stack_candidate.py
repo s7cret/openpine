@@ -209,7 +209,7 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
     assert outputs["mode"] == "candidate"
     assert outputs["candidate_path"] == manifest.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
-    assert outputs["pine2ast_sha"] == "13add270abe0875c9d88c122447a5b66392d66ed"
+    assert outputs["pine2ast_sha"] == "a5870fc40b790b764d70e4eac9db0abbb31a2a15"
     assert outputs["openpine_sha"] == "d" * 40
 
 

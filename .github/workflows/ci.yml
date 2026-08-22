@@ -97,6 +97,8 @@ jobs:
           ref: ${{ steps.stack.outputs.optimizer_sha || '73d67934d078cb97a4947cc7b0b12665c4086099' }}
           path: stack/optimizer
           fetch-depth: 0
+      - name: Exclude candidate checkouts from OpenPine source status
+        run: printf 'stack/\n' >> .git/info/exclude
       - name: Verify candidate checkout identities
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
         run: |
@@ -126,7 +128,10 @@ jobs:
             --wheelhouse "$RUNNER_TEMP/openpine-candidate-verification" \
             --python "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
             --install
-          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pip install '.[dev]'
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pip install \
+            'pytest>=8.0.0' 'pytest-cov>=4.0.0' 'ruff>=0.4.0' \
+            'mypy>=1.10.0' 'httpx>=0.28.0' 'pytest-asyncio>=1.4.0' \
+            'matplotlib>=3.8.0' 'build>=1.2.0'
           echo "$RUNNER_TEMP/openpine-candidate-venv/bin" >> "$GITHUB_PATH"
       - name: Run candidate release gate
         run: >-

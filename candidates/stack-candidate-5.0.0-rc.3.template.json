@@ -25,37 +25,37 @@
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
       "ref": "feat/5.0-bar-v2",
-      "sha": "68c34ab8546a48c680405092e11aede8464c1338",
+      "sha": "99426a3a684589e1ba5b69d1a2316d1d77b86cd2",
       "version": "5.0.0rc3"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
       "ref": "feat/5.0-intent-tape",
-      "sha": "d788c69bac5c256dff7815a18c911582fab339ae",
+      "sha": "7e681f3ce2945d2ba702833b1f82aa4da133d909",
       "version": "5.0.0rc3"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
       "ref": "feat/5.0-warmup-reset",
-      "sha": "89c31e4ba76e8c74f8799dbc3a07e6677a4c7cd7",
+      "sha": "7408b4671e91d34b9302b665867f6cb45c81ed0d",
       "version": "5.0.0rc3"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "13add270abe0875c9d88c122447a5b66392d66ed",
+      "sha": "a5870fc40b790b764d70e4eac9db0abbb31a2a15",
       "version": "5.0.0rc3"
     },
     "ast2python": {
       "repo": "s7cret/ast2python",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "2f3d51d66b1da6020fe63a68da7d45c9392952e5",
+      "sha": "27546897a12245f8227f3935c2a85b38a665fb45",
       "version": "5.0.0rc3"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "ddfbc0009d218a05026d95e9dcdf3b87c7b4dafa",
+      "sha": "9483118ea79079a1b31d2b9382c596d48ec42453",
       "version": "5.0.0rc3"
     },
     "openpine": {
