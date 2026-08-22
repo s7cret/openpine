@@ -11,7 +11,7 @@ TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.3.template.json"
 HISTORICAL = (
     ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
 )
-PIN = "af9ecbc455e9af83cdc609f6b6ff85c40fb6c8bb"
+PIN = "91c405e759206b542d22df242ef55ac49b1f0bb4"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
     "openpine-contracts",
@@ -209,7 +209,7 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
     assert outputs["mode"] == "candidate"
     assert outputs["candidate_path"] == manifest.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
-    assert outputs["pine2ast_sha"] == "4b930ea0b7c658297738f2ab16f23152b047f94f"
+    assert outputs["pine2ast_sha"] == "13add270abe0875c9d88c122447a5b66392d66ed"
     assert outputs["openpine_sha"] == "d" * 40
 
 
