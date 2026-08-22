@@ -109,6 +109,23 @@ def test_backend_ci_uses_the_same_candidate_resolver_and_checkouts() -> None:
         assert f"--checkout {component}=" in workflow
 
 
+@pytest.mark.parametrize("workflow_name", ["ci.yml", "stack-ci.yml"])
+def test_feature_branch_pushes_do_not_duplicate_pull_request_runs(
+    workflow_name: str,
+) -> None:
+    workflow = yaml.load(
+        (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8"),
+        Loader=yaml.BaseLoader,
+    )
+
+    assert workflow["on"]["push"] == {"branches": ["main"]}
+    assert workflow["on"]["pull_request"] == {"branches": ["main"]}
+    assert workflow["concurrency"] == {
+        "group": "${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}",
+        "cancel-in-progress": "true",
+    }
+
+
 def test_backend_release_gate_separates_candidate_from_production_lock() -> None:
     release_gate = (ROOT / "scripts" / "release_gate.sh").read_text(encoding="utf-8")
 
