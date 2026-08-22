@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install candidate build tooling
+        run: python -m pip install --upgrade build
       - name: Materialize immutable stack candidate
         working-directory: openpine
         run: |

@@ -25,7 +25,7 @@
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
       "ref": "feat/5.0-bar-v2",
-      "sha": "99426a3a684589e1ba5b69d1a2316d1d77b86cd2",
+      "sha": "b82216eb2ee899fbfec43bdd367b375a2603c5f3",
       "version": "5.0.0rc3"
     },
     "pinelib": {
@@ -37,7 +37,7 @@
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
       "ref": "feat/5.0-warmup-reset",
-      "sha": "7408b4671e91d34b9302b665867f6cb45c81ed0d",
+      "sha": "2208e0da0d14f467813e781a3c755a019079c8f3",
       "version": "5.0.0rc3"
     },
     "pine2ast": {
@@ -49,13 +49,13 @@
     "ast2python": {
       "repo": "s7cret/ast2python",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "27546897a12245f8227f3935c2a85b38a665fb45",
+      "sha": "4ad3ce15fd30fd7808f74a2d9d8897a84eed2dd9",
       "version": "5.0.0rc3"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "9483118ea79079a1b31d2b9382c596d48ec42453",
+      "sha": "17e9dc74493698e5d5017a79187980200a60e569",
       "version": "5.0.0rc3"
     },
     "openpine": {

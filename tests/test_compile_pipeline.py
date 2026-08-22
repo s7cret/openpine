@@ -11,7 +11,7 @@ from openpine.pine.source import PineSource
 
 COMMITS = {
     "pine2ast": "4a3dd35b5b2d4385f09eed04b82804d689c080e8",
-    "ast2python": "27546897a12245f8227f3935c2a85b38a665fb45",
+    "ast2python": "4ad3ce15fd30fd7808f74a2d9d8897a84eed2dd9",
     "pinelib": "7e681f3ce2945d2ba702833b1f82aa4da133d909",
     "openpine-contracts": "91c405e759206b542d22df242ef55ac49b1f0bb4",
 }

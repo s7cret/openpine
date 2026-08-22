@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install candidate build tooling
+        run: python -m pip install --upgrade build
       - name: Install Bubblewrap sandbox runtime
         run: |
           sudo apt-get update
