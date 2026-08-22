@@ -136,6 +136,10 @@ jobs:
             'matplotlib>=3.8.0' 'build>=1.2.0'
           echo "$RUNNER_TEMP/openpine-candidate-venv/bin" >> "$GITHUB_PATH"
       - name: Run candidate release gate
+        env:
+          OPENPINE_BUILD_COMMIT: ${{ github.sha }}
+          OPENPINE_PRODUCER_COMMITS_JSON: >-
+            {"pine2ast":"a5870fc40b790b764d70e4eac9db0abbb31a2a15","ast2python":"74491f81c597e6c1b1be7c5503c87e598ad85223","pinelib":"7e681f3ce2945d2ba702833b1f82aa4da133d909","openpine-contracts":"91c405e759206b542d22df242ef55ac49b1f0bb4"}
         run: >-
           OPENPINE_CANDIDATE_MANIFEST="$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
           bash scripts/release_gate.sh

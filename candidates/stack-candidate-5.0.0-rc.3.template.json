@@ -49,7 +49,7 @@
     "ast2python": {
       "repo": "s7cret/ast2python",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "69caeddb311a982a929e798b541de81b7fc90bcb",
+      "sha": "74491f81c597e6c1b1be7c5503c87e598ad85223",
       "version": "5.0.0rc3"
     },
     "optimizer": {
