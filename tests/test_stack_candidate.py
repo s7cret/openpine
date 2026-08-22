@@ -103,6 +103,7 @@ def test_backend_ci_uses_the_same_candidate_resolver_and_checkouts() -> None:
     assert "--openpine-sha \"$GITHUB_SHA\"" in workflow
     assert '--root "$RUNNER_TEMP/openpine-candidate"' in workflow
     assert "build_candidate_wheelhouse.py" in workflow
+    assert 'rm -f "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}"' in workflow
     assert " -e " not in workflow
     for component in REQUIRED:
         assert f"--checkout {component}=" in workflow

@@ -122,6 +122,7 @@ jobs:
             --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
             --wheelhouse "$RUNNER_TEMP/openpine-candidate-verification" \
             --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
+          rm -f "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}"
           python -m venv "$RUNNER_TEMP/openpine-candidate-venv"
           "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pip install -U pip
           "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
@@ -139,7 +140,7 @@ jobs:
         env:
           OPENPINE_BUILD_COMMIT: ${{ github.sha }}
           OPENPINE_PRODUCER_COMMITS_JSON: >-
-            {"pine2ast":"a5870fc40b790b764d70e4eac9db0abbb31a2a15","ast2python":"74491f81c597e6c1b1be7c5503c87e598ad85223","pinelib":"7e681f3ce2945d2ba702833b1f82aa4da133d909","openpine-contracts":"91c405e759206b542d22df242ef55ac49b1f0bb4"}
+            {"pine2ast":"a5870fc40b790b764d70e4eac9db0abbb31a2a15","ast2python":"3086e9f0e516a06c11daba4208a11845ec7021bd","pinelib":"7e681f3ce2945d2ba702833b1f82aa4da133d909","openpine-contracts":"91c405e759206b542d22df242ef55ac49b1f0bb4"}
         run: >-
           OPENPINE_CANDIDATE_MANIFEST="$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
           bash scripts/release_gate.sh
