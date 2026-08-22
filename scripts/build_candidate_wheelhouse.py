@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -13,6 +15,22 @@ from pathlib import Path
 
 class CandidateError(RuntimeError):
     """Candidate checkout does not match the manifest."""
+
+
+SHA40 = re.compile(r"^[0-9a-f]{40}$")
+
+
+def load_candidate(path: Path) -> dict:
+    resolver_path = Path(__file__).with_name("resolve_stack_candidate.py")
+    spec = importlib.util.spec_from_file_location("resolve_stack_candidate", resolver_path)
+    if spec is None or spec.loader is None:
+        raise CandidateError("candidate resolver unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        return module.load_candidate(path)
+    except module.CandidateSelectionError as exc:
+        raise CandidateError(str(exc)) from exc
 
 
 def _git_executable() -> str:
@@ -51,14 +69,13 @@ def verify_checkouts(candidate: dict, checkouts: dict[str, Path]) -> dict[str, s
         path = checkouts[name]
         if not (path / ".git").exists() and not (path / ".git").is_file():
             raise CandidateError(f"{name} is not a git checkout: {path}")
-        dirty = _git(path, "status", "--porcelain", "--untracked-files=no")
+        dirty = _git(path, "status", "--porcelain", "--untracked-files=all")
         if dirty:
             raise CandidateError(f"{name} dirty")
         head = _git(path, "rev-parse", "HEAD")
         expected = spec["sha"]
-        if expected == "THIS_CHECKOUT":
-            resolved[name] = head
-            continue
+        if not isinstance(expected, str) or SHA40.fullmatch(expected) is None:
+            raise CandidateError(f"{name} sha must be 40 lowercase hex")
         if head != expected:
             raise CandidateError(f"{name} sha mismatch: {head} != {expected}")
         resolved[name] = head
@@ -86,7 +103,7 @@ def main() -> int:
     parser.add_argument("--checkout", action="append", default=[], required=True)
     parser.add_argument("--build", action="store_true")
     args = parser.parse_args()
-    candidate = json.loads(args.candidate.read_text(encoding="utf-8"))
+    candidate = load_candidate(args.candidate)
     checkouts = parse_checkouts(args.checkout)
     resolved = verify_checkouts(candidate, checkouts)
     args.outdir.mkdir(parents=True, exist_ok=True)

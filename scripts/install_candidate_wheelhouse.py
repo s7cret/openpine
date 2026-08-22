@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import subprocess
 from email.parser import Parser
@@ -25,6 +26,48 @@ STACK_NAMES = {
 
 class WheelhouseInstallError(RuntimeError):
     """Candidate wheelhouse cannot be installed closed."""
+
+
+def wheel_hashes_from_candidate(candidate: dict) -> dict[str, str]:
+    if candidate.get("stage") != "wheel-bound":
+        raise WheelhouseInstallError("wheel-bound candidate required for install")
+    components = candidate.get("components")
+    if not isinstance(components, dict) or not components:
+        raise WheelhouseInstallError("candidate components missing")
+    hashes: dict[str, str] = {}
+    for name, row in components.items():
+        wheel = row.get("wheel") if isinstance(row, dict) else None
+        if not isinstance(wheel, dict):
+            raise WheelhouseInstallError(f"wheel identity missing: {name}")
+        filename = wheel.get("filename")
+        digest = wheel.get("sha256")
+        if not isinstance(filename, str) or not filename.endswith(".whl"):
+            raise WheelhouseInstallError(f"wheel filename invalid: {name}")
+        if (
+            not isinstance(digest, str)
+            or not digest.startswith("sha256:")
+            or len(digest) != 71
+        ):
+            raise WheelhouseInstallError(f"wheel hash invalid: {name}")
+        if filename in hashes:
+            raise WheelhouseInstallError(f"duplicate wheel filename: {filename}")
+        hashes[filename] = digest
+    return hashes
+
+
+def load_candidate(path: Path) -> dict:
+    resolver_path = Path(__file__).with_name("resolve_stack_candidate.py")
+    spec = importlib.util.spec_from_file_location("resolve_stack_candidate", resolver_path)
+    if spec is None or spec.loader is None:
+        raise WheelhouseInstallError("candidate resolver unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        candidate = module.load_candidate(path)
+    except module.CandidateSelectionError as exc:
+        raise WheelhouseInstallError(str(exc)) from exc
+    wheel_hashes_from_candidate(candidate)
+    return candidate
 
 
 def file_sha256(path: Path) -> str:
@@ -163,17 +206,16 @@ def download_third_party(requirements: list[str], dest: Path, *, python: str) ->
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--wheelhouse", type=Path, required=True)
-    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--candidate", type=Path, required=True)
     parser.add_argument("--deps", type=Path)
     parser.add_argument("--requirements", type=Path)
     parser.add_argument("--python", default="python3")
     parser.add_argument("--install", action="store_true")
     args = parser.parse_args()
     wheelhouse = args.wheelhouse.resolve()
-    manifest = (args.manifest or wheelhouse / "wheelhouse.json").resolve()
     deps = (args.deps or wheelhouse / "deps").resolve()
-    payload = load_wheelhouse(manifest)
-    verify_local_hashes(wheelhouse, payload["wheels"])
+    candidate = load_candidate(args.candidate.resolve())
+    verify_local_hashes(wheelhouse, wheel_hashes_from_candidate(candidate))
     locals_ = collect_local_wheels(wheelhouse)
     third_party: list[str] = []
     seen: set[str] = set()
@@ -198,6 +240,7 @@ def main() -> int:
                 find_links=[wheelhouse, deps],
             )
         )
+        subprocess.check_call([args.python, "-m", "pip", "check"])  # noqa: S603
     return 0
 
 

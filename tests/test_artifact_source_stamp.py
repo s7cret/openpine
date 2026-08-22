@@ -5,6 +5,44 @@ from types import SimpleNamespace
 import pytest
 
 from openpine.gateway.routes import backtest as routes
+from openpine.run_identity import execution_data_snapshot_hash
+
+
+def _bar() -> SimpleNamespace:
+    return SimpleNamespace(
+        time=0,
+        time_close=59_999,
+        open=1,
+        high=2,
+        low=0.5,
+        close=1.5,
+        volume=3,
+    )
+
+
+def _config() -> SimpleNamespace:
+    return SimpleNamespace(
+        exchange="binance",
+        market_type="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_time=0,
+        end_time=60_000,
+    )
+
+
+def _snapshot_hash(bars: list[object], supplemental_bars=None) -> str:
+    return execution_data_snapshot_hash(
+        bars=bars,
+        supplemental_bars=supplemental_bars,
+        exchange="binance",
+        market="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_ms=0,
+        end_ms=60_000,
+        finality_policy="CLOSED_BAR_ONLY",
+    )
 
 
 def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
@@ -42,9 +80,10 @@ def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
         market="spot",
         prefetch_end_ms=60_000,
         source=b"STAMPED",
+        data_snapshot_hash=_snapshot_hash([_bar()]),
     )
     routes._artifact_backtest_process_entry(
-        object(), spec, [], object(), {"qty": 3}
+        object(), spec, [_bar()], _config(), {"qty": 3}
     )
 
     assert recaptures == []
@@ -105,9 +144,10 @@ def test_artifact_worker_forwards_confirmed_htf_bars(monkeypatch) -> None:
         market="spot",
         prefetch_end_ms=60_000,
         source=b"STAMPED",
+        data_snapshot_hash=_snapshot_hash([_bar()], htf_bars),
         htf_bars=htf_bars,
     )
-    routes._artifact_backtest_process_entry(object(), spec, [], object(), {})
+    routes._artifact_backtest_process_entry(object(), spec, [_bar()], _config(), {})
     assert "error" not in seen
     assert seen["htf_bars"] == htf_bars
 
@@ -149,8 +189,9 @@ def test_artifact_worker_stamps_confirmed_provider_htf_bars(monkeypatch) -> None
         market="spot",
         prefetch_end_ms=60_000,
         source=b"STAMPED",
+        data_snapshot_hash=_snapshot_hash([_bar()]),
     )
-    routes._artifact_backtest_process_entry(object(), spec, bars, object(), {})
+    routes._artifact_backtest_process_entry(object(), spec, bars, _config(), {})
     assert "error" not in seen
     assert seen["htf_bars"] == [
         {
@@ -167,7 +208,7 @@ def test_artifact_worker_stamps_confirmed_provider_htf_bars(monkeypatch) -> None
     ]
 
 
-def test_artifact_worker_does_not_invent_time_close(monkeypatch) -> None:
+def test_artifact_worker_fails_closed_when_chart_time_close_is_missing(monkeypatch) -> None:
     seen: dict[str, object] = {}
 
     class Adapter:
@@ -193,16 +234,17 @@ def test_artifact_worker_does_not_invent_time_close(monkeypatch) -> None:
         market="spot",
         prefetch_end_ms=60_000,
         source=b"STAMPED",
+        data_snapshot_hash=_snapshot_hash([_bar()]),
     )
     routes._artifact_backtest_process_entry(
         object(),
         spec,
         [SimpleNamespace(time=1, open=1, high=1, low=1, close=1, volume=1)],
-        object(),
+        _config(),
         {},
     )
-    assert "error" not in seen
-    assert seen["htf_bars"] is None
+    assert "htf_bars" not in seen
+    assert "time_close" in str(seen["error"])
 
 
 def test_artifact_worker_keeps_none_when_other_htf_unconfirmed(monkeypatch) -> None:
@@ -230,6 +272,7 @@ def test_artifact_worker_keeps_none_when_other_htf_unconfirmed(monkeypatch) -> N
         market="spot",
         prefetch_end_ms=60_000,
         source=b"STAMPED",
+        data_snapshot_hash=_snapshot_hash([_bar()]),
         htf_timeframe="1D",
     )
     routes._artifact_backtest_process_entry(
@@ -246,7 +289,7 @@ def test_artifact_worker_keeps_none_when_other_htf_unconfirmed(monkeypatch) -> N
                 volume=3,
             )
         ],
-        object(),
+        _config(),
         {},
     )
     assert "error" not in seen

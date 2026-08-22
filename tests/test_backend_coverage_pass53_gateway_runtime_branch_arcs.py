@@ -35,6 +35,7 @@ from openpine.gateway.schemas import (
     PineSourceUpdate,
 )
 from openpine.runtime import engine as runtime_engine
+from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
 
 
 class _Cursor:
@@ -263,7 +264,9 @@ def test_backtest_worker_queue_edges_without_progress_callbacks(monkeypatch):
     assert bt._execute_backtest_run_in_thread("run", set(), Adapter(), object, [], object(), {}, None) == "forced-loop-exit"
 
 
-def test_backtest_routes_and_background_remaining_branches(monkeypatch):
+def test_backtest_routes_and_background_remaining_branches(
+    monkeypatch, tmp_path, job_store
+):
     class Store:
         def __init__(self) -> None:
             self.saved: list[dict[str, object]] = []
@@ -344,6 +347,7 @@ def test_backtest_routes_and_background_remaining_branches(monkeypatch):
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy(strategy_id=strategy_id)),
         backtest_store=store,
         backtest_cancel_requests=set(),
+        job_store=job_store,
     )
 
     response = asyncio.run(
@@ -391,11 +395,13 @@ def test_backtest_routes_and_background_remaining_branches(monkeypatch):
     )
     bg_state = SimpleNamespace(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy(strategy_id=strategy_id, params_json="")),
-        artifact_store=SimpleNamespace(get_artifact=lambda *a, **k: {"compile_meta": {}}),
+        artifact_store=SimpleNamespace(get_artifact=lambda *a, **k: make_sealed_artifact()),
         orchestrator=SimpleNamespace(load_bars=lambda query, progress_callback=None: _series((0, 60_000))),
         backtest_store=store,
         backtest_cancel_requests=set(),
         storage=SimpleNamespace(),
+        config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
+        admission_identity=make_deployment_identity(),
     )
     asyncio.run(bt._run_backtest_background(bg_state, "s1", "run-bg", 0, 120_000, None, 0, False))
     assert captured["params"] == {}
@@ -540,60 +546,6 @@ class _StateStore:
 
     def mark_invalid(self, *args, **kwargs):
         pass
-
-
-def test_live_runner_mini_backtest_artifact_fallback_and_risk_branches(monkeypatch):
-    class EmptyAdapter:
-        def run(self, *args, **kwargs):
-            return SimpleNamespace(
-                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
-                resume_state={"runtime_state": {}, "bar_index": 1},
-            )
-
-    _patch_live_runtime(monkeypatch, EmptyAdapter)
-    runner = lr.LiveStrategyRunner(
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series((0, 60_000))),
-        artifact_store=SimpleNamespace(get_artifact=lambda *a, **k: None),
-        state_store=_StateStore(),
-    )
-    assert runner._run_mini_backtest(_strategy(), 60_000) == []
-
-    snapshot = SimpleNamespace(bar_time=0, state_data={"runtime_state": {}, "bar_index": 0})
-
-    class EmptyOnSecondLoad:
-        def __init__(self) -> None:
-            self.calls = 0
-
-        def load_bars(self, query):
-            self.calls += 1
-            return _series((0, 60_000)) if self.calls == 1 else SimpleNamespace(query=query, bars=[])
-
-    runner = lr.LiveStrategyRunner(
-        orchestrator=EmptyOnSecondLoad(),
-        artifact_store=SimpleNamespace(get_artifact=lambda *a, **k: {}),
-        state_store=_StateStore(snapshot),
-    )
-    assert runner._run_mini_backtest(_strategy(), 120_000) == []
-
-    class NonEmptyFallbackLoad:
-        def load_bars(self, query):
-            return _series((0, 60_000))
-
-    runner = lr.LiveStrategyRunner(
-        orchestrator=NonEmptyFallbackLoad(),
-        artifact_store=SimpleNamespace(get_artifact=lambda *a, **k: {}),
-        state_store=_StateStore(snapshot),
-    )
-    assert runner._run_mini_backtest(_strategy(), 120_000) == []
-
-    monkeypatch.setattr(lr.LiveStrategyRunner, "_strategy_risk_percents", lambda self, strategy: (10.0, 5.0))
-    orders = [
-        {"entry_price": 100, "side": "buy", "take_profit_price": 111, "stop_price": 99},
-        {"entry_price": 200, "side": "sell", "take_profit_price": 180, "stop_price": 205},
-    ]
-    lr.LiveStrategyRunner(state_store=_StateStore())._attach_risk_prices(_strategy(), orders)
-    assert orders[0]["take_profit_price"] == 111
-    assert orders[1]["stop_price"] == 205
 
 
 def test_runtime_engine_generated_module_adapter_and_progress_false_branch(monkeypatch, tmp_path: Path):
@@ -837,7 +789,9 @@ def test_dashboard_empty_last_bar_and_strategy_health_branches(monkeypatch):
     assert response.strategies[0].health["last_bar_time"] is None
 
 
-def test_pine_ops_compile_list_artifacts_and_inspect_branches(monkeypatch, tmp_path: Path):
+def test_pine_ops_compile_list_artifacts_and_inspect_branches(
+    monkeypatch, tmp_path: Path, request
+):
     ws = _FakeWS()
     monkeypatch.setattr(pine_ops, "ws_manager", ws)
 
@@ -848,14 +802,25 @@ def test_pine_ops_compile_list_artifacts_and_inspect_branches(monkeypatch, tmp_p
             self.kwargs = kwargs
 
     pine2ast.ParseOptions = ParseOptions
-    pine2ast.parse_code = lambda source_text, options=None: SimpleNamespace(ok=True, ast={"kind": "root"}, diagnostics=[])
+    pine2ast.parse_code = lambda source_text, options=None: SimpleNamespace(
+        ok=True,
+        ast={"kind": "root"},
+        diagnostics=[],
+        frontend_artifact={},
+        support_profile={},
+        ast_artifact={},
+    )
     pine2ast.ast_to_dict = lambda ast: {}
     pine2ast.ast_to_json = lambda ast: "{}"
 
     ast2python = types.ModuleType("ast2python")
     warning_diag = SimpleNamespace(message="only a warning", severity=SimpleNamespace(value="warning"))
-    ast2python.translate_ast = lambda ast_dict, module_name: SimpleNamespace(
-        diagnostics=[warning_diag], code="class GeneratedStrategy: pass\n", metadata={"ok": True}
+    ast2python.translate_ast = lambda ast_dict, **kwargs: SimpleNamespace(
+        diagnostics=[warning_diag],
+        code="class GeneratedStrategy: pass\n",
+        metadata={"ok": True},
+        source_map=[],
+        generated_artifact={"content_hash": "sha256:" + "b" * 64},
     )
     monkeypatch.setitem(sys.modules, "pine2ast", pine2ast)
     monkeypatch.setitem(sys.modules, "ast2python", ast2python)
@@ -878,6 +843,10 @@ def test_pine_ops_compile_list_artifacts_and_inspect_branches(monkeypatch, tmp_p
         def save_artifact(self, **kwargs):
             self.saved.append(kwargs)
 
+        @staticmethod
+        def artifact_id_for_envelope(envelope):
+            return "art_" + str(envelope["content_hash"]).split(":", 1)[1][:16]
+
         def get_artifact(self, artifact_id, source_id):
             artifact_dir = self._root / source_id / artifact_id
             artifact_dir.mkdir(exist_ok=True)
@@ -886,7 +855,14 @@ def test_pine_ops_compile_list_artifacts_and_inspect_branches(monkeypatch, tmp_p
 
     artifact_store = ArtifactStore()
     registry = PineRegistry()
-    state = SimpleNamespace(pine_registry=registry, artifact_store=artifact_store)
+    from openpine.jobs.persist import JobV1Store
+
+    state = SimpleNamespace(
+        pine_registry=registry,
+        artifact_store=artifact_store,
+        job_store=JobV1Store(tmp_path / "jobs.sqlite"),
+    )
+    request.addfinalizer(state.job_store.close)
 
     tasks: list[tuple[object, tuple, dict]] = []
 

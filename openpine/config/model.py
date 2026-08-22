@@ -46,6 +46,8 @@ class OpenPineConfig(pydantic.BaseModel):
     sqlite_path: Path = Path(".openpine/openpine.sqlite")
     db_path: Path | None = None
     duckdb_path: Path = Path(".openpine/openpine.duckdb")
+    deployment_manifest: Path | None = None
+    deployment_wheelhouse: Path | None = None
     log_level: str = "INFO"
     timezone: str = DEFAULT_TIMEZONE
     live_enabled: bool = False
@@ -141,6 +143,8 @@ class OpenPineConfig(pydantic.BaseModel):
         "sqlite_path",
         "db_path",
         "duckdb_path",
+        "deployment_manifest",
+        "deployment_wheelhouse",
         mode="before",
     )
     @classmethod
@@ -172,6 +176,10 @@ class OpenPineConfig(pydantic.BaseModel):
             self.db_path = self.sqlite_path
         elif not self.db_path.is_absolute():
             self.db_path = self.workspace_root / self.db_path
+        for field_name in ("deployment_manifest", "deployment_wheelhouse"):
+            value = getattr(self, field_name)
+            if value is not None and not value.is_absolute():
+                setattr(self, field_name, self.workspace_root / value)
 
     def config_path(self) -> Path:
         """Path to the YAML config file (resolved from config_dir)."""

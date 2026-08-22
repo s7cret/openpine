@@ -85,8 +85,36 @@ def _run_isolated_tv_replay(
     effective_pre_bars=None,
     htf_bars=None,
     htf_timeframe=None,
+    expected_data_snapshot_hash=None,
+    data_snapshot_start_ms=None,
+    data_snapshot_end_ms=None,
 ):
     del params, runtime_data_provider, progress_callback, effective_pre_bars
+    from openpine.run_identity import execution_data_snapshot_hash
+
+    if not isinstance(expected_data_snapshot_hash, str):
+        raise RuntimeError("data snapshot hash is required for TV replay")
+    snapshot_start = (
+        int(config.start_time)
+        if data_snapshot_start_ms is None
+        else int(data_snapshot_start_ms)
+    )
+    snapshot_end = (
+        int(config.end_time) if data_snapshot_end_ms is None else int(data_snapshot_end_ms)
+    )
+    actual_snapshot_hash = execution_data_snapshot_hash(
+        bars=bars,
+        supplemental_bars=htf_bars,
+        exchange=str(config.exchange),
+        market=str(config.market_type),
+        symbol=str(config.symbol),
+        timeframe=str(config.timeframe),
+        start_ms=snapshot_start,
+        end_ms=snapshot_end,
+        finality_policy="CLOSED_BAR_ONLY",
+    )
+    if actual_snapshot_hash != expected_data_snapshot_hash:
+        raise RuntimeError("data snapshot hash mismatch before TV replay")
     requested = htf_timeframe
     chart_tf = str(getattr(config, "timeframe", ""))
     if htf_bars is None and not (requested and str(requested) != chart_tf):
@@ -651,9 +679,16 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
 
 
-def _strategy_decl_args(state: GatewayState, strategy: Any) -> dict[str, Any]:
+def _strategy_decl_args(
+    state: GatewayState,
+    strategy: Any,
+    *,
+    artifact: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     from openpine.runtime.declaration_args import artifact_strategy_declaration_args
 
+    if artifact is not None:
+        return artifact_strategy_declaration_args(artifact)
     try:
         artifact = state.artifact_store.get_artifact(strategy.artifact_id, strategy.pine_id)
         return artifact_strategy_declaration_args(artifact)
@@ -780,14 +815,22 @@ async def _run_tv_parity_background(
             BacktestArtifactError,
             BacktestEngineAdapter,
         )
-        from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
+        from openpine.runtime.isolated_run import IsolatedRunError
+        from openpine.run_identity import verified_generated_source
+        from openpine_contracts import AdmitError
 
         try:
-            generated_source = capture_generated_source(
-                strategy.pine_id,
-                strategy.artifact_id,
+            artifact = state.artifact_store.get_artifact(
+                strategy.artifact_id, strategy.pine_id
             )
-        except (BacktestArtifactError, IsolatedRunError) as exc:
+            generated_source = verified_generated_source(artifact)
+        except (
+            AdmitError,
+            BacktestArtifactError,
+            FileNotFoundError,
+            IsolatedRunError,
+            ValueError,
+        ) as exc:
             state.backtest_store.mark_failed(run_id, str(exc))
             failure = {
                 "run_id": run_id,
@@ -831,11 +874,53 @@ async def _run_tv_parity_background(
             to_ms=parsed.summary["to_time"],
             warmup_bars=warmup_bars,
             capture_plots=capture_plots,
-            decl_args=_strategy_decl_args(state, strategy),
+            decl_args=_strategy_decl_args(state, strategy, artifact=artifact),
             compare_from_ms=compare_from_ms,
             compare_to_ms=compare_to_ms,
             effective_pre_bars=effective_pre_bars,
             semantic_profile=semantic_profile,
+        )
+        stamped_htf = _confirmed_htf_bars_for_backtest(
+            list(parsed.bars),
+            strategy=strategy,
+            requested_timeframe=htf_timeframe,
+            mtf_series=mtf_series,
+            load_bars=state.orchestrator.load_bars,
+            from_ms=int(parsed.summary["from_time"]),
+            to_ms=int(parsed.summary["to_time"]),
+        )
+        from openpine.admission import DeploymentAdmissionIdentity
+        from openpine.run_identity import admit_and_persist_run_identity
+
+        deployment = getattr(state, "admission_identity", None)
+        if not isinstance(deployment, DeploymentAdmissionIdentity):
+            raise RuntimeError("run admission deployment identity is unavailable")
+        run_identity = admit_and_persist_run_identity(
+            data_dir=state.config.data_dir,
+            deployment=deployment,
+            mode="parity",
+            run_id=run_id,
+            artifact=artifact,
+            bars=parsed.bars,
+            supplemental_bars=stamped_htf,
+            exchange=str(config.exchange),
+            market=str(config.market_type),
+            symbol=str(config.symbol),
+            timeframe=str(config.timeframe),
+            start_ms=int(parsed.summary["from_time"]),
+            end_ms=int(parsed.summary["to_time"]),
+            semantic_profile=str(config.semantic_profile),
+            finality_policy="CLOSED_BAR_ONLY",
+            warmup_policy="CALC_ONLY",
+            score_policy="ALL_BARS",
+            required_capabilities=(
+                "closed_bar",
+                "deterministic_clock",
+                "isolated_worker",
+                "broker_projection",
+                "intent_tape_v2",
+            ),
+            created_at_utc_ms=int(time.time() * 1000),
         )
         runtime_data_provider = None
         try:
@@ -861,15 +946,6 @@ async def _run_tv_parity_background(
             )
 
         run_effective_pre_bars = effective_pre_bars if effective_pre_bars > 0 else None
-        stamped_htf = _confirmed_htf_bars_for_backtest(
-            list(parsed.bars),
-            strategy=strategy,
-            requested_timeframe=htf_timeframe,
-            mtf_series=mtf_series,
-            load_bars=state.orchestrator.load_bars,
-            from_ms=int(parsed.summary["from_time"]),
-            to_ms=int(parsed.summary["to_time"]),
-        )
         run_args = (
             BacktestEngineAdapter(),
             generated_source,
@@ -885,6 +961,9 @@ async def _run_tv_parity_background(
             effective_pre_bars=run_effective_pre_bars,
             htf_bars=stamped_htf,
             htf_timeframe=htf_timeframe,
+            expected_data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+            data_snapshot_start_ms=int(parsed.summary["from_time"]),
+            data_snapshot_end_ms=int(parsed.summary["to_time"]),
         )
 
         loop = asyncio.get_event_loop()
@@ -1063,7 +1142,7 @@ async def run_tv_parity(
     from openpine.storage.backtest_dto import BacktestRunRequest as StoreBacktestRunRequest
     from openpine.timezones import parse_timestamp_ms
 
-    require_http_admit("parity")
+    require_http_admit(state, "parity")
 
     try:
         strategy = state.strategy_registry.get_strategy(strategy_id)

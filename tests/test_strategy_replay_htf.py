@@ -94,7 +94,9 @@ def test_confirmed_htf_bars_do_not_invent_time_close() -> None:
     )
 
 
-def test_gateway_replay_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
+def test_gateway_replay_stamps_confirmed_provider_htf_bars(
+    monkeypatch, job_store
+) -> None:
     seen: dict[str, object] = {}
     broadcasts: list[object] = []
 
@@ -163,7 +165,7 @@ def test_gateway_replay_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
     async def _call():
         response = await strategies.strategy_replay(
             "s1",
-            state=SimpleNamespace(orchestrator=DataOrchestrator()),
+            state=SimpleNamespace(orchestrator=DataOrchestrator(), job_store=job_store),
             registry=Registry(),
         )
         await asyncio.sleep(0)
@@ -245,7 +247,9 @@ def test_replay_helper_same_timeframe_does_not_refetch() -> None:
     assert stamped[0]["timeframe"] == "1m"
 
 
-def test_gateway_replay_fetches_explicit_htf_timeframe(monkeypatch) -> None:
+def test_gateway_replay_fetches_explicit_htf_timeframe(
+    monkeypatch, job_store
+) -> None:
     seen = {}
     loaded = []
 
@@ -314,7 +318,7 @@ def test_gateway_replay_fetches_explicit_htf_timeframe(monkeypatch) -> None:
         response = await strategies.strategy_replay(
             "s1",
             body=ReplayRequest(htf_timeframe="1D"),
-            state=SimpleNamespace(orchestrator=DataOrchestrator()),
+            state=SimpleNamespace(orchestrator=DataOrchestrator(), job_store=job_store),
             registry=Registry(),
         )
         await asyncio.sleep(0)

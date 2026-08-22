@@ -1,0 +1,67 @@
+{
+  "schema": "openpine.stack-candidate-template.v1",
+  "id": "5.0.0-rc.3",
+  "not_a_release": true,
+  "admission": {
+    "capabilities": [
+      "closed_bar",
+      "deterministic_clock",
+      "isolated_worker",
+      "broker_projection",
+      "intent_tape_v2"
+    ],
+    "semantic_profiles": ["strict_5x"],
+    "finality_policies": ["CLOSED_BAR_ONLY"],
+    "warmup_policies": ["CALC_ONLY"],
+    "score_policies": ["ALL_BARS"]
+  },
+  "components": {
+    "openpine-contracts": {
+      "repo": "s7cret/openpine-contracts",
+      "ref": "feat/5.0-contracts",
+      "sha": "af9ecbc455e9af83cdc609f6b6ff85c40fb6c8bb",
+      "version": "5.0.0rc3"
+    },
+    "marketdata-provider": {
+      "repo": "s7cret/marketdata-provider",
+      "ref": "feat/5.0-bar-v2",
+      "sha": "0b6209ae161bfe79ecb6c5f756a160a05d3a4c28",
+      "version": "5.0.0rc3"
+    },
+    "pinelib": {
+      "repo": "s7cret/pinelib",
+      "ref": "feat/5.0-intent-tape",
+      "sha": "801b908e0ba53d1387cfd032cb6d29aa53ba0ca0",
+      "version": "5.0.0rc3"
+    },
+    "backtest_engine": {
+      "repo": "s7cret/backtest_engine",
+      "ref": "feat/5.0-warmup-reset",
+      "sha": "1a01b50f83080c2e8204fbda855be7dffb1ad779",
+      "version": "5.0.0rc3"
+    },
+    "pine2ast": {
+      "repo": "s7cret/pine2ast",
+      "ref": "feat/5.0-contracts-pin",
+      "sha": "4b930ea0b7c658297738f2ab16f23152b047f94f",
+      "version": "5.0.0rc3"
+    },
+    "ast2python": {
+      "repo": "s7cret/ast2python",
+      "ref": "feat/5.0-contracts-pin",
+      "sha": "5b0cd4e6ea9bca2ee779a44882ddc321c628fed1",
+      "version": "5.0.0rc3"
+    },
+    "optimizer": {
+      "repo": "s7cret/optimizer",
+      "ref": "feat/5.0-contracts-pin",
+      "sha": "2b2ad26b47090252911fd7037f72e5c6bc7cbcb7",
+      "version": "5.0.0rc3"
+    },
+    "openpine": {
+      "repo": "s7cret/openpine",
+      "ref": "feat/5.0-isolated-worker",
+      "version": "5.0.0rc3"
+    }
+  }
+}

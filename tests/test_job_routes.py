@@ -5,9 +5,26 @@ from types import SimpleNamespace
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from openpine.admission import DeploymentAdmissionIdentity
 from openpine.gateway.deps import get_state
 from openpine.gateway.routes.jobs import router
 from openpine.jobs.persist import JobV1Store
+
+STACK_HASH = "sha256:" + "e" * 64
+
+
+def _admission_identity() -> DeploymentAdmissionIdentity:
+    return DeploymentAdmissionIdentity(
+        stack_id="test-stack",
+        stack_manifest_hash=STACK_HASH,
+        wheel_identities=(("openpine", "5.0.0rc3", "sha256:" + "a" * 64),),
+        schema_hashes={"openpine.run.v2": "sha256:" + "b" * 64},
+        capabilities=frozenset({"closed_bar"}),
+        semantic_profiles=frozenset({"strict_5x"}),
+        finality_policies=frozenset({"CLOSED_BAR_ONLY"}),
+        warmup_policies=frozenset({"CALC_ONLY"}),
+        score_policies=frozenset({"ALL_BARS"}),
+    )
 
 
 def _client(tmp_path) -> tuple[TestClient, JobV1Store]:
@@ -72,6 +89,9 @@ def test_live_admission_is_get_and_non_mutating() -> None:
 
     app = FastAPI()
     app.include_router(trading_router)
+    app.dependency_overrides[get_state] = lambda: SimpleNamespace(
+        admission_identity=_admission_identity()
+    )
     client = TestClient(app)
     response = client.get("/live/admission")
     assert response.status_code == 200
@@ -81,13 +101,15 @@ def test_live_admission_is_get_and_non_mutating() -> None:
     assert client.post("/live/admission").status_code == 405
 
 
-def test_live_start_without_typed_confirm_is_400() -> None:
+def test_live_start_without_typed_confirm_is_400(monkeypatch) -> None:
     from openpine.gateway.routes.trading import router as trading_router
 
+    monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
     app = FastAPI()
     app.include_router(trading_router)
     app.dependency_overrides[get_state] = lambda: SimpleNamespace(
-        config=SimpleNamespace(live_enabled=True)
+        config=SimpleNamespace(live_enabled=True),
+        admission_identity=_admission_identity(),
     )
     client = TestClient(app)
     preview = client.get("/live/admission/preview", params={"strategy_id": "s1"})
@@ -97,12 +119,13 @@ def test_live_start_without_typed_confirm_is_400() -> None:
     assert denied.status_code == 400
 
 
-def test_live_and_paper_start_require_semantic_profile() -> None:
+def test_live_and_paper_start_require_semantic_profile(monkeypatch) -> None:
     import time
 
     from openpine.gateway.routes.trading import router as trading_router
     from openpine.live_preview import make_live_preview
 
+    monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
     strategy = SimpleNamespace(status="paused", archived=False, mode="paper")
     registry = SimpleNamespace(
         get_strategy=lambda strategy_id: strategy,
@@ -113,9 +136,12 @@ def test_live_and_paper_start_require_semantic_profile() -> None:
     app.dependency_overrides[get_state] = lambda: SimpleNamespace(
         config=SimpleNamespace(live_enabled=True),
         strategy_registry=registry,
+        admission_identity=_admission_identity(),
     )
     client = TestClient(app)
-    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
+    preview = make_live_preview(
+        "s1", now_ms=int(time.time() * 1000), stack_id=STACK_HASH
+    )
     live_payload = {
         "strategy_id": "s1",
         "preview_hash": preview["preview_hash"],

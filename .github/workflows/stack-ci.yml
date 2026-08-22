@@ -18,10 +18,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Materialize immutable stack candidate
+        working-directory: openpine
+        run: |
+          mkdir -p "$RUNNER_TEMP/openpine-candidate"
+          python scripts/materialize_stack_candidate.py \
+            --template candidates/stack-candidate-5.0.0-rc.3.template.json \
+            --openpine-sha "$GITHUB_SHA" \
+            --created-at-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --builder github-actions \
+            --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --source-uri "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.json"
       - name: Resolve active stack candidate
         id: stack
         working-directory: openpine
-        run: python scripts/resolve_stack_candidate.py --root . --github-output "$GITHUB_OUTPUT"
+        run: >-
+          python scripts/resolve_stack_candidate.py
+          --root "$RUNNER_TEMP/openpine-candidate"
+          --github-output "$GITHUB_OUTPUT"
       - name: Checkout OpenPine Contracts candidate
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
         uses: actions/checkout@v4
@@ -69,8 +84,8 @@ jobs:
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
         run: |
           python openpine/scripts/build_candidate_wheelhouse.py \
-            --candidate "openpine/${{ steps.stack.outputs.candidate_path }}" \
-            --outdir "$RUNNER_TEMP/openpine-candidate-verification" \
+            --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
+            --outdir "$RUNNER_TEMP/openpine-wheelhouse" \
             --checkout openpine-contracts=openpine-contracts \
             --checkout marketdata-provider=marketdata-provider \
             --checkout pinelib=pinelib \
@@ -78,41 +93,38 @@ jobs:
             --checkout pine2ast=pine2ast \
             --checkout ast2python=ast2python \
             --checkout optimizer=optimizer \
-            --checkout openpine=openpine
-      - name: Install stack
-        env:
-          STACK_MODE: ${{ steps.stack.outputs.mode }}
+            --checkout openpine=openpine \
+            --build
+      - name: Finalize and clean-install wheel-bound candidate
+        if: ${{ steps.stack.outputs.mode == 'candidate' }}
         run: |
           python -m pip install -U pip
-          python -m pip install -e './openpine[dev]'
-          if [[ "$STACK_MODE" == "candidate" ]]; then
-            python -m pip install --no-deps -e ./openpine-contracts
-          fi
-          python -m pip install --no-deps -e ./marketdata-provider
-          python -m pip install --no-deps -e ./pinelib
-          python -m pip install --no-deps -e ./pine2ast
-          python -m pip install --no-deps -e ./ast2python
-          python -m pip install --no-deps -e ./backtest_engine
-          python -m pip install --no-deps -e ./optimizer
+          python openpine/scripts/finalize_stack_candidate.py \
+            --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
+            --wheelhouse "$RUNNER_TEMP/openpine-wheelhouse" \
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
+          python -m venv "$RUNNER_TEMP/openpine-candidate-venv"
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
+            openpine/scripts/install_candidate_wheelhouse.py \
+            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json" \
+            --wheelhouse "$RUNNER_TEMP/openpine-wheelhouse" \
+            --python "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
+            --install
       - name: Verify installed stack versions
-        env:
-          STACK_MODE: ${{ steps.stack.outputs.mode }}
         run: |
-          python - <<'PY'
-          import os
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" - <<'PY'
           from importlib.metadata import version
 
           expected = {
-              'openpine': '4.0.2',
-              'pine2ast': '4.0.2',
-              'ast2python': '4.0.2',
-              'pinelib': '4.0.2',
-              'backtest-engine': '4.0.2',
-              'marketdata-provider': '4.0.2',
-              'optimizer': '4.0.2',
+              'openpine': '5.0.0rc3',
+              'openpine-contracts': '5.0.0rc3',
+              'pine2ast': '5.0.0rc3',
+              'ast2python': '5.0.0rc3',
+              'pinelib': '5.0.0rc3',
+              'backtest-engine': '5.0.0rc3',
+              'marketdata-provider': '5.0.0rc3',
+              'optimizer': '5.0.0rc3',
           }
-          if os.environ['STACK_MODE'] == 'candidate':
-              expected['openpine-contracts'] = '1.0.0rc1'
           for distribution, wanted in expected.items():
               installed = version(distribution)
               if installed != wanted:
@@ -125,14 +137,19 @@ jobs:
         env:
           PINE_STACK_ROOT: ${{ github.workspace }}
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
-        run: python -m pytest -q ast2python/tests/integration/test_v1_0_cross_project_e2e.py
+        run: |
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pip install pytest
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pytest -q \
+            ast2python/tests/integration/test_v1_0_cross_project_e2e.py
       - name: OpenPine production release report
         if: ${{ steps.stack.outputs.mode == 'production' }}
         run: (cd openpine && python -m openpine.release --root .)
       - name: OpenPine feature candidate report
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
         working-directory: openpine
-        run: python -m pytest -q tests/test_stack_candidate.py
+        run: |
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pytest -q \
+            tests/test_stack_candidate.py
       - name: Production sibling release reports
         if: ${{ steps.stack.outputs.mode == 'production' }}
         run: |

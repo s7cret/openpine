@@ -13,8 +13,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from openpine import __version__
-
 STACK_LOCK_PATH = Path(__file__).with_name("stack-lock.json")
 STACK_LOCK_SCHEMA = "openpine.stack-lock.v1"
 EXPECTED_COMPONENTS = (
@@ -111,15 +109,21 @@ def package_tree_identity(package_root: Path) -> str:
 
 
 def validate_stack_lock(
-    lock: Mapping[str, Any], *, root: Path | None = None
+    lock: Mapping[str, Any],
+    *,
+    root: Path | None = None,
+    expected_version: str | None = None,
 ) -> tuple[str, ...]:
     """Validate schema, allowlisted identities and optional product pin coherence."""
 
     errors: list[str] = []
     if lock.get("schema") != STACK_LOCK_SCHEMA:
         errors.append(f"stack lock schema must be {STACK_LOCK_SCHEMA}")
-    if lock.get("release") != __version__:
-        errors.append(f"stack lock release must match package version {__version__}")
+    release = lock.get("release")
+    if not isinstance(release, str) or not release:
+        errors.append("stack lock release must be a non-empty string")
+    if expected_version is not None and release != expected_version:
+        errors.append(f"stack lock release must be {expected_version}")
     components = lock.get("components")
     if not isinstance(components, list):
         return (*errors, "stack lock components must be a list")
@@ -142,8 +146,8 @@ def validate_stack_lock(
                 errors.append(
                     f"stack lock component {name} repository must be {expected_repository}"
                 )
-        if item.get("version") != __version__:
-            errors.append(f"stack lock component {name} version must be {__version__}")
+        if item.get("version") != release:
+            errors.append(f"stack lock component {name} version must match lock release {release}")
         tree_sha256 = item.get("tree_sha256")
         if not isinstance(tree_sha256, str) or _NONZERO_SHA256.fullmatch(tree_sha256) is None:
             errors.append(

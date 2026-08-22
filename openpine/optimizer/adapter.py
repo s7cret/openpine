@@ -23,6 +23,7 @@ class OptimizerRunConfig:
 
     strategy_id: str
     trials: int
+    optimization_id: str | None = None
     artifact_id: str | None = None
     params_hash: str | None = None
     data_query: dict | None = None
@@ -146,8 +147,13 @@ class LocalOptimizerAdapter:
             version=getattr(module, "__version__", None),
         )
 
+    def allocate_optimization_id(self) -> str:
+        """Allocate the durable identity before optimization work begins."""
+
+        return f"opt_{uuid.uuid4().hex[:12]}"
+
     def start_optimization(self, config: OptimizerRunConfig) -> OptimizerResultRef:
-        optimization_id = f"opt_{uuid.uuid4().hex[:12]}"
+        optimization_id = config.optimization_id or self.allocate_optimization_id()
         validation_reason = _validate_trials(config.trials)
         if validation_reason is not None:
             result = self._failed_result(optimization_id, config, validation_reason)

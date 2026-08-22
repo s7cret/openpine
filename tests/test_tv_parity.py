@@ -11,6 +11,11 @@ import pytest
 
 from openpine.gateway import server
 from openpine.gateway.routes import tv_parity
+from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
+
+
+def _sealed_artifact() -> dict[str, object]:
+    return make_sealed_artifact(python_code="VALUE = 1\n")
 
 
 class FakeTrade:
@@ -214,7 +219,9 @@ def test_preview_candles_endpoint_returns_locked_period(tmp_path: Path):
     assert not any(str(tmp_path) in value for value in _json_strings(payload))
 
 
-def test_run_endpoint_queues_tv_candle_replay_without_server_side_paths(tmp_path: Path, monkeypatch):
+def test_run_endpoint_queues_tv_candle_replay_without_server_side_paths(
+    tmp_path: Path, monkeypatch, job_store
+):
     class FakeStrategyRegistry:
         def get_strategy(self, strategy_id: str):
             assert strategy_id == "strat_1"
@@ -249,6 +256,7 @@ def test_run_endpoint_queues_tv_candle_replay_without_server_side_paths(tmp_path
         config=SimpleNamespace(data_dir=tmp_path),
         strategy_registry=FakeStrategyRegistry(),
         backtest_store=fake_store,
+        job_store=job_store,
     )
     app = FastAPI()
     app.include_router(tv_parity.router, prefix="/api")
@@ -300,7 +308,7 @@ def test_run_endpoint_queues_tv_candle_replay_without_server_side_paths(tmp_path
 
 
 def test_run_endpoint_treats_csv_from_time_as_visible_window_not_calculation_window(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch, job_store
 ):
     class FakeStrategyRegistry:
         def get_strategy(self, strategy_id: str):
@@ -341,6 +349,7 @@ def test_run_endpoint_treats_csv_from_time_as_visible_window_not_calculation_win
         config=SimpleNamespace(data_dir=tmp_path),
         strategy_registry=FakeStrategyRegistry(),
         backtest_store=fake_store,
+        job_store=job_store,
     )
     app = FastAPI()
     app.include_router(tv_parity.router, prefix="/api")
@@ -760,8 +769,9 @@ async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: P
     )
     state = SimpleNamespace(
         config=SimpleNamespace(data_dir=tmp_path, data_cache_root=tmp_path / "cache"),
+        admission_identity=make_deployment_identity(),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: strategy),
-        artifact_store=SimpleNamespace(get_artifact=lambda *args: {}),
+        artifact_store=SimpleNamespace(get_artifact=lambda *args: _sealed_artifact()),
         backtest_store=FakeBacktestStore(),
         orchestrator=SimpleNamespace(load_bars=lambda *args, **kwargs: parsed.series),
     )
@@ -816,6 +826,11 @@ async def test_background_marks_artifact_load_failures(tmp_path: Path, monkeypat
     state = SimpleNamespace(
         config=SimpleNamespace(data_dir=tmp_path),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: SimpleNamespace(pine_id="pine_1", artifact_id="art_1", symbol="BTCUSDT", timeframe="1m")),
+        artifact_store=SimpleNamespace(
+            get_artifact=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                BacktestArtifactError("artifact missing")
+            )
+        ),
         backtest_store=SimpleNamespace(mark_failed=lambda run_id, error: marked.append((run_id, error))),
     )
 
@@ -985,7 +1000,9 @@ def _bar_series_for_window(exchange: str, market_type: str, symbol: str, timefra
 
 
 @pytest.mark.asyncio
-async def test_run_endpoint_queues_exchange_data_with_full_prehistory(tmp_path: Path, monkeypatch):
+async def test_run_endpoint_queues_exchange_data_with_full_prehistory(
+    tmp_path: Path, monkeypatch, job_store
+):
     captured = {}
 
     class Store:
@@ -1010,6 +1027,7 @@ async def test_run_endpoint_queues_exchange_data_with_full_prehistory(tmp_path: 
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         backtest_store=store,
         orchestrator=Orchestrator(),
+        job_store=job_store,
     )
     monkeypatch.setattr(tv_parity, "_run_tv_parity_background", fake_background)
     monkeypatch.setattr(tv_parity.ws_manager, "update_progress", lambda *args, **kwargs: None)
@@ -1038,7 +1056,9 @@ async def test_run_endpoint_queues_exchange_data_with_full_prehistory(tmp_path: 
 
 
 @pytest.mark.asyncio
-async def test_run_endpoint_exchange_data_without_full_prehistory_uses_warmup_window(tmp_path: Path, monkeypatch):
+async def test_run_endpoint_exchange_data_without_full_prehistory_uses_warmup_window(
+    tmp_path: Path, monkeypatch, job_store
+):
     captured = {}
 
     class Orchestrator:
@@ -1051,6 +1071,7 @@ async def test_run_endpoint_exchange_data_without_full_prehistory_uses_warmup_wi
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         backtest_store=SimpleNamespace(create_run=lambda request: "run_exchange_warmup"),
         orchestrator=Orchestrator(),
+        job_store=job_store,
     )
     monkeypatch.setattr(tv_parity, "_run_tv_parity_background", lambda **kwargs: None)
     monkeypatch.setattr(tv_parity.ws_manager, "update_progress", lambda *args, **kwargs: None)
@@ -1157,8 +1178,12 @@ def test_exchange_data_source_error_branches(tmp_path: Path):
     assert empty_bars.value.status_code == 400
 
 
-def test_backtest_process_entry_passes_effective_pre_bars():
+def test_backtest_process_entry_passes_effective_pre_bars(monkeypatch):
     from openpine.gateway.routes import backtest as backtest_routes
+
+    monkeypatch.setattr(
+        backtest_routes, "_terminate_current_process_descendants", lambda: None
+    )
 
     seen = {}
 
@@ -1224,7 +1249,9 @@ async def test_background_passes_effective_pre_bars_to_worker(tmp_path: Path, mo
     monkeypatch.setattr(tv_parity, "write_tv_parity_exports_and_comparison", lambda **kwargs: {"run_id": kwargs["run_id"], "comparison": {}, "outputs": {}})
     state = SimpleNamespace(
         config=SimpleNamespace(data_dir=tmp_path, data_cache_root=tmp_path / "cache"),
+        admission_identity=make_deployment_identity(),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
+        artifact_store=SimpleNamespace(get_artifact=lambda *args: _sealed_artifact()),
         backtest_store=FakeStore(),
         orchestrator=SimpleNamespace(load_bars=lambda *args, **kwargs: parsed.series),
     )
@@ -1507,7 +1534,9 @@ async def test_run_tv_parity_validation_errors(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_run_tv_parity_replaces_existing_run_root(tmp_path: Path, monkeypatch):
+async def test_run_tv_parity_replaces_existing_run_root(
+    tmp_path: Path, monkeypatch, job_store
+):
     class Store:
         def create_run(self, request):
             return "run_existing"
@@ -1519,6 +1548,7 @@ async def test_run_tv_parity_replaces_existing_run_root(tmp_path: Path, monkeypa
         config=SimpleNamespace(data_dir=tmp_path),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         backtest_store=Store(),
+        job_store=job_store,
     )
     monkeypatch.setattr(tv_parity.ws_manager, "update_progress", lambda *args, **kwargs: None)
 
@@ -1570,8 +1600,9 @@ async def test_background_success_handles_params_override_and_runtime_provider_f
     monkeypatch.setattr(tv_parity, "write_tv_parity_exports_and_comparison", lambda **kwargs: {"outputs": {}, "comparison": None})
     state = SimpleNamespace(
         config=SimpleNamespace(data_dir=tmp_path, data_cache_root=None),
+        admission_identity=make_deployment_identity(),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy(params_json='{"ignored": true}')),
-        artifact_store=SimpleNamespace(get_artifact=lambda *args: {}),
+        artifact_store=SimpleNamespace(get_artifact=lambda *args: _sealed_artifact()),
         backtest_store=SimpleNamespace(save_result=lambda **kwargs: saved.update(kwargs), mark_failed=lambda *args: None),
         orchestrator=SimpleNamespace(load_bars=lambda *args, **kwargs: parsed.series),
     )

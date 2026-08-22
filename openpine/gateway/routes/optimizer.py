@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import math
+import time
+import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,9 +38,9 @@ def _optimizer_strategy(state: GatewayState, strategy_id: str):
 
 
 def _optimizer_backtest_config(
-    state: GatewayState,
     strategy,
     *,
+    artifact: dict,
     from_ms: int,
     to_ms: int,
     semantic_profile: str,
@@ -51,9 +53,6 @@ def _optimizer_backtest_config(
     from openpine.runtime.declaration_args import artifact_strategy_declaration_args
     from openpine.runtime.engine import BacktestRunConfig
 
-    artifact = state.artifact_store.get_artifact(
-        strategy.artifact_id, strategy.pine_id
-    )
     decl_args = artifact_strategy_declaration_args(artifact)
     commission_type = {
         "cash_per_order": "fixed_per_order",
@@ -136,7 +135,9 @@ def _trial_summaries(result) -> list[OptimizerTrialSummary]:
     return summaries
 
 
-def _terminalize_optimizer_job(state: GatewayState, result) -> None:
+def _terminalize_optimizer_job(
+    state: GatewayState, result, *, lease_owner: str
+) -> None:
     from openpine.jobs.persist import JobV1Error
 
     store = getattr(state, "job_store", None)
@@ -146,12 +147,14 @@ def _terminalize_optimizer_job(state: GatewayState, result) -> None:
         if result.status == "completed":
             store.mark_succeeded(
                 result.optimization_id,
+                lease_owner=lease_owner,
                 result_artifact_refs=[f"optimizer:{result.optimization_id}"],
             )
         else:
             store.mark_failed(
                 result.optimization_id,
                 error_code="OPTIMIZER_SEARCH_FAILED",
+                lease_owner=lease_owner,
             )
     except (JobV1Error, KeyError) as exc:
         log.warning(
@@ -169,7 +172,7 @@ async def optimizer_dry_run(
     """Validate optimizer configuration without launching optimization."""
     from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
 
-    require_http_admit("optimize")
+    require_http_admit(state, "optimize")
     from openpine.admission import admit_semantic_profile
     from openpine_contracts import AdmitError
 
@@ -212,6 +215,8 @@ async def optimizer_dry_run(
             status=result.status,
             reason=getattr(result, "reason", None),
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         log.error("optimizer_dry_run_failed", error=str(exc))
         raise HTTPException(500, f"Optimizer validation failed: {exc}")
@@ -224,8 +229,9 @@ async def optimizer_search(
 ) -> OptimizerSearchResponse:
     """Run external optimizer search over isolated generated artifact bytes."""
     from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
+    from openpine.jobs.persist import JobV1Error
 
-    require_http_admit("optimize")
+    require_http_admit(state, "optimize")
     from openpine.admission import admit_semantic_profile
     from openpine_contracts import AdmitError
 
@@ -247,7 +253,7 @@ async def optimizer_search(
         )
         from openpine.optimizer import OptimizerRunConfig, OptimizerService
         from openpine.optimizer.isolated_runner import IsolatedOptimizerRunner
-        from openpine.runtime.isolated_run import capture_generated_source
+        from openpine.run_identity import verified_generated_source
 
         from_ms = _parse_date_ms(req.from_time)
         to_ms = _parse_date_ms(req.to_time)
@@ -258,9 +264,12 @@ async def optimizer_search(
         bars = list(getattr(series, "bars", series))
         if not bars:
             raise HTTPException(400, "Optimizer search requires non-empty market data")
-        source = await asyncio.to_thread(
-            capture_generated_source, strategy.pine_id, strategy.artifact_id
+        artifact = await asyncio.to_thread(
+            state.artifact_store.get_artifact,
+            strategy.artifact_id,
+            strategy.pine_id,
         )
+        source = verified_generated_source(artifact)
         stamped_htf = await asyncio.to_thread(
             _confirmed_htf_bars_for_backtest,
             bars,
@@ -272,8 +281,8 @@ async def optimizer_search(
             to_ms=to_ms,
         )
         engine_config = _optimizer_backtest_config(
-            state,
             strategy,
+            artifact=artifact,
             from_ms=from_ms,
             to_ms=to_ms,
             semantic_profile=admitted.value,
@@ -281,16 +290,85 @@ async def optimizer_search(
         base_params = json.loads(strategy.params_json or "{}")
         if not isinstance(base_params, dict):
             raise HTTPException(400, "Strategy params_json must contain an object")
+        service = OptimizerService()
+        allocator = getattr(service.adapter, "allocate_optimization_id", None)
+        allocated_id = (
+            allocator() if callable(allocator) else f"opt_{uuid.uuid4().hex[:12]}"
+        )
+        if not isinstance(allocated_id, str) or not allocated_id:
+            raise ValueError("optimizer adapter returned an invalid durable identity")
+        optimization_id = allocated_id
+        lease_owner = f"gateway:{optimization_id}"
+
+        from openpine.admission import DeploymentAdmissionIdentity
+        from openpine.run_identity import admit_and_persist_run_identity
+
+        deployment = getattr(state, "admission_identity", None)
+        if not isinstance(deployment, DeploymentAdmissionIdentity):
+            raise HTTPException(503, "ADMISSION_IDENTITY_REQUIRED")
+        state_config = getattr(state, "config", None)
+        data_dir = getattr(state_config, "data_dir", None)
+        if data_dir is None:
+            raise HTTPException(503, "RUN_IDENTITY_STORAGE_REQUIRED")
+        run_identity = admit_and_persist_run_identity(
+            data_dir=data_dir,
+            deployment=deployment,
+            mode="optimize",
+            run_id=optimization_id,
+            artifact=artifact,
+            bars=bars,
+            supplemental_bars=stamped_htf,
+            exchange=str(strategy.exchange),
+            market=str(strategy.market_type),
+            symbol=str(strategy.symbol),
+            timeframe=str(strategy.timeframe),
+            start_ms=from_ms,
+            end_ms=to_ms,
+            semantic_profile=admitted.value,
+            finality_policy="CLOSED_BAR_ONLY",
+            warmup_policy="CALC_ONLY",
+            score_policy="ALL_BARS",
+            required_capabilities=(
+                "closed_bar",
+                "deterministic_clock",
+                "isolated_worker",
+                "broker_projection",
+                "intent_tape_v2",
+            ),
+            created_at_utc_ms=int(time.time() * 1000),
+        )
         runner = IsolatedOptimizerRunner(
             source=source,
             bars=bars,
             config=engine_config,
+            expected_data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
             base_params=base_params,
             htf_bars=stamped_htf,
         )
-        state_config = getattr(state, "config", None)
         output_root = Path(getattr(state_config, "data_dir", ".")) / "optimizer"
+        persist_gateway_job(
+            state,
+            job_id=optimization_id,
+            kind="optimize",
+            actor="gateway",
+            idempotency_key=optimization_id,
+            input_artifact_refs=[f"artifact:{strategy.artifact_id}"],
+            semantic_profile=admitted.value,
+        )
+        job_store = getattr(state, "job_store", None)
+        if job_store is None:
+            raise HTTPException(503, "JOB_PERSISTENCE_REQUIRED")
+        try:
+            job_store.mark_running(
+                optimization_id,
+                lease_owner=lease_owner,
+                lease_deadline_utc_ms=int(time.time() * 1000) + 3_600_000,
+            )
+        except JobV1Error as exc:
+            raise HTTPException(503, "JOB_PERSISTENCE_FAILED") from exc
+
         run_config = OptimizerRunConfig(
+            optimization_id=optimization_id,
             strategy_id=strategy.strategy_id,
             trials=req.trials,
             artifact_id=strategy.artifact_id,
@@ -311,19 +389,22 @@ async def optimizer_search(
             output_dir=output_root,
             storage_backend="json",
         )
-        service = OptimizerService()
-        ref = await asyncio.to_thread(service.adapter.start_optimization, run_config)
-        result = await asyncio.to_thread(service.adapter.get_result, ref.optimization_id)
-        persist_gateway_job(
-            state,
-            job_id=result.optimization_id,
-            kind="optimize",
-            actor="gateway",
-            idempotency_key=result.optimization_id,
-            input_artifact_refs=[f"artifact:{strategy.artifact_id}"],
-            semantic_profile=admitted.value,
-        )
-        _terminalize_optimizer_job(state, result)
+        try:
+            ref = await asyncio.to_thread(service.adapter.start_optimization, run_config)
+            if ref.optimization_id != optimization_id:
+                raise ValueError("optimizer returned a different durable optimization_id")
+            result = await asyncio.to_thread(service.adapter.get_result, ref.optimization_id)
+        except Exception:
+            try:
+                job_store.mark_failed(
+                    optimization_id,
+                    error_code="OPTIMIZER_SEARCH_FAILED",
+                    lease_owner=lease_owner,
+                )
+            except (JobV1Error, KeyError) as persistence_exc:
+                raise HTTPException(503, "JOB_PERSISTENCE_FAILED") from persistence_exc
+            raise
+        _terminalize_optimizer_job(state, result, lease_owner=lease_owner)
         champion = None
         if result.status == "completed" and result.best_params:
             champion = OptimizerChampion(

@@ -17,8 +17,9 @@ from openpine.registry.strategies import SQLiteStrategyRegistry
 
 
 @pytest.mark.asyncio
-async def test_strategy_archive_disables_and_blocks_start_enable(tmp_path):
+async def test_strategy_archive_disables_and_blocks_start_enable(tmp_path, request):
     registry = SQLiteStrategyRegistry(db_path=tmp_path / "openpine.sqlite")
+    request.addfinalizer(registry.close)
     strategy = registry.create_strategy(
         name="Archive me",
         pine_id="pine_1",
@@ -50,8 +51,9 @@ async def test_strategy_archive_disables_and_blocks_start_enable(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_pine_source_archive_roundtrip_and_blocks_strategy_create(tmp_path):
+async def test_pine_source_archive_roundtrip_and_blocks_strategy_create(tmp_path, request):
     pine_registry = SQLitePineSourceRegistry(db_path=tmp_path / "openpine.sqlite")
+    request.addfinalizer(pine_registry.close)
     source = pine_registry.add_source("//@version=5\nstrategy('x')", "x.pine")
 
     archived = await pine_sources.archive_source(source.id, registry=pine_registry)

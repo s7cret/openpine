@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -158,7 +159,9 @@ def _state(tmp_path: Path) -> SimpleNamespace:
     )
 
 
-def test_accounts_data_inventory_delete_backfill_and_risk(tmp_path, monkeypatch):
+def test_accounts_data_inventory_delete_backfill_and_risk(
+    tmp_path, monkeypatch, job_store
+):
     state = _state(tmp_path)
     cache = tmp_path / "pcache"
     cache.mkdir()
@@ -175,7 +178,7 @@ def test_accounts_data_inventory_delete_backfill_and_risk(tmp_path, monkeypatch)
 
     root = state.config.data_cache_root / "marketdata"
     root.mkdir(parents=True)
-    with sqlite3.connect(root / "index.sqlite") as db:
+    with closing(sqlite3.connect(root / "index.sqlite")) as db, db:
         db.execute(
             "CREATE TABLE marketdata_segments (id text, exchange text, market text, symbol text, timeframe text, start_time int, end_time int, rows_count int, source_kind text)"
         )
@@ -212,6 +215,7 @@ def test_accounts_data_inventory_delete_backfill_and_risk(tmp_path, monkeypatch)
     payload = {"exchange": "binance", "market_type": "spot", "symbol": "BTCUSDT", "timeframe": "1m", "from_time": 0, "to_time": 60_000}
     assert accounts_data._stored_ranges_cover_request(payload, state)[0] is True
     state2 = _state(tmp_path / "s2")
+    state2.job_store = job_store
     state2.orchestrator = FakeOrchestrator(_series(0, (_bar(0), _bar(60_000), _bar(120_000))))
     loaded = accounts_data._run_data_backfill_sync({**payload, "to_time": 180_000}, state2, lambda *args: None)
     assert loaded["bars_loaded"] >= 0
@@ -387,12 +391,22 @@ class ArtifactStoreFake:
             raise FileNotFoundError(artifact_id)
         return {"artifact_dir": str(artifact_dir), "compile_meta": json.loads((artifact_dir / "compile_meta.json").read_text())}
 
+    @staticmethod
+    def artifact_id_for_envelope(envelope):
+        return "art_" + str(envelope["content_hash"]).split(":", 1)[1][:16]
+
 
 def _pine_state(tmp_path: Path):
-    return SimpleNamespace(pine_registry=PineRegistryFake(), artifact_store=ArtifactStoreFake(tmp_path / "artifacts"))
+    from openpine.jobs.persist import JobV1Store
+
+    return SimpleNamespace(
+        pine_registry=PineRegistryFake(),
+        artifact_store=ArtifactStoreFake(tmp_path / "artifacts"),
+        job_store=JobV1Store(tmp_path / "jobs.sqlite"),
+    )
 
 
-def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch):
+def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch, request):
     import pine2ast
     import ast2python
 
@@ -405,11 +419,19 @@ def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch):
         code="P2A1507",
         severity=Severity(),
     )
-    result_ok = SimpleNamespace(ok=True, diagnostics=[], ast=SimpleNamespace(kind="Program"))
+    artifacts = {
+        "frontend_artifact": {},
+        "support_profile": {},
+        "ast_artifact": {},
+    }
+    result_ok = SimpleNamespace(
+        ok=True, diagnostics=[], ast=SimpleNamespace(kind="Program"), **artifacts
+    )
     result_visual = SimpleNamespace(
         ok=False,
         diagnostics=[visual_diag],
         ast=SimpleNamespace(kind="Program"),
+        **artifacts,
     )
     result_bad = SimpleNamespace(ok=False, diagnostics=[diag], ast=None)
     parse_options = []
@@ -425,6 +447,8 @@ def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch):
             code="# generated",
             diagnostics=[],
             metadata={"declaration": {}, "visual_policy": kwargs.get("visual_policy")},
+            source_map=[],
+            generated_artifact={"content_hash": "sha256:" + "a" * 64},
         )
 
     monkeypatch.setattr(pine2ast, "parse_code", fake_parse_code)
@@ -432,6 +456,7 @@ def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch):
     monkeypatch.setattr(pine2ast, "ast_to_json", lambda ast: "{}")
     monkeypatch.setattr(ast2python, "translate_ast", fake_translate_ast)
     state = _pine_state(tmp_path)
+    request.addfinalizer(state.job_store.close)
     tasks = BackgroundTasks()
     queued = asyncio.run(pine_ops.compile_pine("src1", tasks, state))
     assert queued["status"] == "queued"
@@ -484,7 +509,7 @@ def test_pine_ops_compile_validate_and_artifact_routes(tmp_path, monkeypatch):
         asyncio.run(pine_ops.inspect_artifact("src1", "missing", state))
 
 
-def test_pine_ops_compile_failure_paths(tmp_path, monkeypatch):
+def test_pine_ops_compile_failure_paths(tmp_path, monkeypatch, request):
     import pine2ast
     import ast2python
 
@@ -493,6 +518,7 @@ def test_pine_ops_compile_failure_paths(tmp_path, monkeypatch):
 
     diag = SimpleNamespace(message="boom", code="E", severity=Severity())
     state = _pine_state(tmp_path)
+    request.addfinalizer(state.job_store.close)
     monkeypatch.setattr(pine2ast, "parse_code", lambda *a, **k: SimpleNamespace(ok=False, diagnostics=[diag], ast=None))
     tasks = BackgroundTasks()
     asyncio.run(pine_ops.compile_pine("src1", tasks, state))

@@ -591,7 +591,7 @@ async def strategy_replay(
     from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
     from openpine.gateway.ws_manager import ws_manager
 
-    require_http_admit("backtest")
+    require_http_admit(state, "backtest")
     try:
         s = registry.get_strategy(strategy_id)
     except KeyError:

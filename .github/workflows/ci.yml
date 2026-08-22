@@ -30,9 +30,23 @@ jobs:
           fi
           sudo -n -u openpine-worker -- /usr/bin/id -u
           /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+      - name: Materialize immutable stack candidate
+        run: |
+          mkdir -p "$RUNNER_TEMP/openpine-candidate"
+          python scripts/materialize_stack_candidate.py \
+            --template candidates/stack-candidate-5.0.0-rc.3.template.json \
+            --openpine-sha "$GITHUB_SHA" \
+            --created-at-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --builder github-actions \
+            --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --source-uri "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.json"
       - name: Resolve active stack candidate
         id: stack
-        run: python scripts/resolve_stack_candidate.py --root . --github-output "$GITHUB_OUTPUT"
+        run: >-
+          python scripts/resolve_stack_candidate.py
+          --root "$RUNNER_TEMP/openpine-candidate"
+          --github-output "$GITHUB_OUTPUT"
       - name: Checkout OpenPine Contracts candidate
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
         uses: actions/checkout@v4
@@ -87,7 +101,7 @@ jobs:
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
         run: |
           python scripts/build_candidate_wheelhouse.py \
-            --candidate "${{ steps.stack.outputs.candidate_path }}" \
+            --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
             --outdir "$RUNNER_TEMP/openpine-candidate-verification" \
             --checkout openpine-contracts=stack/openpine-contracts \
             --checkout marketdata-provider=stack/marketdata-provider \
@@ -96,22 +110,28 @@ jobs:
             --checkout pine2ast=stack/pine2ast \
             --checkout ast2python=stack/ast2python \
             --checkout optimizer=stack/optimizer \
-            --checkout openpine=.
-      - name: Install OpenPine and exact stack checkouts
-        env:
-          STACK_MODE: ${{ steps.stack.outputs.mode }}
+            --checkout openpine=. \
+            --build
+      - name: Finalize and clean-install wheel-bound candidate
         run: |
-          python -m pip install -e '.[dev]'
-          if [[ "$STACK_MODE" == "candidate" ]]; then
-            python -m pip install --no-deps -e stack/openpine-contracts
-          fi
-          python -m pip install --no-deps -e stack/marketdata-provider
-          python -m pip install --no-deps -e stack/pinelib
-          python -m pip install --no-deps -e stack/pine2ast
-          python -m pip install --no-deps -e stack/ast2python
-          python -m pip install --no-deps -e stack/backtest_engine
-          python -m pip install --no-deps -e stack/optimizer
-      - run: bash scripts/release_gate.sh
+          python scripts/finalize_stack_candidate.py \
+            --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
+            --wheelhouse "$RUNNER_TEMP/openpine-candidate-verification" \
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
+          python -m venv "$RUNNER_TEMP/openpine-candidate-venv"
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pip install -U pip
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
+            scripts/install_candidate_wheelhouse.py \
+            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json" \
+            --wheelhouse "$RUNNER_TEMP/openpine-candidate-verification" \
+            --python "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
+            --install
+          "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pip install '.[dev]'
+          echo "$RUNNER_TEMP/openpine-candidate-venv/bin" >> "$GITHUB_PATH"
+      - name: Run candidate release gate
+        run: >-
+          OPENPINE_CANDIDATE_MANIFEST="$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
+          bash scripts/release_gate.sh
       - name: Type-check hardened API boundary
         run: >-
           python -m mypy --python-version 3.13 --ignore-missing-imports

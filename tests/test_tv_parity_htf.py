@@ -2,7 +2,48 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+from openpine_contracts import AdmitError
+
 from openpine.gateway.routes.tv_parity import _run_isolated_tv_replay
+from openpine.run_identity import execution_data_snapshot_hash
+
+
+def _bar() -> SimpleNamespace:
+    return SimpleNamespace(
+        time=0,
+        time_close=59_999,
+        open=1,
+        high=2,
+        low=0.5,
+        close=1.5,
+        volume=3,
+    )
+
+
+def _config() -> SimpleNamespace:
+    return SimpleNamespace(
+        exchange="binance",
+        market_type="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_time=0,
+        end_time=60_000,
+    )
+
+
+def _snapshot_hash(bars, supplemental_bars=None) -> str:
+    return execution_data_snapshot_hash(
+        bars=bars,
+        supplemental_bars=supplemental_bars,
+        exchange="binance",
+        market="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_ms=0,
+        end_ms=60_000,
+        finality_policy="CLOSED_BAR_ONLY",
+    )
 
 
 def test_isolated_tv_replay_forwards_confirmed_htf_bars() -> None:
@@ -26,14 +67,16 @@ def test_isolated_tv_replay_forwards_confirmed_htf_bars() -> None:
             seen["htf_bars"] = kwargs.get("htf_bars")
             return SimpleNamespace(ok=True)
 
+    bars = [_bar()]
     result = _run_isolated_tv_replay(
         Adapter(),
         b"STAMPED",
-        [],
-        object(),
+        bars,
+        _config(),
         {},
         None,
         htf_bars=htf_bars,
+        expected_data_snapshot_hash=_snapshot_hash(bars, htf_bars),
     )
     assert result.ok is True
     assert seen["htf_bars"] == htf_bars
@@ -62,9 +105,10 @@ def test_isolated_tv_replay_stamps_confirmed_provider_htf_bars() -> None:
         Adapter(),
         b"STAMPED",
         bars,
-        SimpleNamespace(symbol="BTCUSDT", timeframe="1m"),
+        _config(),
         {},
         None,
+        expected_data_snapshot_hash=_snapshot_hash(bars),
     )
     assert result.ok is True
     assert seen["htf_bars"] == [
@@ -82,7 +126,7 @@ def test_isolated_tv_replay_stamps_confirmed_provider_htf_bars() -> None:
     ]
 
 
-def test_isolated_tv_replay_does_not_invent_time_close() -> None:
+def test_isolated_tv_replay_fails_closed_without_time_close() -> None:
     seen: dict[str, object] = {}
 
     class Adapter:
@@ -90,16 +134,17 @@ def test_isolated_tv_replay_does_not_invent_time_close() -> None:
             seen["htf_bars"] = kwargs.get("htf_bars")
             return SimpleNamespace(ok=True)
 
-    result = _run_isolated_tv_replay(
-        Adapter(),
-        b"STAMPED",
-        [SimpleNamespace(time=1, open=1, high=1, low=1, close=1, volume=1)],
-        SimpleNamespace(symbol="BTCUSDT", timeframe="1m"),
-        {},
-        None,
-    )
-    assert result.ok is True
-    assert seen["htf_bars"] is None
+    with pytest.raises(AdmitError, match="time_close"):
+        _run_isolated_tv_replay(
+            Adapter(),
+            b"STAMPED",
+            [SimpleNamespace(time=1, open=1, high=1, low=1, close=1, volume=1)],
+            _config(),
+            {},
+            None,
+            expected_data_snapshot_hash="sha256:" + "a" * 64,
+        )
+    assert "htf_bars" not in seen
 
 
 def test_isolated_tv_replay_keeps_none_when_other_htf_unconfirmed() -> None:
@@ -110,24 +155,16 @@ def test_isolated_tv_replay_keeps_none_when_other_htf_unconfirmed() -> None:
             seen["htf_bars"] = kwargs.get("htf_bars")
             return SimpleNamespace(ok=True)
 
+    bars = [_bar()]
     result = _run_isolated_tv_replay(
         Adapter(),
         b"STAMPED",
-        [
-            SimpleNamespace(
-                time=0,
-                time_close=59_999,
-                open=1,
-                high=2,
-                low=0.5,
-                close=1.5,
-                volume=3,
-            )
-        ],
-        SimpleNamespace(symbol="BTCUSDT", timeframe="1m"),
+        bars,
+        _config(),
         {},
         None,
         htf_timeframe="1D",
+        expected_data_snapshot_hash=_snapshot_hash(bars),
     )
     assert result.ok is True
     assert seen["htf_bars"] is None

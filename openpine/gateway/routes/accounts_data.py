@@ -11,6 +11,7 @@ import subprocess
 import sys
 import threading
 import time
+from contextlib import closing
 from pathlib import Path
 from typing import Any, cast
 
@@ -761,7 +762,7 @@ async def data_backfill(
     from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
     from openpine.jobs import Job, JobType
 
-    require_http_admit("backfill")
+    require_http_admit(state, "backfill")
 
     from_ms = _parse_date_ms(body.from_time)
     to_ms = _parse_date_ms(body.to_time)
@@ -1841,7 +1842,7 @@ def _merge_marketdata_segment_groups(
         return
     touched: set[tuple[str, str, str, str, str]] = set()
     try:
-        with sqlite3.connect(index_path) as db:
+        with closing(sqlite3.connect(index_path)) as db, db:
             rows = db.execute("""
                 SELECT id, exchange, market, symbol, timeframe, start_time, end_time, rows_count, source_kind
                 FROM marketdata_segments
@@ -2297,7 +2298,7 @@ def _delete_marketdata_segment_series(
 
     if index_path.exists():
         try:
-            with sqlite3.connect(index_path) as db:
+            with closing(sqlite3.connect(index_path)) as db, db:
                 db.execute(
                     """
                     DELETE FROM marketdata_segments

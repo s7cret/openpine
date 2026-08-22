@@ -135,7 +135,10 @@ def test_batch_registry_compile_and_progress_edges(monkeypatch, tmp_path: Path, 
     assert batch_runner.ensure_strategy_instance(entry, SimpleNamespace(id="src"), "art", "15m") == ("sid", True)
 
 
-def test_backtest_route_helpers_with_fake_storage(tmp_path: Path):
+def test_backtest_route_helpers_with_fake_storage(monkeypatch, tmp_path: Path):
+    monkeypatch.setattr(
+        backtest_routes, "_terminate_current_process_descendants", lambda: None
+    )
     assert backtest_routes._normalize_metrics_payload({"metrics": {"a": 1}, "nested": {"b": 2}}) == {"a": 1}
     assert backtest_routes._normalize_metrics_payload(None) is None
     assert backtest_routes._parse_date_ms("1234") == 1234000

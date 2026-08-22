@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 import os
+import signal
+import subprocess
 import sys
 import textwrap
+import time
 from pathlib import Path
 
 import pytest
 
-from openpine.runtime.isolated_worker import IsolatedWorkerError, evaluate_artifact
+from openpine.runtime.isolated_worker import (
+    InteractiveWorkerSession,
+    IsolatedWorkerError,
+    evaluate_artifact,
+)
 
 
 def _eval(source: bytes, **kwargs):
@@ -60,6 +67,190 @@ def test_worker_times_out_infinite_loop() -> None:
     source = "while True:\n    pass\n"
     with pytest.raises(IsolatedWorkerError, match="timeout"):
         _eval(source.encode("utf-8"), timeout_s=0.4)
+
+
+def test_interactive_worker_timeout_covers_partial_line_output() -> None:
+    source = b"""
+import os
+os.write(1, b"{")
+os.read(0, 1)
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        pass
+    def _process_bar(self, bar, bar_index):
+        pass
+"""
+    with pytest.raises(IsolatedWorkerError, match="timeout"):
+        InteractiveWorkerSession(
+            source,
+            semantic_profile="strict_5x",
+            chart_timeframe="1m",
+            timeout_s=0.2,
+        )
+
+
+def test_partial_line_cleanup_is_bounded_when_descendant_retains_pipes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from openpine.runtime import isolated_worker
+
+    script = (
+        "import os,time\n"
+        "pid=os.fork()\n"
+        "if pid == 0:\n"
+        "    time.sleep(60)\n"
+        "os.write(1,b'{')\n"
+        "time.sleep(60)\n"
+    )
+    proc = subprocess.Popen(  # noqa: S603 - fixed interpreter and in-test script
+        [sys.executable, "-c", script],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    session = object.__new__(InteractiveWorkerSession)
+    session.proc = proc
+    session.unit_name = "openpine-worker-bounded-cleanup-test"
+    session.timeout_s = 0.1
+    session._closed = False
+    session._stdout_buffer = bytearray()
+    session.bytes_received = 0
+
+    def unresolved_cleanup(_unit_name: str) -> None:
+        raise IsolatedWorkerError("worker unit cleanup could not be verified")
+
+    monkeypatch.setattr(isolated_worker, "_stop_worker_unit", unresolved_cleanup)
+    started = time.monotonic()
+    try:
+        with pytest.raises(IsolatedWorkerError, match="could not be verified"):
+            session._read_message()
+        assert time.monotonic() - started < 3.0
+        assert proc.stdout is not None and proc.stdout.closed
+        assert proc.stderr is not None and proc.stderr.closed
+    finally:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        try:
+            proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=2)
+
+
+def test_worker_unit_cleanup_escalates_and_verifies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from openpine.runtime import isolated_worker
+
+    results = iter(((0, ""), (0, "active\n"), (0, ""), (0, "inactive\n")))
+    calls: list[list[str]] = []
+
+    def fake_run(argv, **_kwargs):
+        calls.append(list(argv))
+        returncode, stdout = next(results)
+        return subprocess.CompletedProcess(argv, returncode, stdout=stdout)
+
+    monkeypatch.setattr(isolated_worker.subprocess, "run", fake_run)
+    isolated_worker._stop_worker_unit("openpine-worker-test")
+    assert any("kill" in argv for argv in calls)
+    assert calls[-1][-1] == "openpine-worker-test"
+
+
+def test_worker_unit_cleanup_fails_if_unit_remains_active(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from openpine.runtime import isolated_worker
+
+    results = iter(((0, ""), (0, "active\n"), (0, ""), (0, "active\n")))
+
+    def fake_run(argv, **_kwargs):
+        returncode, stdout = next(results)
+        return subprocess.CompletedProcess(argv, returncode, stdout=stdout)
+
+    monkeypatch.setattr(isolated_worker.subprocess, "run", fake_run)
+    try:
+        with pytest.raises(IsolatedWorkerError, match="remained active"):
+            isolated_worker._stop_worker_unit("openpine-worker-test")
+        assert "openpine-worker-test" in isolated_worker._PENDING_WORKER_UNITS
+    finally:
+        isolated_worker._discard_pending_worker_unit("openpine-worker-test")
+
+
+def test_worker_unit_cleanup_fails_closed_on_state_query_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from openpine.runtime import isolated_worker
+
+    results = iter(((0, ""), (1, ""), (0, ""), (1, "")))
+
+    def fake_run(argv, **_kwargs):
+        returncode, stdout = next(results)
+        return subprocess.CompletedProcess(argv, returncode, stdout=stdout)
+
+    monkeypatch.setattr(isolated_worker.subprocess, "run", fake_run)
+    try:
+        with pytest.raises(IsolatedWorkerError, match="could not be verified"):
+            isolated_worker._stop_worker_unit("openpine-worker-test")
+        assert "openpine-worker-test" in isolated_worker._PENDING_WORKER_UNITS
+    finally:
+        isolated_worker._discard_pending_worker_unit("openpine-worker-test")
+
+
+def test_worker_unit_stop_timeout_still_escalates_and_verifies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from openpine.runtime import isolated_worker
+
+    calls: list[list[str]] = []
+    results = iter(((0, "active\n"), (0, ""), (0, "inactive\n")))
+
+    def fake_run(argv, **_kwargs):
+        calls.append(list(argv))
+        if "stop" in argv:
+            raise subprocess.TimeoutExpired(argv, 2)
+        returncode, stdout = next(results)
+        return subprocess.CompletedProcess(argv, returncode, stdout=stdout)
+
+    monkeypatch.setattr(isolated_worker.subprocess, "run", fake_run)
+    isolated_worker._stop_worker_unit("openpine-worker-test")
+    assert any("kill" in argv for argv in calls)
+    assert "openpine-worker-test" not in isolated_worker._PENDING_WORKER_UNITS
+
+
+def test_worker_unit_kill_failure_retains_name_and_retry_clears_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from openpine.runtime import isolated_worker
+
+    results = iter(((0, ""), (0, "active\n"), (0, "active\n")))
+
+    def fail_kill(argv, **_kwargs):
+        if "kill" in argv:
+            raise subprocess.TimeoutExpired(argv, 2)
+        returncode, stdout = next(results)
+        return subprocess.CompletedProcess(argv, returncode, stdout=stdout)
+
+    monkeypatch.setattr(isolated_worker.subprocess, "run", fail_kill)
+    try:
+        with pytest.raises(IsolatedWorkerError, match="remained active"):
+            isolated_worker._stop_worker_unit("openpine-worker-test")
+        assert "openpine-worker-test" in isolated_worker._PENDING_WORKER_UNITS
+
+        retry_results = iter(((0, ""), (0, "inactive\n")))
+
+        def successful_retry(argv, **_kwargs):
+            returncode, stdout = next(retry_results)
+            return subprocess.CompletedProcess(argv, returncode, stdout=stdout)
+
+        monkeypatch.setattr(isolated_worker.subprocess, "run", successful_retry)
+        isolated_worker._retry_pending_worker_unit_cleanup()
+        assert "openpine-worker-test" not in isolated_worker._PENDING_WORKER_UNITS
+    finally:
+        isolated_worker._discard_pending_worker_unit("openpine-worker-test")
 
 
 def test_worker_rejects_malformed_and_nonzero_output(
@@ -185,6 +376,157 @@ def test_worker_rejects_huge_source_and_subprocess() -> None:
         _eval(b'__import__("subprocess")\n', timeout_s=5)
 
 
+def test_worker_does_not_retry_internal_type_error() -> None:
+    source = b"""
+CALLS = 0
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        pass
+    def _process_bar(self, *args):
+        global CALLS
+        CALLS += 1
+        if CALLS == 1:
+            raise TypeError("intentional-first-call")
+        raise RuntimeError("strategy-was-retried")
+"""
+    with pytest.raises(IsolatedWorkerError, match="intentional-first-call") as error:
+        _eval(source, bars=_bar_dicts(), timeout_s=5)
+    assert "strategy-was-retried" not in str(error.value)
+
+
+def test_worker_reports_constructor_and_bar_commit_failures_without_fallback() -> None:
+    constructor = b"""
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        raise TypeError("constructor-internal")
+    def _process_bar(self, bar, bar_index):
+        pass
+"""
+    with pytest.raises(IsolatedWorkerError, match="STRATEGY_CONSTRUCTOR_ERROR"):
+        _eval(constructor, bars=_bar_dicts(), timeout_s=5)
+
+    commit = b"""
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.rt = runtime
+        def fail_commit(_runtime):
+            raise RuntimeError("commit-failed")
+        type(self.rt).end_bar = fail_commit
+    def _process_bar(self, bar, bar_index):
+        pass
+"""
+    with pytest.raises(IsolatedWorkerError, match="BAR_COMMIT_ERROR"):
+        _eval(commit, bars=_bar_dicts(), timeout_s=5)
+
+
+def test_interactive_worker_receives_broker_projection_before_each_decision() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+        self.ctx.attach_runtime(runtime)
+    def _process_bar(self, bar, bar_index):
+        if self.ctx.position_size == 0:
+            self.ctx.entry("L", "long", qty=1)
+        else:
+            self.ctx.close("L")
+"""
+    flat = {
+        "cash": 10_000,
+        "equity": 10_000,
+        "netprofit": 0,
+        "openprofit": 0,
+        "grossprofit": 0,
+        "grossloss": 0,
+        "position_size": 0,
+        "position_avg_price": 0,
+        "position_entry_name": None,
+        "opentrades": 0,
+        "closedtrades": 0,
+        "wintrades": 0,
+        "losstrades": 0,
+        "eventrades": 0,
+        "max_drawdown": 0,
+        "max_runup": 0,
+        "fills": [],
+        "open_trade_log": [],
+        "closed_trade_log": [],
+    }
+    long = {**flat, "position_size": 1, "position_avg_price": 10, "opentrades": 1}
+
+    with InteractiveWorkerSession(
+        source,
+        semantic_profile="strict_5x",
+        chart_timeframe="1m",
+    ) as session:
+        session.heartbeat()
+        first = session.evaluate_bar(
+            _bar_dicts()[0], bar_index=0, phase="score", recalc_iteration=0, projection=flat
+        )
+        second = session.evaluate_bar(
+            _bar_dicts()[1], bar_index=1, phase="score", recalc_iteration=0, projection=long
+        )
+
+    assert [event["kind"] for event in first["intent_batch"]] == ["entry"]
+    assert [event["kind"] for event in second["intent_batch"]] == ["close"]
+    assert first["message_type"] == "INTENT_BATCH"
+    assert second["message_type"] == "INTENT_BATCH"
+    assert session.proc.stdin is not None and session.proc.stdin.closed
+    assert session.proc.stdout is not None and session.proc.stdout.closed
+    assert session.proc.stderr is not None and session.proc.stderr.closed
+
+
+def test_interactive_worker_streams_more_than_ten_megabytes_across_bounded_messages() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+        self.ctx.attach_runtime(runtime)
+    def _process_bar(self, bar, bar_index):
+        return None
+"""
+    projection = {
+        "cash": 10_000,
+        "equity": 10_000,
+        "netprofit": 0,
+        "openprofit": 0,
+        "grossprofit": 0,
+        "grossloss": 0,
+        "position_size": 0,
+        "position_avg_price": 0,
+        "position_entry_name": None,
+        "opentrades": 0,
+        "closedtrades": 0,
+        "wintrades": 0,
+        "losstrades": 0,
+        "eventrades": 0,
+        "max_drawdown": 0,
+        "max_runup": 0,
+        "fills": [],
+        "open_trade_log": [],
+        "closed_trade_log": [],
+        "padding": "x" * 900_000,
+    }
+    with InteractiveWorkerSession(
+        source,
+        semantic_profile="strict_5x",
+        chart_timeframe="1m",
+        timeout_s=10,
+    ) as session:
+        for index in range(12):
+            response = session.evaluate_bar(
+                {**_bar_dicts()[0], "time": 1_000 + index},
+                bar_index=index,
+                phase="score",
+                recalc_iteration=0,
+                projection=projection,
+            )
+            assert response["intent_batch"] == []
+        assert session.bytes_sent > 10 * 1024 * 1024
+
+
 def test_worker_argv_has_no_new_session() -> None:
     from openpine.runtime.isolated_worker import (
         IsolatedWorkerError,
@@ -203,6 +545,13 @@ def test_worker_argv_has_no_new_session() -> None:
     assert "--unshare-pid" in argv
     assert "--die-with-parent" in argv
     assert "--clearenv" in argv
+    assert "/usr/bin/systemd-run" in argv
+    assert "--uid=openpine-worker" in argv
+    assert "--property=MemoryMax=134217728" in argv
+    assert "--property=MemorySwapMax=0" in argv
+    assert "--property=TasksMax=32" in argv
+    assert "--property=KillMode=control-group" in argv
+    assert "--property=SystemCallFilter=@system-service @mount" in argv
     remount_index = argv.index("--remount-ro")
     assert argv[remount_index : remount_index + 2] == ["--remount-ro", "/"]
     assert remount_index > argv.index("--dev")
@@ -216,6 +565,105 @@ def test_worker_argv_has_no_new_session() -> None:
     assert tmpfs_index < trusted_dest_index
     assert f"sys.path.insert(0, {trusted_dest!r})" in _BOOTSTRAP
     assert not any(item.endswith("dist-packages") for item in argv)
+
+
+def test_worker_ledger_projection_exposes_complete_indexed_trade_api() -> None:
+    from openpine.runtime.isolated_worker import _BOOTSTRAP
+    from pinelib.core.na import na
+
+    namespace = {"__name__": "__ledger_projection_test__"}
+    exec(_BOOTSTRAP, namespace)
+    projection = namespace["_LedgerProjection"](
+        {
+            "equity": 101.0,
+            "closed_trade_log": [
+                {
+                    "entry_price": 10.0,
+                    "exit_price": 12.0,
+                    "entry_time": 1,
+                    "exit_time": 2,
+                    "profit": 2.0,
+                    "profit_percent": 20.0,
+                    "commission": 0.1,
+                    "qty": 3.0,
+                    "side": "long",
+                    "size": 3.0,
+                    "entry_id": "L",
+                    "exit_id": "X",
+                    "entry_comment": "enter",
+                    "exit_comment": "leave",
+                    "max_runup": 4.0,
+                    "max_drawdown": 1.0,
+                    "entry_bar_index": 5,
+                    "exit_bar_index": 6,
+                }
+            ],
+            "open_trade_log": [
+                {
+                    "entry_price": 20.0,
+                    "exit_price": None,
+                    "entry_time": 3,
+                    "exit_time": None,
+                    "profit": -1.0,
+                    "profit_percent": -5.0,
+                    "commission": 0.2,
+                    "qty": 2.0,
+                    "side": "short",
+                    "size": -2.0,
+                    "entry_id": "S",
+                    "exit_id": None,
+                    "max_runup": 2.0,
+                    "max_drawdown": 3.0,
+                    "entry_bar_index": 7,
+                }
+            ],
+        }
+    )
+
+    closed = {
+        "entry_price": 10.0,
+        "exit_price": 12.0,
+        "entry_time": 1,
+        "exit_time": 2,
+        "profit": 2.0,
+        "profit_percent": 20.0,
+        "commission": 0.1,
+        "qty": 3.0,
+        "side": "long",
+        "size": 3.0,
+        "entry_id": "L",
+        "exit_id": "X",
+        "entry_comment": "enter",
+        "exit_comment": "leave",
+        "max_runup": 4.0,
+        "max_drawdown": 1.0,
+        "entry_bar_index": 5,
+        "exit_bar_index": 6,
+    }
+    opened = {
+        "entry_price": 20.0,
+        "entry_time": 3,
+        "profit": -1.0,
+        "profit_percent": -5.0,
+        "commission": 0.2,
+        "qty": 2.0,
+        "side": "short",
+        "size": -2.0,
+        "entry_id": "S",
+        "max_runup": 2.0,
+        "max_drawdown": 3.0,
+        "entry_bar_index": 7,
+    }
+    for field, expected in closed.items():
+        assert getattr(projection, f"closedtrades_{field}")(0) == expected
+    assert projection.closedtrades_net_profit(0) == closed["profit"]
+    for field, expected in opened.items():
+        assert getattr(projection, f"opentrades_{field}")(0) == expected
+    assert projection.opentrades_exit_price(0) is na
+    assert projection.opentrades_exit_time(0) is na
+    assert projection.opentrades_exit_id(0) is na
+    assert projection.closedtrades_entry_price(2) is na
+    assert projection.equity == 101.0
 
 
 def test_worker_argv_mounts_optional_lib64_read_only(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -240,6 +688,36 @@ def test_worker_argv_mounts_optional_lib64_read_only(monkeypatch: pytest.MonkeyP
         "/lib64",
         "/lib64",
     ]
+
+
+def test_trusted_stage_cleanup_removes_partial_copy(monkeypatch, tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    import openpine.runtime.isolated_worker as worker
+
+    stage = tmp_path / "openpine-trusted-partial"
+    worker._cleanup_trusted_stage()
+
+    def make_stage(**_kwargs):
+        stage.mkdir()
+        return str(stage)
+
+    monkeypatch.setattr(worker.tempfile, "mkdtemp", make_stage)
+    monkeypatch.setattr(
+        worker.importlib.util,
+        "find_spec",
+        lambda _name: SimpleNamespace(origin=str(tmp_path / "package" / "__init__.py")),
+    )
+
+    def fail_copy(_src, target, **_kwargs):
+        Path(target).mkdir(parents=True)
+        raise OSError("copy failed")
+
+    monkeypatch.setattr(worker.shutil, "copytree", fail_copy)
+    with pytest.raises(OSError, match="copy failed"):
+        worker._stage_trusted_packages()
+    assert not stage.exists()
+    assert worker._TRUSTED_STAGE is None
 
 
 def test_worker_handshake_rejects_unknown_stack_and_profile() -> None:

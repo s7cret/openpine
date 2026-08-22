@@ -29,6 +29,7 @@ def to_engine_bar(bar: Bar) -> Any:
     """Convert one canonical marketdata bar to BacktestEngine's runtime bar."""
 
     from backtest_engine.models import Bar as EngineBar
+    from openpine_contracts import Finality
 
     return EngineBar(
         time=int(bar.time),
@@ -38,6 +39,7 @@ def to_engine_bar(bar: Bar) -> Any:
         close=float(bar.close),
         volume=None if bar.volume is None else float(bar.volume),
         time_close=int(bar.time_close),
+        finality=Finality.FINAL if bar.closed else Finality.OPEN,
     )
 
 

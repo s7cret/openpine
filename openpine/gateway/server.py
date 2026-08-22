@@ -73,6 +73,10 @@ def _env_float(name: str, default: float) -> float:
 def _live_runner_requested(state: GatewayState) -> bool:
     """Return whether live/paper catch-up work is enabled for this gateway."""
 
+    from openpine.live_release_gate import live_execution_enabled
+
+    if not live_execution_enabled():
+        return False
     return bool(getattr(state.config, "live_enabled", False)) or _env_flag(
         "OPENPINE_ENABLE_LIVE_RUNNER"
     )

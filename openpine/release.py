@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import tomllib
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -22,7 +21,7 @@ from openpine.stack_lock import (
 from openpine.storage.migrations import _get_migration_files
 from openpine.storage.schema_indexes import REQUIRED_INDEXES
 
-REQUIRED_STACK_VERSION = "4.0.2"
+REQUIRED_STACK_VERSION = "5.0.0rc3"
 CANONICAL_DOCS = {
     "docs/README.md",
     "docs/ARCHITECTURE.md",
@@ -48,23 +47,23 @@ def _pyproject(root: Path) -> dict:
 def _dependency_errors(project: dict) -> list[str]:
     errors: list[str] = []
     dependencies = [str(item) for item in project.get("dependencies", [])]
-    repositories = {
-        "pine2ast": "pine2ast",
-        "ast2python": "ast2python",
-        "pinelib": "pinelib",
-        "backtest-engine": "backtest_engine",
-        "marketdata-provider": "marketdata-provider",
-        "optimizer": "optimizer",
+    packages = {
+        "pine2ast",
+        "ast2python",
+        "pinelib",
+        "backtest-engine",
+        "marketdata-provider",
+        "optimizer",
+        "openpine-contracts",
     }
-    for package, repository in repositories.items():
-        prefix = f"{package} @ git+https://github.com/s7cret/{repository}.git@"
-        refs = [
-            dependency.removeprefix(prefix)
-            for dependency in dependencies
-            if dependency.startswith(prefix)
-        ]
-        if len(refs) != 1 or re.fullmatch(r"[0-9a-f]{40}", refs[0]) is None:
-            errors.append(f"dependency ref for {package} is not an immutable commit SHA")
+    for package in sorted(packages):
+        expected = f"{package}=={__version__}"
+        matches = [dependency for dependency in dependencies if dependency == expected]
+        if matches != [expected]:
+            errors.append(f"dependency for {package} must be exactly {expected}")
+    vcs = [dependency for dependency in dependencies if "git+" in dependency or " @ " in dependency]
+    if vcs:
+        errors.append("publishable candidate metadata must not contain VCS dependencies")
     return errors
 
 
@@ -86,7 +85,7 @@ def release_report(root: Path) -> ReleaseReport:
             {"valid": False, "coherent": False, "source_tree_matches": False}
         )
     else:
-        lock_errors = validate_stack_lock(lock, root=root)
+        lock_errors = validate_stack_lock(lock)
         ref_errors = validate_stack_refs(lock, root=root)
         errors.extend(lock_errors)
         errors.extend(ref_errors)

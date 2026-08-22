@@ -321,26 +321,41 @@ def _install_pine_modules(monkeypatch, *, parse_ok=True, translation_errors=Fals
 
     diag = SimpleNamespace(code="E", severity=SimpleNamespace(value="error"), message="boom")
     pine2ast.ParseOptions = ParseOptions
-    pine2ast.parse_code = lambda source, options=None: SimpleNamespace(ok=parse_ok, diagnostics=[diag] if not parse_ok else [], ast=SimpleNamespace(node="ast"))
+    pine2ast.parse_code = lambda source, options=None: SimpleNamespace(
+        ok=parse_ok,
+        diagnostics=[diag] if not parse_ok else [],
+        ast=SimpleNamespace(node="ast"),
+        frontend_artifact={},
+        support_profile={},
+        ast_artifact={},
+    )
     pine2ast.ast_to_dict = lambda ast: {"ast": True}
     pine2ast.ast_to_json = lambda ast: "{}"
 
     ast2python = ModuleType("ast2python")
     trans_diag = SimpleNamespace(severity=SimpleNamespace(value="fatal"), message="bad translation")
-    ast2python.translate_ast = lambda ast, module_name=None: SimpleNamespace(
+    ast2python.translate_ast = lambda ast, **kwargs: SimpleNamespace(
         diagnostics=[trans_diag] if translation_errors else [],
         code="class GeneratedStrategy: pass\n",
         metadata={"ok": True},
+        source_map=[],
+        generated_artifact={"content_hash": "sha256:" + "c" * 64},
     )
     monkeypatch.setitem(sys.modules, "pine2ast", pine2ast)
     monkeypatch.setitem(sys.modules, "ast2python", ast2python)
 
 
 @pytest.mark.asyncio
-async def test_pine_ops_compile_validate_artifacts_and_progress_edges(monkeypatch, tmp_path: Path):
+async def test_pine_ops_compile_validate_artifacts_and_progress_edges(
+    monkeypatch, tmp_path: Path, request
+):
     progress = Progress()
     monkeypatch.setattr(pine_ops, "ws_manager", progress)
     state = State()
+    from openpine.jobs.persist import JobV1Store
+
+    state.job_store = JobV1Store(tmp_path / "jobs.sqlite")
+    request.addfinalizer(state.job_store.close)
 
     bg = Background()
     _install_pine_modules(monkeypatch, parse_ok=False)
@@ -358,6 +373,9 @@ async def test_pine_ops_compile_validate_artifacts_and_progress_edges(monkeypatc
 
     class RaisingArtifactStore:
         _root = tmp_path / "artifacts"
+        @staticmethod
+        def artifact_id_for_envelope(envelope):
+            return "art_" + str(envelope["content_hash"]).split(":", 1)[1][:16]
         def save_artifact(self, **kwargs):
             raise RuntimeError("save failed")
         def get_artifact(self, artifact_id, source_id):

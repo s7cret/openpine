@@ -12,6 +12,7 @@ from urllib.error import URLError
 
 import pandas as pd
 import pytest
+from ast2python.artifact import build_generated_artifact_v2
 from marketdata_provider.contracts import InstrumentKey, parse_timeframe
 
 
@@ -581,16 +582,34 @@ def test_config_cache_pine_risk_timezone_and_compile_success_leftovers(
         def compile(self, source_text: str, **kwargs) -> CompileResult:
             assert source_text.startswith("//@version=6")
             assert "profile" in kwargs
+            python_code = "class GeneratedStrategy:\n    pass\n"
             return CompileResult(
                 success=True,
-                python_code="# generated\n",
+                python_code=python_code,
                 compile_meta={"pine2ast_version": "p", "ast2python_version": "a"},
                 ast_json='{"kind":"Program"}',
+                source_map=[],
+                generated_artifact=build_generated_artifact_v2(
+                    source=source_text,
+                    ast_payload={"kind": "Program"},
+                    emitted_module=python_code,
+                    source_map=[],
+                    producer_commits={
+                        "pine2ast": "1" * 40,
+                        "ast2python": "2" * 40,
+                        "pinelib": "3" * 40,
+                        "openpine-contracts": "4" * 40,
+                    },
+                    entrypoint_module="generated_strategy",
+                    entrypoint_class="GeneratedStrategy",
+                ),
             )
 
     compiled = compile_pipeline(pine, Adapter(), params_hash="params")
 
     artifact_path = Path(compiled["artifact_path"])
     assert compiled["success"] is True
-    assert (artifact_path / "generated_strategy.py").read_text() == "# generated\n"
+    assert (artifact_path / "generated_strategy.py").read_text() == (
+        "class GeneratedStrategy:\n    pass\n"
+    )
     assert (artifact_path / "ast.json").read_text() == '{"kind":"Program"}'

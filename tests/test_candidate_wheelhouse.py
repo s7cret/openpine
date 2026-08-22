@@ -61,13 +61,13 @@ def test_sha_mismatch_is_fail_closed(tmp_path: Path) -> None:
     assert rows["pinelib"] == sha
 
 
-def test_this_checkout_resolves_to_head(tmp_path: Path) -> None:
+def test_this_checkout_placeholder_is_rejected(tmp_path: Path) -> None:
     mod = _load()
     repo = _repo(tmp_path, "openpine")
-    sha = _git(repo, "rev-parse", "HEAD")
     candidate = {"components": {"openpine": {"sha": "THIS_CHECKOUT"}}}
-    rows = mod.verify_checkouts(candidate, {"openpine": repo})
-    assert rows["openpine"] == sha
+
+    with pytest.raises(mod.CandidateError, match="40 lowercase hex"):
+        mod.verify_checkouts(candidate, {"openpine": repo})
 
 
 def test_dirty_tree_is_fail_closed(tmp_path: Path) -> None:

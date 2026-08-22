@@ -404,6 +404,11 @@ class CompileResult:
     errors: list[str] = field(default_factory=list)
     compile_meta: dict = field(default_factory=dict)
     ast_json: str | None = None
+    generated_artifact: dict[str, Any] | None = None
+    source_map: list[dict[str, Any]] | None = None
+    frontend_artifact: dict[str, Any] | None = None
+    support_profile: dict[str, Any] | None = None
+    ast_artifact: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -619,6 +624,10 @@ def _parse_with_library_api(
                 compile_meta["filtered_visual_diagnostics"] = visual_errors
             if compatibility_errors:
                 compile_meta["filtered_compatibility_diagnostics"] = compatibility_errors
+        for attribute in ("frontend_artifact", "support_profile", "ast_artifact"):
+            payload = getattr(parse_result, attribute, None)
+            if isinstance(payload, dict):
+                compile_meta[f"_{attribute}"] = payload
         return ast, None
 
     parse_errors = parse_errors or ["pine2ast returned no AST"]
@@ -664,6 +673,10 @@ def _parse_with_library_api(
             errors=retry_errors,
             compile_meta=compile_meta,
         )
+    for attribute in ("frontend_artifact", "support_profile", "ast_artifact"):
+        payload = getattr(parse_result, attribute, None)
+        if isinstance(payload, dict):
+            compile_meta[f"_{attribute}"] = payload
     return ast, None
 
 
@@ -676,12 +689,25 @@ def _translate_ast_with_library_api(
     profile: CompileProfile,
     compile_meta: dict[str, Any],
     kwargs: dict[str, Any],
+    source_text: str = "",
 ) -> CompileResult:
     ast_json = apis.ast_to_json(ast)
     ast_payload = json.loads(ast_json)
     _allow_visual_only_producer_gates(ast_payload, compile_meta)
     _drop_filtered_ast_diagnostics(ast_payload, compile_meta)
     ast_json = json.dumps(ast_payload, ensure_ascii=False)
+    frontend_artifact = compile_meta.pop("_frontend_artifact", None)
+    support_profile = compile_meta.pop("_support_profile", None)
+    ast_artifact = compile_meta.pop("_ast_artifact", None)
+    producer_commits = kwargs.get("producer_commits")
+    if (
+        producer_commits is None
+        and isinstance(frontend_artifact, dict)
+        and frontend_artifact.get("schema_id") == "openpine.frontend.v2"
+    ):
+        from openpine.build_identity import compiler_producer_commits
+
+        producer_commits = compiler_producer_commits()
     translation = apis.translate_ast(
         ast_payload,
         module_name=module_name,
@@ -699,12 +725,20 @@ def _translate_ast_with_library_api(
         allow_realtime_local_simulation=kwargs.get(
             "allow_realtime_local_simulation", False
         ),
+        source=source_text,
+        frontend_artifact=frontend_artifact,
+        support_profile=support_profile,
+        ast_artifact=ast_artifact,
+        producer_commits=producer_commits,
     )
     translation_meta = getattr(translation, "metadata", {}) or {}
     compile_meta.update(
         {
             "translation_metadata": translation_meta,
             "source_map_entries": len(getattr(translation, "source_map", []) or []),
+            "generated_artifact_hash": (
+                getattr(translation, "generated_artifact", {}) or {}
+            ).get("content_hash"),
         }
     )
     if profile.name == "production":
@@ -722,6 +756,11 @@ def _translate_ast_with_library_api(
         python_code=translation.code,
         ast_json=ast_json,
         compile_meta=compile_meta,
+        generated_artifact=getattr(translation, "generated_artifact", None),
+        source_map=list(getattr(translation, "source_map", []) or []),
+        frontend_artifact=frontend_artifact,
+        support_profile=support_profile,
+        ast_artifact=ast_artifact,
     )
 
 
@@ -858,8 +897,24 @@ class SubprocessCompilerAdapter:
         }
 
         try:
+            producer_commits = kwargs.get("producer_commits")
+            if producer_commits is None:
+                from openpine.build_identity import compiler_producer_commits
+
+                producer_commits = compiler_producer_commits()
+                kwargs["producer_commits"] = producer_commits
+            if not isinstance(producer_commits, dict):
+                raise ValueError("producer_commits must be an exact component mapping")
+            pine2ast_commit = producer_commits.get("pine2ast")
+            if not isinstance(pine2ast_commit, str) or re.fullmatch(
+                r"[0-9a-f]{40}", pine2ast_commit
+            ) is None:
+                raise ValueError(
+                    "producer_commits.pine2ast must be an exact 40-character Git SHA"
+                )
             options = apis.parse_options(
                 source_name=kwargs.get("source_name", "<memory>"),
+                producer_commit=pine2ast_commit,
             )
             ast, parse_error = _parse_with_library_api(
                 apis=apis,
@@ -902,6 +957,7 @@ class SubprocessCompilerAdapter:
                 profile=profile,
                 compile_meta=compile_meta,
                 kwargs=kwargs,
+                source_text=source_text,
             )
         except Exception as exc:
             production_error = (

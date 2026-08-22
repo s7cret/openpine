@@ -10,6 +10,7 @@ from openpine.gateway.routes.optimizer import optimizer_search
 from openpine.gateway.schemas import OptimizerSearchRequest
 from openpine.optimizer.isolated_runner import IsolatedOptimizerRunner
 from openpine.registry.strategies import StrategyInstance
+from tests.admission_helpers import make_sealed_artifact
 
 
 SEARCH_SOURCE = b"""
@@ -26,6 +27,10 @@ class GeneratedStrategy:
         if bar_index == 2:
             self.ctx.close("L")
 """
+
+
+def _artifact(*, python_code: str) -> dict[str, object]:
+    return make_sealed_artifact(python_code=python_code)
 
 
 def _strategy() -> StrategyInstance:
@@ -105,6 +110,9 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
     )
 
     class Adapter:
+        def allocate_optimization_id(self):
+            return "opt-1"
+
         def start_optimization(self, config):
             captured["config"] = config
             return SimpleNamespace(optimization_id="opt-1", strategy_id="s1")
@@ -152,11 +160,15 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
     monkeypatch.setattr("openpine.gateway.side_effects.persist_gateway_job", persist)
 
     class JobStore:
-        def mark_succeeded(self, job_id, *, result_artifact_refs=None):
+        def mark_running(self, job_id, *, lease_owner, lease_deadline_utc_ms):
+            captured["job_running"] = (job_id, lease_owner, lease_deadline_utc_ms)
+
+        def mark_succeeded(self, job_id, *, lease_owner, result_artifact_refs=None):
+            captured["job_lease_owner"] = lease_owner
             captured["job_terminal"] = (job_id, result_artifact_refs)
 
-        def mark_failed(self, job_id, *, error_code):
-            captured["job_failed"] = (job_id, error_code)
+        def mark_failed(self, job_id, *, error_code, lease_owner=None):
+            captured["job_failed"] = (job_id, error_code, lease_owner)
 
     def load_bars(query):
         loaded.append((query.instrument.symbol, query.timeframe.canonical))
@@ -166,7 +178,9 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         orchestrator=SimpleNamespace(load_bars=load_bars),
         artifact_store=SimpleNamespace(
-            get_artifact=lambda artifact_id, pine_id: {"compile_meta": {}}
+            get_artifact=lambda artifact_id, pine_id: _artifact(
+                python_code="CAPTURED"
+            )
         ),
         config=SimpleNamespace(data_dir=tmp_path),
         job_store=JobStore(),
@@ -205,8 +219,7 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
     assert response.champion.metrics == {"net_profit": 15.0}
     assert response.trials_completed == 3
     assert response.trials[1].result_content_hash == "r3"
-    assert captured["source_calls"] == 1
-    assert captured["source_identity"] == ("pine-1", "artifact-1")
+    assert captured["source_calls"] == 0
     config = captured["config"]
     assert isinstance(config.runner, IsolatedOptimizerRunner)
     assert config.runner.source == b"CAPTURED"
@@ -225,29 +238,38 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
         {"symbol": "ETHUSDT", "timeframe": "4h"},
     ]
     assert config.parameters[0]["name"] == "qty"
+    assert config.optimization_id == "opt-1"
     assert config.data_query["from_time"] == start_ms
     assert captured["job"]["job_id"] == "opt-1"
     assert captured["job"]["semantic_profile"] == "strict_5x"
     assert "artifact:artifact-1" in captured["job"]["input_artifact_refs"]
     assert captured["job_terminal"] == ("opt-1", ["optimizer:opt-1"])
+    assert captured["job_running"][0] == "opt-1"
+    assert captured["job_lease_owner"] == captured["job_running"][1]
     assert "job_failed" not in captured
 
 
 @pytest.mark.asyncio
 async def test_optimizer_search_route_selects_real_isolated_champion(
-    monkeypatch, tmp_path
+    monkeypatch, tmp_path, job_store
 ) -> None:
-    from backtest_engine import Bar
+    from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
 
     start_ms = 1_700_000_000_000
+    instrument = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
+    timeframe = parse_timeframe("1m")
     bars = [
         Bar(
+            instrument=instrument,
+            timeframe=timeframe,
             time=start_ms + index * 60_000,
             time_close=start_ms + (index + 1) * 60_000 - 1,
             open=10 + index * 5,
             high=11 + index * 5,
             low=9 + index * 5,
             close=10 + index * 5,
+            volume=1,
+            closed=True,
         )
         for index in range(4)
     ]
@@ -264,9 +286,12 @@ async def test_optimizer_search_route_selects_real_isolated_champion(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         orchestrator=SimpleNamespace(load_bars=lambda query: SimpleNamespace(bars=bars)),
         artifact_store=SimpleNamespace(
-            get_artifact=lambda artifact_id, pine_id: {"compile_meta": {}}
+            get_artifact=lambda artifact_id, pine_id: _artifact(
+                python_code=SEARCH_SOURCE.decode("utf-8")
+            )
         ),
         config=SimpleNamespace(data_dir=tmp_path),
+        job_store=job_store,
     )
 
     response = await optimizer_search(
@@ -295,8 +320,8 @@ async def test_optimizer_search_route_selects_real_isolated_champion(
     assert response.trials_completed == 3
     assert response.champion is not None
     assert response.champion.params == {"qty": 3}
-    assert response.champion.metrics["net_profit"] == 15.0
+    assert response.champion.metrics["net_profit"] == 30.0
     assert list((tmp_path / "optimizer").glob("opt_*/trials.jsonl"))
     assert "artifact_uri" not in response.model_dump()
-    assert source_calls == [("pine-1", "artifact-1")]
+    assert source_calls == []
     assert not any(name.startswith("openpine_generated_") for name in sys.modules)

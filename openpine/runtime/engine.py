@@ -345,10 +345,11 @@ class BacktestEngineAdapter:
         except AdmitError as exc:
             raise IsolatedRunError(str(exc)) from exc
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
+        configured_rounding = getattr(config, "qty_rounding_mode", None)
         qty_rounding = (
             "floor"
-            if getattr(config, "qty_rounding_mode", None) == "truncate"
-            else getattr(config, "qty_rounding_mode", None) or "floor"
+            if configured_rounding in {None, "none", "truncate"}
+            else configured_rounding
         )
         engine_config = self._module.BacktestConfig(
             symbol=config.symbol,
@@ -426,10 +427,11 @@ class BacktestEngineAdapter:
         )
 
     def _to_engine_config(self, config: BacktestRunConfig) -> Any:
+        configured_rounding = getattr(config, "qty_rounding_mode", None)
         qty_rounding = (
             "floor"
-            if getattr(config, "qty_rounding_mode", None) == "truncate"
-            else getattr(config, "qty_rounding_mode", None) or "floor"
+            if configured_rounding in {None, "none", "truncate"}
+            else configured_rounding
         )
         engine_config = self._module.BacktestConfig(
             symbol=config.symbol,

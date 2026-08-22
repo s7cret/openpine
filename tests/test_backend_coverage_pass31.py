@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from types import SimpleNamespace
 
 
 from openpine.gateway.routes import backtest as bt
+from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
 
 
 class FakeWS:
@@ -68,9 +70,21 @@ def _state(*, registry=None, orchestrator=None, storage=None, store=None):
         strategy_registry=registry or FakeRegistry(),
         backtest_store=store or FakeStore(),
         orchestrator=orchestrator or SimpleNamespace(load_bars=lambda query, progress_callback=None: SimpleNamespace(query=query, bars=[])),
-        artifact_store=SimpleNamespace(get_artifact=lambda artifact_id, pine_id: {"compile_meta": {"translation_metadata": {"declaration": {"arguments": {"commission_type": "cash_per_order"}}}}}),
+        artifact_store=SimpleNamespace(
+            get_artifact=lambda artifact_id, pine_id: make_sealed_artifact(
+                {
+                    "translation_metadata": {
+                        "declaration": {
+                            "arguments": {"commission_type": "cash_per_order"}
+                        }
+                    }
+                }
+            )
+        ),
         storage=storage or FakeStorage(),
         backtest_cancel_requests=set(),
+        config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
+        admission_identity=make_deployment_identity(),
     )
 
 
@@ -88,7 +102,9 @@ def test_backtest_background_strategy_and_artifact_failures(monkeypatch):
         raise rt.BacktestArtifactError("bad artifact")
     monkeypatch.setattr(isolated_run, "capture_generated_source", bad_loader)
     store = FakeStore()
-    asyncio.run(bt._run_backtest_background(_state(store=store), "s1", "run2", 1, 2, None, 0, False))
+    state = _state(store=store)
+    state.artifact_store = SimpleNamespace(get_artifact=bad_loader)
+    asyncio.run(bt._run_backtest_background(state, "s1", "run2", 1, 2, None, 0, False))
     assert store.failed and "bad artifact" in store.failed[-1][1]
 
 

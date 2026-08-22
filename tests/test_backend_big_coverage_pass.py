@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,6 +25,7 @@ from openpine.gateway.routes.pine_sources import list_sources as list_pine_sourc
 from openpine.gateway.ws_manager import ConnectionManager
 from openpine.orders.models import OrderIntent, OrderSide, OrderStatus, OrderType
 from openpine.risk.manager import RiskManager
+from tests.admission_helpers import STACK_HASH, make_deployment_identity
 
 
 class FakeCursor:
@@ -100,10 +102,13 @@ class FakeStrategy:
 
 
 class FakeStrategyRegistry:
+    _connections: list[sqlite3.Connection] = []
+
     def __init__(self):
         self.strategy = FakeStrategy()
         self.calls: list[tuple[str, object]] = []
         self._conn = sqlite3.connect(":memory:")
+        self._connections.append(self._conn)
         self._conn.execute("CREATE TABLE strategy_instances (strategy_id text, name text, symbol text, timeframe text, exchange text, market_type text, params_json text, params_hash text, updated_at int)")
         self._conn.execute("INSERT INTO strategy_instances VALUES ('s1','Strategy','BTCUSDT','1m','binance','spot','{}','hash',1)")
 
@@ -140,6 +145,7 @@ class FakeStrategyRegistry:
 class FakeState:
     def __init__(self, tmp_path: Path | None = None):
         self.storage = FakeStorage()
+        self.admission_identity = make_deployment_identity()
         self.strategy_registry = FakeStrategyRegistry()
         self.scheduler = SimpleNamespace(list_jobs=lambda: [])
         self.risk_manager = RiskManager(False)
@@ -153,6 +159,15 @@ class FakeState:
         self.state_store = SimpleNamespace(load_snapshot=lambda strategy_id: SimpleNamespace(bar_time=123, state_data={"position": {"qty": 2, "side": "long"}}))
         self.backtest_store = SimpleNamespace(list_runs=lambda **kw: [], get_run=lambda run_id: None)
         self.backtest_cancel_requests = set()
+
+
+@pytest.fixture(autouse=True)
+def _close_fake_strategy_connections():
+    yield
+    while FakeStrategyRegistry._connections:
+        FakeStrategyRegistry._connections.pop().close()
+    while FakePineRegistry._connections:
+        FakePineRegistry._connections.pop().close()
 
 
 def _intent(**kw) -> OrderIntent:
@@ -302,7 +317,7 @@ def test_accounts_data_helpers_cover_inventory_and_delete_paths(tmp_path, monkey
     monkeypatch.setattr(accounts_data, "_marketdata_store_root", lambda _state: root)
     index = root / "index.sqlite"
     index.parent.mkdir(parents=True)
-    with sqlite3.connect(index) as db:
+    with closing(sqlite3.connect(index)) as db, db:
         db.execute("CREATE TABLE marketdata_segments (id text, exchange text, market text, symbol text, timeframe text, start_time int, end_time int, rows_count int, source_kind text)")
         db.execute("INSERT INTO marketdata_segments VALUES ('seg1','binance','spot','BTCUSDT','1m',0,60000,2,'trade_kline')")
     segdir = accounts_data._marketdata_segment_dir(root, "binance", "spot", "BTCUSDT", "1m", "trade_kline")
@@ -345,7 +360,7 @@ def test_orders_positions_routes_with_fake_storage():
     assert positions["strategy_id"] == "s1"
 
 
-def test_backtest_and_misc_route_helpers():
+def test_backtest_and_misc_route_helpers(job_store):
     class Q:
         instrument = SimpleNamespace(exchange="binance", market="spot", symbol="BTCUSDT")
         timeframe = SimpleNamespace(canonical="1m")
@@ -357,6 +372,7 @@ def test_backtest_and_misc_route_helpers():
     assert _normalize_metrics_payload(None) is None
     assert asyncio.run(list_events(limit=3, state=FakeState())) == []
     state = FakeState()
+    state.job_store = job_store
     resp = asyncio.run(optimizer_dry_run(SimpleNamespace(strategy_id="s1", trials=2), state))
     assert resp.strategy_id == "s1"
     assert asyncio.run(list_pine_sources(SimpleNamespace(list_sources=lambda: []))) == []
@@ -535,6 +551,8 @@ def test_data_inventory_summary_and_risk_routes(tmp_path, monkeypatch):
     assert toggled["kill_switch"] is True
 
 class FakePineRegistry:
+    _connections: list[sqlite3.Connection] = []
+
     def __init__(self):
         self.sources = {
             "p1": SimpleNamespace(
@@ -551,6 +569,7 @@ class FakePineRegistry:
         }
         self._mem = self.sources
         self._conn = sqlite3.connect(":memory:")
+        self._connections.append(self._conn)
         self._conn.execute(
             "CREATE TABLE pine_sources (id text, name text, source_text text, source_hash text, source_type text, updated_at int)"
         )
@@ -798,15 +817,18 @@ def test_events_websocket_and_old_schema_event_listing():
     assert ws2.accepted
 
 
-def test_additional_strategy_and_trading_edge_paths(tmp_path):
+def test_additional_strategy_and_trading_edge_paths(tmp_path, monkeypatch):
     import time
 
     from openpine.gateway.schemas import LiveStartRequest, StrategyCreate, StrategyUpdate
     from openpine.live_preview import make_live_preview
 
     state = FakeState(tmp_path)
+    monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
     state.config.live_enabled = True
-    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
+    preview = make_live_preview(
+        "s1", now_ms=int(time.time() * 1000), stack_id=STACK_HASH
+    )
     live = asyncio.run(
         trading.start_live(
             LiveStartRequest(

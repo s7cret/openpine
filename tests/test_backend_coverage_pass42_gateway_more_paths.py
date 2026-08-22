@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import queue
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -24,6 +25,7 @@ from openpine.gateway.schemas import (
     BacktestRunRequest,
     DataBackfillRequest,
 )
+from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
 
 
 @pytest.fixture(autouse=True)
@@ -264,8 +266,8 @@ def _backtest_state(*, store=None, cancel=None, registry=None, orchestrator=None
         backtest_cancel_requests=cancel if cancel is not None else set(),
         artifact_store=artifact_store
         or SimpleNamespace(
-            get_artifact=lambda artifact_id, pine_id: {
-                "compile_meta": {
+            get_artifact=lambda artifact_id, pine_id: make_sealed_artifact(
+                {
                     "translation_metadata": {
                         "declaration": {
                             "arguments": {
@@ -276,7 +278,7 @@ def _backtest_state(*, store=None, cancel=None, registry=None, orchestrator=None
                         }
                     }
                 }
-            }
+            )
         ),
         orchestrator=orchestrator
         or SimpleNamespace(
@@ -288,10 +290,13 @@ def _backtest_state(*, store=None, cancel=None, registry=None, orchestrator=None
             )[1]
         ),
         storage=storage or _FingerprintStorage(),
+        config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
+        admission_identity=make_deployment_identity(),
     )
 
 
 def test_backtest_estimate_worker_queue_and_process_edges(monkeypatch):
+    monkeypatch.setattr(bt, "_terminate_current_process_descendants", lambda: None)
     estimate = bt._estimate_backtest_market_data(_strategy(), 0, 180_000)
     assert estimate.effective_from == 0
     assert estimate.exchange == "binance"
@@ -509,8 +514,8 @@ def test_backtest_background_uses_pinelib_defaults_when_strategy_omits_initial_c
 
     monkeypatch.setattr(bt, "_run_backtest_in_process", run_in_process)
     artifact_store = SimpleNamespace(
-        get_artifact=lambda artifact_id, pine_id: {
-            "compile_meta": {
+        get_artifact=lambda artifact_id, pine_id: make_sealed_artifact(
+            {
                 "translation_metadata": {
                     "declaration": {
                         "arguments": {
@@ -522,7 +527,7 @@ def test_backtest_background_uses_pinelib_defaults_when_strategy_omits_initial_c
                     }
                 }
             }
-        }
+        )
     )
     store = _BacktestStore()
     state = _backtest_state(store=store, artifact_store=artifact_store)
@@ -537,11 +542,14 @@ def test_backtest_background_uses_pinelib_defaults_when_strategy_omits_initial_c
     assert store.saved
 
 
-def test_backtest_routes_listing_estimate_run_and_artifact_error_paths(monkeypatch, tmp_path):
+def test_backtest_routes_listing_estimate_run_and_artifact_error_paths(
+    monkeypatch, tmp_path, job_store
+):
     store = _BacktestStore()
     store.runs = [_run_row("old", started_at=1), _run_row("new", started_at=2)]
     store.metrics_exc = True
     state = _backtest_state(store=store)
+    state.job_store = job_store
     state.strategy_registry = SimpleNamespace(get_strategy=lambda strategy_id: (_ for _ in ()).throw(KeyError(strategy_id)))
 
     with pytest.raises(HTTPException) as bad_range:
@@ -619,86 +627,6 @@ def test_backtest_routes_listing_estimate_run_and_artifact_error_paths(monkeypat
     assert report_error.value.status_code == 500
 
 
-def test_live_runner_loop_process_strategy_and_small_helpers(monkeypatch):
-    runner = lr.LiveStrategyRunner(state_store=None)
-
-    async def cancelled_check():
-        raise asyncio.CancelledError
-
-    runner._running = True
-    monkeypatch.setattr(runner, "_check_all_strategies", cancelled_check)
-    asyncio.run(runner._run_loop())
-
-    class Registry:
-        def list_strategies(self):
-            return [_strategy(enabled=False), _strategy(strategy_id="s2", status="paused")]
-
-    asyncio.run(lr.LiveStrategyRunner(registry=Registry(), state_store=None)._check_all_strategies())
-
-    import marketdata_provider.contracts as contracts
-
-    with monkeypatch.context() as m:
-        m.setattr(contracts, "parse_timeframe", lambda value: SimpleNamespace(duration_ms=None))
-        asyncio.run(lr.LiveStrategyRunner(state_store=None)._process_strategy(_strategy(), 123_456))
-
-    runner = lr.LiveStrategyRunner(state_store=None)
-    runner._strategy_states["s1"] = lr.StrategyBarState("s1", 60_000)
-    monkeypatch.setattr(
-        runner,
-        "_run_mini_backtest",
-        lambda strategy, bar_time: (_ for _ in ()).throw(RuntimeError("mini failed")),
-    )
-    asyncio.run(runner._process_strategy(_strategy(), 240_001))
-    assert runner._strategy_states["s1"].last_bar_time_ms == 60_000
-
-    asyncio.run(runner._process_orders(_strategy(), []))
-
-    class BadMatch:
-        def group(self, index):
-            return "not-a-float"
-
-    with monkeypatch.context() as m:
-        m.setattr(lr.re, "search", lambda *args, **kwargs: BadMatch())
-        assert lr.LiveStrategyRunner._extract_percent_input("tpPct=input.float(1)", "tpPct") is None
-
-    class BadStorage:
-        def execute(self, *args, **kwargs):
-            raise RuntimeError("source query down")
-
-    assert lr.LiveStrategyRunner(storage=BadStorage())._strategy_risk_percents(_strategy()) == (None, None)
-
-    class EmptyStorage:
-        def execute(self, *args, **kwargs):
-            return _Cursor(one=None)
-
-    assert lr.LiveStrategyRunner(storage=EmptyStorage())._strategy_risk_percents(_strategy()) == (None, None)
-
-    runner = lr.LiveStrategyRunner(state_store=None)
-    assert runner._load_resume_snapshot(_strategy(), instrument_key={}, timeframe={}, at_or_before_bar_time=1) is None
-    runner._save_resume_snapshot(
-        _strategy(),
-        result=SimpleNamespace(resume_state={"runtime_state": {}}),
-        instrument_key={},
-        timeframe={},
-        bar_time=1,
-        data_fingerprint="fp",
-    )
-    runner._mark_resume_snapshot_invalid(_strategy(), 1)
-
-    class SaveStore:
-        def save_runtime_snapshot(self, **kwargs):
-            raise AssertionError("should not save without resume_state")
-
-    lr.LiveStrategyRunner(state_store=SaveStore())._save_resume_snapshot(
-        _strategy(),
-        result=SimpleNamespace(resume_state=None),
-        instrument_key={},
-        timeframe={},
-        bar_time=1,
-        data_fingerprint="fp",
-    )
-
-
 def _patch_live_runtime(monkeypatch, adapter_cls, *, provider=None):
     import openpine.data.provider_adapter as provider_adapter
     import openpine.runtime.engine as runtime_engine
@@ -742,139 +670,9 @@ class _StateStore:
         self.invalidated.append((args, kwargs))
 
 
-def test_live_runner_mini_backtest_resume_rebase_empty_and_optional_failures(monkeypatch):
-    class EmptyAdapter:
-        def run(self, *args, **kwargs):
-            return SimpleNamespace(
-                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
-                resume_state=None,
-            )
-
-    _patch_live_runtime(
-        monkeypatch,
-        EmptyAdapter,
-        provider=lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("provider optional")),
-    )
-
-    artifact_store = SimpleNamespace(
-        get_artifact=lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("artifact meta down"))
-    )
-    no_runtime = _StateStore(SimpleNamespace(bar_time=60_000, state_data={"bar_index": 1}))
-    runner = lr.LiveStrategyRunner(
-        config=lr.RunnerConfig(lookback_bars=3),
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series((0, 60_000, 120_000))),
-        artifact_store=artifact_store,
-        state_store=no_runtime,
-    )
-    assert runner._run_mini_backtest(_strategy(), 120_000) == []
-
-    future = _StateStore(SimpleNamespace(bar_time=120_000, state_data={"runtime_state": {}, "bar_index": 0}))
-    runner = lr.LiveStrategyRunner(
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series((0, 60_000))),
-        state_store=future,
-    )
-    assert runner._run_mini_backtest(_strategy(), 120_000) == []
-
-    bad_index = _StateStore(SimpleNamespace(bar_time=60_000, state_data={"runtime_state": {}, "bar_index": "bad"}))
-    runner = lr.LiveStrategyRunner(
-        config=lr.RunnerConfig(lookback_bars=2),
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series((0, 60_000, 120_000))),
-        state_store=bad_index,
-    )
-    assert runner._run_mini_backtest(_strategy(), 180_000) == []
-    assert bad_index.invalidated
-
-    huge_index = _StateStore(SimpleNamespace(bar_time=60_000, state_data={"runtime_state": {}, "bar_index": 999}))
-    runner = lr.LiveStrategyRunner(
-        config=lr.RunnerConfig(lookback_bars=2),
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series((0, 60_000, 120_000))),
-        state_store=huge_index,
-    )
-    assert runner._run_mini_backtest(_strategy(), 180_000) == []
-
-    empty_bars = SimpleNamespace(query=_series((0,)).query, bars=[])
-    runner = lr.LiveStrategyRunner(orchestrator=SimpleNamespace(load_bars=lambda query: empty_bars), state_store=None)
-    assert runner._run_mini_backtest(_strategy(), 60_000) == []
-
-
-def test_live_runner_valid_resume_with_no_order_runs_once(monkeypatch):
-    class EmptyResumeAdapter:
-        calls = 0
-
-        def run(self, *args, **kwargs):
-            type(self).calls += 1
-            assert kwargs.get("resume_state") is not None
-            return SimpleNamespace(
-                raw_result=SimpleNamespace(trades=[], order_lifecycle=[]),
-                resume_state={"runtime_state": {}, "bar_index": 2},
-            )
-
-    _patch_live_runtime(monkeypatch, EmptyResumeAdapter)
-
-    class CountingOrchestrator:
-        def __init__(self):
-            self.calls = 0
-
-        def load_bars(self, query):
-            self.calls += 1
-            return _series((0, 60_000, 120_000))
-
-    orchestrator = CountingOrchestrator()
-    store = _StateStore(
-        SimpleNamespace(
-            bar_time=60_000,
-            state_data={"runtime_state": {}, "bar_index": 1},
-        )
-    )
-    runner = lr.LiveStrategyRunner(orchestrator=orchestrator, state_store=store)
-
-    assert runner._run_mini_backtest(_strategy(), 180_000) == []
-    assert orchestrator.calls == 1
-    assert EmptyResumeAdapter.calls == 1
-    assert store.saved
-
-
-def test_live_runner_mini_backtest_nonresume_error_and_resume_retry_empty(monkeypatch):
-    class PlainErrorAdapter:
-        def run(self, *args, **kwargs):
-            raise RuntimeError("plain engine boom")
-
-    _patch_live_runtime(monkeypatch, PlainErrorAdapter)
-    store = _StateStore(SimpleNamespace(bar_time=60_000, state_data={"runtime_state": {}, "bar_index": 1}))
-    runner = lr.LiveStrategyRunner(
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series((0, 60_000, 120_000))),
-        state_store=store,
-    )
-    assert runner._run_mini_backtest(_strategy(), 180_000) is None
-
-    class ResumeErrorThenUnusedAdapter:
-        calls = 0
-
-        def run(self, *args, **kwargs):
-            type(self).calls += 1
-            if kwargs.get("resume_state") is not None and type(self).calls == 1:
-                raise RuntimeError("resume config hash mismatch")
-            return SimpleNamespace(raw_result=SimpleNamespace(trades=[], order_lifecycle=[]), resume_state=None)
-
-    _patch_live_runtime(monkeypatch, ResumeErrorThenUnusedAdapter)
-
-    class SwitchingOrchestrator:
-        def __init__(self):
-            self.calls = 0
-
-        def load_bars(self, query):
-            self.calls += 1
-            if self.calls == 1:
-                return _series((0, 60_000, 120_000))
-            return SimpleNamespace(query=query, bars=[])
-
-    store = _StateStore(SimpleNamespace(bar_time=60_000, state_data={"runtime_state": {}, "bar_index": 1}))
-    runner = lr.LiveStrategyRunner(orchestrator=SwitchingOrchestrator(), state_store=store)
-    assert runner._run_mini_backtest(_strategy(), 180_000) == []
-    assert store.invalidated
-
-
-def test_accounts_data_route_validation_refresh_delete_and_backfill(monkeypatch):
+def test_accounts_data_route_validation_refresh_delete_and_backfill(
+    monkeypatch, tmp_path, job_store
+):
     state = SimpleNamespace()
     monkeypatch.setattr(ad, "_series_by_id", lambda state: {"sid": {"id": "sid", "latest_ms": None}})
     with pytest.raises(HTTPException) as no_latest:
@@ -933,7 +731,7 @@ def test_accounts_data_route_validation_refresh_delete_and_backfill(monkeypatch)
                 to_time="2021-01-01T00:00:00Z",
             ),
             BackgroundTasks(),
-            SimpleNamespace(scheduler=huge_scheduler),
+            SimpleNamespace(scheduler=huge_scheduler, job_store=job_store),
         )
     )
     assert huge_backfill["status"] == "pending"
@@ -1075,7 +873,7 @@ def test_accounts_data_route_validation_refresh_delete_and_backfill(monkeypatch)
                 to_time="1970-01-01T00:01:00Z",
             ),
             BackgroundTasks(),
-            SimpleNamespace(scheduler=scheduler),
+            SimpleNamespace(scheduler=scheduler, job_store=job_store),
         )
     )
     assert deduped["job_id"] == existing.id

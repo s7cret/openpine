@@ -38,46 +38,6 @@ def _series(start: int, end: int) -> BarSeries:
     return BarSeries(query, bars, coverage)
 
 
-def test_live_runner_skips_isolated_run_without_semantic_profile(monkeypatch) -> None:
-    calls: list[object] = []
-
-    class Adapter:
-        def run_isolated(self, *args, **kwargs):
-            calls.append((args, kwargs))
-            raise AssertionError("isolated run must not start")
-
-    monkeypatch.setattr("openpine.runtime.isolated_run.capture_generated_source", lambda *a, **k: b"src")
-    monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
-    runner = LiveStrategyRunner(
-        RunnerConfig(lookback_bars=2),
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series(query.start_ms, query.end_ms)),
-        state_store=None,
-    )
-    assert runner._run_mini_backtest(_Strategy(), 120000) is None
-    assert calls == []
-
-
-def test_live_runner_forwards_admitted_semantic_profile(monkeypatch) -> None:
-    seen: dict[str, object] = {}
-
-    class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
-            seen["semantic_profile"] = getattr(config, "semantic_profile", None)
-            return SimpleNamespace(raw_result=SimpleNamespace(trades=[], order_lifecycle=[]), resume_state=None)
-
-    monkeypatch.setattr("openpine.runtime.isolated_run.capture_generated_source", lambda *a, **k: b"src")
-    monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
-    strategy = _Strategy()
-    strategy.semantic_profile = "strict_5x"
-    runner = LiveStrategyRunner(
-        RunnerConfig(lookback_bars=2),
-        orchestrator=SimpleNamespace(load_bars=lambda query: _series(query.start_ms, query.end_ms)),
-        state_store=None,
-    )
-    assert runner._run_mini_backtest(strategy, 120000) == []
-    assert seen["semantic_profile"] == "strict_5x"
-
-
 def test_job_executor_config_requires_strategy_semantic_profile() -> None:
     import pytest
     from openpine_contracts import AdmitError

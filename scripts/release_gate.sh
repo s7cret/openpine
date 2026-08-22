@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export PYTHON=${PYTHON:-python}
-export PYTHONPATH="${PYTHONPATH:-}:$(pwd)"
 export DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-false}
 
 $PYTHON -m compileall -q openpine tests
@@ -13,8 +12,17 @@ $PYTHON -m openpine.quality duplicates openpine
 $PYTHON -m openpine.quality architecture openpine --max-lines 4000
 $PYTHON -m openpine.distribution manifest --root .
 $PYTHON scripts/verify_v5_sec_001.py
-candidate_manifest=$($PYTHON scripts/resolve_stack_candidate.py --root .)
-if [[ -n "$candidate_manifest" ]]; then
+candidate_manifest_path=${OPENPINE_CANDIDATE_MANIFEST:-}
+if [[ -z "$candidate_manifest_path" && -f candidates/stack-candidate-5.0.0-rc.3.template.json ]]; then
+    echo "materialized candidate manifest required: set OPENPINE_CANDIDATE_MANIFEST" >&2
+    exit 1
+fi
+if [[ -n "$candidate_manifest_path" ]]; then
+    test -f "$candidate_manifest_path"
+    candidate_root=$(dirname "$candidate_manifest_path")
+    candidate_name=$($PYTHON scripts/resolve_stack_candidate.py \
+        --root "$candidate_root" --require-stage wheel-bound)
+    test "$candidate_root/$candidate_name" = "$candidate_manifest_path"
     $PYTHON -m pytest -q tests/test_stack_candidate.py
 else
     $PYTHON -m openpine.release --root .

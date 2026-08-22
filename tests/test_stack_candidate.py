@@ -7,7 +7,10 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ROOT / "stack-candidate-5.0.0-rc.2.json"
+TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.3.template.json"
+HISTORICAL = (
+    ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
+)
 PIN = "af9ecbc455e9af83cdc609f6b6ff85c40fb6c8bb"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
@@ -32,19 +35,34 @@ def _resolver():
     return module
 
 
-def test_candidate_manifest_pins_eight_repos_and_is_not_a_release() -> None:
-    payload = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    assert payload["schema"] == "openpine.stack-candidate.v1"
-    assert payload["id"] == "5.0.0-rc.2"
+def _materializer():
+    spec = importlib.util.spec_from_file_location(
+        "materialize_stack_candidate",
+        ROOT / "scripts" / "materialize_stack_candidate.py",
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_candidate_template_pins_eight_repos_and_is_not_active() -> None:
+    payload = json.loads(TEMPLATE.read_text(encoding="utf-8"))
+    assert payload["schema"] == "openpine.stack-candidate-template.v1"
+    assert payload["id"] == "5.0.0-rc.3"
     assert payload["not_a_release"] is True
-    assert payload["contracts_pin"] == PIN
     components = payload["components"]
     assert set(components) == REQUIRED
     assert components["openpine-contracts"]["sha"] == PIN
     for name, row in components.items():
-        if name == "openpine" and row["sha"] == "THIS_CHECKOUT":
+        assert row["version"] == "5.0.0rc3"
+        if name == "openpine":
+            assert "sha" not in row
             continue
         assert SHA40.fullmatch(row["sha"]), name
+    assert _resolver().resolve_candidate(ROOT) is None
+    historical = json.loads(HISTORICAL.read_text(encoding="utf-8"))
+    assert historical["components"]["openpine"]["sha"] == "THIS_CHECKOUT"
     lock = json.loads(
         (ROOT / "openpine" / "stack-lock.json").read_text(encoding="utf-8")
     )
@@ -57,10 +75,17 @@ def test_stack_ci_separates_feature_candidate_from_production_release() -> None:
     )
 
     assert "resolve_stack_candidate.py" in workflow
+    assert "materialize_stack_candidate.py" in workflow
+    assert "finalize_stack_candidate.py" in workflow
+    assert "install_candidate_wheelhouse.py" in workflow
+    assert "--openpine-sha \"$GITHUB_SHA\"" in workflow
+    assert '--root "$RUNNER_TEMP/openpine-candidate"' in workflow
     assert "build_candidate_wheelhouse.py" in workflow
+    assert " -e " not in workflow
     assert "steps.stack.outputs.mode == 'production'" in workflow
     assert "steps.stack.outputs.mode == 'candidate'" in workflow
-    assert "python -m pytest -q tests/test_stack_candidate.py" in workflow
+    assert "openpine-candidate-venv/bin/python" in workflow
+    assert "tests/test_stack_candidate.py" in workflow
     assert "name: Production sibling release reports" in workflow
     for component in REQUIRED:
         assert f"--checkout {component}=" in workflow
@@ -72,7 +97,13 @@ def test_backend_ci_uses_the_same_candidate_resolver_and_checkouts() -> None:
     )
 
     assert "resolve_stack_candidate.py" in workflow
+    assert "materialize_stack_candidate.py" in workflow
+    assert "finalize_stack_candidate.py" in workflow
+    assert "install_candidate_wheelhouse.py" in workflow
+    assert "--openpine-sha \"$GITHUB_SHA\"" in workflow
+    assert '--root "$RUNNER_TEMP/openpine-candidate"' in workflow
     assert "build_candidate_wheelhouse.py" in workflow
+    assert " -e " not in workflow
     for component in REQUIRED:
         assert f"--checkout {component}=" in workflow
 
@@ -80,11 +111,16 @@ def test_backend_ci_uses_the_same_candidate_resolver_and_checkouts() -> None:
 def test_backend_release_gate_separates_candidate_from_production_lock() -> None:
     release_gate = (ROOT / "scripts" / "release_gate.sh").read_text(encoding="utf-8")
 
-    assert "resolve_stack_candidate.py --root ." in release_gate
+    assert "OPENPINE_CANDIDATE_MANIFEST" in release_gate
+    assert '--root "$candidate_root" --require-stage wheel-bound' in release_gate.replace(
+        "\\\n", ""
+    )
+    assert "materialized candidate manifest required" in release_gate
     assert "stack-candidate-5.0.0-rc.2.json" not in release_gate
     assert "$PYTHON -m pytest -q tests/test_stack_candidate.py" in release_gate
     assert "$PYTHON -m openpine.release --root ." in release_gate
     assert "export PYTHON=${PYTHON:-python}" in release_gate
+    assert "export PYTHONPATH" not in release_gate
 
 
 def test_backend_ci_installs_required_sandbox_runtime() -> None:
@@ -157,35 +193,39 @@ def test_candidate_resolver_rejects_unsafe_filename(tmp_path: Path) -> None:
         resolver.resolve_candidate(tmp_path)
 
 
-def test_candidate_resolver_emits_manifest_identity() -> None:
+def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
     resolver = _resolver()
-    outputs = dict(resolver.github_outputs(MANIFEST))
+    materializer = _materializer()
+    payload = materializer.materialize_candidate(
+        json.loads(TEMPLATE.read_text(encoding="utf-8")),
+        openpine_sha="d" * 40,
+        created_at_utc="2026-08-20T21:00:00Z",
+        provenance={"builder": "test", "run_id": "1"},
+    )
+    manifest = tmp_path / "stack-candidate-5.0.0-rc.3.json"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    outputs = dict(resolver.github_outputs(manifest))
 
     assert outputs["mode"] == "candidate"
-    assert outputs["candidate_path"] == MANIFEST.name
+    assert outputs["candidate_path"] == manifest.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
     assert outputs["pine2ast_sha"] == "4b930ea0b7c658297738f2ab16f23152b047f94f"
-    assert outputs["openpine_sha"] == "THIS_CHECKOUT"
+    assert outputs["openpine_sha"] == "d" * 40
 
 
 def test_candidate_resolver_rejects_github_output_injection(tmp_path: Path) -> None:
     resolver = _resolver()
+    materializer = _materializer()
     manifest = tmp_path / "stack-candidate-evil.json"
-    manifest.write_text(
-        json.dumps(
-            {
-                "schema": "openpine.stack-candidate.v1",
-                "not_a_release": True,
-                "components": {
-                    "pinelib": {
-                        "repo": "s7cret/pinelib\nmode=production",
-                        "sha": "0" * 40,
-                    }
-                },
-            }
-        ),
-        encoding="utf-8",
+    payload = materializer.materialize_candidate(
+        json.loads(TEMPLATE.read_text(encoding="utf-8")),
+        openpine_sha="d" * 40,
+        created_at_utc="2026-08-20T21:00:00Z",
+        provenance={"builder": "test", "run_id": "1"},
     )
+    payload["components"]["pinelib"]["repo"] = "s7cret/pinelib\nmode=production"
+    payload["manifest_hash"] = resolver.candidate_manifest_hash(payload)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(resolver.CandidateSelectionError, match="invalid repository"):
         resolver.load_candidate(manifest)

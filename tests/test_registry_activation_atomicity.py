@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import threading
+from contextlib import closing
 
 from openpine.registry.strategies import SQLiteStrategyRegistry
 
@@ -51,7 +52,7 @@ def _run_in_thread(target):
 
 
 def _durable_state(db_path, strategy_id):
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn, conn:
         strategy = conn.execute(
             "SELECT enabled, archived FROM strategy_instances WHERE strategy_id = ?",
             (strategy_id,),

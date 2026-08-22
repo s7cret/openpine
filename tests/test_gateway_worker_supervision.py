@@ -24,6 +24,7 @@ from openpine.gateway.worker_supervisor import (
     worker_runtime_snapshot,
 )
 from openpine.registry.strategies import SQLiteStrategyRegistry, WorkerCircuitOpenError
+from tests.admission_helpers import STACK_HASH, make_deployment_identity
 
 
 class _StopEvent:
@@ -514,39 +515,6 @@ async def test_start_exception_after_child_becomes_live_is_contained_without_ret
 
 
 @pytest.mark.asyncio
-async def test_live_runner_stop_waits_for_executor_quiescence() -> None:
-    entered = threading.Event()
-    release = threading.Event()
-    strategy = SimpleNamespace(
-        strategy_id="s1",
-        enabled=True,
-        status="running",
-        timeframe="1m",
-        symbol="BTCUSDT",
-    )
-    runner = LiveStrategyRunner(
-        config=RunnerConfig(shutdown_timeout_seconds=0.01),
-        state_store=None,
-    )
-
-    def blocking_backtest(strategy, up_to_bar_time_ms: int):
-        del strategy, up_to_bar_time_ms
-        entered.set()
-        release.wait(timeout=2.0)
-        return None
-
-    runner._run_mini_backtest = blocking_backtest
-    runner._task = asyncio.create_task(runner._process_strategy(strategy, 120_001))
-    runner._running = True
-    assert await asyncio.to_thread(entered.wait, 1.0)
-
-    runner.stop()
-    assert await runner.wait_stopped() is False
-    release.set()
-    assert await runner.wait_stopped() is True
-
-
-@pytest.mark.asyncio
 async def test_live_runner_wait_stopped_bounds_task_cancellation() -> None:
     entered = asyncio.Event()
     release = asyncio.Event()
@@ -673,6 +641,7 @@ async def test_lifespan_cleans_started_supervisor_when_fetcher_startup_fails(
 @pytest.mark.asyncio
 async def test_lifespan_stops_fetcher_when_live_runner_shutdown_raises(monkeypatch) -> None:
     calls: list[str] = []
+    monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
 
     class Storage:
         def execute(self, *_args, **_kwargs):
@@ -1244,6 +1213,7 @@ async def test_paper_start_uses_single_atomic_registry_activation() -> None:
         strategy_registry=Registry(),
         strategy_activation_lock=threading.RLock(),
         _background_worker_supervisor=None,
+        admission_identity=make_deployment_identity(),
     )
 
     result = await trading.start_paper(
@@ -1313,7 +1283,10 @@ async def test_dedicated_enable_translates_late_circuit_race_to_http_503() -> No
 
 
 @pytest.mark.asyncio
-async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_write() -> None:
+async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_write(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
     lock = threading.RLock()
     strategy = SimpleNamespace(
         strategy_id="s1",
@@ -1370,6 +1343,7 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
         strategy_activation_lock=lock,
         _background_worker_supervisor=Worker(),
         config=SimpleNamespace(live_enabled=True),
+        admission_identity=make_deployment_identity(),
     )
 
     await strategies.strategy_enable(
@@ -1389,7 +1363,9 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
     from openpine.live_preview import make_live_preview
     import time
 
-    preview = make_live_preview("s1", now_ms=int(time.time() * 1000))
+    preview = make_live_preview(
+        "s1", now_ms=int(time.time() * 1000), stack_id=STACK_HASH
+    )
     await trading.start_live(
         trading.LiveStartRequest(
             strategy_id="s1",
@@ -1707,7 +1683,12 @@ def test_registry_rejects_activation_of_archived_strategy_atomically(
 
 
 @pytest.mark.asyncio
-async def test_trading_start_routes_reject_archived_strategy() -> None:
+async def test_trading_start_routes_reject_archived_strategy(monkeypatch) -> None:
+    import time
+
+    from openpine.live_preview import make_live_preview
+
+    monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
     strategy = SimpleNamespace(strategy_id="archived", status="paused", archived=True)
 
     class Registry:
@@ -1720,12 +1701,26 @@ async def test_trading_start_routes_reject_archived_strategy() -> None:
     state = SimpleNamespace(
         strategy_registry=Registry(),
         config=SimpleNamespace(live_enabled=True),
+        admission_identity=make_deployment_identity(),
     )
 
     with pytest.raises(HTTPException) as paper_exc:
         await trading.start_paper(PaperStartRequest(strategy_id="archived", semantic_profile="strict_5x"), state)
     assert paper_exc.value.status_code == 400
 
+    preview = make_live_preview(
+        "archived", now_ms=int(time.time() * 1000), stack_id=STACK_HASH
+    )
     with pytest.raises(HTTPException) as live_exc:
-        await trading.start_live(LiveStartRequest(strategy_id="archived"), state)
+        await trading.start_live(
+            LiveStartRequest(
+                strategy_id="archived",
+                preview_hash=preview["preview_hash"],
+                confirmation="LIVE",
+                idempotency_key="live-archived",
+                expires_at_utc_ms=preview["expires_at_utc_ms"],
+                semantic_profile="strict_5x",
+            ),
+            state,
+        )
     assert live_exc.value.status_code == 400

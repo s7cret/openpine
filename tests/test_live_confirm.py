@@ -10,14 +10,18 @@ from openpine.live_preview import (
 from openpine.runtime.cgroup import CgroupError, apply_memory_max
 
 
+STACK_ID = "sha256:" + "e" * 64
+
+
 def test_preview_hash_is_stable_and_required() -> None:
-    preview = make_live_preview("strat-1", now_ms=1_000)
+    preview = make_live_preview("strat-1", now_ms=1_000, stack_id=STACK_ID)
     require_live_confirmation(
         strategy_id="strat-1",
         preview_hash_value=preview["preview_hash"],
         confirmation="LIVE",
         expires_at_utc_ms=preview["expires_at_utc_ms"],
         now_ms=1_000,
+        stack_id=STACK_ID,
     )
     with pytest.raises(LiveConfirmError, match="LIVE"):
         require_live_confirmation(
@@ -26,6 +30,7 @@ def test_preview_hash_is_stable_and_required() -> None:
             confirmation="yes",
             expires_at_utc_ms=preview["expires_at_utc_ms"],
             now_ms=1_000,
+            stack_id=STACK_ID,
         )
     with pytest.raises(LiveConfirmError, match="expired"):
         require_live_confirmation(
@@ -34,6 +39,7 @@ def test_preview_hash_is_stable_and_required() -> None:
             confirmation="LIVE",
             expires_at_utc_ms=preview["expires_at_utc_ms"],
             now_ms=preview["expires_at_utc_ms"],
+            stack_id=STACK_ID,
         )
     with pytest.raises(LiveConfirmError, match="mismatch"):
         require_live_confirmation(
@@ -42,6 +48,7 @@ def test_preview_hash_is_stable_and_required() -> None:
             confirmation="LIVE",
             expires_at_utc_ms=preview["expires_at_utc_ms"],
             now_ms=1_000,
+            stack_id=STACK_ID,
         )
 
 

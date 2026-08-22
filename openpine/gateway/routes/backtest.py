@@ -23,14 +23,14 @@ from typing import Annotated, Any, cast
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 
 from openpine._compat import structlog
-from openpine.admission import DEFAULT_STACK_ID, admit_run, admit_semantic_profile
+from openpine.admission import admit_semantic_profile
 from openpine.exchange_metadata import (
     default_price_tick,
     default_qty_rounding_mode,
     default_qty_step,
 )
 from openpine.gateway.deps import GatewayState, get_state
-from openpine.gateway.side_effects import persist_gateway_job
+from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
 from openpine.gateway.schemas import (
     BacktestEstimateResponse,
     BacktestProgress,
@@ -41,6 +41,7 @@ from openpine.gateway.schemas import (
 )
 from openpine.gateway.ws_manager import ws_manager
 from openpine.timezones import parse_timestamp_ms
+from openpine_contracts import AdmitError
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/backtest", tags=["backtest"])
@@ -78,6 +79,7 @@ class _ArtifactBacktestSpec:
     market: str
     prefetch_end_ms: int
     source: bytes
+    data_snapshot_hash: str
     htf_bars: list[dict[str, Any]] | None = None
     htf_timeframe: str | None = None
 
@@ -1153,6 +1155,55 @@ def _bar_series_fingerprint(series) -> str:
     return digest.hexdigest()
 
 
+def _admit_loaded_backtest_run(
+    state: GatewayState,
+    *,
+    strategy: object,
+    run_id: str,
+    artifact: dict[str, Any],
+    bars: list[object],
+    supplemental_bars: list[dict[str, Any]] | None,
+    config: object,
+) -> str:
+    from openpine.admission import DeploymentAdmissionIdentity
+    from openpine.run_identity import admit_and_persist_run_identity
+
+    data_dir = getattr(getattr(state, "config", None), "data_dir", None)
+    if data_dir is None:
+        raise RuntimeError("run identity data directory is unavailable")
+    deployment = getattr(state, "admission_identity", None)
+    if not isinstance(deployment, DeploymentAdmissionIdentity):
+        raise RuntimeError("run admission deployment identity is unavailable")
+    payload = admit_and_persist_run_identity(
+        data_dir=data_dir,
+        deployment=deployment,
+        mode="backtest",
+        run_id=run_id,
+        artifact=artifact,
+        bars=bars,
+        supplemental_bars=supplemental_bars,
+        exchange=str(getattr(config, "exchange")),
+        market=str(getattr(config, "market_type")),
+        symbol=str(getattr(config, "symbol")),
+        timeframe=str(getattr(config, "timeframe")),
+        start_ms=int(getattr(config, "start_time")),
+        end_ms=int(getattr(config, "end_time")),
+        semantic_profile=str(getattr(config, "semantic_profile")),
+        finality_policy="CLOSED_BAR_ONLY",
+        warmup_policy="CALC_ONLY",
+        score_policy="ALL_BARS",
+        required_capabilities=(
+            "closed_bar",
+            "deterministic_clock",
+            "isolated_worker",
+            "broker_projection",
+            "intent_tape_v2",
+        ),
+        created_at_utc_ms=int(time.time() * 1000),
+    )
+    return str(payload["data_snapshot_hash"])
+
+
 def _backtest_process_entry(
     out, adapter, strategy_class, bars, config, params, runtime_data_provider, effective_pre_bars=None
 ):
@@ -1190,6 +1241,21 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
         source = spec.source
         if not source:
             raise RuntimeError("captured artifact source is missing")
+        from openpine.run_identity import execution_data_snapshot_hash
+
+        actual_snapshot_hash = execution_data_snapshot_hash(
+            bars=bars,
+            supplemental_bars=spec.htf_bars,
+            exchange=str(config.exchange),
+            market=str(config.market_type),
+            symbol=str(config.symbol),
+            timeframe=str(config.timeframe),
+            start_ms=int(config.start_time),
+            end_ms=int(config.end_time),
+            finality_policy="CLOSED_BAR_ONLY",
+        )
+        if actual_snapshot_hash != spec.data_snapshot_hash:
+            raise RuntimeError("data snapshot hash mismatch before backtest execution")
         htf_bars = spec.htf_bars
         requested = spec.htf_timeframe
         if htf_bars is None and not (
@@ -1875,14 +1941,21 @@ async def _run_backtest_background(
         await ws_manager.broadcast_progress(run_id)
 
         from openpine.runtime.engine import BacktestArtifactError
-        from openpine.runtime.isolated_run import IsolatedRunError, capture_generated_source
+        from openpine.runtime.isolated_run import IsolatedRunError
+        from openpine.run_identity import verified_generated_source
 
         try:
-            generated_source = capture_generated_source(
-                strategy.pine_id,
-                strategy.artifact_id,
+            artifact = state.artifact_store.get_artifact(
+                strategy.artifact_id, strategy.pine_id
             )
-        except (BacktestArtifactError, IsolatedRunError) as exc:
+            generated_source = verified_generated_source(artifact)
+        except (
+            AdmitError,
+            BacktestArtifactError,
+            FileNotFoundError,
+            IsolatedRunError,
+            ValueError,
+        ) as exc:
             ws_manager.update_progress(run_id, "backtest", "failed", 0.1, str(exc))
             await ws_manager.broadcast_progress(run_id)
             state.backtest_store.mark_failed(run_id, str(exc))
@@ -2009,13 +2082,7 @@ async def _run_backtest_background(
         from openpine.runtime.declaration_args import artifact_strategy_declaration_args
         from openpine.runtime.engine import BacktestRunConfig
 
-        try:
-            artifact = state.artifact_store.get_artifact(
-                strategy.artifact_id, strategy.pine_id
-            )
-            decl_args = artifact_strategy_declaration_args(artifact)
-        except Exception:
-            decl_args = artifact_strategy_declaration_args(None)
+        decl_args = artifact_strategy_declaration_args(artifact)
 
         params = {}
         if params_override:
@@ -2099,6 +2166,15 @@ async def _run_backtest_background(
             from_ms=from_ms,
             to_ms=to_ms,
         )
+        data_snapshot_hash = _admit_loaded_backtest_run(
+            state,
+            strategy=strategy,
+            run_id=run_id,
+            artifact=artifact,
+            bars=bars,
+            supplemental_bars=stamped_htf,
+            config=config,
+        )
         artifact_spec = _ArtifactBacktestSpec(
             pine_id=strategy.pine_id,
             artifact_id=strategy.artifact_id,
@@ -2109,6 +2185,7 @@ async def _run_backtest_background(
             market=config.market_type,
             prefetch_end_ms=to_ms,
             source=generated_source,
+            data_snapshot_hash=data_snapshot_hash,
             htf_bars=stamped_htf,
             htf_timeframe=htf_timeframe,
         )
@@ -2255,12 +2332,7 @@ async def run_backtest(
     ] = None,
 ) -> BacktestRunResponse:
     """Start a backtest run (async, tracks progress via WebSocket)."""
-    from openpine_contracts import AdmitError
-
-    try:
-        admit_run(mode="backtest", stack_id=DEFAULT_STACK_ID)
-    except AdmitError as exc:
-        raise HTTPException(403, exc.message) from exc
+    require_http_admit(state, "backtest")
     from_ms = _parse_date_ms(body.from_time)
     to_ms = _parse_date_ms(body.to_time)
     if from_ms >= to_ms:

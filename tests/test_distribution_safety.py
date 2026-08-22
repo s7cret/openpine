@@ -337,10 +337,11 @@ def test_stack_dependencies_are_immutable_and_ci_extras_are_complete() -> None:
         "backtest-engine",
         "marketdata-provider",
         "optimizer",
+        "openpine-contracts",
     }
     for name in direct_names:
-        dependency = next(item for item in dependencies if item.startswith(f"{name} @ "))
-        assert re.fullmatch(r".+@[0-9a-f]{40}", dependency)
+        assert f"{name}==5.0.0rc3" in dependencies
+    assert not any("git+" in dependency or " @ " in dependency for dependency in dependencies)
 
     dev_dependencies = config["project"]["optional-dependencies"]["dev"]
     assert any(str(item).startswith("matplotlib") for item in dev_dependencies)

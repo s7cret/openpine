@@ -34,6 +34,20 @@ class GatewayState:
 
     def __init__(self) -> None:
         self.config = OpenPineConfig.load()
+        deployment_manifest = getattr(self.config, "deployment_manifest", None)
+        deployment_wheelhouse = getattr(self.config, "deployment_wheelhouse", None)
+        if (deployment_manifest is None) != (deployment_wheelhouse is None):
+            raise RuntimeError(
+                "both deployment_manifest and deployment_wheelhouse are required"
+            )
+        self.admission_identity = None
+        if deployment_manifest is not None and deployment_wheelhouse is not None:
+            from openpine.admission import load_active_deployment_identity
+
+            self.admission_identity = load_active_deployment_identity(
+                deployment_manifest,
+                deployment_wheelhouse,
+            )
         self.storage = SQLiteStorage(self.config.sqlite_path)
         # Schema compatibility is a startup invariant: managers below issue
         # queries that require the latest migrations. Never run against a

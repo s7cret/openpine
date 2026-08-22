@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from types import SimpleNamespace
 
 from marketdata_provider.contracts import (
@@ -13,6 +14,7 @@ from marketdata_provider.contracts import (
 )
 
 from openpine.gateway.routes import backtest as bt
+from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
 
 
 class _Cursor:
@@ -108,8 +110,8 @@ def test_gateway_backtest_config_uses_exchange_market_metadata(monkeypatch):
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: strategy),
         orchestrator=SimpleNamespace(load_bars=lambda query, progress_callback=None: _series()),
         artifact_store=SimpleNamespace(
-            get_artifact=lambda artifact_id, pine_id: {
-                "compile_meta": {
+            get_artifact=lambda artifact_id, pine_id: make_sealed_artifact(
+                {
                     "translation_metadata": {
                         "declaration": {
                             "arguments": {
@@ -119,12 +121,13 @@ def test_gateway_backtest_config_uses_exchange_market_metadata(monkeypatch):
                         }
                     }
                 }
-            }
+            )
         ),
         backtest_store=_Store(),
         backtest_cancel_requests=set(),
         storage=_Storage(),
-        config=SimpleNamespace(data_cache_root=None, data_dir=None),
+        config=SimpleNamespace(data_cache_root=None, data_dir=Path(".openpine")),
+        admission_identity=make_deployment_identity(),
     )
 
     asyncio.run(bt._run_backtest_background(state, "s1", "run1", 0, 172_800_000, None, 0, False))

@@ -64,22 +64,38 @@ def _runtime_contract_v1_4_options():
         )
 
 
-def _translate_ast_recording_visuals(ast_dict: dict[str, object], *, module_name: str):
+def _translate_ast_recording_visuals(
+    ast_dict: dict[str, object],
+    *,
+    module_name: str,
+    source_text: str = "",
+    parse_result: object | None = None,
+    producer_commits: dict[str, str] | None = None,
+):
     from inspect import Parameter, signature
 
     from ast2python import translate_ast
 
+    kwargs: dict[str, object] = {"module_name": module_name}
     try:
-        params = signature(translate_ast).parameters.values()
+        params = tuple(signature(translate_ast).parameters.values())
     except (TypeError, ValueError):
         return translate_ast(ast_dict, module_name=module_name, visual_policy="record")
-    supports_visual_policy = any(
-        param.name == "visual_policy" or param.kind is Parameter.VAR_KEYWORD
-        for param in params
-    )
-    if supports_visual_policy:
-        return translate_ast(ast_dict, module_name=module_name, visual_policy="record")
-    return translate_ast(ast_dict, module_name=module_name)
+    supports_kwargs = any(param.kind is Parameter.VAR_KEYWORD for param in params)
+    supported_names = {param.name for param in params}
+
+    def include(name: str, value: object) -> None:
+        if supports_kwargs or name in supported_names:
+            kwargs[name] = value
+
+    include("visual_policy", "record")
+    include("source", source_text)
+    if parse_result is not None:
+        include("frontend_artifact", getattr(parse_result, "frontend_artifact", None))
+        include("support_profile", getattr(parse_result, "support_profile", None))
+        include("ast_artifact", getattr(parse_result, "ast_artifact", None))
+    include("producer_commits", producer_commits)
+    return translate_ast(ast_dict, **kwargs)
 
 
 def _artifact_dir_for_inspect(
@@ -123,7 +139,7 @@ async def compile_pine(
     """Compile a Pine source into an artifact (async with progress)."""
     from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
 
-    require_http_admit("compile")
+    require_http_admit(state, "compile")
     try:
         src = state.pine_registry.get_source(source_id)
     except KeyError:
@@ -189,9 +205,15 @@ async def compile_pine(
                 "parser_gate": "pass",
                 "semantic_gate": "pass",
             }
+            from openpine.build_identity import compiler_producer_commits
+
+            producer_commits = compiler_producer_commits()
             translation = _translate_ast_recording_visuals(
                 ast_dict,
                 module_name=src.name,
+                source_text=src.source_text,
+                parse_result=result,
+                producer_commits=producer_commits,
             )
 
             if translation.diagnostics:
@@ -217,15 +239,18 @@ async def compile_pine(
             await ws_manager.broadcast_progress(operation_id)
 
             # Stage 3: Save artifact
-            import hashlib
-            import time as _time
-
-            artifact_id = f"art_{hashlib.sha256(f'{source_id}{_time.time()}'.encode()).hexdigest()[:16]}"
+            generated_artifact = getattr(translation, "generated_artifact", None)
+            if not isinstance(generated_artifact, dict):
+                raise RuntimeError("translation did not return sealed generated artifact")
+            artifact_id = state.artifact_store.artifact_id_for_envelope(
+                generated_artifact
+            )
             compile_meta = {
                 "compile_status": "OK",
                 "source_id": source_id,
                 "artifact_id": artifact_id,
                 "translation_metadata": getattr(translation, "metadata", {}),
+                "generated_artifact_hash": generated_artifact["content_hash"],
             }
             if filtered_visual_diagnostics:
                 compile_meta["filtered_visual_diagnostics"] = filtered_visual_diagnostics
@@ -238,6 +263,11 @@ async def compile_pine(
                 compile_meta=compile_meta,
                 source_text=src.source_text,
                 ast_json=ast_to_json(result.ast),
+                source_map=list(getattr(translation, "source_map", []) or []),
+                generated_artifact=generated_artifact,
+                frontend_artifact=dict(result.frontend_artifact),
+                support_profile=dict(result.support_profile),
+                ast_artifact=dict(result.ast_artifact),
             )
 
             # Set as active artifact

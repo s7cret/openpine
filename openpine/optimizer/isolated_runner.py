@@ -57,12 +57,14 @@ class IsolatedOptimizerRunner:
         source: bytes,
         bars: tuple[Any, ...] | list[Any],
         config: Any,
+        expected_data_snapshot_hash: str,
         base_params: dict[str, Any] | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
     ) -> None:
         self.source = bytes(source)
         self.bars = tuple(bars)
         self.config = config
+        self.expected_data_snapshot_hash = expected_data_snapshot_hash
         self.base_params = dict(base_params or {})
         self.htf_bars = list(htf_bars or [])
         self.data_fingerprint = _stable_hash(self.bars)
@@ -79,6 +81,21 @@ class IsolatedOptimizerRunner:
         return self.runner_fingerprint
 
     def __call__(self, request: Any) -> RunnerResponse:
+        from openpine.run_identity import execution_data_snapshot_hash
+
+        actual_snapshot_hash = execution_data_snapshot_hash(
+            bars=self.bars,
+            supplemental_bars=self.htf_bars,
+            exchange=str(self.config.exchange),
+            market=str(self.config.market_type),
+            symbol=str(self.config.symbol),
+            timeframe=str(self.config.timeframe),
+            start_ms=int(self.config.start_time),
+            end_ms=int(self.config.end_time),
+            finality_policy="CLOSED_BAR_ONLY",
+        )
+        if actual_snapshot_hash != self.expected_data_snapshot_hash:
+            raise RuntimeError("data snapshot hash mismatch before optimizer trial")
         trial_params = {**self.base_params, **dict(request.params)}
         isolated = BacktestEngineAdapter().run_isolated(
             self.source,

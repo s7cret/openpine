@@ -575,6 +575,7 @@ def test_gateway_server_lifespan_worker_modes(monkeypatch):
     monkeypatch.setenv("OPENPINE_ENABLE_BACKGROUND_WORKER", "1")
     monkeypatch.setenv("OPENPINE_ENABLE_PERIODIC_FETCHER", "1")
     monkeypatch.setenv("OPENPINE_ENABLE_LIVE_RUNNER", "1")
+    monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
     import openpine.data.periodic_fetcher as pf_mod
     import openpine.gateway.live_runner as lr_mod
     monkeypatch.setattr(pf_mod, "PeriodicBarFetcher", _Service)
@@ -617,7 +618,7 @@ def test_gateway_server_lifespan_worker_modes(monkeypatch):
     assert "/health" in routes and "/" in routes
 
 
-def test_gateway_optimizer_route_and_small_edges(monkeypatch):
+def test_gateway_optimizer_route_and_small_edges(monkeypatch, job_store):
     import asyncio
     import openpine.optimizer as opt_pkg
     from openpine.gateway.routes import optimizer as optimizer_route
@@ -628,7 +629,12 @@ def test_gateway_optimizer_route_and_small_edges(monkeypatch):
             return SimpleNamespace(strategy_id=strategy_id, trials_requested=trials, status="ok", reason=None)
 
     monkeypatch.setattr(opt_pkg, "OptimizerService", _Service)
-    response = asyncio.run(optimizer_route.optimizer_dry_run(OptimizerDryRunRequest(strategy_id="s1", trials=3), state=SimpleNamespace()))
+    response = asyncio.run(
+        optimizer_route.optimizer_dry_run(
+            OptimizerDryRunRequest(strategy_id="s1", trials=3),
+            state=SimpleNamespace(job_store=job_store),
+        )
+    )
     assert response.status == "ok"
 
     class _BadService:
@@ -637,4 +643,9 @@ def test_gateway_optimizer_route_and_small_edges(monkeypatch):
 
     monkeypatch.setattr(opt_pkg, "OptimizerService", _BadService)
     with pytest.raises(Exception):
-        asyncio.run(optimizer_route.optimizer_dry_run(OptimizerDryRunRequest(strategy_id="s1", trials=1), state=SimpleNamespace()))
+        asyncio.run(
+            optimizer_route.optimizer_dry_run(
+                OptimizerDryRunRequest(strategy_id="s1", trials=1),
+                state=SimpleNamespace(job_store=job_store),
+            )
+        )

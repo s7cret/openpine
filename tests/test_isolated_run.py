@@ -4,6 +4,7 @@ import sys
 
 import pytest
 from backtest_engine import BacktestConfig, BacktestEngine, Bar
+from openpine_contracts import Finality
 
 from openpine.runtime.isolated_run import (
     IsolatedRunError,
@@ -15,18 +16,26 @@ from openpine.runtime.isolated_run import (
 
 SOURCE = (
     "from pinelib.strategy.context import StrategyContext\n"
-    "ctx = StrategyContext(intent_run_id='run', intent_strategy_id='s')\n"
-    "ctx._runtime = type('RT', (), {"
-    "'bar_index': 2, "
-    "'current_bar': type('B', (), {'time': 1002})()"
-    "})()\n"
-    "ctx.entry('L', 'long', qty=1)\n"
+    "class GeneratedStrategy:\n"
+    "    def __init__(self, params=None, runtime=None):\n"
+    "        self.ctx = StrategyContext(intent_run_id='run', intent_strategy_id='s')\n"
+    "        self.ctx.attach_runtime(runtime)\n"
+    "    def _process_bar(self, bar, bar_index):\n"
+    "        if bar_index == 2:\n"
+    "            self.ctx.entry('L', 'long', qty=1)\n"
 )
 
 
 def _bars() -> list[Bar]:
     return [
-        Bar(time=1_000 + i, open=10.0 + i, high=11.0 + i, low=9.0 + i, close=10.5 + i)
+        Bar(
+            time=1_000 + i,
+            open=10.0 + i,
+            high=11.0 + i,
+            low=9.0 + i,
+            close=10.5 + i,
+            finality=Finality.FINAL,
+        )
         for i in range(6)
     ]
 
@@ -66,8 +75,17 @@ def test_isolated_run_replays_live_tape_without_importing_generated() -> None:
 
 
 def test_isolated_run_rejects_artifact_without_tape() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+        self.ctx.attach_runtime(runtime)
+    def _process_bar(self, bar, bar_index):
+        return None
+"""
     with pytest.raises(IsolatedRunError, match="live pinelib tape"):
-        run_isolated_artifact(b"VALUE = 1\n", bars=_bars(), config=_cfg())
+        run_isolated_artifact(source, bars=_bars(), config=_cfg())
 
 
 def test_isolated_run_forwards_trial_params_into_generated_strategy() -> None:
@@ -92,6 +110,120 @@ class GeneratedStrategy:
     )
 
     assert result["intent_tape"][0]["qty"] == "3"
+
+
+def test_isolated_run_gives_broker_projection_before_each_strategy_decision() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+        self.ctx.attach_runtime(runtime)
+    def _process_bar(self, bar, bar_index):
+        if self.ctx.position_size == 0:
+            self.ctx.entry("L", "long", qty=1)
+        else:
+            self.ctx.close("L")
+"""
+
+    result = run_isolated_artifact(source, bars=_bars(), config=_cfg(semantic_profile="strict_5x"))
+
+    kinds = [event["kind"] for event in result["intent_tape"]]
+    assert kinds[0] == "entry"
+    assert "close" in kinds
+    assert result["execution_protocol"] == "openpine.worker.protocol.v2"
+
+
+def test_isolated_worker_exposes_complete_trade_projection_to_generated_code() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+        self.ctx.attach_runtime(runtime)
+
+    def _process_bar(self, bar, bar_index):
+        if self.ctx.position_size == 0 and self.ctx.closedtrades == 0:
+            self.ctx.entry("L", "long", qty=1, comment="entry")
+        elif self.ctx.opentrades > 0:
+            self.ctx.opentrades_entry_price(0)
+            self.ctx.opentrades_profit(0)
+            self.ctx.opentrades_profit_percent(0)
+            self.ctx.opentrades_commission(0)
+            self.ctx.opentrades_qty(0)
+            self.ctx.opentrades_side(0)
+            self.ctx.opentrades_entry_id(0)
+            self.ctx.opentrades_exit_price(0)
+            self.ctx.opentrades_exit_time(0)
+            self.ctx.opentrades_exit_id(0)
+            self.ctx.opentrades_size(0)
+            self.ctx.opentrades_max_runup(0)
+            self.ctx.opentrades_max_drawdown(0)
+            self.ctx.opentrades_entry_bar_index(0)
+            self.ctx.close("L", comment="exit")
+        elif self.ctx.closedtrades > 0:
+            self.ctx.closedtrades_entry_price(0)
+            self.ctx.closedtrades_exit_price(0)
+            self.ctx.closedtrades_entry_time(0)
+            self.ctx.closedtrades_exit_time(0)
+            self.ctx.closedtrades_profit(0)
+            self.ctx.closedtrades_profit_percent(0)
+            self.ctx.closedtrades_commission(0)
+            self.ctx.closedtrades_qty(0)
+            self.ctx.closedtrades_side(0)
+            self.ctx.closedtrades_size(0)
+            self.ctx.closedtrades_entry_id(0)
+            self.ctx.closedtrades_exit_id(0)
+            self.ctx.closedtrades_entry_comment(0)
+            self.ctx.closedtrades_exit_comment(0)
+            self.ctx.closedtrades_max_runup(0)
+            self.ctx.closedtrades_max_drawdown(0)
+            self.ctx.closedtrades_entry_bar_index(0)
+            self.ctx.closedtrades_exit_bar_index(0)
+            self.ctx.entry("VERIFIED", "long", qty=1)
+"""
+
+    result = run_isolated_artifact(
+        source,
+        bars=_bars(),
+        config=_cfg(semantic_profile="strict_5x"),
+    )
+
+    assert any(
+        event.get("command_id") == "VERIFIED" for event in result["intent_tape"]
+    )
+
+
+def test_isolated_protocol_supports_same_bar_calc_on_order_fills_recalc() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.ctx = StrategyContext(
+            intent_run_id="run",
+            intent_strategy_id="s",
+            calc_on_order_fills=True,
+            process_orders_on_close=True,
+        )
+        self.ctx.attach_runtime(runtime)
+    def _process_bar(self, bar, bar_index):
+        if bar_index == 0 and self.ctx.position_size == 0:
+            self.ctx.entry("L", "long", qty=1)
+        elif bar_index == 0 and self.ctx.position_size > 0:
+            self.ctx.close("L", immediately=True)
+"""
+    cfg = _cfg(semantic_profile="strict_5x")
+    cfg.calc_on_order_fills = True
+    cfg.process_orders_on_close = True
+
+    result = run_isolated_artifact(source, bars=_bars(), config=cfg)
+
+    first_bar = [
+        event for event in result["intent_tape"] if event["bar_index"] == 0
+    ]
+    assert [event["kind"] for event in first_bar] == ["entry", "close"]
+    assert [event["recalc_iteration"] for event in first_bar] == [0, 1]
 
 
 def test_isolated_indicator_exposes_htf_close_on_last_confirmed_child_bar() -> None:
@@ -638,14 +770,15 @@ def test_capture_generated_source_uses_bytes_not_later_path(
         def get_artifact(self, artifact_id: str, source_id: str) -> dict:
             return {
                 "artifact_dir": str(artifact_dir),
+                "python_code": SOURCE,
                 "compile_meta": {"compile_status": "OK"},
             }
 
     import openpine.artifacts as artifacts
 
     monkeypatch.setattr(artifacts, "ArtifactStore", Store)
-    captured = capture_generated_source("src", "art")
     path.write_text("VALUE = 999\n", encoding="utf-8")
+    captured = capture_generated_source("src", "art")
     assert captured == SOURCE.encode("utf-8")
     result = run_isolated_artifact(captured, bars=_bars(), config=_cfg())
     assert result["intent_tape"][0]["qty"] == "1"
@@ -662,6 +795,7 @@ def test_run_isolated_from_store_captures_then_replays(
         def get_artifact(self, artifact_id: str, source_id: str) -> dict:
             return {
                 "artifact_dir": str(artifact_dir),
+                "python_code": SOURCE,
                 "compile_meta": {"compile_status": "OK"},
             }
 
@@ -735,9 +869,9 @@ def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyP
     applied: list[int] = []
     real = isolated_run.apply_live_intents_for_bar
 
-    def _capture(ctx, tape, bar_index):
+    def _capture(ctx, tape, bar_index, **kwargs):
         applied.append(int(bar_index))
-        return real(ctx, tape, bar_index)
+        return real(ctx, tape, bar_index, **kwargs)
 
     monkeypatch.setattr(isolated_run, "apply_live_intents_for_bar", _capture)
     cfg = BacktestConfig(
@@ -753,14 +887,26 @@ def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyP
         resume_validation_policy="diagnostic",
     )
     cfg.semantic_profile = "legacy_4x"
-    first = run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars()[:3], config=cfg)
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None):
+        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
+        self.ctx.attach_runtime(runtime)
+    def _process_bar(self, bar, bar_index):
+        if bar_index == 2 and self.ctx.position_size == 0:
+            self.ctx.entry("L", "long", qty=1)
+        if bar_index == 4 and self.ctx.position_size > 0:
+            self.ctx.close("L")
+"""
+    first = run_isolated_artifact(source, bars=_bars()[:3], config=cfg)
     resume = first["raw_result"].resume_state
     assert resume is not None
     warnings = [getattr(item, "code", "") for item in (first["raw_result"].warnings or [])]
     assert "RESUME_STRATEGY_STATE_UNAVAILABLE" not in warnings
     applied.clear()
     run_isolated_artifact(
-        SOURCE.encode("utf-8"),
+        source,
         bars=_bars(),
         config=cfg,
         resume_state=resume,
@@ -776,11 +922,12 @@ def test_isolated_run_requires_semantic_profile(monkeypatch: pytest.MonkeyPatch)
 
     seen: dict[str, object] = {}
 
-    def _capture(source, **kwargs):
-        seen["semantic_profile"] = kwargs.get("semantic_profile")
-        raise IsolatedWorkerError("stop")
+    class _CaptureSession:
+        def __init__(self, source, **kwargs):
+            seen["semantic_profile"] = kwargs.get("semantic_profile")
+            raise IsolatedWorkerError("stop")
 
-    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    monkeypatch.setattr(isolated_run, "InteractiveWorkerSession", _CaptureSession)
     with pytest.raises(IsolatedRunError, match="semantic_profile"):
         run_isolated_artifact(
             SOURCE.encode("utf-8"),
@@ -796,11 +943,12 @@ def test_isolated_run_forwards_config_semantic_profile(monkeypatch: pytest.Monke
 
     seen: dict[str, object] = {}
 
-    def _capture(source, **kwargs):
-        seen["semantic_profile"] = kwargs.get("semantic_profile")
-        raise IsolatedWorkerError("stop")
+    class _CaptureSession:
+        def __init__(self, source, **kwargs):
+            seen["semantic_profile"] = kwargs.get("semantic_profile")
+            raise IsolatedWorkerError("stop")
 
-    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    monkeypatch.setattr(isolated_run, "InteractiveWorkerSession", _CaptureSession)
     cfg = _cfg()
     cfg.semantic_profile = "strict_5x"
     with pytest.raises(IsolatedRunError, match="stop"):
@@ -867,11 +1015,12 @@ def test_isolated_run_forwards_confirmed_htf_bars(monkeypatch: pytest.MonkeyPatc
         }
     ]
 
-    def _capture(source, **kwargs):
-        seen["htf_bars"] = kwargs.get("htf_bars")
-        raise IsolatedWorkerError("stop")
+    class _CaptureSession:
+        def __init__(self, source, **kwargs):
+            seen["htf_bars"] = kwargs.get("htf_bars")
+            raise IsolatedWorkerError("stop")
 
-    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    monkeypatch.setattr(isolated_run, "InteractiveWorkerSession", _CaptureSession)
     with pytest.raises(IsolatedRunError, match="stop"):
         run_isolated_artifact(
             SOURCE.encode("utf-8"),
@@ -887,11 +1036,11 @@ def test_isolated_run_rejects_unconfirmed_htf_bars(monkeypatch: pytest.MonkeyPat
 
     seen: dict[str, object] = {}
 
-    def _capture(source, **kwargs):
-        seen["called"] = True
-        return {"ok": True, "intent_tape": []}
+    class _CaptureSession:
+        def __init__(self, source, **kwargs):
+            seen["called"] = True
 
-    monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
+    monkeypatch.setattr(isolated_run, "InteractiveWorkerSession", _CaptureSession)
     with pytest.raises(IsolatedRunError, match="confirmed HTF"):
         run_isolated_artifact(
             SOURCE.encode("utf-8"),

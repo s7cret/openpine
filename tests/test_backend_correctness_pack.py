@@ -328,6 +328,7 @@ def test_artifact_backtest_uses_spawn_context(
         market="spot",
         prefetch_end_ms=60_000,
         source=b"STAMPED",
+        data_snapshot_hash="sha256:" + "a" * 64,
     )
 
     result = backtest._run_backtest_in_process(
@@ -505,6 +506,7 @@ def test_cancel_waits_for_starting_worker_registration(
 @pytest.mark.asyncio
 async def test_backtest_admission_returns_429_when_capacity_is_saturated(
     monkeypatch: pytest.MonkeyPatch,
+    job_store,
 ) -> None:
     monkeypatch.setenv("OPENPINE_BACKTEST_MAX_CONCURRENCY", "1")
     monkeypatch.setattr(backtest, "ws_manager", _Progress())
@@ -524,6 +526,7 @@ async def test_backtest_admission_returns_429_when_capacity_is_saturated(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: strategy),
         backtest_store=store,
         backtest_cancel_requests=set(),
+        job_store=job_store,
     )
     body = SimpleNamespace(
         strategy_id="strategy-1",
@@ -551,7 +554,7 @@ async def test_backtest_admission_returns_429_when_capacity_is_saturated(
 
 @pytest.mark.asyncio
 async def test_backtest_idempotency_reuses_run_and_rejects_key_body_conflict(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, job_store
 ) -> None:
     monkeypatch.setenv("OPENPINE_BACKTEST_MAX_CONCURRENCY", "1")
     monkeypatch.setattr(backtest, "ws_manager", _Progress())
@@ -598,6 +601,7 @@ async def test_backtest_idempotency_reuses_run_and_rejects_key_body_conflict(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: strategy),
         backtest_store=store,
         backtest_cancel_requests=set(),
+        job_store=job_store,
     )
     body = SimpleNamespace(
         strategy_id="strategy-1",

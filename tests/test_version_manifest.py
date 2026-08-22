@@ -65,7 +65,12 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     # openpine is the workspace checkout and is definitely installed here
     openpine = next(m for m in payload["modules"] if m["name"] == "openpine")
     assert openpine["installed"] is True
-    assert openpine["version"] == "4.0.2"
+    assert openpine["version"] == "5.0.0rc3"
+    assert openpine["distribution_version"] == "5.0.0rc3"
+    assert openpine["module_version"] == "5.0.0rc3"
+    assert openpine["conforms_to_lock"] is False
+    assert openpine["identity_conforms"] is False
+    assert payload["stack_conforms"] is False
     assert openpine["path"] is not None
     assert openpine["path"].endswith("/openpine/__init__.py")
     assert openpine["summary"] is not None

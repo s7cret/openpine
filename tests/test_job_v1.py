@@ -94,7 +94,13 @@ def test_cancel_retry_and_lease_recovery_are_idempotent(tmp_path) -> None:
     assert store.get("f1")["retry_count"] == 1
 
     store.create(job_id="run-1", kind="parity")
-    store.mark_running("run-1", lease_owner="w1", lease_deadline_utc_ms=1)
+    store.mark_running(
+        "run-1",
+        lease_owner="w1",
+        lease_deadline_utc_ms=1,
+        now_ms=0,
+        expected_version=1,
+    )
     lost = store.recover_lost_leases(now_ms=2)
     assert lost == 1
     assert store.get("run-1")["state"] == JobState.LOST
@@ -103,8 +109,15 @@ def test_cancel_retry_and_lease_recovery_are_idempotent(tmp_path) -> None:
 def test_events_are_ordered_duplicate_safe_and_gap_resyncs(tmp_path) -> None:
     store = JobV1Store(tmp_path / "jobs.sqlite")
     store.create(job_id="e1", kind="compile")
-    store.mark_running("e1", lease_owner="w", lease_deadline_utc_ms=10**12)
-    store.mark_succeeded("e1", result_artifact_refs=["art:1"])
+    store.mark_running(
+        "e1",
+        lease_owner="w",
+        lease_deadline_utc_ms=10**15,
+        expected_version=1,
+    )
+    store.mark_succeeded(
+        "e1", lease_owner="w", expected_version=2, result_artifact_refs=["art:1"]
+    )
     events = store.events(after="")
     assert [item["type"] for item in events] == ["created", "running", "succeeded"]
     replay = store.events(after="")
@@ -149,14 +162,37 @@ def test_persist_gateway_job_stamps_semantic_profile(tmp_path) -> None:
 def test_persist_gateway_job_does_not_silent_legacy(tmp_path) -> None:
     from types import SimpleNamespace
 
+    from fastapi import HTTPException
+
     from openpine.gateway.side_effects import persist_gateway_job
     from openpine.jobs.persist import JobV1Error
 
     store = JobV1Store(tmp_path / "jobs.sqlite")
     state = SimpleNamespace(job_store=store)
-    persist_gateway_job(state, job_id="opt-silent", kind="optimize", actor="gateway")
+    with pytest.raises(HTTPException) as exc_info:
+        persist_gateway_job(state, job_id="opt-silent", kind="optimize", actor="gateway")
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "semantic_profile required"
     persist_gateway_job(state, job_id="fill-1", kind="backfill", actor="gateway")
     with pytest.raises(JobV1Error, match="not found"):
         store.get("opt-silent")
     refs = store.get("fill-1")["input_artifact_refs"]
     assert not any(str(item).startswith("semantic_profile:") for item in refs)
+
+
+def test_persist_gateway_job_blocks_when_store_is_unavailable() -> None:
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from openpine.gateway.side_effects import persist_gateway_job
+
+    with pytest.raises(HTTPException) as exc_info:
+        persist_gateway_job(
+            SimpleNamespace(job_store=None),
+            job_id="job-1",
+            kind="compile",
+            actor="gateway",
+        )
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.detail == "JOB_PERSISTENCE_REQUIRED"

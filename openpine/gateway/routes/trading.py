@@ -7,8 +7,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from openpine._compat import structlog
-from openpine.admission import DEFAULT_STACK_ID, admit_run, admit_semantic_profile
+from openpine.admission import admit_semantic_profile
 from openpine.gateway.deps import GatewayState, get_state
+from openpine.gateway.side_effects import require_http_admit
 from openpine.gateway.routes.activation_guard import (
     guarded_strategy_activation,
 )
@@ -89,10 +90,7 @@ async def start_paper(
     state: GatewayState = Depends(get_state),
 ) -> TradingStatusResponse:
     """Start paper trading for a strategy."""
-    try:
-        admit_run(mode="paper", stack_id=DEFAULT_STACK_ID)
-    except AdmitError as exc:
-        raise HTTPException(403, exc.message) from exc
+    require_http_admit(state, "paper")
     admitted = _require_semantic_profile(
         profile=getattr(body, "semantic_profile", None),
         source="paper",
@@ -159,6 +157,14 @@ async def start_live(
     """Start live trading for a strategy (requires global live_enabled)."""
     import time
 
+    from openpine.live_release_gate import (
+        LIVE_RC_BLOCKED_CODE,
+        live_execution_enabled,
+    )
+
+    if not live_execution_enabled():
+        raise HTTPException(403, LIVE_RC_BLOCKED_CODE)
+
     try:
         require_live_confirmation(
             strategy_id=body.strategy_id,
@@ -166,6 +172,7 @@ async def start_live(
             confirmation=body.confirmation,
             expires_at_utc_ms=body.expires_at_utc_ms,
             now_ms=int(time.time() * 1000),
+            stack_id=state.admission_identity.stack_manifest_hash,
         )
     except LiveConfirmError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -177,10 +184,7 @@ async def start_live(
             "Live trading is disabled globally. Enable in config before starting live.",
         )
 
-    try:
-        admit_run(mode="live", stack_id=DEFAULT_STACK_ID)
-    except AdmitError as exc:
-        raise HTTPException(403, exc.message) from exc
+    require_http_admit(state, "live")
     admitted = _require_semantic_profile(
         profile=getattr(body, "semantic_profile", None),
         source="live",
@@ -242,31 +246,60 @@ async def stop_live(
 
 
 @router.get("/live/admission")
-async def live_admission() -> dict[str, object]:
+async def live_admission(
+    state: GatewayState = Depends(get_state),
+) -> dict[str, object]:
     """Non-mutating live admission preview. Never starts trading."""
-    from openpine.admission import DEFAULT_STACK_ID, admit_run
-    from openpine_contracts import AdmitError
+    from openpine.live_release_gate import (
+        LIVE_RC_BLOCKED_CODE,
+        LIVE_RC_BLOCKED_MESSAGE,
+        live_execution_enabled,
+    )
 
-    try:
-        result = admit_run(mode="live", stack_id=DEFAULT_STACK_ID)
-    except AdmitError as exc:
+    if not live_execution_enabled():
         return {
             "admitted": False,
-            "code": exc.code,
-            "message": exc.message,
+            "code": LIVE_RC_BLOCKED_CODE,
+            "message": LIVE_RC_BLOCKED_MESSAGE,
             "mutating": False,
         }
-    return {**result.to_dict(), "mutating": False}
+
+    try:
+        require_http_admit(state, "live")
+    except HTTPException as exc:
+        return {
+            "admitted": False,
+            "code": str(exc.detail),
+            "message": str(exc.detail),
+            "mutating": False,
+        }
+    deployment = state.admission_identity
+    return {
+        "admitted": True,
+        "code": "ADMIT_OK",
+        "message": "admitted",
+        "details": {
+            "stack_id": deployment.stack_id,
+            "stack_manifest_hash": deployment.stack_manifest_hash,
+        },
+        "mutating": False,
+    }
 
 
 @router.get("/live/admission/preview")
 async def live_admission_preview(
     strategy_id: str = Query(..., min_length=1),
+    state: GatewayState = Depends(get_state),
 ) -> dict[str, object]:
     """Immutable start preview. Does not start trading."""
     import time
 
-    return make_live_preview(strategy_id, now_ms=int(time.time() * 1000))
+    require_http_admit(state, "live")
+    return make_live_preview(
+        strategy_id,
+        now_ms=int(time.time() * 1000),
+        stack_id=state.admission_identity.stack_manifest_hash,
+    )
 
 
 @router.get("/trading/status/{strategy_id}", response_model=TradingStatusResponse)

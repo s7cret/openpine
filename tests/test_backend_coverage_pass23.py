@@ -69,9 +69,11 @@ class Storage:
 
 
 @pytest.mark.asyncio
-async def test_backtest_routes_run_outputs_actions_and_progress(monkeypatch, tmp_path):
+async def test_backtest_routes_run_outputs_actions_and_progress(
+    monkeypatch, tmp_path, job_store
+):
     store = Store(); storage = Storage(); registry = Registry()
-    state = SimpleNamespace(strategy_registry=registry, backtest_store=store, storage=storage, backtest_cancel_requests=set())
+    state = SimpleNamespace(strategy_registry=registry, backtest_store=store, storage=storage, backtest_cancel_requests=set(), job_store=job_store)
 
     estimate = BacktestEstimateResponse(strategy_id="s1", symbol="BTCUSDT", timeframe="1m", requested_from=1, requested_to=2, effective_from=1, effective_to=2, earliest_available=0, adjusted=True, estimated_bars=1, estimated_pages=1)
     monkeypatch.setattr(routes, "_estimate_backtest_market_data", lambda strategy, from_ms, to_ms: estimate)

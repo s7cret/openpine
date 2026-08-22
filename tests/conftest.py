@@ -6,14 +6,54 @@ from pathlib import Path
 
 import pytest
 
+from tests.admission_helpers import make_deployment_identity
+
+_REAL_RMTREE = shutil.rmtree
+
+
+@pytest.fixture(autouse=True)
+def _bind_exact_test_admission_identity(monkeypatch, request):
+    """Route/CLI tests use a nonzero, structured deployment identity."""
+
+    if request.node.path.name == "test_admission.py":
+        yield
+        return
+
+    from openpine import admission
+    from openpine.gateway import side_effects
+
+    original = side_effects.require_http_admit
+
+    def require_test_identity(state: object, mode: str) -> None:
+        if getattr(state, "admission_identity", None) is None:
+            setattr(state, "admission_identity", make_deployment_identity())
+        original(state, mode)
+
+    monkeypatch.setattr(side_effects, "require_http_admit", require_test_identity)
+    for module_name in (
+        "openpine.gateway.routes.backtest",
+        "openpine.gateway.routes.trading",
+    ):
+        module = sys.modules.get(module_name)
+        if module is not None:
+            monkeypatch.setattr(module, "require_http_admit", require_test_identity)
+    monkeypatch.setattr(
+        admission,
+        "admit_configured_deployment",
+        lambda *, mode: admission.admit_deployment(
+            mode=mode, deployment=make_deployment_identity()
+        ),
+    )
+    yield
+
 
 @pytest.fixture(autouse=True)
 def _cleanup_repo_runtime_artifacts():
     """Keep release-gate tests hermetic after tests that exercise default paths."""
     root = Path(__file__).resolve().parents[1]
-    shutil.rmtree(root / ".openpine", ignore_errors=True)
+    _REAL_RMTREE(root / ".openpine", ignore_errors=True)
     yield
-    shutil.rmtree(root / ".openpine", ignore_errors=True)
+    _REAL_RMTREE(root / ".openpine", ignore_errors=True)
 
 
 @pytest.fixture(autouse=True)
@@ -31,6 +71,19 @@ def _cleanup_backtest_terminal_state():
     clear()
     yield
     clear()
+
+
+@pytest.fixture
+def job_store(tmp_path: Path):
+    """Real transactional Job v1 store for mutating route tests."""
+
+    from openpine.jobs.persist import JobV1Store
+
+    store = JobV1Store(tmp_path / "jobs-v1.sqlite")
+    try:
+        yield store
+    finally:
+        store.close()
 
 
 # Keep async tests runnable when pytest-asyncio plugin autoload is disabled.

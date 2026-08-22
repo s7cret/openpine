@@ -6,8 +6,6 @@ import hashlib
 import json
 from typing import Any
 
-from openpine.admission import DEFAULT_STACK_ID
-
 CONFIRMATION_LIVE = "LIVE"
 PREVIEW_TTL_MS = 60_000
 
@@ -31,7 +29,7 @@ def preview_hash(*, strategy_id: str, expires_at_utc_ms: int, stack_id: str) -> 
 
 
 def make_live_preview(
-    strategy_id: str, *, now_ms: int, stack_id: str = DEFAULT_STACK_ID
+    strategy_id: str, *, now_ms: int, stack_id: str
 ) -> dict[str, Any]:
     if not strategy_id.strip():
         raise LiveConfirmError("strategy_id required")
@@ -57,7 +55,7 @@ def require_live_confirmation(
     confirmation: str,
     expires_at_utc_ms: int | None,
     now_ms: int,
-    stack_id: str = DEFAULT_STACK_ID,
+    stack_id: str,
 ) -> None:
     if confirmation != CONFIRMATION_LIVE:
         raise LiveConfirmError("typed confirmation LIVE required")

@@ -68,6 +68,28 @@ def test_missing_hash_is_fail_closed(tmp_path: Path) -> None:
         mod.verify_local_hashes(tmp_path, {})
 
 
+def test_only_wheel_bound_candidate_can_supply_install_hashes() -> None:
+    mod = _mod()
+    source = {"stage": "source", "components": {}}
+    with pytest.raises(mod.WheelhouseInstallError, match="wheel-bound"):
+        mod.wheel_hashes_from_candidate(source)
+
+    bound = {
+        "stage": "wheel-bound",
+        "components": {
+            "pinelib": {
+                "wheel": {
+                    "filename": "pinelib-5.0.0rc3-py3-none-any.whl",
+                    "sha256": "sha256:" + "a" * 64,
+                }
+            }
+        },
+    }
+    assert mod.wheel_hashes_from_candidate(bound) == {
+        "pinelib-5.0.0rc3-py3-none-any.whl": "sha256:" + "a" * 64
+    }
+
+
 def test_third_party_requirements_skip_stack_and_vcs_pins(tmp_path: Path) -> None:
     wheel = _write_wheel(
         tmp_path,

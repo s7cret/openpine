@@ -431,3 +431,72 @@ def test_live_production_compile_rejects_invalid_tv_source(
     assert not result.success
     assert result.python_code is None
     assert expected_error in "\n".join(result.errors).lower()
+
+
+def test_library_compile_propagates_sealed_artifact_bundle(monkeypatch) -> None:
+    frontend = {"schema_id": "openpine.frontend.v2", "content_hash": "front"}
+    support = {"schema_id": "openpine.support_profile.v2", "content_hash": "support"}
+    ast_artifact = {"schema_id": "pine.ast.v1", "content_hash": "ast"}
+    generated = {"schema_id": "openpine.generated_artifact.v2", "content_hash": "gen"}
+    commits = {
+        "pine2ast": "1" * 40,
+        "ast2python": "2" * 40,
+        "pinelib": "3" * 40,
+        "openpine-contracts": "4" * 40,
+    }
+    captured: dict = {}
+    parse_options_kwargs: dict = {}
+
+    def parse_options(**kwargs):
+        parse_options_kwargs.update(kwargs)
+        return SimpleNamespace()
+
+    def translate_ast(_payload, **kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(
+            code="# generated\n",
+            metadata={"compile_profile": "production"},
+            source_map=[{"python_line": 1, "origin": "generated_runtime_scaffold"}],
+            generated_artifact=generated,
+        )
+
+    apis = adapter_module._LibraryApis(
+        parse_code=lambda _source, _options: SimpleNamespace(
+            ast={"kind": "Program"},
+            diagnostics=[],
+            ok=True,
+            frontend_artifact=frontend,
+            support_profile=support,
+            ast_artifact=ast_artifact,
+        ),
+        parse_options=parse_options,
+        ast_to_json=lambda _ast: json.dumps({"kind": "Program"}),
+        translate_ast=translate_ast,
+        versions={},
+    )
+    monkeypatch.setattr(
+        adapter_module,
+        "_load_library_apis",
+        lambda: (apis, adapter_module.LibraryAvailability(available=True)),
+    )
+
+    result = SubprocessCompilerAdapter().compile(
+        "source bytes",
+        module_name="generated",
+        producer_commits=commits,
+    )
+
+    assert result.success is True
+    assert parse_options_kwargs["producer_commit"] == commits["pine2ast"]
+    assert captured["source"] == "source bytes"
+    assert captured["frontend_artifact"] is frontend
+    assert captured["support_profile"] is support
+    assert captured["ast_artifact"] is ast_artifact
+    assert captured["producer_commits"] == commits
+    assert result.generated_artifact is generated
+    assert result.source_map == [
+        {"python_line": 1, "origin": "generated_runtime_scaffold"}
+    ]
+    assert result.frontend_artifact is frontend
+    assert result.support_profile is support
+    assert result.ast_artifact is ast_artifact

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from types import SimpleNamespace
 
 
@@ -8,6 +9,7 @@ from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageRepo
 
 from openpine.gateway.routes import backtest as backtest_routes
 from openpine.runtime.engine import BacktestArtifactError
+from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
 
 
 def _bar(t: int = 0) -> Bar:
@@ -78,8 +80,8 @@ class FakeArtifactStore:
     def get_artifact(self, artifact_id: str, pine_id: str):
         if self.fail:
             raise RuntimeError("artifact meta unavailable")
-        return {
-            "compile_meta": {
+        return make_sealed_artifact(
+            {
                 "translation_metadata": {
                     "declaration": {
                         "arguments": {
@@ -92,7 +94,7 @@ class FakeArtifactStore:
                     }
                 }
             }
-        }
+        )
 
 
 class FakeOrchestrator:
@@ -116,6 +118,8 @@ def _state(**kwargs):
         artifact_store=kwargs.get("artifact_store") or FakeArtifactStore(),
         orchestrator=kwargs.get("orchestrator") or FakeOrchestrator(),
         storage=FakeStorage(),
+        config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
+        admission_identity=make_deployment_identity(),
     )
 
 
@@ -162,7 +166,7 @@ def test_run_backtest_background_success_and_runtime_error(monkeypatch):
     assert state.backtest_store.saved and state.backtest_store.saved[0]["run_id"] == "r1"
 
     _patch_runtime(monkeypatch, run_error=RuntimeError("compute failed"), provider_error=RuntimeError("provider optional"))
-    state2 = _state(artifact_store=FakeArtifactStore(fail=True))
+    state2 = _state()
     asyncio.run(backtest_routes._run_backtest_background(state2, "s1", "r2", 0, 120_000, {"x": 1}, 0, False))
     assert any("compute failed" in msg for msg in state2.backtest_store.failed)
 
@@ -231,7 +235,13 @@ def test_background_retains_lease_until_unproven_worker_unregisters(monkeypatch)
 
 def test_run_backtest_background_failure_and_cancel_paths(monkeypatch):
     _patch_runtime(monkeypatch, artifact_error=BacktestArtifactError("bad artifact"))
-    state = _state()
+    state = _state(
+        artifact_store=SimpleNamespace(
+            get_artifact=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                BacktestArtifactError("bad artifact")
+            )
+        )
+    )
     asyncio.run(backtest_routes._run_backtest_background(state, "s1", "r1", 0, 120_000, None, 0, False))
     assert state.backtest_store.failed == ["bad artifact"]
 

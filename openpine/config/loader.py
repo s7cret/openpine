@@ -14,6 +14,8 @@ _STABLE_QUOTE_ASSETS_ENV = "OPENPINE_MARKETDATA_STABLE_QUOTE_ASSETS"
 _SYMBOL_SEARCH_LIMIT_ENV = "OPENPINE_MARKETDATA_SYMBOL_SEARCH_LIMIT"
 _TIMEFRAMES_ENV = "OPENPINE_MARKETDATA_TIMEFRAMES"
 _DEFAULT_TIMEFRAME_ENV = "OPENPINE_MARKETDATA_DEFAULT_TIMEFRAME"
+_DEPLOYMENT_MANIFEST_ENV = "OPENPINE_DEPLOYMENT_MANIFEST"
+_DEPLOYMENT_WHEELHOUSE_ENV = "OPENPINE_DEPLOYMENT_WHEELHOUSE"
 
 
 def _apply_env_overrides(data: dict) -> dict:
@@ -38,6 +40,10 @@ def _apply_env_overrides(data: dict) -> dict:
         )
     if _DEFAULT_TIMEFRAME_ENV in os.environ:
         merged["marketdata_default_timeframe"] = os.environ[_DEFAULT_TIMEFRAME_ENV]
+    if _DEPLOYMENT_MANIFEST_ENV in os.environ:
+        merged["deployment_manifest"] = os.environ[_DEPLOYMENT_MANIFEST_ENV]
+    if _DEPLOYMENT_WHEELHOUSE_ENV in os.environ:
+        merged["deployment_wheelhouse"] = os.environ[_DEPLOYMENT_WHEELHOUSE_ENV]
     return merged
 
 

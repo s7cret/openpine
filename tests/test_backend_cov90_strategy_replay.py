@@ -44,7 +44,7 @@ class Registry:
         self.statuses.append((strategy_id, status))
 
 
-def test_strategy_replay_success_and_failure(monkeypatch):
+def test_strategy_replay_success_and_failure(monkeypatch, job_store):
     broadcasts = []
 
     async def broadcast(update):
@@ -89,7 +89,11 @@ def test_strategy_replay_success_and_failure(monkeypatch):
 
     reg = Registry()
     async def _call(strategy_id, registry):
-        response = await sr.strategy_replay(strategy_id, state=SimpleNamespace(orchestrator=DataOrchestrator()), registry=registry)
+        response = await sr.strategy_replay(
+            strategy_id,
+            state=SimpleNamespace(orchestrator=DataOrchestrator(), job_store=job_store),
+            registry=registry,
+        )
         await asyncio.sleep(0)
         await asyncio.sleep(0)
         return response

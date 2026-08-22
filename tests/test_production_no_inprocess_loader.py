@@ -80,10 +80,8 @@ def test_indicator_cli_and_batch_do_not_call_generated_class_loader() -> None:
     assert offenders == []
 
 
-def test_isolated_live_and_job_forward_resume_state() -> None:
-    live = (PKG / "gateway/live_runner.py").read_text(encoding="utf-8")
+def test_isolated_job_and_engine_forward_resume_state() -> None:
     job = (PKG / "workers/strategy_job_executor.py").read_text(encoding="utf-8")
     engine = (PKG / "runtime/engine.py").read_text(encoding="utf-8")
-    assert "resume_state=resume_state" in live
     assert "resume_state=resume_state" in job.split("run_isolated", 1)[1]
     assert "resume_state=resume_state" in engine.split("def run_isolated", 1)[1]
