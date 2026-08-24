@@ -1022,6 +1022,7 @@ _TRUSTED_NAMES = (
     "pinelib",
     "referencing",
     "rpds",
+    "typing_extensions",
 )
 _RUNTIME_ROOTS = ("/usr", "/lib", "/lib64")
 
@@ -1055,14 +1056,20 @@ def _stage_trusted_packages() -> list[tuple[str, str]]:
                 spec = importlib.util.find_spec(name)
                 if spec is None or not spec.origin:
                     continue
-                src = Path(spec.origin).resolve().parent
-                target = stage / name
-                shutil.copytree(
-                    src,
-                    target,
-                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
-                )
-                _chmod_tree(target)
+                origin = Path(spec.origin).resolve()
+                if spec.submodule_search_locations is None:
+                    target = stage / origin.name
+                    shutil.copy2(origin, target)
+                    target.chmod(0o644 | stat.S_IROTH)
+                else:
+                    src = origin.parent
+                    target = stage / name
+                    shutil.copytree(
+                        src,
+                        target,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+                    )
+                    _chmod_tree(target)
             _TRUSTED_STAGE = stage
         except Exception:
             shutil.rmtree(stage, ignore_errors=True)

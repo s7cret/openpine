@@ -636,7 +636,7 @@ def test_worker_argv_mounts_optional_lib64_read_only(monkeypatch: pytest.MonkeyP
 
     argv = _runtime_ro_bind_args()
 
-    assert argv == [
+    expected = [
         "--ro-bind",
         "/usr",
         "/usr",
@@ -647,6 +647,10 @@ def test_worker_argv_mounts_optional_lib64_read_only(monkeypatch: pytest.MonkeyP
         "/lib64",
         "/lib64",
     ]
+    python_prefix = Path(sys.base_prefix).resolve()
+    if not python_prefix.is_relative_to(Path("/usr").resolve()):
+        expected.extend(["--ro-bind", str(python_prefix), str(python_prefix)])
+    assert argv == expected
 
 
 def test_trusted_stage_cleanup_removes_partial_copy(monkeypatch, tmp_path: Path) -> None:
@@ -665,7 +669,10 @@ def test_trusted_stage_cleanup_removes_partial_copy(monkeypatch, tmp_path: Path)
     monkeypatch.setattr(
         worker.importlib.util,
         "find_spec",
-        lambda _name: SimpleNamespace(origin=str(tmp_path / "package" / "__init__.py")),
+        lambda _name: SimpleNamespace(
+            origin=str(tmp_path / "package" / "__init__.py"),
+            submodule_search_locations=[str(tmp_path / "package")],
+        ),
     )
 
     def fail_copy(_src, target, **_kwargs):

@@ -56,6 +56,7 @@ def admitted_manifest() -> dict[str, Any]:
                 "pinelib",
                 "referencing",
                 "rpds",
+                "typing_extensions",
             ],
         },
     }
