@@ -23,7 +23,7 @@ from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_an
 
 log = structlog.get_logger(__name__)
 
-REQUIRED_MARKETDATA_PROVIDER_VERSION = "5.0.0rc3"
+REQUIRED_MARKETDATA_PROVIDER_VERSION = "5.0.0rc4"
 
 
 class RuntimeDataProviderAdapter:

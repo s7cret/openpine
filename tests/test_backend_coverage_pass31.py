@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 from openpine.gateway.routes import backtest as bt
 from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
+from tests.rc4_fixtures import admitted_manifest, canonical_bar_envelopes, execution_context
 
 
 class FakeWS:
@@ -85,6 +86,7 @@ def _state(*, registry=None, orchestrator=None, storage=None, store=None):
         backtest_cancel_requests=set(),
         config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
     )
 
 
@@ -146,7 +148,24 @@ def test_backtest_background_success_and_helpers(monkeypatch):
     monkeypatch.setattr(ddp, "DirectBinanceDataProvider", lambda market="spot": SimpleNamespace(market=market))
     monkeypatch.setattr(bt, "_run_backtest_in_process", lambda *args, **kwargs: SimpleNamespace(raw_result=SimpleNamespace(trades=[1], equity_curve=[1]), bars_processed=1))
     bar = SimpleNamespace(time=1, time_close=2, open=1.0, high=2.0, low=0.5, close=1.5, volume=10)
-    state = _state(orchestrator=SimpleNamespace(load_bars=lambda query, progress_callback=None: SimpleNamespace(query=query, bars=[bar])), storage=FakeStorage())
+    context = execution_context(
+        series_id="binance/spot/BTCUSDT:1m",
+        instrument_id="binance/spot/BTCUSDT",
+        exchange="binance",
+        market="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+    )
+    state = _state(
+        orchestrator=SimpleNamespace(
+            load_bars=lambda query, progress_callback=None: SimpleNamespace(
+                query=query,
+                bars=[bar],
+                canonical_bars=canonical_bar_envelopes([bar], context),
+            )
+        ),
+        storage=FakeStorage(),
+    )
     asyncio.run(bt._run_backtest_background(state, "s1", "run6", 1, 2, {"override": 1}, 0, True))
     assert state.backtest_store.saved
     assert bt._normalize_metrics_payload({"metrics": {"total_trades": 3}})["trades_total"] == 3

@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import sys
 import types
+from pathlib import Path
 from types import SimpleNamespace
 
 from openpine.gateway.routes import strategies
@@ -13,6 +14,43 @@ from openpine.gateway.routes.strategies import (
     _run_isolated_strategy_replay,
 )
 from openpine.runtime.isolated_run import _confirmed_htf_bars_from_provider_bars
+from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import HASH_A, HASH_B, admitted_manifest
+
+
+def _canonical_series(bars):
+    return SimpleNamespace(
+        bars=bars,
+        canonical_bars=[
+            {
+                "series_id": "binance/spot/BTCUSDT:1m",
+                "instrument_id": "binance/spot/BTCUSDT",
+            }
+            for _ in bars
+        ],
+    )
+
+
+def _replay_state(orchestrator, job_store):
+    return SimpleNamespace(
+        orchestrator=orchestrator,
+        artifact_store=SimpleNamespace(
+            get_artifact=lambda *a, **k: make_sealed_artifact(python_code="src")
+        ),
+        config=SimpleNamespace(data_dir=Path(".openpine")),
+        admitted_manifest=admitted_manifest(),
+        job_store=job_store,
+    )
+
+
+def _stub_run_admission(monkeypatch):
+    from openpine.gateway.routes import backtest
+
+    monkeypatch.setattr(
+        backtest,
+        "_admit_loaded_backtest_run",
+        lambda *a, **k: {"data_snapshot_hash": HASH_A, "content_hash": HASH_B},
+    )
 
 
 def test_isolated_strategy_replay_forwards_confirmed_htf_bars() -> None:
@@ -114,18 +152,20 @@ def test_gateway_replay_stamps_confirmed_provider_htf_bars(
     monkeypatch.setitem(sys.modules, "marketdata_provider.contracts", md_contracts)
 
     class DataOrchestrator:
-        def get_bars(self, query):
-            return [
-                SimpleNamespace(
-                    time=0,
-                    time_close=59_999,
-                    open=1,
-                    high=2,
-                    low=0.5,
-                    close=1.5,
-                    volume=3,
-                )
-            ]
+        def load_bars(self, query):
+            return _canonical_series(
+                [
+                    SimpleNamespace(
+                        time=0,
+                        time_close=59_999,
+                        open=1,
+                        high=2,
+                        low=0.5,
+                        close=1.5,
+                        volume=3,
+                    )
+                ]
+            )
 
     class BacktestRunConfig:
         def __init__(self, **kw):
@@ -162,10 +202,12 @@ def test_gateway_replay_stamps_confirmed_provider_htf_bars(
         def update_status(self, strategy_id, status):
             return None
 
+    _stub_run_admission(monkeypatch)
+
     async def _call():
         response = await strategies.strategy_replay(
             "s1",
-            state=SimpleNamespace(orchestrator=DataOrchestrator(), job_store=job_store),
+            state=_replay_state(DataOrchestrator(), job_store),
             registry=Registry(),
         )
         await asyncio.sleep(0)
@@ -266,18 +308,36 @@ def test_gateway_replay_fetches_explicit_htf_timeframe(
     monkeypatch.setitem(sys.modules, "marketdata_provider.contracts", md_contracts)
 
     class DataOrchestrator:
-        def get_bars(self, query):
+        def load_bars(self, query):
             tf = getattr(query.timeframe, "value", query.timeframe)
             loaded.append(str(tf))
             if str(tf) == "1D":
-                return [
+                return _canonical_series(
+                    [
+                        SimpleNamespace(
+                            time=0,
+                            time_close=86_399_999,
+                            open=40,
+                            high=43,
+                            low=39,
+                            close=42,
+                            volume=1,
+                        )
+                    ]
+                )
+            return _canonical_series(
+                [
                     SimpleNamespace(
-                        time=0, time_close=86_399_999, open=40, high=43, low=39, close=42, volume=1
+                        time=0,
+                        time_close=59_999,
+                        open=1,
+                        high=2,
+                        low=0.5,
+                        close=1.5,
+                        volume=3,
                     )
                 ]
-            return [
-                SimpleNamespace(time=0, time_close=59_999, open=1, high=2, low=0.5, close=1.5, volume=3)
-            ]
+            )
 
     class BacktestRunConfig:
         def __init__(self, **kw):
@@ -314,11 +374,13 @@ def test_gateway_replay_fetches_explicit_htf_timeframe(
         def update_status(self, strategy_id, status):
             return None
 
+    _stub_run_admission(monkeypatch)
+
     async def _call():
         response = await strategies.strategy_replay(
             "s1",
             body=ReplayRequest(htf_timeframe="1D"),
-            state=SimpleNamespace(orchestrator=DataOrchestrator(), job_store=job_store),
+            state=_replay_state(DataOrchestrator(), job_store),
             registry=Registry(),
         )
         await asyncio.sleep(0)

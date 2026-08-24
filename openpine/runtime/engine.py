@@ -470,6 +470,18 @@ class BacktestEngineAdapter:
         )
         engine_config.exchange = config.exchange
         engine_config.market_type = config.market_type
+        for name in (
+            "execution_context",
+            "admitted_manifest",
+            "instrument_id",
+            "generated_artifact",
+            "bar_envelopes",
+            "run_hash",
+            "protocol_artifact_dir",
+        ):
+            value = getattr(config, name, None)
+            if value is not None:
+                object.__setattr__(engine_config, name, value)
         return engine_config
 
     def run_isolated(

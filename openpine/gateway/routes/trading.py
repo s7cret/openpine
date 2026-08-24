@@ -106,6 +106,8 @@ async def start_paper(
         raise HTTPException(400, "Cannot start paper: strategy is in error state.")
     if getattr(s, "archived", False):
         raise HTTPException(400, "Archived strategy cannot be started")
+    if hasattr(state, "execution_router") and getattr(state, "execution_router") is None:
+        raise HTTPException(503, "CANONICAL_EXECUTION_ROUTER_REQUIRED")
     _stamp_strategy_profile(s, admitted, registry)
     _stamp_strategy_mtf(s, body, registry, getattr(state, "_live_runner", None))
     try:

@@ -10,6 +10,7 @@ from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageRepo
 from openpine.gateway.routes import backtest as backtest_routes
 from openpine.runtime.engine import BacktestArtifactError
 from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
+from tests.rc4_fixtures import admitted_manifest, canonical_series
 
 
 def _bar(t: int = 0) -> Bar:
@@ -18,13 +19,13 @@ def _bar(t: int = 0) -> Bar:
     return Bar(inst, tf, t, t + 60_000, 1.0, 1.0, 1.0, 1.0, 1.0, True)
 
 
-def _series(bars: tuple[Bar, ...] | None = None) -> BarSeries:
+def _series(bars: tuple[Bar, ...] | None = None):
     bars = bars if bars is not None else (_bar(0), _bar(60_000))
     inst = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
     tf = parse_timeframe("1m")
     query = BarQuery(inst, tf, 0, 120_000, gap_policy="allow_with_metadata")
     coverage = CoverageReport(0, 120_000, bars[0].time if bars else None, bars[-1].time_close if bars else None, source_mix=("test",))
-    return BarSeries(query, bars, coverage)
+    return canonical_series(BarSeries(query, bars, coverage))
 
 
 class FakeRegistry:
@@ -120,6 +121,7 @@ def _state(**kwargs):
         storage=FakeStorage(),
         config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
     )
 
 

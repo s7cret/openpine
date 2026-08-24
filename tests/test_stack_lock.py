@@ -8,6 +8,8 @@ import sys
 import zipfile
 from pathlib import Path, PurePosixPath
 
+import openpine_contracts
+
 from openpine.stack_lock import (
     EXPECTED_COMPONENTS,
     _github_repository_from_url,
@@ -97,7 +99,7 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     root = Path(__file__).resolve().parents[1]
     # The production 4.0.2 lock stays frozen while this checkout is a 5.0 candidate.
     assert self_identity["tree_sha256"] != package_tree_identity(root / "openpine")
-    assert (root / "candidates" / "stack-candidate-5.0.0-rc.3.template.json").is_file()
+    assert (root / "candidates" / "stack-candidate-5.0.0-rc.4.template.json").is_file()
     assert validate_stack_lock(lock) == ()
 
 
@@ -255,6 +257,26 @@ def test_isolated_installed_wheel_serves_api_version_with_packaged_lock(tmp_path
     with zipfile.ZipFile(wheel) as archive:
         members = [PurePosixPath(item.filename) for item in archive.infolist()]
         assert all(not member.is_absolute() and ".." not in member.parts for member in members)
+        archive.extractall(target)
+    contracts_wheel_dir = tmp_path / "contracts-wheel"
+    contracts_root = Path(openpine_contracts.__file__).resolve().parents[1]
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "build",
+            "--wheel",
+            "--outdir",
+            str(contracts_wheel_dir),
+            str(contracts_root),
+        ],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    contracts_wheel = next(contracts_wheel_dir.glob("openpine_contracts-*.whl"))
+    with zipfile.ZipFile(contracts_wheel) as archive:
         archive.extractall(target)
     smoke = f"""
 import sys

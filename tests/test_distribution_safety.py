@@ -340,7 +340,7 @@ def test_stack_dependencies_are_immutable_and_ci_extras_are_complete() -> None:
         "openpine-contracts",
     }
     for name in direct_names:
-        assert f"{name}==5.0.0rc3" in dependencies
+        assert f"{name}==5.0.0rc4" in dependencies
     assert not any("git+" in dependency or " @ " in dependency for dependency in dependencies)
 
     dev_dependencies = config["project"]["optional-dependencies"]["dev"]

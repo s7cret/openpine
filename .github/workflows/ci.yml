@@ -44,13 +44,13 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/openpine-candidate"
           python scripts/materialize_stack_candidate.py \
-            --template candidates/stack-candidate-5.0.0-rc.3.template.json \
+            --template candidates/stack-candidate-5.0.0-rc.4.template.json \
             --openpine-sha "$GITHUB_SHA" \
             --created-at-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --builder github-actions \
             --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --source-uri "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.json"
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.json"
       - name: Resolve active stack candidate
         id: stack
         run: >-
@@ -69,42 +69,42 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pine2ast_repo || 's7cret/pine2ast' }}
-          ref: ${{ steps.stack.outputs.pine2ast_sha || 'c57323351a1e638e0337e1be247883da2570ab28' }}
+          ref: ${{ steps.stack.outputs.pine2ast_sha || '1715eef9c395b81db24224b6724f16589c1c960a' }}
           path: stack/pine2ast
           fetch-depth: 0
       - name: Checkout AST2Python
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.ast2python_repo || 's7cret/ast2python' }}
-          ref: ${{ steps.stack.outputs.ast2python_sha || 'b3013b13a32a6e3eb68edc111390e35f206323fc' }}
+          ref: ${{ steps.stack.outputs.ast2python_sha || 'ce8a691c6bdc8a1a1c81a2b8ed2cebb36e02da3b' }}
           path: stack/ast2python
           fetch-depth: 0
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
-          ref: ${{ steps.stack.outputs.pinelib_sha || 'fcf9c0f92213313db39bc42c83f676786c85400c' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || '6e649cb81a2d0d971dd7df66c542e22e19e39319' }}
           path: stack/pinelib
           fetch-depth: 0
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
-          ref: ${{ steps.stack.outputs.backtest_engine_sha || '329b9905bff2ea0b7b7f48662e4ce8b83d919c60' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '3ccb3b32779cd633bcf3bde125dd586c3367f792' }}
           path: stack/backtest_engine
           fetch-depth: 0
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.marketdata_provider_repo || 's7cret/marketdata-provider' }}
-          ref: ${{ steps.stack.outputs.marketdata_provider_sha || 'b868ace65524f5c3bf62498f667db411e299a4ce' }}
+          ref: ${{ steps.stack.outputs.marketdata_provider_sha || 'e098947dfd30444273090e521e5c749673909c37' }}
           path: stack/marketdata-provider
           fetch-depth: 0
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.optimizer_repo || 's7cret/optimizer' }}
-          ref: ${{ steps.stack.outputs.optimizer_sha || '73d67934d078cb97a4947cc7b0b12665c4086099' }}
+          ref: ${{ steps.stack.outputs.optimizer_sha || '1a6e8857d18ec072309bdf6d4832f56a6c3de6e4' }}
           path: stack/optimizer
           fetch-depth: 0
       - name: Exclude candidate checkouts from OpenPine source status
@@ -129,13 +129,13 @@ jobs:
           python scripts/finalize_stack_candidate.py \
             --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
             --wheelhouse "$RUNNER_TEMP/openpine-candidate-verification" \
-            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.wheels.json"
           rm -f "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}"
           python -m venv "$RUNNER_TEMP/openpine-candidate-venv"
           "$RUNNER_TEMP/openpine-candidate-venv/bin/python" -m pip install -U pip
           "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
             scripts/install_candidate_wheelhouse.py \
-            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json" \
+            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.wheels.json" \
             --wheelhouse "$RUNNER_TEMP/openpine-candidate-verification" \
             --python "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
             --install
@@ -148,9 +148,9 @@ jobs:
         env:
           OPENPINE_BUILD_COMMIT: ${{ github.sha }}
           OPENPINE_PRODUCER_COMMITS_JSON: >-
-            {"pine2ast":"a5870fc40b790b764d70e4eac9db0abbb31a2a15","ast2python":"3086e9f0e516a06c11daba4208a11845ec7021bd","pinelib":"7e681f3ce2945d2ba702833b1f82aa4da133d909","openpine-contracts":"91c405e759206b542d22df242ef55ac49b1f0bb4"}
+            {"pine2ast":"1715eef9c395b81db24224b6724f16589c1c960a","ast2python":"ce8a691c6bdc8a1a1c81a2b8ed2cebb36e02da3b","pinelib":"6e649cb81a2d0d971dd7df66c542e22e19e39319","openpine-contracts":"a91c0ce0d36d60e8dc5cb43e7aa92ab59c2eaa6c"}
         run: >-
-          OPENPINE_CANDIDATE_MANIFEST="$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
+          OPENPINE_CANDIDATE_MANIFEST="$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.wheels.json"
           bash scripts/release_gate.sh
       - name: Type-check hardened API boundary
         run: >-

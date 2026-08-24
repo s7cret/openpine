@@ -20,10 +20,17 @@ import tempfile
 import threading
 import time
 import uuid
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from openpine_contracts import validate_payload, verify_content_hash
+
 from openpine.runtime.cgroup import CgroupError, attach_worker_tree, prepare_worker_cgroup
+from openpine.runtime.worker_protocol import WorkerProtocolError, WorkerProtocolTranscript
+
+ExecutionContext = dict[str, Any]
+AdmittedManifest = Mapping[str, Any]
 
 BWRAP = "/usr/bin/bwrap"
 SANDBOX_PYTHON = "/usr/bin/python3"
@@ -48,6 +55,132 @@ ALLOWED = {
     "re", "copy", "numbers", "pinelib", "openpine_contracts",
     "__future__", "ast2python",
 }
+
+from copy import deepcopy
+from openpine_contracts import (
+    aggregate_batch_hash,
+    seal_content_hash,
+    validate_payload,
+    validate_worker_protocol_sequence,
+    verify_content_hash,
+)
+
+_COMPONENT = {
+    "HELLO": "openpine", "LOAD_ARTIFACT": "openpine", "INIT_RUN": "openpine",
+    "BAR_BEGIN": "openpine", "INTENT_BATCH": "pinelib",
+    "BROKER_EVENT_BATCH": "backtest_engine", "RECALC_REQUEST": "backtest_engine",
+    "RECALC_RESULT": "pinelib", "BAR_COMMIT": "backtest_engine",
+    "FINALIZE": "openpine", "ABORT": "openpine",
+}
+_ROLE = {
+    "HELLO": "worker", "LOAD_ARTIFACT": "parent", "INIT_RUN": "parent",
+    "BAR_BEGIN": "parent", "INTENT_BATCH": "worker",
+    "BROKER_EVENT_BATCH": "engine", "RECALC_REQUEST": "engine",
+    "RECALC_RESULT": "worker", "BAR_COMMIT": "engine",
+    "FINALIZE": "parent", "ABORT": "parent",
+}
+_ALLOWED_AFTER = {
+    "HELLO": {"LOAD_ARTIFACT", "ABORT"},
+    "LOAD_ARTIFACT": {"INIT_RUN", "ABORT"},
+    "INIT_RUN": {"BAR_BEGIN", "FINALIZE", "ABORT"},
+    "BAR_BEGIN": {"INTENT_BATCH", "ABORT"},
+    "INTENT_BATCH": {"BROKER_EVENT_BATCH", "BAR_COMMIT", "ABORT"},
+    "BROKER_EVENT_BATCH": {"RECALC_REQUEST", "BAR_COMMIT", "ABORT"},
+    "RECALC_REQUEST": {"RECALC_RESULT", "ABORT"},
+    "RECALC_RESULT": {"INTENT_BATCH", "ABORT"},
+    "BAR_COMMIT": {"BAR_BEGIN", "FINALIZE", "ABORT"},
+    "FINALIZE": set(), "ABORT": set(),
+}
+
+def _semver(value):
+    text = str(value)
+    if "rc" in text and "-rc." not in text:
+        base, marker, rc = text.partition("rc")
+        if marker and base and rc.isdigit():
+            return f"{base}-rc.{rc}"
+    return text
+
+class _Protocol:
+    def __init__(self, execution_context):
+        self.context = deepcopy(execution_context)
+        validate_payload("openpine.execution_context.v1", self.context)
+        if not verify_content_hash(self.context, schema_id="openpine.execution_context.v1"):
+            raise RuntimeError("execution context content hash is invalid")
+        commits = self.context["producer_commits"]
+        versions = {
+            row["name"]: _semver(row["version"])
+            for row in self.context["wheel_identities"]
+        }
+        self.identities = {
+            component: (versions[component], commits[component])
+            for component in {"openpine", "pinelib", "backtest_engine"}
+        }
+        self.messages = []
+
+    @property
+    def last_id(self):
+        return None if not self.messages else self.messages[-1]["message_id"]
+
+    def _transition(self, kind):
+        if not self.messages and kind != "HELLO":
+            raise RuntimeError("worker protocol must start with HELLO")
+        if self.messages and kind not in _ALLOWED_AFTER[self.messages[-1]["kind"]]:
+            raise RuntimeError("invalid worker protocol transition")
+
+    def append(self, kind, body, created_at_utc_ms):
+        self._transition(kind)
+        component = _COMPONENT[kind]
+        version, commit = self.identities[component]
+        sequence = len(self.messages)
+        payload = seal_content_hash({
+            "schema_id": "openpine.worker.protocol.v2",
+            "schema_version": "2.3.0",
+            "producer": component,
+            "producer_version": version,
+            "producer_commit": commit,
+            "stack_id": self.context["stack_manifest_hash"],
+            "created_at_utc_ms": int(created_at_utc_ms),
+            "serializer_id": "openpine.canonical.json.v1",
+            "content_hash_alg": "sha256",
+            "message_id": f"{self.context['session_id']}:{sequence}:{kind}",
+            "sender_role": _ROLE[kind],
+            "session_id": self.context["session_id"],
+            "run_id": self.context["run_id"],
+            "sequence": sequence,
+            "correlation_id": self.context["run_id"],
+            "causation_id": self.last_id,
+            "kind": kind,
+            "body": deepcopy(body),
+        }, schema_id="openpine.worker.protocol.v2")
+        validate_payload("openpine.worker.protocol.v2", payload)
+        candidate = [*self.messages, payload]
+        if kind in {"FINALIZE", "ABORT"}:
+            validate_worker_protocol_sequence(candidate)
+        self.messages.append(payload)
+        return payload
+
+    def accept(self, message):
+        validate_payload("openpine.worker.protocol.v2", message)
+        if not verify_content_hash(message, schema_id="openpine.worker.protocol.v2"):
+            raise RuntimeError("worker protocol content hash is invalid")
+        kind = message["kind"]
+        self._transition(kind)
+        component = _COMPONENT[kind]
+        version, commit = self.identities[component]
+        expected = {
+            "producer": component, "producer_version": version,
+            "producer_commit": commit, "stack_id": self.context["stack_manifest_hash"],
+            "session_id": self.context["session_id"], "run_id": self.context["run_id"],
+            "sequence": len(self.messages), "correlation_id": self.context["run_id"],
+            "causation_id": self.last_id, "sender_role": _ROLE[kind],
+        }
+        if any(message.get(field) != value for field, value in expected.items()):
+            raise RuntimeError("worker protocol identity mismatch")
+        candidate = [*self.messages, message]
+        if kind in {"FINALIZE", "ABORT"}:
+            validate_worker_protocol_sequence(candidate)
+        self.messages.append(deepcopy(message))
+        return message
 
 def _validated_ohlc_bar(raw_bar, label):
     if not isinstance(raw_bar, dict):
@@ -238,6 +371,71 @@ _OPEN_TRADE_FIELDS = frozenset({
     "exit_id", "max_runup", "max_drawdown", "entry_bar_index",
 })
 
+def _legacy_projection(sealed):
+    validate_payload("openpine.broker_projection.v1", sealed)
+    if not verify_content_hash(sealed, schema_id="openpine.broker_projection.v1"):
+        raise RuntimeError("broker projection content hash is invalid")
+    position = sealed["position"]
+    open_trades = [
+        {
+            "entry_price": float(row["entry_price"]),
+            "entry_time": row["entry_time_utc_ms"],
+            "profit": float(row["unrealized_pnl"]),
+            "commission": 0.0,
+            "qty": float(row["qty"]),
+            "side": row["direction"].lower(),
+            "size": float(row["qty"]) * (1 if row["direction"] == "LONG" else -1),
+            "entry_id": row["entry_name"],
+            "entry_bar_index": row["entry_bar_index"],
+        }
+        for row in sealed["open_trades"]
+    ]
+    closed_trades = [
+        {
+            "entry_price": float(row["entry_price"]),
+            "exit_price": float(row["exit_price"]),
+            "entry_time": row["entry_time_utc_ms"],
+            "exit_time": row["exit_time_utc_ms"],
+            "profit": float(row["realized_pnl"]),
+            "commission": float(row["commission"]),
+            "qty": float(row["qty"]),
+            "side": row["direction"].lower(),
+            "size": float(row["qty"]) * (1 if row["direction"] == "LONG" else -1),
+            "entry_id": row["entry_name"],
+            "entry_bar_index": row["entry_bar_index"],
+            "exit_bar_index": row["exit_bar_index"],
+        }
+        for row in sealed["closed_trades"]
+    ]
+    return {
+        "cash": float(sealed["cash"]),
+        "equity": float(sealed["equity"]),
+        "netprofit": float(sealed["realized_pnl"]),
+        "openprofit": float(sealed["unrealized_pnl"]),
+        "grossprofit": float(sealed["gross_profit"]),
+        "grossloss": float(sealed["gross_loss"]),
+        "position_size": (
+            float(position["qty"])
+            * (-1 if position["direction"] == "SHORT" else 1)
+        ),
+        "position_avg_price": (
+            0.0 if position["avg_price"] is None else float(position["avg_price"])
+        ),
+        "position_entry_name": position["entry_name"],
+        "position_direction": position["direction"].lower(),
+        "opentrades": len(open_trades),
+        "closedtrades": len(closed_trades),
+        "wintrades": sealed["winning_trades"],
+        "losstrades": sealed["losing_trades"],
+        "eventrades": sealed["even_trades"],
+        "max_drawdown": 0.0,
+        "max_runup": 0.0,
+        "orders": sealed["orders"],
+        "fills": sealed["fills"],
+        "open_trade_log": open_trades,
+        "closed_trade_log": closed_trades,
+    }
+
 class _LedgerProjection:
     def __init__(self, payload):
         if not isinstance(payload, dict):
@@ -280,7 +478,14 @@ class _LedgerProjection:
 
         return metric
 
-def _interactive_loop(inst, rt, process_bar_arity, PineBar):
+def _interactive_loop(
+    inst,
+    rt,
+    process_bar_arity,
+    PineBar,
+    execution_context,
+    generated_artifact,
+):
     ctx = getattr(inst, "ctx", None)
     if ctx is None:
         raise RuntimeError("interactive strategy must expose ctx")
@@ -292,9 +497,29 @@ def _interactive_loop(inst, rt, process_bar_arity, PineBar):
     tape = getattr(ctx, "intent_tape", None)
     if tape is None:
         raise RuntimeError("interactive strategy must expose an intent tape")
+    if list(tape.events):
+        raise RuntimeError("strategy constructor emitted intents before protocol admission")
+    initialize = getattr(ctx, "_initialize_intent_context", None)
+    if not callable(initialize):
+        raise RuntimeError("strategy context cannot admit execution identity")
+    initialize(
+        run_id=execution_context["run_id"],
+        strategy_id=execution_context["strategy_id"],
+        series_id=execution_context["series_id"],
+        instrument_id=execution_context["instrument_id"],
+        timeframe=execution_context["timeframe"],
+        producer_commit=execution_context["producer_commits"]["pinelib"],
+        strict_production=True,
+        stack_id=execution_context["stack_manifest_hash"],
+        execution_context=execution_context,
+    )
+    ctx.attach_runtime(rt)
+    tape = ctx.intent_tape
+    protocol = _Protocol(execution_context)
     current_key = None
     current_bar = None
     sent_events = 0
+    last_intent_message = None
 
     def commit_current():
         nonlocal current_key, current_bar
@@ -312,54 +537,134 @@ def _interactive_loop(inst, rt, process_bar_arity, PineBar):
         current_key = None
         current_bar = None
 
-    json.dump({
-        "ok": True,
-        "message_type": "HELLO",
-        "protocol": "openpine.worker.protocol.v2",
-        "capabilities": ["bar_stream", "broker_projection", "intent_batch", "heartbeat"],
-        "isolation": _isolation(),
-    }, sys.stdout)
+    hello = protocol.append(
+        "HELLO",
+        {
+            "worker_id": execution_context["session_id"],
+            "protocol_version": "2.3.0",
+            "capabilities": ["closed_bar", "checkpoint_v1"],
+        },
+        0,
+    )
+    json.dump(hello, sys.stdout)
     sys.stdout.write("\n")
     sys.stdout.flush()
 
+    loaded = False
+    initialized = False
     for line in sys.stdin:
         if len(line) > 1_000_000:
             raise RuntimeError("interactive message exceeds size limit")
         message = json.loads(line)
-        message_type = message.get("message_type")
-        if message_type == "PING":
-            json.dump({"ok": True, "message_type": "PONG"}, sys.stdout)
+        protocol.accept(message)
+        kind = message["kind"]
+        body = message["body"]
+        if kind == "LOAD_ARTIFACT":
+            if (
+                body["artifact_hash"] != generated_artifact["content_hash"]
+                or body["module_hash"] != generated_artifact["emitted_module_hash"]
+                or body["entrypoint_module"] != generated_artifact["entrypoint_module"]
+                or body["entrypoint_class"] != generated_artifact["entrypoint_class"]
+            ):
+                raise RuntimeError("loaded artifact identity mismatch")
+            loaded = True
+            continue
+        if kind == "INIT_RUN":
+            if not loaded:
+                raise RuntimeError("artifact must be loaded before run initialization")
+            if (
+                body["execution_context"] != execution_context
+                or body["execution_context_hash"] != execution_context["content_hash"]
+                or body["run_id"] != execution_context["run_id"]
+            ):
+                raise RuntimeError("run initialization identity mismatch")
+            initialized = True
+            continue
+        if kind == "FINALIZE":
+            commit_current()
+            return 0
+        if kind == "ABORT":
+            commit_current()
+            return 2
+        if not initialized:
+            raise RuntimeError("run must be initialized before bar execution")
+        if kind == "BROKER_EVENT_BATCH":
+            continue
+        if kind == "RECALC_REQUEST":
+            if current_bar is None or last_intent_message is None:
+                raise RuntimeError("recalculation has no active callback")
+            projection = _LedgerProjection(
+                _legacy_projection(body["broker_projection"])
+            )
+            ctx.attach_strategy_ledger_view(projection)
+            if "closedtrades" in projection._payload:
+                ctx.closedtrades = int(projection._payload["closedtrades"])
+            recalc_iteration = body["recalc_iteration"]
+            begin_callback = getattr(ctx, "begin_intent_callback", None)
+            if callable(begin_callback):
+                begin_callback(phase="score", recalc_iteration=recalc_iteration)
+            if process_bar_arity == 1:
+                inst._process_bar(current_bar)
+            else:
+                inst._process_bar(current_bar, body["bar_index"])
+            recalc_result = protocol.append(
+                "RECALC_RESULT",
+                {
+                    "run_id": execution_context["run_id"],
+                    "bar_index": body["bar_index"],
+                    "recalc_iteration": recalc_iteration,
+                    "intent_batch_message_id": last_intent_message["message_id"],
+                    "intent_batch_hash": last_intent_message["body"]["intent_batch_hash"],
+                },
+                current_bar.time,
+            )
+            json.dump(recalc_result, sys.stdout)
+            sys.stdout.write("\n")
+            all_events = list(tape.events)
+            batch = [_safe(dict(item)) for item in all_events[sent_events:]]
+            sent_events = len(all_events)
+            response = protocol.append(
+                "INTENT_BATCH",
+                {
+                    "run_id": execution_context["run_id"],
+                    "bar_index": body["bar_index"],
+                    "recalc_iteration": recalc_iteration,
+                    "intent_batch_hash": aggregate_batch_hash(
+                        batch,
+                        batch_kind="INTENT_BATCH",
+                        item_schema_id="openpine.intent.v2",
+                    ),
+                    "intents": batch,
+                },
+                current_bar.time,
+            )
+            last_intent_message = response
+            json.dump(response, sys.stdout)
             sys.stdout.write("\n")
             sys.stdout.flush()
             continue
-        if message_type in {"FINALIZE", "ABORT"}:
+        if kind == "BAR_COMMIT":
             commit_current()
-            json.dump({
-                "ok": message_type == "FINALIZE",
-                "message_type": message_type,
-                "intent_tape_hash": tape.content_hash(),
-            }, sys.stdout)
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-            return 0 if message_type == "FINALIZE" else 2
-        if message_type != "BAR_BEGIN":
-            raise RuntimeError("unsupported interactive message type")
+            continue
+        if kind != "BAR_BEGIN":
+            raise RuntimeError("unsupported interactive message kind")
 
-        raw_bar = message.get("bar")
-        time, open_, high, low, close = _validated_ohlc_bar(raw_bar, "chart bar")
-        bar_index = message.get("bar_index")
-        recalc_iteration = message.get("recalc_iteration", 0)
-        if isinstance(bar_index, bool) or not isinstance(bar_index, int) or bar_index < 0:
-            raise RuntimeError("bar_index must be a nonnegative integer")
-        if (
-            isinstance(recalc_iteration, bool)
-            or not isinstance(recalc_iteration, int)
-            or recalc_iteration < 0
-        ):
-            raise RuntimeError("recalc_iteration must be a nonnegative integer")
+        raw_bar = body["bar"]
+        projection_payload = body["broker_projection"]
+        if not verify_content_hash(raw_bar, schema_id="openpine.marketdata.bar.v2"):
+            raise RuntimeError("bar content hash is invalid")
+        if body["bar_hash"] != raw_bar["bar_content_hash"]:
+            raise RuntimeError("bar identity mismatch")
+        time = int(raw_bar["open_time_utc_ms"])
+        open_ = float(raw_bar["open"])
+        high = float(raw_bar["high"])
+        low = float(raw_bar["low"])
+        close = float(raw_bar["close"])
+        bar_index = body["bar_index"]
+        recalc_iteration = body["recalc_iteration"]
         key = (bar_index, time)
         if current_key is not None and current_key != key:
-            commit_current()
+            raise RuntimeError("previous bar must be committed before BAR_BEGIN")
         if current_key is None:
             current_bar = PineBar(
                 time=time,
@@ -367,53 +672,45 @@ def _interactive_loop(inst, rt, process_bar_arity, PineBar):
                 high=high,
                 low=low,
                 close=close,
-                volume=float(raw_bar.get("volume") or 0),
-                time_close=(
-                    int(raw_bar["time_close"])
-                    if raw_bar.get("time_close") is not None
-                    else None
-                ),
+                volume=float(raw_bar["volume"]),
+                time_close=int(raw_bar["close_time_utc_ms"]),
             )
             rt.begin_bar(current_bar)
             current_key = key
 
-        projection = _LedgerProjection(message.get("projection"))
+        projection = _LedgerProjection(_legacy_projection(projection_payload))
         ctx.attach_strategy_ledger_view(projection)
         if "closedtrades" in projection._payload:
             ctx.closedtrades = int(projection._payload["closedtrades"])
         begin_callback = getattr(ctx, "begin_intent_callback", None)
         if callable(begin_callback):
-            begin_callback(
-                phase=str(message.get("phase") or "score"),
-                recalc_iteration=recalc_iteration,
-            )
-        try:
-            if process_bar_arity == 1:
-                inst._process_bar(current_bar)
-            else:
-                inst._process_bar(current_bar, bar_index)
-        except Exception as exc:
-            json.dump({
-                "ok": False,
-                "message_type": "ABORT",
-                "error_code": "STRATEGY_RUNTIME_ERROR",
-                "error": f"{exc.__class__.__name__}: {exc}",
-            }, sys.stdout)
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-            return 2
+            begin_callback(phase="score", recalc_iteration=recalc_iteration)
+        if process_bar_arity == 1:
+            inst._process_bar(current_bar)
+        else:
+            inst._process_bar(current_bar, bar_index)
 
         all_events = list(tape.events)
         batch = [_safe(dict(item)) for item in all_events[sent_events:]]
         sent_events = len(all_events)
-        json.dump({
-            "ok": True,
-            "message_type": "INTENT_BATCH",
-            "bar_index": bar_index,
-            "recalc_iteration": recalc_iteration,
-            "intent_batch": batch,
-            "tape_increment_hash": tape.content_hash(),
-        }, sys.stdout)
+        intent_batch_hash = aggregate_batch_hash(
+            batch,
+            batch_kind="INTENT_BATCH",
+            item_schema_id="openpine.intent.v2",
+        )
+        response = protocol.append(
+            "INTENT_BATCH",
+            {
+                "run_id": execution_context["run_id"],
+                "bar_index": bar_index,
+                "recalc_iteration": recalc_iteration,
+                "intent_batch_hash": intent_batch_hash,
+                "intents": batch,
+            },
+            time,
+        )
+        last_intent_message = response
+        json.dump(response, sys.stdout)
         sys.stdout.write("\n")
         sys.stdout.flush()
     commit_current()
@@ -429,7 +726,38 @@ def main() -> int:
         pass
     raw = sys.stdin.readline(1_000_000)
     request = json.loads(raw)
-    if request.get("stack_id") != "openpine-5.0":
+    if request.get("interactive") is True:
+        from openpine_contracts import validate_payload, verify_content_hash
+
+        execution_context = request.get("execution_context")
+        try:
+            validate_payload("openpine.execution_context.v1", execution_context)
+        except Exception:
+            json.dump({"ok": False, "error": "execution_context invalid"}, sys.stdout)
+            return 2
+        if not verify_content_hash(
+            execution_context, schema_id="openpine.execution_context.v1"
+        ) or request.get("stack_id") != execution_context.get("stack_manifest_hash"):
+            json.dump({"ok": False, "error": "stack_id mismatch"}, sys.stdout)
+            return 2
+        generated_artifact = request.get("generated_artifact")
+        try:
+            validate_payload("openpine.generated_artifact.v2", generated_artifact)
+        except Exception:
+            json.dump({"ok": False, "error": "generated artifact invalid"}, sys.stdout)
+            return 2
+        if not verify_content_hash(
+            generated_artifact, schema_id="openpine.generated_artifact.v2"
+        ):
+            json.dump({"ok": False, "error": "generated artifact hash invalid"}, sys.stdout)
+            return 2
+        from ast2python.artifact import _digest
+        if generated_artifact.get("emitted_module_hash") != _digest(
+            request.get("source", ""), "openpine.generated_artifact.v2"
+        ):
+            json.dump({"ok": False, "error": "generated module hash mismatch"}, sys.stdout)
+            return 2
+    elif request.get("stack_id") != "openpine-5.0":
         json.dump({"ok": False, "error": "stack_id mismatch"}, sys.stdout)
         return 2
     if request.get("semantic_profile") not in {"legacy_4x", "strict_5x"}:
@@ -516,8 +844,16 @@ def main() -> int:
                 stamped = request.get("htf_bars") or []
                 for raw_bar in bars:
                     _validated_ohlc_bar(raw_bar, "chart bar")
+                if request.get("interactive") is True:
+                    from pinelib.execution_context import ExecutionContext as PineExecutionContext
+
+                    symbol_info = PineExecutionContext.coerce(
+                        execution_context
+                    ).to_symbol_info()
+                else:
+                    symbol_info = SymbolInfo(tickerid=str(request["instrument_id"]))
                 rt = PineRuntime(
-                    symbol_info=SymbolInfo(tickerid="S"),
+                    symbol_info=symbol_info,
                     timeframe=TimeframeInfo.from_string(
                         str(request.get("chart_timeframe"))
                         if request.get("interactive") is True
@@ -567,11 +903,18 @@ def main() -> int:
                 return 2
             if request.get("interactive") is True:
                 try:
-                    return _interactive_loop(inst, rt, process_bar_arity, PineBar)
+                    return _interactive_loop(
+                        inst,
+                        rt,
+                        process_bar_arity,
+                        PineBar,
+                        execution_context,
+                        request["generated_artifact"],
+                    )
                 except Exception as exc:
                     json.dump({
                         "ok": False,
-                        "message_type": "ABORT",
+                        "kind": "ABORT",
                         "error_code": "WORKER_PROTOCOL_ERROR",
                         "error": f"{exc.__class__.__name__}: {exc}",
                     }, sys.stdout)
@@ -745,10 +1088,41 @@ def _runtime_ro_bind_args() -> list[str]:
     return argv
 
 
-def _bwrap_argv(unit_name: str | None = None) -> list[str]:
-    if not Path(BWRAP).is_file():
+def _resolved_worker_policy(admitted_manifest: AdmittedManifest) -> dict[str, Any]:
+    if not isinstance(admitted_manifest, Mapping):
+        raise IsolatedWorkerError("sealed admitted manifest is required")
+    manifest_hash = admitted_manifest.get("manifest_hash")
+    if not isinstance(manifest_hash, str) or not manifest_hash.startswith("sha256:"):
+        raise IsolatedWorkerError("sealed admitted manifest hash is required")
+    policy = admitted_manifest.get("worker_policy")
+    if not isinstance(policy, Mapping):
+        raise IsolatedWorkerError("admitted worker policy is required")
+    required = {
+        "bubblewrap_path",
+        "python_path",
+        "worker_user",
+        "tmpfs_bytes",
+        "memory_max_bytes",
+        "tasks_max",
+        "trusted_packages",
+    }
+    if set(policy) != required:
+        raise IsolatedWorkerError("admitted worker policy fields are invalid")
+    trusted = policy.get("trusted_packages")
+    if trusted != ["ast2python", "openpine_contracts", "pinelib"]:
+        raise IsolatedWorkerError("admitted trusted package policy is invalid")
+    resolved = dict(policy)
+    resolved["trusted_package_binds"] = _stage_trusted_packages()
+    return resolved
+
+
+def _bwrap_argv(
+    admitted_manifest: AdmittedManifest, unit_name: str | None = None
+) -> list[str]:
+    policy = _resolved_worker_policy(admitted_manifest)
+    if not Path(str(policy["bubblewrap_path"])).is_file():
         raise IsolatedWorkerError("bubblewrap is required for isolated execution")
-    if not Path(SANDBOX_PYTHON).is_file():
+    if not Path(str(policy["python_path"])).is_file():
         raise IsolatedWorkerError("sandbox python is missing")
     if worker_user_uid() is None:
         raise IsolatedWorkerError("dedicated openpine-worker user is required")
@@ -763,10 +1137,10 @@ def _bwrap_argv(unit_name: str | None = None) -> list[str]:
         "--pipe",
         "--service-type=exec",
         f"--unit={unit}",
-        f"--uid={WORKER_USER}",
-        "--property=MemoryMax=134217728",
+        f"--uid={policy['worker_user']}",
+        f"--property=MemoryMax={policy['memory_max_bytes']}",
         "--property=MemorySwapMax=0",
-        "--property=TasksMax=32",
+        f"--property=TasksMax={policy['tasks_max']}",
         "--property=CPUQuota=100%",
         "--property=KillMode=control-group",
         "--property=OOMPolicy=kill",
@@ -774,14 +1148,14 @@ def _bwrap_argv(unit_name: str | None = None) -> list[str]:
         "--",
     ]
     argv = prefix + [
-        BWRAP,
+        str(policy["bubblewrap_path"]),
         *_runtime_ro_bind_args(),
         "--size",
-        str(TMPFS_BYTES),
+        str(policy["tmpfs_bytes"]),
         "--tmpfs",
         "/tmp",
     ]
-    for src, dest in _stage_trusted_packages():
+    for src, dest in policy["trusted_package_binds"]:
         argv.extend(["--ro-bind", src, dest])
     return argv + [
         "--proc",
@@ -817,7 +1191,7 @@ def _bwrap_argv(unit_name: str | None = None) -> list[str]:
         "1",
         "--chdir",
         "/tmp",
-        SANDBOX_PYTHON,
+        str(policy["python_path"]),
         "-I",
         "-c",
         _BOOTSTRAP,
@@ -990,31 +1364,84 @@ class InteractiveWorkerSession:
     def __init__(
         self,
         source: bytes,
+        execution_context: ExecutionContext,
+        instrument_id: str,
+        admitted_manifest: AdmittedManifest,
+        generated_artifact: dict[str, Any],
+        run_hash: str,
+        protocol_artifact_dir: str | Path,
         *,
         semantic_profile: str,
         chart_timeframe: str,
         params: dict[str, Any] | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
         timeout_s: float = 5.0,
-        stack_id: str = "openpine-5.0",
         cgroup_dir: str | Path | None = None,
     ) -> None:
         if len(source) > 500_000:
             raise IsolatedWorkerError("artifact source exceeds size limit")
-        if stack_id != "openpine-5.0":
-            raise IsolatedWorkerError("stack_id mismatch")
+        try:
+            validate_payload("openpine.execution_context.v1", execution_context)
+        except ValueError as exc:
+            raise IsolatedWorkerError("execution_context is invalid") from exc
+        if not verify_content_hash(
+            execution_context, schema_id="openpine.execution_context.v1"
+        ):
+            raise IsolatedWorkerError("execution_context content hash is invalid")
+        try:
+            validate_payload("openpine.generated_artifact.v2", generated_artifact)
+        except ValueError as exc:
+            raise IsolatedWorkerError("generated artifact is invalid") from exc
+        if not verify_content_hash(
+            generated_artifact, schema_id="openpine.generated_artifact.v2"
+        ):
+            raise IsolatedWorkerError("generated artifact content hash is invalid")
+        from ast2python.artifact import _digest
+
+        if generated_artifact.get("emitted_module_hash") != _digest(
+            source.decode("utf-8"), "openpine.generated_artifact.v2"
+        ):
+            raise IsolatedWorkerError("generated artifact module hash mismatch")
+        if (
+            execution_context.get("generated_artifact_hash")
+            != generated_artifact.get("content_hash")
+            or execution_context.get("emitted_module_hash")
+            != generated_artifact.get("emitted_module_hash")
+            or execution_context.get("stack_manifest_hash")
+            != generated_artifact.get("stack_id")
+        ):
+            raise IsolatedWorkerError("generated artifact admission identity mismatch")
+        if (
+            not isinstance(run_hash, str)
+            or not run_hash.startswith("sha256:")
+            or run_hash == "sha256:" + "0" * 64
+        ):
+            raise IsolatedWorkerError("sealed run hash is required")
+        stack_manifest_hash = execution_context.get("stack_manifest_hash")
+        if stack_manifest_hash != execution_context.get("stack_id"):
+            raise IsolatedWorkerError("execution_context stack manifest identity mismatch")
+        if not isinstance(instrument_id, str) or not instrument_id.strip():
+            raise IsolatedWorkerError("instrument identity is required")
         if semantic_profile not in {"legacy_4x", "strict_5x"}:
             raise IsolatedWorkerError("semantic_profile required")
         if not isinstance(chart_timeframe, str) or not chart_timeframe.strip():
             raise IsolatedWorkerError("chart_timeframe required")
         if params is not None and not isinstance(params, dict):
             raise IsolatedWorkerError("params must be an object")
+        if not str(protocol_artifact_dir):
+            raise IsolatedWorkerError("protocol artifact directory is required")
         self.timeout_s = timeout_s
         self._closed = False
         self._stdout_buffer = bytearray()
         self.unit_name = _worker_unit_name()
         self.bytes_sent = 0
         self.bytes_received = 0
+        self.generated_artifact = dict(generated_artifact)
+        self.run_hash = run_hash
+        self.protocol_artifact_dir = Path(protocol_artifact_dir)
+        self.protocol_artifact_dir.mkdir(parents=True, exist_ok=True)
+        self.protocol = WorkerProtocolTranscript(execution_context)
+        self._last_commit: dict[str, Any] | None = None
         if cgroup_dir is not None:
             try:
                 prepare_worker_cgroup(cgroup_dir)
@@ -1022,7 +1449,7 @@ class InteractiveWorkerSession:
                 raise IsolatedWorkerError(str(exc)) from exc
         try:
             self.proc = subprocess.Popen(  # noqa: S603
-                _bwrap_argv(self.unit_name),
+                _bwrap_argv(admitted_manifest, self.unit_name),
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -1038,11 +1465,14 @@ class InteractiveWorkerSession:
                 self._kill()
                 raise IsolatedWorkerError(str(exc)) from exc
         try:
-            self._write_message(
+            self._write_bootstrap(
                 {
                     "interactive": True,
                     "source": source.decode("utf-8"),
-                    "stack_id": stack_id,
+                    "stack_id": stack_manifest_hash,
+                    "execution_context": execution_context,
+                    "generated_artifact": generated_artifact,
+                    "instrument_id": instrument_id,
                     "semantic_profile": semantic_profile,
                     "chart_timeframe": chart_timeframe,
                     "htf_bars": htf_bars or [],
@@ -1050,9 +1480,33 @@ class InteractiveWorkerSession:
                 }
             )
             hello = self._read_message()
-            if hello.get("message_type") != "HELLO":
+            if hello.get("kind") != "HELLO":
                 self._raise_response(hello)
             self.hello = hello
+            load = self.protocol.append(
+                "LOAD_ARTIFACT",
+                {
+                    "artifact_hash": generated_artifact["content_hash"],
+                    "module_hash": generated_artifact["emitted_module_hash"],
+                    "entrypoint_module": generated_artifact["entrypoint_module"],
+                    "entrypoint_class": generated_artifact["entrypoint_class"],
+                },
+                created_at_utc_ms=0,
+            )
+            self._write_message(load)
+            init = self.protocol.append(
+                "INIT_RUN",
+                {
+                    "run_id": execution_context["run_id"],
+                    "run_hash": run_hash,
+                    "execution_context_hash": execution_context["content_hash"],
+                    "execution_context": execution_context,
+                    "semantic_profile": semantic_profile,
+                    "capabilities": ["closed_bar", "checkpoint_v1"],
+                },
+                created_at_utc_ms=0,
+            )
+            self._write_message(init)
         except Exception:
             self._kill()
             raise
@@ -1070,7 +1524,7 @@ class InteractiveWorkerSession:
             if pipe is not None and not pipe.closed:
                 pipe.close()
 
-    def _write_message(self, payload: dict[str, Any]) -> None:
+    def _write_json_line(self, payload: dict[str, Any]) -> None:
         if self._closed or self.proc.stdin is None:
             raise IsolatedWorkerError("interactive worker is closed")
         encoded = json.dumps(payload, separators=(",", ":")) + "\n"
@@ -1083,6 +1537,18 @@ class InteractiveWorkerSession:
         except (BrokenPipeError, OSError) as exc:
             raise IsolatedWorkerError("interactive worker pipe closed") from exc
         self.bytes_sent += encoded_size
+
+    def _write_bootstrap(self, payload: dict[str, Any]) -> None:
+        self._write_json_line(payload)
+
+    def _write_message(self, payload: dict[str, Any]) -> None:
+        try:
+            validate_payload("openpine.worker.protocol.v2", payload)
+        except ValueError as exc:
+            raise IsolatedWorkerError("invalid worker protocol message") from exc
+        if not verify_content_hash(payload, schema_id="openpine.worker.protocol.v2"):
+            raise IsolatedWorkerError("worker protocol message content hash is invalid")
+        self._write_json_line(payload)
 
     def _read_message(self) -> dict[str, Any]:
         if self.proc.stdout is None:
@@ -1123,8 +1589,17 @@ class InteractiveWorkerSession:
             raise IsolatedWorkerError("malformed worker output") from exc
         if not isinstance(response, dict):
             raise IsolatedWorkerError("worker response must be an object")
-        if not response.get("ok"):
+        if response.get("schema_id") != "openpine.worker.protocol.v2":
             self._raise_response(response)
+        try:
+            validate_payload("openpine.worker.protocol.v2", response)
+            if not verify_content_hash(
+                response, schema_id="openpine.worker.protocol.v2"
+            ):
+                raise WorkerProtocolError("worker response content hash is invalid")
+            self.protocol.accept(response)
+        except (ValueError, WorkerProtocolError) as exc:
+            raise IsolatedWorkerError("invalid worker protocol response") from exc
         return response
 
     @staticmethod
@@ -1137,36 +1612,140 @@ class InteractiveWorkerSession:
         self._write_message(payload)
         return self._read_message()
 
-    def evaluate_bar(
-        self,
-        bar: dict[str, Any],
-        *,
-        bar_index: int,
-        phase: str,
-        recalc_iteration: int,
-        projection: dict[str, Any],
-    ) -> dict[str, Any]:
-        return self._request(
-            {
-                "message_type": "BAR_BEGIN",
-                "bar": bar,
-                "bar_index": bar_index,
-                "phase": phase,
-                "recalc_iteration": recalc_iteration,
-                "projection": projection,
-            }
+    def evaluate_bar(self, event: Mapping[str, Any]) -> dict[str, Any]:
+        required = {
+            "run_id",
+            "bar_index",
+            "bar_open_time_utc_ms",
+            "recalc_iteration",
+            "bar_hash",
+            "bar",
+            "broker_projection",
+        }
+        if not required.issubset(event):
+            raise IsolatedWorkerError("engine BAR_BEGIN artifact is incomplete")
+        message = self.protocol.append(
+            "BAR_BEGIN",
+            {name: event[name] for name in required},
+            created_at_utc_ms=int(event["bar_open_time_utc_ms"]),
         )
+        response = self._request(message)
+        if response.get("kind") != "INTENT_BATCH":
+            raise IsolatedWorkerError("worker did not return INTENT_BATCH")
+        body = response.get("body")
+        if not isinstance(body, dict):
+            raise IsolatedWorkerError("worker INTENT_BATCH body is invalid")
+        return body
+
+    def _persist_artifact(self, artifact: Mapping[str, Any]) -> dict[str, Any]:
+        encoded = artifact.get("bytes")
+        if not isinstance(encoded, bytes):
+            raise IsolatedWorkerError("protocol artifact bytes are required")
+        artifact_hash = artifact.get("artifact_hash")
+        if not isinstance(artifact_hash, str) or not artifact_hash.startswith("sha256:"):
+            raise IsolatedWorkerError("protocol artifact hash is invalid")
+        path = self.protocol_artifact_dir / f"{artifact_hash[7:]}.json"
+        if path.exists():
+            if path.read_bytes() != encoded:
+                raise IsolatedWorkerError("protocol artifact hash collision")
+        else:
+            temporary = path.with_suffix(".tmp")
+            temporary.write_bytes(encoded)
+            temporary.replace(path)
+        return {
+            "artifact_hash": artifact_hash,
+            "schema_id": artifact["schema_id"],
+            "codec": artifact["codec"],
+            "size_bytes": artifact["size_bytes"],
+            "uri": path.resolve().as_uri(),
+        }
+
+    def evaluate_recalc(self, event: Mapping[str, Any]) -> dict[str, Any]:
+        recalc_iteration = int(event["recalc_iteration"])
+        broker_batch = self.protocol.append(
+            "BROKER_EVENT_BATCH",
+            {
+                "run_id": event["run_id"],
+                "bar_index": event["bar_index"],
+                "recalc_iteration": recalc_iteration - 1,
+                "broker_event_batch_hash": event["broker_event_batch_hash"],
+                "broker_events": event["broker_events"],
+            },
+            created_at_utc_ms=int(event["bar_open_time_utc_ms"]),
+        )
+        self._write_message(broker_batch)
+        request = self.protocol.append(
+            "RECALC_REQUEST",
+            {
+                "run_id": event["run_id"],
+                "bar_index": event["bar_index"],
+                "recalc_iteration": recalc_iteration,
+                "cause_sequence": broker_batch["sequence"],
+                "broker_projection_hash": event["broker_projection_hash"],
+                "broker_projection": event["broker_projection"],
+            },
+            created_at_utc_ms=int(event["bar_open_time_utc_ms"]),
+        )
+        self._write_message(request)
+        result = self._read_message()
+        if result.get("kind") != "RECALC_RESULT":
+            raise IsolatedWorkerError("worker did not return RECALC_RESULT")
+        response = self._read_message()
+        if response.get("kind") != "INTENT_BATCH":
+            raise IsolatedWorkerError("worker did not return recalculated INTENT_BATCH")
+        body = response.get("body")
+        if not isinstance(body, dict):
+            raise IsolatedWorkerError("worker recalculated INTENT_BATCH body is invalid")
+        return body
+
+    def commit_bar(self, event: Mapping[str, Any]) -> dict[str, Any]:
+        state_ref = self._persist_artifact(event["state_artifact"])
+        projection_ref = self._persist_artifact(
+            event["broker_projection_artifact"]
+        )
+        body = {
+            "run_id": event["run_id"],
+            "bar_index": event["bar_index"],
+            "recalc_iteration": event["recalc_iteration"],
+            "state_hash": event["state_hash"],
+            "broker_projection_hash": event["broker_projection_hash"],
+            "state_ref": state_ref,
+            "broker_projection_ref": projection_ref,
+        }
+        message = self.protocol.append(
+            "BAR_COMMIT",
+            body,
+            created_at_utc_ms=int(event["bar_open_time_utc_ms"]),
+        )
+        self._write_message(message)
+        self._last_commit = message
+        return message
 
     def heartbeat(self) -> None:
-        response = self._request({"message_type": "PING"})
-        if response.get("message_type") != "PONG":
-            raise IsolatedWorkerError("invalid heartbeat response")
+        if self._closed or self.proc.poll() is not None:
+            raise IsolatedWorkerError("interactive worker heartbeat failed")
 
     def finalize(self) -> dict[str, Any]:
         if self._closed:
-            return {"ok": True, "message_type": "FINALIZE"}
+            return {"kind": "FINALIZE"}
+        if self._last_commit is None:
+            raise IsolatedWorkerError("cannot finalize without a committed bar")
+        commit_body = self._last_commit["body"]
+        message: dict[str, Any] | None = None
         try:
-            response = self._request({"message_type": "FINALIZE"})
+            message = self.protocol.append(
+                "FINALIZE",
+                {
+                    "run_id": commit_body["run_id"],
+                    "final_sequence": self._last_commit["sequence"],
+                    "final_state_hash": commit_body["state_hash"],
+                    "broker_projection_hash": commit_body["broker_projection_hash"],
+                    "last_commit_message_id": self._last_commit["message_id"],
+                    "last_committed_sequence": self._last_commit["sequence"],
+                },
+                created_at_utc_ms=int(self._last_commit["created_at_utc_ms"]),
+            )
+            self._write_message(message)
         finally:
             if self.proc.stdin is not None:
                 self.proc.stdin.close()
@@ -1177,7 +1756,8 @@ class InteractiveWorkerSession:
             finally:
                 self._close_pipes()
                 self._closed = True
-        return response
+        assert message is not None
+        return message
 
     def __enter__(self) -> "InteractiveWorkerSession":
         return self
@@ -1187,8 +1767,17 @@ class InteractiveWorkerSession:
             self.finalize()
         else:
             try:
-                self._request({"message_type": "ABORT"})
-            except IsolatedWorkerError:
+                abort = self.protocol.append(
+                    "ABORT",
+                    {
+                        "run_id": self.protocol.execution_context["run_id"],
+                        "error_code": "PARENT_ABORT",
+                        "reason": str(exc or "isolated run aborted"),
+                    },
+                    created_at_utc_ms=0,
+                )
+                self._write_message(abort)
+            except (IsolatedWorkerError, WorkerProtocolError, ValueError):
                 pass
             finally:
                 self._kill()
@@ -1197,6 +1786,8 @@ class InteractiveWorkerSession:
 def evaluate_artifact(
     source: bytes,
     *,
+    admitted_manifest: AdmittedManifest,
+    instrument_id: str = "",
     timeout_s: float = 5.0,
     stack_id: str = "openpine-5.0",
     semantic_profile: str = "",
@@ -1220,6 +1811,7 @@ def evaluate_artifact(
         {
             "source": source.decode("utf-8"),
             "stack_id": stack_id,
+            "instrument_id": instrument_id,
             "semantic_profile": semantic_profile,
             "bars": bars or [],
             "htf_bars": htf_bars or [],
@@ -1230,7 +1822,7 @@ def evaluate_artifact(
     try:
         # Immutable argv: trusted bwrap + /usr/bin/python3. No shell, no user path.
         proc = subprocess.Popen(  # noqa: S603
-            _bwrap_argv(unit_name),
+            _bwrap_argv(admitted_manifest, unit_name),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

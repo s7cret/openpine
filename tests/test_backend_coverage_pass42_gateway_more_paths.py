@@ -26,6 +26,7 @@ from openpine.gateway.schemas import (
     DataBackfillRequest,
 )
 from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
+from tests.rc4_fixtures import admitted_manifest, canonical_series
 
 
 @pytest.fixture(autouse=True)
@@ -61,7 +62,7 @@ def _bar(t: int = 0, close: float = 1.0) -> Bar:
     return Bar(inst, tf, t, t + 60_000, close, close + 1, close - 1, close, 10.0, True)
 
 
-def _series(times=(0, 60_000)) -> BarSeries:
+def _series(times=(0, 60_000)):
     bars = tuple(_bar(t, float(i + 1)) for i, t in enumerate(times))
     inst = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
     tf = parse_timeframe("1m")
@@ -74,7 +75,7 @@ def _series(times=(0, 60_000)) -> BarSeries:
         bars[-1].time_close if bars else None,
         source_mix=("unit",),
     )
-    return BarSeries(query, bars, coverage)
+    return canonical_series(BarSeries(query, bars, coverage))
 
 
 class _Cursor:
@@ -292,6 +293,7 @@ def _backtest_state(*, store=None, cancel=None, registry=None, orchestrator=None
         storage=storage or _FingerprintStorage(),
         config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
     )
 
 

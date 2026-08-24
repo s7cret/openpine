@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from openpine.gateway.schemas import BacktestRunRequest
 from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_indicator
+from tests.rc4_fixtures import admitted_manifest
 from openpine.runtime.mtf import (
     confirmed_mtf_bars_for_requests,
     parse_mtf_series_args,
@@ -70,6 +71,8 @@ def test_isolated_indicator_supports_two_requested_mtf_series() -> None:
     result = run_isolated_indicator(
         MULTI_SERIES_SOURCE,
         chart,
+        admitted_manifest=admitted_manifest(),
+        instrument_id="test:S",
         semantic_profile="strict_5x",
         htf_bars=mtf_bars,
     )

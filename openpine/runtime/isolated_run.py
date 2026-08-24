@@ -254,25 +254,43 @@ def run_isolated_artifact(
 ) -> dict[str, Any]:
     from backtest_engine import BacktestCallbacks, BacktestEngine
 
+    if resume_state is not None:
+        raise IsolatedRunError("RESUME_UNSUPPORTED_FOR_WORKER_PROTOCOL")
     semantic_profile = _semantic_profile(config)
     chart_timeframe = str(getattr(config, "timeframe", "") or "")
     if not chart_timeframe:
         raise IsolatedRunError("chart timeframe is required")
     accumulated_events: list[dict[str, Any]] = []
-    callback_state: dict[str, Any] = {}
-
-    def capture_projection(payload: dict[str, Any]) -> None:
-        callback_state.clear()
-        callback_state.update(payload)
+    pending_batch: dict[str, Any] = {}
 
     try:
         with InteractiveWorkerSession(
             source,
+            getattr(config, "execution_context", {}),
+            str(getattr(config, "instrument_id", None) or getattr(config, "symbol", "")),
+            getattr(config, "admitted_manifest", {}),
+            getattr(config, "generated_artifact", {}),
+            str(getattr(config, "run_hash", "")),
+            getattr(config, "protocol_artifact_dir", ""),
             semantic_profile=semantic_profile,
             chart_timeframe=chart_timeframe,
             htf_bars=_stamp_confirmed_htf_bars(htf_bars),
             params=params,
         ) as session:
+
+            def handle_protocol_event(event: dict[str, Any]) -> None:
+                if event.get("kind") == "BAR_BEGIN":
+                    pending_batch.clear()
+                    pending_batch.update(session.evaluate_bar(event))
+                    return
+                if event.get("kind") == "BAR_COMMIT":
+                    session.commit_bar(event)
+                    return
+                if event.get("kind") == "RECALC_REQUEST":
+                    pending_batch.clear()
+                    pending_batch.update(session.evaluate_recalc(event))
+                    return
+                raise IsolatedRunError("engine emitted an unsupported protocol event")
 
             class _InteractiveStrategy:
                 required_runtime_capabilities: tuple[str, ...] = ()
@@ -282,20 +300,11 @@ def run_isolated_artifact(
                     self.ctx = ctx
 
                 def _process_bar(self, bar: Any, bar_index: int) -> None:
-                    if not callback_state:
+                    if not pending_batch:
                         raise IsolatedRunError(
-                            "engine did not provide broker projection before strategy callback"
+                            "worker did not provide INTENT_BATCH before strategy callback"
                         )
-                    response = session.evaluate_bar(
-                        _chart_bar_payload(bar),
-                        bar_index=bar_index,
-                        phase=str(callback_state.get("phase") or "score"),
-                        recalc_iteration=int(
-                            callback_state.get("recalc_iteration") or 0
-                        ),
-                        projection=_strategy_projection(callback_state),
-                    )
-                    batch = response.get("intent_batch")
+                    batch = pending_batch.get("intents")
                     if not isinstance(batch, list):
                         raise IsolatedRunError("worker INTENT_BATCH payload is invalid")
                     if not batch:
@@ -322,10 +331,12 @@ def run_isolated_artifact(
             result = BacktestEngine(config).run(
                 _InteractiveStrategy,
                 bars=bars,
-                callbacks=BacktestCallbacks(on_strategy_callback=capture_projection),
+                callbacks=BacktestCallbacks(on_protocol_callback=handle_protocol_event),
                 resume_state=resume_state,
+                execution_context=getattr(config, "execution_context", None),
+                bar_envelopes=getattr(config, "bar_envelopes", None),
             )
-            isolation = session.hello.get("isolation")
+            isolation = {"protocol": "openpine.worker.protocol.v2"}
     except (IsolatedWorkerError, IntentReplayError) as exc:
         raise IsolatedRunError(str(exc)) from exc
 
@@ -357,6 +368,19 @@ def capture_generated_source(source_id: str, artifact_id: str) -> bytes:
         artifact = ArtifactStore().get_artifact(artifact_id, source_id)
     except (FileNotFoundError, BacktestArtifactError, ValueError) as exc:
         raise IsolatedRunError(str(exc)) from exc
+    generated_artifact = artifact.get("generated_artifact")
+    if not isinstance(generated_artifact, dict):
+        raise IsolatedRunError("GENERATED_ARTIFACT_ENVELOPE_REQUIRED")
+    from openpine_contracts import validate_payload, verify_content_hash
+
+    try:
+        validate_payload("openpine.generated_artifact.v2", generated_artifact)
+    except ValueError as exc:
+        raise IsolatedRunError("GENERATED_ARTIFACT_ENVELOPE_REQUIRED") from exc
+    if not verify_content_hash(
+        generated_artifact, schema_id="openpine.generated_artifact.v2"
+    ):
+        raise IsolatedRunError("GENERATED_ARTIFACT_ENVELOPE_REQUIRED")
     source = artifact.get("python_code")
     if not isinstance(source, str) or not source:
         raise IsolatedRunError(f"Artifact {artifact_id} has no generated_strategy.py")
@@ -390,6 +414,8 @@ def run_isolated_indicator(
     source: bytes,
     bars: list[Any],
     *,
+    admitted_manifest: dict[str, Any],
+    instrument_id: str,
     semantic_profile: object | None = None,
     htf_bars: list[dict[str, Any]] | None = None,
 ) -> IsolatedPlotResult:
@@ -397,6 +423,8 @@ def run_isolated_indicator(
     try:
         payload = evaluate_artifact(
             source,
+            admitted_manifest=admitted_manifest,
+            instrument_id=instrument_id,
             bars=bar_payloads,
             semantic_profile=_generated_semantic_profile(semantic_profile),
             htf_bars=_stamp_confirmed_htf_bars(htf_bars),

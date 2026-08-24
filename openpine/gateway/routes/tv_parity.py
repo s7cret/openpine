@@ -922,6 +922,86 @@ async def _run_tv_parity_background(
             ),
             created_at_utc_ms=int(time.time() * 1000),
         )
+        admitted_manifest = getattr(state, "admitted_manifest", None)
+        generated_artifact = artifact.get("generated_artifact")
+        if not isinstance(admitted_manifest, dict):
+            raise RuntimeError("admitted candidate manifest is unavailable")
+        if not isinstance(generated_artifact, dict):
+            raise RuntimeError("generated artifact envelope is required")
+        components = admitted_manifest.get("components")
+        marketdata_row = (
+            components.get("marketdata-provider")
+            if isinstance(components, dict)
+            else None
+        )
+        marketdata_commit = (
+            marketdata_row.get("sha") if isinstance(marketdata_row, dict) else None
+        )
+        if not isinstance(marketdata_commit, str):
+            raise RuntimeError("marketdata producer commit is unavailable")
+        from openpine_contracts import Finality
+        from marketdata_provider.canonical.provider import (
+            ProviderRawBar,
+            build_public_snapshot,
+        )
+
+        provider_revision = f"tv-export:{fingerprint}"
+        query = parsed.series.query
+        canonical_snapshot = build_public_snapshot(
+            query,
+            [
+                ProviderRawBar(
+                    instrument_id=query.instrument.serialize(),
+                    timeframe=query.timeframe.canonical,
+                    open_time_utc_ms=int(bar.time),
+                    close_time_utc_ms=None,
+                    open=str(bar.open),
+                    high=str(bar.high),
+                    low=str(bar.low),
+                    close=str(bar.close),
+                    volume=str(0 if bar.volume is None else bar.volume),
+                    finality=Finality.FINAL,
+                    provider="tradingview-export",
+                    provider_revision=provider_revision,
+                )
+                for bar in parsed.bars
+            ],
+            provider_revision={"known": True, "revision": provider_revision},
+            producer_commit=marketdata_commit,
+            stack_id=deployment.stack_manifest_hash,
+        )
+        canonical_bars = canonical_snapshot["bars"]
+        from openpine.run_identity import execution_context_from_admission
+
+        execution_context = execution_context_from_admission(
+            deployment,
+            admitted_manifest,
+            run_id=run_id,
+            strategy_id=str(strategy_id),
+            artifact=artifact,
+            data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+            series_id=str(canonical_bars[0]["series_id"]),
+            instrument_id=str(canonical_bars[0]["instrument_id"]),
+            exchange=str(config.exchange),
+            market=str(config.market_type),
+            symbol=str(config.symbol),
+            timeframe=str(config.timeframe),
+            semantic_profile=str(config.semantic_profile),
+            created_at_utc_ms=int(time.time() * 1000),
+        )
+        for name, value in (
+            ("execution_context", execution_context),
+            ("admitted_manifest", admitted_manifest),
+            ("instrument_id", execution_context["instrument_id"]),
+            ("generated_artifact", generated_artifact),
+            ("bar_envelopes", [dict(item) for item in canonical_bars]),
+            ("run_hash", str(run_identity["content_hash"])),
+            (
+                "protocol_artifact_dir",
+                str(state.config.data_dir / "protocol" / run_id),
+            ),
+        ):
+            object.__setattr__(config, name, value)
         runtime_data_provider = None
         try:
             from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter

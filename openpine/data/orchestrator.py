@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import inspect
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from copy import deepcopy
 from concurrent.futures import Future
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
+
+from openpine_contracts import validate_payload, verify_content_hash
 
 from marketdata_provider import create_candle_store
 from marketdata_provider.config import MarketDataConfig, StorageConfig
@@ -37,7 +40,21 @@ class MarketDataProvider(Protocol):
 
     persists_fetches: bool
 
-    def fetch_bars(self, query: BarQuery) -> BarSeries: ...
+    def fetch_bars(self, query: BarQuery) -> object: ...
+
+
+@dataclass(frozen=True)
+class CanonicalBarSeries:
+    """Compatibility bars paired with their exact admitted RC.4 envelopes."""
+
+    query: BarQuery
+    bars: tuple[Bar, ...]
+    coverage: CoverageReport
+    canonical_bars: tuple[dict[str, object], ...]
+    snapshot: dict[str, object]
+
+
+LoadedBarSeries = BarSeries | CanonicalBarSeries
 
 
 @dataclass
@@ -45,7 +62,7 @@ class _ProviderFlight:
     """One in-flight provider request for a physical market-data series."""
 
     query: BarQuery
-    future: Future[BarSeries]
+    future: Future[LoadedBarSeries]
 
 
 class DataCoverageError(RuntimeError):
@@ -68,6 +85,81 @@ def _default_candle_store() -> CandleStore:
     cache_root = DEFAULT_CONFIG.data_cache_root or (DEFAULT_CONFIG.data_dir / "cache")
     return create_candle_store(
         MarketDataConfig(storage=StorageConfig(cache_dir=cache_root / "marketdata"))
+    )
+
+
+def _canonical_series(
+    payload: object, query: BarQuery, *, source: str
+) -> BarSeries | CanonicalBarSeries:
+    if isinstance(payload, BarSeries):
+        return payload
+    if not isinstance(payload, Mapping):
+        raise StorageUnavailableError("marketdata boundary returned an invalid snapshot")
+    snapshot = deepcopy(dict(payload))
+    envelope = snapshot.get("snapshot_envelope")
+    raw_bars = snapshot.get("bars")
+    if not isinstance(envelope, Mapping) or not isinstance(raw_bars, list):
+        raise StorageUnavailableError("marketdata snapshot envelope is required")
+    validate_payload("openpine.marketdata.v2", envelope)
+    if not verify_content_hash(envelope, schema_id="openpine.marketdata.v2"):
+        raise StorageUnavailableError("marketdata snapshot content hash is invalid")
+    body = envelope.get("body")
+    contract_query = body.get("query") if isinstance(body, Mapping) else None
+    expected = {
+        "instrument_id": query.instrument.serialize(),
+        "timeframe": query.timeframe.canonical,
+        "start_utc_ms": query.start_ms,
+        "end_utc_ms": query.end_ms,
+    }
+    if not isinstance(contract_query, Mapping) or any(
+        contract_query.get(name) != value for name, value in expected.items()
+    ):
+        raise StorageUnavailableError("marketdata snapshot query identity mismatch")
+    canonical: list[dict[str, object]] = []
+    bars: list[Bar] = []
+    for index, raw_bar in enumerate(raw_bars):
+        if not isinstance(raw_bar, Mapping):
+            raise StorageUnavailableError(f"marketdata bar {index} is invalid")
+        bar_envelope = deepcopy(dict(raw_bar))
+        validate_payload("openpine.marketdata.bar.v2", bar_envelope)
+        if not verify_content_hash(
+            bar_envelope, schema_id="openpine.marketdata.bar.v2"
+        ):
+            raise StorageUnavailableError(
+                f"marketdata bar {index} content hash is invalid"
+            )
+        if (
+            bar_envelope.get("instrument_id") != expected["instrument_id"]
+            or bar_envelope.get("timeframe") != expected["timeframe"]
+        ):
+            raise StorageUnavailableError(
+                f"marketdata bar {index} identity does not match query"
+            )
+        finality = getattr(bar_envelope.get("finality"), "value", None) or str(
+            bar_envelope.get("finality")
+        )
+        bars.append(
+            Bar(
+                instrument=query.instrument,
+                timeframe=query.timeframe,
+                time=int(bar_envelope["open_time_utc_ms"]),
+                time_close=int(bar_envelope["close_time_utc_ms"]),
+                open=float(str(bar_envelope["open"])),
+                high=float(str(bar_envelope["high"])),
+                low=float(str(bar_envelope["low"])),
+                close=float(str(bar_envelope["close"])),
+                volume=float(str(bar_envelope["volume"])),
+                closed=finality == "FINAL",
+            )
+        )
+        canonical.append(bar_envelope)
+    bar_tuple = tuple(bars)
+    return CanonicalBarSeries(
+        query=query,
+        bars=bar_tuple,
+        coverage=_coverage_for(query, bar_tuple, source),
+        canonical_bars=tuple(canonical),
+        snapshot=snapshot,
     )
 
 
@@ -108,7 +200,7 @@ class DataOrchestrator:
 
     def load_bars(
         self, query: BarQuery, progress_callback: Callable[..., None] | None = None
-    ) -> BarSeries:
+    ) -> LoadedBarSeries:
         """Load bars according to query.source: storage, provider, or auto."""
 
         if query.source == "storage":
@@ -214,13 +306,14 @@ class DataOrchestrator:
             for start, end in coverage.missing_intervals
         ]
 
-    def _write_provider_series(self, series: BarSeries) -> StoreResult:
+    def _write_provider_series(self, series: LoadedBarSeries) -> StoreResult:
         self._validator.validate(series, allow_gaps=True)
         return self._write_series(series)
 
-    def _write_series(self, series: BarSeries) -> StoreResult:
+    def _write_series(self, series: LoadedBarSeries) -> StoreResult:
         try:
-            result = self._store.write(series)
+            payload = series.snapshot if isinstance(series, CanonicalBarSeries) else series
+            result = self._store.write(payload)
         except Exception as exc:
             raise StorageUnavailableError(str(exc)) from exc
         if not result.success:
@@ -230,9 +323,11 @@ class DataOrchestrator:
     def validate_coverage(self, series: BarSeries) -> CoverageReport:
         return self._validator.validate(series)
 
-    def _load_storage(self, query: BarQuery, *, require_complete: bool) -> BarSeries:
+    def _load_storage(self, query: BarQuery, *, require_complete: bool) -> LoadedBarSeries:
         try:
-            series = self._store.read(query)
+            series = _canonical_series(
+                self._store.read(query), query, source="storage"
+            )
         except Exception as exc:
             raise StorageUnavailableError(str(exc)) from exc
         self._validator.validate(series, allow_gaps=True)
@@ -255,8 +350,8 @@ class DataOrchestrator:
             else series
         )
 
-    def _save_cache(self, series: BarSeries) -> None:
-        if not self._cache_enabled:
+    def _save_cache(self, series: LoadedBarSeries) -> None:
+        if not self._cache_enabled or isinstance(series, CanonicalBarSeries):
             return
         try:
             save_bar_series(self._cache_dir, series)
@@ -265,7 +360,7 @@ class DataOrchestrator:
 
     def _load_provider(
         self, query: BarQuery, progress_callback: Callable[..., None] | None = None
-    ) -> BarSeries:
+    ) -> LoadedBarSeries:
         if self._provider is None:
             raise ProviderUnavailableError("market data provider is not configured")
         series_key = _provider_series_key(query)
@@ -292,9 +387,10 @@ class DataOrchestrator:
         try:
             fetch_bars = self._provider.fetch_bars
             if progress_callback is not None and _accepts_progress_callback(fetch_bars):
-                series = fetch_bars(query, progress_callback=progress_callback)  # type: ignore[call-arg]
+                raw_series = fetch_bars(query, progress_callback=progress_callback)  # type: ignore[call-arg]
             else:
-                series = fetch_bars(query)
+                raw_series = fetch_bars(query)
+            series = _canonical_series(raw_series, query, source="provider")
             self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
         except BaseException as exc:
             with self._provider_flights_guard:
@@ -334,7 +430,7 @@ class DataOrchestrator:
         )
 
     @staticmethod
-    def _require_complete(series: BarSeries, source: str) -> BarSeries:
+    def _require_complete(series: LoadedBarSeries, source: str) -> LoadedBarSeries:
         if series.coverage.is_complete:
             return series
         raise IncompleteCoverageError(
@@ -349,7 +445,7 @@ class BarSeriesValidator:
     """Validate canonical bar ordering and query coverage metadata."""
 
     def validate(
-        self, series: BarSeries, *, allow_gaps: bool | None = None
+        self, series: LoadedBarSeries, *, allow_gaps: bool | None = None
     ) -> CoverageReport:
         coverage = _coverage_for(
             series.query, series.bars, _source_name(series.coverage)

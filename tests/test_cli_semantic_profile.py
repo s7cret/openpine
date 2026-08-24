@@ -16,6 +16,7 @@ from openpine.cli.runtime_helpers import (
 )
 from openpine.runtime.engine import BacktestRunConfig
 from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
+from tests.rc4_fixtures import admitted_manifest
 
 
 def test_cli_backtest_config_uses_strategy_semantic_profile() -> None:
@@ -60,7 +61,15 @@ def test_cli_replay_config_uses_strategy_semantic_profile() -> None:
 def test_cli_isolated_indicator_requires_semantic_profile(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -89,7 +98,15 @@ def test_cli_isolated_indicator_requires_semantic_profile(monkeypatch) -> None:
 def test_cli_isolated_indicator_forwards_admitted_profile(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -110,6 +127,7 @@ def test_cli_isolated_indicator_forwards_admitted_profile(monkeypatch) -> None:
         console=SimpleNamespace(),
         perf_counter=lambda: 0.0,
         semantic_profile="strict_5x",
+        admitted_manifest=admitted_manifest(),
     )
     assert captured["semantic_profile"] == "strict_5x"
 
@@ -190,7 +208,15 @@ def test_cli_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch) -> None
         }
     ]
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["htf_bars"] = htf_bars
         return SimpleNamespace(plots=())
 
@@ -212,6 +238,7 @@ def test_cli_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch) -> None
         perf_counter=lambda: 0.0,
         semantic_profile="strict_5x",
         htf_bars=htf_bars,
+        admitted_manifest=admitted_manifest(),
     )
     assert captured["htf_bars"] == htf_bars
 

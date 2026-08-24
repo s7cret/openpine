@@ -11,6 +11,11 @@ from openpine.gateway.schemas import OptimizerSearchRequest
 from openpine.optimizer.isolated_runner import IsolatedOptimizerRunner
 from openpine.registry.strategies import StrategyInstance
 from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import (
+    admitted_manifest,
+    canonical_bar_envelopes,
+    execution_context,
+)
 
 
 SEARCH_SOURCE = b"""
@@ -172,7 +177,11 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
 
     def load_bars(query):
         loaded.append((query.instrument.symbol, query.timeframe.canonical))
-        return SimpleNamespace(bars=bars)
+        context = execution_context()
+        return SimpleNamespace(
+            bars=bars,
+            canonical_bars=canonical_bar_envelopes(list(bars), context),
+        )
 
     state = SimpleNamespace(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
@@ -183,6 +192,8 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
             )
         ),
         config=SimpleNamespace(data_dir=tmp_path),
+        execution_context=execution_context(),
+        admitted_manifest=admitted_manifest(),
         job_store=JobStore(),
     )
 
@@ -273,6 +284,14 @@ async def test_optimizer_search_route_selects_real_isolated_champion(
         )
         for index in range(4)
     ]
+    market_context = execution_context(
+        series_id=f"{instrument.serialize()}:1m",
+        instrument_id=instrument.serialize(),
+        exchange="binance",
+        market="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+    )
     source_calls: list[tuple[str, str]] = []
 
     def capture_source(source_id: str, artifact_id: str) -> bytes:
@@ -284,13 +303,22 @@ async def test_optimizer_search_route_selects_real_isolated_champion(
     )
     state = SimpleNamespace(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
-        orchestrator=SimpleNamespace(load_bars=lambda query: SimpleNamespace(bars=bars)),
+        orchestrator=SimpleNamespace(
+            load_bars=lambda query: SimpleNamespace(
+                bars=bars,
+                canonical_bars=canonical_bar_envelopes(
+                    list(bars), market_context
+                ),
+            )
+        ),
         artifact_store=SimpleNamespace(
             get_artifact=lambda artifact_id, pine_id: _artifact(
                 python_code=SEARCH_SOURCE.decode("utf-8")
             )
         ),
         config=SimpleNamespace(data_dir=tmp_path),
+        execution_context=market_context,
+        admitted_manifest=admitted_manifest(),
         job_store=job_store,
     )
 

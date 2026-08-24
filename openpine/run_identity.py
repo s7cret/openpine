@@ -32,6 +32,16 @@ from openpine.build_identity import current_build_identity
 
 _RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _DATA_SNAPSHOT_SCHEMA = "openpine.data.snapshot.v1"
+_EXECUTION_SCHEMA_IDS = (
+    "openpine.execution_context.v1",
+    "openpine.intent.v2",
+    "openpine.worker.protocol.v2",
+    "openpine.checkpoint.v1",
+    "openpine.checkpoint.proof.v1",
+)
+_EXECUTION_CAPABILITIES = frozenset(
+    {"closed_bar", "deterministic_clock", "checkpoint_v1", "sealed_artifact_refs"}
+)
 
 
 def _field(value: object, name: str) -> Any:
@@ -522,3 +532,199 @@ def admit_and_persist_run_identity(
     )
     persist_run_identity(data_dir, run_id, payload)
     return payload
+
+
+def derive_execution_context(
+    base_context: Mapping[str, object],
+    *,
+    run_id: str,
+    strategy_id: str,
+    artifact: Mapping[str, object],
+    data_snapshot_hash: str,
+    series_id: str,
+    instrument_id: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    timeframe: str,
+    semantic_profile: str,
+) -> dict[str, object]:
+    """Bind an admitted stack template to one exact execution run."""
+
+    validate_payload("openpine.execution_context.v1", base_context)
+    if not verify_content_hash(
+        base_context, schema_id="openpine.execution_context.v1"
+    ):
+        raise AdmitError(
+            "base execution context content hash is invalid",
+            code="EXECUTION_CONTEXT_INVALID",
+        )
+    generated = artifact.get("generated_artifact")
+    if not isinstance(generated, Mapping):
+        raise AdmitError(
+            "generated artifact envelope is required",
+            code="GENERATED_ARTIFACT_REQUIRED",
+        )
+    validate_payload("openpine.generated_artifact.v2", generated)
+    if not verify_content_hash(generated, schema_id="openpine.generated_artifact.v2"):
+        raise AdmitError(
+            "generated artifact content hash is invalid",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    payload = dict(base_context)
+    payload.pop("content_hash", None)
+    payload.update(
+        {
+            "run_id": run_id,
+            "strategy_id": strategy_id,
+            "session_id": f"{run_id}:worker",
+            "generated_artifact_hash": generated["content_hash"],
+            "source_hash": generated["source_hash"],
+            "emitted_module_hash": generated["emitted_module_hash"],
+            "data_snapshot_hash": data_snapshot_hash,
+            "series_id": series_id,
+            "instrument_id": instrument_id,
+            "exchange": exchange,
+            "market": market,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "semantic_profile": semantic_profile,
+        }
+    )
+    sealed = seal_content_hash(payload, schema_id="openpine.execution_context.v1")
+    validate_payload("openpine.execution_context.v1", sealed)
+    return sealed
+
+
+def _protocol_semver(value: str) -> str:
+    match = re.fullmatch(r"(\d+\.\d+\.\d+)rc(\d+)", value)
+    return f"{match.group(1)}-rc.{match.group(2)}" if match else value
+
+
+def execution_context_from_admission(
+    deployment: DeploymentAdmissionIdentity,
+    admitted_manifest: Mapping[str, object],
+    *,
+    run_id: str,
+    strategy_id: str,
+    artifact: Mapping[str, object],
+    data_snapshot_hash: str,
+    series_id: str,
+    instrument_id: str,
+    exchange: str,
+    market: str,
+    symbol: str,
+    timeframe: str,
+    semantic_profile: str,
+    created_at_utc_ms: int,
+    timezone: str = "UTC",
+    currency: str = "USD",
+    mintick: str = "0.01",
+    pointvalue: str = "1",
+    session_policy: str = "24x7",
+) -> dict[str, object]:
+    """Construct one sealed execution context from exact deployment evidence."""
+
+    if admitted_manifest.get("manifest_hash") != deployment.stack_manifest_hash:
+        raise AdmitError(
+            "admitted manifest does not match deployment identity",
+            code="STACK_MANIFEST_HASH_MISMATCH",
+        )
+    generated = artifact.get("generated_artifact")
+    if not isinstance(generated, Mapping):
+        raise AdmitError(
+            "generated artifact envelope is required",
+            code="GENERATED_ARTIFACT_REQUIRED",
+        )
+    validate_payload("openpine.generated_artifact.v2", generated)
+    if not verify_content_hash(generated, schema_id="openpine.generated_artifact.v2"):
+        raise AdmitError(
+            "generated artifact content hash is invalid",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    components = admitted_manifest.get("components")
+    if not isinstance(components, Mapping):
+        raise AdmitError(
+            "admitted component commits are required",
+            code="ADMISSION_IDENTITY_INVALID",
+        )
+    wheel_identities = [
+        {"name": name, "version": version, "content_hash": digest}
+        for name, version, digest in deployment.wheel_identities
+    ]
+    if len(wheel_identities) != 8:
+        raise AdmitError(
+            "exactly eight wheel identities are required",
+            code="ADMISSION_IDENTITY_INVALID",
+        )
+    producer_commits: dict[str, str] = {}
+    for row in wheel_identities:
+        name = str(row["name"])
+        component = components.get(name)
+        if not isinstance(component, Mapping):
+            raise AdmitError(
+                f"admitted component identity is missing: {name}",
+                code="ADMISSION_IDENTITY_INVALID",
+            )
+        commit = component.get("sha", component.get("commit"))
+        if not isinstance(commit, str) or re.fullmatch(r"[0-9a-f]{40}", commit) is None:
+            raise AdmitError(
+                f"admitted component commit is invalid: {name}",
+                code="ADMISSION_IDENTITY_INVALID",
+            )
+        producer_commits[name] = commit
+    versions = {str(row["name"]): str(row["version"]) for row in wheel_identities}
+    required_schema_hashes: dict[str, str] = {}
+    for schema_id in _EXECUTION_SCHEMA_IDS:
+        digest = deployment.schema_hashes.get(schema_id)
+        if not isinstance(digest, str):
+            raise AdmitError(
+                f"execution schema hash is missing: {schema_id}",
+                code="ADMISSION_IDENTITY_INVALID",
+            )
+        required_schema_hashes[schema_id] = digest
+    payload: dict[str, object] = {
+        "schema_id": "openpine.execution_context.v1",
+        "schema_version": "1.0.0",
+        "producer": "openpine",
+        "producer_version": _protocol_semver(versions["openpine"]),
+        "producer_commit": producer_commits["openpine"],
+        "stack_id": deployment.stack_manifest_hash,
+        "created_at_utc_ms": int(created_at_utc_ms),
+        "serializer_id": "openpine.canonical.json.v1",
+        "content_hash_alg": "sha256",
+        "run_id": run_id,
+        "strategy_id": strategy_id,
+        "session_id": f"{run_id}:worker",
+        "stack_manifest_hash": deployment.stack_manifest_hash,
+        "wheel_identities": wheel_identities,
+        "schema_hashes": required_schema_hashes,
+        "generated_artifact_hash": generated["content_hash"],
+        "source_hash": generated["source_hash"],
+        "emitted_module_hash": generated["emitted_module_hash"],
+        "data_snapshot_hash": data_snapshot_hash,
+        "series_id": series_id,
+        "instrument_id": instrument_id,
+        "exchange": exchange,
+        "market": market,
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "timezone": timezone,
+        "currency": currency,
+        "mintick": mintick,
+        "pointvalue": pointvalue,
+        "session_policy": session_policy,
+        "semantic_profile": semantic_profile,
+        "finality_policy": "CLOSED_BAR_ONLY",
+        "warmup_policy": "CALC_ONLY",
+        "score_policy": "ALL_BARS",
+        "end_policy": "LIQUIDATE_ON_LAST_BAR",
+        "capabilities": sorted(deployment.capabilities & _EXECUTION_CAPABILITIES),
+        "producer_commits": producer_commits,
+        "policy_registry_version": "openpine.policies.rc4.v1",
+        "schema_registry_version": "openpine.schemas.rc4.v1",
+        "capability_registry_version": "openpine.capabilities.rc4.v1",
+    }
+    sealed = seal_content_hash(payload, schema_id="openpine.execution_context.v1")
+    validate_payload("openpine.execution_context.v1", sealed)
+    return sealed

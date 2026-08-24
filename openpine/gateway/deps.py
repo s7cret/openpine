@@ -41,9 +41,12 @@ class GatewayState:
                 "both deployment_manifest and deployment_wheelhouse are required"
             )
         self.admission_identity = None
+        self.admitted_manifest = None
         if deployment_manifest is not None and deployment_wheelhouse is not None:
             from openpine.admission import load_active_deployment_identity
+            from openpine.runtime.admitted_manifest import load_admitted_manifest
 
+            self.admitted_manifest = load_admitted_manifest(deployment_manifest)
             self.admission_identity = load_active_deployment_identity(
                 deployment_manifest,
                 deployment_wheelhouse,

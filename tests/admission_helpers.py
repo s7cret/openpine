@@ -4,12 +4,12 @@ from ast2python.artifact import _digest
 from openpine.admission import DeploymentAdmissionIdentity
 from openpine_contracts import seal_content_hash
 
-STACK_HASH = "sha256:" + "e" * 64
+STACK_HASH = "sha256:" + "d" * 64
 _FAKE_COMMITS = {
-    "pine2ast": "1" * 40,
-    "ast2python": "2" * 40,
-    "pinelib": "3" * 40,
-    "openpine-contracts": "4" * 40,
+    "pine2ast": "b" * 40,
+    "ast2python": "c" * 40,
+    "pinelib": "d" * 40,
+    "openpine-contracts": "a" * 40,
 }
 
 
@@ -17,8 +17,29 @@ def make_deployment_identity() -> DeploymentAdmissionIdentity:
     return DeploymentAdmissionIdentity(
         stack_id="test-stack",
         stack_manifest_hash=STACK_HASH,
-        wheel_identities=(("openpine", "5.0.0rc3", "sha256:" + "a" * 64),),
-        schema_hashes={"openpine.run.v2": "sha256:" + "b" * 64},
+        wheel_identities=tuple(
+            (name, "5.0.0rc4", "sha256:" + "a" * 64)
+            for name in (
+                "openpine-contracts",
+                "marketdata-provider",
+                "pinelib",
+                "pine2ast",
+                "ast2python",
+                "backtest_engine",
+                "optimizer",
+                "openpine",
+            )
+        ),
+        schema_hashes={
+            schema_id: "sha256:" + "b" * 64
+            for schema_id in (
+                "openpine.execution_context.v1",
+                "openpine.intent.v2",
+                "openpine.worker.protocol.v2",
+                "openpine.checkpoint.v1",
+                "openpine.checkpoint.proof.v1",
+            )
+        },
         capabilities=frozenset(
             {
                 "closed_bar",
@@ -39,6 +60,7 @@ def make_sealed_artifact(
     compile_meta: dict | None = None,
     *,
     python_code: str = "generated-source",
+    semantic_profile: str = "strict_5x",
 ) -> dict[str, object]:
     return {
         "compile_meta": dict(compile_meta or {}),
@@ -48,9 +70,9 @@ def make_sealed_artifact(
                 "schema_id": "openpine.generated_artifact.v2",
                 "schema_version": "2.0.0",
                 "producer": "ast2python",
-                "producer_version": "5.0.0-rc.3",
+                "producer_version": "5.0.0-rc.4",
                 "producer_commit": _FAKE_COMMITS["ast2python"],
-                "stack_id": "test-stack",
+                "stack_id": STACK_HASH,
                 "created_at_utc_ms": 1,
                 "serializer_id": "openpine.canonical.json.v1",
                 "content_hash_alg": "sha256",
@@ -62,9 +84,9 @@ def make_sealed_artifact(
                 ),
                 "source_map_hash": "sha256:" + "f" * 64,
                 "support_profile_hash": "sha256:" + "9" * 64,
-                "lowering_version": "5.0.0rc3",
+                "lowering_version": "5.0.0rc4",
                 "producer_commits": dict(_FAKE_COMMITS),
-                "semantic_profile": "strict_5x",
+                "semantic_profile": semantic_profile,
                 "required_runtime_capabilities": ["intent_tape_v2"],
                 "import_allowlist": ["pinelib"],
                 "entrypoint_module": "generated_strategy",

@@ -329,6 +329,12 @@ def test_artifact_backtest_uses_spawn_context(
         prefetch_end_ms=60_000,
         source=b"STAMPED",
         data_snapshot_hash="sha256:" + "a" * 64,
+        execution_context={},
+        admitted_manifest={},
+        generated_artifact={},
+        run_hash="sha256:" + "b" * 64,
+        bar_envelopes=[],
+        protocol_artifact_dir=str(tmp_path / "protocol"),
     )
 
     result = backtest._run_backtest_in_process(

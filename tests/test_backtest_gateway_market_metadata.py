@@ -15,6 +15,7 @@ from marketdata_provider.contracts import (
 
 from openpine.gateway.routes import backtest as bt
 from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
+from tests.rc4_fixtures import admitted_manifest, canonical_series
 
 
 class _Cursor:
@@ -67,7 +68,7 @@ def _series():
     )
     query = BarQuery(inst, tf, 0, 172_800_000, gap_policy="allow_with_metadata")
     coverage = CoverageReport(0, 172_800_000, 0, 172_800_000, source_mix=("unit",))
-    return BarSeries(query, bars, coverage)
+    return canonical_series(BarSeries(query, bars, coverage))
 
 
 def test_gateway_backtest_config_uses_exchange_market_metadata(monkeypatch):
@@ -128,6 +129,7 @@ def test_gateway_backtest_config_uses_exchange_market_metadata(monkeypatch):
         storage=_Storage(),
         config=SimpleNamespace(data_cache_root=None, data_dir=Path(".openpine")),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
     )
 
     asyncio.run(bt._run_backtest_background(state, "s1", "run1", 0, 172_800_000, None, 0, False))

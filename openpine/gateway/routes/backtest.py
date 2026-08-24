@@ -80,6 +80,12 @@ class _ArtifactBacktestSpec:
     prefetch_end_ms: int
     source: bytes
     data_snapshot_hash: str
+    execution_context: dict[str, Any]
+    admitted_manifest: dict[str, Any]
+    generated_artifact: dict[str, Any]
+    run_hash: str
+    bar_envelopes: list[dict[str, Any]]
+    protocol_artifact_dir: str
     htf_bars: list[dict[str, Any]] | None = None
     htf_timeframe: str | None = None
 
@@ -1164,7 +1170,7 @@ def _admit_loaded_backtest_run(
     bars: list[object],
     supplemental_bars: list[dict[str, Any]] | None,
     config: object,
-) -> str:
+) -> dict[str, object]:
     from openpine.admission import DeploymentAdmissionIdentity
     from openpine.run_identity import admit_and_persist_run_identity
 
@@ -1201,7 +1207,7 @@ def _admit_loaded_backtest_run(
         ),
         created_at_utc_ms=int(time.time() * 1000),
     )
-    return str(payload["data_snapshot_hash"])
+    return cast(dict[str, object], payload)
 
 
 def _backtest_process_entry(
@@ -1256,6 +1262,16 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
         )
         if actual_snapshot_hash != spec.data_snapshot_hash:
             raise RuntimeError("data snapshot hash mismatch before backtest execution")
+        for name, value in (
+            ("execution_context", spec.execution_context),
+            ("admitted_manifest", spec.admitted_manifest),
+            ("instrument_id", spec.execution_context["instrument_id"]),
+            ("generated_artifact", spec.generated_artifact),
+            ("bar_envelopes", spec.bar_envelopes),
+            ("run_hash", spec.run_hash),
+            ("protocol_artifact_dir", spec.protocol_artifact_dir),
+        ):
+            object.__setattr__(config, name, value)
         htf_bars = spec.htf_bars
         requested = spec.htf_timeframe
         if htf_bars is None and not (
@@ -2166,7 +2182,7 @@ async def _run_backtest_background(
             from_ms=from_ms,
             to_ms=to_ms,
         )
-        data_snapshot_hash = _admit_loaded_backtest_run(
+        run_identity = _admit_loaded_backtest_run(
             state,
             strategy=strategy,
             run_id=run_id,
@@ -2174,6 +2190,41 @@ async def _run_backtest_background(
             bars=bars,
             supplemental_bars=stamped_htf,
             config=config,
+        )
+        canonical_bars = getattr(series, "canonical_bars", None)
+        if not isinstance(canonical_bars, (list, tuple)) or len(canonical_bars) != len(
+            bars
+        ):
+            raise RuntimeError("canonical marketdata bar envelopes are required")
+        deployment = getattr(state, "admission_identity", None)
+        admitted_manifest = getattr(state, "admitted_manifest", None)
+        from openpine.admission import DeploymentAdmissionIdentity
+
+        if not isinstance(deployment, DeploymentAdmissionIdentity) or not isinstance(
+            admitted_manifest, dict
+        ):
+            raise RuntimeError("deployment admission identity is required")
+        generated_artifact = artifact.get("generated_artifact")
+        if not isinstance(generated_artifact, dict):
+            raise RuntimeError("generated artifact envelope is required")
+        from openpine.run_identity import execution_context_from_admission
+
+        first_bar = canonical_bars[0]
+        execution_context = execution_context_from_admission(
+            deployment,
+            admitted_manifest,
+            run_id=run_id,
+            strategy_id=strategy.strategy_id,
+            artifact=artifact,
+            data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+            series_id=str(first_bar["series_id"]),
+            instrument_id=str(first_bar["instrument_id"]),
+            exchange=config.exchange,
+            market=config.market_type,
+            symbol=config.symbol,
+            timeframe=config.timeframe,
+            semantic_profile=config.semantic_profile,
+            created_at_utc_ms=int(time.time() * 1000),
         )
         artifact_spec = _ArtifactBacktestSpec(
             pine_id=strategy.pine_id,
@@ -2185,7 +2236,15 @@ async def _run_backtest_background(
             market=config.market_type,
             prefetch_end_ms=to_ms,
             source=generated_source,
-            data_snapshot_hash=data_snapshot_hash,
+            data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+            execution_context=execution_context,
+            admitted_manifest=admitted_manifest,
+            generated_artifact=generated_artifact,
+            run_hash=str(run_identity["content_hash"]),
+            bar_envelopes=[dict(item) for item in canonical_bars],
+            protocol_artifact_dir=str(
+                Path(configured_data_dir) / "protocol" / run_id
+            ),
             htf_bars=stamped_htf,
             htf_timeframe=htf_timeframe,
         )

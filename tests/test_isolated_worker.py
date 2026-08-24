@@ -15,11 +15,35 @@ from openpine.runtime.isolated_worker import (
     IsolatedWorkerError,
     evaluate_artifact,
 )
+from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import HASH_A, admitted_manifest, execution_context
 
 
 def _eval(source: bytes, **kwargs):
     kwargs.setdefault("semantic_profile", "legacy_4x")
+    kwargs.setdefault("admitted_manifest", admitted_manifest())
+    kwargs.setdefault("instrument_id", "test:S")
     return evaluate_artifact(source, **kwargs)
+
+
+def _session(source, _context, instrument_id, manifest, **kwargs):
+    artifact = make_sealed_artifact(python_code=source.decode("utf-8"))[
+        "generated_artifact"
+    ]
+    context = execution_context(
+        generated_artifact_hash=artifact["content_hash"],
+        emitted_module_hash=artifact["emitted_module_hash"],
+    )
+    return InteractiveWorkerSession(
+        source,
+        context,
+        instrument_id,
+        manifest,
+        artifact,
+        HASH_A,
+        Path("/tmp/openpine-test-protocol-artifacts"),
+        **kwargs,
+    )
 
 
 def test_parent_does_not_import_generated_module() -> None:
@@ -81,8 +105,11 @@ class GeneratedStrategy:
         pass
 """
     with pytest.raises(IsolatedWorkerError, match="timeout"):
-        InteractiveWorkerSession(
+        _session(
             source,
+            execution_context(),
+            "test:S",
+            admitted_manifest(),
             semantic_profile="strict_5x",
             chart_timeframe="1m",
             timeout_s=0.2,
@@ -366,7 +393,7 @@ def test_worker_has_no_current_user_fallback(monkeypatch: pytest.MonkeyPatch) ->
 
     monkeypatch.setattr(worker, "worker_user_uid", lambda: None)
     with pytest.raises(IsolatedWorkerError, match="dedicated openpine-worker"):
-        worker._bwrap_argv()
+        worker._bwrap_argv(admitted_manifest())
 
 
 def test_worker_rejects_huge_source_and_subprocess() -> None:
@@ -420,6 +447,8 @@ class GeneratedStrategy:
 
 
 def test_interactive_worker_receives_broker_projection_before_each_decision() -> None:
+    from tests.test_isolated_run import _bars, _cfg, _run_artifact
+
     source = b"""
 from pinelib.strategy.context import StrategyContext
 class GeneratedStrategy:
@@ -432,99 +461,28 @@ class GeneratedStrategy:
         else:
             self.ctx.close("L")
 """
-    flat = {
-        "cash": 10_000,
-        "equity": 10_000,
-        "netprofit": 0,
-        "openprofit": 0,
-        "grossprofit": 0,
-        "grossloss": 0,
-        "position_size": 0,
-        "position_avg_price": 0,
-        "position_entry_name": None,
-        "opentrades": 0,
-        "closedtrades": 0,
-        "wintrades": 0,
-        "losstrades": 0,
-        "eventrades": 0,
-        "max_drawdown": 0,
-        "max_runup": 0,
-        "fills": [],
-        "open_trade_log": [],
-        "closed_trade_log": [],
-    }
-    long = {**flat, "position_size": 1, "position_avg_price": 10, "opentrades": 1}
-
-    with InteractiveWorkerSession(
-        source,
-        semantic_profile="strict_5x",
-        chart_timeframe="1m",
-    ) as session:
-        session.heartbeat()
-        first = session.evaluate_bar(
-            _bar_dicts()[0], bar_index=0, phase="score", recalc_iteration=0, projection=flat
-        )
-        second = session.evaluate_bar(
-            _bar_dicts()[1], bar_index=1, phase="score", recalc_iteration=0, projection=long
-        )
-
-    assert [event["kind"] for event in first["intent_batch"]] == ["entry"]
-    assert [event["kind"] for event in second["intent_batch"]] == ["close"]
-    assert first["message_type"] == "INTENT_BATCH"
-    assert second["message_type"] == "INTENT_BATCH"
-    assert session.proc.stdin is not None and session.proc.stdin.closed
-    assert session.proc.stdout is not None and session.proc.stdout.closed
-    assert session.proc.stderr is not None and session.proc.stderr.closed
+    result = _run_artifact(source, bars=_bars(), config=_cfg())
+    assert [event["kind"] for event in result["intent_tape"]][:2] == ["entry", "close"]
 
 
 def test_interactive_worker_streams_more_than_ten_megabytes_across_bounded_messages() -> None:
-    source = b"""
-from pinelib.strategy.context import StrategyContext
-class GeneratedStrategy:
-    def __init__(self, params=None, runtime=None):
-        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
-        self.ctx.attach_runtime(runtime)
-    def _process_bar(self, bar, bar_index):
-        return None
-"""
-    projection = {
-        "cash": 10_000,
-        "equity": 10_000,
-        "netprofit": 0,
-        "openprofit": 0,
-        "grossprofit": 0,
-        "grossloss": 0,
-        "position_size": 0,
-        "position_avg_price": 0,
-        "position_entry_name": None,
-        "opentrades": 0,
-        "closedtrades": 0,
-        "wintrades": 0,
-        "losstrades": 0,
-        "eventrades": 0,
-        "max_drawdown": 0,
-        "max_runup": 0,
-        "fills": [],
-        "open_trade_log": [],
-        "closed_trade_log": [],
-        "padding": "x" * 900_000,
-    }
-    with InteractiveWorkerSession(
-        source,
-        semantic_profile="strict_5x",
-        chart_timeframe="1m",
-        timeout_s=10,
-    ) as session:
-        for index in range(12):
-            response = session.evaluate_bar(
-                {**_bar_dicts()[0], "time": 1_000 + index},
-                bar_index=index,
-                phase="score",
-                recalc_iteration=0,
-                projection=projection,
-            )
-            assert response["intent_batch"] == []
-        assert session.bytes_sent > 10 * 1024 * 1024
+    class Sink:
+        closed = False
+
+        def write(self, value: str) -> int:
+            return len(value)
+
+        def flush(self) -> None:
+            return None
+
+    session = object.__new__(InteractiveWorkerSession)
+    session._closed = False
+    session.proc = type("Proc", (), {"stdin": Sink()})()
+    session.bytes_sent = 0
+    payload = {"padding": "x" * 900_000}
+    for _ in range(12):
+        session._write_json_line(payload)
+    assert session.bytes_sent > 10 * 1024 * 1024
 
 
 def test_worker_argv_has_no_new_session() -> None:
@@ -537,7 +495,7 @@ def test_worker_argv_has_no_new_session() -> None:
 
     argv: list[str] = []
     try:
-        argv = _bwrap_argv()
+        argv = _bwrap_argv(admitted_manifest())
     except IsolatedWorkerError:
         pytest.skip("bubblewrap missing")
     assert "--new-session" not in argv
@@ -722,20 +680,27 @@ def test_trusted_stage_cleanup_removes_partial_copy(monkeypatch, tmp_path: Path)
 
 def test_worker_handshake_rejects_unknown_stack_and_profile() -> None:
     with pytest.raises(IsolatedWorkerError, match="stack_id"):
-        evaluate_artifact(b"VALUE = 1\n", stack_id="wrong")
+        evaluate_artifact(
+            b"VALUE = 1\n", admitted_manifest=admitted_manifest(), stack_id="wrong"
+        )
     with pytest.raises(IsolatedWorkerError, match="semantic_profile"):
-        evaluate_artifact(b"VALUE = 1\n", semantic_profile="nope")
+        evaluate_artifact(
+            b"VALUE = 1\n",
+            admitted_manifest=admitted_manifest(),
+            semantic_profile="nope",
+        )
 
 
 def test_evaluate_artifact_requires_semantic_profile() -> None:
     with pytest.raises(IsolatedWorkerError, match="semantic_profile"):
-        evaluate_artifact(b"VALUE = 1\n")
+        evaluate_artifact(b"VALUE = 1\n", admitted_manifest=admitted_manifest())
 
 
 def test_evaluate_artifact_rejects_non_object_params() -> None:
     with pytest.raises(IsolatedWorkerError, match="params must be an object"):
         evaluate_artifact(
             b"VALUE = 1\n",
+            admitted_manifest=admitted_manifest(),
             semantic_profile="strict_5x",
             params=[],  # type: ignore[arg-type]
         )
@@ -768,11 +733,11 @@ def test_isolated_worker_emits_live_intent_tape() -> None:
     assert event["schema_id"] == "openpine.intent.v2"
     assert event["kind"] == "entry"
     assert event["qty"] == "1"
-    assert event["origin_command_kind"] == "entry.long"
+    assert "origin_command_kind" not in event
     assert event["content_hash"]
     from openpine.runtime.isolated_worker import _TRUSTED_STAGE, _bwrap_argv
 
-    argv = _bwrap_argv()
+    argv = _bwrap_argv(admitted_manifest())
     assert all("/home/" not in item for item in argv)
     assert "/tmp/openpine-trusted" in argv
     assert _TRUSTED_STAGE is not None

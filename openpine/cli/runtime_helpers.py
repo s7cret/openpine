@@ -974,6 +974,7 @@ def _run_indicator_plot_runtime(
     perf_counter,
     semantic_profile: object,
     htf_bars=None,
+    admitted_manifest=None,
 ) -> tuple[object, float]:
     from openpine.admission import admit_semantic_profile
 
@@ -984,10 +985,13 @@ def _run_indicator_plot_runtime(
     t0 = perf_counter()
     if isinstance(generated_class, (bytes, bytearray)):
         from openpine.runtime.isolated_run import run_isolated_indicator
+        from openpine.runtime.admitted_manifest import load_admitted_manifest
 
         backend_result = run_isolated_indicator(
             bytes(generated_class),
             bars,
+            admitted_manifest=admitted_manifest or load_admitted_manifest(),
+            instrument_id=symbol,
             semantic_profile=admitted.value,
             htf_bars=htf_bars,
         )

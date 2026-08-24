@@ -9,6 +9,7 @@ from openpine_contracts import AdmitError
 
 from openpine.batch.runner import _build_arg_parser, run_indicator
 from openpine.batch.tv_corpus import ChartExport, ExportEntry
+from tests.rc4_fixtures import admitted_manifest
 
 
 def _chart(tmp_path: Path) -> ChartExport:
@@ -47,6 +48,7 @@ def _args(**overrides) -> argparse.Namespace:
         provider_only_bars=True,
         tv_authoritative_bars=False,
         semantic_profile=None,
+        admitted_manifest=admitted_manifest(),
     )
     values.update(overrides)
     return argparse.Namespace(**values)
@@ -76,7 +78,15 @@ def test_batch_indicator_requires_semantic_profile(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -117,7 +127,15 @@ def test_batch_indicator_forwards_admitted_profile(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["semantic_profile"] = semantic_profile
         return SimpleNamespace(plots=())
 
@@ -197,7 +215,15 @@ def test_batch_indicator_forwards_confirmed_htf_bars(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["htf_bars"] = htf_bars
         return SimpleNamespace(plots=())
 
@@ -248,7 +274,15 @@ def test_batch_indicator_stamps_confirmed_provider_htf_bars(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["htf_bars"] = htf_bars
         return SimpleNamespace(plots=())
 
@@ -303,7 +337,15 @@ def test_batch_indicator_does_not_invent_time_close(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["htf_bars"] = htf_bars
         return SimpleNamespace(plots=())
 
@@ -369,7 +411,15 @@ def test_batch_indicator_fetches_explicit_htf_timeframe(
         lambda chart, bars: (0, None),
     )
 
-    def fake_run(source, bars, *, semantic_profile=None, htf_bars=None):
+    def fake_run(
+        source,
+        bars,
+        *,
+        semantic_profile=None,
+        htf_bars=None,
+        admitted_manifest=None,
+        instrument_id=None,
+    ):
         captured["htf_bars"] = htf_bars
         return SimpleNamespace(plots=())
 

@@ -1,6 +1,6 @@
 {
   "schema": "openpine.stack-candidate-template.v1",
-  "id": "5.0.0-rc.3",
+  "id": "5.0.0-rc.4",
   "not_a_release": true,
   "admission": {
     "capabilities": [
@@ -8,60 +8,70 @@
       "deterministic_clock",
       "isolated_worker",
       "broker_projection",
-      "intent_tape_v2"
+      "intent_tape_v2",
+      "checkpoint_v1"
     ],
     "semantic_profiles": ["strict_5x"],
     "finality_policies": ["CLOSED_BAR_ONLY"],
     "warmup_policies": ["CALC_ONLY"],
     "score_policies": ["ALL_BARS"]
   },
+  "worker_policy": {
+    "bubblewrap_path": "/usr/bin/bwrap",
+    "python_path": "/usr/bin/python3",
+    "worker_user": "openpine-worker",
+    "tmpfs_bytes": 16777216,
+    "memory_max_bytes": 134217728,
+    "tasks_max": 32,
+    "trusted_packages": ["ast2python", "openpine_contracts", "pinelib"]
+  },
   "components": {
     "openpine-contracts": {
       "repo": "s7cret/openpine-contracts",
       "ref": "feat/5.0-contracts",
-      "sha": "91c405e759206b542d22df242ef55ac49b1f0bb4",
-      "version": "5.0.0rc3"
+      "sha": "a91c0ce0d36d60e8dc5cb43e7aa92ab59c2eaa6c",
+      "version": "5.0.0rc4"
     },
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
       "ref": "feat/5.0-bar-v2",
-      "sha": "b82216eb2ee899fbfec43bdd367b375a2603c5f3",
-      "version": "5.0.0rc3"
+      "sha": "e098947dfd30444273090e521e5c749673909c37",
+      "version": "5.0.0rc4"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
       "ref": "feat/5.0-intent-tape",
-      "sha": "7e681f3ce2945d2ba702833b1f82aa4da133d909",
-      "version": "5.0.0rc3"
+      "sha": "6e649cb81a2d0d971dd7df66c542e22e19e39319",
+      "version": "5.0.0rc4"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
       "ref": "feat/5.0-warmup-reset",
-      "sha": "2208e0da0d14f467813e781a3c755a019079c8f3",
-      "version": "5.0.0rc3"
+      "sha": "3ccb3b32779cd633bcf3bde125dd586c3367f792",
+      "version": "5.0.0rc4"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "a5870fc40b790b764d70e4eac9db0abbb31a2a15",
-      "version": "5.0.0rc3"
+      "sha": "1715eef9c395b81db24224b6724f16589c1c960a",
+      "version": "5.0.0rc4"
     },
     "ast2python": {
       "repo": "s7cret/ast2python",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "3086e9f0e516a06c11daba4208a11845ec7021bd",
-      "version": "5.0.0rc3"
+      "sha": "ce8a691c6bdc8a1a1c81a2b8ed2cebb36e02da3b",
+      "version": "5.0.0rc4"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
       "ref": "feat/5.0-contracts-pin",
-      "sha": "17e9dc74493698e5d5017a79187980200a60e569",
-      "version": "5.0.0rc3"
+      "sha": "1a6e8857d18ec072309bdf6d4832f56a6c3de6e4",
+      "version": "5.0.0rc4"
     },
     "openpine": {
       "repo": "s7cret/openpine",
       "ref": "feat/5.0-isolated-worker",
-      "version": "5.0.0rc3"
+      "version": "5.0.0rc4"
     }
   }
 }

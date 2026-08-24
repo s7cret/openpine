@@ -15,13 +15,23 @@ HASH_A = "sha256:" + "a" * 64
 HASH_B = "sha256:" + "b" * 64
 HASH_C = "sha256:" + "c" * 64
 HASH_D = "sha256:" + "8" * 64
+STACK_COMPONENTS = (
+    "openpine-contracts",
+    "marketdata-provider",
+    "pinelib",
+    "pine2ast",
+    "ast2python",
+    "backtest_engine",
+    "optimizer",
+    "openpine",
+)
 
 
 def _deployment() -> DeploymentAdmissionIdentity:
     return DeploymentAdmissionIdentity(
-        stack_id="5.0.0-rc.3",
+        stack_id="5.0.0-rc.4",
         stack_manifest_hash=HASH_A,
-        wheel_identities=(("openpine", "5.0.0rc3", HASH_B),),
+        wheel_identities=(("openpine", "5.0.0rc4", HASH_B),),
         schema_hashes={"openpine.run.v2": HASH_C},
         capabilities=frozenset({"closed_bar", "deterministic_clock"}),
         semantic_profiles=frozenset({"strict_5x"}),
@@ -29,6 +39,70 @@ def _deployment() -> DeploymentAdmissionIdentity:
         warmup_policies=frozenset({"CALC_ONLY"}),
         score_policies=frozenset({"ALL_BARS"}),
     )
+
+
+def test_execution_context_is_derived_from_exact_deployment_and_manifest() -> None:
+    from openpine.run_identity import execution_context_from_admission
+
+    schema_ids = (
+        "openpine.execution_context.v1",
+        "openpine.intent.v2",
+        "openpine.worker.protocol.v2",
+        "openpine.checkpoint.v1",
+        "openpine.checkpoint.proof.v1",
+    )
+    deployment = DeploymentAdmissionIdentity(
+        stack_id="5.0.0-rc.4",
+        stack_manifest_hash=HASH_A,
+        wheel_identities=tuple(
+            (name, "5.0.0rc4", HASH_B) for name in STACK_COMPONENTS
+        ),
+        schema_hashes={name: HASH_C for name in schema_ids},
+        capabilities=frozenset(
+            {"closed_bar", "deterministic_clock", "broker_projection"}
+        ),
+        semantic_profiles=frozenset({"strict_5x"}),
+        finality_policies=frozenset({"CLOSED_BAR_ONLY"}),
+        warmup_policies=frozenset({"CALC_ONLY"}),
+        score_policies=frozenset({"ALL_BARS"}),
+    )
+    commits = {
+        name: f"{index + 1:x}" * 40 for index, name in enumerate(STACK_COMPONENTS)
+    }
+    manifest = {
+        "manifest_hash": HASH_A,
+        "components": {
+            name: {"sha": commits[name]} for name in STACK_COMPONENTS
+        },
+    }
+    artifact = make_sealed_artifact(python_code="class GeneratedStrategy: pass\n")
+    generated = artifact["generated_artifact"]
+
+    context = execution_context_from_admission(
+        deployment,
+        manifest,
+        run_id="run-1",
+        strategy_id="strategy-1",
+        artifact=artifact,
+        data_snapshot_hash=HASH_D,
+        series_id="binance/spot/BTCUSDT:1m",
+        instrument_id="binance/spot/BTCUSDT",
+        exchange="binance",
+        market="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        semantic_profile="strict_5x",
+        created_at_utc_ms=1,
+    )
+
+    validate_payload("openpine.execution_context.v1", context)
+    assert verify_content_hash(context, schema_id="openpine.execution_context.v1")
+    assert context["producer_version"] == "5.0.0-rc.4"
+    assert context["producer_commit"] == commits["openpine"]
+    assert context["producer_commits"] == commits
+    assert context["generated_artifact_hash"] == generated["content_hash"]
+    assert context["emitted_module_hash"] == generated["emitted_module_hash"]
+    assert context["stack_manifest_hash"] == deployment.stack_manifest_hash
 
 
 def _bar(close: float = 1.0, *, time: int = 0) -> SimpleNamespace:
@@ -154,7 +228,7 @@ def test_run_identity_is_admitted_sealed_and_persisted_before_execution(
 
     monkeypatch.setattr(
         "openpine.run_identity.current_build_identity",
-        lambda: BuildIdentity(version="5.0.0rc3", commit="1" * 40),
+        lambda: BuildIdentity(version="5.0.0rc4", commit="1" * 40),
     )
     bars = [_bar(time=0), _bar(time=60_000)]
     artifact = _sealed_artifact()
@@ -299,6 +373,12 @@ def test_spawned_backtest_rehashes_exact_bars_before_engine(monkeypatch: pytest.
         prefetch_end_ms=60_000,
         source=b"class Generated: pass\n",
         data_snapshot_hash=HASH_A,
+        execution_context={},
+        admitted_manifest={},
+        generated_artifact={},
+        run_hash=HASH_B,
+        bar_envelopes=[],
+        protocol_artifact_dir="/tmp/protocol",
     )
     config = SimpleNamespace(
         exchange="binance",
@@ -375,11 +455,24 @@ def test_optimizer_runner_rehashes_bars_before_each_trial(
         end_ms=60_000,
         finality_policy="CLOSED_BAR_ONLY",
     )
+    from tests.admission_helpers import make_sealed_artifact
+    from tests.rc4_fixtures import HASH_A, admitted_manifest, execution_context
+
+    generated_artifact = make_sealed_artifact(python_code="source")[
+        "generated_artifact"
+    ]
     runner = IsolatedOptimizerRunner(
         source=b"source",
         bars=[_bar()],
         config=config,
         expected_data_snapshot_hash=expected,
+        execution_context=execution_context(),
+        admitted_manifest=admitted_manifest(),
+        instrument_id="test:BTCUSDT",
+        generated_artifact=generated_artifact,
+        bar_envelopes=[],
+        run_hash=HASH_A,
+        protocol_artifact_dir="/tmp/openpine-test-protocol-artifacts",
         htf_bars=htf_bars,
     )
     runner.htf_bars[0]["close"] = 1.6

@@ -24,7 +24,7 @@ def _source_candidate() -> dict:
     return materializer.materialize_candidate(
         {
             "schema": "openpine.stack-candidate-template.v1",
-            "id": "5.0.0-rc.3",
+            "id": "5.0.0-rc.4",
             "not_a_release": True,
             "admission": {
                 "capabilities": ["closed_bar", "deterministic_clock"],
@@ -38,18 +38,18 @@ def _source_candidate() -> dict:
                     "repo": "s7cret/pinelib",
                     "ref": "feat/5.0-intent-tape",
                     "sha": "a" * 40,
-                    "version": "5.0.0rc3",
+                    "version": "5.0.0rc4",
                 },
                 "openpine": {
                     "repo": "s7cret/openpine",
                     "ref": "feat/5.0-isolated-worker",
-                    "version": "5.0.0rc3",
+                    "version": "5.0.0rc4",
                 },
                 "openpine-contracts": {
                     "repo": "s7cret/openpine-contracts",
                     "ref": "feat/5.0-contracts",
                     "sha": "c" * 40,
-                    "version": "5.0.0rc3",
+                    "version": "5.0.0rc4",
                 },
             },
         },
@@ -63,7 +63,7 @@ def _wheel(
     directory: Path,
     *,
     name: str,
-    version: str = "5.0.0rc3",
+    version: str = "5.0.0rc4",
     requires: tuple[str, ...] = (),
     schemas: dict[str, bytes] | None = None,
 ) -> Path:
@@ -103,11 +103,11 @@ def test_finalize_binds_exact_wheels_and_dependency_closure(tmp_path: Path) -> N
     finalizer = _load("finalize_stack_candidate.py")
     resolver = _load("resolve_stack_candidate.py")
     _wheel(tmp_path, name="pinelib")
-    _wheel(tmp_path, name="openpine", requires=("pinelib==5.0.0rc3",))
+    _wheel(tmp_path, name="openpine", requires=("pinelib==5.0.0rc4",))
     _contracts_wheel(tmp_path)
 
     payload = finalizer.finalize_candidate(_source_candidate(), tmp_path)
-    path = tmp_path / "stack-candidate-5.0.0-rc.3.json"
+    path = tmp_path / "stack-candidate-5.0.0-rc.4.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
 
     assert payload["stage"] == "wheel-bound"

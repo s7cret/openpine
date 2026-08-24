@@ -33,13 +33,13 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/openpine-candidate"
           python scripts/materialize_stack_candidate.py \
-            --template candidates/stack-candidate-5.0.0-rc.3.template.json \
+            --template candidates/stack-candidate-5.0.0-rc.4.template.json \
             --openpine-sha "$GITHUB_SHA" \
             --created-at-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --builder github-actions \
             --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --source-uri "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.json"
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.json"
       - name: Resolve active stack candidate
         id: stack
         working-directory: openpine
@@ -70,13 +70,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
-          ref: ${{ steps.stack.outputs.pinelib_sha || 'fcf9c0f92213313db39bc42c83f676786c85400c' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || '6e649cb81a2d0d971dd7df66c542e22e19e39319' }}
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
-          ref: ${{ steps.stack.outputs.backtest_engine_sha || '329b9905bff2ea0b7b7f48662e4ce8b83d919c60' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '3ccb3b32779cd633bcf3bde125dd586c3367f792' }}
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
@@ -112,11 +112,11 @@ jobs:
           python openpine/scripts/finalize_stack_candidate.py \
             --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
             --wheelhouse "$RUNNER_TEMP/openpine-wheelhouse" \
-            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json"
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.wheels.json"
           python -m venv "$RUNNER_TEMP/openpine-candidate-venv"
           "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
             openpine/scripts/install_candidate_wheelhouse.py \
-            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.3.wheels.json" \
+            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.wheels.json" \
             --wheelhouse "$RUNNER_TEMP/openpine-wheelhouse" \
             --python "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
             --install
@@ -126,14 +126,14 @@ jobs:
           from importlib.metadata import version
 
           expected = {
-              'openpine': '5.0.0rc3',
-              'openpine-contracts': '5.0.0rc3',
-              'pine2ast': '5.0.0rc3',
-              'ast2python': '5.0.0rc3',
-              'pinelib': '5.0.0rc3',
-              'backtest-engine': '5.0.0rc3',
-              'marketdata-provider': '5.0.0rc3',
-              'optimizer': '5.0.0rc3',
+              'openpine': '5.0.0rc4',
+              'openpine-contracts': '5.0.0rc4',
+              'pine2ast': '5.0.0rc4',
+              'ast2python': '5.0.0rc4',
+              'pinelib': '5.0.0rc4',
+              'backtest-engine': '5.0.0rc4',
+              'marketdata-provider': '5.0.0rc4',
+              'optimizer': '5.0.0rc4',
           }
           for distribution, wanted in expected.items():
               installed = version(distribution)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import pytest
 from backtest_engine import BacktestConfig, BacktestEngine, Bar
@@ -12,6 +13,13 @@ from openpine.runtime.isolated_run import (
     run_isolated_artifact,
     run_isolated_from_store,
     run_isolated_indicator,
+)
+from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import (
+    HASH_A,
+    admitted_manifest,
+    canonical_bar_envelopes,
+    execution_context,
 )
 
 SOURCE = (
@@ -40,7 +48,7 @@ def _bars() -> list[Bar]:
     ]
 
 
-def _cfg(*, semantic_profile: str = "legacy_4x") -> BacktestConfig:
+def _cfg(*, semantic_profile: str = "strict_5x") -> BacktestConfig:
     cfg = BacktestConfig(
         symbol="S",
         timeframe="1m",
@@ -52,11 +60,50 @@ def _cfg(*, semantic_profile: str = "legacy_4x") -> BacktestConfig:
         score_end_time=1_005,
     )
     cfg.semantic_profile = semantic_profile
+    cfg.execution_context = execution_context()  # type: ignore[attr-defined]
+    cfg.instrument_id = "test:S"  # type: ignore[attr-defined]
+    cfg.admitted_manifest = admitted_manifest()  # type: ignore[attr-defined]
     return cfg
 
 
+def _admit_config(source: bytes, bars, config, artifact=None):
+    if artifact is None:
+        artifact = make_sealed_artifact(
+            python_code=source.decode("utf-8"),
+            semantic_profile=str(config.semantic_profile),
+        )["generated_artifact"]
+    context = execution_context(
+        generated_artifact_hash=artifact["content_hash"],
+        emitted_module_hash=artifact["emitted_module_hash"],
+        semantic_profile=str(config.semantic_profile),
+    )
+    config.execution_context = context  # type: ignore[attr-defined]
+    config.generated_artifact = artifact  # type: ignore[attr-defined]
+    config.run_hash = HASH_A  # type: ignore[attr-defined]
+    config.bar_envelopes = canonical_bar_envelopes(bars, context)  # type: ignore[attr-defined]
+    config.protocol_artifact_dir = Path(  # type: ignore[attr-defined]
+        "/tmp/openpine-test-protocol-artifacts"
+    )
+    return config
+
+
+def _run_artifact(source: bytes, *, bars, config, **kwargs):
+    return run_isolated_artifact(
+        source,
+        bars=bars,
+        config=_admit_config(source, bars, config),
+        **kwargs,
+    )
+
+
+def _run_indicator(*args, **kwargs):
+    kwargs.setdefault("admitted_manifest", admitted_manifest())
+    kwargs.setdefault("instrument_id", "test:S")
+    return run_isolated_indicator(*args, **kwargs)
+
+
 def test_isolated_run_replays_live_tape_without_importing_generated() -> None:
-    result = run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars(), config=_cfg())
+    result = _run_artifact(SOURCE.encode("utf-8"), bars=_bars(), config=_cfg())
     assert result["intent_tape"][0]["schema_id"] == "openpine.intent.v2"
     assert result["intent_tape"][0]["kind"] == "entry"
     assert result["score_ledger_hash"]
@@ -85,7 +132,7 @@ class GeneratedStrategy:
         return None
 """
     with pytest.raises(IsolatedRunError, match="live pinelib tape"):
-        run_isolated_artifact(source, bars=_bars(), config=_cfg())
+        _run_artifact(source, bars=_bars(), config=_cfg())
 
 
 def test_isolated_run_forwards_trial_params_into_generated_strategy() -> None:
@@ -102,7 +149,7 @@ class GeneratedStrategy:
             self.ctx.entry("L", "long", qty=self.qty)
 """
 
-    result = run_isolated_artifact(
+    result = _run_artifact(
         source,
         bars=_bars(),
         config=_cfg(),
@@ -126,7 +173,7 @@ class GeneratedStrategy:
             self.ctx.close("L")
 """
 
-    result = run_isolated_artifact(source, bars=_bars(), config=_cfg(semantic_profile="strict_5x"))
+    result = _run_artifact(source, bars=_bars(), config=_cfg(semantic_profile="strict_5x"))
 
     kinds = [event["kind"] for event in result["intent_tape"]]
     assert kinds[0] == "entry"
@@ -184,7 +231,7 @@ class GeneratedStrategy:
             self.ctx.entry("VERIFIED", "long", qty=1)
 """
 
-    result = run_isolated_artifact(
+    result = _run_artifact(
         source,
         bars=_bars(),
         config=_cfg(semantic_profile="strict_5x"),
@@ -217,7 +264,7 @@ class GeneratedStrategy:
     cfg.calc_on_order_fills = True
     cfg.process_orders_on_close = True
 
-    result = run_isolated_artifact(source, bars=_bars(), config=cfg)
+    result = _run_artifact(source, bars=_bars(), config=cfg)
 
     first_bar = [
         event for event in result["intent_tape"] if event["bar_index"] == 0
@@ -302,7 +349,7 @@ class GeneratedStrategy:
         },
     ]
 
-    result = run_isolated_indicator(
+    result = _run_indicator(
         source,
         chart_bars,
         semantic_profile="strict_5x",
@@ -324,7 +371,7 @@ class GeneratedStrategy:
         )
 """
 
-    result = run_isolated_indicator(
+    result = _run_indicator(
         source,
         [
             {
@@ -402,7 +449,7 @@ class GeneratedStrategy:
         )
     ]
 
-    result = run_isolated_indicator(
+    result = _run_indicator(
         source,
         chart_bars,
         semantic_profile="strict_5x",
@@ -475,13 +522,13 @@ class GeneratedStrategy:
         for time, value in ((0, 10), (86_400_000, 20), (172_800_000, 30))
     ]
 
-    prefix = run_isolated_indicator(
+    prefix = _run_indicator(
         source,
         chart_bars[:3],
         semantic_profile="strict_5x",
         htf_bars=htf_bars[:2],
     )
-    full = run_isolated_indicator(
+    full = _run_indicator(
         source,
         chart_bars,
         semantic_profile="strict_5x",
@@ -543,7 +590,7 @@ class GeneratedStrategy:
         for time, value in ((0, 10), (86_400_000, 20))
     ]
 
-    result = run_isolated_indicator(
+    result = _run_indicator(
         source,
         chart_bars,
         semantic_profile="strict_5x",
@@ -564,7 +611,7 @@ class GeneratedStrategy:
 """
 
     with pytest.raises(IsolatedRunError, match="confirmed chart bars"):
-        run_isolated_indicator(
+        _run_indicator(
             source,
             [{"time": 0, "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1}],
             semantic_profile="strict_5x",
@@ -649,7 +696,7 @@ class GeneratedStrategy:
         return None
 """
     with pytest.raises(IsolatedRunError, match="chart (bars|timeframe)"):
-        run_isolated_indicator(
+        _run_indicator(
             source,
             chart_bars,
             semantic_profile="strict_5x",
@@ -682,7 +729,7 @@ def test_isolated_indicator_rejects_missing_required_chart_field(missing: str) -
     del bar[missing]
 
     with pytest.raises(IsolatedRunError, match=f"required field {missing}"):
-        run_isolated_indicator(
+        _run_indicator(
             b"VALUE = 1\n",
             [bar],
             semantic_profile="strict_5x",
@@ -708,7 +755,7 @@ def test_isolated_indicator_rejects_missing_required_htf_field(missing: str) -> 
     del htf_bar[missing]
 
     with pytest.raises(IsolatedRunError, match=f"HTF bar required field {missing}"):
-        run_isolated_indicator(
+        _run_indicator(
             b"VALUE = 1\n",
             [
                 {
@@ -743,7 +790,7 @@ def test_isolated_run_drives_generated_class_to_same_hash() -> None:
         "})()\n"
         "        self.ctx.entry('L', 'long', qty=1)\n"
     )
-    result = run_isolated_artifact(source.encode("utf-8"), bars=_bars(), config=_cfg())
+    result = _run_artifact(source.encode("utf-8"), bars=_bars(), config=_cfg())
     assert result["intent_tape"][0]["bar_index"] == 2
 
     class LiveEntry:
@@ -770,8 +817,9 @@ def test_capture_generated_source_uses_bytes_not_later_path(
         def get_artifact(self, artifact_id: str, source_id: str) -> dict:
             return {
                 "artifact_dir": str(artifact_dir),
-                "python_code": SOURCE,
-                "compile_meta": {"compile_status": "OK"},
+                **make_sealed_artifact(
+                    {"compile_status": "OK"}, python_code=SOURCE
+                ),
             }
 
     import openpine.artifacts as artifacts
@@ -780,7 +828,7 @@ def test_capture_generated_source_uses_bytes_not_later_path(
     path.write_text("VALUE = 999\n", encoding="utf-8")
     captured = capture_generated_source("src", "art")
     assert captured == SOURCE.encode("utf-8")
-    result = run_isolated_artifact(captured, bars=_bars(), config=_cfg())
+    result = _run_artifact(captured, bars=_bars(), config=_cfg())
     assert result["intent_tape"][0]["qty"] == "1"
 
 
@@ -790,19 +838,23 @@ def test_run_isolated_from_store_captures_then_replays(
     artifact_dir = tmp_path / "art"
     artifact_dir.mkdir()
     (artifact_dir / "generated_strategy.py").write_text(SOURCE, encoding="utf-8")
+    stored = make_sealed_artifact({"compile_status": "OK"}, python_code=SOURCE)
 
     class Store:
         def get_artifact(self, artifact_id: str, source_id: str) -> dict:
             return {
                 "artifact_dir": str(artifact_dir),
-                "python_code": SOURCE,
-                "compile_meta": {"compile_status": "OK"},
+                **stored,
             }
 
     import openpine.artifacts as artifacts
 
     monkeypatch.setattr(artifacts, "ArtifactStore", Store)
-    result = run_isolated_from_store("src", "art", bars=_bars(), config=_cfg())
+    bars = _bars()
+    config = _admit_config(
+        SOURCE.encode("utf-8"), bars, _cfg(), stored["generated_artifact"]
+    )
+    result = run_isolated_from_store("src", "art", bars=bars, config=config)
     assert result["intent_tape"][0]["kind"] == "entry"
     assert result["score_ledger_hash"]
 
@@ -817,7 +869,7 @@ def test_isolated_indicator_returns_plot_tuples() -> None:
         "    def _process_bar(self, bar, i=0):\n"
         "        self.rt.plot_recorder.record_plot(int(bar.time), int(i), bar.close, 'close')\n"
     )
-    result = run_isolated_indicator(
+    result = _run_indicator(
         source.encode("utf-8"),
         _bars()[:2],
         semantic_profile="strict_5x",
@@ -841,26 +893,28 @@ def _resume_cfg() -> BacktestConfig:
         export_resume_state=True,
         resume_validation_policy="diagnostic",
     )
-    cfg.semantic_profile = "legacy_4x"
+    cfg.semantic_profile = "strict_5x"
+    cfg.execution_context = execution_context()  # type: ignore[attr-defined]
+    cfg.instrument_id = "test:S"  # type: ignore[attr-defined]
+    cfg.admitted_manifest = admitted_manifest()  # type: ignore[attr-defined]
     return cfg
 
 
 def test_isolated_run_honors_resume_state_without_double_entry() -> None:
-    first = run_isolated_artifact(
+    first = _run_artifact(
         SOURCE.encode("utf-8"),
         bars=_bars(),
         config=_resume_cfg(),
     )
     resume = getattr(first["raw_result"], "resume_state", None)
     assert resume is not None
-    second = run_isolated_artifact(
-        SOURCE.encode("utf-8"),
-        bars=_bars(),
-        config=_resume_cfg(),
-        resume_state=resume,
-    )
-    assert second["score_ledger_hash"]
-    assert getattr(second["raw_result"], "resume_state", None) is not None
+    with pytest.raises(IsolatedRunError, match="RESUME_UNSUPPORTED_FOR_WORKER_PROTOCOL"):
+        _run_artifact(
+            SOURCE.encode("utf-8"),
+            bars=_bars(),
+            config=_resume_cfg(),
+            resume_state=resume,
+        )
 
 
 def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -886,7 +940,10 @@ def test_isolated_resume_skips_already_replayed_bars(monkeypatch: pytest.MonkeyP
         export_resume_state=True,
         resume_validation_policy="diagnostic",
     )
-    cfg.semantic_profile = "legacy_4x"
+    cfg.semantic_profile = "strict_5x"
+    cfg.execution_context = execution_context()  # type: ignore[attr-defined]
+    cfg.instrument_id = "test:S"  # type: ignore[attr-defined]
+    cfg.admitted_manifest = admitted_manifest()  # type: ignore[attr-defined]
     source = b"""
 from pinelib.strategy.context import StrategyContext
 class GeneratedStrategy:
@@ -899,21 +956,20 @@ class GeneratedStrategy:
         if bar_index == 4 and self.ctx.position_size > 0:
             self.ctx.close("L")
 """
-    first = run_isolated_artifact(source, bars=_bars()[:3], config=cfg)
+    first = _run_artifact(source, bars=_bars()[:3], config=cfg)
     resume = first["raw_result"].resume_state
     assert resume is not None
     warnings = [getattr(item, "code", "") for item in (first["raw_result"].warnings or [])]
     assert "RESUME_STRATEGY_STATE_UNAVAILABLE" not in warnings
     applied.clear()
-    run_isolated_artifact(
-        source,
-        bars=_bars(),
-        config=cfg,
-        resume_state=resume,
-    )
-    assert applied
-    assert min(applied) > int(resume.bar_index)
-    assert 0 not in applied
+    with pytest.raises(IsolatedRunError, match="RESUME_UNSUPPORTED_FOR_WORKER_PROTOCOL"):
+        _run_artifact(
+            source,
+            bars=_bars(),
+            config=cfg,
+            resume_state=resume,
+        )
+    assert applied == []
 
 
 def test_isolated_run_requires_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -923,13 +979,13 @@ def test_isolated_run_requires_semantic_profile(monkeypatch: pytest.MonkeyPatch)
     seen: dict[str, object] = {}
 
     class _CaptureSession:
-        def __init__(self, source, **kwargs):
+        def __init__(self, source, *args, **kwargs):
             seen["semantic_profile"] = kwargs.get("semantic_profile")
             raise IsolatedWorkerError("stop")
 
     monkeypatch.setattr(isolated_run, "InteractiveWorkerSession", _CaptureSession)
     with pytest.raises(IsolatedRunError, match="semantic_profile"):
-        run_isolated_artifact(
+        _run_artifact(
             SOURCE.encode("utf-8"),
             bars=_bars(),
             config=_cfg(semantic_profile=""),
@@ -944,7 +1000,7 @@ def test_isolated_run_forwards_config_semantic_profile(monkeypatch: pytest.Monke
     seen: dict[str, object] = {}
 
     class _CaptureSession:
-        def __init__(self, source, **kwargs):
+        def __init__(self, source, *args, **kwargs):
             seen["semantic_profile"] = kwargs.get("semantic_profile")
             raise IsolatedWorkerError("stop")
 
@@ -952,7 +1008,7 @@ def test_isolated_run_forwards_config_semantic_profile(monkeypatch: pytest.Monke
     cfg = _cfg()
     cfg.semantic_profile = "strict_5x"
     with pytest.raises(IsolatedRunError, match="stop"):
-        run_isolated_artifact(SOURCE.encode("utf-8"), bars=_bars(), config=cfg)
+        _run_artifact(SOURCE.encode("utf-8"), bars=_bars(), config=cfg)
     assert seen["semantic_profile"] == "strict_5x"
 
 
@@ -969,7 +1025,7 @@ def test_isolated_indicator_forwards_semantic_profile(monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
     with pytest.raises(IsolatedRunError, match="stop"):
-        run_isolated_indicator(b"VALUE = 1\n", _bars(), semantic_profile="strict_5x")
+        _run_indicator(b"VALUE = 1\n", _bars(), semantic_profile="strict_5x")
     assert seen["semantic_profile"] == "strict_5x"
 
 
@@ -985,7 +1041,7 @@ def test_isolated_indicator_requires_semantic_profile(monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(isolated_run, "evaluate_artifact", _ok)
     with pytest.raises(IsolatedRunError, match="semantic_profile"):
-        run_isolated_indicator(b"VALUE = 1\n", _bars())
+        _run_indicator(b"VALUE = 1\n", _bars())
     assert "semantic_profile" not in seen
 
 
@@ -993,7 +1049,7 @@ def test_isolated_indicator_rejects_unknown_profile() -> None:
     from openpine.runtime.isolated_run import run_isolated_indicator
 
     with pytest.raises(IsolatedRunError, match="semantic_profile"):
-        run_isolated_indicator(b"VALUE = 1\n", _bars(), semantic_profile="nope")
+        _run_indicator(b"VALUE = 1\n", _bars(), semantic_profile="nope")
 
 
 def test_isolated_run_forwards_confirmed_htf_bars(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1016,13 +1072,13 @@ def test_isolated_run_forwards_confirmed_htf_bars(monkeypatch: pytest.MonkeyPatc
     ]
 
     class _CaptureSession:
-        def __init__(self, source, **kwargs):
+        def __init__(self, source, *args, **kwargs):
             seen["htf_bars"] = kwargs.get("htf_bars")
             raise IsolatedWorkerError("stop")
 
     monkeypatch.setattr(isolated_run, "InteractiveWorkerSession", _CaptureSession)
     with pytest.raises(IsolatedRunError, match="stop"):
-        run_isolated_artifact(
+        _run_artifact(
             SOURCE.encode("utf-8"),
             bars=_bars(),
             config=_cfg(),
@@ -1037,12 +1093,12 @@ def test_isolated_run_rejects_unconfirmed_htf_bars(monkeypatch: pytest.MonkeyPat
     seen: dict[str, object] = {}
 
     class _CaptureSession:
-        def __init__(self, source, **kwargs):
+        def __init__(self, source, *args, **kwargs):
             seen["called"] = True
 
     monkeypatch.setattr(isolated_run, "InteractiveWorkerSession", _CaptureSession)
     with pytest.raises(IsolatedRunError, match="confirmed HTF"):
-        run_isolated_artifact(
+        _run_artifact(
             SOURCE.encode("utf-8"),
             bars=_bars(),
             config=_cfg(),
@@ -1088,7 +1144,7 @@ def test_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch: pytest.Monk
 
     monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
     with pytest.raises(IsolatedRunError, match="stop"):
-        run_isolated_indicator(
+        _run_indicator(
             b"VALUE = 1\n",
             _bars(),
             semantic_profile="strict_5x",
@@ -1109,7 +1165,7 @@ def test_isolated_indicator_rejects_unconfirmed_htf_bars(monkeypatch: pytest.Mon
 
     monkeypatch.setattr(isolated_run, "evaluate_artifact", _capture)
     with pytest.raises(IsolatedRunError, match="confirmed HTF"):
-        run_isolated_indicator(
+        _run_indicator(
             b"VALUE = 1\n",
             _bars(),
             semantic_profile="strict_5x",

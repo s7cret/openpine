@@ -3,11 +3,14 @@ from __future__ import annotations
 import asyncio
 import sys
 import types
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from openpine.gateway.routes import strategies as sr
+from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import HASH_A, HASH_B, admitted_manifest
 
 
 def _strategy():
@@ -62,8 +65,25 @@ def test_strategy_replay_success_and_failure(monkeypatch, job_store):
     data_orch = types.ModuleType("openpine.data.orchestrator")
 
     class DataOrchestrator:
-        def get_bars(self, query):
-            return [SimpleNamespace(time=1)]
+        def load_bars(self, query):
+            bar = SimpleNamespace(
+                time=1,
+                time_close=60_000,
+                open=1,
+                high=1,
+                low=1,
+                close=1,
+                volume=1,
+            )
+            return SimpleNamespace(
+                bars=[bar],
+                canonical_bars=[
+                    {
+                        "series_id": "binance/spot/BTCUSDT:1m",
+                        "instrument_id": "binance/spot/BTCUSDT",
+                    }
+                ],
+            )
 
     data_orch.DataOrchestrator = DataOrchestrator
     monkeypatch.setitem(sys.modules, "openpine.data.orchestrator", data_orch)
@@ -88,10 +108,27 @@ def test_strategy_replay_success_and_failure(monkeypatch, job_store):
     monkeypatch.setitem(sys.modules, "openpine.runtime.isolated_run", iso)
 
     reg = Registry()
+    from openpine.gateway.routes import backtest as backtest_routes
+
+    monkeypatch.setattr(
+        backtest_routes,
+        "_admit_loaded_backtest_run",
+        lambda *a, **k: {"data_snapshot_hash": HASH_A, "content_hash": HASH_B},
+    )
+
     async def _call(strategy_id, registry):
+        artifact_store = SimpleNamespace(
+            get_artifact=lambda *a, **k: make_sealed_artifact(python_code="src")
+        )
         response = await sr.strategy_replay(
             strategy_id,
-            state=SimpleNamespace(orchestrator=DataOrchestrator(), job_store=job_store),
+            state=SimpleNamespace(
+                orchestrator=DataOrchestrator(),
+                artifact_store=artifact_store,
+                job_store=job_store,
+                config=SimpleNamespace(data_dir=Path(".openpine")),
+                admitted_manifest=admitted_manifest(),
+            ),
             registry=registry,
         )
         await asyncio.sleep(0)
@@ -105,9 +142,27 @@ def test_strategy_replay_success_and_failure(monkeypatch, job_store):
     assert broadcasts[-1].status == "completed"
 
     # Error branch inside background replay.
-    iso.capture_generated_source = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom"))
+    class BrokenStore:
+        def get_artifact(self, *args, **kwargs):
+            raise RuntimeError("boom")
+
     reg2 = Registry()
-    response = asyncio.run(_call("s1", reg2))
+    async def _broken_call():
+        response = await sr.strategy_replay(
+            "s1",
+            state=SimpleNamespace(
+                orchestrator=DataOrchestrator(),
+                artifact_store=BrokenStore(),
+                job_store=job_store,
+                config=SimpleNamespace(data_dir=Path(".openpine")),
+            ),
+            registry=reg2,
+        )
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        return response
+
+    response = asyncio.run(_broken_call())
     assert response["status"] == "started"
     assert ("s1", "error") in reg2.statuses
     assert broadcasts[-1].status == "failed"

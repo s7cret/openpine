@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 
 from openpine.batch import runner
+from tests.rc4_fixtures import admitted_manifest
 from openpine.batch.tv_corpus import ChartExport, ExportEntry
 from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
 
@@ -43,6 +44,7 @@ def _entry(tmp_path: Path, kind: str = "strategy", export_id: int = 9) -> Export
 def _args(tmp_path: Path, **overrides) -> argparse.Namespace:
     values = dict(
         symbol="BTCUSDT",
+        admitted_manifest=admitted_manifest(),
         exchange="binance",
         market_type="spot",
         root=tmp_path,

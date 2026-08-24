@@ -6,6 +6,13 @@ import pytest
 
 from openpine.gateway.routes import backtest as routes
 from openpine.run_identity import execution_data_snapshot_hash
+from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import (
+    HASH_A,
+    admitted_manifest,
+    canonical_bar_envelopes,
+    execution_context,
+)
 
 
 def _bar() -> SimpleNamespace:
@@ -45,6 +52,36 @@ def _snapshot_hash(bars: list[object], supplemental_bars=None) -> str:
     )
 
 
+def _spec(*, source: bytes, data_snapshot_hash: str, **overrides):
+    generated = make_sealed_artifact(python_code=source.decode("utf-8"))[
+        "generated_artifact"
+    ]
+    context = execution_context(
+        generated_artifact_hash=generated["content_hash"],
+        emitted_module_hash=generated["emitted_module_hash"],
+    )
+    values = {
+        "pine_id": "pine-1",
+        "artifact_id": "art-1",
+        "symbol": "BTCUSDT",
+        "timeframe": "1m",
+        "cache_dir": "/tmp",
+        "exchange": "binance",
+        "market": "spot",
+        "prefetch_end_ms": 60_000,
+        "source": source,
+        "data_snapshot_hash": data_snapshot_hash,
+        "execution_context": context,
+        "admitted_manifest": admitted_manifest(),
+        "generated_artifact": generated,
+        "run_hash": HASH_A,
+        "bar_envelopes": canonical_bar_envelopes([_bar()], context),
+        "protocol_artifact_dir": "/tmp/openpine-test-protocol-artifacts",
+    }
+    values.update(overrides)
+    return routes._ArtifactBacktestSpec(**values)
+
+
 def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
     recaptures: list[tuple] = []
 
@@ -62,6 +99,11 @@ def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
         def run_isolated(self, source, bars, config, **kwargs):
             seen["source"] = source
             seen["params"] = kwargs.get("params")
+            seen["execution_context"] = config.execution_context
+            seen["generated_artifact"] = config.generated_artifact
+            seen["bar_envelopes"] = config.bar_envelopes
+            seen["run_hash"] = config.run_hash
+            seen["protocol_artifact_dir"] = config.protocol_artifact_dir
             return SimpleNamespace(ok=True)
 
     monkeypatch.setattr(
@@ -70,7 +112,7 @@ def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
     monkeypatch.setattr(routes, "_put_backtest_process_result", lambda out, result: seen.setdefault("result", result))
     monkeypatch.setattr(routes, "_put_backtest_process_error", lambda out, exc: seen.setdefault("error", exc))
 
-    spec = routes._ArtifactBacktestSpec(
+    spec = _spec(
         pine_id="pine-1",
         artifact_id="art-1",
         symbol="BTCUSDT",
@@ -89,13 +131,18 @@ def test_artifact_worker_uses_stamped_source_not_recapture(monkeypatch) -> None:
     assert recaptures == []
     assert seen["source"] == b"STAMPED"
     assert seen["params"] == {"qty": 3}
+    assert seen["execution_context"] == spec.execution_context
+    assert seen["generated_artifact"] == spec.generated_artifact
+    assert seen["bar_envelopes"] == spec.bar_envelopes
+    assert seen["run_hash"] == spec.run_hash
+    assert seen["protocol_artifact_dir"] == spec.protocol_artifact_dir
     assert getattr(seen["result"], "ok", None) is True
     assert "error" not in seen
 
 
 def test_artifact_spec_requires_captured_source() -> None:
     with pytest.raises(TypeError):
-        routes._ArtifactBacktestSpec(
+        _spec(
             pine_id="pine-1",
             artifact_id="art-1",
             symbol="BTCUSDT",
@@ -134,7 +181,7 @@ def test_artifact_worker_forwards_confirmed_htf_bars(monkeypatch) -> None:
     monkeypatch.setattr(routes, "_put_backtest_process_result", lambda out, result: None)
     monkeypatch.setattr(routes, "_put_backtest_process_error", lambda out, exc: seen.setdefault("error", exc))
 
-    spec = routes._ArtifactBacktestSpec(
+    spec = _spec(
         pine_id="pine-1",
         artifact_id="art-1",
         symbol="BTCUSDT",
@@ -179,7 +226,7 @@ def test_artifact_worker_stamps_confirmed_provider_htf_bars(monkeypatch) -> None
         routes, "_put_backtest_process_error", lambda out, exc: seen.setdefault("error", exc)
     )
 
-    spec = routes._ArtifactBacktestSpec(
+    spec = _spec(
         pine_id="pine-1",
         artifact_id="art-1",
         symbol="BTCUSDT",
@@ -224,7 +271,7 @@ def test_artifact_worker_fails_closed_when_chart_time_close_is_missing(monkeypat
         routes, "_put_backtest_process_error", lambda out, exc: seen.setdefault("error", exc)
     )
 
-    spec = routes._ArtifactBacktestSpec(
+    spec = _spec(
         pine_id="pine-1",
         artifact_id="art-1",
         symbol="BTCUSDT",
@@ -262,7 +309,7 @@ def test_artifact_worker_keeps_none_when_other_htf_unconfirmed(monkeypatch) -> N
     monkeypatch.setattr(
         routes, "_put_backtest_process_error", lambda out, exc: seen.setdefault("error", exc)
     )
-    spec = routes._ArtifactBacktestSpec(
+    spec = _spec(
         pine_id="pine-1",
         artifact_id="art-1",
         symbol="BTCUSDT",

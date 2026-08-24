@@ -537,7 +537,7 @@ def _confirmed_htf_bars_for_replay(
                     market=instrument.market,
                     symbol=request_symbol,
                 )
-            return load_bars(
+            loaded = load_bars(
                 BarQuery(
                     instrument=request_instrument,
                     timeframe=parse_timeframe(timeframe),
@@ -545,6 +545,7 @@ def _confirmed_htf_bars_for_replay(
                     end_ms=end_ms,
                 )
             )
+            return list(getattr(loaded, "bars", loaded))
 
         return confirmed_mtf_bars_for_requests(
             chart_bars=bars,
@@ -558,7 +559,7 @@ def _confirmed_htf_bars_for_replay(
     if requested_timeframe and str(requested_timeframe) != str(chart_timeframe):
         from marketdata_provider.contracts import BarQuery, parse_timeframe
 
-        fetched = load_bars(
+        loaded = load_bars(
             BarQuery(
                 instrument=instrument,
                 timeframe=parse_timeframe(str(requested_timeframe)),
@@ -566,6 +567,7 @@ def _confirmed_htf_bars_for_replay(
                 end_ms=end_ms,
             )
         )
+        fetched = list(getattr(loaded, "bars", loaded))
     return _confirmed_htf_bars_for_timeframe(
         chart_bars=bars,
         symbol=symbol,
@@ -625,9 +627,10 @@ async def strategy_replay(
                 BacktestEngineAdapter,
                 BacktestRunConfig,
             )
-            from openpine.runtime.isolated_run import capture_generated_source
+            from openpine.run_identity import verified_generated_source
 
-            source = capture_generated_source(s.pine_id, s.artifact_id)
+            artifact = state.artifact_store.get_artifact(s.artifact_id, s.pine_id)
+            source = verified_generated_source(artifact)
 
             tf = parse_timeframe(s.timeframe)
             symbol = str(s.symbol).upper()
@@ -641,7 +644,7 @@ async def strategy_replay(
             start_ms = now_ms - 90 * 24 * 3600 * 1000
             end_ms = now_ms
 
-            bars = state.orchestrator.get_bars(
+            series = state.orchestrator.load_bars(
                 BarQuery(
                     instrument=key,
                     timeframe=tf,
@@ -649,6 +652,7 @@ async def strategy_replay(
                     end_ms=end_ms,
                 )
             )
+            bars = list(series.bars)
 
             run_id = operation_id
             config = BacktestRunConfig(
@@ -663,22 +667,85 @@ async def strategy_replay(
                 semantic_profile=admitted.value,
             )
 
+            htf_bars = _confirmed_htf_bars_for_replay(
+                bars,
+                symbol=symbol,
+                chart_timeframe=str(s.timeframe),
+                requested_timeframe=(
+                    getattr(body, "htf_timeframe", None) if body is not None else None
+                ),
+                mtf_series=(
+                    getattr(body, "mtf_series", None) if body is not None else None
+                ),
+                load_bars=state.orchestrator.load_bars,
+                instrument=key,
+                start_ms=start_ms,
+                end_ms=end_ms,
+            )
+            from openpine.gateway.routes.backtest import _admit_loaded_backtest_run
+
+            run_identity = _admit_loaded_backtest_run(
+                state,
+                strategy=s,
+                run_id=run_id,
+                artifact=artifact,
+                bars=bars,
+                supplemental_bars=htf_bars,
+                config=config,
+            )
+            canonical_bars = getattr(series, "canonical_bars", None)
+            if not isinstance(canonical_bars, (list, tuple)) or len(
+                canonical_bars
+            ) != len(bars):
+                raise RuntimeError("canonical marketdata bar envelopes are required")
+            from openpine.admission import DeploymentAdmissionIdentity
+            from openpine.run_identity import execution_context_from_admission
+
+            deployment = getattr(state, "admission_identity", None)
+            admitted_manifest = getattr(state, "admitted_manifest", None)
+            generated_artifact = artifact.get("generated_artifact")
+            if not isinstance(deployment, DeploymentAdmissionIdentity) or not isinstance(
+                admitted_manifest, dict
+            ):
+                raise RuntimeError("deployment admission identity is required")
+            if not isinstance(generated_artifact, dict):
+                raise RuntimeError("generated artifact envelope is required")
+            first_bar = canonical_bars[0]
+            execution_context = execution_context_from_admission(
+                deployment,
+                admitted_manifest,
+                run_id=run_id,
+                strategy_id=str(s.strategy_id),
+                artifact=artifact,
+                data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+                series_id=str(first_bar["series_id"]),
+                instrument_id=str(first_bar["instrument_id"]),
+                exchange=config.exchange,
+                market=config.market_type,
+                symbol=config.symbol,
+                timeframe=config.timeframe,
+                semantic_profile=config.semantic_profile,
+                created_at_utc_ms=int(_time_module.time() * 1000),
+            )
+            for name, value in (
+                ("execution_context", execution_context),
+                ("admitted_manifest", admitted_manifest),
+                ("instrument_id", execution_context["instrument_id"]),
+                ("generated_artifact", generated_artifact),
+                ("bar_envelopes", [dict(item) for item in canonical_bars]),
+                ("run_hash", str(run_identity["content_hash"])),
+                (
+                    "protocol_artifact_dir",
+                    str(state.config.data_dir / "protocol" / run_id),
+                ),
+            ):
+                object.__setattr__(config, name, value)
             result = _run_isolated_strategy_replay(
                 BacktestEngineAdapter(),
                 source,
                 bars,
                 config,
-                htf_bars=_confirmed_htf_bars_for_replay(
-                    bars,
-                    symbol=symbol,
-                    chart_timeframe=str(s.timeframe),
-                    requested_timeframe=getattr(body, "htf_timeframe", None) if body is not None else None,
-                    mtf_series=getattr(body, "mtf_series", None) if body is not None else None,
-                    load_bars=state.orchestrator.get_bars,
-                    instrument=key,
-                    start_ms=start_ms,
-                    end_ms=end_ms,
-                ),
+                htf_bars=htf_bars,
             )
 
             registry.update_status(strategy_id, "paused")

@@ -149,6 +149,11 @@ def materialize_candidate(
         "admission": admission,
         "components": components,
     }
+    worker_policy = template.get("worker_policy")
+    if worker_policy is not None:
+        if not isinstance(worker_policy, Mapping):
+            raise CandidateMaterializationError("worker_policy must be an object")
+        payload["worker_policy"] = dict(worker_policy)
     payload["manifest_hash"] = candidate_manifest_hash(payload)
     return payload
 

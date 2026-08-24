@@ -149,7 +149,7 @@ def test_release_report_rejects_feature_tree_against_frozen_4_0_2_lock() -> None
     _clean_release_artifacts(root)
     report = release_report(root)
 
-    assert __version__ == "5.0.0rc3"
+    assert __version__ == "5.0.0rc4"
     assert report.ok is False
     assert report.errors == (
         "stack lock OpenPine tree_sha256 does not match package sources",
@@ -171,8 +171,8 @@ def test_frozen_stack_lock_stays_valid_but_not_coherent_with_feature_tree() -> N
     assert stack_checks["source_tree_matches"] is False
     assert all(item["version"] == "4.0.2" for item in lock["components"])
     workflow = (root / ".github" / "workflows" / "stack-ci.yml").read_text()
-    assert "'openpine': '5.0.0rc3'" in workflow
-    assert "'openpine-contracts': '5.0.0rc3'" in workflow
+    assert "'openpine': '5.0.0rc4'" in workflow
+    assert "'openpine-contracts': '5.0.0rc4'" in workflow
 
 
 def test_release_report_returns_structured_failure_for_mapping_components(

@@ -8,6 +8,13 @@ from openpine.optimizer import LocalOptimizerAdapter, OptimizerRunConfig
 from openpine.optimizer.isolated_runner import IsolatedOptimizerRunner
 from openpine.run_identity import execution_data_snapshot_hash
 from openpine.runtime.engine import BacktestRunConfig
+from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import (
+    HASH_A,
+    admitted_manifest,
+    canonical_bar_envelopes,
+    execution_context,
+)
 
 
 SOURCE = b"""
@@ -61,6 +68,13 @@ def _config() -> BacktestRunConfig:
 def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -> None:
     bars = _bars()
     config = _config()
+    artifact = make_sealed_artifact(python_code=SOURCE.decode("utf-8"))[
+        "generated_artifact"
+    ]
+    context = execution_context(
+        generated_artifact_hash=artifact["content_hash"],
+        emitted_module_hash=artifact["emitted_module_hash"],
+    )
     runner = IsolatedOptimizerRunner(
         source=SOURCE,
         bars=bars,
@@ -75,6 +89,13 @@ def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -
             end_ms=config.end_time,
             finality_policy="CLOSED_BAR_ONLY",
         ),
+        execution_context=context,
+        admitted_manifest=admitted_manifest(),
+        instrument_id="test:S",
+        generated_artifact=artifact,
+        bar_envelopes=canonical_bar_envelopes(list(bars), context),
+        run_hash=HASH_A,
+        protocol_artifact_dir=str(tmp_path / "protocol"),
         base_params={},
     )
     adapter = LocalOptimizerAdapter()

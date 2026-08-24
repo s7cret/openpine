@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from tests.admission_helpers import make_deployment_identity
+from tests.rc4_fixtures import admitted_manifest
 
 _REAL_RMTREE = shutil.rmtree
 
@@ -27,6 +28,8 @@ def _bind_exact_test_admission_identity(monkeypatch, request):
     def require_test_identity(state: object, mode: str) -> None:
         if getattr(state, "admission_identity", None) is None:
             setattr(state, "admission_identity", make_deployment_identity())
+        if getattr(state, "admitted_manifest", None) is None:
+            setattr(state, "admitted_manifest", admitted_manifest())
         original(state, mode)
 
     monkeypatch.setattr(side_effects, "require_http_admit", require_test_identity)

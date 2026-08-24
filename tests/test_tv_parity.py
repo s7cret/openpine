@@ -12,6 +12,7 @@ import pytest
 from openpine.gateway import server
 from openpine.gateway.routes import tv_parity
 from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
+from tests.rc4_fixtures import admitted_manifest
 
 
 def _sealed_artifact() -> dict[str, object]:
@@ -770,6 +771,7 @@ async def test_background_success_saves_result_and_tv_parity_payload(tmp_path: P
     state = SimpleNamespace(
         config=SimpleNamespace(data_dir=tmp_path, data_cache_root=tmp_path / "cache"),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: strategy),
         artifact_store=SimpleNamespace(get_artifact=lambda *args: _sealed_artifact()),
         backtest_store=FakeBacktestStore(),
@@ -1250,6 +1252,7 @@ async def test_background_passes_effective_pre_bars_to_worker(tmp_path: Path, mo
     state = SimpleNamespace(
         config=SimpleNamespace(data_dir=tmp_path, data_cache_root=tmp_path / "cache"),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         artifact_store=SimpleNamespace(get_artifact=lambda *args: _sealed_artifact()),
         backtest_store=FakeStore(),
@@ -1601,6 +1604,7 @@ async def test_background_success_handles_params_override_and_runtime_provider_f
     state = SimpleNamespace(
         config=SimpleNamespace(data_dir=tmp_path, data_cache_root=None),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy(params_json='{"ignored": true}')),
         artifact_store=SimpleNamespace(get_artifact=lambda *args: _sealed_artifact()),
         backtest_store=SimpleNamespace(save_result=lambda **kwargs: saved.update(kwargs), mark_failed=lambda *args: None),

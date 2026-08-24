@@ -337,11 +337,50 @@ async def optimizer_search(
             ),
             created_at_utc_ms=int(time.time() * 1000),
         )
+        deployment = getattr(state, "admission_identity", None)
+        admitted_manifest = getattr(state, "admitted_manifest", None)
+        if not isinstance(deployment, DeploymentAdmissionIdentity) or not isinstance(
+            admitted_manifest, dict
+        ):
+            raise HTTPException(503, "DEPLOYMENT_ADMISSION_REQUIRED")
+        canonical_bars = getattr(series, "canonical_bars", None)
+        if not isinstance(canonical_bars, (list, tuple)) or len(canonical_bars) != len(
+            bars
+        ):
+            raise HTTPException(503, "CANONICAL_BAR_ENVELOPES_REQUIRED")
+        from openpine.run_identity import execution_context_from_admission
+
+        execution_context = execution_context_from_admission(
+            deployment,
+            admitted_manifest,
+            run_id=optimization_id,
+            strategy_id=str(strategy.strategy_id),
+            artifact=artifact,
+            data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+            series_id=str(canonical_bars[0]["series_id"]),
+            instrument_id=str(canonical_bars[0]["instrument_id"]),
+            exchange=str(strategy.exchange),
+            market=str(strategy.market_type),
+            symbol=str(strategy.symbol),
+            timeframe=str(strategy.timeframe),
+            semantic_profile=admitted.value,
+            created_at_utc_ms=int(time.time() * 1000),
+        )
+        generated_artifact = artifact.get("generated_artifact")
+        if not isinstance(generated_artifact, dict):
+            raise HTTPException(503, "GENERATED_ARTIFACT_ENVELOPE_REQUIRED")
         runner = IsolatedOptimizerRunner(
             source=source,
             bars=bars,
             config=engine_config,
             expected_data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+            execution_context=execution_context,
+            admitted_manifest=admitted_manifest,
+            instrument_id=str(execution_context["instrument_id"]),
+            generated_artifact=generated_artifact,
+            bar_envelopes=[dict(bar) for bar in canonical_bars],
+            run_hash=str(run_identity["content_hash"]),
+            protocol_artifact_dir=str(Path(data_dir) / "protocol" / optimization_id),
             base_params=base_params,
             htf_bars=stamped_htf,
         )

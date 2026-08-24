@@ -7,11 +7,11 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.3.template.json"
+TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.4.template.json"
 HISTORICAL = (
     ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
 )
-PIN = "91c405e759206b542d22df242ef55ac49b1f0bb4"
+PIN = "a91c0ce0d36d60e8dc5cb43e7aa92ab59c2eaa6c"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
     "openpine-contracts",
@@ -49,13 +49,13 @@ def _materializer():
 def test_candidate_template_pins_eight_repos_and_is_not_active() -> None:
     payload = json.loads(TEMPLATE.read_text(encoding="utf-8"))
     assert payload["schema"] == "openpine.stack-candidate-template.v1"
-    assert payload["id"] == "5.0.0-rc.3"
+    assert payload["id"] == "5.0.0-rc.4"
     assert payload["not_a_release"] is True
     components = payload["components"]
     assert set(components) == REQUIRED
     assert components["openpine-contracts"]["sha"] == PIN
     for name, row in components.items():
-        assert row["version"] == "5.0.0rc3"
+        assert row["version"] == "5.0.0rc4"
         if name == "openpine":
             assert "sha" not in row
             continue
@@ -220,14 +220,14 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
         created_at_utc="2026-08-20T21:00:00Z",
         provenance={"builder": "test", "run_id": "1"},
     )
-    manifest = tmp_path / "stack-candidate-5.0.0-rc.3.json"
+    manifest = tmp_path / "stack-candidate-5.0.0-rc.4.json"
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     outputs = dict(resolver.github_outputs(manifest))
 
     assert outputs["mode"] == "candidate"
     assert outputs["candidate_path"] == manifest.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
-    assert outputs["pine2ast_sha"] == "a5870fc40b790b764d70e4eac9db0abbb31a2a15"
+    assert outputs["pine2ast_sha"] == "1715eef9c395b81db24224b6724f16589c1c960a"
     assert outputs["openpine_sha"] == "d" * 40
 
 

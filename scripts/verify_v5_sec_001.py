@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import sys
 import textwrap
@@ -96,6 +97,20 @@ def _empty_report(worker_uid: int | None) -> dict[str, Any]:
     }
 
 
+def _acceptance_manifest() -> dict[str, Any]:
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "candidates"
+        / "stack-candidate-5.0.0-rc.4.template.json"
+    )
+    content = path.read_bytes()
+    template = json.loads(content)
+    return {
+        "manifest_hash": "sha256:" + hashlib.sha256(content).hexdigest(),
+        "worker_policy": template["worker_policy"],
+    }
+
+
 def build_report() -> dict[str, Any]:
     worker_uid = worker_user_uid()
     report = _empty_report(worker_uid)
@@ -115,6 +130,8 @@ def build_report() -> dict[str, Any]:
         modules_before = set(sys.modules)
         result = evaluate_artifact(
             captured_source,
+            admitted_manifest=_acceptance_manifest(),
+            instrument_id="acceptance:S",
             semantic_profile="strict_5x",
             timeout_s=8,
         )
@@ -167,7 +184,7 @@ def build_report() -> dict[str, Any]:
         "canonical_intent_tape": (
             event.get("schema_id") == "openpine.intent.v2"
             and event.get("kind") == "entry"
-            and event.get("origin_command_kind") == "entry.long"
+            and "origin_command_kind" not in event
             and bool(event.get("content_hash"))
         ),
         "captured_source_bytes": namespace.get("CAPTURED_MARKER") == "original",

@@ -635,6 +635,7 @@ def run_indicator(
         capture_generated_source,
         run_isolated_indicator,
     )
+    from openpine.runtime.admitted_manifest import load_admitted_manifest
 
     timings: dict[str, float] = {}
     bars, data_meta = load_calculation_bars(entry, chart, args, timings)
@@ -666,6 +667,10 @@ def run_indicator(
     backend_result = run_isolated_indicator(
         source_bytes,
         bars,
+        admitted_manifest=(
+            getattr(args, "admitted_manifest", None) or load_admitted_manifest()
+        ),
+        instrument_id=str(getattr(chart, "symbol", None) or getattr(entry, "symbol", "")),
         semantic_profile=admitted.value,
         htf_bars=htf_bars,
     )

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import copy
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
@@ -58,12 +59,28 @@ class IsolatedOptimizerRunner:
         bars: tuple[Any, ...] | list[Any],
         config: Any,
         expected_data_snapshot_hash: str,
+        execution_context: dict[str, Any],
+        admitted_manifest: dict[str, Any],
+        instrument_id: str,
+        generated_artifact: dict[str, Any],
+        bar_envelopes: list[dict[str, Any]],
+        run_hash: str,
+        protocol_artifact_dir: str,
         base_params: dict[str, Any] | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
     ) -> None:
         self.source = bytes(source)
         self.bars = tuple(bars)
-        self.config = config
+        self.config = copy.copy(config)
+        object.__setattr__(self.config, "execution_context", execution_context)
+        object.__setattr__(self.config, "admitted_manifest", admitted_manifest)
+        object.__setattr__(self.config, "instrument_id", instrument_id)
+        object.__setattr__(self.config, "generated_artifact", generated_artifact)
+        object.__setattr__(self.config, "bar_envelopes", bar_envelopes)
+        object.__setattr__(self.config, "run_hash", run_hash)
+        object.__setattr__(
+            self.config, "protocol_artifact_dir", protocol_artifact_dir
+        )
         self.expected_data_snapshot_hash = expected_data_snapshot_hash
         self.base_params = dict(base_params or {})
         self.htf_bars = list(htf_bars or [])

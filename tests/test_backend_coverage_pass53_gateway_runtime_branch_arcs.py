@@ -36,6 +36,7 @@ from openpine.gateway.schemas import (
 )
 from openpine.runtime import engine as runtime_engine
 from tests.admission_helpers import make_deployment_identity, make_sealed_artifact
+from tests.rc4_fixtures import admitted_manifest, canonical_series
 
 
 class _Cursor:
@@ -119,7 +120,7 @@ def _bar(t: int = 0, close: float = 1.0) -> Bar:
     return Bar(inst, tf, t, t + 60_000, close, close + 1, close - 1, close, 10.0, True)
 
 
-def _series(times=(0, 60_000)) -> BarSeries:
+def _series(times=(0, 60_000)):
     inst = InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT")
     tf = parse_timeframe("1m")
     bars = tuple(_bar(t, float(i + 1)) for i, t in enumerate(times))
@@ -138,7 +139,7 @@ def _series(times=(0, 60_000)) -> BarSeries:
         bars[-1].time_close if bars else None,
         source_mix=("unit",),
     )
-    return BarSeries(query, bars, coverage)
+    return canonical_series(BarSeries(query, bars, coverage))
 
 
 def _force_fast_local(frame, name: str, value: object) -> None:
@@ -402,6 +403,7 @@ def test_backtest_routes_and_background_remaining_branches(
         storage=SimpleNamespace(),
         config=SimpleNamespace(data_dir=Path(".openpine"), data_cache_root=None),
         admission_identity=make_deployment_identity(),
+        admitted_manifest=admitted_manifest(),
     )
     asyncio.run(bt._run_backtest_background(bg_state, "s1", "run-bg", 0, 120_000, None, 0, False))
     assert captured["params"] == {}
