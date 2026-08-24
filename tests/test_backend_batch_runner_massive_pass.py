@@ -12,6 +12,7 @@ from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
 
 from openpine.batch import runner
 from openpine.batch.tv_corpus import ChartExport, ExportEntry
+from tests.rc4_fixtures import canonical_bar_envelopes, execution_context
 
 
 def _chart(tmp_path: Path, name: str = "chart_15m.csv") -> ChartExport:
@@ -82,7 +83,11 @@ def test_batch_runner_data_and_meta_edges(monkeypatch, tmp_path):
     class Series: pass
     class Orch:
         def __init__(self, provider=None): pass
-        def load_bars(self, query): return SimpleNamespace(bars=bars)
+        def load_bars(self, query):
+            return SimpleNamespace(
+                bars=bars,
+                canonical_bars=canonical_bar_envelopes(bars, execution_context()),
+            )
     monkeypatch.setattr("openpine.data.orchestrator.DataOrchestrator", Orch)
     monkeypatch.setattr("openpine.data.provider_adapter.create_local_marketdata_provider_adapter", lambda: Provider())
     loaded, info = runner.load_calculation_bars(entry, chart, args, {})

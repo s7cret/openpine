@@ -673,6 +673,9 @@ def test_capture_plots_keeps_stamped_isolated_execution_path():
     ), patch(
         "openpine.runtime.isolated_run.capture_generated_source",
         return_value=generated_source,
+    ), patch(
+        "openpine.cli.runtime_helpers._bind_cli_isolated_config",
+        return_value=None,
     ):
         mock_registry = MockRegistry.return_value
         mock_registry.get_strategy.return_value = MagicMock(
@@ -688,7 +691,10 @@ def test_capture_plots_keeps_stamped_isolated_execution_path():
             semantic_profile="strict_5x",
         )
 
-        MockOrch.return_value.get_bars.return_value = [MagicMock()]
+        MockOrch.return_value.load_bars.return_value = SimpleNamespace(
+            bars=[MagicMock()],
+            canonical_bars=[{"schema_id": "openpine.marketdata.bar.v2"}],
+        )
         MockArtifactStore.return_value.get_artifact.return_value = {
             "compile_meta": {}
         }

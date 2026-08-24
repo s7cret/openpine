@@ -30,6 +30,57 @@ from openpine.runtime.mtf import (
 from openpine.timezones import parse_timestamp_ms
 
 
+class CanonicalCliBars(list):
+    """CLI bar list carrying exact producer-owned envelopes."""
+
+    def __init__(self, bars, canonical_bars):
+        super().__init__(bars)
+        self.canonical_bars = [dict(item) for item in canonical_bars]
+
+
+def _bind_cli_isolated_config(
+    *,
+    config,
+    strategy,
+    strategy_id: str,
+    artifact_store_cls,
+    bars,
+    htf_bars,
+    run_id: str,
+    created_at_utc_ms: int,
+) -> None:
+    canonical_bars = getattr(bars, "canonical_bars", None)
+    if not isinstance(canonical_bars, list) or len(canonical_bars) != len(bars):
+        raise IsolatedRunError("canonical marketdata bar envelopes are required")
+    from openpine.admission import load_active_deployment_identity
+    from openpine.config import OpenPineConfig
+    from openpine.run_identity import bind_isolated_execution
+    from openpine.runtime.admitted_manifest import load_admitted_manifest
+
+    runtime_config = OpenPineConfig.load()
+    manifest_path = getattr(runtime_config, "deployment_manifest", None)
+    wheelhouse = getattr(runtime_config, "deployment_wheelhouse", None)
+    if manifest_path is None or wheelhouse is None:
+        raise IsolatedRunError("CLI execution requires an admitted deployment")
+    artifact = artifact_store_cls().get_artifact(
+        strategy.artifact_id, strategy.pine_id
+    )
+    bind_isolated_execution(
+        config,
+        data_dir=runtime_config.data_dir,
+        deployment=load_active_deployment_identity(manifest_path, wheelhouse),
+        admitted_manifest=load_admitted_manifest(manifest_path),
+        mode="backtest",
+        run_id=run_id,
+        strategy_id=strategy_id,
+        artifact=artifact,
+        bars=bars,
+        bar_envelopes=canonical_bars,
+        supplemental_bars=htf_bars,
+        created_at_utc_ms=created_at_utc_ms,
+    )
+
+
 def _fmt_utc_ms(timestamp_ms: int) -> str:
     """Format a millisecond timestamp without deprecated utcfromtimestamp()."""
     return (
@@ -1379,7 +1430,17 @@ def _load_strategy_backtest_bars(
         orch.set_provider(provider)
     console.print("[dim]data: loading bars[/dim]")
     t0 = _time.perf_counter()
-    bars = orch.get_bars(query)
+    load_bars = getattr(orch, "load_bars", None)
+    if callable(load_bars):
+        series = load_bars(query)
+        canonical_bars = getattr(series, "canonical_bars", None)
+        bars = (
+            CanonicalCliBars(list(series.bars), canonical_bars)
+            if isinstance(canonical_bars, (list, tuple))
+            else list(series.bars)
+        )
+    else:
+        bars = orch.get_bars(query)
     data_load_sec = _time.perf_counter() - t0
     if bars:
         console.print(
@@ -1634,6 +1695,18 @@ def _run_strategy_backtest_or_exit(
     perf_counter,
 ):
     try:
+        if isinstance(prepared.strategy_class, (bytes, bytearray)):
+            created_at_utc_ms = int(datetime.now(UTC).timestamp() * 1000)
+            _bind_cli_isolated_config(
+                config=prepared.config,
+                strategy=registry.get_strategy(strategy_id),
+                strategy_id=strategy_id,
+                artifact_store_cls=deps.ArtifactStore,
+                bars=prepared.bars,
+                htf_bars=getattr(prepared, "htf_bars", None),
+                run_id=f"cli-backtest-{strategy_id}-{created_at_utc_ms}",
+                created_at_utc_ms=created_at_utc_ms,
+            )
         return _run_strategy_backtest_adapter(
             adapter_cls=deps.BacktestEngineAdapter,
             strategy_class=prepared.strategy_class,

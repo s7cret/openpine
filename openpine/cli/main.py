@@ -53,6 +53,7 @@ from openpine.cli.runtime_helpers import (
     _build_strategy_backtest_run_meta,
     _build_strategy_backtest_run_request,
     _build_strategy_replay_config,
+    _bind_cli_isolated_config,
     _default_qty_rounding_mode,
     _default_qty_step,
     _ensure_output_dir,
@@ -2890,6 +2891,17 @@ def strategy_replay(
             console=console,
             htf_timeframe=htf_timeframe,
             mtf_series=mtf_series,
+        )
+        created_at_utc_ms = int(_time_module.time() * 1000)
+        _bind_cli_isolated_config(
+            config=prepared.config,
+            strategy=s,
+            strategy_id=strategy_id,
+            artifact_store_cls=ArtifactStore,
+            bars=prepared.bars,
+            htf_bars=getattr(prepared, "htf_bars", None),
+            run_id=f"cli-replay-{strategy_id}-{created_at_utc_ms}",
+            created_at_utc_ms=created_at_utc_ms,
         )
         registry.update_status(strategy_id, "running")
         try:

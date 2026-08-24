@@ -33,7 +33,15 @@ def _deployment() -> DeploymentAdmissionIdentity:
         stack_manifest_hash=HASH_A,
         wheel_identities=(("openpine", "5.0.0rc4", HASH_B),),
         schema_hashes={"openpine.run.v2": HASH_C},
-        capabilities=frozenset({"closed_bar", "deterministic_clock"}),
+        capabilities=frozenset(
+            {
+                "closed_bar",
+                "deterministic_clock",
+                "isolated_worker",
+                "broker_projection",
+                "intent_tape_v2",
+            }
+        ),
         semantic_profiles=frozenset({"strict_5x"}),
         finality_policies=frozenset({"CLOSED_BAR_ONLY"}),
         warmup_policies=frozenset({"CALC_ONLY"}),
@@ -403,6 +411,80 @@ def test_optimizer_search_persists_run_identity_before_external_execution() -> N
     admission = source.index("admit_and_persist_run_identity(")
     dispatch = source.index("start_optimization")
     assert admission < dispatch
+
+
+def test_bind_isolated_execution_attaches_exact_protocol_inputs(tmp_path) -> None:
+    from openpine.run_identity import bind_isolated_execution, run_identity_path
+    from tests.admission_helpers import make_sealed_artifact
+    from tests.rc4_fixtures import (
+        admitted_manifest,
+        canonical_bar_envelopes,
+        execution_context,
+    )
+
+    bar = _bar()
+    config = SimpleNamespace(
+        exchange="binance",
+        market_type="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_time=0,
+        end_time=60_000,
+        semantic_profile="strict_5x",
+    )
+    manifest = admitted_manifest()
+    schema_ids = (
+        "openpine.execution_context.v1",
+        "openpine.intent.v2",
+        "openpine.worker.protocol.v2",
+        "openpine.checkpoint.v1",
+        "openpine.checkpoint.proof.v1",
+    )
+    deployment = DeploymentAdmissionIdentity(
+        stack_id="5.0.0-rc.4",
+        stack_manifest_hash=str(manifest["manifest_hash"]),
+        wheel_identities=tuple(
+            (name, "5.0.0rc4", HASH_B) for name in STACK_COMPONENTS
+        ),
+        schema_hashes={name: HASH_C for name in schema_ids},
+        capabilities=frozenset(
+            {
+                "closed_bar",
+                "deterministic_clock",
+                "isolated_worker",
+                "broker_projection",
+                "intent_tape_v2",
+            }
+        ),
+        semantic_profiles=frozenset({"strict_5x"}),
+        finality_policies=frozenset({"CLOSED_BAR_ONLY"}),
+        warmup_policies=frozenset({"CALC_ONLY"}),
+        score_policies=frozenset({"ALL_BARS"}),
+    )
+    artifact = make_sealed_artifact(python_code="VALUE = 1\n")
+    envelopes = canonical_bar_envelopes([bar], execution_context())
+
+    identity = bind_isolated_execution(
+        config,
+        data_dir=tmp_path,
+        deployment=deployment,
+        admitted_manifest=manifest,
+        mode="backtest",
+        run_id="run-bind",
+        strategy_id="strategy-test",
+        artifact=artifact,
+        bars=[bar],
+        bar_envelopes=envelopes,
+        supplemental_bars=None,
+        created_at_utc_ms=1,
+    )
+
+    assert config.execution_context["run_id"] == "run-bind"
+    assert config.generated_artifact == artifact["generated_artifact"]
+    assert config.bar_envelopes == envelopes
+    assert config.run_hash == identity["content_hash"]
+    assert config.protocol_artifact_dir.endswith("protocol/run-bind")
+    assert run_identity_path(tmp_path, "run-bind").is_file()
 
 
 def test_optimizer_runner_rehashes_bars_before_each_trial(

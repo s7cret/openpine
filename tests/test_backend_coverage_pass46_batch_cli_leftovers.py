@@ -127,7 +127,7 @@ def test_runner_revision_registry_and_calculation_bar_leftovers(monkeypatch, tmp
     assert isinstance(runner.load_source_registry(), FakeSourceRegistry)
     assert isinstance(runner.load_strategy_registry(), FakeStrategyRegistry)
 
-    entry = _entry(tmp_path / "missing_calc_from")
+    entry = _entry(tmp_path / "missing_calc_from", kind="indicator")
     with pytest.raises(ValueError, match="calculation-from"):
         runner.load_calculation_bars(
             entry,
@@ -194,7 +194,22 @@ def test_runner_revision_registry_and_calculation_bar_leftovers(monkeypatch, tmp
 
 
 def test_load_calculation_bars_tv_authoritative_uses_chart_csv_without_provider(monkeypatch, tmp_path: Path):
-    entry = _entry(tmp_path / "tv_authoritative")
+    strategy_entry = _entry(tmp_path / "tv_authoritative_strategy")
+    with pytest.raises(RuntimeError, match="producer-owned marketdata bars"):
+        runner.load_calculation_bars(
+            strategy_entry,
+            strategy_entry.charts[0],
+            _runner_args(
+                tmp_path,
+                provider_only_bars=False,
+                tv_authoritative_bars=True,
+                calculation_from="1",
+                calculation_to="999999999",
+            ),
+            {},
+        )
+
+    entry = _entry(tmp_path / "tv_authoritative", kind="indicator")
     chart = entry.charts[0]
 
     def provider_should_not_be_called():

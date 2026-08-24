@@ -728,3 +728,86 @@ def execution_context_from_admission(
     sealed = seal_content_hash(payload, schema_id="openpine.execution_context.v1")
     validate_payload("openpine.execution_context.v1", sealed)
     return sealed
+
+
+def bind_isolated_execution(
+    config: object,
+    *,
+    data_dir: str | Path,
+    deployment: DeploymentAdmissionIdentity,
+    admitted_manifest: Mapping[str, object],
+    mode: object,
+    run_id: str,
+    strategy_id: str,
+    artifact: Mapping[str, object],
+    bars: Iterable[object],
+    bar_envelopes: Iterable[Mapping[str, object]],
+    supplemental_bars: Iterable[object] | None,
+    created_at_utc_ms: int,
+) -> dict[str, object]:
+    """Persist one admitted run and attach exact protocol inputs to its config."""
+
+    bar_list = list(bars)
+    envelopes = [dict(item) for item in bar_envelopes]
+    if not bar_list or len(envelopes) != len(bar_list):
+        raise AdmitError(
+            "exact canonical bar envelopes are required",
+            code="CANONICAL_BAR_ENVELOPES_REQUIRED",
+        )
+    run_identity = admit_and_persist_run_identity(
+        data_dir=data_dir,
+        deployment=deployment,
+        mode=mode,
+        run_id=run_id,
+        artifact=artifact,
+        bars=bar_list,
+        supplemental_bars=supplemental_bars,
+        exchange=str(getattr(config, "exchange")),
+        market=str(getattr(config, "market_type")),
+        symbol=str(getattr(config, "symbol")),
+        timeframe=str(getattr(config, "timeframe")),
+        start_ms=int(getattr(config, "start_time")),
+        end_ms=int(getattr(config, "end_time")),
+        semantic_profile=str(getattr(config, "semantic_profile")),
+        finality_policy="CLOSED_BAR_ONLY",
+        warmup_policy="CALC_ONLY",
+        score_policy="ALL_BARS",
+        required_capabilities=(
+            "closed_bar",
+            "deterministic_clock",
+            "isolated_worker",
+            "broker_projection",
+            "intent_tape_v2",
+        ),
+        created_at_utc_ms=created_at_utc_ms,
+    )
+    first = envelopes[0]
+    execution_context = execution_context_from_admission(
+        deployment,
+        admitted_manifest,
+        run_id=run_id,
+        strategy_id=strategy_id,
+        artifact=artifact,
+        data_snapshot_hash=str(run_identity["data_snapshot_hash"]),
+        series_id=str(first["series_id"]),
+        instrument_id=str(first["instrument_id"]),
+        exchange=str(getattr(config, "exchange")),
+        market=str(getattr(config, "market_type")),
+        symbol=str(getattr(config, "symbol")),
+        timeframe=str(getattr(config, "timeframe")),
+        semantic_profile=str(getattr(config, "semantic_profile")),
+        created_at_utc_ms=created_at_utc_ms,
+    )
+    generated = artifact.get("generated_artifact")
+    assert isinstance(generated, Mapping)
+    for name, value in (
+        ("execution_context", execution_context),
+        ("admitted_manifest", dict(admitted_manifest)),
+        ("instrument_id", execution_context["instrument_id"]),
+        ("generated_artifact", dict(generated)),
+        ("bar_envelopes", envelopes),
+        ("run_hash", str(run_identity["content_hash"])),
+        ("protocol_artifact_dir", str(Path(data_dir) / "protocol" / run_id)),
+    ):
+        object.__setattr__(config, name, value)
+    return run_identity

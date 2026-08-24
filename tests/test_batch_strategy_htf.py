@@ -4,8 +4,41 @@ import argparse
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
+from openpine.batch import runner as batch_runner
 from openpine.batch.runner import run_strategy
 from openpine.batch.tv_corpus import ChartExport, ExportEntry
+from tests.rc4_fixtures import admitted_manifest
+
+
+def _sealed_bars(bars):
+    return batch_runner.CanonicalBars(
+        list(bars),
+        [{"schema_id": "openpine.marketdata.bar.v2"} for _ in bars],
+    )
+
+
+@pytest.fixture(autouse=True)
+def _admitted_batch_execution(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "openpine.config.OpenPineConfig.load",
+        lambda: SimpleNamespace(
+            data_dir=tmp_path,
+            deployment_manifest=tmp_path / "candidate.json",
+            deployment_wheelhouse=tmp_path / "wheelhouse",
+        ),
+    )
+    monkeypatch.setattr(
+        "openpine.admission.load_active_deployment_identity", lambda *a, **k: object()
+    )
+    monkeypatch.setattr(
+        "openpine.runtime.admitted_manifest.load_admitted_manifest",
+        lambda *a, **k: admitted_manifest(),
+    )
+    monkeypatch.setattr(
+        "openpine.run_identity.bind_isolated_execution", lambda *a, **k: {}
+    )
 
 
 def _chart(tmp_path: Path) -> ChartExport:
@@ -66,7 +99,10 @@ def test_batch_strategy_forwards_confirmed_htf_bars(tmp_path: Path, monkeypatch)
 
     monkeypatch.setattr(
         "openpine.batch.runner.load_calculation_bars",
-        lambda *a, **k: ([], {"calculation_from": 0, "calculation_to": 60_000}),
+        lambda *a, **k: (
+            _sealed_bars([]),
+            {"calculation_from": 0, "calculation_to": 60_000},
+        ),
     )
     monkeypatch.setattr(
         "openpine.batch.runner.timed_call",
@@ -126,7 +162,10 @@ def test_batch_strategy_stamps_confirmed_provider_htf_bars(tmp_path: Path, monke
 
     monkeypatch.setattr(
         "openpine.batch.runner.load_calculation_bars",
-        lambda *a, **k: (bars, {"calculation_from": 0, "calculation_to": 60_000}),
+        lambda *a, **k: (
+            _sealed_bars(bars),
+            {"calculation_from": 0, "calculation_to": 60_000},
+        ),
     )
     monkeypatch.setattr(
         "openpine.batch.runner.timed_call",
@@ -187,7 +226,9 @@ def test_batch_strategy_does_not_invent_time_close(tmp_path: Path, monkeypatch) 
     monkeypatch.setattr(
         "openpine.batch.runner.load_calculation_bars",
         lambda *a, **k: (
-            [SimpleNamespace(time=1, open=1, high=1, low=1, close=1, volume=1)],
+            _sealed_bars(
+                [SimpleNamespace(time=1, open=1, high=1, low=1, close=1, volume=1)]
+            ),
             {"calculation_from": 0, "calculation_to": 60_000},
         ),
     )
@@ -262,7 +303,10 @@ def test_batch_strategy_fetches_explicit_htf_timeframe(tmp_path: Path, monkeypat
     def load_bars(entry, chart, args, timings):
         loaded.append(str(chart.timeframe))
         bars = fetched if chart.timeframe == "1D" else chart_bars
-        return bars, {"calculation_from": 0, "calculation_to": 60_000}
+        return (
+            bars if chart.timeframe == "1D" else _sealed_bars(bars),
+            {"calculation_from": 0, "calculation_to": 60_000},
+        )
 
     monkeypatch.setattr("openpine.batch.runner.load_calculation_bars", load_bars)
     monkeypatch.setattr(
@@ -336,7 +380,10 @@ def test_batch_strategy_same_htf_timeframe_does_not_refetch(tmp_path: Path, monk
 
     def load_bars(entry, chart, args, timings):
         loaded.append(str(chart.timeframe))
-        return bars, {"calculation_from": 0, "calculation_to": 60_000}
+        return _sealed_bars(bars), {
+            "calculation_from": 0,
+            "calculation_to": 60_000,
+        }
 
     monkeypatch.setattr("openpine.batch.runner.load_calculation_bars", load_bars)
     monkeypatch.setattr(

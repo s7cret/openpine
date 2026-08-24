@@ -155,7 +155,15 @@ def _write_progress(
     write_json(root / "current_progress.json", payload)
 
 
-BAR_CACHE: dict[tuple[str, str, str, str, int, int], list[Any]] = {}
+class CanonicalBars(list[Any]):
+    """List-compatible bars carrying exact producer-owned envelopes."""
+
+    def __init__(self, bars: list[Any], canonical_bars: list[dict[str, Any]]) -> None:
+        super().__init__(bars)
+        self.canonical_bars = canonical_bars
+
+
+BAR_CACHE: dict[tuple[str, str, str, str, int, int], CanonicalBars] = {}
 
 
 def utc_now() -> str:
@@ -289,6 +297,10 @@ def load_calculation_bars(
 
     tv_authoritative_bars = bool(getattr(args, "tv_authoritative_bars", False))
     if tv_authoritative_bars:
+        if entry.kind == "strategy":
+            raise RuntimeError(
+                "sealed strategy execution requires producer-owned marketdata bars"
+            )
         t0 = time.perf_counter()
         bars = _merge_tv_visible_bars(
             provider_bars=[],
@@ -373,7 +385,22 @@ def load_calculation_bars(
         t0 = time.perf_counter()
         provider = create_local_marketdata_provider_adapter()
         orchestrator = DataOrchestrator(provider=provider)
-        bars = list(orchestrator.load_bars(query).bars)
+        series = orchestrator.load_bars(query)
+        if not series.bars:
+            raise RuntimeError(
+                f"no calculation bars from OpenPine DataOrchestrator for {args.symbol} {chart.timeframe} "
+                f"{ms_to_utc_iso(calculation_from)}..{ms_to_utc_iso(calculation_to)}"
+            )
+        canonical_bars = getattr(series, "canonical_bars", None)
+        if entry.kind == "strategy" and (
+            not isinstance(canonical_bars, (list, tuple))
+            or len(canonical_bars) != len(series.bars)
+        ):
+            raise RuntimeError("canonical marketdata bar envelopes are required")
+        bars = CanonicalBars(
+            list(series.bars),
+            [dict(item) for item in canonical_bars or ()],
+        )
         timings["data_load_sec"] = round(time.perf_counter() - t0, 3)
         BAR_CACHE[cache_key] = bars
         data_fetch_info = getattr(
@@ -388,6 +415,10 @@ def load_calculation_bars(
     tv_corpus_meta = None
     tv_corpus_patched_bars = 0
     if not args.provider_only_bars:
+        if entry.kind == "strategy":
+            raise RuntimeError(
+                "TV overlays cannot mutate sealed producer-owned strategy bars"
+            )
         tv_corpus_bars, tv_corpus_meta = load_visible_bars_by_time(
             root=args.root,
             manifest=args.manifest,
@@ -823,26 +854,23 @@ def run_strategy(
         BacktestEngineAdapter,
         BacktestRunConfig,
     )
-    from openpine.runtime.isolated_run import (
-        capture_generated_source,
-    )
+    from openpine.run_identity import verified_generated_source
 
     timings: dict[str, float] = {}
     bars, data_meta = load_calculation_bars(entry, chart, args, timings)
     compare_from, compare_to = chart.start_ms, chart_end_exclusive_ms(chart)
-    source_bytes = timed_call(
-        timings,
-        "load_artifact_sec",
-        capture_generated_source,
-        source.id,
-        artifact_id,
-    )
     artifact = timed_call(
         timings,
         "load_compile_meta_sec",
         ArtifactStore().get_artifact,
         artifact_id,
         source.id,
+    )
+    source_bytes = timed_call(
+        timings,
+        "load_artifact_sec",
+        verified_generated_source,
+        artifact,
     )
     decl = (
         artifact.get("compile_meta", {})
@@ -864,6 +892,35 @@ def run_strategy(
         bars=bars,
         args=args,
         timings=timings,
+    )
+    canonical_bars = getattr(bars, "canonical_bars", None)
+    if not isinstance(canonical_bars, list) or len(canonical_bars) != len(bars):
+        raise RuntimeError("canonical marketdata bar envelopes are required")
+    from openpine.admission import load_active_deployment_identity
+    from openpine.config import OpenPineConfig
+    from openpine.run_identity import bind_isolated_execution
+    from openpine.runtime.admitted_manifest import load_admitted_manifest
+
+    runtime_config = OpenPineConfig.load()
+    manifest_path = getattr(runtime_config, "deployment_manifest", None)
+    wheelhouse = getattr(runtime_config, "deployment_wheelhouse", None)
+    if manifest_path is None or wheelhouse is None:
+        raise RuntimeError("batch strategy execution requires an admitted deployment")
+    deployment = load_active_deployment_identity(manifest_path, wheelhouse)
+    admitted_manifest = load_admitted_manifest(manifest_path)
+    bind_isolated_execution(
+        config,
+        data_dir=runtime_config.data_dir,
+        deployment=deployment,
+        admitted_manifest=admitted_manifest,
+        mode="backtest",
+        run_id=_run_id(str(getattr(args, "batch_id", "manual")), entry, chart),
+        strategy_id=str(source.id),
+        artifact=artifact,
+        bars=bars,
+        bar_envelopes=canonical_bars,
+        supplemental_bars=htf_bars,
+        created_at_utc_ms=int(time.time() * 1000),
     )
     result = BacktestEngineAdapter().run_isolated(
         source_bytes, bars, config, htf_bars=htf_bars

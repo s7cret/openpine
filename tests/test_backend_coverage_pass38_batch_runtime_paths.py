@@ -9,7 +9,8 @@ from types import SimpleNamespace
 
 
 from openpine.batch import runner
-from tests.rc4_fixtures import admitted_manifest
+from tests.admission_helpers import make_sealed_artifact
+from tests.rc4_fixtures import admitted_manifest, canonical_bar_envelopes, execution_context
 from openpine.batch.tv_corpus import ChartExport, ExportEntry
 from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
 
@@ -107,7 +108,12 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
     monkeypatch.setattr(
         runner,
         "load_calculation_bars",
-        lambda entry, chart, args, timings: (_bars(), dict(data_meta)),
+        lambda entry, chart, args, timings: (
+            runner.CanonicalBars(
+                _bars(), canonical_bar_envelopes(_bars(), execution_context())
+            ),
+            dict(data_meta),
+        ),
     )
     monkeypatch.setattr(runner, "_infer_tv_bar_index_offset", lambda chart, bars: (0, None))
 
@@ -143,20 +149,20 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
 
     class ArtifactStore:
         def get_artifact(self, artifact_id, source_id):
-            return {
-                "compile_meta": {
-                    "translation_metadata": {
-                        "declaration": {
-                            "arguments": {
-                                "initial_capital": 1234.0,
-                                "commission_type": "cash_per_order",
-                                "commission_value": 1.0,
-                                "pyramiding": 2,
-                            }
+            artifact = make_sealed_artifact(python_code="src")
+            artifact["compile_meta"] = {
+                "translation_metadata": {
+                    "declaration": {
+                        "arguments": {
+                            "initial_capital": 1234.0,
+                            "commission_type": "cash_per_order",
+                            "commission_value": 1.0,
+                            "pyramiding": 2,
                         }
                     }
                 }
             }
+            return artifact
 
     class BacktestRunConfig:
         def __init__(self, **kwargs):
@@ -175,6 +181,24 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
     monkeypatch.setattr(artifacts_mod, "ArtifactStore", ArtifactStore)
     monkeypatch.setattr(engine_mod, "BacktestRunConfig", BacktestRunConfig)
     monkeypatch.setattr(engine_mod, "BacktestEngineAdapter", BacktestEngineAdapter)
+    monkeypatch.setattr(
+        "openpine.config.OpenPineConfig.load",
+        lambda: SimpleNamespace(
+            data_dir=tmp_path,
+            deployment_manifest=tmp_path / "candidate.json",
+            deployment_wheelhouse=tmp_path / "wheelhouse",
+        ),
+    )
+    monkeypatch.setattr(
+        "openpine.admission.load_active_deployment_identity", lambda *a, **k: object()
+    )
+    monkeypatch.setattr(
+        "openpine.runtime.admitted_manifest.load_admitted_manifest",
+        lambda *a, **k: admitted_manifest(),
+    )
+    monkeypatch.setattr(
+        "openpine.run_identity.bind_isolated_execution", lambda *a, **k: {}
+    )
     monkeypatch.setattr(
         "openpine.runtime.isolated_run.capture_generated_source",
         lambda *a, **k: b"src",

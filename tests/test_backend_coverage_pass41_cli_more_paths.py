@@ -438,6 +438,7 @@ def test_main_strategy_replay_success_readiness_and_engine_failure(monkeypatch):
             return SimpleNamespace(status="ok", bars_processed=len(bars), uses_backtest_engine=True)
 
     monkeypatch.setattr(engine_mod, "BacktestEngineAdapter", Adapter)
+    monkeypatch.setattr(cli_main, "_bind_cli_isolated_config", lambda **kwargs: None)
 
     result = runner.invoke(cli_main.cli, ["strategy", "replay", "s1", "--from", "2026-01-01"])
     assert result.exit_code == 0, result.output

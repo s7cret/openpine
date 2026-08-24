@@ -295,6 +295,7 @@ def test_cli_strategy_replay_forwards_confirmed_htf_bars(monkeypatch) -> None:
         ),
     )
     monkeypatch.setattr("openpine.runtime.engine.BacktestEngineAdapter", Adapter)
+    monkeypatch.setattr(cli_main, "_bind_cli_isolated_config", lambda **kwargs: None)
 
     result = CliRunner().invoke(cli_main.cli, ["strategy", "replay", "s1"])
     assert result.exit_code == 0, result.output
