@@ -61,7 +61,9 @@ def make_sealed_artifact(
     *,
     python_code: str = "generated-source",
     semantic_profile: str = "strict_5x",
+    producer_commits: dict[str, str] | None = None,
 ) -> dict[str, object]:
+    commits = dict(producer_commits or _FAKE_COMMITS)
     return {
         "compile_meta": dict(compile_meta or {}),
         "python_code": python_code,
@@ -71,8 +73,8 @@ def make_sealed_artifact(
                 "schema_version": "2.0.0",
                 "producer": "ast2python",
                 "producer_version": "5.0.0-rc.4",
-                "producer_commit": _FAKE_COMMITS["ast2python"],
-                "stack_id": STACK_HASH,
+                "producer_commit": commits["ast2python"],
+                "stack_id": "openpine-5.0",
                 "created_at_utc_ms": 1,
                 "serializer_id": "openpine.canonical.json.v1",
                 "content_hash_alg": "sha256",
@@ -85,7 +87,7 @@ def make_sealed_artifact(
                 "source_map_hash": "sha256:" + "f" * 64,
                 "support_profile_hash": "sha256:" + "9" * 64,
                 "lowering_version": "5.0.0rc4",
-                "producer_commits": dict(_FAKE_COMMITS),
+                "producer_commits": commits,
                 "semantic_profile": semantic_profile,
                 "required_runtime_capabilities": ["intent_tape_v2"],
                 "import_allowlist": ["pinelib"],

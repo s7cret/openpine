@@ -1431,10 +1431,28 @@ class InteractiveWorkerSession:
             != generated_artifact.get("content_hash")
             or execution_context.get("emitted_module_hash")
             != generated_artifact.get("emitted_module_hash")
-            or execution_context.get("stack_manifest_hash")
-            != generated_artifact.get("stack_id")
         ):
             raise IsolatedWorkerError("generated artifact admission identity mismatch")
+        if generated_artifact.get("stack_id") != "openpine-5.0":
+            raise IsolatedWorkerError("generated artifact stack family mismatch")
+        generated_commits = generated_artifact.get("producer_commits")
+        execution_commits = execution_context.get("producer_commits")
+        if not isinstance(generated_commits, Mapping) or not isinstance(
+            execution_commits, Mapping
+        ):
+            raise IsolatedWorkerError("generated artifact producer identity is missing")
+        for component_name in (
+            "openpine-contracts",
+            "pine2ast",
+            "ast2python",
+            "pinelib",
+        ):
+            if generated_commits.get(component_name) != execution_commits.get(
+                component_name
+            ):
+                raise IsolatedWorkerError(
+                    f"generated artifact producer identity mismatch: {component_name}"
+                )
         if (
             not isinstance(run_hash, str)
             or not run_hash.startswith("sha256:")

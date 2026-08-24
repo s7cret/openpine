@@ -22,6 +22,12 @@ STACK_COMPONENTS = (
 )
 
 
+def _openpine_commit() -> str:
+    from openpine.build_identity import current_build_identity
+
+    return current_build_identity().commit
+
+
 def admitted_manifest() -> dict[str, Any]:
     return {
         "schema": "openpine.stack-candidate.v2",
@@ -37,7 +43,7 @@ def admitted_manifest() -> dict[str, Any]:
             "marketdata-provider": {"sha": "e" * 40},
             "backtest_engine": {"sha": "f" * 40},
             "optimizer": {"sha": "2" * 40},
-            "openpine": {"sha": "1" * 40},
+            "openpine": {"sha": _openpine_commit()},
         },
         "worker_policy": {
             "bubblewrap_path": "/usr/bin/bwrap",
@@ -79,7 +85,7 @@ def execution_context(
         "schema_version": "1.0.0",
         "producer": "openpine",
         "producer_version": "5.0.0-rc.4",
-        "producer_commit": "1" * 40,
+        "producer_commit": _openpine_commit(),
         "stack_id": STACK_HASH,
         "created_at_utc_ms": 0,
         "serializer_id": "openpine.canonical.json.v1",
@@ -131,7 +137,7 @@ def execution_context(
             "marketdata-provider": "e" * 40,
             "backtest_engine": "f" * 40,
             "optimizer": "2" * 40,
-            "openpine": "1" * 40,
+            "openpine": _openpine_commit(),
         },
     }
     return seal_content_hash(payload, schema_id="openpine.execution_context.v1")

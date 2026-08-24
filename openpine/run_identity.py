@@ -42,6 +42,12 @@ _EXECUTION_SCHEMA_IDS = (
 _EXECUTION_CAPABILITIES = frozenset(
     {"closed_bar", "deterministic_clock", "checkpoint_v1", "sealed_artifact_refs"}
 )
+_GENERATED_ARTIFACT_PRODUCERS = (
+    "openpine-contracts",
+    "pine2ast",
+    "ast2python",
+    "pinelib",
+)
 
 
 def _field(value: object, name: str) -> Any:
@@ -474,6 +480,7 @@ def admit_and_persist_run_identity(
     *,
     data_dir: str | Path,
     deployment: DeploymentAdmissionIdentity,
+    admitted_manifest: Mapping[str, object],
     mode: object,
     run_id: str,
     artifact: Mapping[str, object],
@@ -492,6 +499,28 @@ def admit_and_persist_run_identity(
     required_capabilities: tuple[str, ...],
     created_at_utc_ms: int,
 ) -> dict[str, object]:
+    if admitted_manifest.get("manifest_hash") != deployment.stack_manifest_hash:
+        raise AdmitError(
+            "admitted manifest does not match deployment identity",
+            code="ADMISSION_IDENTITY_INVALID",
+        )
+    components = admitted_manifest.get("components")
+    openpine_component = (
+        components.get("openpine") if isinstance(components, Mapping) else None
+    )
+    expected_producer_commit = (
+        openpine_component.get("sha")
+        if isinstance(openpine_component, Mapping)
+        else None
+    )
+    if (
+        not isinstance(expected_producer_commit, str)
+        or re.fullmatch(r"[0-9a-f]{40}", expected_producer_commit) is None
+    ):
+        raise AdmitError(
+            "admitted OpenPine producer commit is required",
+            code="ADMISSION_IDENTITY_INVALID",
+        )
     artifact_hash = generated_artifact_hash(artifact)
     snapshot_hash = execution_data_snapshot_hash(
         bars=bars,
@@ -530,6 +559,11 @@ def admit_and_persist_run_identity(
         run_id=run_id,
         created_at_utc_ms=created_at_utc_ms,
     )
+    if payload.get("producer_commit") != expected_producer_commit:
+        raise AdmitError(
+            "run producer commit differs from admitted OpenPine commit",
+            code="ADMISSION_IDENTITY_INVALID",
+        )
     persist_run_identity(data_dir, run_id, payload)
     return payload
 
@@ -673,6 +707,28 @@ def execution_context_from_admission(
                 code="ADMISSION_IDENTITY_INVALID",
             )
         producer_commits[name] = commit
+    generated_commits = generated.get("producer_commits")
+    if not isinstance(generated_commits, Mapping):
+        raise AdmitError(
+            "generated artifact producer commits are required",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    for component_name in _GENERATED_ARTIFACT_PRODUCERS:
+        if generated_commits.get(component_name) != producer_commits[component_name]:
+            raise AdmitError(
+                f"generated artifact producer commit drift: {component_name}",
+                code="GENERATED_ARTIFACT_INVALID",
+            )
+    if generated.get("producer_commit") != producer_commits["ast2python"]:
+        raise AdmitError(
+            "generated artifact producer commit drift: ast2python",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    if generated.get("stack_id") != "openpine-5.0":
+        raise AdmitError(
+            "generated artifact stack family is invalid",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
     versions = {str(row["name"]): str(row["version"]) for row in wheel_identities}
     required_schema_hashes: dict[str, str] = {}
     for schema_id in _EXECUTION_SCHEMA_IDS:
@@ -757,6 +813,7 @@ def bind_isolated_execution(
     run_identity = admit_and_persist_run_identity(
         data_dir=data_dir,
         deployment=deployment,
+        admitted_manifest=admitted_manifest,
         mode=mode,
         run_id=run_id,
         artifact=artifact,

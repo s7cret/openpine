@@ -306,6 +306,9 @@ async def optimizer_search(
         deployment = getattr(state, "admission_identity", None)
         if not isinstance(deployment, DeploymentAdmissionIdentity):
             raise HTTPException(503, "ADMISSION_IDENTITY_REQUIRED")
+        admitted_manifest = getattr(state, "admitted_manifest", None)
+        if not isinstance(admitted_manifest, dict):
+            raise HTTPException(503, "DEPLOYMENT_ADMISSION_REQUIRED")
         state_config = getattr(state, "config", None)
         data_dir = getattr(state_config, "data_dir", None)
         if data_dir is None:
@@ -313,6 +316,7 @@ async def optimizer_search(
         run_identity = admit_and_persist_run_identity(
             data_dir=data_dir,
             deployment=deployment,
+            admitted_manifest=admitted_manifest,
             mode="optimize",
             run_id=optimization_id,
             artifact=artifact,
@@ -337,12 +341,6 @@ async def optimizer_search(
             ),
             created_at_utc_ms=int(time.time() * 1000),
         )
-        deployment = getattr(state, "admission_identity", None)
-        admitted_manifest = getattr(state, "admitted_manifest", None)
-        if not isinstance(deployment, DeploymentAdmissionIdentity) or not isinstance(
-            admitted_manifest, dict
-        ):
-            raise HTTPException(503, "DEPLOYMENT_ADMISSION_REQUIRED")
         canonical_bars = getattr(series, "canonical_bars", None)
         if not isinstance(canonical_bars, (list, tuple)) or len(canonical_bars) != len(
             bars

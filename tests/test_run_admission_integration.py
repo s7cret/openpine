@@ -83,8 +83,15 @@ def test_execution_context_is_derived_from_exact_deployment_and_manifest() -> No
             name: {"sha": commits[name]} for name in STACK_COMPONENTS
         },
     }
-    artifact = make_sealed_artifact(python_code="class GeneratedStrategy: pass\n")
+    artifact = make_sealed_artifact(
+        python_code="class GeneratedStrategy: pass\n",
+        producer_commits={
+            name: commits[name]
+            for name in ("openpine-contracts", "pine2ast", "ast2python", "pinelib")
+        },
+    )
     generated = artifact["generated_artifact"]
+    assert isinstance(generated, dict)
 
     context = execution_context_from_admission(
         deployment,
@@ -111,6 +118,34 @@ def test_execution_context_is_derived_from_exact_deployment_and_manifest() -> No
     assert context["generated_artifact_hash"] == generated["content_hash"]
     assert context["emitted_module_hash"] == generated["emitted_module_hash"]
     assert context["stack_manifest_hash"] == deployment.stack_manifest_hash
+
+    drifted_artifact = dict(artifact)
+    drifted_generated = dict(generated)
+    drifted_generated.pop("content_hash")
+    drifted_commits = dict(drifted_generated["producer_commits"])
+    drifted_commits["pine2ast"] = "9" * 40
+    drifted_generated["producer_commits"] = drifted_commits
+    drifted_artifact["generated_artifact"] = seal_content_hash(
+        drifted_generated,
+        schema_id="openpine.generated_artifact.v2",
+    )
+    with pytest.raises(AdmitError, match="producer commit drift"):
+        execution_context_from_admission(
+            deployment,
+            manifest,
+            run_id="run-drift",
+            strategy_id="strategy-1",
+            artifact=drifted_artifact,
+            data_snapshot_hash=HASH_D,
+            series_id="binance/spot/BTCUSDT:1m",
+            instrument_id="binance/spot/BTCUSDT",
+            exchange="binance",
+            market="spot",
+            symbol="BTCUSDT",
+            timeframe="1m",
+            semantic_profile="strict_5x",
+            created_at_utc_ms=1,
+        )
 
 
 def _bar(close: float = 1.0, *, time: int = 0) -> SimpleNamespace:
@@ -244,6 +279,10 @@ def test_run_identity_is_admitted_sealed_and_persisted_before_execution(
     payload = admit_and_persist_run_identity(
         data_dir=tmp_path,
         deployment=_deployment(),
+        admitted_manifest={
+            "manifest_hash": HASH_A,
+            "components": {"openpine": {"sha": "1" * 40}},
+        },
         mode="backtest",
         run_id="bt_123",
         artifact=artifact,
@@ -270,6 +309,36 @@ def test_run_identity_is_admitted_sealed_and_persisted_before_execution(
 
     path = run_identity_path(tmp_path, "bt_123")
     assert json.loads(path.read_text(encoding="utf-8")) == payload
+
+    monkeypatch.setattr(
+        "openpine.run_identity.current_build_identity",
+        lambda: BuildIdentity(version="5.0.0rc4", commit="2" * 40),
+    )
+    with pytest.raises(AdmitError, match="producer commit"):
+        admit_and_persist_run_identity(
+            data_dir=tmp_path,
+            deployment=_deployment(),
+            admitted_manifest={
+                "manifest_hash": HASH_A,
+                "components": {"openpine": {"sha": "1" * 40}},
+            },
+            mode="backtest",
+            run_id="bt_drift",
+            artifact=artifact,
+            bars=bars,
+            exchange="binance",
+            market="spot",
+            symbol="BTCUSDT",
+            timeframe="1m",
+            start_ms=0,
+            end_ms=120_000,
+            semantic_profile="strict_5x",
+            finality_policy="CLOSED_BAR_ONLY",
+            warmup_policy="CALC_ONLY",
+            score_policy="ALL_BARS",
+            required_capabilities=("closed_bar", "deterministic_clock"),
+            created_at_utc_ms=123,
+        )
 
 
 def test_run_identity_persistence_rejects_path_escape_and_conflicting_replay(tmp_path) -> None:

@@ -1180,9 +1180,13 @@ def _admit_loaded_backtest_run(
     deployment = getattr(state, "admission_identity", None)
     if not isinstance(deployment, DeploymentAdmissionIdentity):
         raise RuntimeError("run admission deployment identity is unavailable")
+    admitted_manifest = getattr(state, "admitted_manifest", None)
+    if not isinstance(admitted_manifest, dict):
+        raise RuntimeError("admitted candidate manifest is unavailable")
     payload = admit_and_persist_run_identity(
         data_dir=data_dir,
         deployment=deployment,
+        admitted_manifest=admitted_manifest,
         mode="backtest",
         run_id=run_id,
         artifact=artifact,

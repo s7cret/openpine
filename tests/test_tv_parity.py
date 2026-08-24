@@ -68,7 +68,7 @@ def test_parse_tradingview_candles_csv_builds_bar_series(tmp_path: Path):
     assert parsed.bars[0].instrument.market == "spot"
     assert parsed.bars[0].instrument.symbol == "BTCUSDT"
     assert parsed.bars[0].open == 100.0
-    assert parsed.bars[1].time_close == 1704067320000
+    assert parsed.bars[1].time_close == 1704067319999
 
 
 def test_parse_tradingview_candles_csv_rejects_missing_ohlc(tmp_path: Path):

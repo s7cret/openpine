@@ -255,7 +255,7 @@ def parse_tradingview_candles_csv(
             if open_time is None:
                 invalid_rows += 1
                 continue
-            time_close = open_time + duration_ms
+            time_close = open_time + duration_ms - 1
             if from_ms is not None and drop_pre_window and open_time < from_ms:
                 continue
             if to_ms is not None and open_time >= to_ms:
@@ -295,7 +295,7 @@ def parse_tradingview_candles_csv(
         instrument=bars[0].instrument,
         timeframe=bars[0].timeframe,
         start_ms=bars[0].time,
-        end_ms=bars[-1].time_close,
+        end_ms=bars[-1].time_close + 1,
         gap_policy="allow_with_metadata",
     )
     coverage = CoverageReport(
@@ -320,7 +320,7 @@ def parse_tradingview_candles_csv(
         "invalid_rows": invalid_rows,
         "duplicate_timestamps": len(duplicate_times),
         "from_time": bars[0].time,
-        "to_time": bars[-1].time_close,
+        "to_time": query.end_ms,
     }
     return ParsedTradingViewCandles(bars=tuple(bars), series=series, summary=summary)
 
@@ -895,9 +895,13 @@ async def _run_tv_parity_background(
         deployment = getattr(state, "admission_identity", None)
         if not isinstance(deployment, DeploymentAdmissionIdentity):
             raise RuntimeError("run admission deployment identity is unavailable")
+        admitted_manifest = getattr(state, "admitted_manifest", None)
+        if not isinstance(admitted_manifest, dict):
+            raise RuntimeError("admitted candidate manifest is unavailable")
         run_identity = admit_and_persist_run_identity(
             data_dir=state.config.data_dir,
             deployment=deployment,
+            admitted_manifest=admitted_manifest,
             mode="parity",
             run_id=run_id,
             artifact=artifact,
@@ -922,10 +926,7 @@ async def _run_tv_parity_background(
             ),
             created_at_utc_ms=int(time.time() * 1000),
         )
-        admitted_manifest = getattr(state, "admitted_manifest", None)
         generated_artifact = artifact.get("generated_artifact")
-        if not isinstance(admitted_manifest, dict):
-            raise RuntimeError("admitted candidate manifest is unavailable")
         if not isinstance(generated_artifact, dict):
             raise RuntimeError("generated artifact envelope is required")
         components = admitted_manifest.get("components")
