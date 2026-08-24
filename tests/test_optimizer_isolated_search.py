@@ -10,10 +10,10 @@ from openpine.run_identity import execution_data_snapshot_hash
 from openpine.runtime.engine import BacktestRunConfig
 from tests.admission_helpers import make_sealed_artifact
 from tests.rc4_fixtures import (
-    HASH_A,
     admitted_manifest,
     canonical_bar_envelopes,
     execution_context,
+    run_identity,
 )
 
 
@@ -75,26 +75,28 @@ def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -
         generated_artifact_hash=artifact["content_hash"],
         emitted_module_hash=artifact["emitted_module_hash"],
     )
+    snapshot_hash = execution_data_snapshot_hash(
+        bars=bars,
+        exchange=config.exchange,
+        market=config.market_type,
+        symbol=config.symbol,
+        timeframe=config.timeframe,
+        start_ms=config.start_time,
+        end_ms=config.end_time,
+        finality_policy="CLOSED_BAR_ONLY",
+    )
     runner = IsolatedOptimizerRunner(
         source=SOURCE,
         bars=bars,
         config=config,
-        expected_data_snapshot_hash=execution_data_snapshot_hash(
-            bars=bars,
-            exchange=config.exchange,
-            market=config.market_type,
-            symbol=config.symbol,
-            timeframe=config.timeframe,
-            start_ms=config.start_time,
-            end_ms=config.end_time,
-            finality_policy="CLOSED_BAR_ONLY",
-        ),
+        expected_data_snapshot_hash=snapshot_hash,
         execution_context=context,
         admitted_manifest=admitted_manifest(),
         instrument_id="test:S",
         generated_artifact=artifact,
         bar_envelopes=canonical_bar_envelopes(list(bars), context),
-        run_hash=HASH_A,
+        run_identity=run_identity(context, data_snapshot_hash=snapshot_hash),
+        data_dir=tmp_path,
         protocol_artifact_dir=str(tmp_path / "protocol"),
         base_params={},
     )
@@ -135,4 +137,8 @@ def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -
     assert result.uses_backtest_engine_path is True
     assert result.metrics["runner_adapter"] == "IsolatedOptimizerRunner"
     assert all(item["result_content_hash"] for item in result.trial_metadata)
+    for trial_id in range(1, 4):
+        run_id = f"run-test.trial-{trial_id}"
+        assert (tmp_path / "run-identities" / f"{run_id}.json").exists()
+        assert (tmp_path / "protocol" / f"trial-{trial_id}").exists()
     assert not any(name.startswith("openpine_generated_") for name in sys.modules)

@@ -368,23 +368,13 @@ def capture_generated_source(source_id: str, artifact_id: str) -> bytes:
         artifact = ArtifactStore().get_artifact(artifact_id, source_id)
     except (FileNotFoundError, BacktestArtifactError, ValueError) as exc:
         raise IsolatedRunError(str(exc)) from exc
-    generated_artifact = artifact.get("generated_artifact")
-    if not isinstance(generated_artifact, dict):
-        raise IsolatedRunError("GENERATED_ARTIFACT_ENVELOPE_REQUIRED")
-    from openpine_contracts import validate_payload, verify_content_hash
+    from openpine.run_identity import verified_generated_source
+    from openpine_contracts import AdmitError
 
     try:
-        validate_payload("openpine.generated_artifact.v2", generated_artifact)
-    except ValueError as exc:
+        return verified_generated_source(artifact)
+    except (AdmitError, ValueError) as exc:
         raise IsolatedRunError("GENERATED_ARTIFACT_ENVELOPE_REQUIRED") from exc
-    if not verify_content_hash(
-        generated_artifact, schema_id="openpine.generated_artifact.v2"
-    ):
-        raise IsolatedRunError("GENERATED_ARTIFACT_ENVELOPE_REQUIRED")
-    source = artifact.get("python_code")
-    if not isinstance(source, str) or not source:
-        raise IsolatedRunError(f"Artifact {artifact_id} has no generated_strategy.py")
-    return source.encode("utf-8")
 
 
 def run_isolated_from_store(

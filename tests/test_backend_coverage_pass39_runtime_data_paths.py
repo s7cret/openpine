@@ -383,24 +383,23 @@ def test_indicator_runtime_and_strategy_persistence_error_edges(monkeypatch, tmp
         return SimpleNamespace(plots=[])
 
     monkeypatch.setattr(rh, "_execute_indicator_plot_runtime", fake_execute)
-    result, elapsed = rh._run_indicator_plot_runtime(
-        generated_class=object,
-        bars=[_bar(0), _bar(60_000)],
-        symbol="BTCUSDT",
-        timeframe="1m",
-        exchange="binance",
-        market_type="spot",
-        provider=SimpleNamespace(_provider="provider"),
-        compare_from_ms=0,
-        compare_to_ms=120_000,
-        progress_every=1,
-        console=console,
-        perf_counter=lambda: 2.0,
-        semantic_profile="strict_5x",
-    )
-    assert result.plots == []
-    assert elapsed == 0
-    assert calls[0]["config"].symbol == "BTCUSDT"
+    with pytest.raises(rh.IsolatedRunError, match="in-process"):
+        rh._run_indicator_plot_runtime(
+            generated_class=object,
+            bars=[_bar(0), _bar(60_000)],
+            symbol="BTCUSDT",
+            timeframe="1m",
+            exchange="binance",
+            market_type="spot",
+            provider=SimpleNamespace(_provider="provider"),
+            compare_from_ms=0,
+            compare_to_ms=120_000,
+            progress_every=1,
+            console=console,
+            perf_counter=lambda: 2.0,
+            semantic_profile="strict_5x",
+        )
+    assert calls == []
 
     class BadStore:
         def create_run(self, request):

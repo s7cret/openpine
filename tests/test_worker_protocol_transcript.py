@@ -122,3 +122,36 @@ def test_parent_and_worker_accept_the_same_wire_messages_fail_closed() -> None:
     tampered["message_id"] = "foreign"
     with pytest.raises(WorkerProtocolError):
         WorkerProtocolTranscript(execution_context()).accept(tampered)
+
+
+@pytest.mark.parametrize(
+    ("role", "producer"),
+    (("parent", "openpine"), ("worker", "openpine"), ("engine", "backtest_engine")),
+)
+def test_abort_role_and_producer_match_the_contract(role: str, producer: str) -> None:
+    sender = WorkerProtocolTranscript(execution_context())
+    receiver = WorkerProtocolTranscript(execution_context())
+    hello = sender.append(
+        "HELLO",
+        {
+            "worker_id": "worker-1",
+            "protocol_version": "2.3.0",
+            "capabilities": ["closed_bar"],
+        },
+        created_at_utc_ms=0,
+    )
+    receiver.accept(hello)
+    abort = sender.append(
+        "ABORT",
+        {
+            "run_id": sender.execution_context["run_id"],
+            "error_code": "TEST_ABORT",
+            "reason": role,
+        },
+        created_at_utc_ms=1,
+        sender_role=role,
+    )
+
+    assert abort["producer"] == producer
+    assert receiver.accept(abort) == abort
+    validate_worker_protocol_sequence(receiver.messages)

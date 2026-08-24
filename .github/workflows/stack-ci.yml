@@ -70,13 +70,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
-          ref: ${{ steps.stack.outputs.pinelib_sha || '6e649cb81a2d0d971dd7df66c542e22e19e39319' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || 'a0ea8e7177e73217c595f978c76ad34bb47d6bec' }}
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
-          ref: ${{ steps.stack.outputs.backtest_engine_sha || '3ccb3b32779cd633bcf3bde125dd586c3367f792' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || 'cc50cb425470265d95f6080854238b9bcda23830' }}
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4

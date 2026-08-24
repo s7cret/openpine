@@ -86,6 +86,14 @@ def verify_local_hashes(directory: Path, wheels: dict[str, str]) -> None:
     found = sorted(path for path in directory.glob("*.whl") if path.is_file())
     if not found:
         raise WheelhouseInstallError("wheelhouse is empty")
+    found_names = {path.name for path in found}
+    expected_names = set(wheels)
+    if found_names != expected_names:
+        missing = sorted(expected_names - found_names)
+        extra = sorted(found_names - expected_names)
+        raise WheelhouseInstallError(
+            f"candidate wheel set mismatch: missing={missing} extra={extra}"
+        )
     for path in found:
         expected = wheels.get(path.name)
         if not expected:

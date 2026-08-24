@@ -16,6 +16,7 @@ import shutil
 import time
 import uuid
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -135,6 +136,7 @@ class ParsedTradingViewCandles:
     bars: tuple[Any, ...]
     series: Any
     summary: dict[str, Any]
+    canonical_values: tuple[dict[str, Any], ...] | None = None
 
 
 _TIME_COLUMNS = (
@@ -208,6 +210,27 @@ def _parse_required_float(row: dict[str, str], column: str) -> float | None:
     return None if math.isnan(value) else value
 
 
+def _exact_decimal_token(value: object, *, field: str) -> tuple[float, str]:
+    text = str(value).strip().replace("\u2212", "-").replace("\xa0", "").replace(" ", "")
+    if "," in text and "." not in text:
+        text = text.replace(",", ".")
+    elif "," in text and "." in text:
+        text = text.replace(",", "")
+    try:
+        decimal_value = Decimal(text)
+        float_value = float(decimal_value)
+    except (InvalidOperation, ValueError, OverflowError) as exc:
+        raise ValueError(f"invalid TradingView {field} value") from exc
+    if not decimal_value.is_finite() or not math.isfinite(float_value):
+        raise ValueError(f"invalid TradingView {field} value")
+    canonical = format(decimal_value, "f")
+    if Decimal(str(float_value)) != decimal_value:
+        raise ValueError(
+            f"TradingView {field} value is not exactly representable by the runtime"
+        )
+    return float_value, canonical
+
+
 def parse_tradingview_candles_csv(
     path: str | Path,
     *,
@@ -245,6 +268,7 @@ def parse_tradingview_candles_csv(
             symbol=symbol.upper(),
         )
         bars: list[Any] = []
+        canonical_values: list[dict[str, Any]] = []
         invalid_rows = 0
         total_rows = 0
         seen_times: set[int] = set()
@@ -260,17 +284,28 @@ def parse_tradingview_candles_csv(
                 continue
             if to_ms is not None and open_time >= to_ms:
                 continue
-            ohlc = {
-                key: _parse_required_float(row, columns[key])
-                for key in ("open", "high", "low", "close")
-            }
-            if any(value is None for value in ohlc.values()):
+            try:
+                exact_ohlc = {
+                    key: _exact_decimal_token(row.get(columns[key]), field=key)
+                    for key in ("open", "high", "low", "close")
+                }
+            except ValueError:
                 invalid_rows += 1
                 continue
+            ohlc = {key: value[0] for key, value in exact_ohlc.items()}
+            canonical_ohlc = {key: value[1] for key, value in exact_ohlc.items()}
             volume = None
+            canonical_volume = "0"
             if volume_col := columns.get("volume"):
-                volume_value = _compare_csv_float(row.get(volume_col))
-                volume = None if math.isnan(volume_value) else volume_value
+                raw_volume = row.get(volume_col)
+                if raw_volume not in (None, ""):
+                    try:
+                        volume, canonical_volume = _exact_decimal_token(
+                            raw_volume, field="volume"
+                        )
+                    except ValueError:
+                        invalid_rows += 1
+                        continue
             if open_time in seen_times:
                 duplicate_times.append(open_time)
             seen_times.add(open_time)
@@ -288,7 +323,18 @@ def parse_tradingview_candles_csv(
                     closed=True,
                 )
             )
-    bars.sort(key=lambda bar: bar.time)
+            canonical_values.append(
+                {
+                    "open_time_utc_ms": open_time,
+                    **canonical_ohlc,
+                    "volume": canonical_volume,
+                }
+            )
+    ordered = sorted(
+        zip(bars, canonical_values, strict=True), key=lambda pair: pair[0].time
+    )
+    bars = [pair[0] for pair in ordered]
+    canonical_values = [pair[1] for pair in ordered]
     if not bars:
         raise ValueError("no valid TradingView candle rows found")
     query = BarQuery(
@@ -322,7 +368,12 @@ def parse_tradingview_candles_csv(
         "from_time": bars[0].time,
         "to_time": query.end_ms,
     }
-    return ParsedTradingViewCandles(bars=tuple(bars), series=series, summary=summary)
+    return ParsedTradingViewCandles(
+        bars=tuple(bars),
+        series=series,
+        summary=summary,
+        canonical_values=tuple(canonical_values),
+    )
 
 
 def _normalize_tv_parity_source(source: str | None) -> str:
@@ -395,8 +446,6 @@ def load_exchange_data_candles(
 ) -> ParsedTradingViewCandles:
     from marketdata_provider.contracts import (
         BarQuery,
-        BarSeries,
-        CoverageReport,
         InstrumentKey,
         parse_timeframe,
     )
@@ -423,14 +472,7 @@ def load_exchange_data_candles(
     effective_pre_bars = sum(1 for bar in bars if int(bar.time) < compare_from_ms)
     delivered_from = int(bars[0].time)
     delivered_to = int(getattr(bars[-1], "time_close", bars[-1].time))
-    coverage = CoverageReport(
-        requested_start_ms=query.start_ms,
-        requested_end_ms=query.end_ms,
-        delivered_start_ms=delivered_from,
-        delivered_end_ms=delivered_to,
-        source_mix=("exchange_data",),
-    )
-    parsed_series = BarSeries(query, bars, coverage)
+
     summary = {
         "source": "exchange_data",
         "exchange": strategy.exchange.lower(),
@@ -450,7 +492,7 @@ def load_exchange_data_candles(
         "full_prehistory": full_prehistory,
         "effective_pre_bars": effective_pre_bars,
     }
-    return ParsedTradingViewCandles(bars=bars, series=parsed_series, summary=summary)
+    return ParsedTradingViewCandles(bars=bars, series=series, summary=summary)
 
 
 def _safe_upload_filename(filename: str | None, fallback: str) -> str:
@@ -948,30 +990,41 @@ async def _run_tv_parity_background(
 
         provider_revision = f"tv-export:{fingerprint}"
         query = parsed.series.query
-        canonical_snapshot = build_public_snapshot(
-            query,
-            [
-                ProviderRawBar(
-                    instrument_id=query.instrument.serialize(),
-                    timeframe=query.timeframe.canonical,
-                    open_time_utc_ms=int(bar.time),
-                    close_time_utc_ms=None,
-                    open=str(bar.open),
-                    high=str(bar.high),
-                    low=str(bar.low),
-                    close=str(bar.close),
-                    volume=str(0 if bar.volume is None else bar.volume),
-                    finality=Finality.FINAL,
-                    provider="tradingview-export",
-                    provider_revision=provider_revision,
-                )
-                for bar in parsed.bars
-            ],
-            provider_revision={"known": True, "revision": provider_revision},
-            producer_commit=marketdata_commit,
-            stack_id=deployment.stack_manifest_hash,
-        )
-        canonical_bars = canonical_snapshot["bars"]
+        if source_label == "exchange_data":
+            canonical_bars = getattr(parsed.series, "canonical_bars", None)
+            if not isinstance(canonical_bars, (list, tuple)) or len(
+                canonical_bars
+            ) != len(parsed.bars):
+                raise RuntimeError("canonical exchange bar envelopes are unavailable")
+            canonical_bars = [dict(item) for item in canonical_bars]
+        else:
+            canonical_values = parsed.canonical_values
+            if canonical_values is None or len(canonical_values) != len(parsed.bars):
+                raise RuntimeError("exact TradingView candle values are unavailable")
+            canonical_snapshot = build_public_snapshot(
+                query,
+                [
+                    ProviderRawBar(
+                        instrument_id=query.instrument.serialize(),
+                        timeframe=query.timeframe.canonical,
+                        open_time_utc_ms=int(values["open_time_utc_ms"]),
+                        close_time_utc_ms=None,
+                        open=str(values["open"]),
+                        high=str(values["high"]),
+                        low=str(values["low"]),
+                        close=str(values["close"]),
+                        volume=str(values["volume"]),
+                        finality=Finality.FINAL,
+                        provider="tradingview-export",
+                        provider_revision=provider_revision,
+                    )
+                    for values in canonical_values
+                ],
+                provider_revision={"known": True, "revision": provider_revision},
+                producer_commit=marketdata_commit,
+                stack_id=deployment.stack_manifest_hash,
+            )
+            canonical_bars = canonical_snapshot["bars"]
         from openpine.run_identity import execution_context_from_admission
 
         execution_context = execution_context_from_admission(

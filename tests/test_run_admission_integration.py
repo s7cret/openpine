@@ -558,6 +558,7 @@ def test_bind_isolated_execution_attaches_exact_protocol_inputs(tmp_path) -> Non
 
 def test_optimizer_runner_rehashes_bars_before_each_trial(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
 ) -> None:
     from openpine.optimizer.isolated_runner import IsolatedOptimizerRunner
 
@@ -607,27 +608,31 @@ def test_optimizer_runner_rehashes_bars_before_each_trial(
         finality_policy="CLOSED_BAR_ONLY",
     )
     from tests.admission_helpers import make_sealed_artifact
-    from tests.rc4_fixtures import HASH_A, admitted_manifest, execution_context
+    from tests.rc4_fixtures import admitted_manifest, execution_context, run_identity
 
     generated_artifact = make_sealed_artifact(python_code="source")[
         "generated_artifact"
     ]
+    context = execution_context()
     runner = IsolatedOptimizerRunner(
         source=b"source",
         bars=[_bar()],
         config=config,
         expected_data_snapshot_hash=expected,
-        execution_context=execution_context(),
+        execution_context=context,
         admitted_manifest=admitted_manifest(),
         instrument_id="test:BTCUSDT",
         generated_artifact=generated_artifact,
         bar_envelopes=[],
-        run_hash=HASH_A,
+        run_identity=run_identity(context, data_snapshot_hash=expected),
+        data_dir=tmp_path,
         protocol_artifact_dir="/tmp/openpine-test-protocol-artifacts",
         htf_bars=htf_bars,
     )
     runner.htf_bars[0]["close"] = 1.6
-    request = SimpleNamespace(params={}, required_metrics=(), fingerprints={})
+    request = SimpleNamespace(
+        trial_id=1, params={}, required_metrics=(), fingerprints={}
+    )
 
     with pytest.raises(RuntimeError, match="data snapshot hash mismatch"):
         runner(request)

@@ -69,6 +69,28 @@ def test_parse_tradingview_candles_csv_builds_bar_series(tmp_path: Path):
     assert parsed.bars[0].instrument.symbol == "BTCUSDT"
     assert parsed.bars[0].open == 100.0
     assert parsed.bars[1].time_close == 1704067319999
+    assert parsed.canonical_values is not None
+    assert parsed.canonical_values[0]["volume"] == "12.5"
+
+
+def test_parse_tradingview_candles_csv_rejects_lossy_decimal_roundtrip(
+    tmp_path: Path,
+) -> None:
+    candles = tmp_path / "lossy.csv"
+    candles.write_text(
+        "time,open,high,low,close,volume\n"
+        "2024-01-01T00:00:00Z,0.123456789123456789,1,0.1,0.5,1\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="no valid TradingView candle rows"):
+        tv_parity.parse_tradingview_candles_csv(
+            candles,
+            exchange="binance",
+            market_type="spot",
+            symbol="BTCUSDT",
+            timeframe="1m",
+        )
 
 
 def test_parse_tradingview_candles_csv_rejects_missing_ohlc(tmp_path: Path):

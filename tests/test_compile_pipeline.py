@@ -13,7 +13,7 @@ COMMITS = {
     "pine2ast": "1715eef9c395b81db24224b6724f16589c1c960a",
     "ast2python": "ce8a691c6bdc8a1a1c81a2b8ed2cebb36e02da3b",
     "pinelib": "e5c69acaca70613734985f84a9ef9d28c1a12b79",
-    "openpine-contracts": "a91c0ce0d36d60e8dc5cb43e7aa92ab59c2eaa6c",
+    "openpine-contracts": "9362f0abe1c4b0924f5f348141826e005cd880ba",
 }
 
 

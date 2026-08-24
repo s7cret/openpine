@@ -44,6 +44,10 @@ _ROLE_BY_KIND = {
     "FINALIZE": "parent",
     "ABORT": "parent",
 }
+_ROLES_BY_KIND = {
+    kind: frozenset({role}) for kind, role in _ROLE_BY_KIND.items()
+}
+_ROLES_BY_KIND["ABORT"] = frozenset({"parent", "worker", "engine"})
 _ALLOWED_AFTER = {
     "HELLO": {"LOAD_ARTIFACT", "ABORT"},
     "LOAD_ARTIFACT": {"INIT_RUN", "ABORT"},
@@ -63,6 +67,12 @@ _ALLOWED_AFTER = {
 
 class WorkerProtocolError(RuntimeError):
     pass
+
+
+def _component_for(kind: str, role: str) -> str:
+    if kind == "ABORT" and role == "engine":
+        return "backtest_engine"
+    return _COMPONENT_BY_KIND[kind]
 
 
 def _semver(value: object) -> str:
@@ -139,9 +149,12 @@ class WorkerProtocolTranscript:
         if not verify_content_hash(candidate_message, schema_id=_SCHEMA_ID):
             raise WorkerProtocolError("worker protocol message content hash is invalid")
         kind = str(candidate_message["kind"])
-        component = _COMPONENT_BY_KIND.get(kind)
-        if component is None:
+        if kind not in _COMPONENT_BY_KIND:
             raise WorkerProtocolError(f"unsupported worker message kind: {kind}")
+        role = str(candidate_message.get("sender_role"))
+        if role not in _ROLES_BY_KIND[kind]:
+            raise WorkerProtocolError(f"invalid sender role for {kind}")
+        component = _component_for(kind, role)
         self._check_transition(kind)
         version, commit = self._components[component]
         expected = {
@@ -154,7 +167,7 @@ class WorkerProtocolTranscript:
             "sequence": len(self._messages),
             "correlation_id": self.execution_context["run_id"],
             "causation_id": self.last_message_id,
-            "sender_role": _ROLE_BY_KIND[kind],
+            "sender_role": role,
         }
         for field, value in expected.items():
             if candidate_message.get(field) != value:
@@ -173,13 +186,12 @@ class WorkerProtocolTranscript:
         created_at_utc_ms: int,
         sender_role: str | None = None,
     ) -> dict[str, Any]:
-        component = _COMPONENT_BY_KIND.get(kind)
-        if component is None:
+        if kind not in _COMPONENT_BY_KIND:
             raise WorkerProtocolError(f"unsupported worker message kind: {kind}")
         role = sender_role or _ROLE_BY_KIND[kind]
-        expected_role = _ROLE_BY_KIND[kind]
-        if role != expected_role and kind != "ABORT":
+        if role not in _ROLES_BY_KIND[kind]:
             raise WorkerProtocolError(f"invalid sender role for {kind}")
+        component = _component_for(kind, role)
         self._check_transition(kind)
         version, commit = self._components[component]
         sequence = len(self._messages)

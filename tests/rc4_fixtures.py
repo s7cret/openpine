@@ -143,6 +143,38 @@ def execution_context(
     return seal_content_hash(payload, schema_id="openpine.execution_context.v1")
 
 
+def run_identity(
+    context: dict[str, Any],
+    *,
+    data_snapshot_hash: str,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_id": "openpine.run.v2",
+        "schema_version": "2.1.0",
+        "producer": "openpine",
+        "producer_version": context["producer_version"],
+        "producer_commit": context["producer_commit"],
+        "stack_id": context["stack_id"],
+        "created_at_utc_ms": 0,
+        "serializer_id": "openpine.canonical.json.v1",
+        "content_hash_alg": "sha256",
+        "run_id": context["run_id"],
+        "run_mode": "OPTIMIZE",
+        "state": "ADMITTED",
+        "stack_manifest_hash": context["stack_manifest_hash"],
+        "wheel_identities": context["wheel_identities"],
+        "schema_hashes": context["schema_hashes"],
+        "generated_artifact_hash": context["generated_artifact_hash"],
+        "data_snapshot_hash": data_snapshot_hash,
+        "semantic_profile": context["semantic_profile"],
+        "finality_policy": context["finality_policy"],
+        "warmup_policy": context["warmup_policy"],
+        "score_policy": context["score_policy"],
+        "required_capabilities": context["capabilities"],
+    }
+    return seal_content_hash(payload, schema_id="openpine.run.v2")
+
+
 def canonical_bar_envelopes(
     bars: list[Any], context: dict[str, Any]
 ) -> list[dict[str, Any]]:

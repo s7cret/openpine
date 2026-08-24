@@ -11,7 +11,7 @@ TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.4.template.json"
 HISTORICAL = (
     ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
 )
-PIN = "a91c0ce0d36d60e8dc5cb43e7aa92ab59c2eaa6c"
+PIN = "9362f0abe1c4b0924f5f348141826e005cd880ba"
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
     "openpine-contracts",

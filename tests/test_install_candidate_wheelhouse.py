@@ -64,8 +64,22 @@ def test_missing_hash_is_fail_closed(tmp_path: Path) -> None:
     wheel = tmp_path / "demo-0.0.1-py3-none-any.whl"
     wheel.write_bytes(b"wheel-bytes")
     mod = _mod()
-    with pytest.raises(mod.WheelhouseInstallError, match="missing hash"):
+    with pytest.raises(mod.WheelhouseInstallError, match="wheel set mismatch"):
         mod.verify_local_hashes(tmp_path, {})
+
+
+def test_missing_expected_wheel_file_is_fail_closed(tmp_path: Path) -> None:
+    wheel = tmp_path / "demo-0.0.1-py3-none-any.whl"
+    wheel.write_bytes(b"wheel-bytes")
+    mod = _mod()
+    with pytest.raises(mod.WheelhouseInstallError, match="wheel set mismatch"):
+        mod.verify_local_hashes(
+            tmp_path,
+            {
+                wheel.name: _sha256(wheel.read_bytes()),
+                "missing-0.0.1-py3-none-any.whl": _sha256(b"missing"),
+            },
+        )
 
 
 def test_only_wheel_bound_candidate_can_supply_install_hashes() -> None:

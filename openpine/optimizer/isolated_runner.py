@@ -7,6 +7,7 @@ import json
 import math
 import copy
 from dataclasses import asdict, is_dataclass
+from pathlib import Path
 from typing import Any
 
 from optimizer import RunnerCapabilities, RunnerResponse
@@ -64,7 +65,8 @@ class IsolatedOptimizerRunner:
         instrument_id: str,
         generated_artifact: dict[str, Any],
         bar_envelopes: list[dict[str, Any]],
-        run_hash: str,
+        run_identity: dict[str, Any],
+        data_dir: str | Path,
         protocol_artifact_dir: str,
         base_params: dict[str, Any] | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
@@ -72,15 +74,14 @@ class IsolatedOptimizerRunner:
         self.source = bytes(source)
         self.bars = tuple(bars)
         self.config = copy.copy(config)
-        object.__setattr__(self.config, "execution_context", execution_context)
-        object.__setattr__(self.config, "admitted_manifest", admitted_manifest)
-        object.__setattr__(self.config, "instrument_id", instrument_id)
-        object.__setattr__(self.config, "generated_artifact", generated_artifact)
-        object.__setattr__(self.config, "bar_envelopes", bar_envelopes)
-        object.__setattr__(self.config, "run_hash", run_hash)
-        object.__setattr__(
-            self.config, "protocol_artifact_dir", protocol_artifact_dir
-        )
+        self.execution_context = dict(execution_context)
+        self.admitted_manifest = dict(admitted_manifest)
+        self.instrument_id = instrument_id
+        self.generated_artifact = dict(generated_artifact)
+        self.bar_envelopes = [dict(item) for item in bar_envelopes]
+        self.run_identity = dict(run_identity)
+        self.data_dir = Path(data_dir)
+        self.protocol_artifact_dir = Path(protocol_artifact_dir)
         self.expected_data_snapshot_hash = expected_data_snapshot_hash
         self.base_params = dict(base_params or {})
         self.htf_bars = list(htf_bars or [])
@@ -98,7 +99,11 @@ class IsolatedOptimizerRunner:
         return self.runner_fingerprint
 
     def __call__(self, request: Any) -> RunnerResponse:
-        from openpine.run_identity import execution_data_snapshot_hash
+        from openpine.run_identity import (
+            execution_data_snapshot_hash,
+            persist_run_identity,
+        )
+        from openpine_contracts import seal_content_hash, validate_payload
 
         actual_snapshot_hash = execution_data_snapshot_hash(
             bars=self.bars,
@@ -113,11 +118,41 @@ class IsolatedOptimizerRunner:
         )
         if actual_snapshot_hash != self.expected_data_snapshot_hash:
             raise RuntimeError("data snapshot hash mismatch before optimizer trial")
+        if isinstance(request.trial_id, bool) or not isinstance(request.trial_id, int):
+            raise RuntimeError("optimizer trial_id must be an integer")
+        trial_run_id = f"{self.execution_context['run_id']}.trial-{request.trial_id}"
+        trial_context_payload = dict(self.execution_context)
+        trial_context_payload.pop("content_hash", None)
+        trial_context_payload["run_id"] = trial_run_id
+        trial_context_payload["session_id"] = f"{trial_run_id}.session"
+        trial_context = seal_content_hash(
+            trial_context_payload, schema_id="openpine.execution_context.v1"
+        )
+        validate_payload("openpine.execution_context.v1", trial_context)
+        trial_run_payload = dict(self.run_identity)
+        trial_run_payload.pop("content_hash", None)
+        trial_run_payload["run_id"] = trial_run_id
+        trial_run = seal_content_hash(trial_run_payload, schema_id="openpine.run.v2")
+        validate_payload("openpine.run.v2", trial_run)
+        persist_run_identity(self.data_dir, trial_run_id, trial_run)
+
+        trial_config = copy.copy(self.config)
+        object.__setattr__(trial_config, "execution_context", trial_context)
+        object.__setattr__(trial_config, "admitted_manifest", self.admitted_manifest)
+        object.__setattr__(trial_config, "instrument_id", self.instrument_id)
+        object.__setattr__(trial_config, "generated_artifact", self.generated_artifact)
+        object.__setattr__(trial_config, "bar_envelopes", self.bar_envelopes)
+        object.__setattr__(trial_config, "run_hash", trial_run["content_hash"])
+        object.__setattr__(
+            trial_config,
+            "protocol_artifact_dir",
+            str(self.protocol_artifact_dir / f"trial-{request.trial_id}"),
+        )
         trial_params = {**self.base_params, **dict(request.params)}
         isolated = BacktestEngineAdapter().run_isolated(
             self.source,
             list(self.bars),
-            self.config,
+            trial_config,
             htf_bars=self.htf_bars or None,
             params=trial_params,
         )

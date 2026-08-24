@@ -80,6 +80,14 @@ _ROLE = {
     "RECALC_RESULT": "worker", "BAR_COMMIT": "engine",
     "FINALIZE": "parent", "ABORT": "parent",
 }
+_ROLES = {kind: {role} for kind, role in _ROLE.items()}
+_ROLES["ABORT"] = {"parent", "worker", "engine"}
+
+def _component_for(kind, role):
+    if kind == "ABORT" and role == "engine":
+        return "backtest_engine"
+    return _COMPONENT[kind]
+
 _ALLOWED_AFTER = {
     "HELLO": {"LOAD_ARTIFACT", "ABORT"},
     "LOAD_ARTIFACT": {"INIT_RUN", "ABORT"},
@@ -166,14 +174,17 @@ class _Protocol:
             raise RuntimeError("worker protocol content hash is invalid")
         kind = message["kind"]
         self._transition(kind)
-        component = _COMPONENT[kind]
+        role = message.get("sender_role")
+        if role not in _ROLES[kind]:
+            raise RuntimeError("worker protocol sender role mismatch")
+        component = _component_for(kind, role)
         version, commit = self.identities[component]
         expected = {
             "producer": component, "producer_version": version,
             "producer_commit": commit, "stack_id": self.context["stack_manifest_hash"],
             "session_id": self.context["session_id"], "run_id": self.context["run_id"],
             "sequence": len(self.messages), "correlation_id": self.context["run_id"],
-            "causation_id": self.last_id, "sender_role": _ROLE[kind],
+            "causation_id": self.last_id, "sender_role": role,
         }
         if any(message.get(field) != value for field, value in expected.items()):
             raise RuntimeError("worker protocol identity mismatch")
@@ -429,8 +440,8 @@ def _legacy_projection(sealed):
         "wintrades": sealed["winning_trades"],
         "losstrades": sealed["losing_trades"],
         "eventrades": sealed["even_trades"],
-        "max_drawdown": 0.0,
-        "max_runup": 0.0,
+        "max_drawdown": float(sealed["max_drawdown"]),
+        "max_runup": float(sealed["max_runup"]),
         "orders": sealed["orders"],
         "fills": sealed["fills"],
         "open_trade_log": open_trades,

@@ -1034,40 +1034,18 @@ def _run_indicator_plot_runtime(
         source="generated_artifact.v2",
     )
     t0 = perf_counter()
-    if isinstance(generated_class, (bytes, bytearray)):
-        from openpine.runtime.isolated_run import run_isolated_indicator
-        from openpine.runtime.admitted_manifest import load_admitted_manifest
+    if not isinstance(generated_class, (bytes, bytearray)):
+        raise IsolatedRunError("in-process generated indicator execution is forbidden")
+    from openpine.runtime.isolated_run import run_isolated_indicator
+    from openpine.runtime.admitted_manifest import load_admitted_manifest
 
-        backend_result = run_isolated_indicator(
-            bytes(generated_class),
-            bars,
-            admitted_manifest=admitted_manifest or load_admitted_manifest(),
-            instrument_id=symbol,
-            semantic_profile=admitted.value,
-            htf_bars=htf_bars,
-        )
-        return backend_result, perf_counter() - t0
-    config = _build_indicator_plot_config(
-        symbol=symbol,
-        timeframe=timeframe,
-        exchange=exchange,
-        market_type=market_type,
-        provider=provider,
-    )
-    backend_result = _execute_indicator_plot_runtime(
-        generated_class=generated_class,
-        bars=bars,
-        config=config,
-        symbol=symbol,
-        timeframe=timeframe,
-        provider=provider,
-        compare_from_ms=compare_from_ms,
-        compare_to_ms=compare_to_ms,
-        progress_callback=_build_progress_callback(
-            bars_total=len(bars),
-            console=console,
-            progress_every=progress_every,
-        ),
+    backend_result = run_isolated_indicator(
+        bytes(generated_class),
+        bars,
+        admitted_manifest=admitted_manifest or load_admitted_manifest(),
+        instrument_id=symbol,
+        semantic_profile=admitted.value,
+        htf_bars=htf_bars,
     )
     return backend_result, perf_counter() - t0
 

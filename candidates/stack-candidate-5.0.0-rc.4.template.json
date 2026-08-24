@@ -29,7 +29,7 @@
     "openpine-contracts": {
       "repo": "s7cret/openpine-contracts",
       "ref": "feat/5.0-contracts",
-      "sha": "a91c0ce0d36d60e8dc5cb43e7aa92ab59c2eaa6c",
+      "sha": "9362f0abe1c4b0924f5f348141826e005cd880ba",
       "version": "5.0.0rc4"
     },
     "marketdata-provider": {
@@ -41,13 +41,13 @@
     "pinelib": {
       "repo": "s7cret/pinelib",
       "ref": "feat/5.0-intent-tape",
-      "sha": "6e649cb81a2d0d971dd7df66c542e22e19e39319",
+      "sha": "a0ea8e7177e73217c595f978c76ad34bb47d6bec",
       "version": "5.0.0rc4"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
       "ref": "feat/5.0-warmup-reset",
-      "sha": "3ccb3b32779cd633bcf3bde125dd586c3367f792",
+      "sha": "cc50cb425470265d95f6080854238b9bcda23830",
       "version": "5.0.0rc4"
     },
     "pine2ast": {
