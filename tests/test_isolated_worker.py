@@ -504,6 +504,7 @@ def test_worker_argv_has_no_new_session() -> None:
     assert "--die-with-parent" in argv
     assert "--clearenv" in argv
     assert "/usr/bin/systemd-run" in argv
+    assert str(Path(sys.executable).resolve()) in argv
     assert "--uid=openpine-worker" in argv
     assert "--property=MemoryMax=134217728" in argv
     assert "--property=MemorySwapMax=0" in argv

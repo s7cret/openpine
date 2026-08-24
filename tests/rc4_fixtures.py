@@ -41,7 +41,7 @@ def admitted_manifest() -> dict[str, Any]:
         },
         "worker_policy": {
             "bubblewrap_path": "/usr/bin/bwrap",
-            "python_path": "/usr/bin/python3",
+            "python_path": "candidate-python",
             "worker_user": "openpine-worker",
             "tmpfs_bytes": 16 * 1024 * 1024,
             "memory_max_bytes": 128 * 1024 * 1024,

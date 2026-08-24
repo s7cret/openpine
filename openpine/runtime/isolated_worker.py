@@ -16,6 +16,7 @@ import select
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -1092,9 +1093,12 @@ def worker_user_available() -> bool:
 
 def _runtime_ro_bind_args() -> list[str]:
     argv: list[str] = []
-    for root in _RUNTIME_ROOTS:
-        if Path(root).exists():
-            argv.extend(["--ro-bind", root, root])
+    roots = [Path(root) for root in _RUNTIME_ROOTS if Path(root).exists()]
+    python_prefix = Path(sys.base_prefix).resolve()
+    if not any(python_prefix.is_relative_to(root.resolve()) for root in roots):
+        roots.append(python_prefix)
+    for root in roots:
+        argv.extend(["--ro-bind", str(root), str(root)])
     return argv
 
 
@@ -1118,10 +1122,13 @@ def _resolved_worker_policy(admitted_manifest: AdmittedManifest) -> dict[str, An
     }
     if set(policy) != required:
         raise IsolatedWorkerError("admitted worker policy fields are invalid")
+    if policy.get("python_path") != "candidate-python":
+        raise IsolatedWorkerError("admitted sandbox Python policy is invalid")
     trusted = policy.get("trusted_packages")
     if trusted != list(_TRUSTED_NAMES):
         raise IsolatedWorkerError("admitted trusted package policy is invalid")
     resolved = dict(policy)
+    resolved["python_path"] = str(Path(sys.executable).resolve())
     resolved["trusted_package_binds"] = _stage_trusted_packages()
     return resolved
 
@@ -1830,7 +1837,7 @@ def evaluate_artifact(
     )
     unit_name = _worker_unit_name()
     try:
-        # Immutable argv: trusted bwrap + /usr/bin/python3. No shell, no user path.
+        # Immutable argv: admitted bwrap + wheel-bound candidate Python. No shell or user path.
         proc = subprocess.Popen(  # noqa: S603
             _bwrap_argv(admitted_manifest, unit_name),
             stdin=subprocess.PIPE,

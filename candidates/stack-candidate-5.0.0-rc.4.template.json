@@ -18,7 +18,7 @@
   },
   "worker_policy": {
     "bubblewrap_path": "/usr/bin/bwrap",
-    "python_path": "/usr/bin/python3",
+    "python_path": "candidate-python",
     "worker_user": "openpine-worker",
     "tmpfs_bytes": 16777216,
     "memory_max_bytes": 134217728,
