@@ -46,7 +46,17 @@ def admitted_manifest() -> dict[str, Any]:
             "tmpfs_bytes": 16 * 1024 * 1024,
             "memory_max_bytes": 128 * 1024 * 1024,
             "tasks_max": 32,
-            "trusted_packages": ["ast2python", "openpine_contracts", "pinelib"],
+            "trusted_packages": [
+                "ast2python",
+                "attr",
+                "attrs",
+                "jsonschema",
+                "jsonschema_specifications",
+                "openpine_contracts",
+                "pinelib",
+                "referencing",
+                "rpds",
+            ],
         },
     }
 

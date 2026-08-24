@@ -1011,7 +1011,17 @@ class IsolatedWorkerError(RuntimeError):
 
 
 _TRUSTED_STAGE: Path | None = None
-_TRUSTED_NAMES = ("pinelib", "openpine_contracts", "ast2python")
+_TRUSTED_NAMES = (
+    "ast2python",
+    "attr",
+    "attrs",
+    "jsonschema",
+    "jsonschema_specifications",
+    "openpine_contracts",
+    "pinelib",
+    "referencing",
+    "rpds",
+)
 _RUNTIME_ROOTS = ("/usr", "/lib", "/lib64")
 
 
@@ -1109,7 +1119,7 @@ def _resolved_worker_policy(admitted_manifest: AdmittedManifest) -> dict[str, An
     if set(policy) != required:
         raise IsolatedWorkerError("admitted worker policy fields are invalid")
     trusted = policy.get("trusted_packages")
-    if trusted != ["ast2python", "openpine_contracts", "pinelib"]:
+    if trusted != list(_TRUSTED_NAMES):
         raise IsolatedWorkerError("admitted trusted package policy is invalid")
     resolved = dict(policy)
     resolved["trusted_package_binds"] = _stage_trusted_packages()

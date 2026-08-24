@@ -23,7 +23,7 @@
     "tmpfs_bytes": 16777216,
     "memory_max_bytes": 134217728,
     "tasks_max": 32,
-    "trusted_packages": ["ast2python", "openpine_contracts", "pinelib"]
+    "trusted_packages": ["ast2python", "attr", "attrs", "jsonschema", "jsonschema_specifications", "openpine_contracts", "pinelib", "referencing", "rpds"]
   },
   "components": {
     "openpine-contracts": {
