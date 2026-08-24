@@ -259,7 +259,12 @@ def test_isolated_installed_wheel_serves_api_version_with_packaged_lock(tmp_path
         assert all(not member.is_absolute() and ".." not in member.parts for member in members)
         archive.extractall(target)
     contracts_wheel_dir = tmp_path / "contracts-wheel"
-    contracts_root = Path(openpine_contracts.__file__).resolve().parents[1]
+    stack_root = os.environ.get("PINE_STACK_ROOT")
+    contracts_root = (
+        Path(stack_root) / "openpine-contracts"
+        if stack_root is not None
+        else Path(openpine_contracts.__file__).resolve().parents[1]
+    )
     subprocess.run(
         [
             sys.executable,
