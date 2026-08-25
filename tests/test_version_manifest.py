@@ -30,7 +30,7 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     assert isinstance(payload["modules"], list)
     assert len(payload["modules"]) == 7
     assert payload["stack_lock"]["schema"] == "openpine.stack-lock.v1"
-    assert payload["stack_lock"]["release"] == "4.0.2"
+    assert payload["stack_lock"]["release"] == "5.0.0rc5"
     assert len(payload["stack_lock"]["sha256"]) == 64
     assert len(payload["stack_lock"]["components"]) == 7
 
@@ -65,12 +65,12 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     # openpine is the workspace checkout and is definitely installed here
     openpine = next(m for m in payload["modules"] if m["name"] == "openpine")
     assert openpine["installed"] is True
-    assert openpine["version"] == "5.0.0rc4"
-    assert openpine["distribution_version"] == "5.0.0rc4"
-    assert openpine["module_version"] == "5.0.0rc4"
-    assert openpine["conforms_to_lock"] is False
-    assert openpine["identity_conforms"] is False
-    assert payload["stack_conforms"] is False
+    assert openpine["version"] == "5.0.0rc5"
+    assert openpine["distribution_version"] == "5.0.0rc5"
+    assert openpine["module_version"] == "5.0.0rc5"
+    assert openpine["conforms_to_lock"] is True
+    assert openpine["identity_conforms"] is True
+    assert payload["stack_conforms"] is True
     assert openpine["path"] is not None
     assert openpine["path"].endswith("/openpine/__init__.py")
     assert openpine["summary"] is not None

@@ -15,7 +15,7 @@ from openpine.data.orchestrator import (
 )
 
 STACK_HASH = "sha256:" + "d" * 64
-COMMIT = "e098947dfd30444273090e521e5c749673909c37"
+COMMIT = "de1cb68be33a9b51ee6ddf2513932c90af721874"
 
 
 def _query() -> BarQuery:

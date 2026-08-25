@@ -13,7 +13,7 @@ $PYTHON -m openpine.quality architecture openpine --max-lines 4000
 $PYTHON -m openpine.distribution manifest --root .
 $PYTHON scripts/verify_v5_sec_001.py
 candidate_manifest_path=${OPENPINE_CANDIDATE_MANIFEST:-}
-if [[ -z "$candidate_manifest_path" && -f candidates/stack-candidate-5.0.0-rc.4.template.json ]]; then
+if [[ -z "$candidate_manifest_path" && -f candidates/stack-candidate-5.0.0-rc.5.template.json ]]; then
     echo "materialized candidate manifest required: set OPENPINE_CANDIDATE_MANIFEST" >&2
     exit 1
 fi

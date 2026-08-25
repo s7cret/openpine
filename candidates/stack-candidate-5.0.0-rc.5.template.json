@@ -1,6 +1,6 @@
 {
   "schema": "openpine.stack-candidate-template.v1",
-  "id": "5.0.0-rc.4",
+  "id": "5.0.0-rc.5",
   "not_a_release": true,
   "admission": {
     "capabilities": [
@@ -28,50 +28,50 @@
   "components": {
     "openpine-contracts": {
       "repo": "s7cret/openpine-contracts",
-      "ref": "feat/5.0-contracts",
-      "sha": "9362f0abe1c4b0924f5f348141826e005cd880ba",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5",
+      "sha": "6b5e67445e2772057cd877e158c7aa0c58bdfe37",
+      "version": "5.0.0rc5"
     },
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
-      "ref": "feat/5.0-bar-v2",
-      "sha": "e098947dfd30444273090e521e5c749673909c37",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5",
+      "sha": "de1cb68be33a9b51ee6ddf2513932c90af721874",
+      "version": "5.0.0rc5"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
-      "ref": "feat/5.0-intent-tape",
-      "sha": "a0ea8e7177e73217c595f978c76ad34bb47d6bec",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5",
+      "sha": "1204d02ed5cea1a3be8b5e8252bc4d881c539a25",
+      "version": "5.0.0rc5"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
-      "ref": "feat/5.0-warmup-reset",
-      "sha": "cc50cb425470265d95f6080854238b9bcda23830",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5",
+      "sha": "0a8a6a62e3556e9c3ef4cd0b5bcd048ce3cd62a0",
+      "version": "5.0.0rc5"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
-      "ref": "feat/5.0-contracts-pin",
-      "sha": "1715eef9c395b81db24224b6724f16589c1c960a",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5-pin",
+      "sha": "325ddd17f4ced3c42739fa58bc902a927c2d4ac6",
+      "version": "5.0.0rc5"
     },
     "ast2python": {
       "repo": "s7cret/ast2python",
-      "ref": "feat/5.0-contracts-pin",
-      "sha": "ce8a691c6bdc8a1a1c81a2b8ed2cebb36e02da3b",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5-pin",
+      "sha": "df6783345ab7105334596b3685206a28e7f7e33e",
+      "version": "5.0.0rc5"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
-      "ref": "feat/5.0-contracts-pin",
-      "sha": "1a6e8857d18ec072309bdf6d4832f56a6c3de6e4",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5-pin",
+      "sha": "7687ad648502a5ab810779262850a7ae7abb3b71",
+      "version": "5.0.0rc5"
     },
     "openpine": {
       "repo": "s7cret/openpine",
-      "ref": "feat/5.0-isolated-worker",
-      "version": "5.0.0rc4"
+      "ref": "release/5.0.0rc5",
+      "version": "5.0.0rc5"
     }
   }
 }

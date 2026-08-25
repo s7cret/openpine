@@ -29,14 +29,14 @@ def _candidate() -> dict:
     payload = {
         "schema": "openpine.stack-candidate.v2",
         "stage": "wheel-bound",
-        "id": "5.0.0-rc.4",
+        "id": "5.0.0-rc.5",
         "components": {
             "openpine": {
-                "version": "5.0.0rc4",
+                "version": "5.0.0rc5",
                 "wheel": {"filename": "openpine.whl", "sha256": HASH_B},
             },
             "openpine-contracts": {
-                "version": "5.0.0rc4",
+                "version": "5.0.0rc5",
                 "wheel": {"filename": "contracts.whl", "sha256": HASH_C},
             },
         },
@@ -60,8 +60,8 @@ def _run_identity(**updates: object) -> RunAdmissionIdentity:
     values: dict[str, object] = {
         "stack_manifest_hash": _candidate()["manifest_hash"],
         "wheel_identities": (
-            ("openpine", "5.0.0rc4", HASH_B),
-            ("openpine-contracts", "5.0.0rc4", HASH_C),
+            ("openpine", "5.0.0rc5", HASH_B),
+            ("openpine-contracts", "5.0.0rc5", HASH_C),
         ),
         "schema_hashes": {
             "openpine.run.v2": HASH_C,
@@ -150,9 +150,9 @@ def test_matching_stack_is_admitted() -> None:
 
 def test_candidate_deployment_identity_requires_wheel_schema_and_policy_evidence() -> None:
     deployment = deployment_identity_from_candidate(_candidate())
-    assert deployment.stack_id == "5.0.0-rc.4"
+    assert deployment.stack_id == "5.0.0-rc.5"
     assert deployment.stack_manifest_hash == _candidate()["manifest_hash"]
-    assert deployment.wheel_identities[0] == ("openpine", "5.0.0rc4", HASH_B)
+    assert deployment.wheel_identities[0] == ("openpine", "5.0.0rc5", HASH_B)
     assert deployment.schema_hashes["openpine.run.v2"] == HASH_C
 
     source = _candidate()
@@ -189,7 +189,7 @@ def test_active_deployment_verifies_wheel_bytes_installed_versions_and_schemas(
     candidate["manifest_hash"] = candidate_manifest_hash(candidate)
     path = tmp_path / "candidate.json"
     path.write_text(json.dumps(candidate), encoding="utf-8")
-    versions = {"openpine": "5.0.0rc4", "openpine-contracts": "5.0.0rc4"}
+    versions = {"openpine": "5.0.0rc5", "openpine-contracts": "5.0.0rc5"}
 
     deployment = load_active_deployment_identity(
         path,
@@ -228,7 +228,7 @@ def test_active_deployment_verifies_wheel_bytes_installed_versions_and_schemas(
 @pytest.mark.parametrize(
     ("updates", "expected"),
     [
-        ({"wheel_identities": (("openpine", "5.0.0rc4", HASH_D),)}, "wheel identities"),
+        ({"wheel_identities": (("openpine", "5.0.0rc5", HASH_D),)}, "wheel identities"),
         ({"schema_hashes": {"openpine.run.v2": HASH_D}}, "schema hashes"),
         ({"generated_artifact_hash": HASH_D}, "artifact hash mismatch"),
         ({"data_snapshot_hash": HASH_D}, "data snapshot hash mismatch"),

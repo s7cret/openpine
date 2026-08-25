@@ -73,7 +73,7 @@ def test_transcript_builds_full_sealed_identity_stable_protocol_messages() -> No
         messages[2]["message_id"],
     ]
     assert messages[0]["producer"] == "openpine"
-    assert messages[0]["producer_version"] == "5.0.0-rc.4"
+    assert messages[0]["producer_version"] == "5.0.0-rc.5"
     for message in messages:
         validate_payload("openpine.worker.protocol.v2", message)
         assert message["schema_id"] == "openpine.worker.protocol.v2"

@@ -18,7 +18,7 @@ def make_deployment_identity() -> DeploymentAdmissionIdentity:
         stack_id="test-stack",
         stack_manifest_hash=STACK_HASH,
         wheel_identities=tuple(
-            (name, "5.0.0rc4", "sha256:" + "a" * 64)
+            (name, "5.0.0rc5", "sha256:" + "a" * 64)
             for name in (
                 "openpine-contracts",
                 "marketdata-provider",
@@ -72,7 +72,7 @@ def make_sealed_artifact(
                 "schema_id": "openpine.generated_artifact.v2",
                 "schema_version": "2.0.0",
                 "producer": "ast2python",
-                "producer_version": "5.0.0-rc.4",
+                "producer_version": "5.0.0-rc.5",
                 "producer_commit": commits["ast2python"],
                 "stack_id": "openpine-5.0",
                 "created_at_utc_ms": 1,
@@ -86,7 +86,7 @@ def make_sealed_artifact(
                 ),
                 "source_map_hash": "sha256:" + "f" * 64,
                 "support_profile_hash": "sha256:" + "9" * 64,
-                "lowering_version": "5.0.0rc4",
+                "lowering_version": "5.0.0rc5",
                 "producer_commits": commits,
                 "semantic_profile": semantic_profile,
                 "required_runtime_capabilities": ["intent_tape_v2"],

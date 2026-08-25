@@ -32,7 +32,7 @@ def admitted_manifest() -> dict[str, Any]:
     return {
         "schema": "openpine.stack-candidate.v2",
         "stage": "wheel-bound",
-        "id": "5.0.0-rc.4-test",
+        "id": "5.0.0-rc.5-test",
         "not_a_release": True,
         "manifest_hash": STACK_HASH,
         "components": {
@@ -84,7 +84,7 @@ def execution_context(
         "schema_id": "openpine.execution_context.v1",
         "schema_version": "1.0.0",
         "producer": "openpine",
-        "producer_version": "5.0.0-rc.4",
+        "producer_version": "5.0.0-rc.5",
         "producer_commit": _openpine_commit(),
         "stack_id": STACK_HASH,
         "created_at_utc_ms": 0,
@@ -95,7 +95,7 @@ def execution_context(
         "session_id": "session-test",
         "stack_manifest_hash": STACK_HASH,
         "wheel_identities": [
-            {"name": name, "version": "5.0.0rc4", "content_hash": HASH_B}
+            {"name": name, "version": "5.0.0rc5", "content_hash": HASH_B}
             for name in STACK_COMPONENTS
         ],
         "schema_hashes": {

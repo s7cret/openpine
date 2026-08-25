@@ -76,19 +76,19 @@ def test_transitive_pin_validation_rejects_stale_stack_dependency_refs() -> None
 def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     lock = load_stack_lock()
     assert lock["schema"] == "openpine.stack-lock.v1"
-    assert lock["release"] == "4.0.2"
+    assert lock["release"] == "5.0.0rc5"
     assert [item["name"] for item in lock["components"]] == list(EXPECTED_COMPONENTS)
-    assert all(item["version"] == "4.0.2" for item in lock["components"])
+    assert all(item["version"] == "5.0.0rc5" for item in lock["components"])
     siblings = lock["components"][1:]
     assert all(re.fullmatch(r"(?!0{40})[0-9a-f]{40}", item["commit"]) for item in siblings)
     expected_tree_sha256 = {
-        "openpine": "4d7cf6bedeef9980ad2236d12b0b8e9c2d38451e19e6ba93446d4e42e63facd3",
-        "pine2ast": "4f05344a48aae9d90a4d94ec467bdea3d915b4ae24acca7faa1fe9320c581670",
-        "ast2python": "3f71e33228a1dcee5bf52e130e45d1b26e4fae9a75f11eb41c304677807ca864",
-        "pinelib": "0f746ef57253621b546da75f50cc1d8a1ad29151fd75140d9088c682f654bd35",
-        "backtest_engine": "74332c1deda837fc0e4c7878897c1926f8ce7ff7ba876ffc9627dd87f58511d8",
-        "marketdata_provider": "e7898ab7396365d2be685ae6138edd07ea2dacd84c340a9f83257ea05f82094d",
-        "optimizer": "c0f7e23b458d01eaf60e8891305a037482c5d79035d4b865e78589f5c9d8fb97",
+        "openpine": "9c19b2a69324561d5f459aaa68ea77a70ae376bd0663bf55147804cd1570c6cb",
+        "pine2ast": "6f8b72ac952b3f2e12b72a468c14bdabb30d0be298f95e7279176121df03ef64",
+        "ast2python": "ed9c6c90ce64cc6df5851365e33c034ded2d10783f74c020603e798c5828f244",
+        "pinelib": "c4ae65891b152a1ecdfce123704a43d1611dc923912292399c4d782cbbd713c1",
+        "backtest_engine": "772741709d7ee6d8231241a3bb918013fbba34ab7b9bb32bbccdf8ea873c1775",
+        "marketdata_provider": "91db52f653ab042917063dfef633bd289a4ba0a725c0e758f752ffd0973b855e",
+        "optimizer": "3f586e50e152a6d5a07732e9412d11e7d138be6fbe570676125bc9e013c7ad8f",
     }
     assert {
         item["name"]: item["tree_sha256"] for item in lock["components"]
@@ -97,9 +97,8 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     assert "commit" not in self_identity
     assert re.fullmatch(r"(?!0{64})[0-9a-f]{64}", self_identity["tree_sha256"])
     root = Path(__file__).resolve().parents[1]
-    # The production 4.0.2 lock stays frozen while this checkout is a 5.0 candidate.
-    assert self_identity["tree_sha256"] != package_tree_identity(root / "openpine")
-    assert (root / "candidates" / "stack-candidate-5.0.0-rc.4.template.json").is_file()
+    assert self_identity["tree_sha256"] == package_tree_identity(root / "openpine")
+    assert (root / "candidates" / "stack-candidate-5.0.0-rc.5.template.json").is_file()
     assert validate_stack_lock(lock) == ()
 
 
@@ -169,6 +168,20 @@ def test_stack_lock_validation_checks_dependency_and_ci_refs(tmp_path: Path) -> 
         encoding="utf-8",
     )
 
+    assert validate_stack_lock(lock, root=root) == ()
+
+    exact_dependencies = [
+        f'    "{item["package"]}=={lock["release"]}",'
+        for item in lock["components"][1:]
+    ]
+    (root / "pyproject.toml").write_text(
+        "[project]\nname='openpine'\nversion='"
+        + lock["release"]
+        + "'\ndependencies=[\n"
+        + "\n".join(exact_dependencies)
+        + "\n]\n",
+        encoding="utf-8",
+    )
     assert validate_stack_lock(lock, root=root) == ()
 
     stack_workflow.write_text(
@@ -301,7 +314,7 @@ app.dependency_overrides[get_state] = lambda: SimpleNamespace()
 response = TestClient(app).get('/api/version')
 assert response.status_code == 200, response.text
 payload = response.json()
-assert payload['stack_lock']['release'] == '4.0.2'
+assert payload['stack_lock']['release'] == '5.0.0rc5'
 assert len(payload['stack_lock']['sha256']) == 64
 assert all(len(item['tree_sha256']) == 64 for item in payload['stack_lock']['components'])
 """

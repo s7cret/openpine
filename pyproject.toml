@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openpine"
-version = "5.0.0rc4"
+version = "5.0.0rc5"
 description = "OpenPine product orchestration boundary for the Pine stack"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,13 +23,13 @@ dependencies = [
     "websockets>=14.0",
     "pandas>=2.0.0",
     "pyarrow>=15.0.0",
-    "pine2ast==5.0.0rc4",
-    "ast2python==5.0.0rc4",
-    "pinelib==5.0.0rc4",
-    "backtest-engine==5.0.0rc4",
-    "marketdata-provider==5.0.0rc4",
-    "optimizer==5.0.0rc4",
-    "openpine-contracts==5.0.0rc4",
+    "pine2ast==5.0.0rc5",
+    "ast2python==5.0.0rc5",
+    "pinelib==5.0.0rc5",
+    "backtest-engine==5.0.0rc5",
+    "marketdata-provider==5.0.0rc5",
+    "optimizer==5.0.0rc5",
+    "openpine-contracts==5.0.0rc5",
 ]
 
 [project.urls]

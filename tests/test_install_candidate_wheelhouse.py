@@ -93,14 +93,14 @@ def test_only_wheel_bound_candidate_can_supply_install_hashes() -> None:
         "components": {
             "pinelib": {
                 "wheel": {
-                    "filename": "pinelib-5.0.0rc4-py3-none-any.whl",
+                    "filename": "pinelib-5.0.0rc5-py3-none-any.whl",
                     "sha256": "sha256:" + "a" * 64,
                 }
             }
         },
     }
     assert mod.wheel_hashes_from_candidate(bound) == {
-        "pinelib-5.0.0rc4-py3-none-any.whl": "sha256:" + "a" * 64
+        "pinelib-5.0.0rc5-py3-none-any.whl": "sha256:" + "a" * 64
     }
 
 

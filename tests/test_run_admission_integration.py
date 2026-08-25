@@ -29,9 +29,9 @@ STACK_COMPONENTS = (
 
 def _deployment() -> DeploymentAdmissionIdentity:
     return DeploymentAdmissionIdentity(
-        stack_id="5.0.0-rc.4",
+        stack_id="5.0.0-rc.5",
         stack_manifest_hash=HASH_A,
-        wheel_identities=(("openpine", "5.0.0rc4", HASH_B),),
+        wheel_identities=(("openpine", "5.0.0rc5", HASH_B),),
         schema_hashes={"openpine.run.v2": HASH_C},
         capabilities=frozenset(
             {
@@ -60,10 +60,10 @@ def test_execution_context_is_derived_from_exact_deployment_and_manifest() -> No
         "openpine.checkpoint.proof.v1",
     )
     deployment = DeploymentAdmissionIdentity(
-        stack_id="5.0.0-rc.4",
+        stack_id="5.0.0-rc.5",
         stack_manifest_hash=HASH_A,
         wheel_identities=tuple(
-            (name, "5.0.0rc4", HASH_B) for name in STACK_COMPONENTS
+            (name, "5.0.0rc5", HASH_B) for name in STACK_COMPONENTS
         ),
         schema_hashes={name: HASH_C for name in schema_ids},
         capabilities=frozenset(
@@ -112,7 +112,7 @@ def test_execution_context_is_derived_from_exact_deployment_and_manifest() -> No
 
     validate_payload("openpine.execution_context.v1", context)
     assert verify_content_hash(context, schema_id="openpine.execution_context.v1")
-    assert context["producer_version"] == "5.0.0-rc.4"
+    assert context["producer_version"] == "5.0.0-rc.5"
     assert context["producer_commit"] == commits["openpine"]
     assert context["producer_commits"] == commits
     assert context["generated_artifact_hash"] == generated["content_hash"]
@@ -271,7 +271,7 @@ def test_run_identity_is_admitted_sealed_and_persisted_before_execution(
 
     monkeypatch.setattr(
         "openpine.run_identity.current_build_identity",
-        lambda: BuildIdentity(version="5.0.0rc4", commit="1" * 40),
+        lambda: BuildIdentity(version="5.0.0rc5", commit="1" * 40),
     )
     bars = [_bar(time=0), _bar(time=60_000)]
     artifact = _sealed_artifact()
@@ -312,7 +312,7 @@ def test_run_identity_is_admitted_sealed_and_persisted_before_execution(
 
     monkeypatch.setattr(
         "openpine.run_identity.current_build_identity",
-        lambda: BuildIdentity(version="5.0.0rc4", commit="2" * 40),
+        lambda: BuildIdentity(version="5.0.0rc5", commit="2" * 40),
     )
     with pytest.raises(AdmitError, match="producer commit"):
         admit_and_persist_run_identity(
@@ -510,10 +510,10 @@ def test_bind_isolated_execution_attaches_exact_protocol_inputs(tmp_path) -> Non
         "openpine.checkpoint.proof.v1",
     )
     deployment = DeploymentAdmissionIdentity(
-        stack_id="5.0.0-rc.4",
+        stack_id="5.0.0-rc.5",
         stack_manifest_hash=str(manifest["manifest_hash"]),
         wheel_identities=tuple(
-            (name, "5.0.0rc4", HASH_B) for name in STACK_COMPONENTS
+            (name, "5.0.0rc5", HASH_B) for name in STACK_COMPONENTS
         ),
         schema_hashes={name: HASH_C for name in schema_ids},
         capabilities=frozenset(

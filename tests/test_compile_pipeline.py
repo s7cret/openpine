@@ -10,10 +10,10 @@ from openpine.config import OpenPineConfig
 from openpine.pine.source import PineSource
 
 COMMITS = {
-    "pine2ast": "1715eef9c395b81db24224b6724f16589c1c960a",
-    "ast2python": "ce8a691c6bdc8a1a1c81a2b8ed2cebb36e02da3b",
+    "pine2ast": "325ddd17f4ced3c42739fa58bc902a927c2d4ac6",
+    "ast2python": "df6783345ab7105334596b3685206a28e7f7e33e",
     "pinelib": "e5c69acaca70613734985f84a9ef9d28c1a12b79",
-    "openpine-contracts": "9362f0abe1c4b0924f5f348141826e005cd880ba",
+    "openpine-contracts": "6b5e67445e2772057cd877e158c7aa0c58bdfe37",
 }
 
 

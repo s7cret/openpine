@@ -17,7 +17,7 @@ def _admission_identity() -> DeploymentAdmissionIdentity:
     return DeploymentAdmissionIdentity(
         stack_id="test-stack",
         stack_manifest_hash=STACK_HASH,
-        wheel_identities=(("openpine", "5.0.0rc4", "sha256:" + "a" * 64),),
+        wheel_identities=(("openpine", "5.0.0rc5", "sha256:" + "a" * 64),),
         schema_hashes={"openpine.run.v2": "sha256:" + "b" * 64},
         capabilities=frozenset({"closed_bar"}),
         semantic_profiles=frozenset({"strict_5x"}),

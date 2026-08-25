@@ -101,7 +101,7 @@ def _acceptance_manifest() -> dict[str, Any]:
     path = (
         Path(__file__).resolve().parents[1]
         / "candidates"
-        / "stack-candidate-5.0.0-rc.4.template.json"
+        / "stack-candidate-5.0.0-rc.5.template.json"
     )
     content = path.read_bytes()
     template = json.loads(content)

@@ -222,6 +222,7 @@ def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
     components = lock.get("components")
     if not isinstance(components, list):
         return errors
+    release = str(lock.get("release", ""))
     for item in components[1:]:
         if not isinstance(item, Mapping):
             continue
@@ -232,7 +233,11 @@ def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
         expected_dependency = (
             f"{package} @ git+https://github.com/{repository}.git@{commit}"
         )
-        if expected_dependency not in dependencies:
+        expected_exact_dependency = f"{package}=={release}"
+        if (
+            expected_dependency not in dependencies
+            and expected_exact_dependency not in dependencies
+        ):
             errors.append(f"stack lock component {name} dependency ref does not match lock")
         for label, refs in workflow_refs.items():
             if refs.get(repository) != commit:

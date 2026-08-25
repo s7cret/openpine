@@ -22,7 +22,7 @@ def _load_script(name: str):
 def _template() -> dict[str, object]:
     return {
         "schema": "openpine.stack-candidate-template.v1",
-        "id": "5.0.0-rc.4",
+        "id": "5.0.0-rc.5",
         "not_a_release": True,
         "admission": {
             "capabilities": ["closed_bar", "deterministic_clock"],
@@ -36,12 +36,12 @@ def _template() -> dict[str, object]:
                 "repo": "s7cret/pinelib",
                 "ref": "feat/5.0-intent-tape",
                 "sha": "b" * 40,
-                "version": "5.0.0rc4",
+                "version": "5.0.0rc5",
             },
             "openpine": {
                 "repo": "s7cret/openpine",
                 "ref": "feat/5.0-isolated-worker",
-                "version": "5.0.0rc4",
+                "version": "5.0.0rc5",
             },
         },
     }
@@ -57,13 +57,13 @@ def test_materialized_candidate_binds_openpine_sha_and_manifest_hash(tmp_path: P
         created_at_utc="2026-08-20T21:00:00Z",
         provenance={"builder": "github-actions", "run_id": "123"},
     )
-    path = tmp_path / "stack-candidate-5.0.0-rc.4.json"
+    path = tmp_path / "stack-candidate-5.0.0-rc.5.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
 
     assert payload["schema"] == "openpine.stack-candidate.v2"
     assert payload["stage"] == "source"
     assert payload["components"]["openpine"]["sha"] == SHA
-    assert payload["components"]["openpine"]["version"] == "5.0.0rc4"
+    assert payload["components"]["openpine"]["version"] == "5.0.0rc5"
     assert payload["admission"]["capabilities"] == [
         "closed_bar",
         "deterministic_clock",
@@ -82,7 +82,7 @@ def test_materialized_candidate_hash_detects_tampering(tmp_path: Path) -> None:
         provenance={"builder": "github-actions", "run_id": "123"},
     )
     payload["components"]["pinelib"]["sha"] = "c" * 40
-    path = tmp_path / "stack-candidate-5.0.0-rc.4.json"
+    path = tmp_path / "stack-candidate-5.0.0-rc.5.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
 
     with pytest.raises(resolver.CandidateSelectionError, match="manifest_hash"):
@@ -105,7 +105,7 @@ def test_template_is_not_discovered_as_an_active_candidate(tmp_path: Path) -> No
     resolver = _load_script("resolve_stack_candidate.py")
     template_dir = tmp_path / "candidates"
     template_dir.mkdir()
-    (template_dir / "stack-candidate-5.0.0-rc.4.template.json").write_text(
+    (template_dir / "stack-candidate-5.0.0-rc.5.template.json").write_text(
         json.dumps(_template()), encoding="utf-8"
     )
 

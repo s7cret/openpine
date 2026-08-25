@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.0.0rc5
+
+- Promotes the coordinated eight-repository 5.x stack with exact RC.5 package, source, wheel, and tree identities.
+- Makes migration 020 idempotent for the recognized legacy schema where `strategy_instances.semantic_profile` already exists, allowing safe production-copy upgrades from migration 19.
+- Ships the strict 5.x admission, isolated worker, Intent v2, broker projection, checkpoint, Bar v2, and trial-identity contracts with a conforming RC.5 stack lock.
+- Preserves fail-closed LIVE admission and the immutable production UI packaging boundary.
+
 ## 4.0.2
 
 - Added authenticated LAN-safe API/WebSocket access, immutable production UI packaging, strict browser/API contracts, and expanded backend/UI accessibility gates.

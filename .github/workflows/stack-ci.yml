@@ -33,13 +33,13 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/openpine-candidate"
           python scripts/materialize_stack_candidate.py \
-            --template candidates/stack-candidate-5.0.0-rc.4.template.json \
+            --template candidates/stack-candidate-5.0.0-rc.5.template.json \
             --openpine-sha "$GITHUB_SHA" \
             --created-at-utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --builder github-actions \
             --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --source-uri "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.json"
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.5.json"
       - name: Resolve active stack candidate
         id: stack
         working-directory: openpine
@@ -58,37 +58,37 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pine2ast_repo || 's7cret/pine2ast' }}
-          ref: ${{ steps.stack.outputs.pine2ast_sha || 'c57323351a1e638e0337e1be247883da2570ab28' }}
+          ref: ${{ steps.stack.outputs.pine2ast_sha || '325ddd17f4ced3c42739fa58bc902a927c2d4ac6' }}
           path: pine2ast
       - name: Checkout AST2Python
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.ast2python_repo || 's7cret/ast2python' }}
-          ref: ${{ steps.stack.outputs.ast2python_sha || 'b3013b13a32a6e3eb68edc111390e35f206323fc' }}
+          ref: ${{ steps.stack.outputs.ast2python_sha || 'df6783345ab7105334596b3685206a28e7f7e33e' }}
           path: ast2python
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
-          ref: ${{ steps.stack.outputs.pinelib_sha || 'a0ea8e7177e73217c595f978c76ad34bb47d6bec' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || '1204d02ed5cea1a3be8b5e8252bc4d881c539a25' }}
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
-          ref: ${{ steps.stack.outputs.backtest_engine_sha || 'cc50cb425470265d95f6080854238b9bcda23830' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '0a8a6a62e3556e9c3ef4cd0b5bcd048ce3cd62a0' }}
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.marketdata_provider_repo || 's7cret/marketdata-provider' }}
-          ref: ${{ steps.stack.outputs.marketdata_provider_sha || 'b868ace65524f5c3bf62498f667db411e299a4ce' }}
+          ref: ${{ steps.stack.outputs.marketdata_provider_sha || 'de1cb68be33a9b51ee6ddf2513932c90af721874' }}
           path: marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.optimizer_repo || 's7cret/optimizer' }}
-          ref: ${{ steps.stack.outputs.optimizer_sha || '73d67934d078cb97a4947cc7b0b12665c4086099' }}
+          ref: ${{ steps.stack.outputs.optimizer_sha || '7687ad648502a5ab810779262850a7ae7abb3b71' }}
           path: optimizer
       - name: Verify candidate checkout identities
         if: ${{ steps.stack.outputs.mode == 'candidate' }}
@@ -112,11 +112,11 @@ jobs:
           python openpine/scripts/finalize_stack_candidate.py \
             --candidate "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}" \
             --wheelhouse "$RUNNER_TEMP/openpine-wheelhouse" \
-            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.wheels.json"
+            --output "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.5.wheels.json"
           python -m venv "$RUNNER_TEMP/openpine-candidate-venv"
           "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
             openpine/scripts/install_candidate_wheelhouse.py \
-            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.4.wheels.json" \
+            --candidate "$RUNNER_TEMP/openpine-candidate/stack-candidate-5.0.0-rc.5.wheels.json" \
             --wheelhouse "$RUNNER_TEMP/openpine-wheelhouse" \
             --python "$RUNNER_TEMP/openpine-candidate-venv/bin/python" \
             --install
@@ -126,14 +126,14 @@ jobs:
           from importlib.metadata import version
 
           expected = {
-              'openpine': '5.0.0rc4',
-              'openpine-contracts': '5.0.0rc4',
-              'pine2ast': '5.0.0rc4',
-              'ast2python': '5.0.0rc4',
-              'pinelib': '5.0.0rc4',
-              'backtest-engine': '5.0.0rc4',
-              'marketdata-provider': '5.0.0rc4',
-              'optimizer': '5.0.0rc4',
+              'openpine': '5.0.0rc5',
+              'openpine-contracts': '5.0.0rc5',
+              'pine2ast': '5.0.0rc5',
+              'ast2python': '5.0.0rc5',
+              'pinelib': '5.0.0rc5',
+              'backtest-engine': '5.0.0rc5',
+              'marketdata-provider': '5.0.0rc5',
+              'optimizer': '5.0.0rc5',
           }
           for distribution, wanted in expected.items():
               installed = version(distribution)

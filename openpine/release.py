@@ -21,7 +21,7 @@ from openpine.stack_lock import (
 from openpine.storage.migrations import _get_migration_files
 from openpine.storage.schema_indexes import REQUIRED_INDEXES
 
-REQUIRED_STACK_VERSION = "5.0.0rc4"
+REQUIRED_STACK_VERSION = "5.0.0rc5"
 CANONICAL_DOCS = {
     "docs/README.md",
     "docs/ARCHITECTURE.md",
