@@ -64,11 +64,23 @@ def _bar(
 
 
 class _Registry:
-    def __init__(self, strategies: list[StrategyInstance]) -> None:
+    def __init__(
+        self,
+        strategies: list[StrategyInstance],
+        *,
+        epochs: dict[str, int] | None = None,
+    ) -> None:
         self._strategies = strategies
+        self._epochs = epochs or {}
 
     def list_strategies(self):
         return list(self._strategies)
+
+    def execution_epoch_started_at(
+        self, strategy_id: str, *, mode: str | None = None
+    ) -> int | None:
+        del mode
+        return self._epochs.get(strategy_id)
 
 
 class _Orchestrator:
@@ -193,6 +205,26 @@ def test_strategy_fanout_dedupes_repeated_bar_jobs() -> None:
     ).process_source_bar(bar)
     assert restarted.jobs[0].id == first.jobs[0].id
     assert len(scheduler.list_jobs()) == 1
+
+
+def test_strategy_fanout_skips_paper_bar_that_opened_before_activation() -> None:
+    registry = _Registry(
+        [_strategy("btc-1m", timeframe="1m")],
+        epochs={"btc-1m": 90_000},
+    )
+    scheduler = JobScheduler()
+    fanout = StrategyBarFanout(
+        registry=registry,
+        orchestrator=_Orchestrator(),
+        scheduler=scheduler,
+    )
+
+    straddling = fanout.process_source_bar(_bar(60_000))
+    post_activation = fanout.process_source_bar(_bar(120_000))
+
+    assert not straddling.jobs
+    assert len(post_activation.jobs) == 1
+    assert post_activation.jobs[0].input["bar_time"] == 120_000
 
 
 def test_strategy_fanout_waits_until_target_bar_closed() -> None:
