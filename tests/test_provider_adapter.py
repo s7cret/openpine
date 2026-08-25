@@ -1,7 +1,9 @@
+import json
 from types import SimpleNamespace
 
 from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
+from openpine.data import provider_adapter
 from openpine.data.provider_adapter import normalize_provider_bar
 
 
@@ -35,3 +37,37 @@ def test_normalize_provider_bar_uses_canonical_contract_shape():
     assert bar.time == 1_000
     assert bar.time_close == 2_000
     assert bar.volume == 5.0
+
+
+def test_provider_factory_binds_admitted_marketdata_identity(monkeypatch, tmp_path):
+    manifest_hash = "sha256:" + "2" * 64
+    marketdata_commit = "1" * 40
+    manifest_path = tmp_path / "candidate.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "stage": "wheel-bound",
+                "not_a_release": True,
+                "manifest_hash": manifest_hash,
+                "components": {
+                    "marketdata-provider": {"sha": marketdata_commit},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("OPENPINE_CANDIDATE_MANIFEST", str(manifest_path))
+    captured = {}
+    fake_provider = SimpleNamespace(persists_fetches=False)
+
+    def create_provider(config):
+        captured["config"] = config
+        return fake_provider
+
+    monkeypatch.setattr(provider_adapter, "create_provider", create_provider)
+
+    assert provider_adapter.create_local_marketdata_provider_adapter() is fake_provider
+    identity = captured["config"].artifact_identity
+    assert identity.producer_commit == marketdata_commit
+    assert identity.stack_id == manifest_hash
+    assert fake_provider.persists_fetches is True
