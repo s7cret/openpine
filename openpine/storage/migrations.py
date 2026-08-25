@@ -13,6 +13,15 @@ from openpine.storage.sqlite_storage import SQLiteStorage
 _MIGRATION_FILE_RE = re.compile(r"^(\d+)_([^.]+)\.sql$")
 
 
+def _schema_already_satisfies_migration(storage: SQLiteStorage, *, version: str, name: str) -> bool:
+    """Recognize legacy runtime-normalized schema before recording a migration."""
+
+    if version != "020" or name != "strategy_semantic_profile":
+        return False
+    columns = storage.execute("PRAGMA table_info(strategy_instances)").fetchall()
+    return any(str(row[1]) == "semantic_profile" for row in columns)
+
+
 def _get_migration_files(migrations_dir: Path) -> list[tuple[int, str, Path]]:
     """Return sorted list of ``(order, name, path)`` for SQL migration files."""
 
@@ -75,10 +84,14 @@ class MigrationRunner:
             description = name.replace("_", " ")
 
             with storage.transaction():
-                # Use the SQLite script parser rather than ``sql.split(';')``;
-                # splitting breaks triggers, CHECK expressions and string values
-                # containing semicolons.
-                storage.execute_script(sql)
+                # Some pre-5.0 runtimes added ``semantic_profile`` through the
+                # strategy registry before migration 020 existed. Record the
+                # migration without replaying its already-satisfied ALTER.
+                if not _schema_already_satisfies_migration(storage, version=version, name=name):
+                    # Use the SQLite script parser rather than ``sql.split(';')``;
+                    # splitting breaks triggers, CHECK expressions and string values
+                    # containing semicolons.
+                    storage.execute_script(sql)
                 storage.execute(
                     """
                     INSERT INTO schema_migrations
