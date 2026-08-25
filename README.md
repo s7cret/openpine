@@ -165,6 +165,23 @@ bash scripts/release_gate.sh
 
 The backend gate runs compileall, `ruff --select F,E9`, pytest+coverage, duplicate/architecture checks, distribution manifest, release manifest, and import smoke. UI audit/test/build is intentionally separate and should be run from `openpine-ui/`.
 
+### Immutable systemd producer identity
+
+Wheel deployments have no `.git` tree. Before installing `openpine-gateway.service`, render the non-secret producer identity file from the exact materialized stack candidate:
+
+```bash
+install -d -m 0750 /etc/openpine
+python scripts/render_immutable_identity_env.py \
+  --candidate /path/to/stack-candidate.wheels.json \
+  --output /etc/openpine/immutable-identity.env
+systemctl daemon-reload
+systemctl restart openpine-gateway.service
+```
+
+The renderer writes mode `0600` and binds JobV1, OpenPine, Pine2AST, AST2Python, PineLib, and Contracts producer SHAs. `openpine-gateway.service` requires this file after `/opt/openpine/.env`, so stale runtime variables cannot override immutable release identity. Keep API tokens only in `/opt/openpine/.env`; never add tokens to the generated identity file or Git.
+
+A compile submission returning `200 queued` is not final acceptance. Poll `/api/pine/compile/progress/{operation_id}` to `completed` and verify the Pine source has a non-null `active_artifact_id`.
+
 ## 4.0 Coverage Baseline
 
 The backend gate now enforces a 90% package coverage floor after the large CLI strategy/data lifecycle, marketdata provider-adapter, exchange-metadata, stream-adapter, TV-corpus, compare-helper, gateway/storage/execution, Telegram, runtime-adapter, optimizer-route, and gateway-lifespan, state CLI, Telegram polling, storage-adapter, and strategy lifecycle hardening pass. This is still a backend-only baseline for the product repository; later passes should continue raising it while decomposing the remaining legacy CLI, batch, live-runner, and Telegram surfaces.

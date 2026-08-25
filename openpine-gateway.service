@@ -16,7 +16,11 @@ Environment=OPENPINE_WORKER_MAX_RESTARTS=3
 Environment=OPENPINE_WORKER_RESTART_WINDOW_SECONDS=300
 Environment=OPENPINE_WORKER_RESTART_BACKOFF_MAX_SECONDS=30
 EnvironmentFile=/opt/openpine/.env
-ExecStart=/opt/openpine/scripts/run_gateway_systemd.sh
+# Generated from the exact materialized candidate by
+# scripts/render_immutable_identity_env.py. Loaded last so stale runtime env
+# cannot override release producer identities; contains no API token.
+EnvironmentFile=/etc/openpine/immutable-identity.env
+ExecStart=/opt/openpine/scripts/run_gateway_systemd.sh --systemd-env-loaded
 Restart=on-failure
 RestartSec=5
 MemoryAccounting=yes
