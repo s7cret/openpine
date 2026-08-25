@@ -228,7 +228,9 @@ def _coverage_for(
     )
 
 
-def _bind_admitted_artifact_identity(config: MarketDataConfig) -> MarketDataConfig:
+def bind_admitted_marketdata_artifact_identity(
+    config: MarketDataConfig,
+) -> MarketDataConfig:
     identity = config.artifact_identity
     if identity.producer_commit is not None or identity.stack_id is not None:
         return config
@@ -266,7 +268,7 @@ def create_local_marketdata_provider_adapter(
     """Create the canonical marketdata-provider adapter for OpenPine."""
 
     ensure_marketdata_provider_version()
-    cfg = _bind_admitted_artifact_identity(config or MarketDataConfig())
+    cfg = bind_admitted_marketdata_artifact_identity(config or MarketDataConfig())
     if cache_dir is not None:
         cfg = replace(cfg, storage=replace(cfg.storage, cache_dir=Path(cache_dir)))
     provider = create_provider(cfg)

@@ -26,6 +26,7 @@ from marketdata_provider.contracts import (
 
 from openpine.config import DEFAULT_CONFIG
 from openpine.data.models import CandleCommitResult, DataGap
+from openpine.data.provider_adapter import bind_admitted_marketdata_artifact_identity
 from openpine.data.persistent_cache import (
     cache_enabled_by_env,
     default_cache_dir,
@@ -83,9 +84,10 @@ class StorageUnavailableError(DataCoverageError):
 
 def _default_candle_store() -> CandleStore:
     cache_root = DEFAULT_CONFIG.data_cache_root or (DEFAULT_CONFIG.data_dir / "cache")
-    return create_candle_store(
-        MarketDataConfig(storage=StorageConfig(cache_dir=cache_root / "marketdata"))
+    config = MarketDataConfig(
+        storage=StorageConfig(cache_dir=cache_root / "marketdata")
     )
+    return create_candle_store(bind_admitted_marketdata_artifact_identity(config))
 
 
 def _canonical_series(
