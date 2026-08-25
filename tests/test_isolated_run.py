@@ -121,7 +121,29 @@ def test_isolated_run_replays_live_tape_without_importing_generated() -> None:
     assert result["score_ledger_hash"] == live.score_ledger_hash
 
 
-def test_isolated_run_rejects_artifact_without_tape() -> None:
+def test_isolated_run_passes_execution_context_to_canonical_generated_constructor() -> None:
+    source = b"""
+from pinelib.strategy.context import StrategyContext
+class GeneratedStrategy:
+    def __init__(self, params=None, runtime=None, execution_context=None):
+        if execution_context is None:
+            raise RuntimeError("execution context missing")
+        self.ctx = StrategyContext(
+            intent_execution_context=execution_context,
+            intent_strict_production=True,
+        )
+        self.ctx.attach_runtime(runtime)
+    def _process_bar(self, bar, bar_index):
+        if bar_index == 2:
+            self.ctx.entry("L", "long", qty=1)
+"""
+
+    result = _run_artifact(source, bars=_bars(), config=_cfg())
+
+    assert result["intent_tape"][0]["kind"] == "entry"
+
+
+def test_isolated_run_accepts_sealed_empty_intent_batches() -> None:
     source = b"""
 from pinelib.strategy.context import StrategyContext
 class GeneratedStrategy:
@@ -131,8 +153,11 @@ class GeneratedStrategy:
     def _process_bar(self, bar, bar_index):
         return None
 """
-    with pytest.raises(IsolatedRunError, match="live pinelib tape"):
-        _run_artifact(source, bars=_bars(), config=_cfg())
+
+    result = _run_artifact(source, bars=_bars(), config=_cfg())
+
+    assert result["intent_tape"] == []
+    assert result["raw_result"].status == "completed"
 
 
 def test_isolated_run_forwards_trial_params_into_generated_strategy() -> None:
@@ -237,9 +262,7 @@ class GeneratedStrategy:
         config=_cfg(semantic_profile="strict_5x"),
     )
 
-    assert any(
-        event.get("command_id") == "VERIFIED" for event in result["intent_tape"]
-    )
+    assert any(event.get("command_id") == "VERIFIED" for event in result["intent_tape"])
 
 
 def test_isolated_protocol_supports_same_bar_calc_on_order_fills_recalc() -> None:
@@ -266,9 +289,7 @@ class GeneratedStrategy:
 
     result = _run_artifact(source, bars=_bars(), config=cfg)
 
-    first_bar = [
-        event for event in result["intent_tape"] if event["bar_index"] == 0
-    ]
+    first_bar = [event for event in result["intent_tape"] if event["bar_index"] == 0]
     assert [event["kind"] for event in first_bar] == ["entry", "close"]
     assert [event["recalc_iteration"] for event in first_bar] == [0, 1]
 
@@ -817,9 +838,7 @@ def test_capture_generated_source_uses_bytes_not_later_path(
         def get_artifact(self, artifact_id: str, source_id: str) -> dict:
             return {
                 "artifact_dir": str(artifact_dir),
-                **make_sealed_artifact(
-                    {"compile_status": "OK"}, python_code=SOURCE
-                ),
+                **make_sealed_artifact({"compile_status": "OK"}, python_code=SOURCE),
             }
 
     import openpine.artifacts as artifacts
@@ -851,17 +870,13 @@ def test_run_isolated_from_store_captures_then_replays(
 
     monkeypatch.setattr(artifacts, "ArtifactStore", Store)
     bars = _bars()
-    config = _admit_config(
-        SOURCE.encode("utf-8"), bars, _cfg(), stored["generated_artifact"]
-    )
+    config = _admit_config(SOURCE.encode("utf-8"), bars, _cfg(), stored["generated_artifact"])
     result = run_isolated_from_store("src", "art", bars=bars, config=config)
     assert result["intent_tape"][0]["kind"] == "entry"
     assert result["score_ledger_hash"]
 
 
 def test_isolated_indicator_returns_plot_tuples() -> None:
-    from openpine.runtime.isolated_run import run_isolated_indicator
-
     source = (
         "class GeneratedStrategy:\n"
         "    def __init__(self, params=None, runtime=None):\n"
@@ -1014,7 +1029,6 @@ def test_isolated_run_forwards_config_semantic_profile(monkeypatch: pytest.Monke
 
 def test_isolated_indicator_forwards_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     import openpine.runtime.isolated_run as isolated_run
-    from openpine.runtime.isolated_run import run_isolated_indicator
     from openpine.runtime.isolated_worker import IsolatedWorkerError
 
     seen: dict[str, object] = {}
@@ -1031,7 +1045,7 @@ def test_isolated_indicator_forwards_semantic_profile(monkeypatch: pytest.Monkey
 
 def test_isolated_indicator_requires_semantic_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     import openpine.runtime.isolated_run as isolated_run
-    from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_indicator
+    from openpine.runtime.isolated_run import IsolatedRunError
 
     seen: dict[str, object] = {}
 
@@ -1046,8 +1060,6 @@ def test_isolated_indicator_requires_semantic_profile(monkeypatch: pytest.Monkey
 
 
 def test_isolated_indicator_rejects_unknown_profile() -> None:
-    from openpine.runtime.isolated_run import run_isolated_indicator
-
     with pytest.raises(IsolatedRunError, match="semantic_profile"):
         _run_indicator(b"VALUE = 1\n", _bars(), semantic_profile="nope")
 
@@ -1120,7 +1132,6 @@ def test_isolated_run_rejects_unconfirmed_htf_bars(monkeypatch: pytest.MonkeyPat
 
 def test_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch: pytest.MonkeyPatch) -> None:
     import openpine.runtime.isolated_run as isolated_run
-    from openpine.runtime.isolated_run import run_isolated_indicator
     from openpine.runtime.isolated_worker import IsolatedWorkerError
 
     seen: dict[str, object] = {}
@@ -1155,7 +1166,6 @@ def test_isolated_indicator_forwards_confirmed_htf_bars(monkeypatch: pytest.Monk
 
 def test_isolated_indicator_rejects_unconfirmed_htf_bars(monkeypatch: pytest.MonkeyPatch) -> None:
     import openpine.runtime.isolated_run as isolated_run
-    from openpine.runtime.isolated_run import run_isolated_indicator
 
     seen: dict[str, object] = {}
 

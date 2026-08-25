@@ -118,6 +118,7 @@ def execution_data_snapshot_hash(
     end_ms: int,
     finality_policy: str,
     supplemental_bars: Iterable[object] | None = None,
+    canonical_bar_envelopes: Iterable[Mapping[str, object]] | None = None,
 ) -> str:
     """Hash every execution-relevant chart and supplemental bar bit."""
 
@@ -149,9 +150,7 @@ def execution_data_snapshot_hash(
         require_series_identity: bool,
     ) -> dict[str, object]:
         open_time = _integer(_field(bar, "time"), name=f"{label}[{index}].time")
-        close_time = _integer(
-            _field(bar, "time_close"), name=f"{label}[{index}].time_close"
-        )
+        close_time = _integer(_field(bar, "time_close"), name=f"{label}[{index}].time_close")
         if close_time < open_time:
             raise AdmitError(
                 f"data snapshot {label}[{index}] closes before it opens",
@@ -160,18 +159,10 @@ def execution_data_snapshot_hash(
         payload: dict[str, object] = {
             "time": open_time,
             "time_close": close_time,
-            "open": _number_token(
-                _field(bar, "open"), name=f"{label}[{index}].open"
-            ),
-            "high": _number_token(
-                _field(bar, "high"), name=f"{label}[{index}].high"
-            ),
-            "low": _number_token(
-                _field(bar, "low"), name=f"{label}[{index}].low"
-            ),
-            "close": _number_token(
-                _field(bar, "close"), name=f"{label}[{index}].close"
-            ),
+            "open": _number_token(_field(bar, "open"), name=f"{label}[{index}].open"),
+            "high": _number_token(_field(bar, "high"), name=f"{label}[{index}].high"),
+            "low": _number_token(_field(bar, "low"), name=f"{label}[{index}].low"),
+            "close": _number_token(_field(bar, "close"), name=f"{label}[{index}].close"),
             "volume": _number_token(
                 _field(bar, "volume"),
                 name=f"{label}[{index}].volume",
@@ -214,18 +205,43 @@ def execution_data_snapshot_hash(
         for index, bar in enumerate(supplemental_bars or ())
     ]
 
-    return content_hash(
-        {
-            "query": {
-                **query_strings,
-                "start_ms": start,
-                "end_ms": end,
-            },
-            "bars": normalized_bars,
-            "supplemental_bars": normalized_supplemental,
+    payload: dict[str, object] = {
+        "query": {
+            **query_strings,
+            "start_ms": start,
+            "end_ms": end,
         },
-        schema_id=_DATA_SNAPSHOT_SCHEMA,
-    )
+        "bars": normalized_bars,
+        "supplemental_bars": normalized_supplemental,
+    }
+    if canonical_bar_envelopes is not None:
+        envelopes = [dict(item) for item in canonical_bar_envelopes]
+        if len(envelopes) != len(normalized_bars):
+            raise AdmitError(
+                "canonical bar envelopes must align with execution bars",
+                code="DATA_SNAPSHOT_INVALID",
+            )
+        for index, envelope in enumerate(envelopes):
+            try:
+                validate_payload("openpine.marketdata.bar.v2", envelope)
+            except SchemaValidationError as exc:
+                raise AdmitError(
+                    f"canonical bar envelope is invalid: {index}",
+                    code="DATA_SNAPSHOT_INVALID",
+                ) from exc
+            if not verify_content_hash(envelope, schema_id="openpine.marketdata.bar.v2"):
+                raise AdmitError(
+                    f"canonical bar envelope content hash is invalid: {index}",
+                    code="DATA_SNAPSHOT_INVALID",
+                )
+            if envelope.get("open_time_utc_ms") != normalized_bars[index]["time"]:
+                raise AdmitError(
+                    f"canonical bar envelope time differs from execution bar: {index}",
+                    code="DATA_SNAPSHOT_INVALID",
+                )
+        payload["canonical_bar_envelopes"] = envelopes
+
+    return content_hash(payload, schema_id=_DATA_SNAPSHOT_SCHEMA)
 
 
 def generated_artifact_hash(artifact: Mapping[str, object]) -> str:
@@ -317,9 +333,7 @@ def persist_run_identity(
     directory_fd: int | None = None
     try:
         try:
-            directory_info = os.stat(
-                "run-identities", dir_fd=root_fd, follow_symlinks=False
-            )
+            directory_info = os.stat("run-identities", dir_fd=root_fd, follow_symlinks=False)
         except FileNotFoundError:
             try:
                 os.mkdir("run-identities", mode=0o700, dir_fd=root_fd)
@@ -327,9 +341,7 @@ def persist_run_identity(
                 pass
             else:
                 os.fsync(root_fd)
-            directory_info = os.stat(
-                "run-identities", dir_fd=root_fd, follow_symlinks=False
-            )
+            directory_info = os.stat("run-identities", dir_fd=root_fd, follow_symlinks=False)
         if stat.S_ISLNK(directory_info.st_mode):
             raise AdmitError(
                 "run identity directory symlink is forbidden",
@@ -439,6 +451,8 @@ def _run_payload(
     mode: object,
     run_id: str,
     created_at_utc_ms: int,
+    broker_adapter_ref: str | None = None,
+    broker_account_ref: str | None = None,
 ) -> dict[str, object]:
     build = current_build_identity()
     run_mode = parse_run_mode(mode)
@@ -449,9 +463,7 @@ def _run_payload(
         "producer_version": build.contract_version,
         "producer_commit": build.commit,
         "stack_id": deployment.stack_id,
-        "created_at_utc_ms": _integer(
-            created_at_utc_ms, name="created_at_utc_ms"
-        ),
+        "created_at_utc_ms": _integer(created_at_utc_ms, name="created_at_utc_ms"),
         "serializer_id": SERIALIZER_ID,
         "content_hash_alg": CONTENT_HASH_ALG,
         "run_id": run_id,
@@ -471,6 +483,19 @@ def _run_payload(
         "score_policy": run.score_policy,
         "required_capabilities": list(run.required_capabilities),
     }
+    if run_mode.value in {"PAPER", "LIVE"}:
+        if not isinstance(broker_adapter_ref, str) or not broker_adapter_ref:
+            raise AdmitError(
+                "broker adapter reference is required for broker execution",
+                code="BROKER_IDENTITY_REQUIRED",
+            )
+        if not isinstance(broker_account_ref, str) or not broker_account_ref:
+            raise AdmitError(
+                "broker account reference is required for broker execution",
+                code="BROKER_IDENTITY_REQUIRED",
+            )
+        payload["broker_adapter_ref"] = broker_adapter_ref
+        payload["broker_account_ref"] = broker_account_ref
     sealed = seal_content_hash(payload, schema_id="openpine.run.v2")
     validate_payload("openpine.run.v2", sealed)
     return sealed
@@ -486,6 +511,7 @@ def admit_and_persist_run_identity(
     artifact: Mapping[str, object],
     bars: Iterable[object],
     supplemental_bars: Iterable[object] | None = None,
+    canonical_bar_envelopes: Iterable[Mapping[str, object]] | None = None,
     exchange: str,
     market: str,
     symbol: str,
@@ -498,6 +524,8 @@ def admit_and_persist_run_identity(
     score_policy: str,
     required_capabilities: tuple[str, ...],
     created_at_utc_ms: int,
+    broker_adapter_ref: str | None = None,
+    broker_account_ref: str | None = None,
 ) -> dict[str, object]:
     if admitted_manifest.get("manifest_hash") != deployment.stack_manifest_hash:
         raise AdmitError(
@@ -505,13 +533,9 @@ def admit_and_persist_run_identity(
             code="ADMISSION_IDENTITY_INVALID",
         )
     components = admitted_manifest.get("components")
-    openpine_component = (
-        components.get("openpine") if isinstance(components, Mapping) else None
-    )
+    openpine_component = components.get("openpine") if isinstance(components, Mapping) else None
     expected_producer_commit = (
-        openpine_component.get("sha")
-        if isinstance(openpine_component, Mapping)
-        else None
+        openpine_component.get("sha") if isinstance(openpine_component, Mapping) else None
     )
     if (
         not isinstance(expected_producer_commit, str)
@@ -525,6 +549,7 @@ def admit_and_persist_run_identity(
     snapshot_hash = execution_data_snapshot_hash(
         bars=bars,
         supplemental_bars=supplemental_bars,
+        canonical_bar_envelopes=canonical_bar_envelopes,
         exchange=exchange,
         market=market,
         symbol=symbol,
@@ -558,6 +583,8 @@ def admit_and_persist_run_identity(
         mode=mode,
         run_id=run_id,
         created_at_utc_ms=created_at_utc_ms,
+        broker_adapter_ref=broker_adapter_ref,
+        broker_account_ref=broker_account_ref,
     )
     if payload.get("producer_commit") != expected_producer_commit:
         raise AdmitError(
@@ -586,9 +613,7 @@ def derive_execution_context(
     """Bind an admitted stack template to one exact execution run."""
 
     validate_payload("openpine.execution_context.v1", base_context)
-    if not verify_content_hash(
-        base_context, schema_id="openpine.execution_context.v1"
-    ):
+    if not verify_content_hash(base_context, schema_id="openpine.execution_context.v1"):
         raise AdmitError(
             "base execution context content hash is invalid",
             code="EXECUTION_CONTEXT_INVALID",
@@ -656,6 +681,7 @@ def execution_context_from_admission(
     mintick: str = "0.01",
     pointvalue: str = "1",
     session_policy: str = "24x7",
+    end_policy: str = "LIQUIDATE_ON_LAST_BAR",
 ) -> dict[str, object]:
     """Construct one sealed execution context from exact deployment evidence."""
 
@@ -774,7 +800,7 @@ def execution_context_from_admission(
         "finality_policy": "CLOSED_BAR_ONLY",
         "warmup_policy": "CALC_ONLY",
         "score_policy": "ALL_BARS",
-        "end_policy": "LIQUIDATE_ON_LAST_BAR",
+        "end_policy": end_policy,
         "capabilities": sorted(deployment.capabilities & _EXECUTION_CAPABILITIES),
         "producer_commits": producer_commits,
         "policy_registry_version": "openpine.policies.rc4.v1",
@@ -800,6 +826,8 @@ def bind_isolated_execution(
     bar_envelopes: Iterable[Mapping[str, object]],
     supplemental_bars: Iterable[object] | None,
     created_at_utc_ms: int,
+    broker_adapter_ref: str | None = None,
+    broker_account_ref: str | None = None,
 ) -> dict[str, object]:
     """Persist one admitted run and attach exact protocol inputs to its config."""
 
@@ -819,6 +847,7 @@ def bind_isolated_execution(
         artifact=artifact,
         bars=bar_list,
         supplemental_bars=supplemental_bars,
+        canonical_bar_envelopes=envelopes,
         exchange=str(getattr(config, "exchange")),
         market=str(getattr(config, "market_type")),
         symbol=str(getattr(config, "symbol")),
@@ -837,6 +866,8 @@ def bind_isolated_execution(
             "intent_tape_v2",
         ),
         created_at_utc_ms=created_at_utc_ms,
+        broker_adapter_ref=broker_adapter_ref,
+        broker_account_ref=broker_account_ref,
     )
     first = envelopes[0]
     execution_context = execution_context_from_admission(
@@ -854,6 +885,11 @@ def bind_isolated_execution(
         timeframe=str(getattr(config, "timeframe")),
         semantic_profile=str(getattr(config, "semantic_profile")),
         created_at_utc_ms=created_at_utc_ms,
+        end_policy=(
+            "PRESERVE_OPEN_POSITIONS"
+            if parse_run_mode(mode).value == "PAPER"
+            else "LIQUIDATE_ON_LAST_BAR"
+        ),
     )
     generated = artifact.get("generated_artifact")
     assert isinstance(generated, Mapping)

@@ -27,9 +27,7 @@ def _eval(source: bytes, **kwargs):
 
 
 def _session(source, _context, instrument_id, manifest, **kwargs):
-    artifact = make_sealed_artifact(python_code=source.decode("utf-8"))[
-        "generated_artifact"
-    ]
+    artifact = make_sealed_artifact(python_code=source.decode("utf-8"))["generated_artifact"]
     context = execution_context(
         generated_artifact_hash=artifact["content_hash"],
         emitted_module_hash=artifact["emitted_module_hash"],
@@ -465,6 +463,43 @@ class GeneratedStrategy:
     assert [event["kind"] for event in result["intent_tape"]][:2] == ["entry", "close"]
 
 
+def test_interactive_worker_reports_eof_terminated_bootstrap_error() -> None:
+    payload = {
+        "ok": False,
+        "error_code": "BOOTSTRAP_ERROR",
+        "error": "pine runtime: synthetic failure",
+    }
+    proc = subprocess.Popen(  # noqa: S603
+        [
+            sys.executable,
+            "-c",
+            "import json,sys; sys.stdout.write(json.dumps(%r))" % payload,
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    session = object.__new__(InteractiveWorkerSession)
+    session.proc = proc
+    session.unit_name = "openpine-worker-eof-error-test"
+    session.timeout_s = 2.0
+    session._closed = False
+    session._stdout_buffer = bytearray()
+    session.bytes_received = 0
+    try:
+        with pytest.raises(
+            IsolatedWorkerError,
+            match="BOOTSTRAP_ERROR: pine runtime: synthetic failure",
+        ):
+            session._read_message()
+    finally:
+        proc.wait(timeout=2)
+        for pipe in (proc.stdin, proc.stdout, proc.stderr):
+            if pipe is not None and not pipe.closed:
+                pipe.close()
+
+
 def test_interactive_worker_streams_more_than_ten_megabytes_across_bounded_messages() -> None:
     class Sink:
         closed = False
@@ -688,9 +723,7 @@ def test_trusted_stage_cleanup_removes_partial_copy(monkeypatch, tmp_path: Path)
 
 def test_worker_handshake_rejects_unknown_stack_and_profile() -> None:
     with pytest.raises(IsolatedWorkerError, match="stack_id"):
-        evaluate_artifact(
-            b"VALUE = 1\n", admitted_manifest=admitted_manifest(), stack_id="wrong"
-        )
+        evaluate_artifact(b"VALUE = 1\n", admitted_manifest=admitted_manifest(), stack_id="wrong")
     with pytest.raises(IsolatedWorkerError, match="semantic_profile"):
         evaluate_artifact(
             b"VALUE = 1\n",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -198,6 +199,7 @@ class StrategyBarFanout:
         )
         job = Job(
             job_type=job_type,
+            id=f"sjob_{hashlib.sha256(idempotency_key.encode()).hexdigest()[:24]}",
             strategy_id=strategy.strategy_id,
             idempotency_key=idempotency_key,
             serialization_key=strategy.strategy_id,
@@ -212,6 +214,7 @@ class StrategyBarFanout:
                 "bar_close_time": bar.time_close,
                 "source": self.config.source,
                 "mtf_series": strategy.mtf_series,
+                "semantic_profile": strategy.semantic_profile,
             },
         )
         return self.scheduler.enqueue(job)
@@ -225,6 +228,8 @@ def _enabled_strategies_for_market(
         strategy
         for strategy in strategies
         if strategy.enabled
+        and not strategy.archived
+        and strategy.status == "running"
         and strategy.exchange.lower() == market_key.exchange
         and strategy.market_type.lower() == market_key.market_type
         and strategy.symbol.upper() == market_key.symbol

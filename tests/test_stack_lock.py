@@ -82,7 +82,7 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     siblings = lock["components"][1:]
     assert all(re.fullmatch(r"(?!0{40})[0-9a-f]{40}", item["commit"]) for item in siblings)
     expected_tree_sha256 = {
-        "openpine": "8009ef2fe5a7bbb09357ec60dfc6a13ea0315428589c404c62aed26443d8af1f",
+        "openpine": "6f8834528b44c0de829eb98be1ec16bdd4333fa8fe5c26e55bb5815a8bdc9af6",
         "pine2ast": "6f8b72ac952b3f2e12b72a468c14bdabb30d0be298f95e7279176121df03ef64",
         "ast2python": "ed9c6c90ce64cc6df5851365e33c034ded2d10783f74c020603e798c5828f244",
         "pinelib": "c4ae65891b152a1ecdfce123704a43d1611dc923912292399c4d782cbbd713c1",

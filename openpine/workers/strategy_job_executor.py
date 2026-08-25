@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import threading
 from collections.abc import Callable
+from contextlib import nullcontext
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
@@ -109,6 +111,8 @@ class StrategyJobExecutor:
         runtime_data_provider: Any | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
         htf_timeframe: str | None = None,
+        execution_lease: Callable[[str], Any] | None = None,
+        publication_lease: Callable[[str], Any] | None = None,
     ) -> None:
         self.registry = registry
         self.orchestrator = orchestrator
@@ -121,9 +125,16 @@ class StrategyJobExecutor:
         self.runtime_data_provider = runtime_data_provider
         self.htf_bars = htf_bars
         self.htf_timeframe = htf_timeframe
+        self.execution_lease = execution_lease
+        self.publication_lease = publication_lease
         self._job_htf_timeframe: str | None = None
         self._job_mtf_series: tuple[Any, ...] | None = None
         self._job_id: str | None = None
+        self._job_type: JobType | None = None
+        self._job_run_identity: dict[str, object] | None = None
+        self._job_broker_account_ref: str | None = None
+        self._job_paper_epoch_start: int | None = None
+        self._process_lock = threading.RLock()
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
     def _requested_htf_timeframe(self) -> str | None:
@@ -131,7 +142,9 @@ class StrategyJobExecutor:
             return self._job_htf_timeframe
         return self.htf_timeframe
 
-    def _confirmed_htf_bars(self, strategy: StrategyInstance, bar: Bar):
+    def _confirmed_htf_bars(self, strategy: StrategyInstance, bars: list[Bar]):
+        if not bars:
+            raise RuntimeError("strategy execution requires chart bars")
         if self.htf_bars is not None:
             return self.htf_bars
         from openpine.runtime.isolated_run import _confirmed_htf_bars_for_timeframe
@@ -149,42 +162,44 @@ class StrategyJobExecutor:
             )
         if requests:
             return confirmed_mtf_bars_for_requests(
-                chart_bars=[bar],
+                chart_bars=bars,
                 chart_symbol=strategy.symbol,
                 chart_timeframe=strategy.timeframe,
                 requests=requests,
                 load_bars=lambda symbol, timeframe: self._load_mtf_provider_bars(
-                    strategy, bar, symbol, timeframe
+                    strategy, bars, symbol, timeframe
                 ),
             )
         fetched = None
         if requested and str(requested) != str(strategy.timeframe):
-            fetched = self._load_htf_provider_bars(strategy, bar, str(requested))
+            fetched = self._load_htf_provider_bars(strategy, bars, str(requested))
         return _confirmed_htf_bars_for_timeframe(
-            chart_bars=[bar],
+            chart_bars=bars,
             symbol=str(strategy.symbol).upper(),
             chart_timeframe=str(strategy.timeframe),
             requested_timeframe=requested,
             fetched_htf_bars=fetched,
         )
 
-    def _load_htf_provider_bars(self, strategy: StrategyInstance, bar: Bar, timeframe: str):
-        return self._load_mtf_provider_bars(
-            strategy, bar, strategy.symbol, timeframe
-        )
+    def _load_htf_provider_bars(self, strategy: StrategyInstance, bars: list[Bar], timeframe: str):
+        return self._load_mtf_provider_bars(strategy, bars, strategy.symbol, timeframe)
 
     def _load_mtf_provider_bars(
         self,
         strategy: StrategyInstance,
-        bar: Bar,
+        bars: list[Bar],
         symbol: str,
         timeframe: str,
     ):
-        start_ms = int(bar.time)
-        end_ms = getattr(bar, "time_close", None)
+        if not bars:
+            raise RuntimeError("MTF execution requires chart bars")
+        first_bar = bars[0]
+        last_bar = bars[-1]
+        start_ms = int(first_bar.time)
+        end_ms = getattr(last_bar, "time_close", None)
         tf = parse_timeframe(timeframe)
         if end_ms is None:
-            end_ms = start_ms + (tf.duration_ms or 60_000)
+            end_ms = int(last_bar.time) + (tf.duration_ms or 60_000)
         query = BarQuery(
             instrument=InstrumentKey(
                 exchange=strategy.exchange.lower(),
@@ -205,13 +220,57 @@ class StrategyJobExecutor:
     def process(self, job: Job) -> StrategyJobExecutionResult:
         """Process one queued strategy bar job and update scheduler status."""
 
+        with self._process_lock:
+            return self._process_serialized(job)
+
+    def _process_serialized(self, job: Job) -> StrategyJobExecutionResult:
+        """Execute one job while mutable job-local runtime bindings are exclusive."""
+
         try:
             self._validate_job(job)
             self._job_id = job.id
+            self._job_type = job.job_type
             payload = _job_payload(job)
             requested = payload.get("htf_timeframe")
             self._job_htf_timeframe = str(requested) if requested else None
             strategy = self.registry.get_strategy(payload["strategy_id"])
+            expected_job_type = _strategy_job_type(strategy.mode)
+            if job.job_type != expected_job_type:
+                raise RuntimeError(
+                    "strategy job type does not match the stored execution mode"
+                )
+            expected_input = {
+                "artifact_id": strategy.artifact_id,
+                "params_hash": strategy.params_hash,
+                "timeframe": parse_timeframe(strategy.timeframe).canonical,
+                "instrument_key": (
+                    f"{strategy.exchange.lower()}:{strategy.market_type.lower()}:"
+                    f"{strategy.symbol.upper()}:{strategy.price_type.lower()}"
+                ),
+                "semantic_profile": strategy.semantic_profile,
+            }
+            strict_identity = {
+                "artifact_id",
+                "params_hash",
+                "semantic_profile",
+            } <= payload.keys()
+            if strict_identity and (
+                not strategy.enabled
+                or strategy.archived
+                or strategy.status != "running"
+            ):
+                raise RuntimeError("strategy is not active for delegated execution")
+            if strict_identity:
+                for field, expected in expected_input.items():
+                    if field not in payload:
+                        continue
+                    actual = payload[field]
+                    if field == "instrument_key" and str(actual).count(":") == 2:
+                        actual = f"{actual}:{strategy.price_type.lower()}"
+                    if actual != expected:
+                        raise RuntimeError(
+                            f"strategy job {field} does not match stored strategy identity"
+                        )
             if "mtf_series" in payload:
                 from openpine.runtime.mtf import admitted_mtf_requests
 
@@ -243,36 +302,56 @@ class StrategyJobExecutor:
                 return result
 
             self.scheduler.mark_running(job.id)
-            resume_state = self.state_store.load_runtime_snapshot(
-                strategy.strategy_id,
-                artifact_id=strategy.artifact_id,
-                params_hash=strategy.params_hash,
-                instrument_key=state_key["instrument_key"],
-                timeframe=state_key["timeframe"],
-                at_or_before_bar_time=bar.time - 1,
+            execution_bars = (
+                self._load_paper_replay_bars(strategy, bar)
+                if job.job_type == JobType.PAPER_BAR_PROCESS
+                else [bar]
             )
-            runtime_result = self._run_strategy(strategy, bar, resume_state)
+            execution = (
+                self.execution_lease(job.id)
+                if self.execution_lease is not None
+                else nullcontext()
+            )
+            with execution:
+                runtime_result = self._run_strategy(strategy, execution_bars, None)
             status = str(getattr(runtime_result, "status", "completed")).lower()
             if status not in {"ok", "completed"}:
                 raise RuntimeError(f"strategy runtime failed with status={status}")
 
-            resume_out = getattr(runtime_result, "resume_state", None)
-            if resume_out is None:
-                resume_out = getattr(
-                    getattr(runtime_result, "raw_result", None), "resume_state", None
-                )
-            snapshot = self.state_store.save_runtime_snapshot(
-                strategy_id=strategy.strategy_id,
-                artifact_id=strategy.artifact_id,
-                params_hash=strategy.params_hash,
-                instrument_key=state_key["instrument_key"],
-                timeframe=state_key["timeframe"],
-                runtime_state=resume_out,
-                bar_time=bar.time,
-                reason=f"{job.job_type.value}",
-                failed_bar=False,
+            if job.job_type == JobType.PAPER_BAR_PROCESS:
+                snapshot_state: object = self._paper_evaluation_snapshot(job, execution_bars, bar)
+            else:
+                snapshot_state = getattr(runtime_result, "resume_state", None)
+                if snapshot_state is None:
+                    snapshot_state = getattr(
+                        getattr(runtime_result, "raw_result", None),
+                        "resume_state",
+                        None,
+                    )
+            publication = (
+                self.publication_lease(job.id)
+                if self.publication_lease is not None
+                else nullcontext()
             )
-            trades_recorded = self._record_ledger(strategy, job, bar, runtime_result)
+            with publication:
+                trades_recorded = self._record_ledger(
+                    strategy, job, bar, runtime_result
+                )
+                snapshot = self.state_store.save_runtime_snapshot(
+                    strategy_id=strategy.strategy_id,
+                    artifact_id=strategy.artifact_id,
+                    params_hash=strategy.params_hash,
+                    instrument_key=state_key["instrument_key"],
+                    timeframe=state_key["timeframe"],
+                    runtime_state=snapshot_state,
+                    bar_time=bar.time,
+                    reason=f"{job.job_type.value}",
+                    failed_bar=False,
+                )
+                if job.job_type == JobType.PAPER_BAR_PROCESS and snapshot is None:
+                    raise RuntimeError(
+                        "paper evaluation snapshot publication is required"
+                    )
             result = StrategyJobExecutionResult(
                 job_id=job.id,
                 strategy_id=strategy.strategy_id,
@@ -296,6 +375,10 @@ class StrategyJobExecutor:
             self._job_htf_timeframe = None
             self._job_mtf_series = None
             self._job_id = None
+            self._job_type = None
+            self._job_run_identity = None
+            self._job_broker_account_ref = None
+            self._job_paper_epoch_start = None
 
     def _validate_job(self, job: Job) -> None:
         if job.job_type not in {
@@ -306,16 +389,12 @@ class StrategyJobExecutor:
             raise ValueError(f"unsupported strategy job type: {job.job_type}")
         _job_payload(job)
 
-    def _load_target_bar(
-        self, strategy: StrategyInstance, payload: dict[str, Any]
-    ) -> Bar:
+    def _load_target_bar(self, strategy: StrategyInstance, payload: dict[str, Any]) -> Bar:
         instrument = _instrument_from_payload(strategy, payload)
         timeframe = parse_timeframe(str(payload["timeframe"]))
         bar_time = int(payload["bar_time"])
         duration_ms = timeframe.duration_ms or 0
-        recorded_close_time = int(
-            payload.get("bar_close_time") or bar_time + duration_ms
-        )
+        recorded_close_time = int(payload.get("bar_close_time") or bar_time + duration_ms)
         bar_close_time = max(recorded_close_time, bar_time + duration_ms)
         query = BarQuery(
             instrument=instrument,
@@ -333,21 +412,113 @@ class StrategyJobExecutor:
             )
         return bars[0]
 
+    def _load_paper_replay_bars(self, strategy: StrategyInstance, target_bar: Bar) -> list[Bar]:
+        duration_ms = target_bar.timeframe.duration_ms
+        if duration_ms is None or duration_ms <= 0:
+            raise RuntimeError("paper replay requires a fixed-duration timeframe")
+        activation_ms = self._paper_epoch_start(strategy)
+        if not callable(getattr(self.registry, "execution_epoch_started_at", None)):
+            activation_ms = min(activation_ms, int(target_bar.time))
+            self._job_paper_epoch_start = activation_ms
+        replay_start = ((activation_ms + duration_ms - 1) // duration_ms) * duration_ms
+        if replay_start > target_bar.time:
+            raise RuntimeError("target bar predates the strategy activation boundary")
+        replay_end = target_bar.time + duration_ms
+        bars: list[Bar] = []
+        for open_time in range(replay_start, replay_end, duration_ms):
+            query = BarQuery(
+                instrument=target_bar.instrument,
+                timeframe=target_bar.timeframe,
+                start_ms=open_time,
+                end_ms=open_time + duration_ms,
+                source="storage",
+                gap_policy="fail",
+            )
+            loaded = list(self.orchestrator.get_bars(query))
+            if len(loaded) != 1 or int(loaded[0].time) != open_time or not bool(loaded[0].closed):
+                raise RuntimeError(
+                    "paper replay requires every closed canonical bar from activation"
+                )
+            bars.append(loaded[0])
+        return bars
+
+    def _paper_epoch_start(self, strategy: StrategyInstance) -> int:
+        if self._job_paper_epoch_start is not None:
+            return self._job_paper_epoch_start
+        loader = getattr(self.registry, "execution_epoch_started_at", None)
+        persisted = (
+            loader(strategy.strategy_id, mode="paper") if callable(loader) else None
+        )
+        raw_epoch = persisted if isinstance(persisted, int) and not isinstance(persisted, bool) else strategy.updated_at
+        epoch = max(0, int(raw_epoch))
+        self._job_paper_epoch_start = epoch
+        return epoch
+
+    def _paper_evaluation_snapshot(
+        self, job: Job, replay_bars: list[Bar], target_bar: Bar
+    ) -> dict[str, object]:
+        identity = self._job_run_identity or {}
+        return {
+            "schema_version": "openpine.paper.evaluation.v1",
+            "resume_policy": "deterministic_replay",
+            "paper_epoch_policy": "reset_on_activation",
+            "run_id": str(identity.get("run_id") or f"strategy-job-{job.id}"),
+            "run_hash": identity.get("content_hash"),
+            "data_snapshot_hash": identity.get("data_snapshot_hash"),
+            "broker_adapter_ref": identity.get("broker_adapter_ref"),
+            "broker_account_ref": identity.get("broker_account_ref"),
+            "replay_start_bar_time": int(replay_bars[0].time),
+            "processed_bar_time": int(target_bar.time),
+            "bars_replayed": len(replay_bars),
+        }
+
     def _stamped_artifact_source(self, strategy: StrategyInstance) -> bytes:
         key = (str(strategy.pine_id), str(strategy.artifact_id))
         stamped = self._stamped_sources.get(key)
         if stamped:
             return stamped
-        stamped = capture_generated_source(strategy.pine_id, strategy.artifact_id)
+        if self.artifact_store is None:
+            stamped = capture_generated_source(strategy.pine_id, strategy.artifact_id)
+        else:
+            from openpine.run_identity import verified_generated_source
+
+            artifact = self.artifact_store.get_artifact(strategy.artifact_id, strategy.pine_id)
+            stamped = verified_generated_source(artifact)
         if not stamped:
             raise RuntimeError("captured artifact source is missing")
         self._stamped_sources[key] = stamped
         return stamped
 
+    def _canonical_envelopes_for_bars(self, bars: list[Bar]) -> tuple[dict[str, object], ...]:
+        envelopes: list[dict[str, object]] = []
+        for bar in bars:
+            duration_ms = bar.timeframe.duration_ms or 0
+            close_time = getattr(bar, "time_close", None)
+            query = BarQuery(
+                instrument=bar.instrument,
+                timeframe=bar.timeframe,
+                start_ms=bar.time,
+                end_ms=max(int(close_time or 0), bar.time + duration_ms),
+                source="storage",
+                gap_policy="fail",
+            )
+            series = self.orchestrator.load_bars(query)
+            canonical = getattr(series, "canonical_bars", None)
+            loaded = list(getattr(series, "bars", ()))
+            if (
+                not isinstance(canonical, tuple)
+                or len(canonical) != 1
+                or len(loaded) != 1
+                or int(loaded[0].time) != int(bar.time)
+            ):
+                raise RuntimeError("canonical marketdata bar envelope is required")
+            envelopes.append(dict(canonical[0]))
+        return tuple(envelopes)
+
     def _bind_isolated_config(
         self,
         strategy: StrategyInstance,
-        bar: Bar,
+        bars: list[Bar],
         config: BacktestRunConfig,
         htf_bars,
     ) -> None:
@@ -357,19 +528,10 @@ class StrategyJobExecutor:
         from openpine.run_identity import bind_isolated_execution
         from openpine.runtime.admitted_manifest import load_admitted_manifest
 
-        duration_ms = bar.timeframe.duration_ms or 0
-        query = BarQuery(
-            instrument=bar.instrument,
-            timeframe=bar.timeframe,
-            start_ms=bar.time,
-            end_ms=max(bar.time_close, bar.time + duration_ms),
-            source="storage",
-            gap_policy="fail",
-        )
-        series = self.orchestrator.load_bars(query)
-        bar_envelopes = getattr(series, "canonical_bars", None)
-        if not isinstance(bar_envelopes, tuple) or len(bar_envelopes) != 1:
-            raise RuntimeError("canonical marketdata bar envelope is required")
+        if not bars:
+            raise RuntimeError("strategy job execution requires chart bars")
+        last_bar = bars[-1]
+        bar_envelopes = self._canonical_envelopes_for_bars(bars)
 
         runtime_config = OpenPineConfig.load()
         manifest_path = runtime_config.deployment_manifest
@@ -378,33 +540,54 @@ class StrategyJobExecutor:
             raise RuntimeError("strategy job execution requires an admitted deployment")
         store = self.artifact_store or ArtifactStore()
         artifact = store.get_artifact(strategy.artifact_id, strategy.pine_id)
-        bind_isolated_execution(
+        deployment = load_active_deployment_identity(manifest_path, wheelhouse)
+        broker_adapter_ref = None
+        broker_account_ref = None
+        mode = "backtest"
+        if self._job_type == JobType.PAPER_BAR_PROCESS:
+            mode = "paper"
+            broker_adapter_ref, broker_account_ref = _paper_broker_identity(
+                strategy,
+                deployment,
+                paper_epoch_start=self._paper_epoch_start(strategy),
+            )
+            self._job_broker_account_ref = broker_account_ref
+        elif self._job_type == JobType.LIVE_BAR_PROCESS:
+            raise RuntimeError("LIVE_RC_BLOCKED")
+        self._job_run_identity = bind_isolated_execution(
             config,
             data_dir=runtime_config.data_dir,
-            deployment=load_active_deployment_identity(manifest_path, wheelhouse),
+            deployment=deployment,
             admitted_manifest=load_admitted_manifest(manifest_path),
-            mode="backtest",
-            run_id=f"strategy-job-{self._job_id or bar.time}",
+            mode=mode,
+            run_id=f"strategy-job-{self._job_id or last_bar.time}",
             strategy_id=strategy.strategy_id,
             artifact=artifact,
-            bars=[bar],
+            bars=bars,
             bar_envelopes=bar_envelopes,
             supplemental_bars=htf_bars,
-            created_at_utc_ms=max(0, int(bar.time_close)),
+            created_at_utc_ms=max(0, int(last_bar.time_close)),
+            broker_adapter_ref=broker_adapter_ref,
+            broker_account_ref=broker_account_ref,
         )
 
     def _run_strategy(
-        self, strategy: StrategyInstance, bar: Bar, resume_state: Any | None
+        self, strategy: StrategyInstance, bars: Bar | list[Bar], resume_state: Any | None
     ) -> Any:
-        config = _build_bar_run_config(strategy, bar)
+        if isinstance(bars, Bar):
+            bars = [bars]
+        if not bars:
+            raise RuntimeError("strategy execution requires chart bars")
+        config = _build_bar_run_config(strategy, bars, artifact_store=self.artifact_store)
         params = _strategy_params(strategy)
-        htf_bars = self._confirmed_htf_bars(strategy, bar)
+        htf_bars = self._confirmed_htf_bars(strategy, bars)
         if self.strategy_loader is None:
             source = self._stamped_artifact_source(strategy)
-            self._bind_isolated_config(strategy, bar, config, htf_bars)
+            if self._job_id is not None:
+                self._bind_isolated_config(strategy, bars, config, htf_bars)
             return self.runtime_adapter.run_isolated(
                 source,
-                [bar],
+                bars,
                 config,
                 resume_state=resume_state,
                 htf_bars=htf_bars,
@@ -416,13 +599,13 @@ class StrategyJobExecutor:
             runtime_data_provider = create_local_runtime_data_provider_adapter(
                 exchange=strategy.exchange.lower(),
                 market=strategy.market_type.lower(),
-                prefetch_end_ms=bar.time_close,
+                prefetch_end_ms=bars[-1].time_close,
             )
         strategy_class.runtime_data_provider = runtime_data_provider
         strategy_class.runtime_intrabar_provider = runtime_data_provider
         return self.runtime_adapter.run(
             strategy_class,
-            [bar],
+            bars,
             config,
             params=params,
             execution_backend=None,
@@ -442,9 +625,7 @@ class StrategyJobExecutor:
         if job.job_type == JobType.OBSERVE_BAR_PROCESS:
             return 0
         source = (
-            LedgerSource.LIVE
-            if job.job_type == JobType.LIVE_BAR_PROCESS
-            else LedgerSource.PAPER
+            LedgerSource.LIVE if job.job_type == JobType.LIVE_BAR_PROCESS else LedgerSource.PAPER
         )
         raw_result = getattr(runtime_result, "raw_result", runtime_result)
         resume_state = getattr(runtime_result, "resume_state", None) or getattr(
@@ -474,6 +655,7 @@ class StrategyJobExecutor:
         self.ledger.upsert_position(
             StrategyPosition(
                 strategy_id=strategy.strategy_id,
+                account_id=self._job_broker_account_ref or _paper_account_ref(strategy, self._paper_epoch_start(strategy)),
                 exchange=strategy.exchange,
                 market_type=strategy.market_type,
                 symbol=strategy.symbol,
@@ -483,8 +665,7 @@ class StrategyJobExecutor:
                 side=side,
                 qty=abs(signed_size),
                 avg_price=_float_or_none(getattr(position, "avg_price", None)),
-                realized_pnl=_float_or_none(getattr(position, "realized_profit", None))
-                or 0.0,
+                realized_pnl=_float_or_none(getattr(position, "realized_profit", None)) or 0.0,
                 unrealized_pnl=_float_or_none(getattr(position, "open_profit", None)),
                 last_bar_time=bar.time,
             )
@@ -501,16 +682,23 @@ class StrategyJobExecutor:
         recorded = 0
         for trade in closed:
             exit_time = getattr(trade, "exit_time", None)
-            if (
-                exit_time is None
-                or int(exit_time) < bar.time
-                or int(exit_time) > bar.time_close
-            ):
+            if exit_time is None or int(exit_time) > bar.time_close:
+                continue
+            if source == LedgerSource.PAPER:
+                if int(exit_time) < self._paper_epoch_start(strategy):
+                    continue
+            elif int(exit_time) < bar.time:
                 continue
             self.ledger.record_trade(
                 StrategyTrade(
-                    trade_id=_ledger_trade_id(strategy.strategy_id, source, trade),
+                    trade_id=_ledger_trade_id(
+                        strategy.strategy_id,
+                        self._job_broker_account_ref or _paper_account_ref(strategy, self._paper_epoch_start(strategy)),
+                        source,
+                        trade,
+                    ),
                     strategy_id=strategy.strategy_id,
+                    account_id=self._job_broker_account_ref or _paper_account_ref(strategy, self._paper_epoch_start(strategy)),
                     exchange=strategy.exchange,
                     market_type=strategy.market_type,
                     symbol=strategy.symbol,
@@ -529,14 +717,8 @@ class StrategyJobExecutor:
                     gross_pnl=_float_or_none(getattr(trade, "profit", None)),
                     net_pnl=_float_or_none(getattr(trade, "profit", None)),
                     fee=(
-                        (
-                            _float_or_none(getattr(trade, "commission_entry", None))
-                            or 0.0
-                        )
-                        + (
-                            _float_or_none(getattr(trade, "commission_exit", None))
-                            or 0.0
-                        )
+                        (_float_or_none(getattr(trade, "commission_entry", None)) or 0.0)
+                        + (_float_or_none(getattr(trade, "commission_exit", None)) or 0.0)
                     ),
                     bars_held=getattr(trade, "bars_held", None),
                     metadata={"job_id": getattr(trade, "id", None)},
@@ -555,9 +737,7 @@ def _job_payload(job: Job) -> dict[str, Any]:
     return payload
 
 
-def _instrument_from_payload(
-    strategy: StrategyInstance, payload: dict[str, Any]
-) -> InstrumentKey:
+def _instrument_from_payload(strategy: StrategyInstance, payload: dict[str, Any]) -> InstrumentKey:
     raw = str(payload.get("instrument_key") or "")
     parts = raw.split(":")
     if len(parts) >= 3:
@@ -567,6 +747,61 @@ def _instrument_from_payload(
         market=strategy.market_type.lower(),
         symbol=strategy.symbol.upper(),
     )
+
+
+def _paper_broker_identity(
+    strategy: StrategyInstance,
+    deployment: Any,
+    *,
+    paper_epoch_start: int,
+) -> tuple[str, str]:
+    wheel_identities = getattr(deployment, "wheel_identities", ())
+    engine_identity = next(
+        (
+            (str(name).replace("_", "-"), str(version), str(digest))
+            for name, version, digest in wheel_identities
+            if str(name).replace("_", "-") == "backtest-engine"
+        ),
+        None,
+    )
+    if engine_identity is None:
+        raise RuntimeError("admitted backtest-engine wheel identity is required")
+    name, version, digest = engine_identity
+    if not version or not digest.startswith("sha256:") or len(digest) != 71:
+        raise RuntimeError("admitted backtest-engine wheel identity is invalid")
+    values = (
+        strategy.strategy_id,
+        strategy.artifact_id,
+        strategy.params_hash,
+        str(paper_epoch_start),
+    )
+    if any(not isinstance(value, str) or not value for value in values):
+        raise RuntimeError("paper account identity is incomplete")
+    return (
+        f"urn:openpine:paper-broker:{name}:{version}:{digest}",
+        _paper_account_ref(strategy, paper_epoch_start),
+    )
+
+
+def _paper_account_ref(
+    strategy: StrategyInstance, paper_epoch_start: int
+) -> str:
+    return (
+        "urn:openpine:paper-account:"
+        f"{strategy.strategy_id}:{strategy.artifact_id}:"
+        f"{strategy.params_hash}:{int(paper_epoch_start)}"
+    )
+
+
+def _strategy_job_type(mode: str) -> JobType:
+    normalized = str(mode).lower()
+    if normalized == "live":
+        return JobType.LIVE_BAR_PROCESS
+    if normalized == "observe":
+        return JobType.OBSERVE_BAR_PROCESS
+    if normalized == "paper":
+        return JobType.PAPER_BAR_PROCESS
+    raise RuntimeError(f"unsupported stored strategy execution mode: {mode}")
 
 
 def _state_key(strategy: StrategyInstance, bar: Bar) -> dict[str, dict[str, str]]:
@@ -589,8 +824,24 @@ def _strategy_params(strategy: StrategyInstance) -> dict[str, Any]:
     return loaded if isinstance(loaded, dict) else {}
 
 
-def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunConfig:
-    decl_args = normalize_strategy_declaration_args(_artifact_declaration_args(strategy))
+def _build_bar_run_config(
+    strategy: StrategyInstance,
+    bars: Bar | list[Bar],
+    *,
+    artifact_store: Any | None = None,
+) -> BacktestRunConfig:
+    if isinstance(bars, Bar):
+        bars = [bars]
+    if not bars:
+        raise RuntimeError("strategy execution requires chart bars")
+    first_bar = bars[0]
+    last_bar = bars[-1]
+    raw_declaration_args = (
+        _artifact_declaration_args(strategy)
+        if artifact_store is None
+        else _artifact_declaration_args(strategy, artifact_store=artifact_store)
+    )
+    decl_args = normalize_strategy_declaration_args(raw_declaration_args)
     commission_type = {
         "cash_per_order": "fixed_per_order",
         "cash_per_contract": "fixed_per_contract",
@@ -600,11 +851,13 @@ def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunCo
     )
     kwargs = {
         "symbol": strategy.symbol,
-        "timeframe": bar.timeframe.canonical,
+        "timeframe": first_bar.timeframe.canonical,
         "exchange": strategy.exchange.lower(),
         "market_type": strategy.market_type.lower(),
-        "start_time": bar.time,
-        "end_time": bar.time_close,
+        "start_time": first_bar.time,
+        "end_time": last_bar.time_close,
+        "score_start_time": first_bar.time,
+        "score_end_time": last_bar.time_close,
         "initial_capital": decl_args.get("initial_capital", 10_000.0),
         "default_qty_type": decl_args.get("default_qty_type", "fixed"),
         "default_qty_value": decl_args.get("default_qty_value", 1.0),
@@ -616,15 +869,11 @@ def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunCo
         "pyramiding": decl_args.get("pyramiding", 0),
         "margin_long": decl_args.get("margin_long", 100.0),
         "margin_short": decl_args.get("margin_short", 100.0),
-        "process_orders_on_close": bool(
-            decl_args.get("process_orders_on_close", False)
-        ),
+        "process_orders_on_close": bool(decl_args.get("process_orders_on_close", False)),
         "calc_on_order_fills": bool(decl_args.get("calc_on_order_fills", False)),
         "calc_on_every_tick": bool(decl_args.get("calc_on_every_tick", False)),
         "use_bar_magnifier": bool(decl_args.get("use_bar_magnifier", False)),
-        "qty_step": default_qty_step(
-            strategy.exchange, strategy.market_type, strategy.symbol
-        ),
+        "qty_step": default_qty_step(strategy.exchange, strategy.market_type, strategy.symbol),
         "qty_rounding_mode": default_qty_rounding_mode(
             strategy.exchange, strategy.market_type, strategy.symbol
         ),
@@ -635,24 +884,24 @@ def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunCo
         "semantic_profile": require_strategy_semantic_profile(strategy).value,
     }
     supported = set(inspect.signature(BacktestRunConfig).parameters)
-    return BacktestRunConfig(
-        **{key: value for key, value in kwargs.items() if key in supported}
-    )
+    return BacktestRunConfig(**{key: value for key, value in kwargs.items() if key in supported})
 
 
-def _artifact_declaration_args(strategy: StrategyInstance) -> dict[str, Any]:
+def _artifact_declaration_args(
+    strategy: StrategyInstance, *, artifact_store: Any | None = None
+) -> dict[str, Any]:
     if not strategy.pine_id or not strategy.artifact_id:
         return {}
     try:
-        from openpine.artifacts import ArtifactStore
+        if artifact_store is None:
+            from openpine.artifacts import ArtifactStore
 
-        artifact = ArtifactStore().get_artifact(strategy.artifact_id, strategy.pine_id)
+            artifact_store = ArtifactStore()
+        artifact = artifact_store.get_artifact(strategy.artifact_id, strategy.pine_id)
     except Exception:
         return {}
     declaration = (
-        artifact.get("compile_meta", {})
-        .get("translation_metadata", {})
-        .get("declaration", {})
+        artifact.get("compile_meta", {}).get("translation_metadata", {}).get("declaration", {})
     )
     args = declaration.get("arguments", {})
     return args if isinstance(args, dict) else {}
@@ -690,9 +939,7 @@ def _result_position(raw_result: Any) -> Any | None:
         pass
 
     position = _Position()
-    position.size = (
-        qty if direction == "long" else -qty if direction == "short" else 0.0
-    )
+    position.size = qty if direction == "long" else -qty if direction == "short" else 0.0
     position.direction = direction
     position.avg_price = avg_price
     position.realized_profit = getattr(raw_result, "net_profit", 0.0)
@@ -700,9 +947,24 @@ def _result_position(raw_result: Any) -> Any | None:
     return position
 
 
-def _ledger_trade_id(strategy_id: str, source: LedgerSource, trade: Any) -> str:
+def _ledger_trade_id(
+    strategy_id: str,
+    account_id_or_source: str | LedgerSource,
+    source_or_trade: LedgerSource | Any,
+    trade: Any | None = None,
+) -> str:
+    if trade is None:
+        account_id = ""
+        source = account_id_or_source
+        trade = source_or_trade
+    else:
+        account_id = str(account_id_or_source)
+        source = source_or_trade
+    if not isinstance(source, LedgerSource):
+        raise TypeError("ledger trade source is invalid")
     payload = {
         "strategy_id": strategy_id,
+        "account_id": account_id,
         "source": source.value,
         "id": getattr(trade, "id", None),
         "entry_id": getattr(trade, "entry_id", None),

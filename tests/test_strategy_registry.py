@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
 
 
@@ -23,6 +25,94 @@ def test_strategy_instance_from_dict_defaults_match_registered_strategy_defaults
     assert strategy.market_type == "spot"
     assert strategy.price_type == "trade"
     assert strategy.mode == "paper"
+
+
+def test_paper_execution_epoch_is_stable_across_metadata_patch_and_resets_on_resume(
+    tmp_path, monkeypatch
+) -> None:
+    registry = SQLiteStrategyRegistry(db_path=tmp_path / "openpine.sqlite")
+    strategy = registry.register_strategy(
+        artifact_id="artifact-1",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        params={},
+        name="paper-epoch",
+        mode="paper",
+    )
+    timestamps = iter((100.0, 101.0, 102.0, 103.0, 104.0, 105.0))
+    monkeypatch.setattr(
+        "openpine.registry.strategies.time.time", lambda: next(timestamps)
+    )
+    try:
+        registry.activate_strategy(
+            strategy.strategy_id, status="running", mode="paper"
+        )
+        first = registry.execution_epoch_started_at(strategy.strategy_id)
+        registry.patch_strategy_atomic(strategy.strategy_id, {"name": "renamed"})
+        assert registry.execution_epoch_started_at(strategy.strategy_id) == first
+
+        registry.patch_strategy_atomic(
+            strategy.strategy_id, {"params_json": "{}"}
+        )
+        assert registry.execution_epoch_started_at(strategy.strategy_id) == first
+
+        registry.patch_strategy_atomic(
+            strategy.strategy_id, {"params_json": '{"length": 21}'}
+        )
+        params_epoch = registry.execution_epoch_started_at(strategy.strategy_id)
+        patched = registry.get_strategy(strategy.strategy_id)
+        assert params_epoch == 103_000
+        assert patched.params_json == '{"length":21}'
+        assert patched.params_hash != strategy.params_hash
+        with pytest.raises(ValueError, match="derived"):
+            registry.patch_strategy_atomic(
+                strategy.strategy_id, {"params_hash": "forged"}
+            )
+
+        registry.transition_strategy(
+            strategy.strategy_id, enabled=False, status="paused"
+        )
+        registry.transition_strategy(
+            strategy.strategy_id, enabled=True, status="running", mode="paper"
+        )
+        second = registry.execution_epoch_started_at(strategy.strategy_id)
+    finally:
+        registry.close()
+
+    assert first == 100_000
+    assert second == 105_000
+
+
+def test_paper_execution_epoch_advances_monotonically_within_same_millisecond(
+    tmp_path, monkeypatch
+) -> None:
+    registry = SQLiteStrategyRegistry(db_path=tmp_path / "openpine.sqlite")
+    strategy = registry.register_strategy(
+        artifact_id="artifact-1",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        params={},
+        name="paper-epoch-same-ms",
+        mode="paper",
+    )
+    monkeypatch.setattr("openpine.registry.strategies.time.time", lambda: 100.0)
+    try:
+        registry.activate_strategy(
+            strategy.strategy_id, status="running", mode="paper"
+        )
+        first = registry.execution_epoch_started_at(strategy.strategy_id)
+        registry.transition_strategy(
+            strategy.strategy_id, enabled=False, status="paused"
+        )
+        registry.transition_strategy(
+            strategy.strategy_id, enabled=True, status="running", mode="paper"
+        )
+        second = registry.execution_epoch_started_at(strategy.strategy_id)
+    finally:
+        registry.close()
+
+    assert first == 100_000
+    assert second == 100_001
 
 
 def test_sqlite_strategy_registry_persists_registered_strategy(tmp_path) -> None:

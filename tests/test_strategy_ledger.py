@@ -76,6 +76,44 @@ def test_strategy_ledger_separates_history_and_paper_trades(tmp_path) -> None:
         storage.close()
 
 
+def test_strategy_ledger_republishes_same_trade_idempotently(tmp_path) -> None:
+    storage = _storage(tmp_path)
+    try:
+        ledger = StrategyLedger(storage)
+        trade = StrategyTrade(
+            trade_id="trade-retry",
+            strategy_id="strategy-1",
+            account_id="paper-account-1",
+            exchange="binance",
+            market_type="spot",
+            symbol="BTCUSDT",
+            timeframe="1m",
+            source=LedgerSource.PAPER,
+            status=TradeStatus.CLOSED,
+            direction="long",
+            entry_time=1,
+            exit_time=2,
+            entry_price=100.0,
+            exit_price=101.0,
+            qty=1.0,
+            net_pnl=1.0,
+        )
+
+        first = ledger.record_trade(trade)
+        second = ledger.record_trade(trade)
+
+        assert first.trade_id == second.trade_id
+        assert (
+            storage.execute(
+                "SELECT count(*) FROM strategy_trades WHERE trade_id = ?",
+                (trade.trade_id,),
+            ).fetchone()[0]
+            == 1
+        )
+    finally:
+        storage.close()
+
+
 def test_strategy_ledger_upserts_current_position(tmp_path) -> None:
     storage = _storage(tmp_path)
     try:

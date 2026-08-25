@@ -23,7 +23,8 @@ from openpine.gateway.worker_supervisor import (
     worker_accepts_strategy_activation,
     worker_runtime_snapshot,
 )
-from openpine.jobs import JobType
+from openpine.jobs import Job, JobScheduler, JobType
+from openpine.jobs.persist import JobV1Error, JobV1Store
 from openpine.registry.strategies import SQLiteStrategyRegistry, WorkerCircuitOpenError
 from tests.admission_helpers import STACK_HASH, make_deployment_identity
 
@@ -109,18 +110,16 @@ def test_background_strategy_dispatch_executes_paper_and_blocks_live() -> None:
         strategy_id="live-strategy",
         job_type=JobType.LIVE_BAR_PROCESS,
     )
-    fanout = SimpleNamespace(
-        process_source_bar=lambda _bar: SimpleNamespace(jobs=(paper, live))
-    )
+    fanout = SimpleNamespace(process_source_bar=lambda _bar: SimpleNamespace(jobs=(paper, live)))
     processed = []
     failed = []
     executor = SimpleNamespace(
-        process=lambda job: processed.append(job.id)
-        or SimpleNamespace(status="done", strategy_id=job.strategy_id, error=None)
+        process=lambda job: (
+            processed.append(job.id)
+            or SimpleNamespace(status="done", strategy_id=job.strategy_id, error=None)
+        )
     )
-    scheduler = SimpleNamespace(
-        mark_failed=lambda job_id, error: failed.append((job_id, error))
-    )
+    scheduler = SimpleNamespace(mark_failed=lambda job_id, error: failed.append((job_id, error)))
 
     server._process_refreshed_strategy_bars(
         fanout=fanout,
@@ -132,6 +131,294 @@ def test_background_strategy_dispatch_executes_paper_and_blocks_live() -> None:
 
     assert processed == ["paper-job"]
     assert failed == [("live-job", "LIVE_RC_BLOCKED")]
+
+
+def test_background_paper_dispatch_persists_lease_result_and_restart_dedupe(
+    tmp_path,
+) -> None:
+    paper = Job(
+        id="sjob-paper",
+        strategy_id="paper-strategy",
+        job_type=JobType.PAPER_BAR_PROCESS,
+        idempotency_key="paper:paper-strategy:SOLUSDT:1m:1",
+        input={
+            "strategy_id": "paper-strategy",
+            "artifact_id": "artifact-1",
+            "params_hash": "params-1",
+            "instrument_key": "binance:spot:SOLUSDT:trade",
+            "timeframe": "1m",
+            "bar_time": 1,
+            "bar_close_time": 60_001,
+            "semantic_profile": "strict_5x",
+        },
+    )
+    fanout = SimpleNamespace(process_source_bar=lambda _bar: SimpleNamespace(jobs=(paper,)))
+    processed = []
+    executor = SimpleNamespace(
+        process=lambda job: (
+            processed.append(job.id)
+            or SimpleNamespace(
+                status="done",
+                strategy_id=job.strategy_id,
+                snapshot_id="snapshot-1",
+                bar_time=1,
+                trades_recorded=0,
+                error=None,
+            )
+        )
+    )
+    scheduler = SimpleNamespace(mark_done=lambda *_args: None, mark_failed=lambda *_args: None)
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    try:
+        for _ in range(2):
+            server._process_refreshed_strategy_bars(
+                fanout=fanout,
+                executor=executor,
+                scheduler=scheduler,
+                market_key="binance:spot:SOLUSDT:trade",
+                bars=[object()],
+                job_store=store,
+                stack_id="sha256:" + "a" * 64,
+                lease_owner="paper-worker-test",
+            )
+
+        persisted = store.get("sjob-paper")
+        assert processed == ["sjob-paper"]
+        assert persisted["state"] == "SUCCEEDED"
+        assert persisted["result_artifact_refs"] == ["snapshot:snapshot-1"]
+    finally:
+        store.close()
+
+
+def test_background_dispatch_persists_entire_fanout_before_execution(tmp_path) -> None:
+    jobs = tuple(
+        Job(
+            id=f"sjob-batch-{index}",
+            strategy_id=f"strategy-{index}",
+            job_type=JobType.PAPER_BAR_PROCESS,
+            idempotency_key=f"paper:strategy-{index}:SOLUSDT:1m:1",
+            input={
+                "strategy_id": f"strategy-{index}",
+                "artifact_id": f"artifact-{index}",
+                "params_hash": f"params-{index}",
+                "instrument_key": "binance:spot:SOLUSDT:trade",
+                "timeframe": "1m",
+                "bar_time": 1,
+                "bar_close_time": 60_001,
+                "semantic_profile": "strict_5x",
+                "mtf_series": [],
+            },
+        )
+        for index in range(2)
+    )
+    fanout = SimpleNamespace(
+        process_source_bar=lambda _bar: SimpleNamespace(jobs=jobs)
+    )
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    observed_counts = []
+    executor = SimpleNamespace(
+        process=lambda job: observed_counts.append(
+            len(store.list_jobs(kind="paper", limit=10)["items"])
+        )
+        or SimpleNamespace(
+            status="done",
+            strategy_id=job.strategy_id,
+            snapshot_id=f"snapshot-{job.id}",
+            bar_time=1,
+            trades_recorded=0,
+            error=None,
+        )
+    )
+    try:
+        server._process_refreshed_strategy_bars(
+            fanout=fanout,
+            executor=executor,
+            scheduler=SimpleNamespace(
+                mark_done=lambda *_args: None,
+                mark_failed=lambda *_args: None,
+            ),
+            market_key="binance:spot:SOLUSDT:trade",
+            bars=[object()],
+            job_store=store,
+            stack_id="sha256:" + "a" * 64,
+            lease_owner="paper-worker-batch",
+        )
+
+        assert observed_counts == [2, 2]
+    finally:
+        store.close()
+
+
+def test_background_worker_recovers_persisted_queued_paper_job(tmp_path) -> None:
+    paper = Job(
+        id="sjob-recover",
+        strategy_id="paper-strategy",
+        job_type=JobType.PAPER_BAR_PROCESS,
+        idempotency_key="paper:paper-strategy:SOLUSDT:1m:2",
+        input={
+            "strategy_id": "paper-strategy",
+            "artifact_id": "artifact-1",
+            "params_hash": "params-1",
+            "instrument_key": "binance:spot:SOLUSDT:trade",
+            "timeframe": "1m",
+            "bar_time": 2,
+            "bar_close_time": 60_002,
+            "semantic_profile": "strict_5x",
+            "mtf_series": [],
+        },
+    )
+    fanout = SimpleNamespace(
+        process_source_bar=lambda _bar: SimpleNamespace(jobs=(paper,))
+    )
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+
+    class CrashBeforeClaim:
+        def create(self, **kwargs):
+            return store.create(**kwargs)
+
+        def mark_running(self, *_args, **_kwargs):
+            raise JobV1Error("synthetic crash before claim")
+
+    try:
+        server._process_refreshed_strategy_bars(
+            fanout=fanout,
+            executor=SimpleNamespace(process=lambda _job: None),
+            scheduler=SimpleNamespace(mark_failed=lambda *_args: None),
+            market_key="binance:spot:SOLUSDT:trade",
+            bars=[object()],
+            job_store=CrashBeforeClaim(),
+            stack_id="sha256:" + "a" * 64,
+            lease_owner="paper-worker-before-crash",
+        )
+        assert store.get("sjob-recover")["state"] == "QUEUED"
+
+        processed = []
+        executor = SimpleNamespace(
+            process=lambda job: processed.append(job.id)
+            or SimpleNamespace(
+                status="done",
+                strategy_id=job.strategy_id,
+                snapshot_id="snapshot-recovered",
+                bar_time=2,
+                trades_recorded=0,
+                error=None,
+            )
+        )
+        recovered = server._recover_persisted_strategy_jobs(
+            executor=executor,
+            scheduler=JobScheduler(),
+            job_store=store,
+            stack_id="sha256:" + "a" * 64,
+            lease_owner="paper-worker-after-restart",
+        )
+
+        assert recovered == 1
+        assert processed == ["sjob-recover"]
+        assert store.get("sjob-recover")["state"] == "SUCCEEDED"
+    finally:
+        store.close()
+
+
+def test_recovery_orders_same_strategy_jobs_by_bar_time(tmp_path) -> None:
+    jobs = tuple(
+        Job(
+            id=f"sjob-order-{bar_time}",
+            strategy_id="paper-strategy",
+            job_type=JobType.PAPER_BAR_PROCESS,
+            idempotency_key=f"paper:paper-strategy:SOLUSDT:1m:{bar_time}",
+            input={
+                "strategy_id": "paper-strategy",
+                "artifact_id": "artifact-1",
+                "params_hash": "params-1",
+                "instrument_key": "binance:spot:SOLUSDT:trade",
+                "timeframe": "1m",
+                "bar_time": bar_time,
+                "bar_close_time": bar_time + 60_000,
+                "semantic_profile": "strict_5x",
+                "mtf_series": [],
+            },
+        )
+        for bar_time in (2, 1)
+    )
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+
+    class CrashBeforeClaim:
+        def create(self, **kwargs):
+            return store.create(**kwargs)
+
+        def mark_running(self, *_args, **_kwargs):
+            raise JobV1Error("synthetic crash before claim")
+
+    try:
+        server._process_refreshed_strategy_bars(
+            fanout=SimpleNamespace(
+                process_source_bar=lambda _bar: SimpleNamespace(jobs=jobs)
+            ),
+            executor=SimpleNamespace(process=lambda _job: None),
+            scheduler=SimpleNamespace(mark_failed=lambda *_args: None),
+            market_key="binance:spot:SOLUSDT:trade",
+            bars=[object()],
+            job_store=CrashBeforeClaim(),
+            stack_id="sha256:" + "a" * 64,
+            lease_owner="paper-worker-before-order-recovery",
+        )
+        processed_bar_times = []
+        executor = SimpleNamespace(
+            process=lambda job: processed_bar_times.append(job.input["bar_time"])
+            or SimpleNamespace(
+                status="done",
+                strategy_id=job.strategy_id,
+                snapshot_id=f"snapshot-{job.id}",
+                bar_time=job.input["bar_time"],
+                trades_recorded=0,
+                error=None,
+            )
+        )
+        recovered = server._recover_persisted_strategy_jobs(
+            executor=executor,
+            scheduler=JobScheduler(),
+            job_store=store,
+            stack_id="sha256:" + "a" * 64,
+            lease_owner="paper-worker-order-recovery",
+        )
+
+        assert recovered == 2
+        assert processed_bar_times == [1, 2]
+    finally:
+        store.close()
+
+
+def test_recovery_cancels_malformed_lost_job_after_retry_budget_exhausted(
+    tmp_path,
+) -> None:
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    try:
+        store.create(
+            job_id="paper-poison",
+            kind="paper",
+            actor="test",
+            max_retries=0,
+            input_artifact_refs=[],
+        )
+        store.mark_running(
+            "paper-poison",
+            lease_owner="paper-worker:old",
+            lease_deadline_utc_ms=100_000,
+            now_ms=1_000,
+        )
+
+        recovered = server._recover_persisted_strategy_jobs(
+            executor=SimpleNamespace(process=lambda _job: None),
+            scheduler=JobScheduler(),
+            job_store=store,
+            stack_id="sha256:" + "a" * 64,
+            lease_owner="paper-worker:new",
+        )
+
+        assert recovered == 0
+        assert store.get("paper-poison")["state"] == "CANCELED"
+    finally:
+        store.close()
 
 
 @pytest.mark.asyncio
@@ -187,9 +474,7 @@ async def test_supervisor_exhausts_restart_budget_and_invokes_fail_safe_once() -
     factory.processes[0].kill(-9)
     await _eventually(lambda: len(factory.processes) == 2)
     factory.processes[1].kill(-9)
-    await _eventually(
-        lambda: supervisor.snapshot()["reason"] == "restart_budget_exhausted"
-    )
+    await _eventually(lambda: supervisor.snapshot()["reason"] == "restart_budget_exhausted")
     await _eventually(lambda: fail_safe_calls == ["paused"])
 
     status = supervisor.snapshot()
@@ -372,9 +657,7 @@ async def test_health_and_dashboard_expose_degraded_worker_runtime() -> None:
     worker = SimpleNamespace(snapshot=lambda: dict(worker_status))
     app = server.create_app(GatewayConfig(api_prefix="/unit-api", cors_origins=["*"]))
     app.state.gateway = SimpleNamespace(_background_worker_supervisor=worker)
-    endpoints = {
-        getattr(route, "path", None): getattr(route, "endpoint") for route in app.routes
-    }
+    endpoints = {getattr(route, "path", None): getattr(route, "endpoint") for route in app.routes}
 
     health = await endpoints["/health"]()
 
@@ -536,9 +819,9 @@ async def test_start_exception_after_child_becomes_live_is_contained_without_ret
 
     supervisor.start()
     await _eventually(
-        lambda: bool(processes)
-        and processes[0].is_alive() is False
-        and fail_safe_calls == ["paused"]
+        lambda: (
+            bool(processes) and processes[0].is_alive() is False and fail_safe_calls == ["paused"]
+        )
     )
 
     assert len(processes) == 1
@@ -775,7 +1058,9 @@ async def test_dashboard_metadata_failure_is_explicitly_degraded() -> None:
             raise OSError("manifest unavailable")
 
     state = SimpleNamespace(
-        storage=SimpleNamespace(execute=lambda *_args, **_kwargs: SimpleNamespace(fetchone=lambda: None)),
+        storage=SimpleNamespace(
+            execute=lambda *_args, **_kwargs: SimpleNamespace(fetchone=lambda: None)
+        ),
         orchestrator=BrokenMetadata(),
         _fetcher=None,
         _live_runner=None,
@@ -800,7 +1085,13 @@ async def test_dashboard_metadata_failure_is_explicitly_degraded() -> None:
 @pytest.mark.asyncio
 async def test_strategy_start_and_enable_are_blocked_while_worker_is_unready() -> None:
     calls: list[tuple[str, object]] = []
-    strategy = SimpleNamespace(strategy_id="s1", archived=False, status="paused", mode="paper", semantic_profile="strict_5x")
+    strategy = SimpleNamespace(
+        strategy_id="s1",
+        archived=False,
+        status="paused",
+        mode="paper",
+        semantic_profile="strict_5x",
+    )
 
     class Registry:
         def get_strategy(self, _strategy_id):
@@ -840,7 +1131,14 @@ async def test_strategy_start_and_enable_are_blocked_while_worker_is_unready() -
 @pytest.mark.asyncio
 async def test_strategy_patch_enabled_true_cannot_bypass_worker_guard() -> None:
     calls: list[tuple[str, object]] = []
-    strategy = SimpleNamespace(strategy_id="s1", archived=False, enabled=False, status="paused", mode="paper", semantic_profile="strict_5x")
+    strategy = SimpleNamespace(
+        strategy_id="s1",
+        archived=False,
+        enabled=False,
+        status="paused",
+        mode="paper",
+        semantic_profile="strict_5x",
+    )
 
     class Registry:
         def get_strategy(self, _strategy_id):
@@ -865,9 +1163,7 @@ async def test_strategy_patch_enabled_true_cannot_bypass_worker_guard() -> None:
     )
 
     with pytest.raises(HTTPException) as error:
-        await strategies.update_strategy(
-            "s1", StrategyUpdate(enabled=True), state=cast(Any, state)
-        )
+        await strategies.update_strategy("s1", StrategyUpdate(enabled=True), state=cast(Any, state))
 
     assert error.value.status_code == 503
     assert calls == []
@@ -923,7 +1219,7 @@ def test_enable_race_cannot_win_after_worker_fail_safe(tmp_path: Path, monkeypat
                     strategy.strategy_id, state=cast(Any, state), action="start"
                 )
             )
-        except BaseException as exc:  # test thread hand-off
+        except BaseException as exc:  # noqa: BLE001 - test thread hand-off
             result.append(exc)
         else:
             result.append(None)
@@ -1042,8 +1338,7 @@ async def test_stale_heartbeat_never_starts_replacement_while_old_worker_survive
     factory.heartbeats[0].value = time.time() - 10.0
 
     await _eventually(
-        lambda: supervisor.snapshot()["reason"]
-        == "unhealthy_process_shutdown_incomplete"
+        lambda: supervisor.snapshot()["reason"] == "unhealthy_process_shutdown_incomplete"
     )
 
     status = supervisor.snapshot()
@@ -1257,9 +1552,7 @@ async def test_paper_start_uses_single_atomic_registry_activation() -> None:
         admission_identity=make_deployment_identity(),
     )
 
-    result = await trading.start_paper(
-        PaperStartRequest(strategy_id="s1"), state=cast(Any, state)
-    )
+    result = await trading.start_paper(PaperStartRequest(strategy_id="s1"), state=cast(Any, state))
 
     assert result.status == "running"
     assert events == ["persist", "activate"]
@@ -1288,7 +1581,13 @@ def test_legacy_unsupervised_worker_fails_closed_without_child_health_evidence()
 
 @pytest.mark.asyncio
 async def test_dedicated_enable_translates_late_circuit_race_to_http_503() -> None:
-    strategy = SimpleNamespace(strategy_id="s1", archived=False, status="paused", mode="paper", semantic_profile="strict_5x")
+    strategy = SimpleNamespace(
+        strategy_id="s1",
+        archived=False,
+        status="paused",
+        mode="paper",
+        semantic_profile="strict_5x",
+    )
 
     class Registry:
         def get_strategy(self, _strategy_id):
@@ -1387,13 +1686,9 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
         admission_identity=make_deployment_identity(),
     )
 
-    await strategies.strategy_enable(
-        "s1", registry=cast(Any, registry), state=cast(Any, state)
-    )
+    await strategies.strategy_enable("s1", registry=cast(Any, registry), state=cast(Any, state))
     strategy.enabled = False
-    await strategies.update_strategy(
-        "s1", StrategyUpdate(enabled=True), state=cast(Any, state)
-    )
+    await strategies.update_strategy("s1", StrategyUpdate(enabled=True), state=cast(Any, state))
     strategy.enabled = False
     await strategies.strategy_action("s1", state=cast(Any, state), action="start")
     strategy.enabled = False
@@ -1404,9 +1699,7 @@ async def test_every_activation_surface_holds_the_shared_lock_for_guard_and_writ
     from openpine.live_preview import make_live_preview
     import time
 
-    preview = make_live_preview(
-        "s1", now_ms=int(time.time() * 1000), stack_id=STACK_HASH
-    )
+    preview = make_live_preview("s1", now_ms=int(time.time() * 1000), stack_id=STACK_HASH)
     await trading.start_live(
         trading.LiveStartRequest(
             strategy_id="s1",
@@ -1746,12 +2039,12 @@ async def test_trading_start_routes_reject_archived_strategy(monkeypatch) -> Non
     )
 
     with pytest.raises(HTTPException) as paper_exc:
-        await trading.start_paper(PaperStartRequest(strategy_id="archived", semantic_profile="strict_5x"), state)
+        await trading.start_paper(
+            PaperStartRequest(strategy_id="archived", semantic_profile="strict_5x"), state
+        )
     assert paper_exc.value.status_code == 400
 
-    preview = make_live_preview(
-        "archived", now_ms=int(time.time() * 1000), stack_id=STACK_HASH
-    )
+    preview = make_live_preview("archived", now_ms=int(time.time() * 1000), stack_id=STACK_HASH)
     with pytest.raises(HTTPException) as live_exc:
         await trading.start_live(
             LiveStartRequest(

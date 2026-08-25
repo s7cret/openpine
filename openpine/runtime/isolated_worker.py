@@ -300,7 +300,7 @@ def _entrypoint_shape(tree):
             )
             if constructor.args.vararg is not None:
                 constructor_arity = 2
-            if constructor_arity not in {0, 1, 2}:
+            if constructor_arity not in {0, 1, 2, 3}:
                 raise RuntimeError("strategy constructor entrypoint shape is unsupported")
         return node.name, constructor_arity, process_arity
     return None
@@ -904,8 +904,14 @@ def main() -> int:
                     inst = cls()
                 elif constructor_arity == 1:
                     inst = cls(params)
-                else:
+                elif constructor_arity == 2:
                     inst = cls(params=params, runtime=rt)
+                else:
+                    inst = cls(
+                        params=params,
+                        runtime=rt,
+                        execution_context=execution_context,
+                    )
             except Exception as exc:
                 json.dump({
                     "ok": False,
@@ -1622,6 +1628,12 @@ class InteractiveWorkerSession:
             except OSError as exc:
                 raise IsolatedWorkerError("interactive worker stdout read failed") from exc
             if not chunk:
+                if self._stdout_buffer:
+                    # Bootstrap failures may flush one final JSON object at process
+                    # exit without a trailing newline. Preserve that diagnostic
+                    # rather than replacing it with the generic exit message.
+                    newline = len(self._stdout_buffer) - 1
+                    break
                 stderr = _read_available_stderr(self.proc)
                 raise IsolatedWorkerError(stderr.strip() or "interactive worker exited")
             self._stdout_buffer.extend(chunk)

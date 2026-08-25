@@ -76,6 +76,22 @@ def _cleanup_backtest_terminal_state():
     clear()
 
 
+@pytest.fixture(autouse=True)
+def _cleanup_default_event_loop_after_test():
+    """Close the fallback loop pytest-asyncio restores on Python 3.13."""
+
+    yield
+    import asyncio
+
+    policy = asyncio.get_event_loop_policy()
+    loop = getattr(getattr(policy, "_local", None), "_loop", None)
+    if loop is None:
+        return
+    if not loop.is_running() and not loop.is_closed():
+        loop.close()
+    asyncio.set_event_loop(None)
+
+
 @pytest.fixture
 def job_store(tmp_path: Path):
     """Real transactional Job v1 store for mutating route tests."""
@@ -94,6 +110,11 @@ def pytest_pyfunc_call(pyfuncitem):
     import asyncio
     import inspect
 
+    if (
+        pyfuncitem.config.pluginmanager.hasplugin("asyncio")
+        and pyfuncitem.get_closest_marker("asyncio") is not None
+    ):
+        return None
     testfunction = pyfuncitem.obj
     if not inspect.iscoroutinefunction(testfunction):
         return None

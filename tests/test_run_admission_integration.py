@@ -62,26 +62,18 @@ def test_execution_context_is_derived_from_exact_deployment_and_manifest() -> No
     deployment = DeploymentAdmissionIdentity(
         stack_id="5.0.0-rc.5",
         stack_manifest_hash=HASH_A,
-        wheel_identities=tuple(
-            (name, "5.0.0rc5", HASH_B) for name in STACK_COMPONENTS
-        ),
+        wheel_identities=tuple((name, "5.0.0rc5", HASH_B) for name in STACK_COMPONENTS),
         schema_hashes={name: HASH_C for name in schema_ids},
-        capabilities=frozenset(
-            {"closed_bar", "deterministic_clock", "broker_projection"}
-        ),
+        capabilities=frozenset({"closed_bar", "deterministic_clock", "broker_projection"}),
         semantic_profiles=frozenset({"strict_5x"}),
         finality_policies=frozenset({"CLOSED_BAR_ONLY"}),
         warmup_policies=frozenset({"CALC_ONLY"}),
         score_policies=frozenset({"ALL_BARS"}),
     )
-    commits = {
-        name: f"{index + 1:x}" * 40 for index, name in enumerate(STACK_COMPONENTS)
-    }
+    commits = {name: f"{index + 1:x}" * 40 for index, name in enumerate(STACK_COMPONENTS)}
     manifest = {
         "manifest_hash": HASH_A,
-        "components": {
-            name: {"sha": commits[name]} for name in STACK_COMPONENTS
-        },
+        "components": {name: {"sha": commits[name]} for name in STACK_COMPONENTS},
     }
     artifact = make_sealed_artifact(
         python_code="class GeneratedStrategy: pass\n",
@@ -254,13 +246,9 @@ def test_verified_generated_source_is_bound_to_the_same_artifact_envelope() -> N
 def test_mutating_routes_do_not_recapture_artifact_after_identity_load() -> None:
     from openpine.gateway.routes import backtest, optimizer, tv_parity
 
-    assert "capture_generated_source" not in inspect.getsource(
-        backtest._run_backtest_background
-    )
+    assert "capture_generated_source" not in inspect.getsource(backtest._run_backtest_background)
     assert "capture_generated_source" not in inspect.getsource(optimizer.optimizer_search)
-    assert "capture_generated_source" not in inspect.getsource(
-        tv_parity._run_tv_parity_background
-    )
+    assert "capture_generated_source" not in inspect.getsource(tv_parity._run_tv_parity_background)
 
 
 def test_run_identity_is_admitted_sealed_and_persisted_before_execution(
@@ -389,6 +377,7 @@ def test_run_identity_rejects_symlinked_directory_and_target(tmp_path) -> None:
 
 def test_run_identity_concurrent_conflict_has_exactly_one_winner(tmp_path) -> None:
     import openpine.run_identity as run_identity
+
     payloads = [
         {"content_hash": HASH_A, "run_id": "race", "tag": "A"},
         {"content_hash": HASH_B, "run_id": "race", "tag": "B"},
@@ -425,7 +414,9 @@ def test_background_backtest_admits_loaded_bytes_before_worker_dispatch() -> Non
     assert admission < dispatch
 
 
-def test_spawned_backtest_rehashes_exact_bars_before_engine(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_spawned_backtest_rehashes_exact_bars_before_engine(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from openpine.gateway.routes import backtest
 
     seen: dict[str, object] = {}
@@ -482,6 +473,36 @@ def test_optimizer_search_persists_run_identity_before_external_execution() -> N
     assert admission < dispatch
 
 
+def test_execution_data_snapshot_hash_binds_canonical_bar_revision_identity() -> None:
+    from openpine.run_identity import execution_data_snapshot_hash
+    from tests.rc4_fixtures import canonical_bar_envelopes, execution_context
+
+    bar = _bar()
+    original = canonical_bar_envelopes([bar], execution_context())[0]
+    changed = dict(original)
+    changed.pop("content_hash")
+    changed["provider_revision"] = {
+        "known": True,
+        "revision": "provider-revision-2",
+    }
+    changed = seal_content_hash(changed, schema_id="openpine.marketdata.bar.v2")
+    kwargs = {
+        "bars": [bar],
+        "exchange": "binance",
+        "market": "spot",
+        "symbol": "BTCUSDT",
+        "timeframe": "1m",
+        "start_ms": 0,
+        "end_ms": 60_000,
+        "finality_policy": "CLOSED_BAR_ONLY",
+    }
+
+    first = execution_data_snapshot_hash(**kwargs, canonical_bar_envelopes=[original])
+    second = execution_data_snapshot_hash(**kwargs, canonical_bar_envelopes=[changed])
+
+    assert first != second
+
+
 def test_bind_isolated_execution_attaches_exact_protocol_inputs(tmp_path) -> None:
     from openpine.run_identity import bind_isolated_execution, run_identity_path
     from tests.admission_helpers import make_sealed_artifact
@@ -512,9 +533,7 @@ def test_bind_isolated_execution_attaches_exact_protocol_inputs(tmp_path) -> Non
     deployment = DeploymentAdmissionIdentity(
         stack_id="5.0.0-rc.5",
         stack_manifest_hash=str(manifest["manifest_hash"]),
-        wheel_identities=tuple(
-            (name, "5.0.0rc5", HASH_B) for name in STACK_COMPONENTS
-        ),
+        wheel_identities=tuple((name, "5.0.0rc5", HASH_B) for name in STACK_COMPONENTS),
         schema_hashes={name: HASH_C for name in schema_ids},
         capabilities=frozenset(
             {
@@ -556,6 +575,80 @@ def test_bind_isolated_execution_attaches_exact_protocol_inputs(tmp_path) -> Non
     assert run_identity_path(tmp_path, "run-bind").is_file()
 
 
+def test_bind_isolated_execution_preserves_true_paper_broker_identity(tmp_path) -> None:
+    from openpine.run_identity import bind_isolated_execution
+    from tests.admission_helpers import make_sealed_artifact
+    from tests.rc4_fixtures import (
+        admitted_manifest,
+        canonical_bar_envelopes,
+        execution_context,
+    )
+
+    bar = _bar()
+    config = SimpleNamespace(
+        exchange="binance",
+        market_type="spot",
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_time=0,
+        end_time=60_000,
+        semantic_profile="strict_5x",
+    )
+    manifest = admitted_manifest()
+    deployment = DeploymentAdmissionIdentity(
+        stack_id="5.0.0-rc.5",
+        stack_manifest_hash=str(manifest["manifest_hash"]),
+        wheel_identities=tuple((name, "5.0.0rc5", HASH_B) for name in STACK_COMPONENTS),
+        schema_hashes={
+            name: HASH_C
+            for name in (
+                "openpine.execution_context.v1",
+                "openpine.intent.v2",
+                "openpine.worker.protocol.v2",
+                "openpine.checkpoint.v1",
+                "openpine.checkpoint.proof.v1",
+            )
+        },
+        capabilities=frozenset(
+            {
+                "closed_bar",
+                "deterministic_clock",
+                "isolated_worker",
+                "broker_projection",
+                "intent_tape_v2",
+            }
+        ),
+        semantic_profiles=frozenset({"strict_5x"}),
+        finality_policies=frozenset({"CLOSED_BAR_ONLY"}),
+        warmup_policies=frozenset({"CALC_ONLY"}),
+        score_policies=frozenset({"ALL_BARS"}),
+    )
+    artifact = make_sealed_artifact(python_code="VALUE = 1\n")
+    envelopes = canonical_bar_envelopes([bar], execution_context())
+
+    identity = bind_isolated_execution(
+        config,
+        data_dir=tmp_path,
+        deployment=deployment,
+        admitted_manifest=manifest,
+        mode="paper",
+        run_id="run-paper-bind",
+        strategy_id="strategy-test",
+        artifact=artifact,
+        bars=[bar],
+        bar_envelopes=envelopes,
+        supplemental_bars=None,
+        created_at_utc_ms=1,
+        broker_adapter_ref="wheel:backtest-engine:sha256:" + "b" * 64,
+        broker_account_ref="paper:strategy-test:artifact:params",
+    )
+
+    assert identity["run_mode"] == "PAPER"
+    assert identity["broker_adapter_ref"] == "wheel:backtest-engine:sha256:" + "b" * 64
+    assert identity["broker_account_ref"] == "paper:strategy-test:artifact:params"
+    assert config.execution_context["end_policy"] == "PRESERVE_OPEN_POSITIONS"
+
+
 def test_optimizer_runner_rehashes_bars_before_each_trial(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
@@ -570,9 +663,7 @@ def test_optimizer_runner_rehashes_bars_before_each_trial(
             called = True
             raise AssertionError("engine must not run after data identity drift")
 
-    monkeypatch.setattr(
-        "openpine.optimizer.isolated_runner.BacktestEngineAdapter", Adapter
-    )
+    monkeypatch.setattr("openpine.optimizer.isolated_runner.BacktestEngineAdapter", Adapter)
     config = SimpleNamespace(
         exchange="binance",
         market_type="spot",
@@ -610,9 +701,7 @@ def test_optimizer_runner_rehashes_bars_before_each_trial(
     from tests.admission_helpers import make_sealed_artifact
     from tests.rc4_fixtures import admitted_manifest, execution_context, run_identity
 
-    generated_artifact = make_sealed_artifact(python_code="source")[
-        "generated_artifact"
-    ]
+    generated_artifact = make_sealed_artifact(python_code="source")["generated_artifact"]
     context = execution_context()
     runner = IsolatedOptimizerRunner(
         source=b"source",
@@ -630,9 +719,7 @@ def test_optimizer_runner_rehashes_bars_before_each_trial(
         htf_bars=htf_bars,
     )
     runner.htf_bars[0]["close"] = 1.6
-    request = SimpleNamespace(
-        trial_id=1, params={}, required_metrics=(), fingerprints={}
-    )
+    request = SimpleNamespace(trial_id=1, params={}, required_metrics=(), fingerprints={})
 
     with pytest.raises(RuntimeError, match="data snapshot hash mismatch"):
         runner(request)
