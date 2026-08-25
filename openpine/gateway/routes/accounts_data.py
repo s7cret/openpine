@@ -364,8 +364,10 @@ async def data_ticker24h(
     market_type: str = 'spot',
     state: GatewayState = Depends(get_state),
 ) -> dict[str, object]:
+    hour_ms = 60 * 60 * 1000
     end_time = int(time.time() * 1000)
-    start_time = end_time - 24 * 60 * 60 * 1000
+    end_time -= end_time % hour_ms
+    start_time = end_time - 24 * hour_ms
     try:
         exchange_id, symbol_id, query, bars = await asyncio.wait_for(
             asyncio.to_thread(

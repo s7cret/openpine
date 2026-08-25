@@ -137,6 +137,38 @@ async def _stop_runtime_services(*, runner=None, fetcher=None, supervisor=None) 
     return runner_quiesced and fetcher_quiesced and supervisor_quiesced
 
 
+def _process_refreshed_strategy_bars(
+    *, fanout, executor, scheduler, market_key, bars
+) -> None:
+    from openpine.jobs import JobType
+
+    for bar in bars:
+        fanout_result = fanout.process_source_bar(bar)
+        for job in fanout_result.jobs:
+            if job.job_type == JobType.LIVE_BAR_PROCESS:
+                scheduler.mark_failed(job.id, "LIVE_RC_BLOCKED")
+                log.warning(
+                    "strategy_bar_live_blocked",
+                    strategy_id=job.strategy_id,
+                    market_key=str(market_key),
+                    bar_time=getattr(bar, "time", None),
+                )
+                continue
+            result = executor.process(job)
+            status = str(getattr(result, "status", "failed"))
+            logger = log.info if status in {"done", "skipped"} else log.error
+            logger(
+                "strategy_bar_processed",
+                strategy_id=getattr(result, "strategy_id", job.strategy_id),
+                market_key=str(market_key),
+                bar_time=getattr(result, "bar_time", getattr(bar, "time", None)),
+                status=status,
+                snapshot_id=getattr(result, "snapshot_id", None),
+                trades_recorded=getattr(result, "trades_recorded", 0),
+                error=getattr(result, "error", None),
+            )
+
+
 def _run_background_services(
     stop_event,
     live_runner_enabled: bool = True,
@@ -148,14 +180,45 @@ def _run_background_services(
     async def _main() -> None:
         from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig
         from openpine.gateway.live_runner import LiveStrategyRunner, RunnerConfig
+        from openpine.storage.strategy_ledger import StrategyLedger
+        from openpine.workers.strategy_fanout import (
+            StrategyBarFanout,
+            StrategyBarFanoutConfig,
+        )
+        from openpine.workers.strategy_job_executor import StrategyJobExecutor
 
         state = GatewayState()
+        fanout = StrategyBarFanout(
+            registry=state.strategy_registry,
+            orchestrator=state.orchestrator,
+            scheduler=state.scheduler,
+            config=StrategyBarFanoutConfig(
+                persist_source=False,
+                persist_aggregates=False,
+                source="periodic",
+            ),
+        )
+        executor = StrategyJobExecutor(
+            registry=state.strategy_registry,
+            orchestrator=state.orchestrator,
+            scheduler=state.scheduler,
+            state_store=state.state_store,
+            ledger=StrategyLedger(state.storage),
+            artifact_store=state.artifact_store,
+        )
         fetcher = PeriodicBarFetcher(
             config=RefreshConfig(
                 interval_seconds=60.0, lookback_bars=2, source_timeframe="1m"
             ),
             registry=state.strategy_registry,
             orchestrator=state.orchestrator,
+            on_bars_refreshed=lambda market_key, bars: _process_refreshed_strategy_bars(
+                fanout=fanout,
+                executor=executor,
+                scheduler=state.scheduler,
+                market_key=market_key,
+                bars=bars,
+            ),
         )
         runner = None
         if live_runner_enabled:

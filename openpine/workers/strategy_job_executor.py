@@ -78,6 +78,7 @@ class RuntimeAdapter(Protocol):
         config: BacktestRunConfig,
         resume_state: Any | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
+        params: dict[str, Any] | None = None,
     ) -> Any: ...
 
 
@@ -102,6 +103,7 @@ class StrategyJobExecutor:
         scheduler: JobScheduler,
         state_store: StateStore,
         ledger: StrategyLedger | None = None,
+        artifact_store: Any | None = None,
         runtime_adapter: RuntimeAdapter | None = None,
         strategy_loader: StrategyClassLoader | None = None,
         runtime_data_provider: Any | None = None,
@@ -113,6 +115,7 @@ class StrategyJobExecutor:
         self.scheduler = scheduler
         self.state_store = state_store
         self.ledger = ledger
+        self.artifact_store = artifact_store
         self.runtime_adapter = runtime_adapter or BacktestEngineAdapter()
         self.strategy_loader = strategy_loader
         self.runtime_data_provider = runtime_data_provider
@@ -120,6 +123,7 @@ class StrategyJobExecutor:
         self.htf_timeframe = htf_timeframe
         self._job_htf_timeframe: str | None = None
         self._job_mtf_series: tuple[Any, ...] | None = None
+        self._job_id: str | None = None
         self._stamped_sources: dict[tuple[str, str], bytes] = {}
 
     def _requested_htf_timeframe(self) -> str | None:
@@ -203,6 +207,7 @@ class StrategyJobExecutor:
 
         try:
             self._validate_job(job)
+            self._job_id = job.id
             payload = _job_payload(job)
             requested = payload.get("htf_timeframe")
             self._job_htf_timeframe = str(requested) if requested else None
@@ -290,6 +295,7 @@ class StrategyJobExecutor:
         finally:
             self._job_htf_timeframe = None
             self._job_mtf_series = None
+            self._job_id = None
 
     def _validate_job(self, job: Job) -> None:
         if job.job_type not in {
@@ -306,9 +312,11 @@ class StrategyJobExecutor:
         instrument = _instrument_from_payload(strategy, payload)
         timeframe = parse_timeframe(str(payload["timeframe"]))
         bar_time = int(payload["bar_time"])
-        bar_close_time = int(
-            payload.get("bar_close_time") or bar_time + (timeframe.duration_ms or 0)
+        duration_ms = timeframe.duration_ms or 0
+        recorded_close_time = int(
+            payload.get("bar_close_time") or bar_time + duration_ms
         )
+        bar_close_time = max(recorded_close_time, bar_time + duration_ms)
         query = BarQuery(
             instrument=instrument,
             timeframe=timeframe,
@@ -336,19 +344,71 @@ class StrategyJobExecutor:
         self._stamped_sources[key] = stamped
         return stamped
 
+    def _bind_isolated_config(
+        self,
+        strategy: StrategyInstance,
+        bar: Bar,
+        config: BacktestRunConfig,
+        htf_bars,
+    ) -> None:
+        from openpine.admission import load_active_deployment_identity
+        from openpine.artifacts import ArtifactStore
+        from openpine.config import OpenPineConfig
+        from openpine.run_identity import bind_isolated_execution
+        from openpine.runtime.admitted_manifest import load_admitted_manifest
+
+        duration_ms = bar.timeframe.duration_ms or 0
+        query = BarQuery(
+            instrument=bar.instrument,
+            timeframe=bar.timeframe,
+            start_ms=bar.time,
+            end_ms=max(bar.time_close, bar.time + duration_ms),
+            source="storage",
+            gap_policy="fail",
+        )
+        series = self.orchestrator.load_bars(query)
+        bar_envelopes = getattr(series, "canonical_bars", None)
+        if not isinstance(bar_envelopes, tuple) or len(bar_envelopes) != 1:
+            raise RuntimeError("canonical marketdata bar envelope is required")
+
+        runtime_config = OpenPineConfig.load()
+        manifest_path = runtime_config.deployment_manifest
+        wheelhouse = runtime_config.deployment_wheelhouse
+        if manifest_path is None or wheelhouse is None:
+            raise RuntimeError("strategy job execution requires an admitted deployment")
+        store = self.artifact_store or ArtifactStore()
+        artifact = store.get_artifact(strategy.artifact_id, strategy.pine_id)
+        bind_isolated_execution(
+            config,
+            data_dir=runtime_config.data_dir,
+            deployment=load_active_deployment_identity(manifest_path, wheelhouse),
+            admitted_manifest=load_admitted_manifest(manifest_path),
+            mode="backtest",
+            run_id=f"strategy-job-{self._job_id or bar.time}",
+            strategy_id=strategy.strategy_id,
+            artifact=artifact,
+            bars=[bar],
+            bar_envelopes=bar_envelopes,
+            supplemental_bars=htf_bars,
+            created_at_utc_ms=max(0, int(bar.time_close)),
+        )
+
     def _run_strategy(
         self, strategy: StrategyInstance, bar: Bar, resume_state: Any | None
     ) -> Any:
         config = _build_bar_run_config(strategy, bar)
         params = _strategy_params(strategy)
+        htf_bars = self._confirmed_htf_bars(strategy, bar)
         if self.strategy_loader is None:
             source = self._stamped_artifact_source(strategy)
+            self._bind_isolated_config(strategy, bar, config, htf_bars)
             return self.runtime_adapter.run_isolated(
                 source,
                 [bar],
                 config,
                 resume_state=resume_state,
-                htf_bars=self._confirmed_htf_bars(strategy, bar),
+                htf_bars=htf_bars,
+                params=params,
             )
         strategy_class = self.strategy_loader(strategy)
         runtime_data_provider = self.runtime_data_provider

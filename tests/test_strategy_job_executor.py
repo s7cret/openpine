@@ -146,6 +146,50 @@ def _runtime_result(bar: Bar):
     )
 
 
+def test_target_bar_load_normalizes_inclusive_close_to_exclusive_query_end() -> None:
+    timeframe = parse_timeframe("15m")
+    bar = Bar(
+        instrument=InstrumentKey(
+            exchange="binance", market="spot", symbol="BTCUSDT"
+        ),
+        timeframe=timeframe,
+        time=0,
+        time_close=(timeframe.duration_ms or 0) - 1,
+        open=100.0,
+        high=110.0,
+        low=90.0,
+        close=105.0,
+        volume=42.0,
+        closed=True,
+    )
+    captured = []
+
+    class InclusiveStore:
+        def get_bars(self, query):
+            captured.append(query)
+            return [bar] if query.end_ms == timeframe.duration_ms else []
+
+    executor = StrategyJobExecutor(
+        registry=_Registry(_strategy()),
+        orchestrator=InclusiveStore(),
+        scheduler=JobScheduler(),
+        state_store=SimpleNamespace(),
+    )
+
+    loaded = executor._load_target_bar(
+        _strategy(),
+        {
+            "instrument_key": "binance:spot:BTCUSDT:trade",
+            "timeframe": "15m",
+            "bar_time": bar.time,
+            "bar_close_time": bar.time_close,
+        },
+    )
+
+    assert loaded is bar
+    assert captured[0].end_ms == timeframe.duration_ms
+
+
 def _storage(tmp_path):
     storage = SQLiteStorage(tmp_path / "openpine.sqlite")
     MigrationRunner().run_migrations(storage)
@@ -334,10 +378,17 @@ def test_delegated_job_loads_all_mtf_series_from_payload(monkeypatch, tmp_path) 
 
     class Adapter:
         def run_isolated(
-            self, source, bars, config, resume_state=None, htf_bars=None
+            self,
+            source,
+            bars,
+            config,
+            resume_state=None,
+            htf_bars=None,
+            params=None,
         ):
             seen["source"] = source
             seen["htf_bars"] = htf_bars
+            seen["params"] = params
             return _runtime_result(bar)
 
     monkeypatch.setattr(
@@ -351,12 +402,14 @@ def test_delegated_job_loads_all_mtf_series_from_payload(monkeypatch, tmp_path) 
         state_store=StateStore(tmp_path / "state"),
         runtime_adapter=Adapter(),
     )
+    monkeypatch.setattr(executor, "_bind_isolated_config", lambda *args: None)
 
     result = executor.process(job)
 
     assert result.status == StrategyJobStatus.DONE
     assert loaded == [("BTCUSDT", "1D"), ("ETHUSDT", "4h")]
     assert seen["source"] == b"STAMPED"
+    assert seen["params"] == {"length": 20}
     assert {
         (item["symbol"], item["timeframe"])
         for item in seen["htf_bars"]
