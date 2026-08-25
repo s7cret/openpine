@@ -3,7 +3,6 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-from fastapi import HTTPException
 from pydantic import ValidationError
 
 from openpine.gateway.routes import strategies as routes
@@ -49,30 +48,25 @@ class Registry:
             setattr(self.item, key, value)
 
 
-@pytest.mark.asyncio
-async def test_update_strategy_rejects_unknown_semantic_profile() -> None:
+def test_update_strategy_schema_rejects_semantic_profile_mutation() -> None:
     with pytest.raises(ValidationError):
         StrategyUpdate()
-    registry = Registry()
-    state = SimpleNamespace(strategy_registry=registry)
-    with pytest.raises(HTTPException) as excinfo:
-        await routes.update_strategy(
-            "s1",
-            StrategyUpdate(semantic_profile="nope"),
-            state,
-        )
-    assert excinfo.value.status_code == 403
-    assert registry.patched == {}
+    with pytest.raises(ValidationError):
+        StrategyUpdate.model_validate({"semantic_profile": "strict_5x"})
+    with pytest.raises(ValidationError):
+        StrategyUpdate.model_validate({"semantic_profile": "legacy_4x"})
 
 
 @pytest.mark.asyncio
-async def test_update_strategy_persists_admitted_semantic_profile() -> None:
+async def test_update_strategy_preserves_stored_semantic_profile() -> None:
     registry = Registry()
     state = SimpleNamespace(strategy_registry=registry)
+
     updated = await routes.update_strategy(
         "s1",
-        StrategyUpdate(semantic_profile="strict_5x"),
+        StrategyUpdate(name="Renamed"),
         state,
     )
-    assert registry.patched.get("semantic_profile") == "strict_5x"
-    assert updated.semantic_profile == "strict_5x"
+
+    assert registry.patched == {"name": "Renamed"}
+    assert updated.semantic_profile == "legacy_4x"

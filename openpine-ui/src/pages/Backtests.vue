@@ -40,8 +40,6 @@ const progressPoller = createVisibilityPoller({
 })
 
 const form = ref({ strategy_id: '', from_time: '', to_time: '', initial_capital: '' })
-const semanticProfile = ref('')
-const allowLegacy = ref(false)
 const mtfSeries = ref<MtfSeriesRow[]>([])
 const allAvailableFrom = computed(() => msToDate(availability.value?.earliest_available ?? availability.value?.effective_from))
 const selectableStrategies = computed(() => stStore.items.filter((item: any) => !item.archived))
@@ -51,8 +49,6 @@ const runValidationMessage = computed(() => {
   if (selectedStrategy.value?.archived) return t('backtests.archivedStrategyUnavailable')
   if (!form.value.from_time || !form.value.to_time) return t('backtests.selectDateRange')
   if (form.value.initial_capital !== '' && Number(form.value.initial_capital) <= 0) return t('backtests.initialCapitalInvalid')
-  if (!semanticProfile.value) return t('backtests.semanticProfileRequired')
-  if (semanticProfile.value === 'legacy_4x' && !allowLegacy.value) return t('backtests.allowLegacyRequired')
   const mtfError = mtfSeriesValidationKey(mtfSeries.value)
   if (mtfError) return t(mtfError)
   return ''
@@ -94,8 +90,6 @@ async function runBacktest() {
   if (payload.initial_capital === '' || payload.initial_capital == null) {
     delete payload.initial_capital
   }
-  payload.semantic_profile = semanticProfile.value
-  payload.allow_legacy = allowLegacy.value
   payload.mtf_series = toMtfSeriesRequests(mtfSeries.value)
   const result = await btStore.run(payload)
   runLoading.value = false
@@ -312,23 +306,6 @@ function effectiveRange(e: any) {
               :placeholder="t('backtests.initialCapitalPlaceholder')"
               class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
             />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-xs text-gray-500">{{ t('backtests.semanticProfile') }}</span>
-            <select
-              id="backtest-semantic-profile"
-              v-model="semanticProfile"
-              data-testid="backtest-semantic-profile"
-              class="bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
-            >
-              <option value="">{{ t('backtests.semanticProfileRequired') }}</option>
-              <option value="strict_5x">strict_5x</option>
-              <option value="legacy_4x">legacy_4x</option>
-            </select>
-          </label>
-          <label v-if="semanticProfile === 'legacy_4x'" class="flex items-center gap-2 text-xs text-gray-400">
-            <input id="backtest-allow-legacy" v-model="allowLegacy" type="checkbox" data-testid="backtest-allow-legacy" />
-            {{ t('backtests.allowLegacy') }}
           </label>
         </div>
         <MtfSeriesEditor v-model="mtfSeries" />

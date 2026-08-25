@@ -165,11 +165,11 @@ async def create_strategy(
         )
 
     from openpine_contracts import AdmitError
-    from openpine.admission import admit_semantic_profile
+    from openpine.admission import CURRENT_SEMANTIC_PROFILE, admit_semantic_profile
 
     try:
         admitted = admit_semantic_profile(
-            profile=body.semantic_profile,
+            profile=CURRENT_SEMANTIC_PROFILE,
             source="generated_artifact.v2",
         )
     except AdmitError as exc:
@@ -238,26 +238,13 @@ async def update_strategy(
         updates["params_hash"] = hashlib.sha256(
             updates["params_json"].encode()
         ).hexdigest()[:16]
-    if "semantic_profile" in updates:
-        from openpine_contracts import AdmitError
-        from openpine.admission import admit_semantic_profile
-
-        try:
-            updates["semantic_profile"] = admit_semantic_profile(
-                profile=updates["semantic_profile"],
-                source="generated_artifact.v2",
-            ).value
-        except AdmitError as exc:
-            raise HTTPException(403, str(exc)) from exc
     if updates.get("enabled"):
         from types import SimpleNamespace
 
         _require_admitted_semantic_profile(
             SimpleNamespace(
                 mode=updates.get("mode", getattr(s, "mode", None)),
-                semantic_profile=updates.get(
-                    "semantic_profile", getattr(s, "semantic_profile", None)
-                ),
+                semantic_profile=getattr(s, "semantic_profile", None),
                 allow_legacy=getattr(s, "allow_legacy", False),
             )
         )
@@ -308,7 +295,6 @@ async def update_strategy(
         "exchange",
         "market_type",
         "params_json",
-        "semantic_profile",
     ):
         if field in updates:
             simple_fields[field] = updates[field]
