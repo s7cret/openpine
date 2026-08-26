@@ -35,7 +35,7 @@
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
       "ref": "fix/calendar-aware-refresh-boundaries",
-      "sha": "affda7009d4f76296f5f07028934d5cad91cc3b1",
+      "sha": "4becdb14930773351de6ec5fa8a9b9d7f3167eb1",
       "version": "5.0.0rc5"
     },
     "pinelib": {
