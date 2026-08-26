@@ -112,6 +112,40 @@ def test_auto_load_does_not_rewrite_result_owned_by_persisting_provider() -> Non
     assert store.written == []
 
 
+def test_auto_chart_load_returns_partial_lightweight_storage_without_provider() -> None:
+    query = _query()
+    partial = _series(query, (_bar(query, 0),), source="storage")
+
+    class Store(_EmptyStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self.read_series_calls = 0
+
+        def read(self, query: BarQuery) -> BarSeries:
+            del query
+            raise AssertionError("chart load must not build a canonical snapshot")
+
+        def read_series(self, _query: BarQuery) -> BarSeries:
+            self.read_series_calls += 1
+            return partial
+
+    class Provider:
+        persists_fetches = True
+
+        def fetch_bars(self, query: BarQuery) -> object:
+            del query
+            raise AssertionError("partial chart storage must not block on provider repair")
+
+    store = Store()
+    loaded = DataOrchestrator(
+        provider=Provider(), store=store, cache_enabled=False
+    ).load_bars(query)
+
+    assert [bar.time for bar in loaded.bars] == [0]
+    assert loaded.coverage.is_complete is False
+    assert store.read_series_calls == 1
+
+
 def test_local_marketdata_provider_is_marked_as_persistence_owner(monkeypatch) -> None:
     canonical_provider = SimpleNamespace()
     monkeypatch.setattr(provider_adapter, "ensure_marketdata_provider_version", lambda: None)

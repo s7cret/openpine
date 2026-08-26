@@ -82,12 +82,12 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     siblings = lock["components"][1:]
     assert all(re.fullmatch(r"(?!0{40})[0-9a-f]{40}", item["commit"]) for item in siblings)
     expected_tree_sha256 = {
-        "openpine": "cc1fe073b1dda0037453525260f1e248d8a9616bd244153fd64de113d451af96",
+        "openpine": "7150a55573e2251763963f7c2c74d09d99bbdc5cea9f70ab5ddb7417bfdae0f8",
         "pine2ast": "6f8b72ac952b3f2e12b72a468c14bdabb30d0be298f95e7279176121df03ef64",
         "ast2python": "ed9c6c90ce64cc6df5851365e33c034ded2d10783f74c020603e798c5828f244",
         "pinelib": "c4ae65891b152a1ecdfce123704a43d1611dc923912292399c4d782cbbd713c1",
         "backtest_engine": "772741709d7ee6d8231241a3bb918013fbba34ab7b9bb32bbccdf8ea873c1775",
-        "marketdata_provider": "2e51acd37ad0f20f99f9ece1374605f691df90b5e37daf13d789a5c07822d6c8",
+        "marketdata_provider": "e15f519561ac603088bb6fe9fe7dd3e61e7eb438892f2b42fddee5db81deecd1",
         "optimizer": "3f586e50e152a6d5a07732e9412d11e7d138be6fbe570676125bc9e013c7ad8f",
     }
     assert {
