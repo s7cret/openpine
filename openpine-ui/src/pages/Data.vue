@@ -158,11 +158,25 @@ const summaryPoller = createVisibilityPoller({
   intervalMs: 30_000,
 })
 
+function refreshResultMessage(data: any) {
+  if (data?.status === 'actual') return t('data.seriesAlreadyActual')
+  const count = Number(data?.bars_loaded ?? 0)
+  return t('data.seriesUpdated', { count: Number.isFinite(count) ? count.toLocaleString() : '0' })
+}
+
 async function refreshSeries(id: string) {
   actionId.value = id
+  loadError.value = ''
+  actionStatus.value = {
+    ...actionStatus.value,
+    [id]: { status: 'running', pct: 0, message: t('data.updatingCandles') },
+  }
   try {
     const { data } = await refreshDataSeries(id)
-    actionStatus.value = { ...actionStatus.value, [id]: data }
+    actionStatus.value = {
+      ...actionStatus.value,
+      [id]: { ...data, message: refreshResultMessage(data) },
+    }
     await load(false)
   } catch (e: any) {
     markActionError(id, e, t('data.refreshFailedLong'))

@@ -76,6 +76,15 @@ describe('provider-backed market data API', () => {
     expect(dataSource).toContain('progressPctById(discoverBackfillKey(symbol))')
   })
 
+  it('shows localized loading and success messages for candle updates', () => {
+    const dataSource = readFileSync(resolve(srcRoot, 'pages/Data.vue'), 'utf8')
+
+    expect(dataSource).toContain("message: t('data.updatingCandles')")
+    expect(dataSource).toContain('refreshResultMessage(data)')
+    expect(dataSource).toContain("t('data.seriesAlreadyActual')")
+    expect(dataSource).toContain("t('data.seriesUpdated'")
+  })
+
   it('does not leave strategy/chart components coupled to browser-side Binance REST', () => {
     const chartSource = readFileSync(resolve(srcRoot, 'components/CandleChart.vue'), 'utf8')
     const strategiesSource = readFileSync(resolve(srcRoot, 'pages/Strategies.vue'), 'utf8')
