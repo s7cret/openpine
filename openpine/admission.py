@@ -516,14 +516,35 @@ def admit_semantic_profile(
     return resolved
 
 
+CURRENT_SEMANTIC_PROFILE = SemanticProfile.STRICT_5X.value
+
+
+def admit_strategy_semantic_profile(
+    strategy: Any,
+    *,
+    source: str,
+    requested_profile: object | None = None,
+) -> SemanticProfile:
+    """Admit the immutable semantic stamp stored on a strategy."""
+
+    stored_profile = getattr(strategy, "semantic_profile", None)
+    if requested_profile is not None and str(requested_profile) != str(stored_profile):
+        raise AdmitError(
+            "semantic profile is immutable for strategy",
+            code="SEMANTIC_PROFILE_MISMATCH",
+            details={"requested": str(requested_profile), "stored": str(stored_profile)},
+        )
+    return admit_semantic_profile(
+        profile=stored_profile,
+        source=source,
+        allow_legacy=str(stored_profile) == SemanticProfile.LEGACY_4X.value,
+    )
+
+
 def require_strategy_semantic_profile(strategy: Any) -> SemanticProfile:
     mode = str(getattr(strategy, "mode", "") or "")
     source = mode if mode in {"live", "paper"} else "backtest"
-    return admit_semantic_profile(
-        profile=getattr(strategy, "semantic_profile", None),
-        source=source,
-        allow_legacy=bool(getattr(strategy, "allow_legacy", False)),
-    )
+    return admit_strategy_semantic_profile(strategy, source=source)
 
 
 def require_admitted(**kwargs: Any) -> AdmitResult:

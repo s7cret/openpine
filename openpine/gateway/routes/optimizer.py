@@ -173,7 +173,7 @@ async def optimizer_dry_run(
     from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
 
     require_http_admit(state, "optimize")
-    from openpine.admission import admit_semantic_profile
+    from openpine.admission import admit_strategy_semantic_profile
     from openpine_contracts import AdmitError
 
     strategy = None
@@ -186,11 +186,10 @@ async def optimizer_dry_run(
             except KeyError:
                 strategy = None
     try:
-        admitted = admit_semantic_profile(
-            profile=getattr(req, "semantic_profile", None)
-            or getattr(strategy, "semantic_profile", None),
+        admitted = admit_strategy_semantic_profile(
+            strategy,
             source="backtest",
-            allow_legacy=bool(getattr(req, "allow_legacy", False)),
+            requested_profile=getattr(req, "semantic_profile", None),
         )
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc
@@ -232,15 +231,15 @@ async def optimizer_search(
     from openpine.jobs.persist import JobV1Error
 
     require_http_admit(state, "optimize")
-    from openpine.admission import admit_semantic_profile
+    from openpine.admission import admit_strategy_semantic_profile
     from openpine_contracts import AdmitError
 
     strategy = _optimizer_strategy(state, req.strategy_id)
     try:
-        admitted = admit_semantic_profile(
-            profile=req.semantic_profile or getattr(strategy, "semantic_profile", None),
+        admitted = admit_strategy_semantic_profile(
+            strategy,
             source="backtest",
-            allow_legacy=req.allow_legacy,
+            requested_profile=req.semantic_profile,
         )
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc

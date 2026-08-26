@@ -118,7 +118,6 @@ const form = ref({
   market_type: 'spot',
   params_json: '{}',
   mode: 'paper',
-  semantic_profile: '',
 })
 
 const timeframes = ref(['1m', '3m', '5m', '15m', '30m', '1h', '4h', '1d'])
@@ -331,21 +330,6 @@ async function addStrategy() {
   } finally {
     createLoading.value = false
   }
-}
-
-async function updateSemanticProfile(profile: string) {
-  const id = showDetail.value
-  if (!id || !profile) return
-  try {
-    await store.update(id, { semantic_profile: profile })
-  } catch (e: any) {
-    detailError.value = apiErrorMessage(e, t('strategies.strategyLoadFailed'))
-  }
-}
-
-function onDetailSemanticProfileChange(event: Event) {
-  const value = (event.target as HTMLSelectElement | null)?.value ?? ''
-  void updateSemanticProfile(value)
 }
 
 async function openDetail(id: string) {
@@ -873,22 +857,6 @@ function exitBadgeClass(exitId: string | null | undefined): string {
           </div>
         </div>
 
-        <div class="space-y-1">
-          <label class="text-[10px] uppercase tracking-wide text-gray-500" for="strategy-semantic-profile">
-            {{ t('strategies.semanticProfile') }}
-          </label>
-          <select
-            id="strategy-semantic-profile"
-            v-model="form.semantic_profile"
-            data-testid="strategy-semantic-profile"
-            class="w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
-          >
-            <option value="">{{ t('strategies.semanticProfileRequired') }}</option>
-            <option value="strict_5x">strict_5x</option>
-            <option value="legacy_4x">legacy_4x</option>
-          </select>
-        </div>
-
         <!-- Actions -->
         <div class="flex flex-wrap gap-2 justify-end items-center">
           <!-- Live validation hint: shown whenever Create is disabled and no
@@ -1187,21 +1155,6 @@ function exitBadgeClass(exitId: string | null | undefined): string {
                 </div>
               </div>
               <div><span class="text-xs text-gray-500">{{ t('strategies.created') }}</span><div class="text-xs text-gray-400">{{ formatTime(store.current?.created_at ?? null) }}</div></div>
-              <div>
-                <span class="text-xs text-gray-500">{{ t('strategies.semanticProfile') }}</span>
-                <select
-                  id="strategy-detail-semantic-profile"
-                  data-testid="strategy-detail-semantic-profile"
-                  :value="store.current?.semantic_profile ?? ''"
-                  :disabled="Boolean(store.current?.archived)"
-                  class="mt-1 w-full bg-dark-700 border border-dark-500 rounded-lg px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-accent disabled:opacity-50"
-                  @change="onDetailSemanticProfileChange"
-                >
-                  <option value="">{{ t('strategies.semanticProfileRequired') }}</option>
-                  <option value="strict_5x">strict_5x</option>
-                  <option value="legacy_4x">legacy_4x</option>
-                </select>
-              </div>
             </div>
 
             <div class="px-4 sm:px-5 pb-3 flex-1 min-h-[300px]">

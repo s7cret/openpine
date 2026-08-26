@@ -1286,14 +1286,11 @@ async def run_tv_parity(
         raise HTTPException(400, "Strategy has no pine_id or artifact_id. Compile first.")
     from pydantic.fields import FieldInfo
 
-    from openpine.admission import admit_semantic_profile
+    from openpine.admission import admit_strategy_semantic_profile
     from openpine_contracts import AdmitError
 
     requested_profile = (
         semantic_profile.default if isinstance(semantic_profile, FieldInfo) else semantic_profile
-    )
-    requested_allow_legacy = (
-        allow_legacy.default if isinstance(allow_legacy, FieldInfo) else allow_legacy
     )
     requested_htf_timeframe = (
         htf_timeframe.default if isinstance(htf_timeframe, FieldInfo) else htf_timeframe
@@ -1307,10 +1304,10 @@ async def run_tv_parity(
         htf_timeframe=requested_htf_timeframe,
     )
     try:
-        admitted_profile = admit_semantic_profile(
-            profile=requested_profile or getattr(strategy, "semantic_profile", None),
+        admitted_profile = admit_strategy_semantic_profile(
+            strategy,
             source="backtest",
-            allow_legacy=bool(requested_allow_legacy),
+            requested_profile=requested_profile,
         )
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc

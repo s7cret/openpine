@@ -21,7 +21,6 @@ function form(overrides: Partial<StrategyFormDraft> = {}): StrategyFormDraft {
     market_type: 'spot',
     params_json: '{}',
     mode: 'paper',
-    semantic_profile: '',
     ...overrides,
   }
 }
@@ -60,14 +59,11 @@ describe('strategy form helpers', () => {
     // Full form -> enabled
     expect(
       isCreateDisabled(form({ name: 'Demo', symbol: 'BTCUSDT', pine_id: 'src-1', artifact_id: 'art-1' })),
-    ).toBe(true)
-    expect(
-      isCreateDisabled(form({ name: 'Demo', symbol: 'BTCUSDT', pine_id: 'src-1', artifact_id: 'art-1', semantic_profile: 'strict_5x' })),
     ).toBe(false)
   })
 
   it('forces Create to stay disabled while a create request is in flight', () => {
-    expect(isCreateDisabled(form({ name: 'Demo', symbol: 'BTCUSDT', pine_id: 'src-1', artifact_id: 'art-1', semantic_profile: 'strict_5x' }), true)).toBe(true)
+    expect(isCreateDisabled(form({ name: 'Demo', symbol: 'BTCUSDT', pine_id: 'src-1', artifact_id: 'art-1' }), true)).toBe(true)
   })
 
   it('Create stays disabled when only artifact_id is set (no Pine source picked)', () => {
@@ -88,7 +84,6 @@ describe('strategy form helpers', () => {
       market_type: 'futures',
       params_json: '{}',
       mode: 'paper',
-      semantic_profile: '',
     })
   })
 

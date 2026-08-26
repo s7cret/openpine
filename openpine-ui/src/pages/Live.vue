@@ -14,8 +14,6 @@ const admission = ref<Record<string, unknown> | null>(null)
 const preview = ref<Record<string, unknown> | null>(null)
 const strategyId = ref('')
 const confirmation = ref('')
-const semanticProfile = ref('')
-const allowLegacy = ref(false)
 const error = ref('')
 const startResult = ref('')
 const mtfSeries = ref<MtfSeriesRow[]>([])
@@ -29,8 +27,6 @@ const canStart = computed(
     Boolean(preview.value) &&
     confirmation.value === 'LIVE' &&
     Boolean(strategyId.value) &&
-    Boolean(semanticProfile.value) &&
-    (semanticProfile.value !== 'legacy_4x' || allowLegacy.value) &&
     !mtfValidationMessage.value,
 )
 
@@ -64,8 +60,6 @@ async function startLive() {
     confirmation: confirmation.value,
     idempotency_key: `live-${strategyId.value}-${String(preview.value.preview_hash)}`,
     expires_at_utc_ms: preview.value.expires_at_utc_ms,
-    semantic_profile: semanticProfile.value,
-    allow_legacy: allowLegacy.value,
     mtf_series: toMtfSeriesRequests(mtfSeries.value),
   })
   startResult.value = JSON.stringify(data)
@@ -83,16 +77,6 @@ async function startLive() {
       <input id="live-strategy" v-model="strategyId" class="bg-dark-700 text-gray-100 text-sm px-2 py-1 rounded" />
       <button class="text-sm text-accent-light" type="button" @click="loadPreview">{{ t('live.review') }}</button>
       <p v-if="preview" class="text-xs text-gray-400 font-mono">{{ preview.preview_hash }}</p>
-      <label class="text-sm text-gray-300" for="live-semantic-profile">{{ t('live.semanticProfile') }}</label>
-      <select id="live-semantic-profile" v-model="semanticProfile" class="bg-dark-700 text-gray-100 text-sm px-2 py-1 rounded" data-testid="live-semantic-profile">
-        <option value="">{{ t('live.semanticProfileRequired') }}</option>
-        <option value="strict_5x">strict_5x</option>
-        <option value="legacy_4x">legacy_4x</option>
-      </select>
-      <label v-if="semanticProfile === 'legacy_4x'" class="text-sm text-gray-300" for="live-allow-legacy">
-        <input id="live-allow-legacy" v-model="allowLegacy" type="checkbox" data-testid="live-allow-legacy" />
-        {{ t('live.allowLegacy') }}
-      </label>
       <MtfSeriesEditor v-model="mtfSeries" />
       <p v-if="mtfValidationMessage" class="text-sm text-warning" role="status">
         {{ mtfValidationMessage }}

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from marketdata_provider import create_footprint_provider, create_provider
-from marketdata_provider.config import MarketDataConfig
+from marketdata_provider.config import ArtifactIdentityConfig, MarketDataConfig
 from marketdata_provider.contracts import (
     Bar,
     BarQuery,
@@ -228,6 +228,38 @@ def _coverage_for(
     )
 
 
+def bind_admitted_marketdata_artifact_identity(
+    config: MarketDataConfig,
+) -> MarketDataConfig:
+    identity = config.artifact_identity
+    if identity.producer_commit is not None or identity.stack_id is not None:
+        return config
+
+    import os
+
+    if not os.environ.get("OPENPINE_CANDIDATE_MANIFEST"):
+        return config
+
+    from openpine.runtime.admitted_manifest import load_admitted_manifest
+
+    manifest = load_admitted_manifest()
+    components = manifest.get("components")
+    marketdata = (
+        components.get("marketdata-provider") if isinstance(components, dict) else None
+    )
+    producer_commit = marketdata.get("sha") if isinstance(marketdata, dict) else None
+    stack_id = manifest.get("manifest_hash")
+    if not isinstance(producer_commit, str) or not isinstance(stack_id, str):
+        raise RuntimeError("admitted marketdata artifact identity is unavailable")
+    return replace(
+        config,
+        artifact_identity=ArtifactIdentityConfig(
+            producer_commit=producer_commit,
+            stack_id=stack_id,
+        ),
+    )
+
+
 def create_local_marketdata_provider_adapter(
     config: MarketDataConfig | None = None,
     *,
@@ -236,7 +268,7 @@ def create_local_marketdata_provider_adapter(
     """Create the canonical marketdata-provider adapter for OpenPine."""
 
     ensure_marketdata_provider_version()
-    cfg = config or MarketDataConfig()
+    cfg = bind_admitted_marketdata_artifact_identity(config or MarketDataConfig())
     if cache_dir is not None:
         cfg = replace(cfg, storage=replace(cfg.storage, cache_dir=Path(cache_dir)))
     provider = create_provider(cfg)

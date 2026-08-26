@@ -147,7 +147,7 @@ class StrategyCreate(BaseModel):
     market_type: str = Field(default="spot", min_length=1, max_length=32)
     params_json: str = Field(default="{}")
     mode: StrategyMode = StrategyMode.PAPER
-    semantic_profile: str = Field(..., min_length=1)
+    semantic_profile: Literal["strict_5x"] | None = None
 
     _validate_non_blank = field_validator(
         "name", "pine_id", "artifact_id", "symbol", "timeframe", "exchange", "market_type"
@@ -169,7 +169,6 @@ class StrategyUpdate(BaseModel):
     mode: StrategyMode | None = None
     enabled: bool | None = None
     archived: bool | None = None
-    semantic_profile: str | None = None
 
     _validate_non_blank = field_validator(
         "name", "symbol", "timeframe", "exchange", "market_type"

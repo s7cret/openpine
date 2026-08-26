@@ -35,6 +35,7 @@ def _strategy(
         price_type="trade",
         mode=mode,
         enabled=enabled,
+        status="running",
         mtf_series_json=mtf_series_json,
     )
 
@@ -63,11 +64,23 @@ def _bar(
 
 
 class _Registry:
-    def __init__(self, strategies: list[StrategyInstance]) -> None:
+    def __init__(
+        self,
+        strategies: list[StrategyInstance],
+        *,
+        epochs: dict[str, int] | None = None,
+    ) -> None:
         self._strategies = strategies
+        self._epochs = epochs or {}
 
     def list_strategies(self):
         return list(self._strategies)
+
+    def execution_epoch_started_at(
+        self, strategy_id: str, *, mode: str | None = None
+    ) -> int | None:
+        del mode
+        return self._epochs.get(strategy_id)
 
 
 class _Orchestrator:
@@ -75,9 +88,7 @@ class _Orchestrator:
         self.closed = []
         self.bars: dict[tuple[str, str, int], Bar] = {}
 
-    def on_candle_closed(
-        self, bar: Bar, *, instrument_key: str, timeframe: str, source: str
-    ):
+    def on_candle_closed(self, bar: Bar, *, instrument_key: str, timeframe: str, source: str):
         self.closed.append((bar, instrument_key, timeframe, source))
         self.bars[(bar.instrument.symbol, timeframe, bar.time)] = bar
 
@@ -86,9 +97,7 @@ class _Orchestrator:
         out = []
         step = query.timeframe.duration_ms or 0
         while current < query.end_ms:
-            bar = self.bars.get(
-                (query.instrument.symbol, query.timeframe.canonical, current)
-            )
+            bar = self.bars.get((query.instrument.symbol, query.timeframe.canonical, current))
             if bar is not None:
                 out.append(bar)
             current += step
@@ -111,9 +120,7 @@ def test_strategy_fanout_persists_source_and_enqueues_target_jobs() -> None:
     )
     orchestrator = _Orchestrator()
     scheduler = JobScheduler()
-    fanout = StrategyBarFanout(
-        registry=registry, orchestrator=orchestrator, scheduler=scheduler
-    )
+    fanout = StrategyBarFanout(registry=registry, orchestrator=orchestrator, scheduler=scheduler)
 
     for minute in range(14):
         orchestrator.on_candle_closed(
@@ -160,8 +167,7 @@ def test_strategy_fanout_snapshots_durable_mtf_series_into_delegated_job() -> No
                 timeframe="1m",
                 mode="live",
                 mtf_series_json=(
-                    '[{"symbol":"BTCUSDT","timeframe":"1D"},'
-                    '{"symbol":"ETHUSDT","timeframe":"4h"}]'
+                    '[{"symbol":"BTCUSDT","timeframe":"1D"},{"symbol":"ETHUSDT","timeframe":"4h"}]'
                 ),
             )
         ]
@@ -183,9 +189,7 @@ def test_strategy_fanout_dedupes_repeated_bar_jobs() -> None:
     registry = _Registry([_strategy("btc-1m", timeframe="1m")])
     orchestrator = _Orchestrator()
     scheduler = JobScheduler()
-    fanout = StrategyBarFanout(
-        registry=registry, orchestrator=orchestrator, scheduler=scheduler
-    )
+    fanout = StrategyBarFanout(registry=registry, orchestrator=orchestrator, scheduler=scheduler)
     bar = _bar(0)
 
     first = fanout.process_source_bar(bar)
@@ -194,16 +198,40 @@ def test_strategy_fanout_dedupes_repeated_bar_jobs() -> None:
     assert len(first.jobs) == 1
     assert len(second.jobs) == 1
     assert first.jobs[0].id == second.jobs[0].id
+    restarted = StrategyBarFanout(
+        registry=registry,
+        orchestrator=orchestrator,
+        scheduler=JobScheduler(),
+    ).process_source_bar(bar)
+    assert restarted.jobs[0].id == first.jobs[0].id
     assert len(scheduler.list_jobs()) == 1
+
+
+def test_strategy_fanout_skips_paper_bar_that_opened_before_activation() -> None:
+    registry = _Registry(
+        [_strategy("btc-1m", timeframe="1m")],
+        epochs={"btc-1m": 90_000},
+    )
+    scheduler = JobScheduler()
+    fanout = StrategyBarFanout(
+        registry=registry,
+        orchestrator=_Orchestrator(),
+        scheduler=scheduler,
+    )
+
+    straddling = fanout.process_source_bar(_bar(60_000))
+    post_activation = fanout.process_source_bar(_bar(120_000))
+
+    assert not straddling.jobs
+    assert len(post_activation.jobs) == 1
+    assert post_activation.jobs[0].input["bar_time"] == 120_000
 
 
 def test_strategy_fanout_waits_until_target_bar_closed() -> None:
     registry = _Registry([_strategy("btc-15m", timeframe="15m")])
     orchestrator = _Orchestrator()
     scheduler = JobScheduler()
-    fanout = StrategyBarFanout(
-        registry=registry, orchestrator=orchestrator, scheduler=scheduler
-    )
+    fanout = StrategyBarFanout(registry=registry, orchestrator=orchestrator, scheduler=scheduler)
 
     result = fanout.process_source_bar(_bar(60_000))
 

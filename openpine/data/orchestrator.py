@@ -9,7 +9,7 @@ from copy import deepcopy
 from concurrent.futures import Future
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, cast
 
 from openpine_contracts import validate_payload, verify_content_hash
 
@@ -23,9 +23,11 @@ from marketdata_provider.contracts import (
     CoverageReport,
     StoreResult,
 )
+from marketdata_provider.errors import MDValidationError
 
 from openpine.config import DEFAULT_CONFIG
 from openpine.data.models import CandleCommitResult, DataGap
+from openpine.data.provider_adapter import bind_admitted_marketdata_artifact_identity
 from openpine.data.persistent_cache import (
     cache_enabled_by_env,
     default_cache_dir,
@@ -83,9 +85,10 @@ class StorageUnavailableError(DataCoverageError):
 
 def _default_candle_store() -> CandleStore:
     cache_root = DEFAULT_CONFIG.data_cache_root or (DEFAULT_CONFIG.data_dir / "cache")
-    return create_candle_store(
-        MarketDataConfig(storage=StorageConfig(cache_dir=cache_root / "marketdata"))
+    config = MarketDataConfig(
+        storage=StorageConfig(cache_dir=cache_root / "marketdata")
     )
+    return create_candle_store(bind_admitted_marketdata_artifact_identity(config))
 
 
 def _canonical_series(
@@ -223,7 +226,9 @@ class DataOrchestrator:
             raise ValueError(f"unsupported data source: {query.source}")
 
         storage_series = self._load_storage(query, require_complete=False)
-        if storage_series.coverage.is_complete:
+        if storage_series.coverage.is_complete or (
+            storage_series.bars and query.gap_policy == "allow_with_metadata"
+        ):
             self._save_cache(storage_series)
             return storage_series
 
@@ -325,9 +330,23 @@ class DataOrchestrator:
 
     def _load_storage(self, query: BarQuery, *, require_complete: bool) -> LoadedBarSeries:
         try:
-            series = _canonical_series(
-                self._store.read(query), query, source="storage"
-            )
+            try:
+                series_reader = getattr(self._store, "read_series", None)
+                payload = (
+                    cast(Callable[[BarQuery], object], series_reader)(query)
+                    if query.gap_policy == "allow_with_metadata" and callable(series_reader)
+                    else self._store.read(query)
+                )
+            except MDValidationError as exc:
+                if str(exc) != "provider_revision is unavailable for an empty snapshot":
+                    raise
+                series: LoadedBarSeries = BarSeries(
+                    query=query,
+                    bars=(),
+                    coverage=_coverage_for(query, (), "storage"),
+                )
+            else:
+                series = _canonical_series(payload, query, source="storage")
         except Exception as exc:
             raise StorageUnavailableError(str(exc)) from exc
         self._validator.validate(series, allow_gaps=True)
@@ -357,6 +376,26 @@ class DataOrchestrator:
             save_bar_series(self._cache_dir, series)
         except Exception:
             return
+
+    def load_provider_series(
+        self,
+        query: BarQuery,
+        progress_callback: Callable[..., None] | None = None,
+    ) -> LoadedBarSeries:
+        """Load provider bars without forcing a canonical snapshot envelope."""
+
+        if self._provider is None:
+            raise ProviderUnavailableError("market data provider is not configured")
+        fetch_series = getattr(self._provider, "fetch_series", None)
+        if not callable(fetch_series):
+            return self._load_provider(query, progress_callback=progress_callback)
+        if progress_callback is not None and _accepts_progress_callback(fetch_series):
+            raw_series = fetch_series(query, progress_callback=progress_callback)
+        else:
+            raw_series = fetch_series(query)
+        series = _canonical_series(raw_series, query, source="provider")
+        self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
+        return series
 
     def _load_provider(
         self, query: BarQuery, progress_callback: Callable[..., None] | None = None

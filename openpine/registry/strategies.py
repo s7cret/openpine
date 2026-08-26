@@ -233,6 +233,23 @@ class SQLiteStrategyRegistry:
             ON strategy_instances(status)
         """)
         self._conn.execute("""
+            CREATE TABLE IF NOT EXISTS strategy_execution_epochs (
+                strategy_id TEXT PRIMARY KEY,
+                mode TEXT NOT NULL,
+                started_at INTEGER NOT NULL,
+                FOREIGN KEY (strategy_id) REFERENCES strategy_instances(strategy_id) ON DELETE CASCADE
+            )
+        """)
+        self._conn.execute("""
+            INSERT OR IGNORE INTO strategy_execution_epochs(strategy_id, mode, started_at)
+            SELECT strategy_id, 'paper', updated_at
+            FROM strategy_instances
+            WHERE strategy_id IS NOT NULL
+              AND enabled = 1
+              AND status = 'running'
+              AND mode = 'paper'
+        """)
+        self._conn.execute("""
             CREATE TABLE IF NOT EXISTS runtime_circuits (
                 name TEXT PRIMARY KEY,
                 is_open INTEGER NOT NULL DEFAULT 0,
@@ -374,16 +391,58 @@ class SQLiteStrategyRegistry:
             return list(self._mem.values())
         return [s for s in self._mem.values() if s.status == status]
 
+    def _set_execution_epoch_locked(
+        self, strategy_id: str, *, mode: str, started_at: int
+    ) -> None:
+        current = self._conn.execute(
+            "SELECT started_at FROM strategy_execution_epochs WHERE strategy_id = ?",
+            (strategy_id,),
+        ).fetchone()
+        effective_started_at = max(
+            int(started_at),
+            (int(current[0]) + 1) if current is not None else int(started_at),
+        )
+        self._conn.execute(
+            """INSERT INTO strategy_execution_epochs(strategy_id, mode, started_at)
+               VALUES (?, ?, ?)
+               ON CONFLICT(strategy_id) DO UPDATE SET
+                   mode = excluded.mode,
+                   started_at = excluded.started_at""",
+            (strategy_id, mode, effective_started_at),
+        )
+
+    @_serialized_connection
+    def execution_epoch_started_at(
+        self, strategy_id: str, *, mode: str = "paper"
+    ) -> int | None:
+        row = self._conn.execute(
+            "SELECT mode, started_at FROM strategy_execution_epochs WHERE strategy_id = ?",
+            (strategy_id,),
+        ).fetchone()
+        if row is None or str(row[0]) != mode:
+            return None
+        return int(row[1])
+
     @_serialized_connection
     def update_status(self, strategy_id: str, status: str) -> None:
         """Update the status of a strategy."""
         si = self.get_strategy(strategy_id)
+        previous_status = si.status
         si.status = status
         si.updated_at = int(time.time() * 1000)
         self._conn.execute(
             "UPDATE strategy_instances SET status = ?, updated_at = ? WHERE strategy_id = ?",
             (status, si.updated_at, si.strategy_id),
         )
+        if (
+            status == "running"
+            and previous_status != "running"
+            and si.enabled
+            and si.mode == "paper"
+        ):
+            self._set_execution_epoch_locked(
+                si.strategy_id, mode="paper", started_at=si.updated_at
+            )
         self._conn.commit()
 
     @_serialized_connection
@@ -471,7 +530,7 @@ class SQLiteStrategyRegistry:
         with self._lock:
             try:
                 self._conn.execute("BEGIN IMMEDIATE")
-                _current_enabled, archived, _status, _mode = (
+                current_enabled, archived, status, mode = (
                     self._strategy_execution_state_locked(strategy_id)
                 )
                 if enabled and archived:
@@ -485,6 +544,15 @@ class SQLiteStrategyRegistry:
                     "UPDATE strategy_instances SET enabled = ?, updated_at = ? WHERE strategy_id = ?",
                     (int(enabled), now, strategy_id),
                 )
+                if (
+                    enabled
+                    and not current_enabled
+                    and status == "running"
+                    and mode == "paper"
+                ):
+                    self._set_execution_epoch_locked(
+                        strategy_id, mode="paper", started_at=now
+                    )
                 self._conn.commit()
             except Exception:
                 self._conn.rollback()
@@ -503,7 +571,7 @@ class SQLiteStrategyRegistry:
         with self._lock:
             try:
                 self._conn.execute("BEGIN IMMEDIATE")
-                _enabled, archived, current_status, current_mode = (
+                current_enabled, archived, current_status, current_mode = (
                     self._strategy_execution_state_locked(strategy_id)
                 )
                 if archived:
@@ -521,6 +589,18 @@ class SQLiteStrategyRegistry:
                        WHERE strategy_id = ?""",
                     (next_status, next_mode, now, strategy_id),
                 )
+                if (
+                    next_status == "running"
+                    and next_mode == "paper"
+                    and (
+                        not current_enabled
+                        or current_status != "running"
+                        or current_mode != "paper"
+                    )
+                ):
+                    self._set_execution_epoch_locked(
+                        strategy_id, mode="paper", started_at=now
+                    )
                 self._conn.commit()
             except Exception:
                 self._conn.rollback()
@@ -559,6 +639,19 @@ class SQLiteStrategyRegistry:
                        WHERE strategy_id = ?""",
                     (int(next_enabled), next_status, next_mode, now, strategy_id),
                 )
+                if (
+                    next_enabled
+                    and next_status == "running"
+                    and next_mode == "paper"
+                    and (
+                        not current_enabled
+                        or current_status != "running"
+                        or current_mode != "paper"
+                    )
+                ):
+                    self._set_execution_epoch_locked(
+                        strategy_id, mode="paper", started_at=now
+                    )
                 self._conn.commit()
             except Exception:
                 self._conn.rollback()
@@ -591,9 +684,24 @@ class SQLiteStrategyRegistry:
             values = dict(updates)
             if not values:
                 return
+            if "params_hash" in values and "params_json" not in values:
+                raise ValueError("params_hash is derived from params_json")
+            if "params_json" in values:
+                try:
+                    parsed_params = json.loads(str(values["params_json"]))
+                except json.JSONDecodeError as exc:
+                    raise ValueError("params_json must be valid JSON") from exc
+                if not isinstance(parsed_params, dict):
+                    raise ValueError("params_json must contain an object")
+                values["params_json"] = json.dumps(
+                    parsed_params,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                values["params_hash"] = _make_params_hash(parsed_params)
             try:
                 self._conn.execute("BEGIN IMMEDIATE")
-                current_enabled, current_archived, current_status, _mode = (
+                current_enabled, current_archived, current_status, current_mode = (
                     self._strategy_execution_state_locked(strategy_id)
                 )
                 next_archived = bool(
@@ -619,12 +727,57 @@ class SQLiteStrategyRegistry:
                     }:
                         values["status"] = "paused"
                 values["updated_at"] = int(time.time() * 1000)
+                next_status = str(values.get("status", current_status))
+                next_mode = str(values.get("mode", current_mode))
+                execution_row = self._conn.execute(
+                    """SELECT params_json, params_hash, symbol, timeframe, exchange,
+                              market_type, semantic_profile
+                       FROM strategy_instances WHERE strategy_id = ?""",
+                    (strategy_id,),
+                ).fetchone()
+                if execution_row is None:
+                    raise KeyError(f"Strategy not found: {strategy_id}")
+                current_params = json.dumps(
+                    json.loads(str(execution_row[0] or "{}")),
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                current_execution = {
+                    "params_json": current_params,
+                    "params_hash": str(execution_row[1]),
+                    "symbol": str(execution_row[2]),
+                    "timeframe": str(execution_row[3]),
+                    "exchange": str(execution_row[4]),
+                    "market_type": str(execution_row[5]),
+                    "semantic_profile": execution_row[6],
+                    "mode": current_mode,
+                }
+                execution_changed = any(
+                    field in values and values[field] != current_value
+                    for field, current_value in current_execution.items()
+                )
                 columns = list(values)
                 set_clause = ", ".join(f"{column} = ?" for column in columns)
                 self._conn.execute(
                     f"UPDATE strategy_instances SET {set_clause} WHERE strategy_id = ?",
                     tuple(values[column] for column in columns) + (strategy_id,),
                 )
+                if (
+                    next_enabled
+                    and next_status == "running"
+                    and next_mode == "paper"
+                    and (
+                        not current_enabled
+                        or current_status != "running"
+                        or current_mode != "paper"
+                        or execution_changed
+                    )
+                ):
+                    self._set_execution_epoch_locked(
+                        strategy_id,
+                        mode="paper",
+                        started_at=int(values["updated_at"]),
+                    )
                 self._conn.commit()
             except Exception:
                 self._conn.rollback()

@@ -585,7 +585,7 @@ def test_periodic_fetcher_and_strategy_executor_remaining_branches(monkeypatch):
     result = executor.process(job)
     assert result.status == worker.StrategyJobStatus.DONE
     assert ledger.positions[-1].side.value == "short"
-    assert len(ledger.trades) == 1
+    assert len(ledger.trades) == 2
 
     failing_executor = worker.StrategyJobExecutor(
         registry=Registry(),

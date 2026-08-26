@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,32 @@ def _create(store: JobV1Store, job_id: str, *, key: str | None = None) -> dict:
         idempotency_key=key,
         input_artifact_refs=["semantic_profile:strict_5x"],
     )
+
+
+def test_job_store_accepts_strategy_execution_kinds(tmp_path: Path) -> None:
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    try:
+        for kind in ("paper", "observe", "live"):
+            job = store.create(job_id=f"job-{kind}", kind=kind, actor="strategy-worker")
+            assert job["kind"] == kind
+    finally:
+        store.close()
+
+
+def test_job_batch_creation_is_atomic(tmp_path: Path) -> None:
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    try:
+        specs = [
+            {"job_id": "paper-1", "kind": "paper", "idempotency_key": "paper-1"},
+            {"job_id": "paper-2", "kind": "paper", "idempotency_key": "paper-2"},
+            {"job_id": "bad", "kind": "unknown", "idempotency_key": "bad"},
+        ]
+        with pytest.raises(JobV1Error, match="unknown kind"):
+            store.create_batch(specs)
+
+        assert store.list_jobs(limit=10)["items"] == []
+    finally:
+        store.close()
 
 
 def test_job_store_finalizer_is_idempotent(tmp_path: Path) -> None:
@@ -139,6 +166,97 @@ def test_unique_idempotency_key_is_atomic_under_threads(tmp_path: Path) -> None:
         assert {job["job_id"] for job in results} == {results[0]["job_id"]}
         indexes = store._conn.execute("PRAGMA index_list(jobs)").fetchall()
         assert any(row[2] for row in indexes)
+    finally:
+        store.close()
+
+
+def test_worker_generation_recovery_fences_foreign_live_lease(tmp_path: Path) -> None:
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    try:
+        store.create(job_id="job-old-worker", kind="paper", actor="test")
+        store.create(job_id="job-backtest-worker", kind="backtest", actor="test")
+        store.mark_running(
+            "job-old-worker",
+            lease_owner="paper-worker:old",
+            lease_deadline_utc_ms=100_000,
+            now_ms=1_000,
+        )
+        store.mark_running(
+            "job-backtest-worker",
+            lease_owner="backtest-worker:active",
+            lease_deadline_utc_ms=100_000,
+            now_ms=1_000,
+        )
+
+        assert (
+            store.recover_worker_leases(
+                active_lease_owner="paper-worker:new",
+                now_ms=2_000,
+                kinds=("paper", "observe", "live"),
+            )
+            == 1
+        )
+        assert store.get("job-old-worker")["state"] == "LOST"
+        assert store.get("job-backtest-worker")["state"] == "RUNNING"
+    finally:
+        store.close()
+
+
+def test_publication_lease_rejects_fenced_worker_generation(tmp_path: Path) -> None:
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    try:
+        store.create(job_id="paper-publish", kind="paper", actor="test")
+        store.mark_running(
+            "paper-publish",
+            lease_owner="paper-worker:old",
+            lease_deadline_utc_ms=100_000,
+            now_ms=1_000,
+        )
+        with store.publication_lease(
+            "paper-publish", lease_owner="paper-worker:old", now_ms=2_000
+        ):
+            pass
+
+        store.recover_worker_leases(
+            active_lease_owner="paper-worker:new",
+            now_ms=3_000,
+            kinds=("paper",),
+        )
+        with pytest.raises(JobV1Error, match="RUNNING"):
+            with store.publication_lease(
+                "paper-publish", lease_owner="paper-worker:old", now_ms=4_000
+            ):
+                pass
+    finally:
+        store.close()
+
+
+def test_execution_lease_heartbeat_renews_long_running_job(tmp_path: Path) -> None:
+    store = JobV1Store(tmp_path / "jobs.sqlite")
+    try:
+        store.create(job_id="paper-heartbeat", kind="paper", actor="test")
+        now = int(time.time() * 1000)
+        store.mark_running(
+            "paper-heartbeat",
+            lease_owner="paper-worker:heartbeat",
+            lease_deadline_utc_ms=now + 1_000,
+            now_ms=now,
+        )
+        with store.heartbeat_lease(
+            "paper-heartbeat",
+            lease_owner="paper-worker:heartbeat",
+            ttl_ms=1_000,
+            interval_seconds=0.01,
+        ):
+            deadline = time.monotonic() + 1.0
+            while store.get("paper-heartbeat")["version"] < 4:
+                if time.monotonic() >= deadline:
+                    raise AssertionError("lease heartbeat did not renew")
+                time.sleep(0.01)
+
+        assert store.get("paper-heartbeat")["lease_owner"] == (
+            "paper-worker:heartbeat"
+        )
     finally:
         store.close()
 

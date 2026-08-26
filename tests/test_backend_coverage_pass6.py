@@ -819,7 +819,7 @@ def test_strategy_job_executor_process_done_skip_and_fail(monkeypatch):
     result = executor.process(job)
     assert result.status == worker.StrategyJobStatus.DONE
     assert result.trades_recorded == 1
-    assert ledger.positions and ledger.trades
+    assert not ledger.positions and ledger.trades
     assert scheduler.calls[-1][0] == "done"
 
     skipped_executor = worker.StrategyJobExecutor(

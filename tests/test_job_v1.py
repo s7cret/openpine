@@ -26,6 +26,9 @@ def test_unknown_kind_and_state_fail_closed(tmp_path) -> None:
         "backfill",
         "compile",
         "optimize",
+        "paper",
+        "observe",
+        "live",
         "parity",
         "report",
     )

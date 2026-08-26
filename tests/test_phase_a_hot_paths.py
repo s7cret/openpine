@@ -4,6 +4,7 @@ import asyncio
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from marketdata_provider.contracts import (
@@ -20,6 +21,10 @@ from openpine.data.orchestrator import DataOrchestrator
 from openpine.data import provider_adapter
 from openpine.data.periodic_fetcher import PeriodicBarFetcher, RawMarketKey, RefreshConfig
 from openpine.gateway.routes import accounts_data
+
+
+def _utc_ms(year: int, month: int, day: int) -> int:
+    return int(datetime(year, month, day, tzinfo=UTC).timestamp() * 1000)
 
 
 def _query(
@@ -107,6 +112,40 @@ def test_auto_load_does_not_rewrite_result_owned_by_persisting_provider() -> Non
     assert store.written == []
 
 
+def test_auto_chart_load_returns_partial_lightweight_storage_without_provider() -> None:
+    query = _query()
+    partial = _series(query, (_bar(query, 0),), source="storage")
+
+    class Store(_EmptyStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self.read_series_calls = 0
+
+        def read(self, query: BarQuery) -> BarSeries:
+            del query
+            raise AssertionError("chart load must not build a canonical snapshot")
+
+        def read_series(self, _query: BarQuery) -> BarSeries:
+            self.read_series_calls += 1
+            return partial
+
+    class Provider:
+        persists_fetches = True
+
+        def fetch_bars(self, query: BarQuery) -> object:
+            del query
+            raise AssertionError("partial chart storage must not block on provider repair")
+
+    store = Store()
+    loaded = DataOrchestrator(
+        provider=Provider(), store=store, cache_enabled=False
+    ).load_bars(query)
+
+    assert [bar.time for bar in loaded.bars] == [0]
+    assert loaded.coverage.is_complete is False
+    assert store.read_series_calls == 1
+
+
 def test_local_marketdata_provider_is_marked_as_persistence_owner(monkeypatch) -> None:
     canonical_provider = SimpleNamespace()
     monkeypatch.setattr(provider_adapter, "ensure_marketdata_provider_version", lambda: None)
@@ -116,6 +155,54 @@ def test_local_marketdata_provider_is_marked_as_persistence_owner(monkeypatch) -
 
     assert result is canonical_provider
     assert result.persists_fetches is True
+
+
+def test_backfill_provider_series_uses_lightweight_fetch_boundary() -> None:
+    query = _query(source="provider")
+    expected = _series(query, (_bar(query, 0), _bar(query, 60_000)), source="provider")
+    callback = object()
+
+    class Provider:
+        persists_fetches = True
+
+        def __init__(self) -> None:
+            self.calls: list[tuple[BarQuery, object]] = []
+
+        def fetch_series(self, request: BarQuery, progress_callback=None) -> BarSeries:
+            self.calls.append((request, progress_callback))
+            return expected
+
+        def fetch_bars(self, query: BarQuery) -> object:
+            del query
+            raise AssertionError("backfill must not build a canonical snapshot")
+
+    provider = Provider()
+    loaded = DataOrchestrator(
+        provider=provider, store=_EmptyStore(), cache_enabled=False
+    ).load_provider_series(query, progress_callback=callback)
+
+    assert loaded is expected
+    assert provider.calls == [(query, callback)]
+
+
+def test_backfill_route_prefers_lightweight_provider_series() -> None:
+    query = _query(source="provider")
+    expected = _series(query, (_bar(query, 0),), source="provider")
+    callback = object()
+
+    class Orchestrator:
+        def load_provider_series(self, request, progress_callback=None):
+            assert (request, progress_callback) == (query, callback)
+            return expected
+
+        def load_bars(self, *_args, **_kwargs):
+            raise AssertionError("canonical provider path must not be used")
+
+    loaded = accounts_data._load_backfill_source_series(
+        SimpleNamespace(orchestrator=Orchestrator()), query, callback
+    )
+
+    assert loaded is expected
 
 
 def test_periodic_refresh_does_not_rewrite_source_owned_by_provider(monkeypatch) -> None:
@@ -320,3 +407,150 @@ def test_manual_refresh_loads_only_tail_off_the_event_loop(monkeypatch) -> None:
     assert orchestrator.query.end_ms == 300_000
     assert orchestrator.thread_id != event_loop_thread
     assert result["from_ms"] == 120_000
+
+
+def test_manual_refresh_excludes_current_open_bar_from_query(monkeypatch) -> None:
+    inventory = {
+        "id": "series-1",
+        "exchange": "binance",
+        "market_type": "spot",
+        "symbol": "BTCUSDT",
+        "timeframe": "1m",
+        "earliest_ms": 0,
+        "latest_ms": 60_000,
+        "ranges": [{"from_ms": 0, "to_ms": 60_000}],
+        "status": "stale",
+    }
+    monkeypatch.setattr(accounts_data, "_series_by_id", lambda _state: {"series-1": inventory})
+    monkeypatch.setattr(accounts_data.time, "time", lambda: 300.5)
+
+    class Orchestrator:
+        def __init__(self) -> None:
+            self.query: BarQuery | None = None
+
+        def load_bars(self, query: BarQuery) -> BarSeries:
+            self.query = query
+            return _series(query, (), source="provider")
+
+    orchestrator = Orchestrator()
+
+    result = asyncio.run(
+        accounts_data.refresh_data_series(
+            "series-1",
+            SimpleNamespace(orchestrator=orchestrator),
+        )
+    )
+
+    assert orchestrator.query is not None
+    assert orchestrator.query.start_ms == 120_000
+    assert orchestrator.query.end_ms == 300_000
+    assert result["to_ms"] == 300_000
+
+
+def test_manual_refresh_returns_actual_when_only_current_open_bar_is_missing(
+    monkeypatch,
+) -> None:
+    inventory = {
+        "id": "series-1",
+        "exchange": "binance",
+        "market_type": "spot",
+        "symbol": "BTCUSDT",
+        "timeframe": "1m",
+        "earliest_ms": 0,
+        "latest_ms": 240_000,
+        "ranges": [{"from_ms": 0, "to_ms": 240_000}],
+        "status": "actual",
+    }
+    monkeypatch.setattr(accounts_data, "_series_by_id", lambda _state: {"series-1": inventory})
+    monkeypatch.setattr(accounts_data.time, "time", lambda: 300.5)
+
+    class Orchestrator:
+        def load_bars(self, query: BarQuery) -> BarSeries:
+            raise AssertionError(f"must not request the current open bar: {query}")
+
+    result = asyncio.run(
+        accounts_data.refresh_data_series(
+            "series-1",
+            SimpleNamespace(orchestrator=Orchestrator()),
+        )
+    )
+
+    assert result["status"] == "actual"
+    assert result["bars_loaded"] == 0
+    assert result["from_ms"] == 300_000
+    assert result["to_ms"] == 300_000
+
+
+def test_manual_refresh_respects_monday_aligned_weekly_candles(monkeypatch) -> None:
+    monday = _utc_ms(2024, 1, 1)
+    current_week = _utc_ms(2024, 1, 8)
+    friday = _utc_ms(2024, 1, 12)
+    inventory = {
+        "id": "series-1",
+        "exchange": "binance",
+        "market_type": "spot",
+        "symbol": "BTCUSDT",
+        "timeframe": "1W",
+        "earliest_ms": monday,
+        "latest_ms": monday,
+        "ranges": [{"from_ms": monday, "to_ms": monday}],
+        "status": "actual",
+    }
+    monkeypatch.setattr(accounts_data, "_series_by_id", lambda _state: {"series-1": inventory})
+    monkeypatch.setattr(accounts_data.time, "time", lambda: friday / 1000)
+
+    class Orchestrator:
+        def load_bars(self, query: BarQuery) -> BarSeries:
+            raise AssertionError(f"must not request the current weekly bar: {query}")
+
+    result = asyncio.run(
+        accounts_data.refresh_data_series(
+            "series-1",
+            SimpleNamespace(orchestrator=Orchestrator()),
+        )
+    )
+
+    assert result["status"] == "actual"
+    assert result["from_ms"] == current_week
+    assert result["to_ms"] == current_week
+
+
+def test_manual_refresh_uses_calendar_month_boundaries(monkeypatch) -> None:
+    january = _utc_ms(2024, 1, 1)
+    february = _utc_ms(2024, 2, 1)
+    march = _utc_ms(2024, 3, 1)
+    now_ms = _utc_ms(2024, 3, 15)
+    inventory = {
+        "id": "series-1",
+        "exchange": "binance",
+        "market_type": "spot",
+        "symbol": "BTCUSDT",
+        "timeframe": "1M",
+        "earliest_ms": january,
+        "latest_ms": january,
+        "ranges": [{"from_ms": january, "to_ms": january}],
+        "status": "stale",
+    }
+    monkeypatch.setattr(accounts_data, "_series_by_id", lambda _state: {"series-1": inventory})
+    monkeypatch.setattr(accounts_data.time, "time", lambda: now_ms / 1000)
+
+    class Orchestrator:
+        def __init__(self) -> None:
+            self.query: BarQuery | None = None
+
+        def load_bars(self, query: BarQuery) -> BarSeries:
+            self.query = query
+            return _series(query, (), source="provider")
+
+    orchestrator = Orchestrator()
+    result = asyncio.run(
+        accounts_data.refresh_data_series(
+            "series-1",
+            SimpleNamespace(orchestrator=orchestrator),
+        )
+    )
+
+    assert orchestrator.query is not None
+    assert orchestrator.query.start_ms == february
+    assert orchestrator.query.end_ms == march
+    assert result["remaining"] is False

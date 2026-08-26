@@ -118,8 +118,6 @@ describe('global UI correctness contracts', () => {
     const mount = live.split('onMounted')[1] ?? ''
     expect(live).toContain('/live/admission')
     expect(live).toContain('live-typed-confirm')
-    expect(live).toContain('live-semantic-profile')
-    expect(live).toContain('semantic_profile: semanticProfile.value')
     expect(live).toContain("confirmation.value === 'LIVE'")
     expect(mount).not.toContain('/live/start')
     expect(live).toContain('/live/start')
@@ -151,44 +149,31 @@ describe('global UI correctness contracts', () => {
     expect(source('components/MtfSeriesEditor.vue')).toContain('data-testid="mtf-series-row"')
   })
 
-  it('optimizer search sends an explicit semantic profile and mirrors validation', () => {
+  it('strategy-based tools do not expose semantic profile overrides', () => {
+    const strategies = source('pages/Strategies.vue')
+    const optimizer = source('pages/Optimizer.vue')
+    const backtests = source('pages/Backtests.vue')
+    const parity = source('pages/TvParity.vue')
+    const live = source('pages/Live.vue')
+
+    for (const page of [strategies, optimizer, backtests, parity, live]) {
+      expect(page).not.toContain('legacy_4x')
+      expect(page).not.toContain('allowLegacy')
+      expect(page).not.toContain('allow_legacy')
+    }
+    expect(strategies).not.toContain('strategy-semantic-profile')
+    expect(strategies).not.toContain('strategy-detail-semantic-profile')
+    expect(strategies).not.toContain('updateSemanticProfile')
+    expect(optimizer).not.toContain('optimizer-semantic-profile')
+    expect(backtests).not.toContain('backtest-semantic-profile')
+    expect(parity).not.toContain('tv-parity-semantic-profile')
+    expect(live).not.toContain('live-semantic-profile')
+  })
+
+  it('optimizer validation still mirrors its disabled button', () => {
     const page = source('pages/Optimizer.vue')
-    expect(page).toContain('optimizer-semantic-profile')
-    expect(page).toContain('semantic_profile: semanticProfile.value')
-    expect(page).toContain('allow_legacy: allowLegacy.value')
-    expect(page).toContain("t('optimizer.semanticProfileRequired')")
     expect(page).toContain('optimizerValidationMessage')
     expect(page).toContain('isSearchDisabled')
     expect(page).toContain(':disabled="isSearchDisabled"')
-  })
-
-  it('backtest start sends an explicit semantic profile', () => {
-    const page = source('pages/Backtests.vue')
-    expect(page).toContain('backtest-semantic-profile')
-    expect(page).toContain('semantic_profile')
-    expect(page).toContain('allow_legacy')
-    expect(page).toContain("t('backtests.semanticProfileRequired')")
-  })
-
-  it('tv parity start sends an explicit semantic profile', () => {
-    const page = source('pages/TvParity.vue')
-    expect(page).toContain('tv-parity-semantic-profile')
-    expect(page).toContain('semanticProfile: semanticProfile.value')
-    expect(page).toContain('allowLegacy: allowLegacy.value')
-    expect(page).toContain("t('tvParity.semanticProfileRequired')")
-  })
-
-  it('strategy create requires an explicit semantic profile', () => {
-    const page = source('pages/Strategies.vue')
-    expect(page).toContain('strategy-semantic-profile')
-    expect(page).toContain('v-model="form.semantic_profile"')
-    expect(page).toContain("t('strategies.semanticProfileRequired')")
-  })
-
-  it('strategy detail can PATCH semantic profile', () => {
-    const page = source('pages/Strategies.vue')
-    expect(page).toContain('strategy-detail-semantic-profile')
-    expect(page).toContain('updateSemanticProfile')
-    expect(page).toContain('semantic_profile:')
   })
 })
