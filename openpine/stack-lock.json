@@ -68,8 +68,8 @@
       "package": "marketdata-provider",
       "repository": "s7cret/marketdata-provider",
       "version": "5.0.0rc5",
-      "commit": "ed939ad3375a6995de7b1341aafb25f5a3714ee3",
-      "tree_sha256": "ee9c8addb83da0f79432edd62de9d4b47c22fa6beebf04b40413b9dbee06fd67",
+      "commit": "dc9f1ea8d941866e80f759df894ee0ea7841b9f3",
+      "tree_sha256": "2e51acd37ad0f20f99f9ece1374605f691df90b5e37daf13d789a5c07822d6c8",
       "contracts": {
         "marketdata_bar": "openpine.marketdata.bar.v2",
         "runtime": "1.4",
