@@ -48,6 +48,7 @@
     "openpine": {
       "repo": "s7cret/openpine",
       "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "242c159cc768e8000b3570706b643c768a047809",
       "version": "5.0.0rc6"
     }
   },

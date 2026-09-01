@@ -3,9 +3,83 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
+from openpine_contracts import seal_content_hash, validate_payload, verify_content_hash
 
 from openpine.registry.strategies import StrategyInstance
 from openpine.workers.strategy_job_executor import StrategyJobExecutor
+
+_COMPONENTS = (
+    "openpine-contracts",
+    "pine2ast",
+    "ast2python",
+    "pinelib",
+    "marketdata-provider",
+    "backtest_engine",
+    "optimizer",
+    "openpine",
+)
+
+
+def _sealed_execution_context(envelope: dict[str, str]) -> dict[str, object]:
+    stack = "sha256:" + "d" * 64
+    payload = {
+        "schema_id": "openpine.execution_context.v1",
+        "schema_version": "1.0.0",
+        "producer": "openpine",
+        "producer_version": "5.0.0",
+        "producer_commit": "8" * 40,
+        "stack_id": stack,
+        "created_at_utc_ms": 0,
+        "serializer_id": "openpine.canonical.json.v1",
+        "content_hash_alg": "sha256",
+        "run_id": "run-rc6",
+        "strategy_id": "strategy-1",
+        "session_id": "run-rc6:worker",
+        "stack_manifest_hash": stack,
+        "wheel_identities": [
+            {"name": name, "version": "5.0.0rc6", "content_hash": "sha256:" + f"{index:x}" * 64}
+            for index, name in enumerate(_COMPONENTS, start=1)
+        ],
+        "schema_hashes": {
+            schema_id: "sha256:" + "e" * 64
+            for schema_id in (
+                "openpine.execution_context.v1",
+                "openpine.intent.v2",
+                "openpine.worker.protocol.v2",
+                "openpine.checkpoint.v1",
+                "openpine.checkpoint.proof.v1",
+            )
+        },
+        "generated_artifact_hash": envelope["content_hash"],
+        "source_hash": envelope["source_hash"],
+        "emitted_module_hash": envelope["emitted_module_hash"],
+        "data_snapshot_hash": "sha256:" + "f" * 64,
+        "series_id": "binance:spot:BTCUSDT:15m",
+        "instrument_id": "binance:spot:BTCUSDT",
+        "exchange": "binance",
+        "market": "spot",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "timezone": "UTC",
+        "currency": "USD",
+        "mintick": "0.01",
+        "pointvalue": "1",
+        "session_policy": "24x7",
+        "semantic_profile": "strict_5x",
+        "finality_policy": "CLOSED_BAR_ONLY",
+        "warmup_policy": "CALC_ONLY",
+        "score_policy": "ALL_BARS",
+        "end_policy": "LIQUIDATE_ON_LAST_BAR",
+        "capabilities": ["checkpoint_v1", "closed_bar", "deterministic_clock", "sealed_artifact_refs"],
+        "producer_commits": {name: f"{index:x}" * 40 for index, name in enumerate(_COMPONENTS, start=1)},
+        "policy_registry_version": "openpine.policies.rc4.v1",
+        "schema_registry_version": "openpine.schemas.rc4.v1",
+        "capability_registry_version": "openpine.capabilities.rc4.v1",
+    }
+    sealed = seal_content_hash(payload, schema_id="openpine.execution_context.v1")
+    validate_payload("openpine.execution_context.v1", sealed)
+    assert verify_content_hash(sealed, schema_id="openpine.execution_context.v1")
+    return sealed
 
 
 def _strategy() -> StrategyInstance:
@@ -263,8 +337,10 @@ def test_job_executor_passes_sealed_v3_envelope_to_run_isolated(monkeypatch) -> 
         "emitted_module_hash": "sha256:" + "3" * 64,
         "producer": {"name": "ast2python", "commit": "b" * 40},
     }
+    context = _sealed_execution_context(envelope)
     artifact = {
         "generated_artifact": envelope,
+        "execution_context": context,
         "compile_meta": {"translation_metadata": {"declaration": {"arguments": {}}}},
     }
     monkeypatch.setattr(
@@ -301,8 +377,11 @@ def test_job_executor_passes_sealed_v3_envelope_to_run_isolated(monkeypatch) -> 
     executor._run_strategy(_strategy(), _bar(0), None)
     assert seen["source"] == b"STAMPED"
     assert seen["generated_artifact"] == envelope
-    context = seen["execution_context"]
-    assert isinstance(context, dict)
-    assert context["generated_artifact_hash"] == envelope["content_hash"]
-    assert context["source_hash"] == envelope["source_hash"]
-    assert context["emitted_module_hash"] == envelope["emitted_module_hash"]
+    passed = seen["execution_context"]
+    assert isinstance(passed, dict)
+    assert passed["schema_id"] == "openpine.execution_context.v1"
+    assert passed["content_hash"]
+    assert passed["generated_artifact_hash"] == envelope["content_hash"]
+    assert passed["source_hash"] == envelope["source_hash"]
+    assert passed["emitted_module_hash"] == envelope["emitted_module_hash"]
+    assert passed == context

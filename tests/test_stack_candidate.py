@@ -19,6 +19,7 @@ EXPECTED_SHAS = {
     "pine2ast": "892fee8c2b0443e702918248f2d2642c877723e7",
     "ast2python": "2655b31a826d43b9df5a88c25186a69377eb09e2",
     "optimizer": "5a62efc672a08e05f7443d3b678fa2595249935a",
+    "openpine": "242c159cc768e8000b3570706b643c768a047809",
 }
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
@@ -61,12 +62,9 @@ def test_candidate_template_pins_eight_repos_and_is_not_active() -> None:
     assert payload["not_a_release"] is True
     components = payload["components"]
     assert set(components) == REQUIRED
-    assert {name: row["sha"] for name, row in components.items() if name != "openpine"} == EXPECTED_SHAS
+    assert {name: row["sha"] for name, row in components.items()} == EXPECTED_SHAS
     for name, row in components.items():
         assert row["version"] == "5.0.0rc6"
-        if name == "openpine":
-            assert "sha" not in row
-            continue
         assert SHA40.fullmatch(row["sha"]), name
     assert _resolver().resolve_candidate(ROOT) is None
     historical = json.loads(HISTORICAL.read_text(encoding="utf-8"))
@@ -127,12 +125,16 @@ def test_candidate_workflows_bind_the_rc6_template_and_component_shas(
 
     assert "stack-candidate-5.0.0-rc.6.template.json" in workflow
     assert "stack-candidate-5.0.0-rc.4.template.json" not in workflow
-    expected_literals = EXPECTED_SHAS.values()
+    expected_literals = (
+        sha
+        for component, sha in EXPECTED_SHAS.items()
+        if component != "openpine"
+    )
     if workflow_name == "stack-ci.yml":
         expected_literals = (
             sha
             for component, sha in EXPECTED_SHAS.items()
-            if component != "openpine-contracts"
+            if component not in {"openpine", "openpine-contracts"}
         )
         assert "steps.stack.outputs.openpine_contracts_sha" in workflow
     for sha in expected_literals:
@@ -246,7 +248,7 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
     materializer = _materializer()
     payload = materializer.materialize_candidate(
         json.loads(TEMPLATE.read_text(encoding="utf-8")),
-        openpine_sha="d" * 40,
+        openpine_sha=EXPECTED_SHAS["openpine"],
         created_at_utc="2026-08-20T21:00:00Z",
         provenance={"builder": "test", "run_id": "1"},
     )
@@ -258,7 +260,7 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
     assert outputs["candidate_path"] == manifest.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
     assert outputs["pine2ast_sha"] == EXPECTED_SHAS["pine2ast"]
-    assert outputs["openpine_sha"] == "d" * 40
+    assert outputs["openpine_sha"] == EXPECTED_SHAS["openpine"]
 
 
 def test_candidate_resolver_rejects_github_output_injection(tmp_path: Path) -> None:
@@ -267,7 +269,7 @@ def test_candidate_resolver_rejects_github_output_injection(tmp_path: Path) -> N
     manifest = tmp_path / "stack-candidate-evil.json"
     payload = materializer.materialize_candidate(
         json.loads(TEMPLATE.read_text(encoding="utf-8")),
-        openpine_sha="d" * 40,
+        openpine_sha=EXPECTED_SHAS["openpine"],
         created_at_utc="2026-08-20T21:00:00Z",
         provenance={"builder": "test", "run_id": "1"},
     )

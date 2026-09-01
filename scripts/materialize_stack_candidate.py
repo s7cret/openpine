@@ -127,11 +127,11 @@ def materialize_candidate(
         )
         if VERSION.fullmatch(version) is None:
             raise CandidateMaterializationError(f"{name}.version must be a candidate version")
-        sha = (
-            _require_sha(openpine_sha, label="openpine sha")
-            if name == "openpine"
-            else _require_sha(raw_row.get("sha"), label=f"{name} sha")
-        )
+        sha = _require_sha(raw_row.get("sha"), label=f"{name} sha")
+        if name == "openpine" and sha != _require_sha(openpine_sha, label="openpine sha"):
+            raise CandidateMaterializationError(
+                "openpine template sha must match --openpine-sha"
+            )
         components[name] = {
             "repo": repo,
             "ref": ref,

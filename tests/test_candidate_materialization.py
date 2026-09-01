@@ -41,6 +41,7 @@ def _template() -> dict[str, object]:
             "openpine": {
                 "repo": "s7cret/openpine",
                 "ref": "feat/5.0-isolated-worker",
+                "sha": SHA,
                 "version": "5.0.0rc4",
             },
         },

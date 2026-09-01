@@ -43,6 +43,7 @@ def _source_candidate() -> dict:
                 "openpine": {
                     "repo": "s7cret/openpine",
                     "ref": "feat/5.0-isolated-worker",
+                    "sha": "b" * 40,
                     "version": "5.0.0rc4",
                 },
                 "openpine-contracts": {

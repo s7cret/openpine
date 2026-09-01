@@ -576,16 +576,24 @@ def _execution_context_from_artifact(artifact: dict[str, Any] | None) -> dict[st
         return None
     if envelope.get("schema_id") != "openpine.generated_artifact.v3":
         raise RuntimeError("sealed V3 generated artifact is required")
-    producer_raw = envelope.get("producer")
-    producer = producer_raw if isinstance(producer_raw, dict) else {}
-    return {
-        "generated_artifact_hash": envelope.get("content_hash"),
-        "source_hash": envelope.get("source_hash"),
-        "emitted_module_hash": envelope.get("emitted_module_hash"),
-        "producer_commits": {
-            "ast2python": producer.get("commit"),
-        },
-    }
+    context = artifact.get("execution_context")
+    if not isinstance(context, dict):
+        raise RuntimeError("sealed execution_context.v1 is required")
+    from openpine_contracts import validate_payload, verify_content_hash
+
+    try:
+        validate_payload("openpine.execution_context.v1", context)
+    except Exception as exc:
+        raise RuntimeError("sealed execution_context.v1 is invalid") from exc
+    if not verify_content_hash(context, schema_id="openpine.execution_context.v1"):
+        raise RuntimeError("sealed execution_context.v1 content hash is invalid")
+    if context.get("generated_artifact_hash") != envelope.get("content_hash"):
+        raise RuntimeError("execution_context does not bind the generated artifact")
+    if context.get("source_hash") != envelope.get("source_hash"):
+        raise RuntimeError("execution_context source_hash does not match generated artifact")
+    if context.get("emitted_module_hash") != envelope.get("emitted_module_hash"):
+        raise RuntimeError("execution_context emitted_module_hash does not match generated artifact")
+    return context
 
 
 def _artifact_declaration_args(strategy: StrategyInstance) -> dict[str, Any]:
