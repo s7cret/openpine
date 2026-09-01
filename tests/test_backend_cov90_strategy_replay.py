@@ -105,6 +105,10 @@ def test_strategy_replay_success_and_failure(monkeypatch, job_store):
 
     iso = types.ModuleType("openpine.runtime.isolated_run")
     iso.capture_generated_source = lambda *a, **k: b"src"
+    monkeypatch.setattr(
+        "openpine.run_identity.verified_generated_source",
+        lambda *a, **k: b"src",
+    )
     monkeypatch.setitem(sys.modules, "openpine.runtime.isolated_run", iso)
 
     reg = Registry()

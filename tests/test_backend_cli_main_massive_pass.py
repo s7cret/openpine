@@ -121,26 +121,6 @@ def test_run_openpine_cli_success_and_failure(monkeypatch):
         cli_main._run_openpine_cli(["bad"])
 
 
-def test_pine_commands_success_and_error_edges(monkeypatch, tmp_path):
-    _install_registry(monkeypatch)
-    import openpine.compile as compile_mod
-    monkeypatch.setattr(compile_mod, "SubprocessCompilerAdapter", lambda: object())
-    monkeypatch.setattr(compile_mod, "compile_pipeline", lambda source, adapter: {"success": True, "artifact_id": "artifact-2", "artifact_path": "/tmp/a.py", "errors": []})
-    runner = CliRunner()
-    pine_file = tmp_path / "src.pine"
-    pine_file.write_text('strategy("s")\n', encoding="utf-8")
-    for args in (["pine", "list"], ["pine", "list", "--json"], ["pine", "show", "src"], ["pine", "pine-add", "src", str(pine_file)], ["pine", "pine-compile", "src"], ["pine", "artifacts", "src"], ["pine", "versions", "src"], ["pine", "activate", "src", "artifact-1"], ["pine", "rollback", "src"], ["pine", "rollback", "src", "--to-version", "artifact-1"], ["pine", "remove", "src"]):
-        res = runner.invoke(cli_main.cli, list(args))
-        assert res.exit_code == 0, (args, res.output)
-    _Registry.missing = True
-    for args in (["pine", "show", "missing"], ["pine", "pine-compile", "missing"], ["pine", "artifacts", "missing"], ["pine", "versions", "missing"], ["pine", "activate", "missing", "x"], ["pine", "rollback", "missing"], ["pine", "remove", "missing"]):
-        res = runner.invoke(cli_main.cli, list(args))
-        assert res.exit_code == 0, (args, res.output)
-    _Registry.missing = False
-    res = runner.invoke(cli_main.cli, ["pine", "activate", "src", "nope"])
-    assert res.exit_code == 0
-    monkeypatch.setattr(compile_mod, "compile_pipeline", lambda source, adapter: {"success": False, "errors": ["bad"]})
-    assert runner.invoke(cli_main.cli, ["pine", "pine-compile", "src"]).exit_code == 0
 
 
 def test_init_stream_state_account_provider_risk_core_plugins(monkeypatch, tmp_path):

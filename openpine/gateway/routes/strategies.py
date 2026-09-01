@@ -170,7 +170,7 @@ async def create_strategy(
     try:
         admitted = admit_semantic_profile(
             profile=body.semantic_profile,
-            source="generated_artifact.v2",
+            source="generated_artifact.v3",
         )
     except AdmitError as exc:
         raise HTTPException(403, str(exc)) from exc
@@ -245,7 +245,7 @@ async def update_strategy(
         try:
             updates["semantic_profile"] = admit_semantic_profile(
                 profile=updates["semantic_profile"],
-                source="generated_artifact.v2",
+                source="generated_artifact.v3",
             ).value
         except AdmitError as exc:
             raise HTTPException(403, str(exc)) from exc

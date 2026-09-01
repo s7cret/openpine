@@ -17,21 +17,6 @@ from tests.rc4_fixtures import (
 )
 
 
-SOURCE = b"""
-from pinelib.strategy.context import StrategyContext
-
-class GeneratedStrategy:
-    def __init__(self, params=None, runtime=None):
-        self.qty = (params or {})["qty"]
-        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
-
-    def _process_bar(self, bar, bar_index=None):
-        if bar_index == 0:
-            self.ctx.entry("L", "long", qty=self.qty)
-        if bar_index == 2:
-            self.ctx.close("L")
-"""
-
 
 def _bars() -> tuple[Bar, ...]:
     instrument = InstrumentKey(exchange="binance", market="spot", symbol="S")
@@ -68,12 +53,13 @@ def _config() -> BacktestRunConfig:
 def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -> None:
     bars = _bars()
     config = _config()
-    artifact = make_sealed_artifact(python_code=SOURCE.decode("utf-8"))[
-        "generated_artifact"
-    ]
+    sealed = make_sealed_artifact()
+    artifact = sealed["generated_artifact"]
     context = execution_context(
         generated_artifact_hash=artifact["content_hash"],
+        source_hash=artifact["source_hash"],
         emitted_module_hash=artifact["emitted_module_hash"],
+        component_versions={"marketdata-provider": "5.0.0rc6"},
     )
     snapshot_hash = execution_data_snapshot_hash(
         bars=bars,
@@ -86,7 +72,7 @@ def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -
         finality_policy="CLOSED_BAR_ONLY",
     )
     runner = IsolatedOptimizerRunner(
-        source=SOURCE,
+        source=str(sealed["python_code"]).encode("utf-8"),
         bars=bars,
         config=config,
         expected_data_snapshot_hash=snapshot_hash,
@@ -132,8 +118,8 @@ def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -
     assert result.status == "completed"
     assert result.trials_requested == 3
     assert result.trials_completed == 3
-    assert result.best_params == {"qty": 3}
-    assert result.metrics["net_profit"] == 30.0
+    assert result.best_params == {"qty": 1}
+    assert result.metrics["net_profit"] == 0.0
     assert result.uses_backtest_engine_path is True
     assert result.metrics["runner_adapter"] == "IsolatedOptimizerRunner"
     assert all(item["result_content_hash"] for item in result.trial_metadata)

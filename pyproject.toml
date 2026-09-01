@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openpine"
-version = "5.0.0rc4"
+version = "5.0.0rc6"
 description = "OpenPine product orchestration boundary for the Pine stack"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,13 +23,13 @@ dependencies = [
     "websockets>=14.0",
     "pandas>=2.0.0",
     "pyarrow>=15.0.0",
-    "pine2ast==5.0.0rc4",
-    "ast2python==5.0.0rc4",
-    "pinelib==5.0.0rc4",
-    "backtest-engine==5.0.0rc4",
-    "marketdata-provider==5.0.0rc4",
-    "optimizer==5.0.0rc4",
-    "openpine-contracts==5.0.0rc4",
+    "pine2ast==5.0.0rc6",
+    "ast2python==5.0.0rc6",
+    "pinelib==5.0.0rc6",
+    "backtest-engine==5.0.0rc6",
+    "marketdata-provider==5.0.0rc6",
+    "optimizer==5.0.0rc6",
+    "openpine-contracts==5.0.0rc6",
 ]
 
 [project.urls]
@@ -101,7 +101,7 @@ disallow_untyped_defs = false
 "openpine/gateway/worker_supervisor.py" = ["BLE001", "S110"]
 "openpine/workers/strategy_job_executor.py" = ["BLE001"]
 "openpine/batch/runner.py" = ["BLE001", "S603"]
-"openpine/compile/adapter.py" = ["BLE001", "S603"]
+
 "openpine/daemon/service.py" = ["BLE001"]
 # Gateway lifecycle, websocket, and dependency adapters isolate client,
 # optional dependency, and shutdown failures from the serving process.

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from bisect import bisect_left
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -23,106 +22,7 @@ from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_an
 
 log = structlog.get_logger(__name__)
 
-REQUIRED_MARKETDATA_PROVIDER_VERSION = "5.0.0rc4"
-
-
-class RuntimeDataProviderAdapter:
-    """Pine runtime data provider backed by the canonical BarQuery provider."""
-
-    def __init__(
-        self,
-        provider: MarketDataProvider,
-        *,
-        exchange: str,
-        market: str,
-        prefetch_end_ms: int | None = None,
-    ) -> None:
-        self._provider = provider
-        from openpine.data.orchestrator import DataOrchestrator
-
-        self._orchestrator = DataOrchestrator(provider=provider)
-        self.exchange = exchange.lower()
-        self.market = market.lower()
-        self.prefetch_end_ms = prefetch_end_ms
-        self._bars_cache: dict[
-            tuple[str, str, str, str], tuple[int, int, list[Any], list[int]]
-        ] = {}
-
-    def get_bars(
-        self,
-        symbol: str,
-        timeframe: str,
-        start_ms: int | None,
-        end_ms: int | None,
-        *,
-        max_bars: int | None = None,
-        exchange: str | None = None,
-        market: str | None = None,
-    ) -> list[Any]:
-        from pinelib.core.bar import from_contract_bar
-
-        if start_ms is None or end_ms is None:
-            raise ValueError(
-                "Pine runtime marketdata requests require bounded start/end"
-            )
-        exchange_key = (exchange or self.exchange).lower()
-        market_key = (market or self.market).lower()
-        symbol_key = symbol.upper()
-        timeframe_key = parse_timeframe(timeframe).canonical
-        cache_key = (exchange_key, market_key, symbol_key, timeframe_key)
-        cached = self._bars_cache.get(cache_key)
-        if cached is not None:
-            cached_start, cached_end, cached_bars, cached_times = cached
-            if cached_start <= start_ms and cached_end >= end_ms:
-                left = bisect_left(cached_times, start_ms)
-                right = bisect_left(cached_times, end_ms)
-                bars = cached_bars[left:right]
-                return bars[:max_bars] if max_bars is not None else bars
-
-        fetch_end_ms = max(end_ms, self.prefetch_end_ms or end_ms)
-        timeframe_obj = parse_timeframe(timeframe_key)
-        query = BarQuery(
-            instrument=InstrumentKey(
-                exchange=exchange_key,
-                market=market_key,
-                symbol=symbol_key,
-            ),
-            timeframe=timeframe_obj,
-            start_ms=int(start_ms),
-            end_ms=int(fetch_end_ms),
-            gap_policy="allow_with_metadata",
-        )
-        fetched = [
-            from_contract_bar(bar) for bar in self._orchestrator.load_bars(query).bars
-        ]
-        fetched_times = [bar.time for bar in fetched]
-        self._bars_cache[cache_key] = (start_ms, fetch_end_ms, fetched, fetched_times)
-        left = bisect_left(fetched_times, start_ms)
-        right = bisect_left(fetched_times, end_ms)
-        bars = fetched[left:right]
-        if max_bars is not None:
-            bars = bars[:max_bars]
-        return bars
-
-    def get_intrabar_bars(
-        self,
-        symbol: str,
-        chart_bar: Any,
-        lower_timeframe: str | None = None,
-        *,
-        max_bars: int | None = None,
-    ) -> list[Any]:
-        timeframe = lower_timeframe or "1"
-        start_ms = int(chart_bar.time)
-        close_ms = getattr(chart_bar, "time_close", None)
-        end_ms = int(close_ms) + 1 if close_ms is not None else start_ms
-        return self.get_bars(
-            symbol,
-            timeframe,
-            start_ms,
-            end_ms,
-            max_bars=max_bars,
-        )
+REQUIRED_MARKETDATA_PROVIDER_VERSION = "5.0.0rc6"
 
 
 def ensure_marketdata_provider_version() -> None:
@@ -244,24 +144,6 @@ def create_local_marketdata_provider_adapter(
     return provider
 
 
-def create_local_runtime_data_provider_adapter(
-    config: MarketDataConfig | None = None,
-    *,
-    cache_dir: Path | str | None = None,
-    exchange: str = "binance",
-    market: str = "spot",
-    prefetch_end_ms: int | None = None,
-) -> RuntimeDataProviderAdapter:
-    """Create the Pine runtime provider used by request.security paths."""
-
-    return RuntimeDataProviderAdapter(
-        create_local_marketdata_provider_adapter(config=config, cache_dir=cache_dir),
-        exchange=exchange,
-        market=market,
-        prefetch_end_ms=prefetch_end_ms,
-    )
-
-
 def create_local_footprint_provider_adapter(
     config: MarketDataConfig | None = None,
     *,
@@ -279,7 +161,7 @@ def create_local_footprint_provider_adapter(
 __all__ = [
     "create_local_footprint_provider_adapter",
     "create_local_marketdata_provider_adapter",
-    "create_local_runtime_data_provider_adapter",
+
     "ensure_marketdata_provider_version",
     "normalize_provider_bar",
 ]

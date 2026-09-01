@@ -9,6 +9,7 @@ scratch, cleared environment. There is no in-process fallback.
 from __future__ import annotations
 
 import atexit
+import hashlib
 import importlib.util
 import json
 import os
@@ -25,7 +26,10 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from ast2python.artifacts import verify_generated_artifact_v3
+from ast2python.errors import BundleInvariantError
 from openpine_contracts import validate_payload, verify_content_hash
+from openpine_contracts.errors import SchemaValidationError
 
 from openpine.runtime.cgroup import CgroupError, attach_worker_tree, prepare_worker_cgroup
 from openpine.runtime.worker_protocol import WorkerProtocolError, WorkerProtocolTranscript
@@ -43,977 +47,39 @@ TRUSTED_DEST = "/tmp/openpine-trusted"
 _BOOTSTRAP = (
     f"import sys\nsys.path.insert(0, {TRUSTED_DEST!r})\n"
     + r"""
-import ast
 import json
-import os
-import resource
-import socket
 
-FORBIDDEN = {"socket", "subprocess", "ctypes", "multiprocessing", "pathlib"}
-ALLOWED = {
-    "os", "math", "json", "decimal", "datetime", "collections", "typing",
-    "abc", "enum", "dataclasses", "functools", "itertools", "operator",
-    "re", "copy", "numbers", "pinelib", "openpine_contracts",
-    "__future__", "ast2python",
-}
+from openpine_rc6_worker_runtime import RC6WorkerProtocol, run_interactive
 
-from copy import deepcopy
-from openpine_contracts import (
-    aggregate_batch_hash,
-    seal_content_hash,
-    validate_payload,
-    validate_worker_protocol_sequence,
-    verify_content_hash,
-)
 
-_COMPONENT = {
-    "HELLO": "openpine", "LOAD_ARTIFACT": "openpine", "INIT_RUN": "openpine",
-    "BAR_BEGIN": "openpine", "INTENT_BATCH": "pinelib",
-    "BROKER_EVENT_BATCH": "backtest_engine", "RECALC_REQUEST": "backtest_engine",
-    "RECALC_RESULT": "pinelib", "BAR_COMMIT": "backtest_engine",
-    "FINALIZE": "openpine", "ABORT": "openpine",
-}
-_ROLE = {
-    "HELLO": "worker", "LOAD_ARTIFACT": "parent", "INIT_RUN": "parent",
-    "BAR_BEGIN": "parent", "INTENT_BATCH": "worker",
-    "BROKER_EVENT_BATCH": "engine", "RECALC_REQUEST": "engine",
-    "RECALC_RESULT": "worker", "BAR_COMMIT": "engine",
-    "FINALIZE": "parent", "ABORT": "parent",
-}
-_ROLES = {kind: {role} for kind, role in _ROLE.items()}
-_ROLES["ABORT"] = {"parent", "worker", "engine"}
+def main():
+    request = json.loads(sys.stdin.readline())
+    if request.get("interactive") is not True:
+        raise RuntimeError("RC6 isolated worker requires interactive protocol execution")
+    context = request.get("execution_context")
+    if not isinstance(context, dict):
+        raise RuntimeError("RC6 execution context is required")
+    if request.get("stack_id") != context.get("stack_manifest_hash"):
+        raise RuntimeError("RC6 request stack identity mismatch")
+    protocol = RC6WorkerProtocol(context)
+    return run_interactive(request, protocol)
 
-def _component_for(kind, role):
-    if kind == "ABORT" and role == "engine":
-        return "backtest_engine"
-    return _COMPONENT[kind]
 
-_ALLOWED_AFTER = {
-    "HELLO": {"LOAD_ARTIFACT", "ABORT"},
-    "LOAD_ARTIFACT": {"INIT_RUN", "ABORT"},
-    "INIT_RUN": {"BAR_BEGIN", "FINALIZE", "ABORT"},
-    "BAR_BEGIN": {"INTENT_BATCH", "ABORT"},
-    "INTENT_BATCH": {"BROKER_EVENT_BATCH", "BAR_COMMIT", "ABORT"},
-    "BROKER_EVENT_BATCH": {"RECALC_REQUEST", "BAR_COMMIT", "ABORT"},
-    "RECALC_REQUEST": {"RECALC_RESULT", "ABORT"},
-    "RECALC_RESULT": {"INTENT_BATCH", "ABORT"},
-    "BAR_COMMIT": {"BAR_BEGIN", "FINALIZE", "ABORT"},
-    "FINALIZE": set(), "ABORT": set(),
-}
-
-def _semver(value):
-    text = str(value)
-    if "rc" in text and "-rc." not in text:
-        base, marker, rc = text.partition("rc")
-        if marker and base and rc.isdigit():
-            return f"{base}-rc.{rc}"
-    return text
-
-class _Protocol:
-    def __init__(self, execution_context):
-        self.context = deepcopy(execution_context)
-        validate_payload("openpine.execution_context.v1", self.context)
-        if not verify_content_hash(self.context, schema_id="openpine.execution_context.v1"):
-            raise RuntimeError("execution context content hash is invalid")
-        commits = self.context["producer_commits"]
-        versions = {
-            row["name"]: _semver(row["version"])
-            for row in self.context["wheel_identities"]
-        }
-        self.identities = {
-            component: (versions[component], commits[component])
-            for component in {"openpine", "pinelib", "backtest_engine"}
-        }
-        self.messages = []
-
-    @property
-    def last_id(self):
-        return None if not self.messages else self.messages[-1]["message_id"]
-
-    def _transition(self, kind):
-        if not self.messages and kind != "HELLO":
-            raise RuntimeError("worker protocol must start with HELLO")
-        if self.messages and kind not in _ALLOWED_AFTER[self.messages[-1]["kind"]]:
-            raise RuntimeError("invalid worker protocol transition")
-
-    def append(self, kind, body, created_at_utc_ms):
-        self._transition(kind)
-        component = _COMPONENT[kind]
-        version, commit = self.identities[component]
-        sequence = len(self.messages)
-        payload = seal_content_hash({
-            "schema_id": "openpine.worker.protocol.v2",
-            "schema_version": "2.3.0",
-            "producer": component,
-            "producer_version": version,
-            "producer_commit": commit,
-            "stack_id": self.context["stack_manifest_hash"],
-            "created_at_utc_ms": int(created_at_utc_ms),
-            "serializer_id": "openpine.canonical.json.v1",
-            "content_hash_alg": "sha256",
-            "message_id": f"{self.context['session_id']}:{sequence}:{kind}",
-            "sender_role": _ROLE[kind],
-            "session_id": self.context["session_id"],
-            "run_id": self.context["run_id"],
-            "sequence": sequence,
-            "correlation_id": self.context["run_id"],
-            "causation_id": self.last_id,
-            "kind": kind,
-            "body": deepcopy(body),
-        }, schema_id="openpine.worker.protocol.v2")
-        validate_payload("openpine.worker.protocol.v2", payload)
-        candidate = [*self.messages, payload]
-        if kind in {"FINALIZE", "ABORT"}:
-            validate_worker_protocol_sequence(candidate)
-        self.messages.append(payload)
-        return payload
-
-    def accept(self, message):
-        validate_payload("openpine.worker.protocol.v2", message)
-        if not verify_content_hash(message, schema_id="openpine.worker.protocol.v2"):
-            raise RuntimeError("worker protocol content hash is invalid")
-        kind = message["kind"]
-        self._transition(kind)
-        role = message.get("sender_role")
-        if role not in _ROLES[kind]:
-            raise RuntimeError("worker protocol sender role mismatch")
-        component = _component_for(kind, role)
-        version, commit = self.identities[component]
-        expected = {
-            "producer": component, "producer_version": version,
-            "producer_commit": commit, "stack_id": self.context["stack_manifest_hash"],
-            "session_id": self.context["session_id"], "run_id": self.context["run_id"],
-            "sequence": len(self.messages), "correlation_id": self.context["run_id"],
-            "causation_id": self.last_id, "sender_role": role,
-        }
-        if any(message.get(field) != value for field, value in expected.items()):
-            raise RuntimeError("worker protocol identity mismatch")
-        candidate = [*self.messages, message]
-        if kind in {"FINALIZE", "ABORT"}:
-            validate_worker_protocol_sequence(candidate)
-        self.messages.append(deepcopy(message))
-        return message
-
-def _validated_ohlc_bar(raw_bar, label):
-    if not isinstance(raw_bar, dict):
-        raise RuntimeError(f"{label} must be an object")
-    for name in ("time", "open", "high", "low", "close"):
-        if name not in raw_bar or raw_bar[name] is None:
-            raise RuntimeError(f"{label} required field {name} is missing")
+if __name__ == "__main__":
     try:
-        return (
-            int(raw_bar["time"]),
-            float(raw_bar["open"]),
-            float(raw_bar["high"]),
-            float(raw_bar["low"]),
-            float(raw_bar["close"]),
+        raise SystemExit(main())
+    except SystemExit:
+        raise
+    except Exception as exc:
+        json.dump(
+            {"error_type": type(exc).__name__, "detail": str(exc)},
+            sys.stdout,
+            separators=(",", ":"),
+            sort_keys=True,
         )
-    except (TypeError, ValueError) as exc:
-        raise RuntimeError(f"{label} numeric fields are invalid") from exc
-
-def _validated_htf_bar(raw_bar):
-    values = _validated_ohlc_bar(raw_bar, "HTF bar")
-    for name in ("symbol", "timeframe", "time_close"):
-        if name not in raw_bar or raw_bar[name] is None or (
-            name in {"symbol", "timeframe"} and not str(raw_bar[name]).strip()
-        ):
-            detail = f"HTF bar required field {name} is missing"
-            if name == "time_close":
-                detail += "; confirmed HTF bars require time_close"
-            raise RuntimeError(detail)
-    try:
-        return values + (int(raw_bar["time_close"]),)
-    except (TypeError, ValueError) as exc:
-        raise RuntimeError("HTF bar numeric fields are invalid") from exc
-
-def _chart_timeframe_value(raw_bars, require_confirmed=False):
-    intervals = []
-    missing_time_close = False
-    for raw_bar in raw_bars:
-        time_close = raw_bar.get("time_close")
-        if time_close is None:
-            missing_time_close = True
-            continue
-        try:
-            interval_ms = int(time_close) - int(raw_bar["time"]) + 1
-        except (KeyError, TypeError, ValueError) as exc:
-            raise RuntimeError("chart bars require numeric time and time_close") from exc
-        if interval_ms <= 0:
-            raise RuntimeError("chart timeframe has non-positive inclusive duration")
-        week_ms = 7 * 86_400_000
-        if interval_ms % week_ms == 0:
-            value = f"{interval_ms // week_ms}W"
-        elif interval_ms % 86_400_000 == 0:
-            value = f"{interval_ms // 86_400_000}D"
-        elif interval_ms % 60_000 == 0:
-            value = str(interval_ms // 60_000)
-        elif interval_ms % 1_000 == 0:
-            value = f"{interval_ms // 1_000}S"
-        else:
-            raise RuntimeError("chart timeframe has unsupported inclusive duration")
-        intervals.append((interval_ms, value))
-    if require_confirmed and (missing_time_close or not intervals):
-        raise RuntimeError("request.security requires confirmed chart bars")
-    if intervals and missing_time_close:
-        raise RuntimeError("chart bars have partial time_close values")
-    if intervals and any(interval != intervals[0][0] for interval, _value in intervals[1:]):
-        raise RuntimeError("chart timeframe is inconsistent across bars")
-    if intervals:
-        return intervals[0][1]
-    return "1"
-
-def _denied(tree: ast.AST) -> str | None:
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                root = alias.name.split(".", 1)[0]
-                if root in FORBIDDEN or root not in ALLOWED:
-                    return root
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            root = node.module.split(".", 1)[0]
-            if root in FORBIDDEN or root not in ALLOWED:
-                return root
-    return None
-
-def _entrypoint_shape(tree):
-    for node in getattr(tree, "body", ()):
-        if not isinstance(node, ast.ClassDef):
-            continue
-        methods = {
-            item.name: item
-            for item in node.body
-            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
-        }
-        process = methods.get("_process_bar")
-        if process is None:
-            continue
-        positional = len(process.args.posonlyargs) + len(process.args.args) - 1
-        process_arity = 2 if process.args.vararg is not None else positional
-        if process_arity not in {1, 2}:
-            raise RuntimeError("_process_bar entrypoint must accept bar or bar+bar_index")
-        constructor = methods.get("__init__")
-        if constructor is None:
-            constructor_arity = 0
-        else:
-            constructor_arity = (
-                len(constructor.args.posonlyargs) + len(constructor.args.args) - 1
-            )
-            if constructor.args.vararg is not None:
-                constructor_arity = 2
-            if constructor_arity not in {0, 1, 2}:
-                raise RuntimeError("strategy constructor entrypoint shape is unsupported")
-        return node.name, constructor_arity, process_arity
-    return None
-
-def _guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
-    caller = str((globals or {}).get("__name__") or "")
-    root = name.split(".", 1)[0]
-    if caller and caller != "__artifact__":
-        return _REAL_IMPORT(name, globals, locals, fromlist, level)
-    if root in FORBIDDEN or (level == 0 and root not in ALLOWED):
-        raise ImportError(f"forbidden import: {root}")
-    return _REAL_IMPORT(name, globals, locals, fromlist, level)
-
-def _safe(value):
-    if value is None or isinstance(value, (bool, int, str)):
-        return value
-    if isinstance(value, float):
-        return None
-    if isinstance(value, (list, tuple)):
-        return [_safe(item) for item in value]
-    if isinstance(value, dict):
-        return {str(key): _safe(item) for key, item in value.items()}
-    return None
-
-def _plot_value(value):
-    current = getattr(value, "_current", value)
-    if current is None or isinstance(current, (bool, int, str)):
-        return current
-    try:
-        from decimal import Decimal
-        if isinstance(current, Decimal):
-            return format(current, "f")
-    except Exception:
-        pass
-    if isinstance(current, float):
-        text = format(current, "f").rstrip("0").rstrip(".")
-        return text or "0"
-    return str(current)
-
-def _isolation():
-    network = "blocked"
-    try:
-        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        probe.settimeout(0.2)
-        probe.connect(("1.1.1.1", 53))
-        network = "open"
-        probe.close()
-    except OSError:
-        network = "blocked"
-    usr_writable = False
-    try:
-        with open("/usr/bin/.openpine-write-probe", "w") as handle:
-            handle.write("x")
-        usr_writable = True
-    except OSError:
-        usr_writable = False
-    return {
-        "uid": os.getuid(),
-        "home_visible": os.path.isdir("/home") and bool(os.listdir("/home")),
-        "usr_writable": usr_writable,
-        "env": sorted(os.environ),
-        "network": network,
-        "rlimits": {
-            "address_space": list(resource.getrlimit(resource.RLIMIT_AS)),
-            "cpu": list(resource.getrlimit(resource.RLIMIT_CPU)),
-            "file_size": list(resource.getrlimit(resource.RLIMIT_FSIZE)),
-            "processes": list(resource.getrlimit(resource.RLIMIT_NPROC)),
-        },
-    }
-
-_CLOSED_TRADE_FIELDS = frozenset({
-    "entry_price", "exit_price", "entry_time", "exit_time", "profit",
-    "profit_percent", "commission", "qty", "side", "size", "entry_id",
-    "exit_id", "entry_comment", "exit_comment", "max_runup", "max_drawdown",
-    "entry_bar_index", "exit_bar_index",
-})
-_OPEN_TRADE_FIELDS = frozenset({
-    "entry_price", "exit_price", "entry_time", "exit_time", "profit",
-    "profit_percent", "commission", "qty", "side", "size", "entry_id",
-    "exit_id", "max_runup", "max_drawdown", "entry_bar_index",
-})
-
-def _legacy_projection(sealed):
-    validate_payload("openpine.broker_projection.v1", sealed)
-    if not verify_content_hash(sealed, schema_id="openpine.broker_projection.v1"):
-        raise RuntimeError("broker projection content hash is invalid")
-    position = sealed["position"]
-    open_trades = [
-        {
-            "entry_price": float(row["entry_price"]),
-            "entry_time": row["entry_time_utc_ms"],
-            "profit": float(row["unrealized_pnl"]),
-            "commission": 0.0,
-            "qty": float(row["qty"]),
-            "side": row["direction"].lower(),
-            "size": float(row["qty"]) * (1 if row["direction"] == "LONG" else -1),
-            "entry_id": row["entry_name"],
-            "entry_bar_index": row["entry_bar_index"],
-        }
-        for row in sealed["open_trades"]
-    ]
-    closed_trades = [
-        {
-            "entry_price": float(row["entry_price"]),
-            "exit_price": float(row["exit_price"]),
-            "entry_time": row["entry_time_utc_ms"],
-            "exit_time": row["exit_time_utc_ms"],
-            "profit": float(row["realized_pnl"]),
-            "commission": float(row["commission"]),
-            "qty": float(row["qty"]),
-            "side": row["direction"].lower(),
-            "size": float(row["qty"]) * (1 if row["direction"] == "LONG" else -1),
-            "entry_id": row["entry_name"],
-            "entry_bar_index": row["entry_bar_index"],
-            "exit_bar_index": row["exit_bar_index"],
-        }
-        for row in sealed["closed_trades"]
-    ]
-    return {
-        "cash": float(sealed["cash"]),
-        "equity": float(sealed["equity"]),
-        "netprofit": float(sealed["realized_pnl"]),
-        "openprofit": float(sealed["unrealized_pnl"]),
-        "grossprofit": float(sealed["gross_profit"]),
-        "grossloss": float(sealed["gross_loss"]),
-        "position_size": (
-            float(position["qty"])
-            * (-1 if position["direction"] == "SHORT" else 1)
-        ),
-        "position_avg_price": (
-            0.0 if position["avg_price"] is None else float(position["avg_price"])
-        ),
-        "position_entry_name": position["entry_name"],
-        "position_direction": position["direction"].lower(),
-        "opentrades": len(open_trades),
-        "closedtrades": len(closed_trades),
-        "wintrades": sealed["winning_trades"],
-        "losstrades": sealed["losing_trades"],
-        "eventrades": sealed["even_trades"],
-        "max_drawdown": float(sealed["max_drawdown"]),
-        "max_runup": float(sealed["max_runup"]),
-        "orders": sealed["orders"],
-        "fills": sealed["fills"],
-        "open_trade_log": open_trades,
-        "closed_trade_log": closed_trades,
-    }
-
-class _LedgerProjection:
-    def __init__(self, payload):
-        if not isinstance(payload, dict):
-            raise RuntimeError("broker projection must be an object")
-        self._payload = payload
-
-    def __getattr__(self, name):
-        if name.startswith("closedtrades_"):
-            field = name[len("closedtrades_"):]
-            if field == "net_profit":
-                field = "profit"
-            collection_name = "closed_trade_log"
-            allowed = _CLOSED_TRADE_FIELDS
-        elif name.startswith("opentrades_"):
-            field = name[len("opentrades_"):]
-            collection_name = "open_trade_log"
-            allowed = _OPEN_TRADE_FIELDS
-        else:
-            if name not in self._payload:
-                raise AttributeError(name)
-            return self._payload[name]
-        if field not in allowed:
-            raise AttributeError(name)
-
-        def metric(index):
-            from pinelib.core.na import na
-
-            collection = self._payload.get(collection_name)
-            if not isinstance(collection, list):
-                raise RuntimeError(f"broker projection {collection_name} must be an array")
-            if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-                return na
-            if index >= len(collection):
-                return na
-            row = collection[index]
-            if not isinstance(row, dict):
-                raise RuntimeError(f"broker projection {collection_name}[{index}] must be an object")
-            value = row.get(field)
-            return na if value is None else value
-
-        return metric
-
-def _interactive_loop(
-    inst,
-    rt,
-    process_bar_arity,
-    PineBar,
-    execution_context,
-    generated_artifact,
-):
-    ctx = getattr(inst, "ctx", None)
-    if ctx is None:
-        raise RuntimeError("interactive strategy must expose ctx")
-    if getattr(ctx, "_runtime", None) is None:
-        attach_runtime = getattr(ctx, "attach_runtime", None)
-        if not callable(attach_runtime):
-            raise RuntimeError("interactive strategy context cannot attach runtime")
-        attach_runtime(rt)
-    tape = getattr(ctx, "intent_tape", None)
-    if tape is None:
-        raise RuntimeError("interactive strategy must expose an intent tape")
-    if list(tape.events):
-        raise RuntimeError("strategy constructor emitted intents before protocol admission")
-    initialize = getattr(ctx, "_initialize_intent_context", None)
-    if not callable(initialize):
-        raise RuntimeError("strategy context cannot admit execution identity")
-    initialize(
-        run_id=execution_context["run_id"],
-        strategy_id=execution_context["strategy_id"],
-        series_id=execution_context["series_id"],
-        instrument_id=execution_context["instrument_id"],
-        timeframe=execution_context["timeframe"],
-        producer_commit=execution_context["producer_commits"]["pinelib"],
-        strict_production=True,
-        stack_id=execution_context["stack_manifest_hash"],
-        execution_context=execution_context,
-    )
-    ctx.attach_runtime(rt)
-    tape = ctx.intent_tape
-    protocol = _Protocol(execution_context)
-    current_key = None
-    current_bar = None
-    sent_events = 0
-    last_intent_message = None
-
-    def commit_current():
-        nonlocal current_key, current_bar
-        if current_key is None:
-            return
-        commit = getattr(ctx, "commit_intents_for_current_bar", None)
-        if callable(commit):
-            commit()
-        end_bar = getattr(rt, "end_bar", None)
-        if callable(end_bar):
-            end_bar()
-        commit_history = getattr(ctx, "commit_scalar_history", None)
-        if callable(commit_history):
-            commit_history()
-        current_key = None
-        current_bar = None
-
-    hello = protocol.append(
-        "HELLO",
-        {
-            "worker_id": execution_context["session_id"],
-            "protocol_version": "2.3.0",
-            "capabilities": ["closed_bar", "checkpoint_v1"],
-        },
-        0,
-    )
-    json.dump(hello, sys.stdout)
-    sys.stdout.write("\n")
-    sys.stdout.flush()
-
-    loaded = False
-    initialized = False
-    for line in sys.stdin:
-        if len(line) > 1_000_000:
-            raise RuntimeError("interactive message exceeds size limit")
-        message = json.loads(line)
-        protocol.accept(message)
-        kind = message["kind"]
-        body = message["body"]
-        if kind == "LOAD_ARTIFACT":
-            if (
-                body["artifact_hash"] != generated_artifact["content_hash"]
-                or body["module_hash"] != generated_artifact["emitted_module_hash"]
-                or body["entrypoint_module"] != generated_artifact["entrypoint_module"]
-                or body["entrypoint_class"] != generated_artifact["entrypoint_class"]
-            ):
-                raise RuntimeError("loaded artifact identity mismatch")
-            loaded = True
-            continue
-        if kind == "INIT_RUN":
-            if not loaded:
-                raise RuntimeError("artifact must be loaded before run initialization")
-            if (
-                body["execution_context"] != execution_context
-                or body["execution_context_hash"] != execution_context["content_hash"]
-                or body["run_id"] != execution_context["run_id"]
-            ):
-                raise RuntimeError("run initialization identity mismatch")
-            initialized = True
-            continue
-        if kind == "FINALIZE":
-            commit_current()
-            return 0
-        if kind == "ABORT":
-            commit_current()
-            return 2
-        if not initialized:
-            raise RuntimeError("run must be initialized before bar execution")
-        if kind == "BROKER_EVENT_BATCH":
-            continue
-        if kind == "RECALC_REQUEST":
-            if current_bar is None or last_intent_message is None:
-                raise RuntimeError("recalculation has no active callback")
-            projection = _LedgerProjection(
-                _legacy_projection(body["broker_projection"])
-            )
-            ctx.attach_strategy_ledger_view(projection)
-            if "closedtrades" in projection._payload:
-                ctx.closedtrades = int(projection._payload["closedtrades"])
-            recalc_iteration = body["recalc_iteration"]
-            begin_callback = getattr(ctx, "begin_intent_callback", None)
-            if callable(begin_callback):
-                begin_callback(phase="score", recalc_iteration=recalc_iteration)
-            if process_bar_arity == 1:
-                inst._process_bar(current_bar)
-            else:
-                inst._process_bar(current_bar, body["bar_index"])
-            recalc_result = protocol.append(
-                "RECALC_RESULT",
-                {
-                    "run_id": execution_context["run_id"],
-                    "bar_index": body["bar_index"],
-                    "recalc_iteration": recalc_iteration,
-                    "intent_batch_message_id": last_intent_message["message_id"],
-                    "intent_batch_hash": last_intent_message["body"]["intent_batch_hash"],
-                },
-                current_bar.time,
-            )
-            json.dump(recalc_result, sys.stdout)
-            sys.stdout.write("\n")
-            all_events = list(tape.events)
-            batch = [_safe(dict(item)) for item in all_events[sent_events:]]
-            sent_events = len(all_events)
-            response = protocol.append(
-                "INTENT_BATCH",
-                {
-                    "run_id": execution_context["run_id"],
-                    "bar_index": body["bar_index"],
-                    "recalc_iteration": recalc_iteration,
-                    "intent_batch_hash": aggregate_batch_hash(
-                        batch,
-                        batch_kind="INTENT_BATCH",
-                        item_schema_id="openpine.intent.v2",
-                    ),
-                    "intents": batch,
-                },
-                current_bar.time,
-            )
-            last_intent_message = response
-            json.dump(response, sys.stdout)
-            sys.stdout.write("\n")
-            sys.stdout.flush()
-            continue
-        if kind == "BAR_COMMIT":
-            commit_current()
-            continue
-        if kind != "BAR_BEGIN":
-            raise RuntimeError("unsupported interactive message kind")
-
-        raw_bar = body["bar"]
-        projection_payload = body["broker_projection"]
-        if not verify_content_hash(raw_bar, schema_id="openpine.marketdata.bar.v2"):
-            raise RuntimeError("bar content hash is invalid")
-        if body["bar_hash"] != raw_bar["bar_content_hash"]:
-            raise RuntimeError("bar identity mismatch")
-        time = int(raw_bar["open_time_utc_ms"])
-        open_ = float(raw_bar["open"])
-        high = float(raw_bar["high"])
-        low = float(raw_bar["low"])
-        close = float(raw_bar["close"])
-        bar_index = body["bar_index"]
-        recalc_iteration = body["recalc_iteration"]
-        key = (bar_index, time)
-        if current_key is not None and current_key != key:
-            raise RuntimeError("previous bar must be committed before BAR_BEGIN")
-        if current_key is None:
-            current_bar = PineBar(
-                time=time,
-                open=open_,
-                high=high,
-                low=low,
-                close=close,
-                volume=float(raw_bar["volume"]),
-                time_close=int(raw_bar["close_time_utc_ms"]),
-            )
-            rt.begin_bar(current_bar)
-            current_key = key
-
-        projection = _LedgerProjection(_legacy_projection(projection_payload))
-        ctx.attach_strategy_ledger_view(projection)
-        if "closedtrades" in projection._payload:
-            ctx.closedtrades = int(projection._payload["closedtrades"])
-        begin_callback = getattr(ctx, "begin_intent_callback", None)
-        if callable(begin_callback):
-            begin_callback(phase="score", recalc_iteration=recalc_iteration)
-        if process_bar_arity == 1:
-            inst._process_bar(current_bar)
-        else:
-            inst._process_bar(current_bar, bar_index)
-
-        all_events = list(tape.events)
-        batch = [_safe(dict(item)) for item in all_events[sent_events:]]
-        sent_events = len(all_events)
-        intent_batch_hash = aggregate_batch_hash(
-            batch,
-            batch_kind="INTENT_BATCH",
-            item_schema_id="openpine.intent.v2",
-        )
-        response = protocol.append(
-            "INTENT_BATCH",
-            {
-                "run_id": execution_context["run_id"],
-                "bar_index": bar_index,
-                "recalc_iteration": recalc_iteration,
-                "intent_batch_hash": intent_batch_hash,
-                "intents": batch,
-            },
-            time,
-        )
-        last_intent_message = response
-        json.dump(response, sys.stdout)
         sys.stdout.write("\n")
         sys.stdout.flush()
-    commit_current()
-    return 0
-
-def main() -> int:
-    resource.setrlimit(resource.RLIMIT_CPU, (2, 2))
-    resource.setrlimit(resource.RLIMIT_NPROC, (32, 32))
-    try:
-        resource.setrlimit(resource.RLIMIT_AS, (134217728, 134217728))
-        resource.setrlimit(resource.RLIMIT_FSIZE, (1048576, 1048576))
-    except (ValueError, resource.error):
-        pass
-    raw = sys.stdin.readline(1_000_000)
-    request = json.loads(raw)
-    if request.get("interactive") is True:
-        from openpine_contracts import validate_payload, verify_content_hash
-
-        execution_context = request.get("execution_context")
-        try:
-            validate_payload("openpine.execution_context.v1", execution_context)
-        except Exception:
-            json.dump({"ok": False, "error": "execution_context invalid"}, sys.stdout)
-            return 2
-        if not verify_content_hash(
-            execution_context, schema_id="openpine.execution_context.v1"
-        ) or request.get("stack_id") != execution_context.get("stack_manifest_hash"):
-            json.dump({"ok": False, "error": "stack_id mismatch"}, sys.stdout)
-            return 2
-        generated_artifact = request.get("generated_artifact")
-        try:
-            validate_payload("openpine.generated_artifact.v2", generated_artifact)
-        except Exception:
-            json.dump({"ok": False, "error": "generated artifact invalid"}, sys.stdout)
-            return 2
-        if not verify_content_hash(
-            generated_artifact, schema_id="openpine.generated_artifact.v2"
-        ):
-            json.dump({"ok": False, "error": "generated artifact hash invalid"}, sys.stdout)
-            return 2
-        from ast2python.artifact import _digest
-        if generated_artifact.get("emitted_module_hash") != _digest(
-            request.get("source", ""), "openpine.generated_artifact.v2"
-        ):
-            json.dump({"ok": False, "error": "generated module hash mismatch"}, sys.stdout)
-            return 2
-    elif request.get("stack_id") != "openpine-5.0":
-        json.dump({"ok": False, "error": "stack_id mismatch"}, sys.stdout)
-        return 2
-    if request.get("semantic_profile") not in {"legacy_4x", "strict_5x"}:
-        json.dump({"ok": False, "error": "semantic_profile required"}, sys.stdout)
-        return 2
-    source = request["source"]
-    tree = ast.parse(source)
-    denied = _denied(tree)
-    if denied:
-        json.dump({"ok": False, "error": f"forbidden import: {denied}"}, sys.stdout)
-        return 2
-    try:
-        entrypoint_shape = _entrypoint_shape(tree)
-    except RuntimeError as exc:
-        json.dump({
-            "ok": False,
-            "error_code": "ARTIFACT_ENTRYPOINT_ERROR",
-            "error": str(exc),
-        }, sys.stdout)
-        return 2
-    namespace = {"__name__": "__artifact__"}
-    raw_builtins = __builtins__
-    if isinstance(raw_builtins, dict):
-        ns_builtins = dict(raw_builtins)
-    else:
-        ns_builtins = {
-            name: getattr(raw_builtins, name)
-            for name in dir(raw_builtins)
-            if not name.startswith("_")
-        }
-        for name in ("__build_class__", "__name__"):
-            if hasattr(raw_builtins, name):
-                ns_builtins[name] = getattr(raw_builtins, name)
-    ns_builtins["__import__"] = _guarded_import
-    namespace["__builtins__"] = ns_builtins
-    namespace["__import__"] = _guarded_import
-    try:
-        exec(compile(tree, "<artifact>", "exec"), namespace, namespace)
-    except ImportError as exc:
-        json.dump({"ok": False, "error": str(exc)}, sys.stdout)
-        return 2
-    public = {
-        key: _safe(value)
-        for key, value in namespace.items()
-        if not key.startswith("_")
-    }
-    events = []
-    for value in list(namespace.values()):
-        tape = getattr(value, "intent_tape", None)
-        raw = getattr(tape, "events", None) if tape is not None else None
-        if not raw:
-            continue
-        for item in raw:
-            events.append(_safe(dict(item)))
-    bars = request.get("bars") or []
-    params = request.get("params")
-    if params is None:
-        params = {}
-    if not isinstance(params, dict):
-        json.dump({"ok": False, "error": "params must be an object"}, sys.stdout)
-        return 2
-    if bars or request.get("interactive") is True:
-        cls = None
-        constructor_arity = None
-        process_bar_arity = None
-        if entrypoint_shape is not None:
-            entrypoint_name, constructor_arity, process_bar_arity = entrypoint_shape
-            candidate = namespace.get(entrypoint_name)
-            if isinstance(candidate, type) and callable(
-                getattr(candidate, "_process_bar", None)
-            ):
-                cls = candidate
-        if request.get("interactive") is True and cls is None:
-            json.dump({
-                "ok": False,
-                "error_code": "ARTIFACT_ENTRYPOINT_ERROR",
-                "error": "interactive artifact must declare one generated strategy entrypoint",
-            }, sys.stdout)
-            return 2
-        if cls is not None:
-            try:
-                from pinelib.core import Bar as PineBar, PineRuntime
-                from pinelib.core.types import RuntimeConfig, SymbolInfo, TimeframeInfo
-                stamped = request.get("htf_bars") or []
-                for raw_bar in bars:
-                    _validated_ohlc_bar(raw_bar, "chart bar")
-                if request.get("interactive") is True:
-                    from pinelib.execution_context import ExecutionContext as PineExecutionContext
-
-                    symbol_info = PineExecutionContext.coerce(
-                        execution_context
-                    ).to_symbol_info()
-                else:
-                    symbol_info = SymbolInfo(tickerid=str(request["instrument_id"]))
-                rt = PineRuntime(
-                    symbol_info=symbol_info,
-                    timeframe=TimeframeInfo.from_string(
-                        str(request.get("chart_timeframe"))
-                        if request.get("interactive") is True
-                        else _chart_timeframe_value(bars, require_confirmed=bool(stamped))
-                    ),
-                    config=RuntimeConfig(semantic_profile=request.get("semantic_profile")),
-                )
-                class _NoHtfProvider:
-                    def get_bars(self, *a, **k):
-                        raise RuntimeError("request.security requires confirmed HTF bars")
-                if stamped:
-                    from pinelib.request.providers import InMemoryDataProvider
-                    keyed = {}
-                    for item in stamped:
-                        time, open_, high, low, close, time_close = _validated_htf_bar(item)
-                        key = (str(item["symbol"]), str(item["timeframe"]))
-                        keyed.setdefault(key, []).append(
-                            PineBar(
-                                time=time,
-                                open=open_,
-                                high=high,
-                                low=low,
-                                close=close,
-                                volume=float(item.get("volume") or 0),
-                                time_close=time_close,
-                            )
-                        )
-                    rt.data_provider = InMemoryDataProvider(keyed)
-                else:
-                    rt.data_provider = _NoHtfProvider()
-            except Exception as exc:
-                json.dump({"ok": False, "error": f"pine runtime: {exc}"}, sys.stdout)
-                return 2
-            try:
-                if constructor_arity == 0:
-                    inst = cls()
-                elif constructor_arity == 1:
-                    inst = cls(params)
-                else:
-                    inst = cls(params=params, runtime=rt)
-            except Exception as exc:
-                json.dump({
-                    "ok": False,
-                    "error_code": "STRATEGY_CONSTRUCTOR_ERROR",
-                    "error": f"{exc.__class__.__name__}: {exc}",
-                }, sys.stdout)
-                return 2
-            if request.get("interactive") is True:
-                try:
-                    return _interactive_loop(
-                        inst,
-                        rt,
-                        process_bar_arity,
-                        PineBar,
-                        execution_context,
-                        request["generated_artifact"],
-                    )
-                except Exception as exc:
-                    json.dump({
-                        "ok": False,
-                        "kind": "ABORT",
-                        "error_code": "WORKER_PROTOCOL_ERROR",
-                        "error": f"{exc.__class__.__name__}: {exc}",
-                    }, sys.stdout)
-                    sys.stdout.write("\n")
-                    sys.stdout.flush()
-                    return 2
-            events = []
-            for i, raw_bar in enumerate(bars):
-                try:
-                    time, open_, high, low, close = _validated_ohlc_bar(raw_bar, "chart bar")
-                    bar = PineBar(
-                        time=time,
-                        open=open_,
-                        high=high,
-                        low=low,
-                        close=close,
-                        volume=float(raw_bar.get("volume") or 0),
-                        time_close=(
-                            int(raw_bar["time_close"])
-                            if raw_bar.get("time_close") is not None
-                            else None
-                        ),
-                    )
-                    rt.begin_bar(bar)
-                except Exception as exc:
-                    json.dump({
-                        "ok": False,
-                        "error_code": "BAR_INPUT_ERROR",
-                        "error": f"{exc.__class__.__name__}: {exc}",
-                    }, sys.stdout)
-                    return 2
-                ctx = getattr(inst, "ctx", None)
-                if ctx is not None and getattr(ctx, "_runtime", None) is None:
-                    ctx._runtime = rt
-                try:
-                    if process_bar_arity == 1:
-                        inst._process_bar(bar)
-                    else:
-                        inst._process_bar(bar, i)
-                except Exception as exc:
-                    json.dump({
-                        "ok": False,
-                        "error_code": "STRATEGY_RUNTIME_ERROR",
-                        "error": f"{exc.__class__.__name__}: {exc}",
-                    }, sys.stdout)
-                    return 2
-                end_bar = getattr(rt, "end_bar", None)
-                if callable(end_bar):
-                    try:
-                        end_bar()
-                    except Exception as exc:
-                        json.dump({
-                            "ok": False,
-                            "error_code": "BAR_COMMIT_ERROR",
-                            "error": f"{exc.__class__.__name__}: {exc}",
-                        }, sys.stdout)
-                        return 2
-            ctx = getattr(inst, "ctx", None)
-            tape = getattr(ctx, "intent_tape", None)
-            raw = getattr(tape, "events", None) if tape is not None else None
-            if raw:
-                events = [_safe(dict(item)) for item in raw]
-    plots = []
-    rec = locals().get("rt")
-    recorder = getattr(rec, "plot_recorder", None) if rec is not None else None
-    raw_plots = recorder.get_records() if recorder is not None else []
-    for item in raw_plots:
-        if isinstance(item, tuple) and len(item) >= 4:
-            plots.append({
-                "bar_time": int(item[0]),
-                "bar_index": int(item[1]),
-                "value": _plot_value(item[2]),
-                "title": str(item[3]),
-            })
-            continue
-        plots.append({
-            "bar_time": int(getattr(item, "bar_time", 0)),
-            "bar_index": int(getattr(item, "bar_index", 0) or 0),
-            "value": _plot_value(getattr(item, "value", None)),
-            "title": str(getattr(item, "title", "")),
-        })
-    json.dump({"ok": True, "namespace": public, "isolation": _isolation(), "intent_tape": events, "plots": plots, "semantic_profile": request.get("semantic_profile")}, sys.stdout)
-    return 0
-
-_REAL_IMPORT = __import__
-if __name__ == "__main__":
-    raise SystemExit(main())
+        raise SystemExit(1)
 """
 )
 
@@ -1027,8 +93,11 @@ _TRUSTED_NAMES = (
     "ast2python",
     "attr",
     "attrs",
+    "backtest_engine",
     "jsonschema",
     "jsonschema_specifications",
+    "marketdata_provider",
+    "openpine_rc6_worker_runtime",
     "openpine_contracts",
     "pinelib",
     "referencing",
@@ -1064,6 +133,12 @@ def _stage_trusted_packages() -> list[tuple[str, str]]:
         try:
             stage.chmod(0o755)
             for name in _TRUSTED_NAMES:
+                if name == "openpine_rc6_worker_runtime":
+                    source = Path(__file__).with_name("rc6_worker_runtime.py")
+                    target = stage / f"{name}.py"
+                    shutil.copy2(source, target)
+                    target.chmod(0o644 | stat.S_IROTH)
+                    continue
                 spec = importlib.util.find_spec(name)
                 if spec is None or not spec.origin:
                     continue
@@ -1146,7 +221,8 @@ def _resolved_worker_policy(admitted_manifest: AdmittedManifest) -> dict[str, An
     if trusted != list(_TRUSTED_NAMES):
         raise IsolatedWorkerError("admitted trusted package policy is invalid")
     resolved = dict(policy)
-    resolved["python_path"] = str(Path(sys.executable).resolve())
+    base_executable = getattr(sys, "_base_executable", sys.executable)
+    resolved["python_path"] = str(Path(base_executable).resolve())
     resolved["trusted_package_binds"] = _stage_trusted_packages()
     return resolved
 
@@ -1393,6 +469,47 @@ def _read_available_stderr(proc: subprocess.Popen[Any], limit: int = 1_000_000) 
     return bytes(chunks).decode("utf-8", errors="replace")
 
 
+def _validate_interactive_generated_artifact(
+    source: bytes,
+    generated_artifact: Mapping[str, Any],
+    execution_context: Mapping[str, Any],
+) -> dict[str, str]:
+    """Validate the exact V3 module admitted for an interactive worker."""
+
+    try:
+        validate_payload("openpine.generated_artifact.v3", generated_artifact)
+        verify_generated_artifact_v3(generated_artifact)
+    except (SchemaValidationError, BundleInvariantError) as exc:
+        raise IsolatedWorkerError("generated artifact is invalid") from exc
+    emitted_hash = "sha256:" + hashlib.sha256(source).hexdigest()
+    producer = generated_artifact.get("producer")
+    entrypoint = generated_artifact.get("entrypoint")
+    execution_commits = execution_context.get("producer_commits")
+    if (
+        execution_context.get("generated_artifact_hash")
+        != generated_artifact.get("content_hash")
+        or execution_context.get("source_hash")
+        != generated_artifact.get("source_hash")
+        or execution_context.get("emitted_module_hash") != emitted_hash
+        or generated_artifact.get("emitted_module_hash") != emitted_hash
+        or not isinstance(producer, Mapping)
+        or not isinstance(execution_commits, Mapping)
+        or producer.get("commit") != execution_commits.get("ast2python")
+        or not isinstance(entrypoint, Mapping)
+    ):
+        raise IsolatedWorkerError("generated artifact admission identity mismatch")
+    module_name = entrypoint.get("module")
+    class_name = entrypoint.get("class")
+    if not isinstance(module_name, str) or class_name != "GeneratedScript":
+        raise IsolatedWorkerError("generated artifact entrypoint identity mismatch")
+    return {
+        "artifact_hash": str(generated_artifact["content_hash"]),
+        "module_hash": emitted_hash,
+        "entrypoint_module": module_name,
+        "entrypoint_class": class_name,
+    }
+
+
 class InteractiveWorkerSession:
     """Persistent protocol-v2 worker: one broker projection and bar per message."""
 
@@ -1423,47 +540,11 @@ class InteractiveWorkerSession:
             execution_context, schema_id="openpine.execution_context.v1"
         ):
             raise IsolatedWorkerError("execution_context content hash is invalid")
-        try:
-            validate_payload("openpine.generated_artifact.v2", generated_artifact)
-        except ValueError as exc:
-            raise IsolatedWorkerError("generated artifact is invalid") from exc
-        if not verify_content_hash(
-            generated_artifact, schema_id="openpine.generated_artifact.v2"
-        ):
-            raise IsolatedWorkerError("generated artifact content hash is invalid")
-        from ast2python.artifact import _digest
-
-        if generated_artifact.get("emitted_module_hash") != _digest(
-            source.decode("utf-8"), "openpine.generated_artifact.v2"
-        ):
-            raise IsolatedWorkerError("generated artifact module hash mismatch")
-        if (
-            execution_context.get("generated_artifact_hash")
-            != generated_artifact.get("content_hash")
-            or execution_context.get("emitted_module_hash")
-            != generated_artifact.get("emitted_module_hash")
-        ):
-            raise IsolatedWorkerError("generated artifact admission identity mismatch")
-        if generated_artifact.get("stack_id") != "openpine-5.0":
-            raise IsolatedWorkerError("generated artifact stack family mismatch")
-        generated_commits = generated_artifact.get("producer_commits")
-        execution_commits = execution_context.get("producer_commits")
-        if not isinstance(generated_commits, Mapping) or not isinstance(
-            execution_commits, Mapping
-        ):
-            raise IsolatedWorkerError("generated artifact producer identity is missing")
-        for component_name in (
-            "openpine-contracts",
-            "pine2ast",
-            "ast2python",
-            "pinelib",
-        ):
-            if generated_commits.get(component_name) != execution_commits.get(
-                component_name
-            ):
-                raise IsolatedWorkerError(
-                    f"generated artifact producer identity mismatch: {component_name}"
-                )
+        load_identity = _validate_interactive_generated_artifact(
+            source,
+            generated_artifact,
+            execution_context,
+        )
         if (
             not isinstance(run_hash, str)
             or not run_hash.startswith("sha256:")
@@ -1490,6 +571,7 @@ class InteractiveWorkerSession:
         self.bytes_sent = 0
         self.bytes_received = 0
         self.generated_artifact = dict(generated_artifact)
+        self.load_identity = load_identity
         self.run_hash = run_hash
         self.protocol_artifact_dir = Path(protocol_artifact_dir)
         self.protocol_artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -1538,12 +620,7 @@ class InteractiveWorkerSession:
             self.hello = hello
             load = self.protocol.append(
                 "LOAD_ARTIFACT",
-                {
-                    "artifact_hash": generated_artifact["content_hash"],
-                    "module_hash": generated_artifact["emitted_module_hash"],
-                    "entrypoint_module": generated_artifact["entrypoint_module"],
-                    "entrypoint_class": generated_artifact["entrypoint_class"],
-                },
+                dict(self.load_identity),
                 created_at_utc_ms=0,
             )
             self._write_message(load)

@@ -280,24 +280,6 @@ def _klines(start_ms: int, count: int) -> list[list[Any]]:
     ]
 
 
-def test_direct_binance_data_provider_exhausts_fixed_page_loop(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from openpine.data import direct_data_provider
-
-    calls: list[str] = []
-
-    def fake_urlopen(req: Any, timeout: int) -> _Response:
-        calls.append(getattr(req, "full_url", str(req)))
-        return _Response(_klines((len(calls) - 1) * 60_000_000, 1000))
-
-    monkeypatch.setattr(direct_data_provider.urllib.request, "urlopen", fake_urlopen)
-
-    provider = direct_data_provider.DirectBinanceDataProvider(timeout=1)
-    bars = provider.get_bars("btcusdt", "1", 0, 2_000_000_000, max_bars=7)
-    assert len(calls) == 20
-    assert len(bars) == 7
-    assert bars[0].time == 0
 
 
 def test_direct_binance_contract_provider_exhausts_fetch_loop(
@@ -413,54 +395,6 @@ def test_periodic_fetcher_stop_without_thread_and_joined_thread() -> None:
     assert fetcher_with_thread._running is False
 
 
-def test_provider_adapter_cache_miss_valid_coverage_and_footprint_factory(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from pinelib.core import bar as pinelib_bar
-
-    from openpine.data import provider_adapter
-
-    monkeypatch.setattr(
-        pinelib_bar,
-        "from_contract_bar",
-        lambda bar: SimpleNamespace(time=bar.time, close=bar.close),
-    )
-
-    class Orchestrator:
-        def load_bars(self, requested: BarQuery) -> SimpleNamespace:
-            return SimpleNamespace(bars=(_bar(0), _bar(60_000), _bar(120_000)))
-
-    adapter = object.__new__(provider_adapter.RuntimeDataProviderAdapter)
-    adapter._orchestrator = Orchestrator()
-    adapter.exchange = "binance"
-    adapter.market = "spot"
-    adapter.prefetch_end_ms = None
-    adapter._bars_cache = {
-        ("binance", "spot", "BTCUSDT", "1m"): (
-            0,
-            60_000,
-            [SimpleNamespace(time=0, close=1.0)],
-            [0],
-        )
-    }
-
-    bars = adapter.get_bars("btcusdt", "1m", 0, 120_000)
-    assert [bar.time for bar in bars] == [0, 60_000]
-
-    coverage = provider_adapter._coverage_for(_query(), (_bar(0), _bar(60_000)), "unit")
-    assert coverage.status == "valid"
-
-    config = object()
-    monkeypatch.setattr(provider_adapter, "ensure_marketdata_provider_version", lambda: None)
-    monkeypatch.setattr(
-        provider_adapter,
-        "create_footprint_provider",
-        lambda cfg: ("footprint-provider", cfg),
-    )
-    assert provider_adapter.create_local_footprint_provider_adapter(config=config) == (
-        "footprint-provider",
-        config,
-    )
 
 
 def test_candle_storage_detect_gaps_no_gap_condition_loops_back(

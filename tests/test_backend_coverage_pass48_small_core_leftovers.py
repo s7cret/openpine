@@ -12,7 +12,6 @@ from urllib.error import URLError
 
 import pandas as pd
 import pytest
-from ast2python.artifact import build_generated_artifact_v2
 from marketdata_provider.contracts import InstrumentKey, parse_timeframe
 
 
@@ -127,34 +126,6 @@ def test_gateway_state_tolerates_nonfatal_service_failures(monkeypatch, tmp_path
     assert state.strategy_registry.closed is True
 
 
-def test_artifact_store_writes_optional_files_and_reports_paths(tmp_path: Path) -> None:
-    from openpine.artifacts.store import ArtifactStore
-
-    store = ArtifactStore(root=tmp_path)
-    assert store.list_artifacts("missing-source") == []
-    assert store.artifact_exists("art_a", "pine_a") is False
-
-    artifact_dir = store.save_artifact(
-        artifact_id="art_a",
-        source_id="pine_a",
-        params_hash="hash_a",
-        python_code="# generated\n",
-        compile_meta={"compile_status": "OK"},
-        source_text="//@version=6\nstrategy('x')\n",
-        ast_json='{"kind":"Program"}',
-        requirements={"packages": ["numpy"]},
-        diagnostics="clean",
-    )
-
-    loaded = store.get_artifact("art_a", "pine_a")
-    assert loaded["ast_json"] == '{"kind":"Program"}'
-    assert loaded["source_text"].startswith("//@version=6")
-    assert loaded["compile_meta"]["params_hash"] == "hash_a"
-    assert json.loads((artifact_dir / "requirements.json").read_text())["packages"] == [
-        "numpy"
-    ]
-    assert store.get_artifact_path("art_a", "pine_a") == artifact_dir
-    assert store.artifact_exists("art_a", "pine_a") is True
 
 
 def test_exchange_metadata_fallbacks_and_cache_error_paths(monkeypatch, tmp_path: Path) -> None:
@@ -504,112 +475,3 @@ def test_account_manager_unfiltered_and_provider_only_queries(tmp_path: Path) ->
         ]
     finally:
         storage.close()
-
-
-def test_config_cache_pine_risk_timezone_and_compile_success_leftovers(
-    monkeypatch, tmp_path: Path
-) -> None:
-    from openpine.accounts.models import Account
-    from openpine.compile.adapter import CompileResult
-    from openpine.compile.pipeline import compile_pipeline
-    from openpine.config import loader as config_loader
-    from openpine.config.model import OpenPineConfig
-    from openpine.data.cache_io import read_valid_meta
-    from openpine.orders.models import OrderIntent, OrderSide, OrderType
-    from openpine.pine.source import PineSource
-    from openpine.risk.manager import MaxPositionSizeRule, RiskManager
-    from openpine import timezones
-
-    monkeypatch.delenv("OPENPINE_CONFIG_DIR", raising=False)
-    monkeypatch.delenv("OPENPINE_TIMEZONE", raising=False)
-    monkeypatch.setattr(config_loader, "load_env_file", lambda: None)
-
-    config_path = tmp_path / "config.yaml"
-    config_path.write_text("config_dir: ~/openpine-pass48\n", encoding="utf-8")
-    assert config_loader.load_config(config_path).config_dir == Path(
-        "~/openpine-pass48"
-    ).expanduser()
-    assert config_loader.load_config(tmp_path / "missing.yaml").timezone == timezones.DEFAULT_TIMEZONE
-
-    meta_path = tmp_path / "cache" / "meta.json"
-    meta_path.parent.mkdir()
-    meta_path.write_text(
-        json.dumps({"schema_version": 1, "key": {"symbol": "BTCUSDT"}}),
-        encoding="utf-8",
-    )
-    assert read_valid_meta(meta_path, {"symbol": "BTCUSDT"}, schema_version=2) is None
-    assert read_valid_meta(meta_path, {"symbol": "ETHUSDT"}, schema_version=1) is None
-    assert read_valid_meta(meta_path, {"symbol": "BTCUSDT"}, schema_version=1)[
-        "schema_version"
-    ] == 1
-
-    pine = PineSource(id="pine_1", name="source", source_text="//@version=6\n")
-    assert pine.to_dict()["id"] == "pine_1"
-    assert PineSource.from_dict({"id": "pine_2", "name": "minimal", "source_text": "x"}).version == "1.0.0"
-
-    account = Account(account_id="acct_1", name="acct", provider="ccxt", exchange="binance")
-    market_order = OrderIntent(
-        client_order_id="client_1",
-        strategy_id="strategy_1",
-        account_id="acct_1",
-        symbol="BTCUSDT",
-        side=OrderSide.BUY,
-        order_type=OrderType.MARKET,
-        quantity=1.0,
-        price=None,
-    )
-    assert MaxPositionSizeRule(max_notional=1.0).check(market_order, account) == (
-        True,
-        None,
-    )
-    risk = RiskManager()
-    assert risk.kill_switch is False
-    risk.set_kill_switch(True)
-    assert risk.kill_switch is True
-
-    monkeypatch.setattr(
-        config_loader,
-        "load_config",
-        lambda: (_ for _ in ()).throw(RuntimeError("bad config")),
-    )
-    assert timezones.configured_timezone().name == timezones.DEFAULT_TIMEZONE
-    assert timezones.format_utc_ms(0) == "1970-01-01 00:00:00"
-
-    cfg = OpenPineConfig(workspace_root=tmp_path, data_dir=tmp_path / "data")
-    monkeypatch.setattr("openpine.artifacts.store.OpenPineConfig.load", lambda: cfg)
-
-    class Adapter:
-        def compile(self, source_text: str, **kwargs) -> CompileResult:
-            assert source_text.startswith("//@version=6")
-            assert "profile" in kwargs
-            python_code = "class GeneratedStrategy:\n    pass\n"
-            return CompileResult(
-                success=True,
-                python_code=python_code,
-                compile_meta={"pine2ast_version": "p", "ast2python_version": "a"},
-                ast_json='{"kind":"Program"}',
-                source_map=[],
-                generated_artifact=build_generated_artifact_v2(
-                    source=source_text,
-                    ast_payload={"kind": "Program"},
-                    emitted_module=python_code,
-                    source_map=[],
-                    producer_commits={
-                        "pine2ast": "1" * 40,
-                        "ast2python": "2" * 40,
-                        "pinelib": "3" * 40,
-                        "openpine-contracts": "4" * 40,
-                    },
-                    entrypoint_module="generated_strategy",
-                    entrypoint_class="GeneratedStrategy",
-                ),
-            )
-
-    compiled = compile_pipeline(pine, Adapter(), params_hash="params")
-
-    artifact_path = Path(compiled["artifact_path"])
-    assert compiled["success"] is True
-    assert (artifact_path / "generated_strategy.py").read_text() == (
-        "class GeneratedStrategy:\n    pass\n"
-    )
-    assert (artifact_path / "ast.json").read_text() == '{"kind":"Program"}'

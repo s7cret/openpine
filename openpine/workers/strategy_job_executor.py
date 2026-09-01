@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Protocol
@@ -13,7 +12,7 @@ from typing import Any, Protocol
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
 
 from openpine.data.orchestrator import DataOrchestrator
-from openpine.data.provider_adapter import create_local_runtime_data_provider_adapter
+
 from openpine.admission import require_strategy_semantic_profile
 from openpine.exchange_metadata import default_qty_rounding_mode, default_qty_step
 from openpine.jobs import Job, JobScheduler, JobType
@@ -58,19 +57,6 @@ class StrategyJobExecutionResult:
 
 
 class RuntimeAdapter(Protocol):
-    def run(
-        self,
-        strategy_class: type,
-        bars: list[Bar],
-        config: BacktestRunConfig,
-        params: dict | None = None,
-        execution_backend: Any | None = None,
-        progress_callback: Any | None = None,
-        runtime_data_provider: Any | None = None,
-        resume_state: Any | None = None,
-        effective_pre_bars: int | None = None,
-    ) -> Any: ...
-
     def run_isolated(
         self,
         source: bytes,
@@ -79,9 +65,6 @@ class RuntimeAdapter(Protocol):
         resume_state: Any | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
     ) -> Any: ...
-
-
-StrategyClassLoader = Callable[[StrategyInstance], type]
 
 
 class StrategyJobExecutor:
@@ -103,8 +86,6 @@ class StrategyJobExecutor:
         state_store: StateStore,
         ledger: StrategyLedger | None = None,
         runtime_adapter: RuntimeAdapter | None = None,
-        strategy_loader: StrategyClassLoader | None = None,
-        runtime_data_provider: Any | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
         htf_timeframe: str | None = None,
     ) -> None:
@@ -114,8 +95,6 @@ class StrategyJobExecutor:
         self.state_store = state_store
         self.ledger = ledger
         self.runtime_adapter = runtime_adapter or BacktestEngineAdapter()
-        self.strategy_loader = strategy_loader
-        self.runtime_data_provider = runtime_data_provider
         self.htf_bars = htf_bars
         self.htf_timeframe = htf_timeframe
         self._job_htf_timeframe: str | None = None
@@ -340,34 +319,13 @@ class StrategyJobExecutor:
         self, strategy: StrategyInstance, bar: Bar, resume_state: Any | None
     ) -> Any:
         config = _build_bar_run_config(strategy, bar)
-        params = _strategy_params(strategy)
-        if self.strategy_loader is None:
-            source = self._stamped_artifact_source(strategy)
-            return self.runtime_adapter.run_isolated(
-                source,
-                [bar],
-                config,
-                resume_state=resume_state,
-                htf_bars=self._confirmed_htf_bars(strategy, bar),
-            )
-        strategy_class = self.strategy_loader(strategy)
-        runtime_data_provider = self.runtime_data_provider
-        if runtime_data_provider is None:
-            runtime_data_provider = create_local_runtime_data_provider_adapter(
-                exchange=strategy.exchange.lower(),
-                market=strategy.market_type.lower(),
-                prefetch_end_ms=bar.time_close,
-            )
-        strategy_class.runtime_data_provider = runtime_data_provider
-        strategy_class.runtime_intrabar_provider = runtime_data_provider
-        return self.runtime_adapter.run(
-            strategy_class,
+        source = self._stamped_artifact_source(strategy)
+        return self.runtime_adapter.run_isolated(
+            source,
             [bar],
             config,
-            params=params,
-            execution_backend=None,
-            runtime_data_provider=runtime_data_provider,
             resume_state=resume_state,
+            htf_bars=self._confirmed_htf_bars(strategy, bar),
         )
 
     def _record_ledger(

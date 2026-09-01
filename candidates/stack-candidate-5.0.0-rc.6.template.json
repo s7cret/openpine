@@ -1,0 +1,87 @@
+{
+  "schema": "openpine.stack-candidate-template.v1",
+  "id": "5.0.0-rc.6",
+  "not_a_release": true,
+  "components": {
+    "openpine-contracts": {
+      "repo": "s7cret/openpine-contracts",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "15122703858f22d28a413c4e4fe31835b0563375",
+      "version": "5.0.0rc6"
+    },
+    "marketdata-provider": {
+      "repo": "s7cret/marketdata-provider",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "2aceac9681ffc191780e2ff2254ba4ee88592cd0",
+      "version": "5.0.0rc6"
+    },
+    "pinelib": {
+      "repo": "s7cret/pinelib",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "11d0aeb7ce932d20cb8c274a0ed0bea17e685058",
+      "version": "5.0.0rc6"
+    },
+    "backtest_engine": {
+      "repo": "s7cret/backtest_engine",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "da66a70bd5dba2bdfdf4c5eab47ef02f2cbee200",
+      "version": "5.0.0rc6"
+    },
+    "pine2ast": {
+      "repo": "s7cret/pine2ast",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "c5d1a1826739fe439f506452e456ae61b1ca59dc",
+      "version": "5.0.0rc6"
+    },
+    "ast2python": {
+      "repo": "s7cret/ast2python",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "4a62199971a55dc341b43a74863c97ba6a701f51",
+      "version": "5.0.0rc6"
+    },
+    "optimizer": {
+      "repo": "s7cret/optimizer",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "sha": "36cd2e7aa7ad2142d939a42928e5403a5b88aa7a",
+      "version": "5.0.0rc6"
+    },
+    "openpine": {
+      "repo": "s7cret/openpine",
+      "ref": "release/5.0.0rc6-local-candidate",
+      "version": "5.0.0rc6"
+    }
+  },
+  "admission": {
+    "capabilities": [
+      "batch.v1",
+      "backtest.v1",
+      "explain.v1",
+      "indicator-runtime.v1",
+      "intent_tape_v2",
+      "live_extra.v1",
+      "live_runner_v1",
+      "optimizer.v1",
+      "runtime.v1",
+      "scheduler.v1",
+      "strategy_inputs_v1",
+      "warmup.v1",
+      "worker-isolation.v2"
+    ],
+    "semantic_profiles": [
+      "permissive_legacy",
+      "strict_5x"
+    ],
+    "finality_policies": [
+      "ALLOW_OPEN",
+      "CLOSED_BAR_ONLY"
+    ],
+    "warmup_policies": [
+      "BACKFILL_GATE",
+      "SUPPRESS_OUTPUTS"
+    ],
+    "score_policies": [
+      "backtest-default-v1",
+      "parity-default-v1"
+    ]
+  }
+}

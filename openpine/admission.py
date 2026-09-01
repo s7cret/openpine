@@ -484,7 +484,7 @@ def admit_semantic_profile(
     allow_legacy: bool = False,
 ) -> SemanticProfile:
     if profile is None:
-        if source in {"generated_artifact.v2", "live", "paper"}:
+        if source in {"generated_artifact.v3", "live", "paper"}:
             raise AdmitError(
                 "semantic profile required",
                 code="SEMANTIC_PROFILE_REQUIRED",

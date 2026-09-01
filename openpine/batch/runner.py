@@ -212,7 +212,8 @@ def get_or_add_source(entry: ExportEntry, *, write: bool) -> tuple[Any | None, b
 
 
 def compile_source(source: Any, *, force: bool) -> tuple[str | None, dict[str, Any]]:
-    from openpine.compile import SubprocessCompilerAdapter, compile_pipeline
+    from openpine.build_identity import compiler_producer_commits
+    from openpine.compile import NativeRC6CompilerAdapter, compile_pipeline
     from openpine.pine.registry import SQLitePineSourceRegistry
 
     if source.active_artifact_id and not force:
@@ -220,7 +221,15 @@ def compile_source(source: Any, *, force: bool) -> tuple[str | None, dict[str, A
             "status": "cached",
             "artifact_id": source.active_artifact_id,
         }
-    result = compile_pipeline(source, SubprocessCompilerAdapter())
+    result = compile_pipeline(
+        source,
+        NativeRC6CompilerAdapter(),
+        extra_options={
+            "module_name": source.name,
+            "source_name": source.source_path or f"{source.name}.pine",
+            "producer_commits": compiler_producer_commits(),
+        },
+    )
     if result.get("success"):
         registry = SQLitePineSourceRegistry()
         try:
@@ -685,7 +694,7 @@ def run_indicator(
 
     admitted = admit_semantic_profile(
         profile=getattr(args, "semantic_profile", None),
-        source="generated_artifact.v2",
+        source="generated_artifact.v3",
     )
     t0 = time.perf_counter()
     htf_bars = _confirmed_htf_bars_for_batch(
@@ -777,7 +786,7 @@ def _build_strategy_run_config(
         plot_to_ms=compare_to,
         semantic_profile=admit_semantic_profile(
             profile=getattr(args, "semantic_profile", None),
-            source="generated_artifact.v2",
+            source="generated_artifact.v3",
         ).value,
     )
 

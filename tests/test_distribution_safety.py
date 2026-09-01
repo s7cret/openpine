@@ -256,6 +256,8 @@ def test_build_zip_rejects_non_regular_source_descriptor(
 
 def test_gitignore_ignores_only_generated_research_payloads() -> None:
     root = Path(__file__).resolve().parents[1]
+    if not (root / ".git").exists():
+        pytest.skip("gitignore gate requires a Git checkout")
     ignored_paths = [
         "research/example/data/raw.csv",
         "research/example/artifacts/report.json",
@@ -340,7 +342,7 @@ def test_stack_dependencies_are_immutable_and_ci_extras_are_complete() -> None:
         "openpine-contracts",
     }
     for name in direct_names:
-        assert f"{name}==5.0.0rc4" in dependencies
+        assert f"{name}==5.0.0rc6" in dependencies
     assert not any("git+" in dependency or " @ " in dependency for dependency in dependencies)
 
     dev_dependencies = config["project"]["optional-dependencies"]["dev"]

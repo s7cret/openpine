@@ -13,11 +13,11 @@ import openpine.artifacts as artifacts_module
 import openpine_contracts
 from openpine.gateway.routes import trading
 from openpine.gateway.schemas import PaperStartRequest
-from openpine.runtime import isolated_run, isolated_worker
+from openpine.runtime import isolated_run, isolated_worker, rc6_worker_runtime
 
 
 def test_p0_001_worker_messages_use_packaged_protocol_not_legacy_message_types() -> None:
-    child = isolated_worker._BOOTSTRAP
+    child = inspect.getsource(rc6_worker_runtime)
     parent = inspect.getsource(isolated_worker.InteractiveWorkerSession)
     violations: list[str] = []
 
@@ -135,7 +135,7 @@ def test_p0_006_engine_canonical_projection_is_forwarded_unchanged(
                     "broker_projection": canonical_projection,
                 }
             )
-            strategy_class({}, None, SimpleNamespace())._process_bar(bars[0], 0)
+            strategy_class({}, None, SimpleNamespace()).run_bar(bars[0], 0)
             return SimpleNamespace(score_ledger_hash="hash")
 
     class Session:

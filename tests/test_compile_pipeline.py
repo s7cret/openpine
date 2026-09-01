@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from ast2python.artifact import build_generated_artifact_v2
 
 from openpine.artifacts.store import ArtifactStore
-from openpine.compile.adapter import CompileResult
+from openpine.compile.native_rc6 import CompileResult, NativeRC6CompilerAdapter
 from openpine.compile.pipeline import compile_pipeline
 from openpine.config import OpenPineConfig
 from openpine.pine.source import PineSource
@@ -31,16 +30,13 @@ def source() -> PineSource:
     )
 
 
-def sealed_artifact(pine_source: str, python_code: str) -> dict:
-    return build_generated_artifact_v2(
-        source=pine_source,
-        ast_payload={},
-        emitted_module=python_code,
-        source_map=[],
+def native_result(source_text: str) -> CompileResult:
+    result = NativeRC6CompilerAdapter().compile(
+        source_text,
         producer_commits=COMMITS,
-        entrypoint_module="generated_strategy",
-        entrypoint_class="GeneratedStrategy",
     )
+    assert result.success, result.errors
+    return result
 
 
 def test_failed_compile_does_not_write_generated_strategy(
@@ -69,14 +65,9 @@ def test_artifact_store_removes_stale_generated_strategy_when_compile_has_no_cod
     tmp_path,
 ) -> None:
     store = ArtifactStore(root=tmp_path)
-    artifact_path = store.save_artifact(
-        artifact_id="art_test",
-        source_id="pine_test",
-        params_hash="default",
-        python_code="class GeneratedStrategy: pass\n",
-        compile_meta={"compile_status": "OK"},
-    )
-    assert (artifact_path / "generated_strategy.py").exists()
+    artifact_path = tmp_path / "pine_test" / "art_test"
+    artifact_path.mkdir(parents=True)
+    artifact_path.joinpath("generated_strategy.py").write_text("stale")
 
     store.save_artifact(
         artifact_id="art_test",
@@ -87,6 +78,18 @@ def test_artifact_store_removes_stale_generated_strategy_when_compile_has_no_cod
     )
 
     assert not (artifact_path / "generated_strategy.py").exists()
+
+
+def test_artifact_store_rejects_unsealed_generated_python(tmp_path) -> None:
+    store = ArtifactStore(root=tmp_path)
+    with pytest.raises(ValueError, match="sealed V3"):
+        store.save_artifact(
+            artifact_id="art_test",
+            source_id="pine_test",
+            params_hash="default",
+            python_code="class GeneratedScript: pass\n",
+            compile_meta={"compile_status": "OK"},
+        )
 
 
 def test_artifact_store_requires_compile_metadata(tmp_path) -> None:
@@ -104,8 +107,8 @@ def test_artifact_store_list_does_not_hide_corrupt_artifact_dirs(tmp_path) -> No
         artifact_id="art_ok",
         source_id="pine_test",
         params_hash="default",
-        python_code="class GeneratedStrategy: pass\n",
-        compile_meta={"compile_status": "OK"},
+        python_code=None,
+        compile_meta={"compile_status": "FAILED"},
     )
     (tmp_path / "pine_test" / "art_corrupt").mkdir()
 
@@ -115,27 +118,18 @@ def test_artifact_store_list_does_not_hide_corrupt_artifact_dirs(tmp_path) -> No
 
 def test_artifact_store_list_returns_artifacts_in_stable_order(tmp_path) -> None:
     store = ArtifactStore(root=tmp_path)
-    store.save_artifact(
-        artifact_id="art_b",
-        source_id="pine_test",
-        params_hash="default",
-        python_code="class GeneratedStrategy: pass\n",
-        compile_meta={"compile_status": "OK"},
-    )
-    store.save_artifact(
-        artifact_id="art_a",
-        source_id="pine_test",
-        params_hash="default",
-        python_code="class GeneratedStrategy: pass\n",
-        compile_meta={"compile_status": "OK"},
-    )
+    for artifact_id in ("art_b", "art_a"):
+        store.save_artifact(
+            artifact_id=artifact_id,
+            source_id="pine_test",
+            params_hash="default",
+            python_code=None,
+            compile_meta={"compile_status": "FAILED"},
+        )
 
     assert [
         artifact["artifact_id"] for artifact in store.list_artifacts("pine_test")
-    ] == [
-        "art_a",
-        "art_b",
-    ]
+    ] == ["art_a", "art_b"]
 
 
 def test_successful_compile_requires_generated_python_code(
@@ -162,7 +156,7 @@ def test_successful_compile_requires_sealed_generated_artifact(
             Adapter(
                 CompileResult(
                     success=True,
-                    python_code="class GeneratedStrategy:\n    pass\n",
+                    python_code="class GeneratedScript:\n    pass\n",
                 )
             ),
         )
@@ -171,8 +165,10 @@ def test_successful_compile_requires_sealed_generated_artifact(
 def test_artifact_store_verifies_sealed_envelope_and_detects_tampering(tmp_path) -> None:
     store = ArtifactStore(root=tmp_path)
     pine_source = source().source_text
-    python_code = "class GeneratedStrategy:\n    pass\n"
-    envelope = sealed_artifact(pine_source, python_code)
+    compiled = native_result(pine_source)
+    python_code = compiled.python_code
+    envelope = compiled.generated_artifact
+    assert python_code is not None and envelope is not None
     artifact_id = store.artifact_id_for_envelope(envelope)
 
     artifact_path = store.save_artifact(
@@ -180,11 +176,15 @@ def test_artifact_store_verifies_sealed_envelope_and_detects_tampering(tmp_path)
         source_id="pine_test",
         params_hash="default",
         python_code=python_code,
-        compile_meta={"compile_status": "OK"},
+        compile_meta={"compile_status": "OK", "producer_commits": COMMITS},
         source_text=pine_source,
-        ast_json="{}",
-        source_map=[],
+        ast_json=compiled.ast_json,
+        source_map=compiled.source_map,
         generated_artifact=envelope,
+        consumer_bundle=compiled.consumer_bundle,
+        frontend_artifact=compiled.frontend_artifact,
+        support_profile=compiled.support_profile,
+        ast_artifact=compiled.ast_artifact,
     )
     loaded = store.get_artifact(artifact_id, "pine_test")
     assert loaded["generated_artifact"] == envelope
@@ -200,23 +200,13 @@ def test_compile_pipeline_uses_sealed_content_identity(tmp_path, monkeypatch) ->
     config = OpenPineConfig(workspace_root=tmp_path, data_dir=tmp_path / "data")
     monkeypatch.setattr("openpine.artifacts.store.OpenPineConfig.load", lambda: config)
     pine = source()
-    code = "class GeneratedStrategy:\n    pass\n"
-    envelope = sealed_artifact(pine.source_text, code)
+    compiled = native_result(pine.source_text)
+    envelope = compiled.generated_artifact
+    assert envelope is not None
 
-    result = compile_pipeline(
-        pine,
-        Adapter(
-            CompileResult(
-                success=True,
-                python_code=code,
-                ast_json="{}",
-                generated_artifact=envelope,
-                source_map=[],
-            )
-        ),
-    )
+    result = compile_pipeline(pine, Adapter(compiled))
 
-    assert result["artifact_id"] == "art_" + envelope["content_hash"].split(":", 1)[1][
-        :16
-    ]
+    assert result["artifact_id"] == "art_" + envelope["content_hash"].split(":", 1)[
+        1
+    ][:16]
     assert result["generated_artifact"] == envelope

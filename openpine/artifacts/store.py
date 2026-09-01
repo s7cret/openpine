@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import tempfile
 from pathlib import Path
 from typing import Any, cast
 
-from openpine_contracts import validate_payload, verify_content_hash
+from ast2python.artifacts import verify_generated_artifact_v3
+from ast2python.emission.source_map import verify_source_map_v2
+from openpine_contracts import validate_payload
+from pine2ast.hardening.consumer_bundle import verify_consumer_bundle
 
 from openpine.config import OpenPineConfig
 
@@ -92,11 +96,8 @@ class ArtifactStore:
 
     @staticmethod
     def artifact_id_for_envelope(generated_artifact: dict[str, Any]) -> str:
-        validate_payload("openpine.generated_artifact.v2", generated_artifact)
-        if not verify_content_hash(
-            generated_artifact, schema_id="openpine.generated_artifact.v2"
-        ):
-            raise ValueError("generated artifact content hash is invalid")
+        validate_payload("openpine.generated_artifact.v3", generated_artifact)
+        verify_generated_artifact_v3(generated_artifact)
         digest = str(generated_artifact["content_hash"]).split(":", 1)[1]
         return f"art_{digest[:16]}"
 
@@ -107,61 +108,64 @@ class ArtifactStore:
         python_code: str,
         source_text: str,
         ast_json: str,
-        source_map: list[dict[str, Any]],
+        source_map: dict[str, Any],
         generated_artifact: dict[str, Any],
+        consumer_bundle: dict[str, Any],
+        compile_meta: dict[str, Any],
         frontend_artifact: dict[str, Any] | None,
         support_profile: dict[str, Any] | None,
         ast_artifact: dict[str, Any] | None,
     ) -> None:
-        from ast2python.artifact import _digest
-
         expected_id = ArtifactStore.artifact_id_for_envelope(generated_artifact)
         if artifact_id != expected_id:
             raise ValueError(
                 f"artifact_id does not match sealed content identity: {artifact_id} != {expected_id}"
             )
-        contract = "openpine.generated_artifact.v2"
-        if generated_artifact["source_hash"] != _digest(source_text, contract):
-            raise ValueError("generated artifact source hash does not match source bytes")
-        if generated_artifact["emitted_module_hash"] != _digest(python_code, contract):
+
+        producer_commits = compile_meta.get("producer_commits")
+        if not isinstance(producer_commits, dict):
+            raise ValueError("compile metadata lacks trusted producer commits")
+        pine2ast_commit = producer_commits.get("pine2ast")
+        ast2python_commit = producer_commits.get("ast2python")
+        if not isinstance(pine2ast_commit, str) or not isinstance(ast2python_commit, str):
+            raise ValueError("compile metadata producer commits are malformed")
+
+        verify_consumer_bundle(
+            consumer_bundle,
+            source=source_text,
+            expected_producer_commit=pine2ast_commit,
+        )
+        validate_payload("openpine.generated_artifact.v3", generated_artifact)
+        verify_generated_artifact_v3(generated_artifact)
+        verify_source_map_v2(source_map)
+
+        producer = generated_artifact.get("producer")
+        if not isinstance(producer, dict) or producer.get("commit") != ast2python_commit:
+            raise ValueError("generated artifact producer commit does not match trust anchor")
+        if generated_artifact.get("bundle_hash") != consumer_bundle.get("content_hash"):
+            raise ValueError("generated artifact bundle hash does not match consumer bundle")
+        source = consumer_bundle.get("source")
+        if not isinstance(source, dict) or generated_artifact.get("source_hash") != source.get(
+            "source_hash"
+        ):
+            raise ValueError("generated artifact source hash does not match consumer bundle")
+        emitted_hash = "sha256:" + hashlib.sha256(python_code.encode("utf-8")).hexdigest()
+        if generated_artifact.get("emitted_module_hash") != emitted_hash:
             raise ValueError("generated artifact emitted module hash does not match Python bytes")
-        if generated_artifact["source_map_hash"] != _digest(
-            {"entries": source_map}, contract
-        ):
+        if generated_artifact.get("source_map_hash") != source_map.get("content_hash"):
             raise ValueError("generated artifact source map hash does not match source map")
+        if json.loads(ast_json) != consumer_bundle.get("ast"):
+            raise ValueError("stored AST does not match consumer bundle")
 
-        parsed_ast = json.loads(ast_json)
-        if ast_artifact is None:
-            expected_ast_hash = _digest(parsed_ast, contract)
-        else:
-            validate_payload("pine.ast.v1", ast_artifact)
-            if not verify_content_hash(ast_artifact, schema_id="pine.ast.v1"):
-                raise ValueError("AST artifact content hash is invalid")
-            expected_ast_hash = ast_artifact["content_hash"]
-        if generated_artifact["ast_hash"] != expected_ast_hash:
-            raise ValueError("generated artifact AST hash does not match AST artifact")
-
-        for payload, schema_id, field, label in (
-            (
-                frontend_artifact,
-                "openpine.frontend.v2",
-                "frontend_artifact_hash",
-                "frontend artifact",
-            ),
-            (
-                support_profile,
-                "openpine.support_profile.v2",
-                "support_profile_hash",
-                "support profile",
-            ),
+        linked = consumer_bundle.get("linked_artifacts")
+        linked_artifacts = linked if isinstance(linked, dict) else {}
+        for name, payload in (
+            ("frontend_artifact", frontend_artifact),
+            ("support_profile", support_profile),
+            ("ast_artifact", ast_artifact),
         ):
-            if payload is None:
-                continue
-            validate_payload(schema_id, payload)
-            if not verify_content_hash(payload, schema_id=schema_id):
-                raise ValueError(f"{label} content hash is invalid")
-            if generated_artifact[field] != payload["content_hash"]:
-                raise ValueError(f"generated artifact {label} hash does not match")
+            if payload is not None and payload != linked_artifacts.get(name):
+                raise ValueError(f"stored {name} does not match consumer bundle")
 
     def _save_sealed_artifact(
         self,
@@ -173,8 +177,9 @@ class ArtifactStore:
         compile_meta: dict,
         source_text: str,
         ast_json: str,
-        source_map: list[dict[str, Any]],
+        source_map: dict[str, Any],
         generated_artifact: dict[str, Any],
+        consumer_bundle: dict[str, Any],
         frontend_artifact: dict[str, Any] | None,
         support_profile: dict[str, Any] | None,
         ast_artifact: dict[str, Any] | None,
@@ -188,6 +193,8 @@ class ArtifactStore:
             ast_json=ast_json,
             source_map=source_map,
             generated_artifact=generated_artifact,
+            consumer_bundle=consumer_bundle,
+            compile_meta=compile_meta,
             frontend_artifact=frontend_artifact,
             support_profile=support_profile,
             ast_artifact=ast_artifact,
@@ -216,6 +223,7 @@ class ArtifactStore:
             for filename, payload in (
                 ("source_map.json", source_map),
                 ("generated_artifact.json", generated_artifact),
+                ("consumer_bundle.json", consumer_bundle),
                 ("frontend_artifact.json", frontend_artifact),
                 ("support_profile.json", support_profile),
                 ("ast_artifact.json", ast_artifact),
@@ -250,8 +258,9 @@ class ArtifactStore:
         ast_json: str | None = None,
         requirements: dict | None = None,
         diagnostics: str = "",
-        source_map: list[dict[str, Any]] | None = None,
+        source_map: dict[str, Any] | None = None,
         generated_artifact: dict[str, Any] | None = None,
+        consumer_bundle: dict[str, Any] | None = None,
         frontend_artifact: dict[str, Any] | None = None,
         support_profile: dict[str, Any] | None = None,
         ast_artifact: dict[str, Any] | None = None,
@@ -261,9 +270,15 @@ class ArtifactStore:
         Returns the path to the artifact directory.
         """
         if generated_artifact is not None:
-            if not python_code or source_text is None or ast_json is None or source_map is None:
+            if (
+                not python_code
+                or source_text is None
+                or ast_json is None
+                or source_map is None
+                or consumer_bundle is None
+            ):
                 raise ValueError(
-                    "sealed artifact save requires Python, source, AST, and source map bytes"
+                    "sealed V3 artifact save requires Python, source, AST, source map, and consumer bundle bytes"
                 )
             return self._save_sealed_artifact(
                 artifact_id=artifact_id,
@@ -275,6 +290,7 @@ class ArtifactStore:
                 ast_json=ast_json,
                 source_map=source_map,
                 generated_artifact=generated_artifact,
+                consumer_bundle=consumer_bundle,
                 frontend_artifact=frontend_artifact,
                 support_profile=support_profile,
                 ast_artifact=ast_artifact,
@@ -283,6 +299,9 @@ class ArtifactStore:
             )
 
         artifact_dir = self._artifact_dir(source_id, artifact_id)
+        if python_code is not None:
+            raise ValueError("generated Python can only be saved as a sealed V3 artifact")
+
         artifact_dir.mkdir(parents=True, exist_ok=True)
 
         strategy_path = artifact_dir / "generated_strategy.py"
@@ -326,16 +345,20 @@ class ArtifactStore:
         generated_artifact = self._read_optional_json(
             artifact_dir, "generated_artifact.json"
         )
+        consumer_bundle = self._read_optional_json(artifact_dir, "consumer_bundle.json")
         frontend_artifact = self._read_optional_json(
             artifact_dir, "frontend_artifact.json"
         )
         support_profile = self._read_optional_json(artifact_dir, "support_profile.json")
         ast_artifact = self._read_optional_json(artifact_dir, "ast_artifact.json")
+        compile_meta = self._read_compile_meta(artifact_dir, artifact_id)
         if generated_artifact is not None:
-            if not isinstance(generated_artifact, dict) or not isinstance(source_map, list):
-                raise ValueError(f"sealed artifact files are malformed: {artifact_id}")
-            if not all(isinstance(item, dict) for item in source_map):
-                raise ValueError(f"sealed source map is malformed: {artifact_id}")
+            if (
+                not isinstance(generated_artifact, dict)
+                or not isinstance(source_map, dict)
+                or not isinstance(consumer_bundle, dict)
+            ):
+                raise ValueError(f"sealed V3 artifact files are malformed: {artifact_id}")
             for payload, label in (
                 (frontend_artifact, "frontend artifact"),
                 (support_profile, "support profile"),
@@ -353,6 +376,8 @@ class ArtifactStore:
                 ast_json=ast_json,
                 source_map=source_map,
                 generated_artifact=generated_artifact,
+                consumer_bundle=consumer_bundle,
+                compile_meta=compile_meta,
                 frontend_artifact=frontend_mapping,
                 support_profile=support_mapping,
                 ast_artifact=ast_mapping,
@@ -365,9 +390,10 @@ class ArtifactStore:
             "python_code": python_code,
             "ast_json": ast_json,
             "source_text": source_text,
-            "compile_meta": self._read_compile_meta(artifact_dir, artifact_id),
+            "compile_meta": compile_meta,
             "source_map": source_map,
             "generated_artifact": generated_artifact,
+            "consumer_bundle": consumer_bundle,
             "frontend_artifact": frontend_artifact,
             "support_profile": support_profile,
             "ast_artifact": ast_artifact,

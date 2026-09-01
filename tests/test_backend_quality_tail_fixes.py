@@ -12,7 +12,6 @@ from types import ModuleType, SimpleNamespace
 import pytest
 import pandas as pd
 
-from openpine.runtime.engine import _MinimalRuntimeConfig
 from openpine.artifacts.store import ArtifactStore
 from openpine.data.candle_storage import CandleStorage
 from openpine.storage.manifests import ManifestStore
@@ -25,7 +24,6 @@ from openpine.storage import (
 )
 from openpine.storage.adapters import DuckDBAnalyticsAdapter
 from openpine.workers.pool import AggregationWorkerPool, FeatureWorkerPool
-from openpine.compile import adapter as compile_adapter
 from openpine.cli import data as cli_data
 from openpine.registry.strategies import SQLiteStrategyRegistry
 import openpine._compat.parquet as parquet_compat
@@ -410,15 +408,6 @@ def test_backtest_store_removes_backup_after_successful_publish_over_existing_di
         storage.close()
 
 
-def test_minimal_runtime_config_does_not_share_mutable_state() -> None:
-    first = _MinimalRuntimeConfig()
-    second = _MinimalRuntimeConfig()
-
-    first.diagnostics.append("diag")
-    first.extra["flag"] = True
-
-    assert second.diagnostics == []
-    assert second.extra == {}
 
 
 def test_parquet_read_requires_concrete_pyarrow_backend(monkeypatch, tmp_path: Path) -> None:
@@ -482,26 +471,6 @@ def test_worker_pool_job_type_sets_are_immutable() -> None:
         FeatureWorkerPool.JOB_TYPES.add("backfill")  # type: ignore[attr-defined]
 
 
-def test_subprocess_ast_json_invariant_returns_compile_error(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(
-        compile_adapter,
-        "_parse_with_pine2ast_subprocess",
-        lambda **_kwargs: (None, None),
-    )
-
-    ast_json, error = compile_adapter._subprocess_ast_json_or_error(
-        pine2ast_path=tmp_path / "pine2ast",
-        src_path=tmp_path / "source.pine",
-        source_text="plot(close)",
-        profile=compile_adapter._profile_from_kwargs({"profile": "diagnostic"}),
-        timeout=1,
-        compile_meta={},
-    )
-
-    assert ast_json is None
-    assert error is not None
-    assert error.success is False
-    assert "returned no result" in error.errors[0]
 
 
 def test_cli_data_backfill_window_fails_closed_on_parser_invariant(monkeypatch) -> None:
@@ -553,18 +522,6 @@ def test_cli_data_backfill_fails_closed_on_incomplete_window(monkeypatch) -> Non
         )
 
 
-def _minimal_compile_apis() -> compile_adapter._LibraryApis:
-    return compile_adapter._LibraryApis(
-        parse_code=lambda *_args, **_kwargs: SimpleNamespace(ast=object(), diagnostics=[], ok=True),
-        parse_options=lambda **_kwargs: SimpleNamespace(),
-        ast_to_json=lambda _ast: "{}",
-        translate_ast=lambda *_args, **_kwargs: SimpleNamespace(
-            code="def run(ctx):\n    return None\n",
-            metadata={},
-            source_map=[],
-        ),
-        versions={},
-    )
 
 
 def test_delete_strategy_ignores_missing_optional_backtest_tables(tmp_path: Path) -> None:
@@ -621,49 +578,8 @@ def test_delete_strategy_rolls_back_when_backtest_dir_cleanup_fails(monkeypatch,
     assert bt_dir.exists()
 
 
-def test_compile_library_invariant_returns_compile_error(monkeypatch) -> None:
-    monkeypatch.setattr(
-        compile_adapter,
-        "_parse_with_library_api",
-        lambda **_kwargs: (None, None),
-    )
-
-    result = compile_adapter.SubprocessCompilerAdapter()._compile_with_library(
-        _minimal_compile_apis(),
-        "plot(close)",
-        profile="diagnostic",
-    )
-
-    assert result.success is False
-    assert "returned no AST" in result.errors[0]
 
 
-def test_compile_subprocess_invariants_return_compile_errors(monkeypatch, tmp_path: Path) -> None:
-    adapter = compile_adapter.SubprocessCompilerAdapter()
-    profile_kwargs = {"profile": "diagnostic"}
-
-    monkeypatch.setattr(compile_adapter, "_resolve_subprocess_tools", lambda: (None, []))
-    missing_tools = adapter._compile_with_subprocess("plot(close)", **profile_kwargs)
-    assert missing_tools.success is False
-    assert "returned no tools" in missing_tools.errors[0]
-
-    tools = compile_adapter._SubprocessTools(tmp_path / "pine2ast", tmp_path / "ast2python")
-    source_path = tmp_path / "source.pine"
-    source_path.write_text("plot(close)", encoding="utf-8")
-    monkeypatch.setattr(compile_adapter, "_resolve_subprocess_tools", lambda: (tools, []))
-    monkeypatch.setattr(compile_adapter, "_write_temp_pine_source", lambda _source: source_path)
-    monkeypatch.setattr(compile_adapter, "_subprocess_ast_json_or_error", lambda **_kwargs: (None, None))
-    missing_ast = adapter._compile_with_subprocess("plot(close)", **profile_kwargs)
-    assert missing_ast.success is False
-    assert "returned no AST JSON" in missing_ast.errors[0]
-
-    ast_path = tmp_path / "ast.json"
-    ast_path.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(compile_adapter, "_subprocess_ast_json_or_error", lambda **_kwargs: ("{}", None))
-    monkeypatch.setattr(compile_adapter, "_translate_ast_with_subprocess", lambda **_kwargs: (None, None, ast_path))
-    missing_code = adapter._compile_with_subprocess("plot(close)", **profile_kwargs)
-    assert missing_code.success is False
-    assert "returned no Python code" in missing_code.errors[0]
 
 
 class _FetchAllRows:

@@ -58,32 +58,6 @@ def _payload(symbol: str, timeframe: str, duration_ms: int, values: list[int]):
     ]
 
 
-def test_isolated_indicator_supports_two_requested_mtf_series() -> None:
-    chart = _payload("BTCUSDT", "15m", 900_000, [1, 1, 1, 1])
-    for index, bar in enumerate(chart):
-        bar["time"] = 84_600_000 + index * 900_000
-        bar["time_close"] = bar["time"] + 899_999
-    mtf_bars = [
-        *_payload("BTCUSDT", "1D", 86_400_000, [100, 200]),
-        *_payload("ETHUSDT", "4h", 14_400_000, [10, 20, 30, 40, 50, 60, 70]),
-    ]
-
-    result = run_isolated_indicator(
-        MULTI_SERIES_SOURCE,
-        chart,
-        admitted_manifest=admitted_manifest(),
-        instrument_id="test:S",
-        semantic_profile="strict_5x",
-        htf_bars=mtf_bars,
-    )
-
-    by_title: dict[str, list[object]] = {}
-    for _time, _index, value, title in result.plots:
-        by_title.setdefault(title, []).append(value)
-    assert by_title == {
-        "btc_daily": ["na", "na", "200", "200"],
-        "eth_four_hour": ["na", "60", "70", "70"],
-    }
 
 
 def test_confirmed_mtf_fetches_each_explicit_series_once() -> None:

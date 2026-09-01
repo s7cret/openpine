@@ -18,7 +18,6 @@ from marketdata_provider.contracts import (
 
 from openpine.batch import tv_corpus as tv
 from openpine.cli import runtime_helpers as rh
-from openpine.compile import adapter as ca
 from openpine.data.footprint_orchestrator import FootprintOrchestrator
 from openpine.data.orchestrator import IncompleteCoverageError, StorageUnavailableError
 from openpine.gateway import server
@@ -194,30 +193,6 @@ def test_footprint_orchestrator_provider_store_and_failures():
         FootprintOrchestrator(store=Store(result=StoreResult(False, 0, "bad"))).store_footprints(series)
 
 
-def test_compile_adapter_edges(monkeypatch, tmp_path: Path):
-    assert ca._is_visual_contract_diagnostic("P2A1507 Builtin plot has no runtime-equivalent visual output")
-    assert not ca._is_visual_contract_diagnostic("P2A1507 Builtin request.foo unsupported")
-    assert ca._unsupported_request_in_source_error("x=request.financial('AAPL')") == "unsupported request call is not production lowerable: request.financial"
-    assert ca._unsupported_request_in_source_error("x=request.security('BTC','1D',close)") is None
-    assert ca._normalize_pine_v5_directive("//@version=5\nplot(close)") == ("//@version=6\nplot(close)", True)
-    assert ca._normalize_pine_v5_directive("plot(close)") == ("plot(close)", False)
-    assert ca._is_pine_v5_version_rejection(["P2A0103 unsupported Pine version 5"])
-    assert not ca._is_pine_v5_version_rejection(["P2A0103 unsupported Pine version 5", "P2A9999 bad"])
-    assert ca._production_metadata_blockers({"unsafe": True, "compile_profile": "diagnostic", "import_aliases": ["x"], "unsupported_features": ["u"]})
-    mod = ModuleType("m")
-    mod.__version__ = "1.2"
-    assert ca._version_from_module(mod, "missing", "__version__") == "1.2"
-    assert ca._version_from_module(ModuleType("empty"), "__version__") == "unknown"
-    monkeypatch.setattr(ca.shutil, "which", lambda name: None)
-    monkeypatch.setattr(ca, "TOOL_SEARCH_PATHS", [tmp_path])
-    assert ca._find_tool("nope") is None
-
-    adapter = ca.SubprocessCompilerAdapter(prefer_library=True, fallback_to_subprocess=False)
-    monkeypatch.setattr(ca, "_load_library_apis", lambda: (None, ca.LibraryAvailability(False, errors=["missing"], paths={}, versions={})))
-    result = adapter.compile("//@version=6\nindicator('x')")
-    assert not result.success and "missing" in result.errors
-    assert not ca.SubprocessCompilerAdapter(prefer_library=False).compile("x").success
-    assert not ca.SubprocessCompilerAdapter(prefer_library=True).compile("x", allow_invalid_ast=True).success
 
 
 def test_runtime_helper_error_edges(monkeypatch):

@@ -15,10 +15,6 @@ from openpine.workers.strategy_job_executor import (
 )
 
 
-class _DummyStrategy:
-    pass
-
-
 def _strategy() -> StrategyInstance:
     strategy = StrategyInstance(
         strategy_id="strategy-1",
@@ -100,8 +96,8 @@ class _RuntimeAdapter:
         self.error = error
         self.calls = []
 
-    def run(self, strategy_class, bars, config, **kwargs):
-        self.calls.append((strategy_class, bars, config, kwargs))
+    def run_isolated(self, source, bars, config, **kwargs):
+        self.calls.append((source, bars, config, kwargs))
         if self.error is not None:
             raise self.error
         return self.result
@@ -169,9 +165,8 @@ def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(
             state_store=StateStore(tmp_path / "state"),
             ledger=ledger,
             runtime_adapter=adapter,
-            strategy_loader=lambda strategy: _DummyStrategy,
-            runtime_data_provider="runtime-provider",
         )
+        executor._stamped_sources[("pine-1", "artifact-1")] = b"generated"
 
         result = executor.process(job)
 
@@ -179,7 +174,7 @@ def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(
         assert result.snapshot_id
         assert result.trades_recorded == 1
         assert scheduler.get_job(job.id).status == JobStatus.DONE
-        assert adapter.calls[0][3]["params"] == {"length": 20}
+        assert adapter.calls[0][0] == b"generated"
         assert adapter.calls[0][3]["resume_state"] is None
         position = ledger.get_position(
             strategy_id="strategy-1",
@@ -223,8 +218,6 @@ def test_strategy_job_executor_skips_already_processed_bar(tmp_path) -> None:
         scheduler=scheduler,
         state_store=state_store,
         runtime_adapter=adapter,
-        strategy_loader=lambda strategy: _DummyStrategy,
-        runtime_data_provider="runtime-provider",
     )
 
     result = executor.process(job)
@@ -246,9 +239,8 @@ def test_strategy_job_executor_marks_failed_without_snapshot(tmp_path) -> None:
         scheduler=scheduler,
         state_store=state_store,
         runtime_adapter=_RuntimeAdapter(error=RuntimeError("boom")),
-        strategy_loader=lambda strategy: _DummyStrategy,
-        runtime_data_provider="runtime-provider",
     )
+    executor._stamped_sources[("pine-1", "artifact-1")] = b"generated"
 
     result = executor.process(job)
 
@@ -276,9 +268,8 @@ def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(
             state_store=StateStore(tmp_path / "state"),
             ledger=ledger,
             runtime_adapter=adapter,
-            strategy_loader=lambda strategy: _DummyStrategy,
-            runtime_data_provider="runtime-provider",
         )
+        executor._stamped_sources[("pine-1", "artifact-1")] = b"generated"
 
         result = executor.process(job)
 

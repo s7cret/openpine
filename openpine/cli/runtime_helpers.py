@@ -972,43 +972,6 @@ def _load_indicator_plot_bars(
     )
 
 
-def _execute_indicator_plot_runtime(
-    *,
-    generated_class,
-    bars,
-    config,
-    symbol: str,
-    timeframe: str,
-    provider,
-    compare_from_ms: int | None,
-    compare_to_ms: int | None,
-    progress_callback,
-):
-    from openpine.integrations import import_library
-
-    import_library("backtest_engine")
-    from backtest_engine.execution_backends.pine_runtime import PineRuntimeBackend
-
-    return PineRuntimeBackend().execute(
-        generated_class,
-        bars,
-        config=config,
-        execution_window=None,
-        runtime_kwargs={
-            "symbol": symbol,
-            "timeframe": timeframe,
-            "data_provider": getattr(provider, "_provider", None),
-            "plot_from_ms": compare_from_ms,
-            "plot_to_ms": compare_to_ms,
-            "progress_callback": progress_callback,
-            "tv_export_barstate": True,
-            "normalize_time_close_exclusive": True,
-        },
-        params={},
-        is_indicator=True,
-    )
-
-
 def _run_indicator_plot_runtime(
     *,
     generated_class,
@@ -1031,7 +994,7 @@ def _run_indicator_plot_runtime(
 
     admitted = admit_semantic_profile(
         profile=semantic_profile,
-        source="generated_artifact.v2",
+        source="generated_artifact.v3",
     )
     t0 = perf_counter()
     if not isinstance(generated_class, (bytes, bytearray)):

@@ -9,7 +9,6 @@ import tomllib
 
 import pytest
 
-from openpine.compile import CompileProfile, SubprocessCompilerAdapter
 from openpine.optimizer import (
     LocalOptimizerAdapter,
     OptimizerRunConfig,
@@ -504,23 +503,8 @@ def test_backtest_run_config_does_not_carry_engine_data_provider() -> None:
     assert 'setattr(engine_config, "data_provider"' not in source
 
 
-def test_production_compile_profile_rejects_stub_flags() -> None:
-    adapter = SubprocessCompilerAdapter(prefer_library=False)
-
-    result = adapter.compile(
-        "//@version=6\nindicator('x')\nplot(close)\n",
-        profile=CompileProfile.production(),
-        allow_unsupported_request_stubs=True,
-    )
-
-    assert not result.success
-    assert "unsafe compile allowances" in result.errors[0]
 
 
-def test_openpine_compile_profile_reexports_ast2python_contract() -> None:
-    from ast2python.profiles import CompileProfile as AstCompileProfile
-
-    assert CompileProfile is AstCompileProfile
 
 
 def test_optimizer_dry_run_validation_is_not_production_result() -> None:

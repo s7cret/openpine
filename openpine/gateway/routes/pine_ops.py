@@ -23,79 +23,41 @@ def _path_is_under(path: Path, root: Path) -> bool:
     return True
 
 
-def _diagnostic_message(diagnostic: object) -> str:
-    code = getattr(diagnostic, "code", None)
-    message = getattr(diagnostic, "message", None)
-    parts = [str(part) for part in (code, message) if part]
-    return ": ".join(parts) if parts else str(diagnostic)
+def _compile_native_rc6(source: object, *, producer_commits: dict[str, str]):
+    from openpine.compile import NativeRC6CompilerAdapter
+
+    name = str(getattr(source, "name"))
+    source_path = getattr(source, "source_path", None)
+    return NativeRC6CompilerAdapter().compile(
+        str(getattr(source, "source_text")),
+        module_name=name,
+        source_name=str(source_path or f"{name}.pine"),
+        producer_commits=producer_commits,
+    )
 
 
-def _is_error_diagnostic(diagnostic: object) -> bool:
-    severity = getattr(getattr(diagnostic, "severity", None), "value", "")
-    return str(severity).lower() in {"error", "fatal"}
+def _validate_native_rc6(
+    source: object, *, producer_commit: str
+) -> dict[str, object]:
+    from pine2ast.hardening.consumer_bundle import (
+        build_consumer_bundle,
+        verify_consumer_bundle,
+    )
 
-
-def _is_visual_contract_diagnostic(diagnostic: object) -> bool:
-    from openpine.compile.adapter import _is_visual_contract_diagnostic as is_visual
-
-    return is_visual(_diagnostic_message(diagnostic))
-
-
-def _blocking_parse_errors(diagnostics: list[object]) -> list[str]:
-    return [
-        _diagnostic_message(diagnostic)
-        for diagnostic in diagnostics
-        if _is_error_diagnostic(diagnostic)
-        and not _is_visual_contract_diagnostic(diagnostic)
-    ]
-
-
-def _runtime_contract_v1_4_options():
-    try:
-        from pine2ast.api import runtime_contract_v1_4_options
-
-        return runtime_contract_v1_4_options()
-    except (ImportError, ModuleNotFoundError):
-        from pine2ast import ParseOptions
-
-        return ParseOptions(
-            runtime_contract_profile="v1.4",
-            strict_builtin_namespaces=True,
-        )
-
-
-def _translate_ast_recording_visuals(
-    ast_dict: dict[str, object],
-    *,
-    module_name: str,
-    source_text: str = "",
-    parse_result: object | None = None,
-    producer_commits: dict[str, str] | None = None,
-):
-    from inspect import Parameter, signature
-
-    from ast2python import translate_ast
-
-    kwargs: dict[str, object] = {"module_name": module_name}
-    try:
-        params = tuple(signature(translate_ast).parameters.values())
-    except (TypeError, ValueError):
-        return translate_ast(ast_dict, module_name=module_name, visual_policy="record")
-    supports_kwargs = any(param.kind is Parameter.VAR_KEYWORD for param in params)
-    supported_names = {param.name for param in params}
-
-    def include(name: str, value: object) -> None:
-        if supports_kwargs or name in supported_names:
-            kwargs[name] = value
-
-    include("visual_policy", "record")
-    include("source", source_text)
-    if parse_result is not None:
-        include("frontend_artifact", getattr(parse_result, "frontend_artifact", None))
-        include("support_profile", getattr(parse_result, "support_profile", None))
-        include("ast_artifact", getattr(parse_result, "ast_artifact", None))
-    include("producer_commits", producer_commits)
-    return translate_ast(ast_dict, **kwargs)
+    name = str(getattr(source, "name"))
+    source_text = str(getattr(source, "source_text"))
+    source_path = getattr(source, "source_path", None)
+    bundle = build_consumer_bundle(
+        source_text,
+        source_name=str(source_path or f"{name}.pine"),
+        producer_commit=producer_commit,
+    )
+    verify_consumer_bundle(
+        bundle,
+        source=source_text,
+        expected_producer_commit=producer_commit,
+    )
+    return bundle
 
 
 def _artifact_dir_for_inspect(
@@ -157,120 +119,65 @@ async def compile_pine(
     async def _run_compile():
         try:
             ws_manager.update_progress(
-                operation_id, "compile", "running", 0.1, "Parsing Pine source..."
+                operation_id, "compile", "running", 0.1, "Building RC6 consumer bundle..."
             )
             await ws_manager.broadcast_progress(operation_id)
-
-            # Stage 1: Pine2AST
-            from pine2ast import parse_code
-
-            opts = _runtime_contract_v1_4_options()
-            result = parse_code(src.source_text, options=opts)
-            diagnostics = list(getattr(result, "diagnostics", []) or [])
-            blocking_errors = _blocking_parse_errors(diagnostics)
-            if getattr(result, "ast", None) is None or blocking_errors:
+            from openpine.build_identity import compiler_producer_commits
+            producer_commits = compiler_producer_commits()
+            compilation = _compile_native_rc6(
+                src, producer_commits=producer_commits
+            )
+            if not compilation.success:
                 ws_manager.update_progress(
                     operation_id,
                     "compile",
                     "failed",
-                    0.2,
-                    f"Parse failed: {blocking_errors[:3]}",
+                    0.6,
+                    f"RC6 compile failed: {compilation.errors[:3]}",
                 )
                 await ws_manager.broadcast_progress(operation_id)
                 return
-
-            filtered_visual_diagnostics = []
-            if not result.ok:
-                filtered_visual_diagnostics = [
-                    _diagnostic_message(diagnostic)
-                    for diagnostic in diagnostics
-                    if _is_error_diagnostic(diagnostic)
-                    and _is_visual_contract_diagnostic(diagnostic)
-                ]
-
-            ws_manager.update_progress(
-                operation_id, "compile", "running", 0.4, "Generating Python..."
-            )
-            await ws_manager.broadcast_progress(operation_id)
-
-            # Stage 2: AST2Python
-            from pine2ast import ast_to_dict, ast_to_json
-
-            ast_dict = ast_to_dict(result.ast)
-            # Inject producer_metadata required by ast2python
-            ast_dict["producer_metadata"] = {
-                "contract": "pine.ast_contract.v1",
-                "runtime_contract": "1.4",
-                "runtime_contract_profile": "runtime_contract_v1_4",
-                "parser_gate": "pass",
-                "semantic_gate": "pass",
-            }
-            from openpine.build_identity import compiler_producer_commits
-
-            producer_commits = compiler_producer_commits()
-            translation = _translate_ast_recording_visuals(
-                ast_dict,
-                module_name=src.name,
-                source_text=src.source_text,
-                parse_result=result,
-                producer_commits=producer_commits,
-            )
-
-            if translation.diagnostics:
-                errors = [
-                    d.message
-                    for d in translation.diagnostics
-                    if hasattr(d, "severity") and d.severity.value in ("error", "fatal")
-                ]
-                if errors:
-                    ws_manager.update_progress(
-                        operation_id,
-                        "compile",
-                        "failed",
-                        0.6,
-                        f"Translation failed: {errors[:3]}",
-                    )
-                    await ws_manager.broadcast_progress(operation_id)
-                    return
 
             ws_manager.update_progress(
                 operation_id, "compile", "running", 0.7, "Saving artifact..."
             )
             await ws_manager.broadcast_progress(operation_id)
-
-            # Stage 3: Save artifact
-            generated_artifact = getattr(translation, "generated_artifact", None)
-            if not isinstance(generated_artifact, dict):
-                raise RuntimeError("translation did not return sealed generated artifact")
+            generated_artifact = compilation.generated_artifact
+            consumer_bundle = compilation.consumer_bundle
+            source_map = compilation.source_map
+            if (
+                generated_artifact is None
+                or consumer_bundle is None
+                or source_map is None
+                or compilation.python_code is None
+                or compilation.ast_json is None
+            ):
+                raise RuntimeError("successful RC6 compile returned incomplete artifacts")
             artifact_id = state.artifact_store.artifact_id_for_envelope(
                 generated_artifact
             )
             compile_meta = {
+                **compilation.compile_meta,
                 "compile_status": "OK",
                 "source_id": source_id,
                 "artifact_id": artifact_id,
-                "translation_metadata": getattr(translation, "metadata", {}),
                 "generated_artifact_hash": generated_artifact["content_hash"],
             }
-            if filtered_visual_diagnostics:
-                compile_meta["filtered_visual_diagnostics"] = filtered_visual_diagnostics
-
             state.artifact_store.save_artifact(
                 artifact_id=artifact_id,
                 source_id=source_id,
                 params_hash="",
-                python_code=translation.code,
+                python_code=compilation.python_code,
                 compile_meta=compile_meta,
                 source_text=src.source_text,
-                ast_json=ast_to_json(result.ast),
-                source_map=list(getattr(translation, "source_map", []) or []),
+                ast_json=compilation.ast_json,
+                source_map=source_map,
                 generated_artifact=generated_artifact,
-                frontend_artifact=dict(result.frontend_artifact),
-                support_profile=dict(result.support_profile),
-                ast_artifact=dict(result.ast_artifact),
+                consumer_bundle=consumer_bundle,
+                frontend_artifact=compilation.frontend_artifact,
+                support_profile=compilation.support_profile,
+                ast_artifact=compilation.ast_artifact,
             )
-
-            # Set as active artifact
             state.pine_registry.set_active_artifact(source_id, artifact_id)
 
             ws_manager.update_progress(
@@ -300,21 +207,18 @@ async def validate_pine(
         raise HTTPException(404, f"Pine source not found: {source_id}")
 
     try:
-        from pine2ast import parse_code
+        from openpine.build_identity import compiler_producer_commits
 
-        opts = _runtime_contract_v1_4_options()
-        result = parse_code(src.source_text, options=opts)
-        diagnostics = list(getattr(result, "diagnostics", []) or [])
-        valid = getattr(result, "ast", None) is not None and not _blocking_parse_errors(
-            diagnostics
+        commits = compiler_producer_commits()
+        bundle = _validate_native_rc6(
+            src, producer_commit=commits["pine2ast"]
         )
         return {
             "source_id": source_id,
-            "valid": valid,
-            "diagnostics": [
-                {"code": d.code, "severity": d.severity.value, "message": d.message}
-                for d in diagnostics
-            ],
+            "valid": True,
+            "diagnostics": [],
+            "consumer_bundle_hash": bundle["content_hash"],
+            "release_axes": bundle["release_axes"],
         }
     except Exception as exc:
         return {"source_id": source_id, "valid": False, "error": str(exc)}

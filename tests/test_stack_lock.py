@@ -9,6 +9,12 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 import openpine_contracts
+import ast2python
+import backtest_engine
+import marketdata_provider
+import optimizer
+import pine2ast
+import pinelib
 
 from openpine.stack_lock import (
     EXPECTED_COMPONENTS,
@@ -99,7 +105,7 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     root = Path(__file__).resolve().parents[1]
     # The production 4.0.2 lock stays frozen while this checkout is a 5.0 candidate.
     assert self_identity["tree_sha256"] != package_tree_identity(root / "openpine")
-    assert (root / "candidates" / "stack-candidate-5.0.0-rc.4.template.json").is_file()
+    assert (root / "candidates" / "stack-candidate-5.0.0-rc.6.template.json").is_file()
     assert validate_stack_lock(lock) == ()
 
 
@@ -258,31 +264,36 @@ def test_isolated_installed_wheel_serves_api_version_with_packaged_lock(tmp_path
         members = [PurePosixPath(item.filename) for item in archive.infolist()]
         assert all(not member.is_absolute() and ".." not in member.parts for member in members)
         archive.extractall(target)
-    contracts_wheel_dir = tmp_path / "contracts-wheel"
-    stack_root = os.environ.get("PINE_STACK_ROOT")
-    contracts_root = (
-        Path(stack_root) / "openpine-contracts"
-        if stack_root is not None
-        else Path(openpine_contracts.__file__).resolve().parents[1]
+    sibling_modules = (
+        openpine_contracts,
+        pine2ast,
+        pinelib,
+        ast2python,
+        marketdata_provider,
+        backtest_engine,
+        optimizer,
     )
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "build",
-            "--wheel",
-            "--outdir",
-            str(contracts_wheel_dir),
-            str(contracts_root),
-        ],
-        cwd=tmp_path,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    contracts_wheel = next(contracts_wheel_dir.glob("openpine_contracts-*.whl"))
-    with zipfile.ZipFile(contracts_wheel) as archive:
-        archive.extractall(target)
+    for index, module in enumerate(sibling_modules):
+        sibling_wheel_dir = tmp_path / f"sibling-wheel-{index}"
+        sibling_root = Path(module.__file__).resolve().parents[1]
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "build",
+                "--wheel",
+                "--outdir",
+                str(sibling_wheel_dir),
+                str(sibling_root),
+            ],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        sibling_wheel = next(sibling_wheel_dir.glob("*.whl"))
+        with zipfile.ZipFile(sibling_wheel) as archive:
+            archive.extractall(target)
     smoke = f"""
 import sys
 from pathlib import Path

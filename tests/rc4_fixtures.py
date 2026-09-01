@@ -22,10 +22,11 @@ STACK_COMPONENTS = (
 )
 
 
-def _openpine_commit() -> str:
-    from openpine.build_identity import current_build_identity
+OPENPINE_COMMIT = "1" * 40
 
-    return current_build_identity().commit
+
+def _openpine_commit() -> str:
+    return OPENPINE_COMMIT
 
 
 def admitted_manifest() -> dict[str, Any]:
@@ -56,8 +57,11 @@ def admitted_manifest() -> dict[str, Any]:
                 "ast2python",
                 "attr",
                 "attrs",
+                "backtest_engine",
                 "jsonschema",
                 "jsonschema_specifications",
+                "marketdata_provider",
+                "openpine_rc6_worker_runtime",
                 "openpine_contracts",
                 "pinelib",
                 "referencing",
@@ -71,7 +75,9 @@ def admitted_manifest() -> dict[str, Any]:
 def execution_context(
     *,
     generated_artifact_hash: str = HASH_B,
+    source_hash: str = HASH_C,
     emitted_module_hash: str = STACK_HASH,
+    component_versions: dict[str, str] | None = None,
     semantic_profile: str = "strict_5x",
     series_id: str = "test:S:1m",
     instrument_id: str = "test:S",
@@ -95,7 +101,11 @@ def execution_context(
         "session_id": "session-test",
         "stack_manifest_hash": STACK_HASH,
         "wheel_identities": [
-            {"name": name, "version": "5.0.0rc4", "content_hash": HASH_B}
+            {
+                "name": name,
+                "version": (component_versions or {}).get(name, "5.0.0rc4"),
+                "content_hash": HASH_B,
+            }
             for name in STACK_COMPONENTS
         ],
         "schema_hashes": {
@@ -106,7 +116,7 @@ def execution_context(
             "openpine.checkpoint.proof.v1": HASH_A,
         },
         "generated_artifact_hash": generated_artifact_hash,
-        "source_hash": HASH_C,
+        "source_hash": source_hash,
         "emitted_module_hash": emitted_module_hash,
         "data_snapshot_hash": HASH_A,
         "series_id": series_id,

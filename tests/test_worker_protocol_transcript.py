@@ -31,8 +31,8 @@ def _bootstrap(transcript: WorkerProtocolTranscript) -> None:
         {
             "artifact_hash": artifact["content_hash"],
             "module_hash": artifact["emitted_module_hash"],
-            "entrypoint_module": artifact["entrypoint_module"],
-            "entrypoint_class": artifact["entrypoint_class"],
+            "entrypoint_module": artifact["entrypoint"]["module"],
+            "entrypoint_class": artifact["entrypoint"]["class"],
         },
         created_at_utc_ms=0,
     )

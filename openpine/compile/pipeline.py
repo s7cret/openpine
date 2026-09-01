@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import time
 
-from openpine.compile.adapter import CompileProfile, CompilerAdapter
+from openpine.compile.native_rc6 import CompilerAdapter
 from openpine.pine.source import PineSource
 
 
@@ -19,7 +19,7 @@ def compile_pipeline(
 
     Args:
         source: PineSource to compile.
-        adapter: CompilerAdapter instance (e.g. SubprocessCompilerAdapter).
+        adapter: Native RC6 CompilerAdapter instance.
         params_hash: Parameter hash for this artifact.
         extra_options: Extra compile options passed to the adapter.
 
@@ -29,7 +29,7 @@ def compile_pipeline(
     """
     from openpine.artifacts.store import ArtifactStore
 
-    extra_options = {"profile": CompileProfile.production(), **(extra_options or {})}
+    extra_options = dict(extra_options or {})
 
     result = adapter.compile(source.source_text, **extra_options)
 
@@ -78,6 +78,7 @@ def compile_pipeline(
             diagnostics="",
             source_map=result.source_map,
             generated_artifact=result.generated_artifact,
+            consumer_bundle=result.consumer_bundle,
             frontend_artifact=result.frontend_artifact,
             support_profile=result.support_profile,
             ast_artifact=result.ast_artifact,

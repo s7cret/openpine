@@ -7,11 +7,19 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.4.template.json"
+TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.6.template.json"
 HISTORICAL = (
     ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
 )
-PIN = "9362f0abe1c4b0924f5f348141826e005cd880ba"
+EXPECTED_SHAS = {
+    "openpine-contracts": "15122703858f22d28a413c4e4fe31835b0563375",
+    "marketdata-provider": "2aceac9681ffc191780e2ff2254ba4ee88592cd0",
+    "pinelib": "11d0aeb7ce932d20cb8c274a0ed0bea17e685058",
+    "backtest_engine": "da66a70bd5dba2bdfdf4c5eab47ef02f2cbee200",
+    "pine2ast": "c5d1a1826739fe439f506452e456ae61b1ca59dc",
+    "ast2python": "4a62199971a55dc341b43a74863c97ba6a701f51",
+    "optimizer": "36cd2e7aa7ad2142d939a42928e5403a5b88aa7a",
+}
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
     "openpine-contracts",
@@ -49,13 +57,13 @@ def _materializer():
 def test_candidate_template_pins_eight_repos_and_is_not_active() -> None:
     payload = json.loads(TEMPLATE.read_text(encoding="utf-8"))
     assert payload["schema"] == "openpine.stack-candidate-template.v1"
-    assert payload["id"] == "5.0.0-rc.4"
+    assert payload["id"] == "5.0.0-rc.6"
     assert payload["not_a_release"] is True
     components = payload["components"]
     assert set(components) == REQUIRED
-    assert components["openpine-contracts"]["sha"] == PIN
+    assert {name: row["sha"] for name, row in components.items() if name != "openpine"} == EXPECTED_SHAS
     for name, row in components.items():
-        assert row["version"] == "5.0.0rc4"
+        assert row["version"] == "5.0.0rc6"
         if name == "openpine":
             assert "sha" not in row
             continue
@@ -107,6 +115,28 @@ def test_backend_ci_uses_the_same_candidate_resolver_and_checkouts() -> None:
     assert " -e " not in workflow
     for component in REQUIRED:
         assert f"--checkout {component}=" in workflow
+
+
+@pytest.mark.parametrize("workflow_name", ["ci.yml", "stack-ci.yml"])
+def test_candidate_workflows_bind_the_rc6_template_and_component_shas(
+    workflow_name: str,
+) -> None:
+    workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(
+        encoding="utf-8"
+    )
+
+    assert "stack-candidate-5.0.0-rc.6.template.json" in workflow
+    assert "stack-candidate-5.0.0-rc.4.template.json" not in workflow
+    expected_literals = EXPECTED_SHAS.values()
+    if workflow_name == "stack-ci.yml":
+        expected_literals = (
+            sha
+            for component, sha in EXPECTED_SHAS.items()
+            if component != "openpine-contracts"
+        )
+        assert "steps.stack.outputs.openpine_contracts_sha" in workflow
+    for sha in expected_literals:
+        assert sha in workflow
 
 
 @pytest.mark.parametrize("workflow_name", ["ci.yml", "stack-ci.yml"])
@@ -220,14 +250,14 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
         created_at_utc="2026-08-20T21:00:00Z",
         provenance={"builder": "test", "run_id": "1"},
     )
-    manifest = tmp_path / "stack-candidate-5.0.0-rc.4.json"
+    manifest = tmp_path / "stack-candidate-5.0.0-rc.6.json"
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     outputs = dict(resolver.github_outputs(manifest))
 
     assert outputs["mode"] == "candidate"
     assert outputs["candidate_path"] == manifest.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
-    assert outputs["pine2ast_sha"] == "1715eef9c395b81db24224b6724f16589c1c960a"
+    assert outputs["pine2ast_sha"] == EXPECTED_SHAS["pine2ast"]
     assert outputs["openpine_sha"] == "d" * 40
 
 

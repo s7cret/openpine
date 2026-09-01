@@ -1,3 +1,3 @@
 """OpenPine package."""
 
-__version__ = "5.0.0rc4"
+__version__ = "5.0.0rc6"

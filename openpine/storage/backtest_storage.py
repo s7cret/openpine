@@ -985,9 +985,7 @@ class BacktestResultStore:
 
     @classmethod
     def _plot_records(cls, plots: Any) -> list[dict[str, Any]]:
-        from pinelib.plot import PlotRecorder
-
-        records = plots.get_records() if isinstance(plots, PlotRecorder) else plots
+        records = plots.get_records() if hasattr(plots, "get_records") else plots
         plot_records: list[dict[str, Any]] = []
         for rec in records:
             if isinstance(rec, tuple) and len(rec) >= 4:

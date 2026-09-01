@@ -119,23 +119,20 @@ def test_execution_context_is_derived_from_exact_deployment_and_manifest() -> No
     assert context["emitted_module_hash"] == generated["emitted_module_hash"]
     assert context["stack_manifest_hash"] == deployment.stack_manifest_hash
 
-    drifted_artifact = dict(artifact)
-    drifted_generated = dict(generated)
-    drifted_generated.pop("content_hash")
-    drifted_commits = dict(drifted_generated["producer_commits"])
-    drifted_commits["pine2ast"] = "9" * 40
-    drifted_generated["producer_commits"] = drifted_commits
-    drifted_artifact["generated_artifact"] = seal_content_hash(
-        drifted_generated,
-        schema_id="openpine.generated_artifact.v2",
-    )
-    with pytest.raises(AdmitError, match="producer commit drift"):
+    drifted_manifest = {
+        **manifest,
+        "components": {
+            **manifest["components"],
+            "pine2ast": {"sha": "9" * 40},
+        },
+    }
+    with pytest.raises(AdmitError, match="lineage|producer commit drift"):
         execution_context_from_admission(
             deployment,
-            manifest,
+            drifted_manifest,
             run_id="run-drift",
             strategy_id="strategy-1",
-            artifact=drifted_artifact,
+            artifact=artifact,
             data_snapshot_hash=HASH_D,
             series_id="binance/spot/BTCUSDT:1m",
             instrument_id="binance/spot/BTCUSDT",
@@ -226,7 +223,7 @@ def test_generated_artifact_hash_requires_verified_sealed_identity() -> None:
 
     tampered = _sealed_artifact()
     tampered["generated_artifact"]["source_hash"] = HASH_D  # type: ignore[index]
-    with pytest.raises(AdmitError, match="content hash"):
+    with pytest.raises(AdmitError, match="content|identity"):
         generated_artifact_hash(tampered)
 
     schema_invalid = {

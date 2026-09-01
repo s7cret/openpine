@@ -26,51 +26,6 @@ def _entry(tmp_path: Path, kind: str = "strategy") -> ExportEntry:
     return ExportEntry(export_id=7, folder="folder", kind=kind, source_group="grp", root=tmp_path, pine_path=pine, charts=(_chart(tmp_path),))
 
 
-def test_batch_runner_core_helpers_and_registries(monkeypatch, tmp_path):
-    entry = _entry(tmp_path)
-    out_root = tmp_path / "out"
-    runner._write_progress(out_root, "batch", entry.export_id, "run", "active", selected_count=1, processed_count=0, summary_by_timeframe={"15m": {"ok": 1}})
-    progress = json.loads((out_root / "current_progress.json").read_text())
-    assert progress["current_entry_id"] == 7 and progress["summary_by_timeframe"]
-    assert runner.ms_to_utc_iso(None) is None and "1970" in runner.ms_to_utc_iso(1000)
-    cb = runner.build_progress_callback("x", 2); cb(1, 5); cb(2, 5); cb(5, 5)
-    assert runner.build_progress_callback("x", 0) is None
-
-    class SourceRegistry:
-        created = []
-        def __init__(self): self._conn = SimpleNamespace(execute=lambda *a, **k: None, commit=lambda: None)
-        def get_source(self, name): raise KeyError(name)
-        def add_source(self, text, name):
-            src = SimpleNamespace(id="pine", name=name, active_artifact_id=None)
-            self.created.append(src); return src
-        def set_active_artifact(self, source_id, artifact_id): self.active=(source_id, artifact_id)
-        def close(self): pass
-    monkeypatch.setattr(runner, "load_source_registry", SourceRegistry)
-    assert runner.get_or_add_source(entry, write=False) == (None, False)
-    src, created = runner.get_or_add_source(entry, write=True)
-    assert created and src.source_type == "strategy"
-    src.active_artifact_id = "cached"
-    assert runner.compile_source(src, force=False)[0] == "cached"
-
-    import openpine.compile as compile_mod
-    import openpine.pine.registry as registry_mod
-    monkeypatch.setattr(compile_mod, "SubprocessCompilerAdapter", lambda: object())
-    monkeypatch.setattr(registry_mod, "SQLitePineSourceRegistry", SourceRegistry)
-    monkeypatch.setattr(compile_mod, "compile_pipeline", lambda source, adapter: {"success": True, "artifact_id": "art", "artifact_path": "x", "errors": []})
-    src.active_artifact_id = None
-    assert runner.compile_source(src, force=True)[0] == "art"
-    monkeypatch.setattr(compile_mod, "compile_pipeline", lambda source, adapter: {"success": False, "errors": ["bad"]})
-    assert runner.compile_source(src, force=True)[0] is None
-
-    class StrategyRegistry:
-        def __init__(self): self.items=[]
-        def list_strategies(self): return self.items
-        def register_strategy(self, **kw): return SimpleNamespace(strategy_id="sid")
-        def update_status(self, strategy_id, status): self.status=(strategy_id,status)
-        def close(self): pass
-    monkeypatch.setattr(runner, "load_strategy_registry", StrategyRegistry)
-    sid, made = runner.ensure_strategy_instance(entry, src, "art", "15m")
-    assert sid == "sid" and made
 
 
 def test_batch_runner_data_and_meta_edges(monkeypatch, tmp_path):

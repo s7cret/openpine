@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -13,6 +14,10 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from ast2python.artifacts import verify_generated_artifact_v3
+from ast2python.errors import BundleInvariantError
+from ast2python.lowering import load_pinelib_target_manifest
+from pine2ast.hardening.consumer_bundle import ConsumerBundleError, verify_consumer_bundle
 from openpine_contracts import (
     AdmitError,
     SchemaValidationError,
@@ -236,17 +241,13 @@ def generated_artifact_hash(artifact: Mapping[str, object]) -> str:
             code="GENERATED_ARTIFACT_IDENTITY_REQUIRED",
         )
     try:
-        validate_payload("openpine.generated_artifact.v2", envelope)
-    except SchemaValidationError as exc:
+        validate_payload("openpine.generated_artifact.v3", envelope)
+        verify_generated_artifact_v3(envelope)
+    except (SchemaValidationError, BundleInvariantError) as exc:
         raise AdmitError(
-            "generated artifact schema is invalid",
+            "generated artifact schema or content identity is invalid",
             code="GENERATED_ARTIFACT_IDENTITY_INVALID",
         ) from exc
-    if not verify_content_hash(envelope, schema_id="openpine.generated_artifact.v2"):
-        raise AdmitError(
-            "generated artifact content hash is invalid",
-            code="GENERATED_ARTIFACT_HASH_MISMATCH",
-        )
     value = envelope.get("content_hash")
     if not isinstance(value, str):
         raise AdmitError(
@@ -268,16 +269,61 @@ def verified_generated_source(artifact: Mapping[str, object]) -> bytes:
         )
     envelope = artifact["generated_artifact"]
     assert isinstance(envelope, Mapping)
-    from ast2python.artifact import _digest
-
     expected = envelope.get("emitted_module_hash")
-    actual = _digest(source, "openpine.generated_artifact.v2")
+    actual = "sha256:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
     if expected != actual:
         raise AdmitError(
             "generated artifact emitted module hash mismatch",
             code="GENERATED_ARTIFACT_HASH_MISMATCH",
         )
     return source.encode("utf-8")
+
+
+def _verified_v3_artifact_record(
+    artifact: Mapping[str, object], producer_commits: Mapping[str, str]
+) -> Mapping[str, object]:
+    generated = artifact.get("generated_artifact")
+    bundle = artifact.get("consumer_bundle")
+    if not isinstance(generated, Mapping) or not isinstance(bundle, Mapping):
+        raise AdmitError(
+            "generated artifact and consumer bundle are required",
+            code="GENERATED_ARTIFACT_REQUIRED",
+        )
+    pine2ast_commit = producer_commits.get("pine2ast")
+    ast2python_commit = producer_commits.get("ast2python")
+    try:
+        validate_payload("openpine.generated_artifact.v3", generated)
+        verify_generated_artifact_v3(generated)
+        verify_consumer_bundle(bundle, expected_producer_commit=pine2ast_commit)
+        target = load_pinelib_target_manifest()
+    except (SchemaValidationError, BundleInvariantError, ConsumerBundleError) as exc:
+        raise AdmitError(
+            "generated artifact V3 lineage is invalid",
+            code="GENERATED_ARTIFACT_INVALID",
+        ) from exc
+    producer = generated.get("producer")
+    if not isinstance(producer, Mapping) or producer.get("commit") != ast2python_commit:
+        raise AdmitError(
+            "generated artifact producer commit drift: ast2python",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    bundle_producer = bundle.get("producer")
+    if not isinstance(bundle_producer, Mapping) or bundle_producer.get("commit") != pine2ast_commit:
+        raise AdmitError(
+            "consumer bundle producer commit drift: pine2ast",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    if generated.get("bundle_hash") != bundle.get("content_hash"):
+        raise AdmitError(
+            "generated artifact bundle identity drift",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    if generated.get("target_manifest_hash") != target.content_hash:
+        raise AdmitError(
+            "generated artifact target manifest drift: pinelib",
+            code="GENERATED_ARTIFACT_INVALID",
+        )
+    return generated
 
 
 def run_identity_path(data_dir: str | Path, run_id: str) -> Path:
@@ -599,12 +645,7 @@ def derive_execution_context(
             "generated artifact envelope is required",
             code="GENERATED_ARTIFACT_REQUIRED",
         )
-    validate_payload("openpine.generated_artifact.v2", generated)
-    if not verify_content_hash(generated, schema_id="openpine.generated_artifact.v2"):
-        raise AdmitError(
-            "generated artifact content hash is invalid",
-            code="GENERATED_ARTIFACT_INVALID",
-        )
+    generated_artifact_hash(artifact)
     payload = dict(base_context)
     payload.pop("content_hash", None)
     payload.update(
@@ -670,12 +711,7 @@ def execution_context_from_admission(
             "generated artifact envelope is required",
             code="GENERATED_ARTIFACT_REQUIRED",
         )
-    validate_payload("openpine.generated_artifact.v2", generated)
-    if not verify_content_hash(generated, schema_id="openpine.generated_artifact.v2"):
-        raise AdmitError(
-            "generated artifact content hash is invalid",
-            code="GENERATED_ARTIFACT_INVALID",
-        )
+    generated_artifact_hash(artifact)
     components = admitted_manifest.get("components")
     if not isinstance(components, Mapping):
         raise AdmitError(
@@ -707,28 +743,7 @@ def execution_context_from_admission(
                 code="ADMISSION_IDENTITY_INVALID",
             )
         producer_commits[name] = commit
-    generated_commits = generated.get("producer_commits")
-    if not isinstance(generated_commits, Mapping):
-        raise AdmitError(
-            "generated artifact producer commits are required",
-            code="GENERATED_ARTIFACT_INVALID",
-        )
-    for component_name in _GENERATED_ARTIFACT_PRODUCERS:
-        if generated_commits.get(component_name) != producer_commits[component_name]:
-            raise AdmitError(
-                f"generated artifact producer commit drift: {component_name}",
-                code="GENERATED_ARTIFACT_INVALID",
-            )
-    if generated.get("producer_commit") != producer_commits["ast2python"]:
-        raise AdmitError(
-            "generated artifact producer commit drift: ast2python",
-            code="GENERATED_ARTIFACT_INVALID",
-        )
-    if generated.get("stack_id") != "openpine-5.0":
-        raise AdmitError(
-            "generated artifact stack family is invalid",
-            code="GENERATED_ARTIFACT_INVALID",
-        )
+    generated = _verified_v3_artifact_record(artifact, producer_commits)
     versions = {str(row["name"]): str(row["version"]) for row in wheel_identities}
     required_schema_hashes: dict[str, str] = {}
     for schema_id in _EXECUTION_SCHEMA_IDS:

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from ast2python.artifact import _digest
 from openpine.admission import DeploymentAdmissionIdentity
-from openpine_contracts import seal_content_hash
+from openpine.compile.native_rc6 import NativeRC6CompilerAdapter
 
 STACK_HASH = "sha256:" + "d" * 64
 _FAKE_COMMITS = {
@@ -18,7 +17,7 @@ def make_deployment_identity() -> DeploymentAdmissionIdentity:
         stack_id="test-stack",
         stack_manifest_hash=STACK_HASH,
         wheel_identities=tuple(
-            (name, "5.0.0rc4", "sha256:" + "a" * 64)
+            (name, "5.0.0rc6", "sha256:" + "a" * 64)
             for name in (
                 "openpine-contracts",
                 "marketdata-provider",
@@ -63,37 +62,28 @@ def make_sealed_artifact(
     semantic_profile: str = "strict_5x",
     producer_commits: dict[str, str] | None = None,
 ) -> dict[str, object]:
-    commits = dict(producer_commits or _FAKE_COMMITS)
+    del python_code
+    source_text = "//@version=6\nstrategy(\"fixture\")\n"
+    compiled = NativeRC6CompilerAdapter().compile(
+        source_text,
+        producer_commits=dict(producer_commits or _FAKE_COMMITS),
+    )
+    if not compiled.success or compiled.generated_artifact is None:
+        raise AssertionError(compiled.diagnostics)
     return {
-        "compile_meta": dict(compile_meta or {}),
-        "python_code": python_code,
-        "generated_artifact": seal_content_hash(
-            {
-                "schema_id": "openpine.generated_artifact.v2",
-                "schema_version": "2.0.0",
-                "producer": "ast2python",
-                "producer_version": "5.0.0-rc.4",
-                "producer_commit": commits["ast2python"],
-                "stack_id": "openpine-5.0",
-                "created_at_utc_ms": 1,
-                "serializer_id": "openpine.canonical.json.v1",
-                "content_hash_alg": "sha256",
-                "source_hash": "sha256:" + "c" * 64,
-                "frontend_artifact_hash": "sha256:" + "d" * 64,
-                "ast_hash": "sha256:" + "e" * 64,
-                "emitted_module_hash": _digest(
-                    python_code, "openpine.generated_artifact.v2"
-                ),
-                "source_map_hash": "sha256:" + "f" * 64,
-                "support_profile_hash": "sha256:" + "9" * 64,
-                "lowering_version": "5.0.0rc4",
-                "producer_commits": commits,
-                "semantic_profile": semantic_profile,
-                "required_runtime_capabilities": ["intent_tape_v2"],
-                "import_allowlist": ["pinelib"],
-                "entrypoint_module": "generated_strategy",
-                "entrypoint_class": "GeneratedStrategy",
-            },
-            schema_id="openpine.generated_artifact.v2",
-        ),
+        "compile_meta": {
+            **compiled.compile_meta,
+            **dict(compile_meta or {}),
+            "semantic_profile": semantic_profile,
+        },
+        "python_code": compiled.python_code,
+        "generated_class": compiled.python_code.encode("utf-8"),
+        "source_text": source_text,
+        "ast_json": compiled.ast_json,
+        "source_map": compiled.source_map,
+        "generated_artifact": compiled.generated_artifact,
+        "consumer_bundle": compiled.consumer_bundle,
+        "frontend_artifact": compiled.frontend_artifact,
+        "support_profile": compiled.support_profile,
+        "ast_artifact": compiled.ast_artifact,
     }

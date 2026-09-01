@@ -7,11 +7,6 @@ from types import SimpleNamespace
 import pytest
 
 from openpine.config.model import OpenPineConfig
-from openpine.data.direct_data_provider import (
-    DirectBinanceDataProvider,
-    _interval_to_ms,
-    _to_binance_interval,
-)
 from openpine.export.window import ExportWindow, parse_time_ms
 from openpine.gateway import deps as gateway_deps
 from openpine.gateway.ws_manager import ConnectionManager
@@ -83,55 +78,6 @@ async def test_connection_manager_disconnects_on_personal_send_failure():
     assert manager.active_count == 0
 
 
-def test_direct_binance_interval_helpers_and_fetch(monkeypatch):
-    assert _to_binance_interval("15") == "15m"
-    assert _to_binance_interval("1H") == "1h"
-    assert _to_binance_interval("2h") == "2h"
-    assert _interval_to_ms("1s") == 1000
-    assert _interval_to_ms("1m") == 60_000
-    assert _interval_to_ms("1h") == 3_600_000
-    assert _interval_to_ms("1d") == 86_400_000
-    assert _interval_to_ms("1w") == 604_800_000
-    assert DirectBinanceDataProvider(market="futures")._base.startswith("https://fapi")
-    assert DirectBinanceDataProvider().get_bars("BTCUSDT", "1m", None, 1) == []
-
-    payloads = [
-        [
-            [1000, "1", "2", "0.5", "1.5", "10"],
-            [2000, "2", "3", "1.5", "2.5", "20"],
-        ],
-        [],
-    ]
-
-    class FakeResponse:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *exc):
-            return None
-
-        def read(self):
-            return json.dumps(payloads.pop(0)).encode()
-
-    def fake_urlopen(req, timeout=10):
-        return FakeResponse()
-
-    monkeypatch.setattr(
-        "openpine.data.direct_data_provider.urllib.request.urlopen", fake_urlopen
-    )
-    bars = DirectBinanceDataProvider(timeout=1).get_bars(
-        "btcusdt", "1s", 1000, 5000, max_bars=1
-    )
-    assert len(bars) == 1
-    assert bars[0].time == 1000 and bars[0].time_close == 2000
-
-    def failing_urlopen(req, timeout=10):
-        raise OSError("offline")
-
-    monkeypatch.setattr(
-        "openpine.data.direct_data_provider.urllib.request.urlopen", failing_urlopen
-    )
-    assert DirectBinanceDataProvider().get_bars("BTCUSDT", "1m", 0, 10) == []
 
 
 def test_export_window_and_config_path_resolution(tmp_path: Path):

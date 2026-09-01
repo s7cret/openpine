@@ -10,66 +10,6 @@ import pytest
 from openpine.runtime import engine as rt
 
 
-def test_runtime_artifact_loading_edges(monkeypatch, tmp_path):
-    artifact_dir = tmp_path / "art"
-    artifact_dir.mkdir()
-    (artifact_dir / "generated_strategy.py").write_text(
-        "class CustomStrategy:\n"
-        "    def _process_bar(self, bar):\n"
-        "        return None\n"
-        "class ImportedBase:\n"
-        "    pass\n",
-        encoding="utf-8",
-    )
-    artifact = {
-        "artifact_dir": str(artifact_dir),
-        "compile_meta": {"compile_status": "OK", "class_name": "CustomStrategy"},
-    }
-
-    class Store:
-        def get_artifact(self, artifact_id, source_id):
-            if artifact_id == "missing-artifact":
-                raise FileNotFoundError(artifact_id)
-            if artifact_id == "bad-status":
-                return {"artifact_dir": str(artifact_dir), "compile_meta": {"compile_status": "FAIL"}}
-            if artifact_id == "unsafe":
-                return {"artifact_dir": str(artifact_dir), "compile_meta": {"compile_status": "OK", "unsafe": True, "unsafe_reasons": ["x"]}}
-            if artifact_id == "missing-file":
-                return {"artifact_dir": str(tmp_path / "none"), "compile_meta": {"compile_status": "OK"}}
-            return artifact
-
-    import openpine.artifacts as artifacts
-
-    monkeypatch.setattr(artifacts, "ArtifactStore", Store)
-    spec = importlib.util.spec_from_file_location(
-        "generated_strategy", artifact_dir / "generated_strategy.py"
-    )
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    cls = rt._select_strategy_class(module, artifact.get("compile_meta", {}))
-    assert cls.__name__ == "CustomStrategy"
-    with pytest.raises(rt.BacktestArtifactError, match="in-process"):
-        rt.load_strategy_class_from_artifact(
-            "src", "ok", symbol="BTCUSDT", timeframe="1m", unsafe_in_process=True
-        )
-    with pytest.raises(rt.BacktestArtifactError, match="in-process"):
-        rt.load_generated_class_from_artifact("src", "ok", unsafe_in_process=True)
-    for artifact_id in ["missing-artifact", "bad-status", "unsafe", "missing-file"]:
-        with pytest.raises(rt.BacktestArtifactError):
-            rt.load_generated_class_from_artifact("src", artifact_id)
-
-    bad_dir = tmp_path / "bad"
-    bad_dir.mkdir()
-    (bad_dir / "generated_strategy.py").write_text("x = 1\n", encoding="utf-8")
-    spec = importlib.util.spec_from_file_location(
-        "bad_strategy", bad_dir / "generated_strategy.py"
-    )
-    assert spec is not None and spec.loader is not None
-    bad_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(bad_module)
-    with pytest.raises(rt.BacktestArtifactError):
-        rt._select_strategy_class(bad_module, {})
 
 
 def test_runtime_adapter_run_and_progress(monkeypatch):

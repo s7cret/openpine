@@ -19,7 +19,7 @@ _COMPONENT_BY_KIND = {
     "LOAD_ARTIFACT": "openpine",
     "INIT_RUN": "openpine",
     "BAR_BEGIN": "openpine",
-    "INTENT_BATCH": "pinelib",
+    "INTENT_BATCH": "backtest_engine",
     "BROKER_EVENT_BATCH": "backtest_engine",
     "RECALC_REQUEST": "backtest_engine",
     "RECALC_RESULT": "pinelib",

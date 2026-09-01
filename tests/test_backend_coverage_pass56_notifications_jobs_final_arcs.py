@@ -298,41 +298,6 @@ def test_worker_heartbeat_unregistered_and_fanout_without_source_persist() -> No
     assert orchestrator.closed == []
 
 
-def test_strategy_job_executor_records_flat_position_branch() -> None:
-    ledger = SimpleNamespace(positions=[])
-
-    def upsert_position(position: Any) -> None:
-        ledger.positions.append(position)
-
-    ledger.upsert_position = upsert_position
-    executor = StrategyJobExecutor(
-        registry=SimpleNamespace(),
-        orchestrator=SimpleNamespace(),
-        scheduler=SimpleNamespace(),
-        state_store=SimpleNamespace(),
-        ledger=ledger,
-        runtime_adapter=SimpleNamespace(),
-        strategy_loader=lambda strategy: object,
-        runtime_data_provider="provider",
-    )
-    position = SimpleNamespace(
-        size=0,
-        direction="flat",
-        avg_price=None,
-        realized_profit=None,
-        open_profit=None,
-    )
-
-    executor._record_position(
-        _strategy(),
-        LedgerSource.PAPER,
-        _bar(0, timeframe="1m"),
-        resume_state=SimpleNamespace(broker_state=SimpleNamespace(position=position)),
-        raw_result=SimpleNamespace(open_trades=[]),
-    )
-
-    assert ledger.positions[0].side == PositionSide.FLAT
-    assert ledger.positions[0].qty == 0.0
 
 
 def test_openpine_main_guard_false_branch() -> None:

@@ -44,23 +44,6 @@ def test_prepare_worker_cgroup_is_not_bwrap_dir(tmp_path: Path) -> None:
     assert worker_cgroup_argv(tmp_path) == []
 
 
-def test_evaluate_artifact_attaches_child_pid(tmp_path: Path) -> None:
-    from openpine.runtime.isolated_worker import evaluate_artifact
-    from tests.rc4_fixtures import admitted_manifest
-
-    (tmp_path / "cgroup.procs").write_text("", encoding="ascii")
-    (tmp_path / "memory.max").write_text("max\n", encoding="ascii")
-    result = evaluate_artifact(
-        b"VALUE = 1\n",
-        admitted_manifest=admitted_manifest(),
-        timeout_s=5,
-        cgroup_dir=tmp_path,
-        semantic_profile="legacy_4x",
-    )
-    assert result["ok"] is True
-    pids = (tmp_path / "cgroup.procs").read_text(encoding="ascii").split()
-    assert pids
-    assert all(item.isdigit() for item in pids)
 
 
 def test_attach_worker_tree_includes_forked_child(tmp_path: Path) -> None:

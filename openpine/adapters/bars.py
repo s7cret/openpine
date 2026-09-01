@@ -51,28 +51,6 @@ def to_engine_bars(series: BarSeries) -> Any:
     return EngineBarSeries.from_bars(to_engine_bar(bar) for bar in series.bars)
 
 
-def to_pinelib_bar(bar: Bar) -> Any:
-    """Convert one canonical marketdata bar to PineLib's runtime bar."""
-
-    from pinelib.core.bar import Bar as PineBar
-
-    return PineBar(
-        time=int(bar.time),
-        open=float(bar.open),
-        high=float(bar.high),
-        low=float(bar.low),
-        close=float(bar.close),
-        volume=0.0 if bar.volume is None else float(bar.volume),
-        time_close=int(bar.time_close),
-    )
-
-
-def to_pinelib_bars(series: BarSeries) -> tuple[Any, ...]:
-    """Convert a canonical marketdata series to PineLib runtime bars."""
-
-    return tuple(to_pinelib_bar(bar) for bar in series.bars)
-
-
 def _normalize_provider_bar(row: Any, query: BarQuery) -> Bar:
     time = int(attr_or_item(row, "time", "open_time_ms", "timestamp"))
     time_close = (
@@ -179,6 +157,5 @@ __all__ = [
     "from_provider_bars",
     "to_engine_bar",
     "to_engine_bars",
-    "to_pinelib_bar",
-    "to_pinelib_bars",
+
 ]

@@ -20,6 +20,8 @@ def _bind_exact_test_admission_identity(monkeypatch, request):
         yield
         return
 
+    monkeypatch.setenv("OPENPINE_BUILD_COMMIT", "1" * 40)
+
     from openpine import admission
     from openpine.gateway import side_effects
 

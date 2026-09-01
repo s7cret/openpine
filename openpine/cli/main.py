@@ -57,7 +57,6 @@ from openpine.cli.runtime_helpers import (
     _default_qty_rounding_mode,
     _default_qty_step,
     _ensure_output_dir,
-    _execute_indicator_plot_runtime,
     _exit_if_no_strategy_bars,
     _exit_if_strategy_not_ready_for_backtest,
     _fmt_utc_ms,
@@ -774,7 +773,8 @@ def pine_add(name: str, source_path: str) -> None:
 def pine_compile(name: str, force: bool) -> None:
     """Compile a Pine source and produce a CompileArtifact."""
     from openpine.admission import admit_configured_deployment
-    from openpine.compile import SubprocessCompilerAdapter, compile_pipeline
+    from openpine.build_identity import compiler_producer_commits
+    from openpine.compile import NativeRC6CompilerAdapter, compile_pipeline
     from openpine.pine.registry import SQLitePineSourceRegistry
     from openpine_contracts import AdmitError
 
@@ -791,8 +791,16 @@ def pine_compile(name: str, force: bool) -> None:
             console.print(f"[red]Pine source not found: {name}[/red]")
             return
 
-        adapter = SubprocessCompilerAdapter()
-        result = compile_pipeline(source, adapter)
+        adapter = NativeRC6CompilerAdapter()
+        result = compile_pipeline(
+            source,
+            adapter,
+            extra_options={
+                "module_name": source.name,
+                "source_name": source.source_path or f"{source.name}.pine",
+                "producer_commits": compiler_producer_commits(),
+            },
+        )
 
         if result["success"]:
             console.print(

@@ -197,52 +197,6 @@ def _run_row(run_id="r1", *, strategy_id="s1", status="done", started_at=1):
     )
 
 
-def _patch_backtest_runtime(monkeypatch, *, run_error=None, provider_error=None):
-    import openpine.data.direct_data_provider as direct_data_provider
-    import openpine.runtime.engine as runtime_engine
-    import openpine.runtime.isolated_run as isolated_run
-
-    class FakeConfig:
-        def __init__(self, **kwargs):
-            self.__dict__.update(kwargs)
-
-    class FakeAdapter:
-        pass
-
-    class FakeProvider:
-        def __init__(self, *args, **kwargs):
-            if provider_error is not None:
-                raise provider_error
-
-    def run_in_process(*args, **kwargs):
-        progress_callback = args[-1] if args else kwargs.get("progress_callback")
-        if progress_callback is not None:
-            progress_callback(2, 4)
-        if run_error is not None:
-            raise run_error
-        return SimpleNamespace(
-            raw_result=SimpleNamespace(trades=[], equity_curve=None), bars_processed=4
-        )
-
-    monkeypatch.setattr(isolated_run, "capture_generated_source", lambda *a, **k: b"generated-source")
-    monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Generated", (), {}))
-    monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
-    monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", FakeAdapter)
-    monkeypatch.setattr(direct_data_provider, "DirectBinanceDataProvider", FakeProvider)
-    monkeypatch.setattr(bt, "_run_backtest_in_process", run_in_process)
-    monkeypatch.setattr(
-        bt,
-        "_estimate_backtest_market_data",
-        lambda strategy, from_ms, to_ms: SimpleNamespace(
-            estimated_bars=4,
-            estimated_pages=1,
-            effective_from=from_ms,
-            effective_to=to_ms,
-            earliest_available=from_ms,
-            adjusted=False,
-            model_dump=lambda: {},
-        ),
-    )
 
 
 class _CancelAfter:
@@ -460,88 +414,8 @@ def test_strategy_replay_uses_strategy_market_contract_not_binance_stub():
     assert "DataOrchestrator()" not in source
 
 
-def test_backtest_background_cancel_progress_and_failure_mark_failed(monkeypatch):
-    ws = _FakeWS()
-    monkeypatch.setattr(bt, "ws_manager", ws)
-    _patch_backtest_runtime(monkeypatch, provider_error=RuntimeError("optional provider down"))
-
-    for trigger, phase in [(2, "artifact load"), (3, "market data load"), (4, "backtest setup")]:
-        store = _BacktestStore()
-        state = _backtest_state(store=store, cancel=_CancelAfter(trigger))
-        run_id = f"run-cancel-{trigger}"
-        asyncio.run(bt._run_backtest_background(state, "s1", run_id, 0, 240_000, None, 0, False))
-        assert store.cancelled and phase in store.cancelled[-1][1]
-
-    store = _BacktestStore()
-    state = _backtest_state(store=store, cancel=_CancelAfter(5))
-    asyncio.run(bt._run_backtest_background(state, "s1", "run-compute-cancel", 0, 240_000, {"fast": 5}, 0, True))
-    assert store.cancelled and "compute" in store.cancelled[-1][1]
-    assert any(event.get("message") == "Bars: 2/4" for event in ws.events)
-    assert not store.saved
-
-    bad_store = _BacktestStore(fail_mark_failed=True)
-    bad_registry = SimpleNamespace(
-        get_strategy=lambda strategy_id: (_ for _ in ()).throw(RuntimeError("registry exploded"))
-    )
-    asyncio.run(
-        bt._run_backtest_background(
-            _backtest_state(store=bad_store, registry=bad_registry),
-            "s1",
-            "run-outer-fail",
-            0,
-            60_000,
-            None,
-            0,
-            False,
-        )
-    )
-    assert any(event.get("status") == "failed" for event in ws.events)
 
 
-def test_backtest_background_uses_pinelib_defaults_when_strategy_omits_initial_capital(monkeypatch):
-    ws = _FakeWS()
-    monkeypatch.setattr(bt, "ws_manager", ws)
-    _patch_backtest_runtime(monkeypatch)
-
-    captured = {}
-
-    def run_in_process(adapter, strategy_class, bars, config, params, runtime_data_provider, progress_callback=None):
-        captured["config"] = config
-        if progress_callback is not None:
-            progress_callback(len(bars), len(bars))
-        return SimpleNamespace(
-            raw_result=SimpleNamespace(trades=[], equity_curve=None),
-            bars_processed=len(bars),
-        )
-
-    monkeypatch.setattr(bt, "_run_backtest_in_process", run_in_process)
-    artifact_store = SimpleNamespace(
-        get_artifact=lambda artifact_id, pine_id: make_sealed_artifact(
-            {
-                "translation_metadata": {
-                    "declaration": {
-                        "arguments": {
-                            "default_qty_type": "percent_of_equity",
-                            "default_qty_value": 80,
-                            "commission_type": "percent",
-                            "commission_value": 0.055,
-                        }
-                    }
-                }
-            }
-        )
-    )
-    store = _BacktestStore()
-    state = _backtest_state(store=store, artifact_store=artifact_store)
-
-    asyncio.run(bt._run_backtest_background(state, "s1", "run-defaults", 0, 240_000, None, 0, False))
-
-    config = captured["config"]
-    assert config.initial_capital == 1000000.0
-    assert config.pyramiding == 1
-    assert config.default_qty_type == "percent_of_equity"
-    assert config.default_qty_value == 80
-    assert store.saved
 
 
 def test_backtest_routes_listing_estimate_run_and_artifact_error_paths(
@@ -629,28 +503,6 @@ def test_backtest_routes_listing_estimate_run_and_artifact_error_paths(
     assert report_error.value.status_code == 500
 
 
-def _patch_live_runtime(monkeypatch, adapter_cls, *, provider=None):
-    import openpine.data.provider_adapter as provider_adapter
-    import openpine.runtime.engine as runtime_engine
-    import openpine.runtime.isolated_run as isolated_run
-
-    class FakeConfig:
-        def __init__(self, **kwargs):
-            self.__dict__.update(kwargs)
-
-    class IsolatedAdapter:
-        def run_isolated(self, *args, **kwargs):
-            return adapter_cls().run(*args, **kwargs)
-
-    monkeypatch.setattr(isolated_run, "capture_generated_source", lambda *a, **k: b"generated-source")
-    monkeypatch.setattr(runtime_engine, "load_strategy_class_from_artifact", lambda *a, **k: type("Generated", (), {}))
-    monkeypatch.setattr(runtime_engine, "BacktestRunConfig", FakeConfig)
-    monkeypatch.setattr(runtime_engine, "BacktestEngineAdapter", IsolatedAdapter)
-    monkeypatch.setattr(
-        provider_adapter,
-        "create_local_runtime_data_provider_adapter",
-        provider or (lambda *a, **k: object()),
-    )
 
 
 class _StateStore:

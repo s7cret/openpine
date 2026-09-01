@@ -169,7 +169,7 @@ def test_pine_cli_artifact_lifecycle_with_fakes(monkeypatch, tmp_path: Path):
     import openpine.artifacts as artifacts_mod
     import openpine.compile as compile_mod
     import openpine.pine.registry as pine_registry_mod
-    source = SimpleNamespace(id="pine1", name="demo", version=2, source_type="strategy", active_artifact_id="art1", created_at=1, updated_at=2)
+    source = SimpleNamespace(id="pine1", name="demo", version=2, source_type="strategy", active_artifact_id="art1", created_at=1, updated_at=2, source_path=str(tmp_path / "source.pine"))
     artifact_dir = tmp_path / "art1"; artifact_dir.mkdir()
     artifacts = [{"artifact_id": "art1", "source_id": "pine1", "artifact_dir": str(artifact_dir), "python_code": "print('x')", "compile_meta": {"params_hash": "abcdef1234567890", "saved_at": "now", "created_at": 123, "schema_version": "v"}}, {"artifact_id": "art2", "artifact_dir": "", "compile_meta": {}}]
     removed: list[str] = []; active: list[tuple[str, str]] = []
@@ -186,7 +186,7 @@ def test_pine_cli_artifact_lifecycle_with_fakes(monkeypatch, tmp_path: Path):
         def list_artifacts(self, source_id): return list(artifacts)
     monkeypatch.setattr(pine_registry_mod, "SQLitePineSourceRegistry", FakePineRegistry)
     monkeypatch.setattr(artifacts_mod, "ArtifactStore", FakeStore)
-    monkeypatch.setattr(compile_mod, "compile_pipeline", lambda source, adapter: {"success": True, "artifact_id": "art3", "artifact_path": "/tmp/art3"})
+    monkeypatch.setattr(compile_mod, "compile_pipeline", lambda source, adapter, **kwargs: {"success": True, "artifact_id": "art3", "artifact_path": "/tmp/art3"})
     runner = CliRunner(); src = tmp_path / "source.pine"; src.write_text("strategy('s')", encoding="utf-8")
     for args in (["pine", "list"], ["pine", "list", "--json"], ["pine", "show", "demo"], ["pine", "pine-add", "demo2", str(src)], ["pine", "pine-compile", "demo"], ["pine", "artifacts", "demo"], ["pine", "inspect", "demo"], ["pine", "versions", "demo"], ["pine", "rollback", "demo"], ["pine", "rollback", "demo", "--to-version", "art2"], ["pine", "activate", "demo", "art1"], ["pine", "remove", "demo"]):
         result = runner.invoke(cli_main.cli, args)

@@ -14,7 +14,6 @@ from openpine.events.bus import EventBus
 from openpine.events.types import Event, EventType, StrategyRuntimeErrorPayload
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance, _make_params_hash
 from openpine.runtime import engine as runtime_engine
-from openpine.runtime.engine import BacktestRunConfig, BacktestArtifactError, _make_data_provider_runtime
 from openpine.storage import SQLiteStorage
 from openpine.streams.manager import MarketDataStreamManager, SubscriptionStatus, _serialize_marketdata_model
 from openpine.quality import architecture_report, duplicate_report, main as quality_main
@@ -150,52 +149,6 @@ async def test_stream_manager_adapter_and_duplicate_paths():
     assert _serialize_marketdata_model({"x": 1}) == {"x": 1}
 
 
-def test_runtime_engine_helpers_and_adapter(monkeypatch, tmp_path):
-    runtime = _make_data_provider_runtime("provider", request_data_end_ms=123)
-    runtime.begin_bar(_bar(), 7)
-    runtime.end_bar()
-    assert runtime.bar_index == 7 and runtime.chart_bars and runtime.data_provider == "provider"
-    assert runtime.config.supports_nested_security is True
-    runtime.config.emit_diagnostic("x")
-
-    missing_artifact = runtime_engine.load_strategy_class_from_artifact
-    with pytest.raises(BacktestArtifactError):
-        missing_artifact("source", "missing", symbol="BTCUSDT", timeframe="1m")
-
-    class FakeCallbacks:
-        def __init__(self, on_bar_end=None):
-            self.on_bar_end = on_bar_end
-
-    class FakeResult:
-        status = "ok"
-        resume_state = {"bar": 1}
-
-    class FakeEngine:
-        def __init__(self, config):
-            self.config = config
-
-        def run(self, strategy_class, **kwargs):
-            assert kwargs["runtime_kwargs"]["symbol"] == "BTCUSDT"
-            cb = kwargs.get("callbacks")
-            if cb and cb.on_bar_end:
-                cb.on_bar_end(None, 0, None)
-            return FakeResult()
-
-    class FakeModule:
-        BacktestEngine = FakeEngine
-
-        class BacktestConfig:
-            def __init__(self, **kwargs):
-                self.__dict__.update(kwargs)
-
-    sys.modules["backtest_engine.models.callbacks"] = SimpleNamespace(BacktestCallbacks=FakeCallbacks)
-    monkeypatch.setattr(runtime_engine, "import_library", lambda name: FakeModule)
-    adapter = runtime_engine.BacktestEngineAdapter()
-    seen: list[tuple[int, int]] = []
-    config = BacktestRunConfig("BTCUSDT", "1m", 0, 60_000, qty_rounding_mode="truncate", capture_plots=True, semantic_profile="strict_5x")
-    result = adapter.run(type("Strategy", (), {}), [_bar()], config, params={"x": 1}, progress_callback=lambda done, total: seen.append((done, total)), runtime_data_provider="dp", resume_state={"r": 1}, effective_pre_bars=3)
-    assert result.status == "ok" and result.resume_state == {"bar": 1}
-    assert seen == [(1, 1)]
 
 
 def test_quality_and_distribution_cli_edges(tmp_path, capsys):
@@ -790,50 +743,3 @@ class _FakeRuntimeAdapter:
         )
         raw = SimpleNamespace(closed_trades=[trade], open_trades=[])
         return SimpleNamespace(status="completed", resume_state=kwargs.get("resume_state"), raw_result=raw)
-
-
-def test_strategy_job_executor_process_done_skip_and_fail(monkeypatch):
-    from openpine.jobs.models import Job, JobType
-    from openpine.workers import strategy_job_executor as worker
-
-    strategy = StrategyInstance(
-        "s1", "S", "pine", "art", "{}", "h", "BTCUSDT", "1m",
-        semantic_profile="strict_5x",
-    )
-    registry = SimpleNamespace(get_strategy=lambda _sid: strategy)
-    bar = _bar(0)
-    payload = {"strategy_id": "s1", "instrument_key": "binance:spot:BTCUSDT", "timeframe": "1m", "bar_time": 0}
-    job = Job(JobType.PAPER_BAR_PROCESS, strategy_id="s1", input=payload)
-    scheduler = _FakeScheduler()
-    ledger = _FakeLedger()
-    executor = worker.StrategyJobExecutor(
-        registry=registry,
-        orchestrator=_FakeOrchestrator([bar]),
-        scheduler=scheduler,
-        state_store=_FakeStateStore(),
-        ledger=ledger,
-        runtime_adapter=_FakeRuntimeAdapter(),
-        strategy_loader=lambda _strategy: type("Strategy", (), {}),
-        runtime_data_provider="dp",
-    )
-    result = executor.process(job)
-    assert result.status == worker.StrategyJobStatus.DONE
-    assert result.trades_recorded == 1
-    assert ledger.positions and ledger.trades
-    assert scheduler.calls[-1][0] == "done"
-
-    skipped_executor = worker.StrategyJobExecutor(
-        registry=registry,
-        orchestrator=_FakeOrchestrator([bar]),
-        scheduler=_FakeScheduler(),
-        state_store=_FakeStateStore(latest=SimpleNamespace(bar_time=0, snapshot_id="old")),
-        runtime_adapter=_FakeRuntimeAdapter(),
-        strategy_loader=lambda _strategy: type("Strategy", (), {}),
-        runtime_data_provider="dp",
-    )
-    skipped = skipped_executor.process(job)
-    assert skipped.status == worker.StrategyJobStatus.SKIPPED
-    assert skipped.skipped_reason == "already_processed"
-
-    bad = executor.process(Job(JobType.REPORT, strategy_id="s1", input=payload))
-    assert bad.status == worker.StrategyJobStatus.FAILED

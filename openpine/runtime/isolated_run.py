@@ -53,21 +53,6 @@ def _generated_semantic_profile(value: object | None) -> str:
         raise IsolatedRunError(f"semantic_profile {value!r} is unknown") from exc
 
 
-class _ReplayLive:
-    def __init__(self, params: dict[str, Any], runtime: Any, ctx: Any) -> None:
-        self.ctx = ctx
-        self.tape = params["tape"]
-
-    def _process_bar(self, bar: Any, bar_index: int) -> None:
-        apply_live_intents_for_bar(self.ctx, self.tape, bar_index)
-
-    def export_state(self) -> dict[str, Any]:
-        return {"replay": True}
-
-    def restore_state(self, state: Any) -> None:
-        return
-
-
 def _stamp_confirmed_htf_bars(htf_bars: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
     if not htf_bars:
         return []
@@ -299,7 +284,7 @@ def run_isolated_artifact(
                     del params, runtime
                     self.ctx = ctx
 
-                def _process_bar(self, bar: Any, bar_index: int) -> None:
+                def run_bar(self, bar: Any, bar_index: int) -> None:
                     if not pending_batch:
                         raise IsolatedRunError(
                             "worker did not provide INTENT_BATCH before strategy callback"
@@ -346,10 +331,8 @@ def run_isolated_artifact(
         except IntentReplayError as exc:
             raise IsolatedRunError(str(exc)) from exc
         tape_events = list(tape.events)
-    elif resume_state is not None:
-        tape_events = []
     else:
-        raise IsolatedRunError("live pinelib tape is empty")
+        tape_events = []
     return {
         "ok": True,
         "intent_tape": tape_events,

@@ -600,68 +600,6 @@ def _bar(time=0, close=1.0, *, instrument=None, timeframe=None):
     )
 
 
-def test_provider_adapter_runtime_cache_and_helpers(monkeypatch, tmp_path):
-    bars = [_bar(0, 1.0), _bar(60_000, 2.0), _bar(120_000, 3.0)]
-
-    class FakeOrchestrator:
-        calls = []
-        def __init__(self, provider):
-            self.provider = provider
-        def load_bars(self, query):
-            FakeOrchestrator.calls.append(query)
-            return SimpleNamespace(bars=bars)
-
-    import pinelib.core.bar as pinelib_bar
-    monkeypatch.setattr("openpine.data.orchestrator.DataOrchestrator", FakeOrchestrator)
-    monkeypatch.setattr(pinelib_bar, "from_contract_bar", lambda bar: SimpleNamespace(time=bar.time, close=bar.close))
-    adapter = provider_adapter_mod.RuntimeDataProviderAdapter(object(), exchange="BINANCE", market="SPOT", prefetch_end_ms=180_000)
-    result = adapter.get_bars("btcusdt", "1m", 0, 120_000, max_bars=1)
-    assert [bar.close for bar in result] == [1.0]
-    cached = adapter.get_bars("BTCUSDT", "1m", 60_000, 120_000)
-    assert [bar.close for bar in cached] == [2.0]
-    assert len(FakeOrchestrator.calls) == 1
-    chart_bar = SimpleNamespace(time=0, time_close=60_000)
-    assert adapter.get_intrabar_bars("BTCUSDT", chart_bar, "1m")
-    try:
-        adapter.get_bars("BTCUSDT", "1m", None, 60_000)
-    except ValueError as exc:
-        assert "bounded" in str(exc)
-
-    query = BarQuery(
-        instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
-        timeframe=parse_timeframe("1m"),
-        start_ms=0,
-        end_ms=60_000,
-    )
-    normalized = provider_adapter_mod.normalize_provider_bar(
-        {"timestamp": 0, "open": 1, "high": 2, "low": 0.5, "close": 1.5}, query
-    )
-    assert normalized.time_close == 60_000 and normalized.volume is None and normalized.closed is True
-    normalized2 = provider_adapter_mod.normalize_provider_bar(
-        {"open_time_ms": 0, "close_time_ms": 10, "exchange": "Bybit", "market": "Linear", "exchange_symbol": "ethusdt", "open": 1, "high": 2, "low": 0, "close": 1, "volume": 5, "is_closed": False}, query
-    )
-    assert normalized2.instrument.exchange == "bybit" and normalized2.closed is False
-    assert provider_adapter_mod._coverage_for(query, tuple(), "unit").status == "empty"
-    duplicate = provider_adapter_mod._coverage_for(query, (bars[0], bars[0]), "unit")
-    assert duplicate.status == "duplicate"
-    unordered = provider_adapter_mod._coverage_for(query, (bars[1], bars[0]), "unit")
-    assert unordered.status == "unordered"
-
-    monkeypatch.setattr(provider_adapter_mod, "ensure_marketdata_provider_version", lambda: None)
-    monkeypatch.setattr(
-        provider_adapter_mod,
-        "create_provider",
-        lambda cfg: SimpleNamespace(kind="provider", cache_dir=cfg.storage.cache_dir),
-    )
-    provider = provider_adapter_mod.create_local_marketdata_provider_adapter(
-        cache_dir=tmp_path / "cache"
-    )
-    assert provider.kind == "provider"
-    assert provider.cache_dir == tmp_path / "cache"
-    assert provider.persists_fetches is True
-    monkeypatch.setattr(provider_adapter_mod, "create_footprint_provider", lambda cfg: ("footprint", cfg.storage.cache_dir))
-    footprint = provider_adapter_mod.create_local_footprint_provider_adapter(cache_dir=tmp_path / "foot")
-    assert footprint[0] == "footprint"
 
 
 def test_exchange_metadata_cache_and_fallbacks(monkeypatch, tmp_path):

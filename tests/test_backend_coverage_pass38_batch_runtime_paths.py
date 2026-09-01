@@ -147,9 +147,14 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
     assert status["plots_rows"] == 2
     assert (indicator_out / "plots.csv").exists()
 
+    sealed_strategy_artifact = make_sealed_artifact()
+    expected_strategy_source = str(sealed_strategy_artifact["python_code"]).encode(
+        "utf-8"
+    )
+
     class ArtifactStore:
         def get_artifact(self, artifact_id, source_id):
-            artifact = make_sealed_artifact(python_code="src")
+            artifact = sealed_strategy_artifact
             artifact["compile_meta"] = {
                 "translation_metadata": {
                     "declaration": {
@@ -171,7 +176,7 @@ def test_batch_runner_executes_indicator_and_strategy_paths(monkeypatch, tmp_pat
     class BacktestEngineAdapter:
         def run_isolated(self, source, bars, config, **kwargs):
             assert config.kwargs["commission_type"] == "fixed_per_order"
-            assert source == b"src"
+            assert source == expected_strategy_source
             return SimpleNamespace(
                 status="ok",
                 bars_processed=len(bars),

@@ -12,7 +12,6 @@ from click.testing import CliRunner
 
 from openpine.batch import runner as batch_runner
 from openpine.batch.tv_corpus import ChartExport, ExportEntry
-from openpine.compile import adapter as compile_adapter
 
 cli_main = importlib.import_module("openpine.cli.main")
 cli_ops = importlib.import_module("openpine.cli.ops")
@@ -28,135 +27,8 @@ def _entry(tmp_path: Path, *, kind: str = "strategy") -> tuple[ExportEntry, Char
     return ExportEntry(42, "demo", kind, "group", root, pine, (chart,)), chart
 
 
-def test_compile_adapter_pure_edges(monkeypatch, tmp_path: Path):
-    assert compile_adapter._is_visual_contract_diagnostic(
-        "P2A1507 Not lowerable under runtime_contract: Builtin plot has no runtime-equivalent"
-    )
-    assert compile_adapter._is_visual_contract_diagnostic(
-        "P2A1507 Not lowerable under runtime_contract: Builtin color.new has no runtime-equivalent"
-    )
-    assert compile_adapter._is_visual_contract_diagnostic("P2A1507 Builtin label.new")
-    assert compile_adapter._is_visual_contract_diagnostic("P2A1507 Builtin barcolor")
-    assert not compile_adapter._is_visual_contract_diagnostic("P2A1507 Builtin request.financial")
-    assert compile_adapter._unsupported_request_in_source_error("request.financial(s, f)") == (
-        "unsupported request call is not production lowerable: request.financial"
-    )
-    assert compile_adapter._unsupported_request_in_source_error("request.security(s, t, close)") is None
-
-    tool = tmp_path / "tool"
-    tool.write_text("#!/bin/sh\n", encoding="utf-8")
-    monkeypatch.setattr(compile_adapter.shutil, "which", lambda name: str(tool) if name == "pine2ast" else None)
-    assert compile_adapter._find_tool("pine2ast") == tool
-    monkeypatch.setattr(compile_adapter, "TOOL_SEARCH_PATHS", [tmp_path])
-    assert compile_adapter._find_tool("tool") == tool
-    assert compile_adapter._find_tool("missing") is None
-
-    assert compile_adapter._version_from_module(SimpleNamespace(__version__="1"), "__version__") == "1"
-    assert compile_adapter._version_from_module(SimpleNamespace(), "missing") == "unknown"
-    diag = SimpleNamespace(code="P2A", severity=SimpleNamespace(value="error"), message="bad")
-    assert compile_adapter._diagnostic_message(diag) == "error: P2A: bad"
-    normalized, changed = compile_adapter._normalize_pine_v5_directive("//@version=5\nplot(close)\n")
-    assert changed and "version=6" in normalized
-    assert compile_adapter._normalize_pine_v5_directive("plot(close)") == ("plot(close)", False)
-    assert compile_adapter._is_pine_v5_version_rejection(["P2A0103 Pine version 5"])
-    assert not compile_adapter._is_pine_v5_version_rejection(["P2A0103", "P2A9999"])
-    blockers = compile_adapter._production_metadata_blockers(
-        {
-            "codegen_safe": False,
-            "runtime_contract_safe": False,
-            "parity_safe": False,
-            "unsafe": True,
-            "unsupported_features": ["x"],
-            "unsupported_nodes": ["y"],
-            "unsupported_declaration_args": ["z"],
-            "import_aliases": {"lib": "x"},
-            "compile_profile": "debug",
-        }
-    )
-    assert len(blockers) >= 8
-    assert compile_adapter._unsupported_request_error(Exception("'request.earnings'")) == (
-        "unsupported request call is not production lowerable: request.earnings"
-    )
-    cp = subprocess.CompletedProcess(["pine2ast"], 2, stdout="out", stderr="err")
-    assert compile_adapter._pine2ast_subprocess_errors(cp)[0].startswith("pine2ast failed")
-    meta = compile_adapter._subprocess_compile_meta(
-        profile=compile_adapter.CompileProfile.production(),
-        module_name="m",
-        strict=True,
-        pine2ast_path=Path("p2a"),
-        ast2python_path=Path("a2p"),
-        adapter_status="selected",
-    )
-    compile_adapter._mark_compile_meta_unsafe(meta, "reason")
-    compile_adapter._mark_compile_meta_unsafe(meta, "reason")
-    assert meta["unsafe_reasons"] == ["reason"]
-    with pytest.raises(ValueError):
-        compile_adapter._import_local_module("bad")
 
 
-def test_compile_adapter_subprocess_and_library_edges(monkeypatch, tmp_path: Path):
-    monkeypatch.setattr(compile_adapter, "_find_tool", lambda name: tmp_path / name if name in {"pine2ast", "ast2python"} else None)
-    tools, errors = compile_adapter._resolve_subprocess_tools()
-    assert tools is not None and not errors
-    src = compile_adapter._write_temp_pine_source("//@version=6")
-    assert src.exists()
-    src.unlink()
-
-    calls: list[list[str]] = []
-    def fake_run(cmd, **kwargs):
-        calls.append(list(map(str, cmd)))
-        if cmd[1] == "parse" and len(calls) == 1:
-            return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="P2A0103 Pine version 5")
-        if cmd[1] == "parse":
-            return subprocess.CompletedProcess(cmd, 0, stdout='{"kind":"Program"}', stderr="")
-        return subprocess.CompletedProcess(cmd, 0, stdout="# code\n", stderr="")
-    monkeypatch.setattr(compile_adapter.subprocess, "run", fake_run)
-    path = tmp_path / "src.pine"; path.write_text("//@version=5\n", encoding="utf-8")
-    meta: dict[str, object] = {}
-    ast_json, err = compile_adapter._subprocess_ast_json_or_error(
-        pine2ast_path=tmp_path / "pine2ast",
-        src_path=path,
-        source_text=path.read_text(),
-        profile=compile_adapter.CompileProfile("diagnostic", False, False, False, allow_implicit_version_rewrite=True, allow_subprocess_fallback=True),
-        timeout=1,
-        compile_meta=meta,
-    )
-    assert err is None and ast_json == '{"kind":"Program"}' and meta["unsafe"] is True
-    code, translate_err, ast_path = compile_adapter._translate_ast_with_subprocess(
-        ast2python_path=tmp_path / "ast2python", ast_json=ast_json, module_name="m", strict=True, timeout=1
-    )
-    assert code == "# code\n" and translate_err is None
-    ast_path.unlink(missing_ok=True)
-
-    class APIs:
-        def __init__(self, parse_result):
-            self.parse_result = parse_result
-            self.parse_calls = []
-        def parse_code(self, text, options):
-            self.parse_calls.append(text)
-            return self.parse_result(text)
-        def parse_options(self, **kwargs):
-            return object()
-        def ast_to_json(self, ast):
-            return json.dumps({"kind": "Program"})
-        def translate_ast(self, payload, **kwargs):
-            return SimpleNamespace(code="# generated", metadata={"compile_profile": "production"}, source_map=[1, 2])
-    ok_parse = lambda text: SimpleNamespace(ast={"ok": True}, ok=True, diagnostics=[])
-    result = compile_adapter._translate_ast_with_library_api(
-        apis=APIs(ok_parse), ast={"ok": True}, module_name="m", strict=False,
-        profile=compile_adapter.CompileProfile.production(), compile_meta={}, kwargs={},
-    )
-    assert result.success and result.python_code == "# generated"
-    apis = APIs(lambda text: SimpleNamespace(ast=None, ok=False, diagnostics=[SimpleNamespace(code="P2A0103", severity=SimpleNamespace(value="error"), message="Pine version 5")]))
-    ast, parse_error = compile_adapter._parse_with_library_api(
-        apis=apis, source_text="//@version=5\n", options=object(), profile=compile_adapter.CompileProfile.production(), compile_meta={},
-    )
-    assert ast is None and parse_error is not None
-    visual = APIs(lambda text: SimpleNamespace(ast={"ok": True}, ok=False, diagnostics=[SimpleNamespace(code="P2A1507", severity=SimpleNamespace(value="error"), message="Builtin plot not lowerable under runtime_contract")]))
-    ast, parse_error = compile_adapter._parse_with_library_api(
-        apis=visual, source_text="//@version=6\n", options=object(), profile=compile_adapter.CompileProfile.production(), compile_meta={},
-    )
-    assert ast is not None and parse_error is None
 
 
 def test_ops_cli_service_queue_workers_branches(monkeypatch, tmp_path: Path):

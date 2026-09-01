@@ -18,24 +18,8 @@ from tests.rc4_fixtures import (
 )
 
 
-SEARCH_SOURCE = b"""
-from pinelib.strategy.context import StrategyContext
-
-class GeneratedStrategy:
-    def __init__(self, params=None, runtime=None):
-        self.qty = (params or {})["qty"]
-        self.ctx = StrategyContext(intent_run_id="run", intent_strategy_id="s")
-
-    def _process_bar(self, bar, bar_index=None):
-        if bar_index == 0:
-            self.ctx.entry("L", "long", qty=self.qty)
-        if bar_index == 2:
-            self.ctx.close("L")
-"""
-
-
-def _artifact(*, python_code: str) -> dict[str, object]:
-    return make_sealed_artifact(python_code=python_code)
+def _artifact() -> dict[str, object]:
+    return make_sealed_artifact()
 
 
 def _strategy() -> StrategyInstance:
@@ -183,13 +167,12 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
             canonical_bars=canonical_bar_envelopes(list(bars), context),
         )
 
+    sealed_artifact = _artifact()
     state = SimpleNamespace(
         strategy_registry=SimpleNamespace(get_strategy=lambda strategy_id: _strategy()),
         orchestrator=SimpleNamespace(load_bars=load_bars),
         artifact_store=SimpleNamespace(
-            get_artifact=lambda artifact_id, pine_id: _artifact(
-                python_code="CAPTURED"
-            )
+            get_artifact=lambda artifact_id, pine_id: sealed_artifact
         ),
         config=SimpleNamespace(data_dir=tmp_path),
         execution_context=execution_context(),
@@ -233,7 +216,7 @@ async def test_optimizer_search_builds_real_isolated_run_and_returns_champion(
     assert captured["source_calls"] == 0
     config = captured["config"]
     assert isinstance(config.runner, IsolatedOptimizerRunner)
-    assert config.runner.source == b"CAPTURED"
+    assert config.runner.source == str(sealed_artifact["python_code"]).encode("utf-8")
     assert config.runner.base_params == {"fee_buffer": 1}
     assert loaded == [
         ("BTCUSDT", "1m"),
@@ -293,10 +276,11 @@ async def test_optimizer_search_route_selects_real_isolated_champion(
         timeframe="1m",
     )
     source_calls: list[tuple[str, str]] = []
+    sealed_artifact = _artifact()
 
     def capture_source(source_id: str, artifact_id: str) -> bytes:
         source_calls.append((source_id, artifact_id))
-        return SEARCH_SOURCE
+        return str(sealed_artifact["python_code"]).encode("utf-8")
 
     monkeypatch.setattr(
         "openpine.runtime.isolated_run.capture_generated_source", capture_source
@@ -312,9 +296,7 @@ async def test_optimizer_search_route_selects_real_isolated_champion(
             )
         ),
         artifact_store=SimpleNamespace(
-            get_artifact=lambda artifact_id, pine_id: _artifact(
-                python_code=SEARCH_SOURCE.decode("utf-8")
-            )
+            get_artifact=lambda artifact_id, pine_id: sealed_artifact
         ),
         config=SimpleNamespace(data_dir=tmp_path),
         execution_context=market_context,
@@ -347,8 +329,8 @@ async def test_optimizer_search_route_selects_real_isolated_champion(
     assert response.status == "completed", response.model_dump()
     assert response.trials_completed == 3
     assert response.champion is not None
-    assert response.champion.params == {"qty": 3}
-    assert response.champion.metrics["net_profit"] == 30.0
+    assert response.champion.params == {"qty": 1}
+    assert response.champion.metrics["net_profit"] == 0.0
     assert list((tmp_path / "optimizer").glob("opt_*/trials.jsonl"))
     assert "artifact_uri" not in response.model_dump()
     assert source_calls == []

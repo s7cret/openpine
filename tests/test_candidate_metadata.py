@@ -23,12 +23,12 @@ def test_candidate_package_metadata_has_one_exact_version_truth() -> None:
         "project"
     ]
 
-    assert project["version"] == __version__ == "5.0.0rc4"
+    assert project["version"] == __version__ == "5.0.0rc6"
     dependencies = [str(item) for item in project["dependencies"]]
     stack_rows = {
         row.split("==", 1)[0]: row for row in dependencies if "==" in row
     }
     assert set(stack_rows) == STACK
-    assert all(row == f"{name}==5.0.0rc4" for name, row in stack_rows.items())
+    assert all(row == f"{name}==5.0.0rc6" for name, row in stack_rows.items())
     assert not any("git+" in row or " @ " in row for row in dependencies)
     assert _dependency_errors(project) == []
