@@ -48,6 +48,16 @@ _ROLES_BY_KIND = {
     kind: frozenset({role}) for kind, role in _ROLE_BY_KIND.items()
 }
 _ROLES_BY_KIND["ABORT"] = frozenset({"parent", "worker", "engine"})
+_BAR_CYCLE_KINDS = frozenset(
+    {
+        "BAR_BEGIN",
+        "INTENT_BATCH",
+        "BROKER_EVENT_BATCH",
+        "RECALC_REQUEST",
+        "RECALC_RESULT",
+        "BAR_COMMIT",
+    }
+)
 _ALLOWED_AFTER = {
     "HELLO": {"LOAD_ARTIFACT", "ABORT"},
     "LOAD_ARTIFACT": {"INIT_RUN", "ABORT"},
@@ -95,6 +105,8 @@ class WorkerProtocolTranscript:
             raise WorkerProtocolError("execution context content hash is invalid")
         self.execution_context = context
         self._messages: list[dict[str, Any]] = []
+        self._sequence = 0
+        self._last: dict[str, Any] | None = None
         self._components = self._component_identities(context)
         for field in ("session_id", "run_id", "stack_manifest_hash"):
             if not isinstance(context.get(field), str) or not context[field]:
@@ -129,19 +141,25 @@ class WorkerProtocolTranscript:
 
     @property
     def last_message_id(self) -> str | None:
-        if not self._messages:
+        if self._last is None:
             return None
-        return str(self._messages[-1]["message_id"])
+        return str(self._last["message_id"])
 
     def _check_transition(self, kind: str) -> None:
-        if not self._messages and kind != "HELLO":
+        if self._last is None and kind != "HELLO":
             raise WorkerProtocolError("worker protocol must start with HELLO")
-        if self._messages:
-            previous_kind = str(self._messages[-1]["kind"])
+        if self._last is not None:
+            previous_kind = str(self._last["kind"])
             if kind not in _ALLOWED_AFTER[previous_kind]:
                 raise WorkerProtocolError(
                     f"invalid worker protocol transition: {previous_kind} -> {kind}"
                 )
+
+    def _remember(self, sealed: dict[str, Any]) -> None:
+        self._last = sealed
+        self._sequence += 1
+        if sealed["kind"] not in _BAR_CYCLE_KINDS:
+            self._messages.append(sealed)
 
     def accept(self, message: Mapping[str, Any]) -> dict[str, Any]:
         candidate_message = deepcopy(dict(message))
@@ -164,7 +182,7 @@ class WorkerProtocolTranscript:
             "stack_id": self.execution_context["stack_manifest_hash"],
             "session_id": self.execution_context["session_id"],
             "run_id": self.execution_context["run_id"],
-            "sequence": len(self._messages),
+            "sequence": self._sequence,
             "correlation_id": self.execution_context["run_id"],
             "causation_id": self.last_message_id,
             "sender_role": role,
@@ -172,10 +190,9 @@ class WorkerProtocolTranscript:
         for field, value in expected.items():
             if candidate_message.get(field) != value:
                 raise WorkerProtocolError(f"worker protocol {field} mismatch")
-        candidate = [*self._messages, candidate_message]
-        if kind in {"FINALIZE", "ABORT"}:
-            validate_worker_protocol_sequence(candidate)
-        self._messages.append(candidate_message)
+        if kind in {"FINALIZE", "ABORT"} and self._sequence == len(self._messages):
+            validate_worker_protocol_sequence([*self._messages, candidate_message])
+        self._remember(candidate_message)
         return deepcopy(candidate_message)
 
     def append(
@@ -194,7 +211,7 @@ class WorkerProtocolTranscript:
         component = _component_for(kind, role)
         self._check_transition(kind)
         version, commit = self._components[component]
-        sequence = len(self._messages)
+        sequence = self._sequence
         session_id = str(self.execution_context["session_id"])
         run_id = str(self.execution_context["run_id"])
         payload = {
@@ -219,10 +236,9 @@ class WorkerProtocolTranscript:
         }
         sealed = seal_content_hash(payload, schema_id=_SCHEMA_ID)
         validate_payload(_SCHEMA_ID, sealed)
-        candidate = [*self._messages, sealed]
-        if kind in {"FINALIZE", "ABORT"}:
-            validate_worker_protocol_sequence(candidate)
-        self._messages.append(sealed)
+        if kind in {"FINALIZE", "ABORT"} and self._sequence == len(self._messages):
+            validate_worker_protocol_sequence([*self._messages, sealed])
+        self._remember(sealed)
         return deepcopy(sealed)
 
     def validate(self) -> None:

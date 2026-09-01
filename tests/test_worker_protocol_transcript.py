@@ -155,3 +155,75 @@ def test_abort_role_and_producer_match_the_contract(role: str, producer: str) ->
     assert abort["producer"] == producer
     assert receiver.accept(abort) == abort
     validate_worker_protocol_sequence(receiver.messages)
+
+
+def test_transcript_does_not_retain_bar_cycle_messages(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "openpine.runtime.worker_protocol.validate_payload", lambda *args, **kwargs: None
+    )
+    monkeypatch.setattr(
+        "openpine.runtime.worker_protocol.verify_content_hash",
+        lambda *args, **kwargs: True,
+    )
+    monkeypatch.setattr(
+        "openpine.runtime.worker_protocol.seal_content_hash",
+        lambda payload, **kwargs: {**payload, "content_hash": HASH_A},
+    )
+    monkeypatch.setattr(
+        "openpine.runtime.worker_protocol.validate_worker_protocol_sequence",
+        lambda *args, **kwargs: None,
+    )
+
+    transcript = WorkerProtocolTranscript(execution_context())
+    _bootstrap(transcript)
+    run_id = transcript.execution_context["run_id"]
+    fat = {"padding": "x" * 50_000, "run_id": run_id}
+    cycles = 80
+    for index in range(cycles):
+        transcript.append(
+            "BAR_BEGIN",
+            {
+                **fat,
+                "bar_index": index,
+                "bar_open_time_utc_ms": index,
+                "recalc_iteration": 0,
+                "bar_hash": HASH_A,
+                "bar": fat,
+                "broker_projection": fat,
+            },
+            created_at_utc_ms=index,
+        )
+        transcript.append(
+            "INTENT_BATCH",
+            {
+                "run_id": run_id,
+                "bar_index": index,
+                "recalc_iteration": 0,
+                "intent_batch_hash": HASH_A,
+                "intents": [],
+            },
+            created_at_utc_ms=index,
+        )
+        transcript.append(
+            "BAR_COMMIT",
+            {
+                "run_id": run_id,
+                "bar_index": index,
+                "recalc_iteration": 0,
+                "state_hash": HASH_A,
+                "broker_projection_hash": HASH_A,
+                "state_ref": {"artifact_hash": HASH_A},
+                "broker_projection_ref": {"artifact_hash": HASH_A},
+            },
+            created_at_utc_ms=index,
+        )
+
+    retained = transcript.messages
+    assert [message["kind"] for message in retained] == [
+        "HELLO",
+        "LOAD_ARTIFACT",
+        "INIT_RUN",
+    ]
+    assert transcript.last_message_id is not None
+    assert transcript.last_message_id.endswith(":BAR_COMMIT")
+    assert all("padding" not in str(message.get("body")) for message in retained)

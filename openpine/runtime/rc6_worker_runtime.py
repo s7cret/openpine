@@ -105,16 +105,31 @@ class RC6WorkerProtocol:
             for component in {"openpine", "pinelib", "backtest_engine"}
         }
         self.messages: list[dict[str, Any]] = []
+        self._sequence = 0
+        self._last: dict[str, Any] | None = None
 
     @property
     def last_id(self) -> str | None:
-        return None if not self.messages else self.messages[-1]["message_id"]
+        return None if self._last is None else self._last["message_id"]
 
     def _transition(self, kind: str) -> None:
-        if not self.messages and kind != "HELLO":
+        if self._last is None and kind != "HELLO":
             raise ValueError("worker protocol must start with HELLO")
-        if self.messages and kind not in _PROTOCOL_AFTER[self.messages[-1]["kind"]]:
+        if self._last is not None and kind not in _PROTOCOL_AFTER[self._last["kind"]]:
             raise ValueError("invalid worker protocol transition")
+
+    def _remember(self, payload: dict[str, Any]) -> None:
+        self._last = payload
+        self._sequence += 1
+        if payload["kind"] not in {
+            "BAR_BEGIN",
+            "INTENT_BATCH",
+            "BROKER_EVENT_BATCH",
+            "RECALC_REQUEST",
+            "RECALC_RESULT",
+            "BAR_COMMIT",
+        }:
+            self.messages.append(payload)
 
     def append(
         self, kind: str, body: Mapping[str, Any], created_at_utc_ms: int
@@ -122,7 +137,7 @@ class RC6WorkerProtocol:
         self._transition(kind)
         component = _PROTOCOL_COMPONENT[kind]
         version, commit = self.identities[component]
-        sequence = len(self.messages)
+        sequence = self._sequence
         payload = seal_content_hash(
             {
                 "schema_id": "openpine.worker.protocol.v2",
@@ -147,10 +162,9 @@ class RC6WorkerProtocol:
             schema_id="openpine.worker.protocol.v2",
         )
         validate_payload("openpine.worker.protocol.v2", payload)
-        candidate = [*self.messages, payload]
-        if kind in {"FINALIZE", "ABORT"}:
-            validate_worker_protocol_sequence(candidate)
-        self.messages.append(payload)
+        if kind in {"FINALIZE", "ABORT"} and self._sequence == len(self.messages):
+            validate_worker_protocol_sequence([*self.messages, payload])
+        self._remember(payload)
         return payload
 
     def accept(self, message: Mapping[str, Any]) -> dict[str, Any]:
@@ -178,17 +192,16 @@ class RC6WorkerProtocol:
             "stack_id": self.context["stack_manifest_hash"],
             "session_id": self.context["session_id"],
             "run_id": self.context["run_id"],
-            "sequence": len(self.messages),
+            "sequence": self._sequence,
             "correlation_id": self.context["run_id"],
             "causation_id": self.last_id,
             "sender_role": role,
         }
         if any(accepted.get(field) != value for field, value in expected.items()):
             raise ValueError("worker protocol identity mismatch")
-        candidate = [*self.messages, accepted]
-        if kind in {"FINALIZE", "ABORT"}:
-            validate_worker_protocol_sequence(candidate)
-        self.messages.append(accepted)
+        if kind in {"FINALIZE", "ABORT"} and self._sequence == len(self.messages):
+            validate_worker_protocol_sequence([*self.messages, accepted])
+        self._remember(accepted)
         return accepted
 
 
