@@ -136,9 +136,13 @@ def create_local_marketdata_provider_adapter(
     """Create the canonical marketdata-provider adapter for OpenPine."""
 
     ensure_marketdata_provider_version()
-    cfg = config or MarketDataConfig()
+    from openpine.data.orchestrator import admitted_artifact_identity
+
+    cfg = config or MarketDataConfig(artifact_identity=admitted_artifact_identity())
     if cache_dir is not None:
         cfg = replace(cfg, storage=replace(cfg.storage, cache_dir=Path(cache_dir)))
+    if cfg.artifact_identity.producer_commit is None:
+        cfg = replace(cfg, artifact_identity=admitted_artifact_identity())
     provider = create_provider(cfg)
     provider.persists_fetches = True
     return provider

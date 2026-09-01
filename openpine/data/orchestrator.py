@@ -9,12 +9,13 @@ from copy import deepcopy
 from concurrent.futures import Future
 from dataclasses import dataclass, replace
 from pathlib import Path
+import re
 from typing import Protocol
 
 from openpine_contracts import validate_payload, verify_content_hash
 
 from marketdata_provider import create_candle_store
-from marketdata_provider.config import MarketDataConfig, StorageConfig
+from marketdata_provider.config import ArtifactIdentityConfig, MarketDataConfig, StorageConfig
 from marketdata_provider.contracts import (
     Bar,
     BarQuery,
@@ -81,10 +82,43 @@ class StorageUnavailableError(DataCoverageError):
     """Raised when storage access or persistence fails."""
 
 
+_COMMIT = re.compile(r"^(?!0{40}$)[0-9a-f]{40}$")
+_STACK = re.compile(r"^sha256:(?!0{64}$)[0-9a-f]{64}$")
+
+
+def admitted_artifact_identity() -> ArtifactIdentityConfig:
+    from openpine.runtime.admitted_manifest import load_admitted_manifest
+
+    try:
+        payload = load_admitted_manifest()
+    except Exception as exc:
+        raise StorageUnavailableError("admitted candidate manifest is required") from exc
+    components = payload.get("components")
+    if not isinstance(components, Mapping):
+        raise StorageUnavailableError("admitted candidate components are required")
+    row = components.get("marketdata-provider")
+    if not isinstance(row, Mapping):
+        raise StorageUnavailableError("admitted marketdata-provider identity is required")
+    sha = row.get("sha")
+    stack_id = payload.get("manifest_hash")
+    if not isinstance(sha, str) or _COMMIT.fullmatch(sha) is None:
+        raise StorageUnavailableError(
+            "producer_commit must be an exact nonzero 40-hex commit"
+        )
+    if not isinstance(stack_id, str) or _STACK.fullmatch(stack_id) is None:
+        raise StorageUnavailableError(
+            "stack_id must be an exact nonzero sha256 manifest hash"
+        )
+    return ArtifactIdentityConfig(producer_commit=sha, stack_id=stack_id)
+
+
 def _default_candle_store() -> CandleStore:
     cache_root = DEFAULT_CONFIG.data_cache_root or (DEFAULT_CONFIG.data_dir / "cache")
     return create_candle_store(
-        MarketDataConfig(storage=StorageConfig(cache_dir=cache_root / "marketdata"))
+        MarketDataConfig(
+            storage=StorageConfig(cache_dir=cache_root / "marketdata"),
+            artifact_identity=admitted_artifact_identity(),
+        )
     )
 
 
