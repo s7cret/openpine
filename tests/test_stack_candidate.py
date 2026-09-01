@@ -19,7 +19,7 @@ EXPECTED_SHAS = {
     "pine2ast": "892fee8c2b0443e702918248f2d2642c877723e7",
     "ast2python": "2655b31a826d43b9df5a88c25186a69377eb09e2",
     "optimizer": "5a62efc672a08e05f7443d3b678fa2595249935a",
-    "openpine": "242c159cc768e8000b3570706b643c768a047809",
+    "openpine": "93898bf818b4745f4188de8d2d3580cdd920f383",
 }
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
