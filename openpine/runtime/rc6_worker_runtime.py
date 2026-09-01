@@ -15,6 +15,7 @@ from types import MappingProxyType
 from typing import Any
 
 from ast2python.artifacts import verify_generated_artifact_v3
+from backtest_engine import BacktestConfig
 from backtest_engine.core.delegated_strategy_intents import (
     DelegatedStrategyIntentHandler,
     build_delegated_strategy_dispatcher,
@@ -272,7 +273,13 @@ class RC6GeneratedScriptSession:
             raise TypeError("identity must be IntentReplayIdentity")
         self.identity = identity
         self.producer_commit = producer_commit
-        self.default_qty_value = default_qty_value
+        self.intent_config = BacktestConfig(
+            symbol=instrument.ticker,
+            timeframe=identity.timeframe,
+            start_time=0,
+            end_time=0,
+            default_qty_value=default_qty_value,
+        )
         self._intent_sequence = 0
 
     def execute_bar(
@@ -293,7 +300,7 @@ class RC6GeneratedScriptSession:
             identity=self.identity,
             producer_commit=self.producer_commit,
             bar_open_time_utc_ms={bar_index: bar_time},
-            default_qty_value=self.default_qty_value,
+            config=self.intent_config,
         )
         self.session.delegated_dispatcher = (
             build_delegated_strategy_dispatcher(

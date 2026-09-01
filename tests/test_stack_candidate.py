@@ -12,13 +12,13 @@ HISTORICAL = (
     ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
 )
 EXPECTED_SHAS = {
-    "openpine-contracts": "15122703858f22d28a413c4e4fe31835b0563375",
-    "marketdata-provider": "2aceac9681ffc191780e2ff2254ba4ee88592cd0",
-    "pinelib": "11d0aeb7ce932d20cb8c274a0ed0bea17e685058",
-    "backtest_engine": "da66a70bd5dba2bdfdf4c5eab47ef02f2cbee200",
-    "pine2ast": "c5d1a1826739fe439f506452e456ae61b1ca59dc",
-    "ast2python": "4a62199971a55dc341b43a74863c97ba6a701f51",
-    "optimizer": "36cd2e7aa7ad2142d939a42928e5403a5b88aa7a",
+    "openpine-contracts": "904e8f660834a10d3382cd1b2ed7380c24b73072",
+    "marketdata-provider": "2fdbbcb3fa2b5e35fc98938c9b7c260c2b36935b",
+    "pinelib": "456ddff14cbf7309c5db9cadbdb798c2a7a9951c",
+    "backtest_engine": "84bb2d415aa7e279f7c7be1bcd7e5efe08f9fbe2",
+    "pine2ast": "892fee8c2b0443e702918248f2d2642c877723e7",
+    "ast2python": "2655b31a826d43b9df5a88c25186a69377eb09e2",
+    "optimizer": "5a62efc672a08e05f7443d3b678fa2595249935a",
 }
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {

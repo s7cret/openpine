@@ -53,6 +53,9 @@ class BacktestRunConfig:
     plot_from_ms: int | None = None
     plot_to_ms: int | None = None
     semantic_profile: str = ""
+    generated_artifact: dict | None = None
+    execution_context: dict | None = None
+    instrument_id: str | None = None
 
 
 @dataclass(frozen=True)

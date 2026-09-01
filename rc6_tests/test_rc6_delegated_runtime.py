@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from backtest_engine import BacktestConfig
 from backtest_engine.core.delegated_strategy_intents import (
     DelegatedStrategyIntentHandler,
     build_delegated_strategy_dispatcher,
@@ -42,6 +43,13 @@ def test_compiled_strategy_commits_backtest_owned_intent() -> None:
         ),
         producer_commit="d" * 40,
         bar_open_time_utc_ms={0: BAR_TIME},
+        config=BacktestConfig(
+            symbol="BINANCE:SOLUSDT",
+            timeframe="1m",
+            start_time=0,
+            end_time=0,
+            default_qty_value=1,
+        ),
     )
     executor = RC6RuntimeExecutor(
         artifact={

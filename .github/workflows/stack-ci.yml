@@ -58,37 +58,37 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pine2ast_repo || 's7cret/pine2ast' }}
-          ref: ${{ steps.stack.outputs.pine2ast_sha || 'c5d1a1826739fe439f506452e456ae61b1ca59dc' }}
+          ref: ${{ steps.stack.outputs.pine2ast_sha || '892fee8c2b0443e702918248f2d2642c877723e7' }}
           path: pine2ast
       - name: Checkout AST2Python
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.ast2python_repo || 's7cret/ast2python' }}
-          ref: ${{ steps.stack.outputs.ast2python_sha || '4a62199971a55dc341b43a74863c97ba6a701f51' }}
+          ref: ${{ steps.stack.outputs.ast2python_sha || '2655b31a826d43b9df5a88c25186a69377eb09e2' }}
           path: ast2python
       - name: Checkout PineLib
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
-          ref: ${{ steps.stack.outputs.pinelib_sha || '11d0aeb7ce932d20cb8c274a0ed0bea17e685058' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || '456ddff14cbf7309c5db9cadbdb798c2a7a9951c' }}
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
-          ref: ${{ steps.stack.outputs.backtest_engine_sha || 'da66a70bd5dba2bdfdf4c5eab47ef02f2cbee200' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '84bb2d415aa7e279f7c7be1bcd7e5efe08f9fbe2' }}
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.marketdata_provider_repo || 's7cret/marketdata-provider' }}
-          ref: ${{ steps.stack.outputs.marketdata_provider_sha || '2aceac9681ffc191780e2ff2254ba4ee88592cd0' }}
+          ref: ${{ steps.stack.outputs.marketdata_provider_sha || '2fdbbcb3fa2b5e35fc98938c9b7c260c2b36935b' }}
           path: marketdata-provider
       - name: Checkout Optimizer
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.optimizer_repo || 's7cret/optimizer' }}
-          ref: ${{ steps.stack.outputs.optimizer_sha || '36cd2e7aa7ad2142d939a42928e5403a5b88aa7a' }}
+          ref: ${{ steps.stack.outputs.optimizer_sha || '5a62efc672a08e05f7443d3b678fa2595249935a' }}
           path: optimizer
       - name: Verify candidate checkout identities
         if: ${{ steps.stack.outputs.mode == 'candidate' }}

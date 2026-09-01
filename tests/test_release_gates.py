@@ -65,11 +65,12 @@ def test_release_gate_enforces_configured_ruff_policy() -> None:
     )
 
 
-def test_release_gate_runs_v5_security_acceptance() -> None:
+def test_release_gate_does_not_invoke_deleted_v5_security_script() -> None:
     root = Path(__file__).resolve().parents[1]
     gate = (root / "scripts" / "release_gate.sh").read_text(encoding="utf-8")
 
-    assert "$PYTHON scripts/verify_v5_sec_001.py" in gate
+    assert "scripts/verify_v5_sec_001.py" not in gate
+    assert "stack-candidate-5.0.0-rc.6.template.json" in gate
 
 
 def test_release_metadata_requires_security_fixed_starlette_range() -> None:

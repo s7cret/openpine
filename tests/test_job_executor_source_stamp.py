@@ -253,3 +253,56 @@ def test_job_executor_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
     executor._run_strategy(_strategy(), _bar(0), None)
     assert loaded == []
     assert seen["htf_bars"][0]["timeframe"] == "15m"
+
+
+def test_job_executor_passes_sealed_v3_envelope_to_run_isolated(monkeypatch) -> None:
+    envelope = {
+        "schema_id": "openpine.generated_artifact.v3",
+        "content_hash": "sha256:" + "1" * 64,
+        "source_hash": "sha256:" + "2" * 64,
+        "emitted_module_hash": "sha256:" + "3" * 64,
+        "producer": {"name": "ast2python", "commit": "b" * 40},
+    }
+    artifact = {
+        "generated_artifact": envelope,
+        "compile_meta": {"translation_metadata": {"declaration": {"arguments": {}}}},
+    }
+    monkeypatch.setattr(
+        "openpine.workers.strategy_job_executor.capture_generated_source",
+        lambda *a, **k: b"STAMPED",
+    )
+
+    class _Store:
+        def get_artifact(self, artifact_id: str, source_id: str) -> dict:
+            assert artifact_id == "artifact-1"
+            assert source_id == "pine-1"
+            return artifact
+
+    monkeypatch.setattr(
+        "openpine.artifacts.ArtifactStore",
+        lambda: _Store(),
+    )
+    seen: dict[str, object] = {}
+
+    class Adapter:
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+            seen["source"] = source
+            seen["generated_artifact"] = getattr(config, "generated_artifact", None)
+            seen["execution_context"] = getattr(config, "execution_context", None)
+            return SimpleNamespace(ok=True)
+
+    executor = StrategyJobExecutor(
+        registry=SimpleNamespace(),
+        orchestrator=SimpleNamespace(),
+        scheduler=SimpleNamespace(),
+        state_store=SimpleNamespace(),
+        runtime_adapter=Adapter(),
+    )
+    executor._run_strategy(_strategy(), _bar(0), None)
+    assert seen["source"] == b"STAMPED"
+    assert seen["generated_artifact"] == envelope
+    context = seen["execution_context"]
+    assert isinstance(context, dict)
+    assert context["generated_artifact_hash"] == envelope["content_hash"]
+    assert context["source_hash"] == envelope["source_hash"]
+    assert context["emitted_module_hash"] == envelope["emitted_module_hash"]

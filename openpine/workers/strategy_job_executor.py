@@ -488,7 +488,8 @@ def _strategy_params(strategy: StrategyInstance) -> dict[str, Any]:
 
 
 def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunConfig:
-    decl_args = normalize_strategy_declaration_args(_artifact_declaration_args(strategy))
+    artifact = _load_sealed_artifact(strategy)
+    decl_args = normalize_strategy_declaration_args(_declaration_args_from_artifact(artifact))
     commission_type = {
         "cash_per_order": "fixed_per_order",
         "cash_per_contract": "fixed_per_contract",
@@ -531,6 +532,11 @@ def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunCo
         "collect_events": False,
         "collect_order_lifecycle": False,
         "semantic_profile": require_strategy_semantic_profile(strategy).value,
+        "generated_artifact": artifact.get("generated_artifact") if artifact else None,
+        "execution_context": _execution_context_from_artifact(artifact),
+        "instrument_id": (
+            f"{strategy.exchange.lower()}:{strategy.market_type.lower()}:{strategy.symbol}"
+        ),
     }
     supported = set(inspect.signature(BacktestRunConfig).parameters)
     return BacktestRunConfig(
@@ -538,14 +544,20 @@ def _build_bar_run_config(strategy: StrategyInstance, bar: Bar) -> BacktestRunCo
     )
 
 
-def _artifact_declaration_args(strategy: StrategyInstance) -> dict[str, Any]:
+def _load_sealed_artifact(strategy: StrategyInstance) -> dict[str, Any] | None:
     if not strategy.pine_id or not strategy.artifact_id:
-        return {}
+        return None
     try:
         from openpine.artifacts import ArtifactStore
 
         artifact = ArtifactStore().get_artifact(strategy.artifact_id, strategy.pine_id)
     except Exception:
+        return None
+    return artifact if isinstance(artifact, dict) else None
+
+
+def _declaration_args_from_artifact(artifact: dict[str, Any] | None) -> dict[str, Any]:
+    if not artifact:
         return {}
     declaration = (
         artifact.get("compile_meta", {})
@@ -554,6 +566,30 @@ def _artifact_declaration_args(strategy: StrategyInstance) -> dict[str, Any]:
     )
     args = declaration.get("arguments", {})
     return args if isinstance(args, dict) else {}
+
+
+def _execution_context_from_artifact(artifact: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not artifact:
+        return None
+    envelope = artifact.get("generated_artifact")
+    if not isinstance(envelope, dict):
+        return None
+    if envelope.get("schema_id") != "openpine.generated_artifact.v3":
+        raise RuntimeError("sealed V3 generated artifact is required")
+    producer_raw = envelope.get("producer")
+    producer = producer_raw if isinstance(producer_raw, dict) else {}
+    return {
+        "generated_artifact_hash": envelope.get("content_hash"),
+        "source_hash": envelope.get("source_hash"),
+        "emitted_module_hash": envelope.get("emitted_module_hash"),
+        "producer_commits": {
+            "ast2python": producer.get("commit"),
+        },
+    }
+
+
+def _artifact_declaration_args(strategy: StrategyInstance) -> dict[str, Any]:
+    return _declaration_args_from_artifact(_load_sealed_artifact(strategy))
 
 
 def _broker_position(resume_state: Any | None) -> Any | None:
