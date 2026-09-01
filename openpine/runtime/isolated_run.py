@@ -294,8 +294,9 @@ def run_isolated_artifact(
                         raise IsolatedRunError("worker INTENT_BATCH payload is invalid")
                     if not batch:
                         return
+                    origin = len(accumulated_events)
                     accumulated_events.extend(dict(item) for item in batch)
-                    validated = require_live_tape(accumulated_events)
+                    validated = require_live_tape(batch, sequence_origin=origin)
                     current = ValidatedIntentTape(
                         events=tuple(dict(item) for item in batch),
                         identity=validated.identity,
