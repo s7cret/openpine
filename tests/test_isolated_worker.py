@@ -389,3 +389,65 @@ PLOT_SOURCE = textwrap.dedent(
             rec.record_plot(int(bar.time), int(i), bar.close, "close")
     """
 ).strip()
+
+
+def test_close_process_pipes_swallows_broken_pipe_on_stdin_close() -> None:
+    from openpine.runtime.isolated_worker import _close_process_pipes
+
+    class Boom:
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+            raise BrokenPipeError(32, "Broken pipe")
+
+    stdin = Boom()
+    proc = type("Proc", (), {"stdin": stdin, "stdout": None, "stderr": None})()
+    _close_process_pipes(proc)
+    assert stdin.closed is True
+
+
+def test_write_pipe_closed_is_not_masked_by_cleanup_broken_pipe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from openpine.runtime import isolated_worker
+
+    class BoomStdin:
+        closed = False
+
+        def write(self, value: str) -> int:
+            raise BrokenPipeError(32, "Broken pipe")
+
+        def flush(self) -> None:
+            return None
+
+        def close(self) -> None:
+            self.closed = True
+            raise BrokenPipeError(32, "Broken pipe")
+
+    class BoomProc:
+        stdin = BoomStdin()
+        stdout = None
+        stderr = None
+
+        def poll(self) -> int:
+            return 1
+
+        def kill(self) -> None:
+            return None
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 1
+
+    session = object.__new__(InteractiveWorkerSession)
+    session._closed = False
+    session.proc = BoomProc()
+    session.unit_name = "openpine-worker-pipe-mask-test"
+    session.bytes_sent = 0
+    monkeypatch.setattr(isolated_worker, "_stop_worker_unit", lambda *_a, **_k: None)
+    with pytest.raises(IsolatedWorkerError, match="interactive worker pipe closed"):
+        try:
+            session._write_json_line({"k": "v"})
+        except Exception:
+            session._kill()
+            raise

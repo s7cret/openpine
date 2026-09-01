@@ -404,8 +404,12 @@ atexit.register(_retry_pending_worker_unit_cleanup)
 
 def _close_process_pipes(proc: subprocess.Popen[Any]) -> None:
     for pipe in (proc.stdin, proc.stdout, proc.stderr):
-        if pipe is not None and not pipe.closed:
+        if pipe is None or getattr(pipe, "closed", False):
+            continue
+        try:
             pipe.close()
+        except (BrokenPipeError, OSError):
+            continue
 
 
 def _reap_worker_process_bounded(
@@ -650,9 +654,7 @@ class InteractiveWorkerSession:
             self._closed = True
 
     def _close_pipes(self) -> None:
-        for pipe in (self.proc.stdin, self.proc.stdout, self.proc.stderr):
-            if pipe is not None and not pipe.closed:
-                pipe.close()
+        _close_process_pipes(self.proc)
 
     def _write_json_line(self, payload: dict[str, Any]) -> None:
         if self._closed or self.proc.stdin is None:
@@ -665,7 +667,11 @@ class InteractiveWorkerSession:
             self.proc.stdin.write(encoded)
             self.proc.stdin.flush()
         except (BrokenPipeError, OSError) as exc:
-            raise IsolatedWorkerError("interactive worker pipe closed") from exc
+            detail = _read_available_stderr(self.proc).strip()
+            suffix = f": {detail}" if detail else ""
+            raise IsolatedWorkerError(
+                f"interactive worker pipe closed{suffix}"
+            ) from exc
         self.bytes_sent += encoded_size
 
     def _write_bootstrap(self, payload: dict[str, Any]) -> None:
