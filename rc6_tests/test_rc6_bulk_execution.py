@@ -74,7 +74,19 @@ def execute_bulk(monkeypatch, case, *, config=None, bars=None, last_batch=True, 
     monkeypatch.setattr("sys.stdout", output)
     assert run_bulk(request, RC6WorkerProtocol(context)) == 0
     messages = [json.loads(line) for line in output.getvalue().splitlines()]
-    return next(row for row in messages if row["kind"] == "BULK_RESULT")
+    from openpine.runtime.bulk_result import BulkResultReceiver, result_identity
+    from openpine.runtime.inputs import input_evidence, resolve_inputs
+    from openpine.runtime.rc6_config import resolve_engine_config
+    effective = resolve_engine_config(request["engine_config"], context)
+    expected = {**input_evidence(resolve_inputs(compiled.python_code, params)),
+                "effective_config_hash": effective.effective_config_hash}
+    with BulkResultReceiver(result_identity(context, expected)) as receiver:
+        result = None
+        for row in messages:
+            if row["kind"].startswith("BULK_RESULT"):
+                result = receiver.accept(row)
+        assert result is not None and receiver.finished
+    return result
 
 
 @pytest.mark.parametrize("kind,value,expected", [("fixed", 7, 7), ("cash", 202, 2), ("percent_of_equity", 20, 2)])

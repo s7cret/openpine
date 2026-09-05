@@ -108,6 +108,7 @@ _TRUSTED_NAMES = (
     "jsonschema",
     "jsonschema_specifications",
     "marketdata_provider",
+    "msgpack",
     "openpine_rc6_worker_runtime",
     "openpine_contracts",
     "pinelib",
@@ -593,7 +594,7 @@ class InteractiveWorkerSession:
         self.bulk_idle_timeout_s = float(bulk_idle_timeout_s)
         self.bulk_backtest = bool(bulk_backtest)
         self.engine_config = dict(engine_config) if engine_config is not None else {}
-        self.max_line_bytes = 32_000_000 if self.bulk_backtest else 1_000_000
+        self.max_line_bytes = 1_000_000
         self._closed = False
         self._stdout_buffer = bytearray()
         self.unit_name = _worker_unit_name()

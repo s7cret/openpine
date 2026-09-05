@@ -864,9 +864,11 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         "score_ledger_hash": result.score_ledger_hash,
         "raw_result": raw,
     }
-    json.dump(payload, sys.stdout, default=str)
-    sys.stdout.write("\n")
-    sys.stdout.flush()
+    from openpine.runtime.bulk_result import encode_result, result_identity
+    for frame in encode_result(payload, identity=result_identity(context, raw)):
+        json.dump(frame, sys.stdout, separators=(",", ":"), allow_nan=False)
+        sys.stdout.write("\n")
+        sys.stdout.flush()
     for line in sys.stdin:
         if len(line) > WORKER_STDIN_LIMIT_BYTES:
             raise ValueError("interactive message exceeds size limit")

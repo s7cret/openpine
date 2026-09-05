@@ -8,6 +8,8 @@ from collections.abc import Mapping, Sequence
 from types import SimpleNamespace
 from typing import Any
 
+from openpine.runtime.bulk_result import BulkResultError, BulkResultReceiver, result_identity
+from openpine.runtime.rc6_config import resolve_engine_config
 from openpine.runtime.isolated_worker import InteractiveWorkerSession, IsolatedWorkerError
 
 BULK_MESSAGE_LIMIT_BYTES = 900_000
@@ -70,33 +72,41 @@ class BulkWorkerSession(InteractiveWorkerSession):
         envelopes: Sequence[Mapping[str, Any]],
         engine_config: Mapping[str, Any],
     ) -> dict[str, Any]:
-        del engine_config
         if not envelopes:
             raise IsolatedWorkerError("bulk backtest requires canonical bar envelopes")
         frames = chunk_bulk_frames(envelopes)
         for frame in frames:
             self._write_json_line(frame)
+        from openpine.runtime.inputs import input_evidence
+        expected_inputs = input_evidence(self.input_registry)
+        config = resolve_engine_config(engine_config, self.protocol.execution_context)
+        identity = result_identity(self.protocol.execution_context, {
+            **expected_inputs, "effective_config_hash": config.effective_config_hash,
+        })
         previous_timeout = self.timeout_s
         self.timeout_s = self.bulk_idle_timeout_s
         try:
-            while True:
-                payload = self._read_message(require_protocol=False)
-                kind = payload.get("kind")
-                if kind == "BULK_PROGRESS":
-                    continue
-                if kind == "BULK_RESULT":
-                    break
-                raise IsolatedWorkerError(
-                    f"bulk worker returned unsupported message: {kind!r}"
-                )
+            with BulkResultReceiver(identity) as receiver:
+                while True:
+                    message = self._read_message(require_protocol=False)
+                    if message.get("kind") == "BULK_PROGRESS":
+                        if receiver.chunks:
+                            raise IsolatedWorkerError("progress after result transmission began")
+                        continue
+                    payload = receiver.accept(message)
+                    if payload is not None:
+                        manifest = receiver.manifest
+                        break
+        except BulkResultError as exc:
+            raise IsolatedWorkerError(str(exc)) from exc
         finally:
             self.timeout_s = previous_timeout
         raw = payload.get("raw_result")
         if not isinstance(raw, Mapping) or raw.get("status") != "completed":
             status = raw.get("status") if isinstance(raw, Mapping) else None
             raise IsolatedWorkerError(f"bulk engine did not complete: {status!r}")
-        from openpine.runtime.inputs import input_evidence
-        expected_inputs = input_evidence(self.input_registry)
+        if raw.get("effective_config_hash") != identity["effective_config_hash"]:
+            raise IsolatedWorkerError("bulk result effective-config identity mismatch")
         if any(raw.get(key) != value for key, value in expected_inputs.items()):
             raise IsolatedWorkerError("bulk result applied-input identity mismatch")
         processed = payload.get("bars_processed")
@@ -128,6 +138,7 @@ class BulkWorkerSession(InteractiveWorkerSession):
             "intent_tape": intent_tape,
             "score_ledger_hash": payload.get("score_ledger_hash"),
             "raw_result": hydrate_bulk_raw_result(payload),
+            "result_manifest": manifest,
         }
 
     def __exit__(self, exc_type, exc, traceback) -> None:
