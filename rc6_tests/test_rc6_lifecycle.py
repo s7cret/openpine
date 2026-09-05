@@ -262,7 +262,19 @@ if bar_index > 0 and m > close[1] and strategy.position_size > 0
     assert result["raw_result"].status == "completed"
     assert result["raw_result"].total_trades == 1
     assert not result["raw_result"].open_trades
-    assert [intent["kind"] for intent in result["intent_tape"]] == ["entry", "close"]
+    # On-close fill recalculation executes the bar-zero condition again.
+    # A second entry *intent* is valid; pyramiding must still prevent a second fill.
+    expected = [("entry", 0, 0)]
+    if on_close:
+        expected.append(("entry", 0, 1))
+    expected.append(("close", 1, 0))
+    assert [(item["kind"], item["bar_index"], item["recalc_iteration"])
+            for item in result["intent_tape"]] == expected
+    assert len(result["raw_result"].closed_trades) == 1
+    trade = result["raw_result"].closed_trades[0]
+    assert trade.qty == 1
+    assert trade.entry_bar_index == (0 if on_close else 1)
+    assert trade.exit_bar_index == 1
 
 
 @pytest.mark.parametrize("fault", [None, "missing_finalize", "bad_final_reference"])
