@@ -245,6 +245,7 @@ class BacktestEngineAdapter:
             "generated_artifact",
             "bar_envelopes",
             "run_hash",
+            "applied_config_hash",
             "protocol_artifact_dir",
             "isolated_protocol",
         ):

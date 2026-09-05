@@ -940,6 +940,9 @@ async def _run_tv_parity_background(
         admitted_manifest = getattr(state, "admitted_manifest", None)
         if not isinstance(admitted_manifest, dict):
             raise RuntimeError("admitted candidate manifest is unavailable")
+        from openpine.runtime.inputs import applied_config_hash, resolve_inputs
+        resolved_hash = applied_config_hash(config, resolve_inputs(artifact["python_code"], params))
+        object.__setattr__(config, "applied_config_hash", resolved_hash)
         run_identity = admit_and_persist_run_identity(
             data_dir=state.config.data_dir,
             deployment=deployment,
@@ -967,6 +970,7 @@ async def _run_tv_parity_background(
                 "intent_tape_v2",
             ),
             created_at_utc_ms=int(time.time() * 1000),
+            config_hash=resolved_hash,
         )
         generated_artifact = artifact.get("generated_artifact")
         if not isinstance(generated_artifact, dict):

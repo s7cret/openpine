@@ -38,6 +38,7 @@ from pinelib.runtime.session import CallbackResult
 
 from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
 from openpine.runtime.rc6_config import resolve_engine_config
+from openpine.runtime.inputs import resolve_inputs, input_evidence
 
 
 _PROTOCOL_COMPONENT = {
@@ -239,6 +240,8 @@ class RC6GeneratedScriptSession:
         producer_commit: str,
         default_qty_value: object = 1,
         engine_config: BacktestConfig | None = None,
+        params: Mapping[str, object] | None = None,
+        expected_input_values_hash: str | None = None,
     ) -> None:
         envelope = artifact.get("generated_artifact")
         source = artifact.get("python_code")
@@ -271,6 +274,9 @@ class RC6GeneratedScriptSession:
             for imported in imports
         ):
             raise ValueError("generated module imports a forbidden package")
+        self.inputs = resolve_inputs(source, params, envelope=envelope)
+        if expected_input_values_hash is not None and expected_input_values_hash != self.inputs.values_hash:
+            raise ValueError("applied input values differ from the admitted parameter hash")
         namespace: dict[str, Any] = {"__name__": module_name}
         exec(compile(tree, f"<{module_name}>", "exec"), namespace, namespace)
         generated_class = namespace.get(entrypoint_name)
@@ -287,6 +293,7 @@ class RC6GeneratedScriptSession:
         self.namespace = MappingProxyType(namespace)
         self.session = RuntimeSession(
             language,
+            inputs=self.inputs,
             instrument=instrument,
             timeframe=timeframe,
         )
@@ -422,6 +429,8 @@ def _session_from_request(
         ),
         producer_commit=str(context["producer_commits"]["backtest_engine"]),
         engine_config=engine_config,
+        params=request.get("params"),
+        expected_input_values_hash=request.get("input_values_hash"),
     )
 
 
@@ -703,7 +712,9 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         required_runtime_capabilities: tuple[str, ...] = ()
 
         def __init__(self, params: dict[str, Any], runtime: Any, ctx: Any) -> None:
-            del params, runtime
+            del runtime
+            if params != dict(session.inputs.values):
+                raise ValueError("bulk broker parameters differ from applied Pine inputs")
             self.ctx = ctx
 
         def run_bar(self, bar: Any, bar_index: int) -> None:
@@ -760,7 +771,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
 
     result = BacktestEngine(config).run(
         _BulkStrategy,
-        params=dict(request.get("params") or {}),
+        params=dict(session.inputs.values),
         bars=engine_bars,
         callbacks=BacktestCallbacks(on_bar_end=on_bar_end),
     )
@@ -798,6 +809,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         "errors": _jsonable(list(getattr(result, "errors", None) or [])),
         "effective_config_hash": config.effective_config_hash,
         "config_snapshot": _jsonable(result.config_snapshot),
+        **input_evidence(session.inputs),
     }
     payload = {
         "kind": "BULK_RESULT",

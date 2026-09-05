@@ -1170,6 +1170,7 @@ def _admit_loaded_backtest_run(
     bars: list[object],
     supplemental_bars: list[dict[str, Any]] | None,
     config: object,
+    params: dict[str, Any] | None = None,
 ) -> dict[str, object]:
     from openpine.admission import DeploymentAdmissionIdentity
     from openpine.run_identity import admit_and_persist_run_identity
@@ -1183,6 +1184,10 @@ def _admit_loaded_backtest_run(
     admitted_manifest = getattr(state, "admitted_manifest", None)
     if not isinstance(admitted_manifest, dict):
         raise RuntimeError("admitted candidate manifest is unavailable")
+    from openpine.runtime.inputs import applied_config_hash, resolve_inputs
+
+    resolved_hash = applied_config_hash(config, resolve_inputs(artifact["python_code"], params))
+    object.__setattr__(config, "applied_config_hash", resolved_hash)
     payload = admit_and_persist_run_identity(
         data_dir=data_dir,
         deployment=deployment,
@@ -1210,6 +1215,7 @@ def _admit_loaded_backtest_run(
             "intent_tape_v2",
         ),
         created_at_utc_ms=int(time.time() * 1000),
+        config_hash=resolved_hash,
     )
     return cast(dict[str, object], payload)
 
@@ -2106,7 +2112,7 @@ async def _run_backtest_background(
         decl_args = artifact_strategy_declaration_args(artifact)
 
         params = {}
-        if params_override:
+        if params_override is not None:
             params = params_override
         elif strategy.params_json:
             import json
@@ -2196,6 +2202,7 @@ async def _run_backtest_background(
             bars=bars,
             supplemental_bars=stamped_htf,
             config=config,
+            params=params,
         )
         canonical_bars = getattr(series, "canonical_bars", None)
         if not isinstance(canonical_bars, (list, tuple)) or len(canonical_bars) != len(

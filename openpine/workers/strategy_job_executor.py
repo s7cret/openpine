@@ -546,6 +546,7 @@ class StrategyJobExecutor:
             bars=bars,
             bar_envelopes=bar_envelopes,
             supplemental_bars=htf_bars,
+            params=_strategy_params(strategy),
             created_at_utc_ms=max(0, int(last_bar.time_close)),
             broker_adapter_ref=broker_adapter_ref,
             broker_account_ref=broker_account_ref,

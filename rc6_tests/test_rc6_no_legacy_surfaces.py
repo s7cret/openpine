@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 
 from openpine.runtime import engine, isolated_run, isolated_worker, rc6_worker_runtime
@@ -27,13 +28,18 @@ def test_rc6_openpine_sources_do_not_import_removed_pinelib_domains() -> None:
         "pinelib.strategy",
         "pinelib.plot",
         "generated_artifact.v2",
-        "PineRuntime",
         "pine_runtime",
     ):
         assert token not in source
+    assert re.search(r"\bPineRuntime\b", source) is None
 
 
 def test_rc6_strategy_jobs_have_no_in_process_generated_class_path() -> None:
     source = Path(strategy_job_executor.__file__).read_text(encoding="utf-8")
     assert "strategy_loader" not in source
     assert "runtime_data_provider" not in source
+
+
+def test_legacy_runtime_guard_allows_the_current_diagnostic_type():
+    assert re.search(r"\bPineRuntime\b", "from pinelib.errors import PineRuntimeError") is None
+    assert re.search(r"\bPineRuntime\b", "from pinelib import PineRuntime as Legacy")

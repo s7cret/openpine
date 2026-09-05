@@ -49,12 +49,12 @@ def bulk_case():
     return compiled, context, config
 
 
-def execute_bulk(monkeypatch, case, *, config=None, bars=None, last_batch=True):
+def execute_bulk(monkeypatch, case, *, config=None, bars=None, last_batch=True, params=None):
     compiled, context, default_config = case
     config = default_config if config is None else config
     generated = compiled.generated_artifact
     request = dict(generated_artifact=generated, execution_context=context,
-                   source=compiled.python_code, engine_config=serialize_engine_config(config, "strict_5x"), params={})
+                   source=compiled.python_code, engine_config=serialize_engine_config(config, "strict_5x"), params={} if params is None else params)
     protocol = RC6WorkerProtocol(context)
     protocol.append("HELLO", dict(worker_id=context["session_id"], protocol_version="2.3.0",
                                   capabilities=["closed_bar", "checkpoint_v1"]), 0)

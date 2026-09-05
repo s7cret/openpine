@@ -572,6 +572,7 @@ def admit_and_persist_run_identity(
     created_at_utc_ms: int,
     broker_adapter_ref: str | None = None,
     broker_account_ref: str | None = None,
+    config_hash: str | None = None,
 ) -> dict[str, object]:
     if admitted_manifest.get("manifest_hash") != deployment.stack_manifest_hash:
         raise AdmitError(
@@ -637,6 +638,11 @@ def admit_and_persist_run_identity(
             "run producer commit differs from admitted OpenPine commit",
             code="ADMISSION_IDENTITY_INVALID",
         )
+    if config_hash is not None:
+        payload = seal_content_hash(
+            {**payload, "config_hash": config_hash}, schema_id="openpine.run.v2",
+        )
+        validate_payload("openpine.run.v2", payload)
     persist_run_identity(data_dir, run_id, payload)
     return payload
 
@@ -843,6 +849,7 @@ def bind_isolated_execution(
     created_at_utc_ms: int,
     broker_adapter_ref: str | None = None,
     broker_account_ref: str | None = None,
+    params: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     """Persist one admitted run and attach exact protocol inputs to its config."""
 
@@ -853,6 +860,10 @@ def bind_isolated_execution(
             "exact canonical bar envelopes are required",
             code="CANONICAL_BAR_ENVELOPES_REQUIRED",
         )
+    from openpine.runtime.inputs import applied_config_hash, resolve_inputs
+
+    inputs = resolve_inputs(artifact["python_code"], params)
+    resolved_config_hash = applied_config_hash(config, inputs)
     run_identity = admit_and_persist_run_identity(
         data_dir=data_dir,
         deployment=deployment,
@@ -883,6 +894,7 @@ def bind_isolated_execution(
         created_at_utc_ms=created_at_utc_ms,
         broker_adapter_ref=broker_adapter_ref,
         broker_account_ref=broker_account_ref,
+        config_hash=resolved_config_hash,
     )
     first = envelopes[0]
     execution_context = execution_context_from_admission(
@@ -915,6 +927,7 @@ def bind_isolated_execution(
         ("generated_artifact", dict(generated)),
         ("bar_envelopes", envelopes),
         ("run_hash", str(run_identity["content_hash"])),
+        ("applied_config_hash", resolved_config_hash),
         ("protocol_artifact_dir", str(Path(data_dir) / "protocol" / run_id)),
     ):
         object.__setattr__(config, name, value)

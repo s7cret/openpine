@@ -77,6 +77,7 @@ def _bind_cli_isolated_config(
         bars=bars,
         bar_envelopes=canonical_bars,
         supplemental_bars=htf_bars,
+        params=json.loads(strategy.params_json) if strategy.params_json else {},
         created_at_utc_ms=created_at_utc_ms,
     )
     object.__setattr__(config, "isolated_protocol", "bulk_backtest")

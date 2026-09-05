@@ -136,6 +136,7 @@ class NativeRC6CompilerAdapter:
                     "lowering_plan_hash": compiled.plan.content_hash,
                     "emitted_module_hash": compiled.emitted.code_hash,
                     "source_map_hash": compiled.emitted.source_map.content_hash,
+                    "input_descriptors": list(compiled.emitted.script_metadata.get("inputs", {}).values()),
                 }
             )
             return CompileResult(

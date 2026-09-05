@@ -248,7 +248,16 @@ def run_isolated_artifact(
 
     if resume_state is not None:
         raise IsolatedRunError("RESUME_UNSUPPORTED_FOR_WORKER_PROTOCOL")
+    from openpine.runtime.inputs import InputBindingError, applied_config_hash, input_evidence, resolve_inputs
+    try:
+        inputs = resolve_inputs(source, params)
+    except InputBindingError as exc:
+        raise IsolatedRunError(f"{exc.code}: {exc}") from exc
+    params = dict(inputs.values)
     semantic_profile = _semantic_profile(config)
+    admitted_config_hash = getattr(config, "applied_config_hash", None)
+    if admitted_config_hash is not None and admitted_config_hash != applied_config_hash(config, inputs):
+        raise IsolatedRunError("applied config or inputs changed after run admission")
     chart_timeframe = str(getattr(config, "timeframe", "") or "")
     if not chart_timeframe:
         raise IsolatedRunError("chart timeframe is required")
@@ -281,6 +290,7 @@ def run_isolated_artifact(
             "intent_tape": bulk["intent_tape"],
             "score_ledger_hash": bulk["score_ledger_hash"],
             "raw_result": bulk["raw_result"],
+            **input_evidence(inputs),
             "isolation": {
                 "protocol": "openpine.worker.protocol.v2",
                 "mode": "bulk_backtest",
@@ -383,8 +393,11 @@ def run_isolated_artifact(
         tape_events = []
     else:
         raise IsolatedRunError("worker did not return an admitted intent batch")
+    for key, value in input_evidence(inputs).items():
+        setattr(result, key, value)
     return {
         "ok": True,
+        **input_evidence(inputs),
         "intent_tape": tape_events,
         "score_ledger_hash": result.score_ledger_hash,
         "raw_result": result,

@@ -95,6 +95,10 @@ class BulkWorkerSession(InteractiveWorkerSession):
         if not isinstance(raw, Mapping) or raw.get("status") != "completed":
             status = raw.get("status") if isinstance(raw, Mapping) else None
             raise IsolatedWorkerError(f"bulk engine did not complete: {status!r}")
+        from openpine.runtime.inputs import input_evidence
+        expected_inputs = input_evidence(self.input_registry)
+        if any(raw.get(key) != value for key, value in expected_inputs.items()):
+            raise IsolatedWorkerError("bulk result applied-input identity mismatch")
         processed = payload.get("bars_processed")
         received = payload.get("bars_received")
         excluded = payload.get("bars_excluded_open")

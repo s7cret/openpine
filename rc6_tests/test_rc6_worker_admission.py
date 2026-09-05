@@ -131,11 +131,18 @@ def _manifest() -> dict[str, object]:
     }
 
 
+@pytest.mark.parametrize("mode,quantity", [
+    ("interactive", None), ("interactive", 2), ("interactive", 7),
+    ("bulk_backtest", 2), ("bulk_backtest", 7),
+])
 def test_isolated_rc6_worker_emits_intent_consumed_by_engine(
-    tmp_path: Path,
+    tmp_path: Path, mode: str, quantity: int | None,
 ) -> None:
+    source = SOURCE if quantity is None else (
+        '//@version=6\nstrategy("input-worker")\nn=input.int(1,minval=1)\n'
+        'strategy.entry("L",strategy.long,qty=n)\n')
     result = NativeRC6CompilerAdapter().compile(
-        SOURCE,
+        source,
         module_name="generated_rc6_worker",
         source_name="rc6-worker.pine",
         producer_commits={
@@ -223,6 +230,7 @@ def test_isolated_rc6_worker_emits_intent_consumed_by_engine(
         "bar_envelopes": [canonical_bar, second_bar],
         "run_hash": "sha256:" + "1" * 64,
         "protocol_artifact_dir": str(tmp_path / "protocol"),
+        "isolated_protocol": mode,
     }.items():
         object.__setattr__(config, name, value)
 
@@ -251,8 +259,10 @@ def test_isolated_rc6_worker_emits_intent_consumed_by_engine(
             ),
         ],
         config=config,
+        params={} if quantity is None else {"n": quantity},
     )
 
+    assert isolated["intent_tape"][0]["qty"] == str(quantity or 1)
     assert isolated["ok"] is True
     assert len(isolated["intent_tape"]) == 2
     assert isolated["intent_tape"][0]["kind"] == "entry"

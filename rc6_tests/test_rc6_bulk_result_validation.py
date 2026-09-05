@@ -26,6 +26,8 @@ def parent_session(payload, context):
     session.timeout_s = 5
     session.bulk_idle_timeout_s = 60
     session.protocol = SimpleNamespace(execution_context=context)
+    from pinelib.input import InputRegistry
+    session.input_registry = InputRegistry()
     session._write_json_line = Mock()
     session._read_message = Mock(return_value=payload)
     return session

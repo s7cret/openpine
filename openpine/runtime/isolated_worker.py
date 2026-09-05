@@ -580,6 +580,11 @@ class InteractiveWorkerSession:
             raise IsolatedWorkerError("chart_timeframe required")
         if params is not None and not isinstance(params, dict):
             raise IsolatedWorkerError("params must be an object")
+        from openpine.runtime.inputs import InputBindingError, resolve_inputs
+        try:
+            self.input_registry = resolve_inputs(source, params, envelope=generated_artifact)
+        except InputBindingError as exc:
+            raise IsolatedWorkerError(f"{exc.code}: {exc}") from exc
         if not str(protocol_artifact_dir):
             raise IsolatedWorkerError("protocol artifact directory is required")
         if bulk_backtest and not isinstance(engine_config, Mapping):
@@ -637,7 +642,8 @@ class InteractiveWorkerSession:
                 "htf_bars": htf_bars_for_bootstrap(
                     bulk_backtest=self.bulk_backtest, htf_bars=htf_bars
                 ),
-                "params": {} if params is None else params,
+                "params": dict(self.input_registry.values),
+                "input_values_hash": self.input_registry.values_hash,
             }
             if self.engine_config:
                 bootstrap["engine_config"] = self.engine_config
