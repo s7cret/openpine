@@ -1,0 +1,134 @@
+{
+  "source_commit": "4302f8b8e3ca5a28cc6cd3c69bd3a544c5b66982",
+  "message": "fix(OP-03): share lossless effective engine settings with RC6 intent sizing\n\nPreserve zeros, rounding, warmup and execution flags; hash and validate transported settings. Both transports bind the same effective config to the delegated handler; supply close/equity projections for fixed/cash/percent sizing. Core engine zero-margin support and declaration-version defaults remain separate acceptance gaps.",
+  "author_name": "OpenPine Review",
+  "author_email": "openpine-review@users.noreply.github.com",
+  "author_date": "2026-09-05T09:02:04Z",
+  "files": [
+    {
+      "path": "openpine/runtime/isolated_run.py",
+      "mode": "100644",
+      "base": "777d898432619741cf4e7f55c666b2177726c080",
+      "sha": "9f0dce605096a5a551f8b34c37f42cf720df26fe",
+      "edits": [
+        [
+          232,
+          265,
+          "    from openpine.runtime.rc6_config import serialize_engine_config\n\n    return serialize_engine_config(config, semantic_profile)\n"
+        ],
+        [
+          336,
+          336,
+          "            engine_config=_bulk_engine_config(config, semantic_profile),\n"
+        ]
+      ]
+    },
+    {
+      "path": "openpine/runtime/isolated_worker.py",
+      "mode": "100644",
+      "base": "1809697fbf3009c34d8e34493051b7192a9b37a5",
+      "sha": "027cf98b517337bf1429b0ba06a6d8e6f19c9ee9",
+      "edits": [
+        [
+          641,
+          642,
+          "            if self.engine_config:\n"
+        ]
+      ]
+    },
+    {
+      "path": "openpine/runtime/rc6_config.py",
+      "mode": "100644",
+      "base": "9411310b532935adb3e4b95a708ad453acca66a6",
+      "sha": "9411310b532935adb3e4b95a708ad453acca66a6",
+      "edits": []
+    },
+    {
+      "path": "openpine/runtime/rc6_worker_runtime.py",
+      "mode": "100644",
+      "base": "a3025a4a890b92694ba827803f8ac53eb4769d7d",
+      "sha": "949de6aef26f93494e27e2874b7ecb3b5d8375c3",
+      "edits": [
+        [
+          39,
+          39,
+          "from openpine.runtime.rc6_config import resolve_engine_config\n"
+        ],
+        [
+          239,
+          239,
+          "        engine_config: BacktestConfig | None = None,\n"
+        ],
+        [
+          295,
+          296,
+          "        self.intent_config = engine_config if engine_config is not None else BacktestConfig(\n"
+        ],
+        [
+          314,
+          314,
+          "        broker_equity: object | None = None,\n"
+        ],
+        [
+          323,
+          323,
+          "            bar_close={bar_index: values.close},\n            bar_equity={} if broker_equity is None else {bar_index: broker_equity},\n"
+        ],
+        [
+          370,
+          371,
+          "def _session_from_request(\n    request: Mapping[str, Any], *, engine_config: BacktestConfig | None = None,\n) -> RC6GeneratedScriptSession:\n"
+        ],
+        [
+          384,
+          384,
+          "    if engine_config is None and \"engine_config\" in request:\n        engine_config = resolve_engine_config(request[\"engine_config\"], context)\n"
+        ],
+        [
+          414,
+          414,
+          "        engine_config=engine_config,\n"
+        ],
+        [
+          525,
+          525,
+          "            broker_equity=projection[\"equity\"],\n"
+        ],
+        [
+          582,
+          582,
+          "        broker_equity=projection[\"equity\"],\n"
+        ],
+        [
+          602,
+          603,
+          "    config = resolve_engine_config(engine_config, context)\n    session = _session_from_request(request, engine_config=config)\n"
+        ],
+        [
+          704,
+          704,
+          "                broker_equity=self.ctx.state.equity,\n"
+        ],
+        [
+          722,
+          766,
+          ""
+        ]
+      ]
+    },
+    {
+      "path": "rc6_tests/test_rc6_bulk_execution.py",
+      "mode": "100644",
+      "base": "e6ba89f9d4810aa00e6daf94dfd45c3d514f197c",
+      "sha": "e6ba89f9d4810aa00e6daf94dfd45c3d514f197c",
+      "edits": []
+    },
+    {
+      "path": "rc6_tests/test_rc6_effective_config.py",
+      "mode": "100644",
+      "base": "bceeb50f61423b21d51a52e1bafd9f9bae032ea6",
+      "sha": "bceeb50f61423b21d51a52e1bafd9f9bae032ea6",
+      "edits": []
+    }
+  ]
+}

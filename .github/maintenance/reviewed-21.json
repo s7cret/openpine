@@ -1,0 +1,79 @@
+{
+  "source_commit": "17907cd0cd735da26800cde50d6d098145f019f6",
+  "message": "fix(OP-04): validate canonical bars and preserve finality in both RC6 paths\n\nOne decoder verifies schema, envelope and nested bar hashes, provenance, numeric/time invariants. Bulk validates identity/order across chunks and excludes OPEN only under CLOSED_BAR_ONLY. Revised envelopes fail closed pending snapshot-proof transport; OP-04 remains partial for revision replay.",
+  "author_name": "OpenPine Review",
+  "author_email": "openpine-review@users.noreply.github.com",
+  "author_date": "2026-09-05T08:58:03Z",
+  "files": [
+    {
+      "path": "openpine/runtime/rc6_marketdata.py",
+      "mode": "100644",
+      "base": "b727bdaee4b42b4d4265a1f8c6276400cced93e6",
+      "sha": "b727bdaee4b42b4d4265a1f8c6276400cced93e6",
+      "edits": []
+    },
+    {
+      "path": "openpine/runtime/rc6_worker_runtime.py",
+      "mode": "100644",
+      "base": "dad42909a5ed8cb7b562c5cfe4ed8061c566a20d",
+      "sha": "a3025a4a890b92694ba827803f8ac53eb4769d7d",
+      "edits": [
+        [
+          37,
+          37,
+          "\nfrom openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar\n"
+        ],
+        [
+          436,
+          440,
+          "def _bar_values(\n    raw_bar: Mapping[str, Any], *, context: Mapping[str, Any] | None = None,\n) -> BarValues:\n    bar = decode_canonical_bar(raw_bar, context=context)\n"
+        ],
+        [
+          441,
+          448,
+          "        open=bar.open, high=bar.high, low=bar.low, close=bar.close,\n        volume=bar.volume, time=bar.time, time_close=bar.time_close,\n"
+        ],
+        [
+          519,
+          520,
+          "        values = _bar_values(raw_bar, context=context)\n"
+        ],
+        [
+          566,
+          580,
+          "    return decode_canonical_bar(envelope)\n"
+        ],
+        [
+          634,
+          634,
+          "    bar_admission = RC6BarAdmission(context)\n"
+        ],
+        [
+          645,
+          646,
+          "            for item in batch:\n                admitted_bar = bar_admission.accept(item)\n                if admitted_bar is not None:\n                    engine_bars.append(admitted_bar)\n"
+        ]
+      ]
+    },
+    {
+      "path": "rc6_tests/test_rc6_marketdata_boundary.py",
+      "mode": "100644",
+      "base": "48cf070ccf290d29b0327c04ad9727e17aa4ddae",
+      "sha": "48cf070ccf290d29b0327c04ad9727e17aa4ddae",
+      "edits": []
+    },
+    {
+      "path": "tests/test_bulk_backtest.py",
+      "mode": "100644",
+      "base": "cc6d40448309f6163a74adf0291ed64ca4c84057",
+      "sha": "32d7aa805089eb770d3c1c6479a564521af0194c",
+      "edits": [
+        [
+          122,
+          123,
+          "    assert \"bar_admission.accept(item)\" in text\n    assert \"engine_bars.append(admitted_bar)\" in text\n"
+        ]
+      ]
+    }
+  ]
+}

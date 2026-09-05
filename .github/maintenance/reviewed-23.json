@@ -1,0 +1,130 @@
+{
+  "source_commit": "b37ed392e58ae37feb6e53432c886a09bc58fcde",
+  "message": "fix(OP-06): retain bulk intents and reject failed or truncated worker runs\n\nPreserve the real intent tape and configured output collections. Validate bar accounting and intent identity in the parent, require the final input batch, reject incomplete engine outcomes, and verify worker exit zero before reporting success.\n\nRegression evidence: 96 native and boundary tests pass locally; the existing bubblewrap integration test is left unchanged and requires CI sandbox dependencies. Result profiles, sealed result manifests and bounded chunk transport remain separate OP-06 acceptance gaps.",
+  "author_name": "OpenPine Review",
+  "author_email": "openpine-review@users.noreply.github.com",
+  "author_date": "2026-09-05T09:08:58Z",
+  "files": [
+    {
+      "path": "openpine/runtime/bulk_worker.py",
+      "mode": "100644",
+      "base": "c2a745f621f8524e2fe4a06341ede2b780023c3d",
+      "sha": "e015f0e52bb18b1f6d793c9e2a0dd1d69621514c",
+      "edits": [
+        [
+          5,
+          5,
+          "import subprocess\n"
+        ],
+        [
+          92,
+          92,
+          "        raw = payload.get(\"raw_result\")\n        if not isinstance(raw, Mapping) or raw.get(\"status\") != \"completed\":\n            status = raw.get(\"status\") if isinstance(raw, Mapping) else None\n            raise IsolatedWorkerError(f\"bulk engine did not complete: {status!r}\")\n        processed = payload.get(\"bars_processed\")\n        received = payload.get(\"bars_received\")\n        excluded = payload.get(\"bars_excluded_open\")\n        if (type(processed) is not int or type(received) is not int or type(excluded) is not int\n                or received != len(envelopes) or not 0 <= excluded <= received\n                or not 0 <= processed <= received - excluded):\n            raise IsolatedWorkerError(\"bulk result bar counts are invalid\")\n"
+        ],
+        [
+          95,
+          95,
+          "        if intent_tape:\n            from backtest_engine.core.intent_replay import IntentReplayError, require_live_tape\n            try:\n                require_live_tape(intent_tape)\n            except (IntentReplayError, ValueError) as exc:\n                raise IsolatedWorkerError(\"bulk result intent tape failed validation\") from exc\n            context = self.protocol.execution_context\n            fields = (\"run_id\", \"strategy_id\", \"series_id\", \"instrument_id\", \"timeframe\")\n            if any(any(event.get(key) != context[key] for key in fields)\n                   or event.get(\"stack_id\") != context[\"stack_manifest_hash\"] for event in intent_tape):\n                raise IsolatedWorkerError(\"bulk result intent identity mismatch\")\n"
+        ],
+        [
+          97,
+          98,
+          "            \"bars_processed\": processed,\n            \"bars_received\": received,\n            \"bars_excluded_open\": excluded,\n"
+        ],
+        [
+          104,
+          105,
+          "        if exc_type is not None:\n            return super().__exit__(exc_type, exc, traceback)\n        try:\n            if self.proc.stdin is not None and not self._closed:\n                self.proc.stdin.close()\n"
+        ],
+        [
+          106,
+          117,
+          "                return_code = self.proc.wait(timeout=2)\n            except subprocess.TimeoutExpired as error:\n                self._kill()\n                raise IsolatedWorkerError(\"bulk worker did not exit after its result\") from error\n            except OSError as error:\n                self._kill()\n                raise IsolatedWorkerError(\"bulk worker exit could not be verified\") from error\n            if return_code != 0:\n                raise IsolatedWorkerError(f\"bulk worker exited with status {return_code}\")\n        finally:\n            self._close_pipes()\n            self._closed = True\n        return None\n"
+        ]
+      ]
+    },
+    {
+      "path": "openpine/runtime/rc6_worker_runtime.py",
+      "mode": "100644",
+      "base": "949de6aef26f93494e27e2874b7ecb3b5d8375c3",
+      "sha": "9fd5a2fcfda78ccc9a9240bd5f79b78b94f22867",
+      "edits": [
+        [
+          632,
+          632,
+          "    received_last_batch = False\n"
+        ],
+        [
+          648,
+          648,
+          "                received_last_batch = True\n"
+        ],
+        [
+          678,
+          678,
+          "    if not received_last_batch:\n        raise ValueError(\"bulk bar stream ended before its final batch\")\n"
+        ],
+        [
+          682,
+          682,
+          "    completed_bars = 0\n    tape_events: list[dict[str, Any]] = []\n"
+        ],
+        [
+          720,
+          720,
+          "            tape_events.extend(batch)\n"
+        ],
+        [
+          740,
+          741,
+          "        nonlocal last_progress, completed_bars\n        completed_bars += 1\n"
+        ],
+        [
+          758,
+          759,
+          "    if getattr(result, \"status\", None) != \"completed\":\n        raise ValueError(\n            f\"bulk engine did not complete: {getattr(result, 'status', None)!r}; \"\n            f\"{getattr(result, 'errors', [])!r}\"\n        )\n"
+        ],
+        [
+          783,
+          783,
+          "        \"events\": _jsonable(list(getattr(result, \"events\", None) or [])),\n        \"warnings\": _jsonable(list(getattr(result, \"warnings\", None) or [])),\n        \"errors\": _jsonable(list(getattr(result, \"errors\", None) or [])),\n        \"effective_config_hash\": config.effective_config_hash,\n        \"config_snapshot\": _jsonable(result.config_snapshot),\n"
+        ],
+        [
+          786,
+          787,
+          "        \"bars_received\": bar_admission.received,\n        \"bars_excluded_open\": bar_admission.excluded_open,\n        \"bars_processed\": completed_bars,\n"
+        ]
+      ]
+    },
+    {
+      "path": "rc6_tests/test_rc6_bulk_execution.py",
+      "mode": "100644",
+      "base": "e6ba89f9d4810aa00e6daf94dfd45c3d514f197c",
+      "sha": "03baa5305775d320d2c8af349ac6b7e086223b21",
+      "edits": [
+        [
+          51,
+          52,
+          "def execute_bulk(monkeypatch, case, *, config=None, bars=None, last_batch=True):\n"
+        ],
+        [
+          70,
+          71,
+          "    frames += [{\"kind\": \"BULK_BARS\", \"bars\": bars, \"last\": last_batch}]\n"
+        ],
+        [
+          93,
+          93,
+          "\n\ndef test_bulk_result_contains_actual_intents_and_equity(monkeypatch, bulk_case):\n    result = execute_bulk(monkeypatch, bulk_case)\n    assert len(result[\"intent_tape\"]) == 1\n    assert result[\"intent_tape\"][0][\"qty\"] == \"7\"\n    assert len(result[\"raw_result\"][\"equity_curve\"]) == 3\n\n\ndef test_bulk_does_not_publish_success_after_engine_failure(monkeypatch, bulk_case):\n    from types import SimpleNamespace\n    monkeypatch.setattr(\"backtest_engine.BacktestEngine.run\", lambda *_a, **_k: SimpleNamespace(\n        status=\"failed\", errors=[\"injected failure\"], bars_processed=0, score_ledger_hash=\"bad\"))\n    with pytest.raises(ValueError, match=\"did not complete\"):\n        execute_bulk(monkeypatch, bulk_case)\n"
+        ]
+      ]
+    },
+    {
+      "path": "rc6_tests/test_rc6_bulk_result_validation.py",
+      "mode": "100644",
+      "base": "ef451f18fda5e5d906cfc77a0f3398dc8060342a",
+      "sha": "ef451f18fda5e5d906cfc77a0f3398dc8060342a",
+      "edits": []
+    }
+  ]
+}

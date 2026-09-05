@@ -1,11 +1,5 @@
 {
   "target": "release/5.0.0rc6",
-  "expected_head": "a36d8087e644433b9656dafeb57cb5451f75afed",
-  "commits": [
-    "reviewed-01.json", "reviewed-02.json", "reviewed-03.json",
-    "reviewed-04.json", "reviewed-05.json", "reviewed-06.json",
-    "reviewed-07.json", "reviewed-08.json", "reviewed-09.json",
-    "reviewed-10.json", "reviewed-11.json", "reviewed-12.json",
-    "reviewed-13.json"
-  ]
+  "expected_head": "b4621601b91d4186ae62b3f53245e67642264581",
+  "commits": ["reviewed-21.json", "reviewed-22.json", "reviewed-23.json"]
 }
