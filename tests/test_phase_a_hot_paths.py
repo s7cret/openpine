@@ -151,7 +151,12 @@ def test_local_marketdata_provider_is_marked_as_persistence_owner(monkeypatch) -
     monkeypatch.setattr(provider_adapter, "ensure_marketdata_provider_version", lambda: None)
     monkeypatch.setattr(provider_adapter, "create_provider", lambda _config: canonical_provider)
 
-    result = provider_adapter.create_local_marketdata_provider_adapter()
+    from marketdata_provider.config import ArtifactIdentityConfig, MarketDataConfig
+
+    config = MarketDataConfig(artifact_identity=ArtifactIdentityConfig(
+        producer_commit="1" * 40, stack_id="sha256:" + "2" * 64,
+    ))
+    result = provider_adapter.create_local_marketdata_provider_adapter(config=config)
 
     assert result is canonical_provider
     assert result.persists_fetches is True
