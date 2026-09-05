@@ -1,35 +1,33 @@
 # RC6 review progress — 2026-09-05
 
-This is a partial implementation ledger, not acceptance of all 36 review tasks or TradingView 1:1 compatibility.
+This ledger records implemented and verified scopes, not completion of all 36 review tasks or TradingView 1:1 compatibility.
 
-## Latest published and CI-verified strategy block
+## Latest published data / chart metadata / UI block
 
-OpenPine code commit: `325b2be8b0d320a1c30651094545ef5d50bbc249`.
-Backtest Engine code head: `70dd7ccfecaabafa3000d359770305acb32c8b9e`.
-The three original local commits are now published with unchanged SHAs in their RC6 branches. Joint CI `33987487240` passed **2,163 cases on Python 3.11 and 2,163 on Python 3.13**, including the real protected workers, with zero failures, errors or skips. Lint, compilation and wheel/sdist builds passed. The seven previously unrun local process cases are included in this CI.
+OpenPine reviewed source: `5a900fb7728b02a37f03e2ac0cd8004dbb03efd2`.
+MarketData Provider reviewed source: `4e269bb7e3d389cae6214da9e17898c32c7ead15`.
+The exact ten source commits are published in the respective RC6 branches. Subsequent receipt commits change documentation only.
 
-[RC6_STRATEGY_PUBLICATION_RECEIPT.md](RC6_STRATEGY_PUBLICATION_RECEIPT.md) records the publication, exact code identities, test scope and archive evidence. [RC6_STRATEGY_HOST_BLOCK.md](RC6_STRATEGY_HOST_BLOCK.md) describes the implemented OP-07/OP-20 scope and remaining limitations. The matching engine source is now available in GitHub; install the source pins together. This is verified partial functionality, not completion of all strategy semantics or a production release.
+Joint CI `33991141948` verified **2774 Python cases per interpreter (3.11 and 3.13), 152 Vitest cases and 22 Node cases**. It includes protected worker processes, actual TypeScript/Vite build and current backend OpenAPI contract checks. Five provider live-network cases are excluded explicitly. Full OpenPine/Pine2AST/standalone optimizer/coverage/TradingView oracle coverage is not claimed. The initial Actions delivery-token failure was resolved by the authorized connector and a successful publication retry without altering tested source.
 
-## Previous cleanup/progress publication
+- **OP-21:** strict offline CSV/Parquet input, explicit timestamp/volume policies and bounded batch parsing. Indexing, complete import provenance, row-group pushdown and repeated intrabar I/O acceptance remain open.
+- **OP-09:** provider hour/month/minute identity and admitted pointvalue survive both workers. Complete instrument metadata and non-crypto behavior remain open.
+- **OP-28:** original visualization loadAll and parity-page races fixed; finite one-pass bounds, display-only pixel sampling and top-mismatch labels are tested. Seventeen actual Vue lifecycle tests are in-memory component tests, not browser/visual E2E. No FPS or whole-backtest speed claim.
 
-OpenPine runtime head: `ff718ec6ef5b78732abd463b0c4c64e2c8560e3d`.
-Integrated cleanup/progress CI `33982457446`: **2,048 tests passed on Python 3.11 and 2,048 on Python 3.13**, with zero failures, errors or skips. Changed-runtime lint, wheel and sdist builds passed. These are four complete library functional suites plus native/sandbox and selected OpenPine regressions, not every test of all seven libraries.
+Details and migration notes: [RC6_DATA_UI_PUBLICATION_RECEIPT.md](RC6_DATA_UI_PUBLICATION_RECEIPT.md). Pre-publication implementation notes: [RC6_DATA_UI_BLOCK.md](RC6_DATA_UI_BLOCK.md). Current source pins: [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json). Same-version wheels must not be mixed without exact identity admission.
 
-See [RC6_CLEANUP_EXECUTION_BLOCK.md](RC6_CLEANUP_EXECUTION_BLOCK.md) for the six exact source commits, cleanup boundaries, sealed chunk transport, progress, actual counts and CLI input fixes. The transport serialization microbenchmark is explicitly scoped and records its memory tradeoff. The worker policy now explicitly requires msgpack; stale admissions must be rebuilt/re-admitted, not bypassed.
+## Preserved branch state
 
-Previous lifecycle runtime `295a6885f1094676ae1bfdc90631814daa9e8966` passed 1,822 cases per interpreter; see [RC6_LIFECYCLE_BLOCK.md](RC6_LIFECYCLE_BLOCK.md). Historical counts overlap and must not be added. The sibling revisions remain [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json); no sibling repository was modified in the cleanup pass.
+OpenPine still has exactly main, release/v2.17, release/v4.0.2 and release/5.0.0rc6. Maintenance branches are archived as same-name tags before removal. Main/historical releases are not promoted or rewritten. Earlier preservation evidence remains in [RC6_BRANCH_CONSOLIDATION_RECEIPT.md](RC6_BRANCH_CONSOLIDATION_RECEIPT.md) and [RC6_BRANCH_SELECTION.json](RC6_BRANCH_SELECTION.json). Cleanup of all sibling branches is not claimed.
 
-## OP-36 branch preservation
+## Previous verified blocks (historical counts overlap)
 
-[RC6_BRANCH_SELECTION.json](RC6_BRANCH_SELECTION.json) maps 12 source commits to their existing preservation commits and records four intentionally excluded RC5 dependency-only commits. The tested retirement procedure archives original branch tips as tags, verifies source preservation and refuses changed refs. The actual final inventory is recorded by the separate consolidation Actions receipt. Main and historical release heads are not promoted to RC6.
+- [Strategy host publication](RC6_STRATEGY_PUBLICATION_RECEIPT.md): seven commands and 17 scalar values; OP-07 remains limited for exits/risk/indexed methods.
+- [Cleanup / bounded results / progress](RC6_CLEANUP_EXECUTION_BLOCK.md): strict Parquet, no legacy pickle, sealed result chunks, explicit msgpack worker policy, input framing and progress.
+- [Lifecycle integration](RC6_LIFECYCLE_BLOCK.md): fill recalculation, history commit boundaries and rounding/margin transport.
+- [Inputs / optimizer](RC6_INPUTS_BLOCK.md): tested input overrides and effective trial settings.
+- [First publication](RC6_REVIEW_PROGRESS_FIRST_PUBLICATION.md): historical evidence, superseded where later blocks explicitly say so.
 
-## Previous publication records
+## Remaining high-priority acceptance
 
-- [Inputs and optimizer trials](RC6_INPUTS_BLOCK.md): previous 340/189/346 passing suites and source pins.
-- [First publication](RC6_REVIEW_PROGRESS_FIRST_PUBLICATION.md): previous 236-test suite and historical limitations.
-
-Earlier claims that inputs were unimplemented or zero margin was rejected are superseded for the tested paths by these later blocks. Earlier test counts are historical and must not be added to current counts.
-
-## Remaining acceptance
-
-Immutable production deployment, complete request integration, full strategy namespace, genuine checkpoints and state-hash equivalence, comprehensive realtime, UI and full Pine v1-v6 TradingView oracle coverage remain open. Complete configuration provenance and advanced optimizer request/parallel acceptance are not closed. Only input-frame serialization was benchmarked; no whole-backtest speedup or final production release is claimed.
+Actual request.security/security_lower_tf probes still fail with A2P_PINELIB_INJECTION; request expression lowering, child-context execution and data integration must be implemented together. The separate na(strategy.position_avg_price) probe still fails type evidence. Immutable production deployment, full strategy exit/risk/indexed access, checkpoint/state-hash equivalence, whole-run cancellation/backpressure, comprehensive realtime, browser UX and Pine v1-v6 TradingView oracle coverage remain open. No production release or complete 36-task acceptance is claimed.

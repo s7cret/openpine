@@ -1,5 +1,9 @@
 # OP-21 / OP-09 / OP-28 data, chart context and parity UI
 
+## Current status
+
+Published source and verified CI are recorded in [RC6_DATA_UI_PUBLICATION_RECEIPT.md](RC6_DATA_UI_PUBLICATION_RECEIPT.md). Its actual verification results supersede the earlier local-only notes below. OP-21 and OP-09 remain partial; the original OP-28 defects are covered by component/data regressions without claiming browser visual acceptance.
+
 ## Implemented scope
 
 Offline imports now use the provider's strict shared row decoder, explicit UTC timestamp units and explicit missing-volume policy. Parquet input iterates selected columns in bounded batches, without a whole-file intermediate list. Invalid rows are rejected even outside the chosen range or after max_bars. Data is not rewritten. The selected return list still materializes and the full file is scanned; concurrent file-write or immutable snapshot proof is not implemented. See marketdata-provider docs/OFFLINE_INPUT.md for migration notes.
