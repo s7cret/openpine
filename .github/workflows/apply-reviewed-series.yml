@@ -1,131 +1,76 @@
-name: Apply reviewed RC6 series
+name: Verify and publish reviewed RC6 stack
 on:
   push:
     branches: ['ops/rc6-delivery-*']
     paths: ['.github/maintenance/reviewed-series.json']
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: reviewed-rc6-publication
   cancel-in-progress: false
 jobs:
-  publish:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
     steps:
       - uses: actions/checkout@v4
         with:
+          repository: s7cret/pinelib
+          ref: 931252f637c86b3ffe872ceb4a4cda4453eb7da2
+          path: publisher-source
+          sparse-checkout: .github/maintenance/reviewed-publisher.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher-source/.github/maintenance/reviewed-publisher.py "$RUNNER_TEMP/reviewed-publisher.py"
+      - uses: actions/checkout@v4
+        with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-      - name: Reconstruct exact reviewed file objects and separate commits
+          python-version: ${{ matrix.python }}
+      - name: Reconstruct exact reviewed source commits
+        run: python "$RUNNER_TEMP/reviewed-publisher.py" reconstruct "$RUNNER_TEMP/review-evidence" .github/maintenance/reviewed-series.json
+      - name: Install the exact sibling source set
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/review-evidence"
-          cp -R .github/maintenance "$RUNNER_TEMP/review-evidence/submission"
+          python -m pip install setuptools==84.0.0 wheel==0.48.0 hatchling==1.32.0 build==1.6.0
           python - <<'PY'
-          import base64, gzip, hashlib, io, json, os, pathlib, re, subprocess
-          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'review-evidence'
-          submission = json.loads((root / 'submission/reviewed-series.json').read_text())
-          target = submission['target']
-          expected = submission['expected_head']
-          if target != 'release/5.0.0rc6' or not re.fullmatch('[0-9a-f]{40}', expected):
-              raise SystemExit('Only the exact RC6 candidate may be updated')
-          commits = []
-          for name in submission['commits']:
-              if not re.fullmatch(r'reviewed-[0-9]{2}\.json', name):
-                  raise SystemExit('Invalid reviewed commit document')
-              doc = json.loads((root / 'submission' / name).read_text())
-              if 'gzip_base64' in doc:
-                  encoded = doc['gzip_base64']
-                  if not isinstance(encoded, str) or len(encoded) > 2000000:
-                      raise SystemExit('Oversized reviewed submission')
-                  with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(encoded, validate=True))) as stream:
-                      raw = stream.read(2000001)
-                  if len(raw) > 2000000 or hashlib.sha256(raw).hexdigest() != doc['sha256']:
-                      raise SystemExit('Reviewed submission digest mismatch')
-                  doc = json.loads(raw)
-              commits.append(doc)
-          def git(*args, **kw):
-              return subprocess.check_output(['git', *args], **kw)
-          remote = git('ls-remote', 'origin', 'refs/heads/' + target, text=True).split()[0]
-          if remote != expected:
-              raise SystemExit('Target moved; re-review required')
-          subprocess.run(['git', 'checkout', '--detach', expected], check=True)
-          mapping = []
-          for commit in commits:
-              for item in commit['files']:
-                  path = item['path']
-                  parts = pathlib.PurePosixPath(path).parts
-                  if not parts or '..' in parts or path.startswith('/') or parts[0] in {'.git', '.github'}:
-                      raise SystemExit('Unsafe or workflow path in reviewed code series')
-                  if item['mode'] == '000000':
-                      subprocess.run(['git', 'update-index', '--force-remove', '--', path], check=True)
-                      continue
-                  if item['mode'] not in {'100644', '100755'}:
-                      raise SystemExit('Unsupported reviewed file mode')
-                  base = item.get('base')
-                  lines = [] if base is None else git('cat-file', 'blob', base).decode('utf-8').splitlines(keepends=True)
-                  out, cursor = [], 0
-                  for start, end, replacement in item['edits']:
-                      if not (type(start) is int and type(end) is int and cursor <= start <= end <= len(lines)):
-                          raise SystemExit('Invalid reviewed edit interval')
-                      out.extend(lines[cursor:start]); out.append(replacement); cursor = end
-                  out.extend(lines[cursor:])
-                  raw = ''.join(out).encode('utf-8')
-                  calculated = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
-                  if calculated != item['sha']:
-                      raise SystemExit('Reviewed blob mismatch: ' + path)
-                  stored = git('hash-object', '-w', '--stdin', input=raw).decode().strip()
-                  subprocess.run(['git', 'update-index', '--add', '--cacheinfo', item['mode'], stored, path], check=True)
-              tree = git('write-tree', text=True).strip()
-              parent = git('rev-parse', 'HEAD', text=True).strip()
-              env = dict(os.environ, GIT_AUTHOR_NAME=commit['author_name'], GIT_AUTHOR_EMAIL=commit['author_email'],
-                         GIT_AUTHOR_DATE=commit['author_date'], GIT_COMMITTER_NAME='OpenPine Review',
-                         GIT_COMMITTER_EMAIL='openpine-review@users.noreply.github.com')
-              message = commit['message'] + '\n\nReviewed-source-commit: ' + commit['source_commit'] + '\n'
-              new = git('commit-tree', tree, '-p', parent, input=message.encode(), env=env).decode().strip()
-              subprocess.run(['git', 'reset', '--hard', new], check=True)
-              mapping.append({'source_commit': commit['source_commit'], 'published_commit': new, 'tree': tree})
-          (root / 'commit-map.json').write_text(json.dumps(mapping, indent=2) + '\n')
-          (root / 'expected-head').write_text(expected)
-          subprocess.run(['git', 'diff', '--check', expected, 'HEAD'], check=True)
-          subprocess.run(['python', '-m', 'compileall', '-q', 'openpine', 'scripts', 'rc6_tests'], check=True)
-          PY
-      - name: Install exact sibling sources and test dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import os, pathlib, subprocess
+          import json, os, pathlib, re, subprocess
+          evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'review-evidence'
           root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'review-stack'
           root.mkdir()
-          pins = {'openpine-contracts':'904e8f660834a10d3382cd1b2ed7380c24b73072',
-                  'pine2ast':'892fee8c2b0443e702918248f2d2642c877723e7',
-                  'ast2python':'ad1ece63c05270051138523eab290f7ca6cd396e',
-                  'pinelib':'c6eb153b7ed57d7c20293c20077a1b63a2d439da',
-                  'backtest_engine':'7532fb34d7b1586f4a49075d29007d00f45527e1',
-                  'marketdata-provider':'0342759363ebe168f89871a481cb5711a022ee7d',
-                  'optimizer':'5a62efc672a08e05f7443d3b678fa2595249935a'}
+          pins = json.loads((evidence / 'submission.json').read_text())['stack_sources']
+          required = {'openpine-contracts','pine2ast','ast2python','pinelib','backtest_engine','marketdata-provider','optimizer'}
+          if set(pins) != required or not all(re.fullmatch('[0-9a-f]{40}', s) for s in pins.values()):
+              raise SystemExit('Invalid stack source identities')
           paths = []
           for name, sha in pins.items():
               path = root / name
               subprocess.run(['git','clone','--quiet','https://github.com/s7cret/' + name + '.git', str(path)], check=True)
               subprocess.run(['git','-C',str(path),'checkout','--detach',sha], check=True)
+              actual = subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'], text=True).strip()
+              if actual != sha:
+                  raise SystemExit('Source checkout identity mismatch')
               paths.append(str(path))
-          subprocess.run(['python','-m','pip','install',*paths,'.','pytest','pytest-asyncio','httpx','ruff','matplotlib'], check=True)
+          subprocess.run(['python','-m','pip','install',*paths,'.[dev]'], check=True)
+          (evidence / 'source-pins.json').write_text(json.dumps(pins, indent=2) + '\n')
           with open(os.environ['GITHUB_ENV'], 'a') as stream:
               stream.write('PINE_STACK_ROOT=' + str(root) + '\n')
           PY
-      - name: Run complete PineLib and Ast2Python suites against the selected stack
+      - name: Full contracts, runtime, compiler and broker functional suites
         env:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: |
           set -euo pipefail
-          (cd "$PINE_STACK_ROOT/pinelib" && python -m pytest -q --junitxml="$RUNNER_TEMP/review-evidence/pinelib.xml")
-          (cd "$PINE_STACK_ROOT/ast2python" && python -m pytest -q --junitxml="$RUNNER_TEMP/review-evidence/ast2python.xml")
+          for repo in openpine-contracts pinelib ast2python backtest_engine; do
+            (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q --junitxml="$RUNNER_TEMP/review-evidence/$repo.xml")
+          done
       - name: Install sandbox without disabling its protections
         run: |
           sudo apt-get update -qq
@@ -137,7 +82,7 @@ jobs:
           fi
           sudo -n -u openpine-worker -- /usr/bin/id -u
           /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
-      - name: Run native RC6 and selected branch regressions
+      - name: Native RC6, actual sandbox and selected branch regressions
         env:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: |
@@ -155,21 +100,35 @@ jobs:
             tests/test_optimizer_isolated_search.py tests/test_optimizer_search_route.py \
             tests/test_optimizer_semantic_profile.py tests/test_backtest_gateway_market_metadata.py \
             tests/test_backtest_semantic_profile.py tests/test_cli_semantic_profile.py tests/test_bulk_backtest.py \
-            --junitxml="$RUNNER_TEMP/review-evidence/regressions.xml"
-      - name: Fast-forward only the reviewed candidate
-        shell: bash
+            --junitxml="$RUNNER_TEMP/review-evidence/openpine.xml"
+      - name: Build OpenPine and retain environment evidence
         run: |
-          set -euo pipefail
-          expected="$(cat "$RUNNER_TEMP/review-evidence/expected-head")"
-          current="$(git ls-remote origin refs/heads/release/5.0.0rc6 | cut -f1)"
-          test "$expected" = "$current"
-          git push origin HEAD:refs/heads/release/5.0.0rc6
-          git rev-parse HEAD > "$RUNNER_TEMP/review-evidence/published-head"
-          git bundle create "$RUNNER_TEMP/review-evidence/published.bundle" HEAD --branches --tags
+          mkdir -p "$RUNNER_TEMP/build-source"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/build-source"
+          python -m build --no-isolation --outdir "$RUNNER_TEMP/review-evidence/dist" "$RUNNER_TEMP/build-source"
+          python -m pip freeze > "$RUNNER_TEMP/review-evidence/environment.txt"
+          cp "$RUNNER_TEMP/reviewed-publisher.py" "$RUNNER_TEMP/review-evidence/reviewed-publisher.py"
+          git status --porcelain > "$RUNNER_TEMP/review-evidence/post-test-worktree.txt"
+          test -z "$(git status --porcelain --untracked-files=no)"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: reviewed-rc6-publication-${{ github.run_id }}
+          name: reviewed-${{ matrix.python }}-${{ github.run_id }}
           path: ${{ runner.temp }}/review-evidence/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: reviewed-3.13-${{ github.run_id }}
+          path: evidence
+      - name: Fast-forward only the fully verified candidate
+        run: python evidence/reviewed-publisher.py publish evidence
