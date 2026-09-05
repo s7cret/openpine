@@ -933,9 +933,16 @@ class InteractiveWorkerSession:
             if self.proc.stdin is not None:
                 self.proc.stdin.close()
             try:
-                self.proc.wait(timeout=2)
-            except subprocess.TimeoutExpired:
+                return_code = self.proc.wait(timeout=2)
+            except subprocess.TimeoutExpired as error:
                 self._kill()
+                raise IsolatedWorkerError("interactive worker did not exit after FINALIZE") from error
+            except OSError as error:
+                self._kill()
+                raise IsolatedWorkerError("interactive worker exit could not be verified") from error
+            else:
+                if return_code != 0:
+                    raise IsolatedWorkerError(f"interactive worker exited with status {return_code}")
             finally:
                 self._close_pipes()
                 self._closed = True

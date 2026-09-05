@@ -379,6 +379,10 @@ def run_isolated_artifact(
                 execution_context=getattr(config, "execution_context", None),
                 bar_envelopes=getattr(config, "bar_envelopes", None),
             )
+            if getattr(result, "status", None) != "completed":
+                raise IsolatedRunError(
+                    f"interactive engine did not complete: {getattr(result, 'status', None)!r}"
+                )
             isolation = {"protocol": "openpine.worker.protocol.v2"}
     except (IsolatedWorkerError, IntentReplayError) as exc:
         raise IsolatedRunError(str(exc)) from exc
