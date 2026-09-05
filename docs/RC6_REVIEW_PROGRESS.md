@@ -2,11 +2,15 @@
 
 This is a partial implementation ledger, not acceptance of all 36 review tasks or TradingView 1:1 compatibility.
 
-## Local strategy host candidate (not published)
+## Latest published and CI-verified strategy block
 
-[RC6_STRATEGY_HOST_BLOCK.md](RC6_STRATEGY_HOST_BLOCK.md) records the new OP-07/OP-20 code, exact local engine dependency and 1,782 passing local cases on Python 3.13.5. The write tool blocked publication. Seven real-process cases (including two new) still require CI; do not treat this candidate as the published or fully accepted release. The source pin file in this local candidate includes the unpublished engine commit.
+OpenPine code commit: `325b2be8b0d320a1c30651094545ef5d50bbc249`.
+Backtest Engine code head: `70dd7ccfecaabafa3000d359770305acb32c8b9e`.
+The three original local commits are now published with unchanged SHAs in their RC6 branches. Joint CI `33987487240` passed **2,163 cases on Python 3.11 and 2,163 on Python 3.13**, including the real protected workers, with zero failures, errors or skips. Lint, compilation and wheel/sdist builds passed. The seven previously unrun local process cases are included in this CI.
 
-## Last published and CI-verified runtime block
+[RC6_STRATEGY_PUBLICATION_RECEIPT.md](RC6_STRATEGY_PUBLICATION_RECEIPT.md) records the publication, exact code identities, test scope and archive evidence. [RC6_STRATEGY_HOST_BLOCK.md](RC6_STRATEGY_HOST_BLOCK.md) describes the implemented OP-07/OP-20 scope and remaining limitations. The matching engine source is now available in GitHub; install the source pins together. This is verified partial functionality, not completion of all strategy semantics or a production release.
+
+## Previous cleanup/progress publication
 
 OpenPine runtime head: `ff718ec6ef5b78732abd463b0c4c64e2c8560e3d`.
 Integrated cleanup/progress CI `33982457446`: **2,048 tests passed on Python 3.11 and 2,048 on Python 3.13**, with zero failures, errors or skips. Changed-runtime lint, wheel and sdist builds passed. These are four complete library functional suites plus native/sandbox and selected OpenPine regressions, not every test of all seven libraries.

@@ -1,10 +1,10 @@
-# OP-07 / OP-20 — native strategy host candidate (2026-09-05)
+# OP-07 / OP-20 — native strategy host (2026-09-05)
 
 ## Status
 
-This is a **locally tested, not yet published** candidate. GitHub writes were blocked by the tool before branch publication. The remote OpenPine RC6 head remains `0b8b48e2463f7a66330276594a008f2bee37a99d`; no main/historical release update or branch cleanup was performed in this pass.
+**Published and jointly verified.** The local code commit `325b2be8b0d320a1c30651094545ef5d50bbc249` is now in OpenPine RC6, and engine commits `5898f30f976a2bb17df4b3dbd8c738de8a4e83ac` and `70dd7ccfecaabafa3000d359770305acb32c8b9e` are in Backtest Engine RC6. Original source SHAs and code were preserved. Joint CI passed on Python 3.11/3.13 with real protected workers. See [RC6_STRATEGY_PUBLICATION_RECEIPT.md](RC6_STRATEGY_PUBLICATION_RECEIPT.md) for results and branch receipts.
 
-Required engine candidate: `70dd7ccfecaabafa3000d359770305acb32c8b9e`, based on `48520cec7e2dafc5755a2e003b1ebf9f48b2163a`. The engine candidate contains a separate OP-20 commit `5898f30f976a2bb17df4b3dbd8c738de8a4e83ac` and an OP-07 bridge commit. Install the included engine source with this OpenPine candidate; the engine candidate is not currently fetchable from the remote release branch.
+The earlier publication-blocked wording in the original commit message is historical; it is not the current status. The source pin file now references a published engine commit. No main or historical release was changed.
 
 ## Implemented
 
@@ -26,9 +26,9 @@ Alert message/disable metadata is retained in intent records; external alert del
 
 A separate existing compiler probe `na(strategy.position_avg_price)` fails with `S4_CALL_ARGUMENT_TYPE_EVIDENCE`; this block does not fix that lowering/type-evidence path. The scalar snapshot test verifies flat-position `na`, while actual compiled Pine tests use the average price after entry. No claim is made that all combinations of scalar expressions compile.
 
-## Local verification
+## Historical local verification before publication
 
-Python **3.13.5**, exact sibling sources recorded in `RC6_LIFECYCLE_SOURCES.json`:
+The following is the original pre-publication record. The later joint CI supersedes its publication and process-verification status, not the documented functionality limits. Python **3.13.5**, exact sibling sources recorded in `RC6_LIFECYCLE_SOURCES.json`:
 
 | Suite | Passed |
 | --- | ---: |
