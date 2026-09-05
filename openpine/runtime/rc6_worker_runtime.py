@@ -7,7 +7,6 @@ import dataclasses
 import hashlib
 import inspect
 import json
-import re
 import sys
 from collections.abc import Mapping
 from copy import deepcopy
@@ -25,6 +24,7 @@ from backtest_engine.core.intent_replay import IntentReplayIdentity
 from backtest_engine.core.strategy_capabilities import (
     strategy_values_from_projection, strategy_values_from_state,
 )
+from marketdata_provider.timeframes import to_pine_timeframe
 from openpine_contracts import (
     ExecutionEvent,
     aggregate_batch_hash,
@@ -416,11 +416,9 @@ class RC6GeneratedScriptSession:
 
 
 def _pine_timeframe(value: object) -> str:
-    text = str(value).strip()
-    minute = re.fullmatch(r"([1-9][0-9]*)m", text)
-    if minute is not None:
-        return minute.group(1)
-    return text
+    if type(value) is not str:
+        raise ValueError("provider timeframe must be a string")
+    return to_pine_timeframe(value)
 
 
 def _session_from_request(
@@ -459,6 +457,7 @@ def _session_from_request(
             timezone=str(context["timezone"]),
             instrument_type="crypto",
             mintick=float(context["mintick"]),
+            pointvalue=float(context["pointvalue"]),
         ),
         timeframe=TimeframeContext.parse(_pine_timeframe(context["timeframe"])),
         identity=IntentReplayIdentity(
