@@ -13,10 +13,14 @@ jobs:
   environment:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.13']
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
       - name: Resolve third-party verification dependencies
         shell: bash
         run: |
@@ -53,7 +57,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: rc6-offline-environment-py311-${{ github.sha }}
+          name: rc6-offline-environment-py${{ matrix.python-version }}-${{ github.sha }}
           path: wheelhouse/
           compression-level: 0
           if-no-files-found: error
