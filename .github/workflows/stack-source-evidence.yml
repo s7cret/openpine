@@ -1,0 +1,65 @@
+name: Stack source evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['release/5.0.0rc6']
+    paths: ['.github/workflows/stack-source-evidence.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  source-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Preserve exact source histories and reference inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence mirrors
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          repos = ['openpine', 'openpine-contracts', 'pine2ast', 'ast2python',
+                   'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer']
+          manifest = {'schema_version': 1, 'purpose': 'source evidence, not release approval',
+                      'openpine_trigger_sha': os.environ['GITHUB_SHA'], 'repositories': []}
+          for name in repos:
+              mirror = pathlib.Path('mirrors') / (name + '.git')
+              subprocess.run(['git', 'clone', '--mirror',
+                              'https://github.com/s7cret/' + name + '.git', str(mirror)],
+                             check=True)
+              bundle = (pathlib.Path('evidence') / (name + '.bundle')).resolve()
+              subprocess.run(['git', '-C', str(mirror), 'bundle', 'create', str(bundle), '--all'],
+                             check=True)
+              subprocess.run(['git', '-C', str(mirror), 'bundle', 'verify', str(bundle)], check=True)
+              refs = subprocess.check_output(
+                  ['git', '-C', str(mirror), 'for-each-ref', '--format=%(refname) %(objectname)'],
+                  text=True).splitlines()
+              digest = hashlib.sha256()
+              with bundle.open('rb') as stream:
+                  for chunk in iter(lambda: stream.read(1048576), b''):
+                      digest.update(chunk)
+              manifest['repositories'].append({'repository': 's7cret/' + name,
+                                                'bundle': bundle.name,
+                                                'sha256': digest.hexdigest(), 'refs': refs})
+          pathlib.Path('evidence/source-manifest.json').write_text(
+              json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stack-source-evidence-${{ github.sha }}
+          path: evidence/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
