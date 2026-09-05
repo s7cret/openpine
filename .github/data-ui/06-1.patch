@@ -1,0 +1,44 @@
+diff --git a/openpine-ui/src/components/TvParityVisualization.race.test.ts b/openpine-ui/src/components/TvParityVisualization.race.test.ts
+index 38d5d4cc35e94a1c2c07b0c620e83a562ff59c62..873a518fc62f23d417d319117dd1b65885c78d7a 100644
+--- a/openpine-ui/src/components/TvParityVisualization.race.test.ts
++++ b/openpine-ui/src/components/TvParityVisualization.race.test.ts
+@@ -1,6 +1,6 @@
+ /** Actual component setup lifecycle; no browser layout or canvas pixels are simulated. */
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import { createRenderer, h, nextTick, ref } from 'vue'
++import { createRenderer, h, nextTick, ref, ssrContextKey } from 'vue'
+ import Visualization from './TvParityVisualization.vue'
+ 
+ const api = vi.hoisted(() => ({ getTvParityChartData: vi.fn(), getTvParitySummaryCards: vi.fn(),
+@@ -25,6 +25,9 @@ async function mount(id='A') {
+   const run = ref(id)
+   const component = {...Visualization,render:()=>null}
+   const app = renderer.createApp({setup:()=>()=>h(component,{runId:run.value})})
++  // Vitest's Node transform registers SFC module IDs in the SSR context.
++  // Custom rendering still runs the real client setup and lifecycle hooks.
++  app.provide(ssrContextKey, { modules: new Set<string>() })
+   const vm = app.mount({})
+   unmount=()=>{app.unmount();unmount=()=>{}}
+   const state=(vm as any).$.subTree.component.setupState
+diff --git a/openpine-ui/src/pages/TvParity.race.test.ts b/openpine-ui/src/pages/TvParity.race.test.ts
+index 3d02e7c9e9da4eb60fa7454956f1b781dd368242..c0e03f68a6c2e7610c919b335971635a22120797 100644
+--- a/openpine-ui/src/pages/TvParity.race.test.ts
++++ b/openpine-ui/src/pages/TvParity.race.test.ts
+@@ -1,6 +1,6 @@
+ /** Real Vue setup/watch/unmount lifecycle with an in-memory renderer, not a browser test. */
+ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+-import { createRenderer, nextTick } from 'vue'
++import { createRenderer, nextTick, ssrContextKey } from 'vue'
+ import TvParity from './TvParity.vue'
+ 
+ const api = vi.hoisted(() => ({
+@@ -47,6 +47,9 @@ let unmount: () => void
+ async function mount() {
+   // Keep actual setup/watch/unmount; DOM directives and visual layout are not under test.
+   const app = renderer.createApp({ ...TvParity, render: () => null })
++  // Vitest's Node transform registers SFC module IDs in the SSR context.
++  // Custom rendering still runs the real client setup and lifecycle hooks.
++  app.provide(ssrContextKey, { modules: new Set<string>() })
+   const vm = app.mount(node())
+   unmount = () => app.unmount()
+   await flush()
