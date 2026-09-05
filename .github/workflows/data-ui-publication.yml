@@ -155,12 +155,12 @@ jobs:
       - name: Complete unit and Vue lifecycle tests
         working-directory: openpine-ui
         run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/evidence/ui.xml"
-      - name: Node regressions
-        working-directory: openpine-ui
-        run: npm run test:node | tee "$RUNNER_TEMP/evidence/ui-node.log"
       - name: Type check and production frontend build
         working-directory: openpine-ui
         run: npm run build | tee "$RUNNER_TEMP/evidence/ui-build.log"
+      - name: Node regressions against the actual production build
+        working-directory: openpine-ui
+        run: npm run test:node | tee "$RUNNER_TEMP/evidence/ui-node.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

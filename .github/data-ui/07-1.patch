@@ -1,0 +1,15 @@
+diff --git a/.github/workflows/rc6-ui.yml b/.github/workflows/rc6-ui.yml
+index e737e5bc16ce16a71d292c408ad89c877ac0a2d2..e55c542cbaf1e736984a175aa4bc02888469f32a 100644
+--- a/.github/workflows/rc6-ui.yml
++++ b/.github/workflows/rc6-ui.yml
+@@ -29,8 +29,9 @@ jobs:
+           cache-dependency-path: openpine-ui/package-lock.json
+       - run: npm ci
+       - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
+-      - run: npm run test:node
++      # Production-package regressions consume the actual built dist tree.
+       - run: npm run build
++      - run: npm run test:node
+       - uses: actions/upload-artifact@v4
+         if: always()
+         with:
