@@ -106,10 +106,14 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
         ]
     )
     orchestrator = _Orchestrator()
+    consumed = []
     fetcher = PeriodicBarFetcher(
         config=RefreshConfig(lookback_bars=2),
         registry=registry,
         orchestrator=orchestrator,
+        on_bars_refreshed=lambda key, bars: consumed.append(
+            (key, [bar.time for bar in bars])
+        ),
     )
 
     monkeypatch.setattr(
@@ -156,6 +160,8 @@ def test_periodic_fetcher_fetches_once_per_stream_key(monkeypatch) -> None:
         1_699_995_600_000,
     ]
     assert not orchestrator.closed
+    assert [item[0].symbol for item in consumed] == ["BTCUSDT", "SOLUSDT"]
+    assert all(times for _key, times in consumed)
 
 
 def test_periodic_fetcher_uses_injected_orchestrator_provider(monkeypatch) -> None:

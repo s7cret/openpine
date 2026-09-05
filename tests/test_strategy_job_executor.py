@@ -142,6 +142,50 @@ def _runtime_result(bar: Bar):
     )
 
 
+def test_target_bar_load_normalizes_inclusive_close_to_exclusive_query_end() -> None:
+    timeframe = parse_timeframe("15m")
+    bar = Bar(
+        instrument=InstrumentKey(
+            exchange="binance", market="spot", symbol="BTCUSDT"
+        ),
+        timeframe=timeframe,
+        time=0,
+        time_close=(timeframe.duration_ms or 0) - 1,
+        open=100.0,
+        high=110.0,
+        low=90.0,
+        close=105.0,
+        volume=42.0,
+        closed=True,
+    )
+    captured = []
+
+    class InclusiveStore:
+        def get_bars(self, query):
+            captured.append(query)
+            return [bar] if query.end_ms == timeframe.duration_ms else []
+
+    executor = StrategyJobExecutor(
+        registry=_Registry(_strategy()),
+        orchestrator=InclusiveStore(),
+        scheduler=JobScheduler(),
+        state_store=SimpleNamespace(),
+    )
+
+    loaded = executor._load_target_bar(
+        _strategy(),
+        {
+            "instrument_key": "binance:spot:BTCUSDT:trade",
+            "timeframe": "15m",
+            "bar_time": bar.time,
+            "bar_close_time": bar.time_close,
+        },
+    )
+
+    assert loaded is bar
+    assert captured[0].end_ms == timeframe.duration_ms
+
+
 def _storage(tmp_path):
     storage = SQLiteStorage(tmp_path / "openpine.sqlite")
     MigrationRunner().run_migrations(storage)
@@ -149,7 +193,7 @@ def _storage(tmp_path):
 
 
 def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(
-    tmp_path,
+    tmp_path, monkeypatch,
 ) -> None:
     bar = _bar()
     scheduler = JobScheduler()
@@ -167,6 +211,7 @@ def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(
             runtime_adapter=adapter,
         )
         executor._stamped_sources[("pine-1", "artifact-1")] = b"generated"
+        monkeypatch.setattr(executor, "_bind_isolated_config", lambda *args: None)
 
         result = executor.process(job)
 
@@ -176,6 +221,7 @@ def test_strategy_job_executor_processes_bar_and_saves_snapshot_and_ledger(
         assert scheduler.get_job(job.id).status == JobStatus.DONE
         assert adapter.calls[0][0] == b"generated"
         assert adapter.calls[0][3]["resume_state"] is None
+        assert adapter.calls[0][3]["params"] == {"length": 20}
         position = ledger.get_position(
             strategy_id="strategy-1",
             exchange="binance",
@@ -228,7 +274,7 @@ def test_strategy_job_executor_skips_already_processed_bar(tmp_path) -> None:
     assert adapter.calls == []
 
 
-def test_strategy_job_executor_marks_failed_without_snapshot(tmp_path) -> None:
+def test_strategy_job_executor_marks_failed_without_snapshot(tmp_path, monkeypatch) -> None:
     bar = _bar()
     scheduler = JobScheduler()
     job = scheduler.enqueue(_job(bar))
@@ -241,6 +287,7 @@ def test_strategy_job_executor_marks_failed_without_snapshot(tmp_path) -> None:
         runtime_adapter=_RuntimeAdapter(error=RuntimeError("boom")),
     )
     executor._stamped_sources[("pine-1", "artifact-1")] = b"generated"
+    monkeypatch.setattr(executor, "_bind_isolated_config", lambda *args: None)
 
     result = executor.process(job)
 
@@ -251,7 +298,7 @@ def test_strategy_job_executor_marks_failed_without_snapshot(tmp_path) -> None:
 
 
 def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(
-    tmp_path,
+    tmp_path, monkeypatch,
 ) -> None:
     bar = _bar()
     scheduler = JobScheduler()
@@ -270,6 +317,7 @@ def test_strategy_job_executor_observe_mode_saves_snapshot_without_ledger(
             runtime_adapter=adapter,
         )
         executor._stamped_sources[("pine-1", "artifact-1")] = b"generated"
+        monkeypatch.setattr(executor, "_bind_isolated_config", lambda *args: None)
 
         result = executor.process(job)
 
@@ -325,10 +373,17 @@ def test_delegated_job_loads_all_mtf_series_from_payload(monkeypatch, tmp_path) 
 
     class Adapter:
         def run_isolated(
-            self, source, bars, config, resume_state=None, htf_bars=None
+            self,
+            source,
+            bars,
+            config,
+            resume_state=None,
+            htf_bars=None,
+            params=None,
         ):
             seen["source"] = source
             seen["htf_bars"] = htf_bars
+            seen["params"] = params
             return _runtime_result(bar)
 
     monkeypatch.setattr(
@@ -342,12 +397,14 @@ def test_delegated_job_loads_all_mtf_series_from_payload(monkeypatch, tmp_path) 
         state_store=StateStore(tmp_path / "state"),
         runtime_adapter=Adapter(),
     )
+    monkeypatch.setattr(executor, "_bind_isolated_config", lambda *args: None)
 
     result = executor.process(job)
 
     assert result.status == StrategyJobStatus.DONE
     assert loaded == [("BTCUSDT", "1D"), ("ETHUSDT", "4h")]
     assert seen["source"] == b"STAMPED"
+    assert seen["params"] == {"length": 20}
     assert {
         (item["symbol"], item["timeframe"])
         for item in seen["htf_bars"]

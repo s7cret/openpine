@@ -257,6 +257,8 @@ def test_data_ticker24h_is_computed_from_provider_bars(monkeypatch):
     query = orchestrator.queries[0]
     assert query.instrument.exchange == 'bybit'
     assert query.timeframe.canonical == '1h'
+    assert query.end_ms % 3_600_000 == 0
+    assert query.end_ms - query.start_ms == 24 * 60 * 60 * 1000
 
 
 def test_data_provider_chart_error_branches(monkeypatch):

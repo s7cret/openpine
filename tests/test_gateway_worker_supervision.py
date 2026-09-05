@@ -23,6 +23,7 @@ from openpine.gateway.worker_supervisor import (
     worker_accepts_strategy_activation,
     worker_runtime_snapshot,
 )
+from openpine.jobs import JobType
 from openpine.registry.strategies import SQLiteStrategyRegistry, WorkerCircuitOpenError
 from tests.admission_helpers import STACK_HASH, make_deployment_identity
 
@@ -95,6 +96,42 @@ async def _eventually(predicate, *, timeout: float = 1.0) -> None:
     async with asyncio.timeout(timeout):
         while not predicate():
             await asyncio.sleep(0.001)
+
+
+def test_background_strategy_dispatch_executes_paper_and_blocks_live() -> None:
+    paper = SimpleNamespace(
+        id="paper-job",
+        strategy_id="paper-strategy",
+        job_type=JobType.PAPER_BAR_PROCESS,
+    )
+    live = SimpleNamespace(
+        id="live-job",
+        strategy_id="live-strategy",
+        job_type=JobType.LIVE_BAR_PROCESS,
+    )
+    fanout = SimpleNamespace(
+        process_source_bar=lambda _bar: SimpleNamespace(jobs=(paper, live))
+    )
+    processed = []
+    failed = []
+    executor = SimpleNamespace(
+        process=lambda job: processed.append(job.id)
+        or SimpleNamespace(status="done", strategy_id=job.strategy_id, error=None)
+    )
+    scheduler = SimpleNamespace(
+        mark_failed=lambda job_id, error: failed.append((job_id, error))
+    )
+
+    server._process_refreshed_strategy_bars(
+        fanout=fanout,
+        executor=executor,
+        scheduler=scheduler,
+        market_key="binance:spot:SOLUSDT:trade",
+        bars=[object()],
+    )
+
+    assert processed == ["paper-job"]
+    assert failed == [("live-job", "LIVE_RC_BLOCKED")]
 
 
 @pytest.mark.asyncio

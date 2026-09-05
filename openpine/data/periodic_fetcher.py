@@ -9,6 +9,7 @@ from __future__ import annotations
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -76,12 +77,14 @@ class PeriodicBarFetcher:
         config: RefreshConfig | None = None,
         registry: SQLiteStrategyRegistry | None = None,
         orchestrator: DataOrchestrator | None = None,
+        on_bars_refreshed: Callable[[RawMarketKey, list[Bar]], None] | None = None,
     ) -> None:
         self.config = config or RefreshConfig()
         self.registry = registry or SQLiteStrategyRegistry()
         self.orchestrator = orchestrator or DataOrchestrator(
             provider=create_local_marketdata_provider_adapter()
         )
+        self.on_bars_refreshed = on_bars_refreshed
 
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
@@ -276,6 +279,8 @@ class PeriodicBarFetcher:
                 source_timeframe=timeframe,
                 target_timeframes=target_timeframes,
             )
+            if self.on_bars_refreshed is not None:
+                self.on_bars_refreshed(key, bars)
         else:
             log.debug(
                 "periodic_fetcher.no_new_bars",
