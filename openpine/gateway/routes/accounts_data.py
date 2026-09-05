@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from marketdata_provider import search_symbols
+from marketdata_provider import next_open_time_ms, search_symbols
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
 from marketdata_provider.errors import MarketDataError
 
@@ -563,20 +563,35 @@ async def refresh_data_series(
     from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
     tf = parse_timeframe(str(series["timeframe"]))
-    duration_ms = tf.duration_ms or 60_000
     now_ms = int(time.time() * 1000)
-    start_ms = max(0, int(series["latest_ms"]) + duration_ms)
-    refresh_end_ms = min(now_ms, start_ms + duration_ms * _DATA_REFRESH_MAX_BARS)
+    latest_ms = int(series["latest_ms"])
     before_ranges = len(series.get("ranges") or [])
-    if (
-        int(series["latest_ms"]) + duration_ms >= now_ms
-        and series.get("status") == "actual"
-    ):
+    if latest_ms >= now_ms:
+        return {
+            "status": "actual",
+            "bars_loaded": 0,
+            "from_ms": latest_ms,
+            "to_ms": now_ms,
+            "latest_ms": latest_ms,
+            "coverage_ranges_before": before_ranges,
+            "coverage_ranges_after": before_ranges,
+            "message": "Series already actual",
+            "series": series,
+        }
+    start_ms = next_open_time_ms(latest_ms, tf.canonical)
+    refresh_end_ms = start_ms
+    for _ in range(_DATA_REFRESH_MAX_BARS):
+        candidate_end_ms = next_open_time_ms(refresh_end_ms, tf.canonical)
+        if candidate_end_ms > now_ms:
+            break
+        refresh_end_ms = candidate_end_ms
+    remaining = next_open_time_ms(refresh_end_ms, tf.canonical) <= now_ms
+    if start_ms >= refresh_end_ms:
         return {
             "status": "actual",
             "bars_loaded": 0,
             "from_ms": start_ms,
-            "to_ms": now_ms,
+            "to_ms": refresh_end_ms,
             "latest_ms": series.get("latest_ms"),
             "coverage_ranges_before": before_ranges,
             "coverage_ranges_after": before_ranges,
@@ -604,7 +619,7 @@ async def refresh_data_series(
         "coverage_complete": bool(getattr(loaded.coverage, "is_complete", False)),
         "from_ms": start_ms,
         "to_ms": refresh_end_ms,
-        "remaining": refresh_end_ms < now_ms,
+        "remaining": remaining,
         "latest_ms": refreshed.get("latest_ms"),
         "coverage_ranges_before": before_ranges,
         "coverage_ranges_after": len(refreshed.get("ranges") or []),
