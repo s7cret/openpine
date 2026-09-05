@@ -2,33 +2,39 @@
 
 This ledger records implemented and verified scopes, not completion of all 36 review tasks or TradingView 1:1 compatibility.
 
-## Latest published request / checkpoint / capability block
+## Latest verified continuation
 
-OpenPine runtime head: `53f0c2d6da67bf364e0962fb50a7107571182427`.
-Joint CI and publication `33998764352`: **3,246 Python cases per interpreter (3.11 and 3.13), 152 Vitest cases and 22 Node cases**, all passing. Four new actual protected-worker request cases ran. OpenPine wheel/sdist and frontend production builds passed. The first five library functional suites are complete; provider excludes five live-network cases, and OpenPine uses native plus selected regressions. No complete standalone optimizer/coverage/oracle acceptance is claimed.
+Code head: `0ab826a7a71a6010f0eed680405cdc36b68bc88a`.
+Permanent read-only CI `33999714708` passed **3,277 Python cases per interpreter (3.11/3.13), 152 Vitest cases and 22 Node cases**. Actual protected worker tests, OpenPine wheel/sdist, TypeScript and production UI builds passed. The new OP-04 commit prevents finite nonzero canonical decimals from silently becoming zero in both worker paths and request preloads, with 31 additional regressions. Genuine zero and representable subnormals remain valid.
 
-[RC6_REQUESTS_CHECKPOINT_PUBLICATION.md](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md) records the six exact OpenPine commits, published sibling pins, artifact digests and remaining limits. Both earlier blockers, A2P_PINELIB_INJECTION and na(strategy.position_avg_price) type evidence, are resolved for the documented supported subset. The former unconfirmed-publication status is superseded by actual joint CI, publication receipts and fresh remote reads.
+See [RC6_NUMERIC_REQUEST_VERIFICATION.md](RC6_NUMERIC_REQUEST_VERIFICATION.md) for exact test scope, artifact digests and unresolved diagnostics. A separate local standalone optimizer containment probe failed and remains unaccepted. The frontend install reported one high and one low dependency vulnerability, not investigated here. Functional CI success is not a complete optimizer, security or release gate. This ledger update is documentation only.
 
-- OP-08: independent compiled source expressions, typed lower-TF arrays, explicit snapshot admission, static preflight and no-lookahead causality tests. Automatic UI/CLI series discovery, nested/UDF and live requests remain open.
-- OP-10: real generated-state export, atomic restore, NA round-trip and receipt-derived counters. Full isolated-process broker/IPC resume remains open; v1 generated envelopes without receipts are rejected.
+## Preserved request / checkpoint / capability block
+
+The six source commits through `53f0c2d6da67bf364e0962fb50a7107571182427` are already published; the numeric continuation does not replace them with the older recovery copy. Their original joint verification/publication `33998764352` passed 3,246 Python cases per interpreter, 152 Vitest and 22 Node cases. Historical counts overlap the current suite and must not be added.
+
+[RC6_REQUESTS_CHECKPOINT_PUBLICATION.md](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md) records exact source commits, sibling pins, publication receipts and limits. Both former blockers, A2P_PINELIB_INJECTION and na(strategy.position_avg_price) type evidence, are resolved for the documented supported subset.
+
+- OP-08: independent source expressions, typed lower-TF arrays, explicit snapshot admission, static preflight and no-lookahead causality tests. Automatic UI/CLI data loading, nested/UDF and live requests remain open.
+- OP-10: real generated-state export, atomic restore, NA round-trip and receipt-derived counters. Full broker/IPC/process resume remains open; v1 generated envelopes without receipts are rejected.
 - OP-14: request/NA/array type and version bindings are improved, not the entire Pine v1-v6 catalog.
-- OP-15: worker advertises and negotiates actual closed-bar support, not unimplemented checkpoint resume. The full producer/compiler/runtime/host capability graph is not closed.
+- OP-15: worker negotiates implemented closed-bar support, not unimplemented checkpoint resume. The full cross-library capability graph remains open.
 
-Update all pinned sources together using [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json), and recompile artifacts against the new target manifest. Same version strings do not establish identical code. The retained read-only native CI now includes complete Pine2AST verification and new request/checkpoint/capability lint paths; runtime and UI code are unchanged by this ledger/CI update.
+Update the exact source set in [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json) together and recompile artifacts against the target manifest. Identical version strings alone are insufficient.
 
-## Preserved branch state
+## Branch preservation
 
-OpenPine still has main, release/v2.17, release/v4.0.2 and release/5.0.0rc6. The completed request publication archived its temporary branch as a same-name tag before removal. Main and historical release heads were untouched. Earlier preservation evidence remains in [RC6_BRANCH_CONSOLIDATION_RECEIPT.md](RC6_BRANCH_CONSOLIDATION_RECEIPT.md) and [RC6_BRANCH_SELECTION.json](RC6_BRANCH_SELECTION.json). Cleanup of all sibling branches is not claimed.
+The four branches remain main, release/v2.17, release/v4.0.2 and release/5.0.0rc6. Main/historical heads were untouched. Completed maintenance history is retained in same-name archive tags. Earlier evidence remains in [RC6_BRANCH_CONSOLIDATION_RECEIPT.md](RC6_BRANCH_CONSOLIDATION_RECEIPT.md) and [RC6_BRANCH_SELECTION.json](RC6_BRANCH_SELECTION.json). Cleanup of every sibling repository is not claimed.
 
-## Previous verified blocks (historical counts overlap)
+## Previous blocks
 
-- [Data and UI publication](RC6_DATA_UI_PUBLICATION_RECEIPT.md): strict offline input, chart timeframe/pointvalue, stale-response protection and display-only downsampling. Its request-compilation failure notes are historical and superseded by the new request block.
-- [Strategy host publication](RC6_STRATEGY_PUBLICATION_RECEIPT.md): seven commands and 17 scalar values; exits/risk/indexed methods remain partial.
-- [Cleanup / bounded results / progress](RC6_CLEANUP_EXECUTION_BLOCK.md): strict Parquet, no legacy pickle, sealed result chunks, explicit msgpack worker policy, input framing and progress.
-- [Lifecycle integration](RC6_LIFECYCLE_BLOCK.md): fill recalculation, history commit boundaries and rounding/margin transport.
-- [Inputs / optimizer](RC6_INPUTS_BLOCK.md): tested input overrides and effective trial settings.
-- [First publication](RC6_REVIEW_PROGRESS_FIRST_PUBLICATION.md): historical evidence, superseded where later blocks explicitly say so.
+- [Data/UI](RC6_DATA_UI_PUBLICATION_RECEIPT.md): strict offline input, metadata and stale-response/display fixes; its request failure notes are historical.
+- [Strategy host](RC6_STRATEGY_PUBLICATION_RECEIPT.md): seven commands and 17 scalar values; advanced exits/risk/indexed methods remain partial.
+- [Cleanup/results/progress](RC6_CLEANUP_EXECUTION_BLOCK.md): real Parquet, sealed result chunks, explicit codec policy and progress.
+- [Lifecycle](RC6_LIFECYCLE_BLOCK.md): fill recalculation, history boundaries and margin/rounding transport.
+- [Inputs/optimizer](RC6_INPUTS_BLOCK.md): tested overrides and trial settings.
+- [First publication](RC6_REVIEW_PROGRESS_FIRST_PUBLICATION.md): historical evidence, superseded only where stated.
 
-## Remaining high-priority acceptance
+## Open acceptance
 
-Automatic requested-series loading, unsupported request forms/live data, full strategy exit/trailing/risk/indexed access, full-job recovery, immutable production delivery, cancellation/backpressure, complete version-specific signatures and capability coverage, browser UX and Pine v1-v6 TradingView oracle coverage remain open. No full 36-task acceptance, whole-backtest speedup or production release is claimed.
+Automatic and advanced requests, full strategy namespace, full-job recovery, immutable deployment, cancellation/backpressure, complete language signatures/capabilities, standalone optimizer, dependency audit, browser UX and external Pine v1-v6 TradingView oracle coverage remain open. No complete 36-task acceptance, measured whole-backtest speedup or production release is claimed.
