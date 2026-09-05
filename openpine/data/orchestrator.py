@@ -24,6 +24,7 @@ from marketdata_provider.contracts import (
     CoverageReport,
     StoreResult,
 )
+from marketdata_provider.errors import MDValidationError
 
 from openpine.config import DEFAULT_CONFIG
 from openpine.data.models import CandleCommitResult, DataGap
@@ -369,9 +370,18 @@ class DataOrchestrator:
 
     def _load_storage(self, query: BarQuery, *, require_complete: bool) -> LoadedBarSeries:
         try:
-            series = _canonical_series(
-                self._store.read(query), query, source="storage"
-            )
+            try:
+                payload = self._store.read(query)
+            except MDValidationError as exc:
+                if str(exc) != "provider_revision is unavailable for an empty snapshot":
+                    raise
+                series: LoadedBarSeries = BarSeries(
+                    query=query,
+                    bars=(),
+                    coverage=_coverage_for(query, (), "storage"),
+                )
+            else:
+                series = _canonical_series(payload, query, source="storage")
         except Exception as exc:
             raise StorageUnavailableError(str(exc)) from exc
         self._validator.validate(series, allow_gaps=True)

@@ -11,6 +11,7 @@ from marketdata_provider.contracts import (
     StoreResult,
     parse_timeframe,
 )
+from marketdata_provider.errors import MDValidationError
 from openpine.data.orchestrator import (
     DataOrchestrator,
     IncompleteCoverageError,
@@ -81,6 +82,14 @@ class _Storage:
 
     def coverage(self, query: BarQuery) -> CoverageReport:
         return self.read(query).coverage
+
+
+class _EmptyStorageReadFails(_Storage):
+    def read(self, query: BarQuery) -> BarSeries:
+        raise MDValidationError("provider_revision is unavailable for an empty snapshot")
+
+    def coverage(self, query: BarQuery) -> CoverageReport:
+        raise MDValidationError("provider_revision is unavailable for an empty snapshot")
 
 
 class _Provider:
@@ -180,6 +189,19 @@ def test_auto_fetches_provider_persists_and_merges_when_storage_incomplete() -> 
     ]
     assert [[bar.time for bar in write] for write in storage.writes] == [
         [60_000, 120_000]
+    ]
+
+
+def test_auto_skips_unsealable_empty_storage_snapshot() -> None:
+    storage = _EmptyStorageReadFails()
+    provider = _Provider((_bar(0), _bar(60_000), _bar(120_000)))
+    orchestrator = DataOrchestrator(candle_store=storage, provider=provider)
+
+    series = orchestrator.load_bars(_query(source="auto"))
+
+    assert [bar.time for bar in series.bars] == [0, 60_000, 120_000]
+    assert [(call.start_ms, call.end_ms) for call in provider.calls] == [
+        (0, 180_000),
     ]
 
 
