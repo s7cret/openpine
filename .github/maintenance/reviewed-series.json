@@ -1,5 +1,8 @@
 {
   "target": "release/5.0.0rc6",
-  "expected_head": "b4621601b91d4186ae62b3f53245e67642264581",
-  "commits": ["reviewed-21.json", "reviewed-22.json", "reviewed-23.json"]
+  "expected_head": "30cce7666d649e02861af225f3445f7f40470927",
+  "commits": [
+    "reviewed-24.json",
+    "reviewed-25.json"
+  ]
 }

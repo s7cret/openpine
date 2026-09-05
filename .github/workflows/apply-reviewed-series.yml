@@ -26,7 +26,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/review-evidence"
           cp -R .github/maintenance "$RUNNER_TEMP/review-evidence/submission"
           python - <<'PY'
-          import hashlib, json, os, pathlib, re, subprocess
+          import base64, gzip, hashlib, io, json, os, pathlib, re, subprocess
           root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'review-evidence'
           submission = json.loads((root / 'submission/reviewed-series.json').read_text())
           target = submission['target']
@@ -37,7 +37,17 @@ jobs:
           for name in submission['commits']:
               if not re.fullmatch(r'reviewed-[0-9]{2}\.json', name):
                   raise SystemExit('Invalid reviewed commit document')
-              commits.append(json.loads((root / 'submission' / name).read_text()))
+              doc = json.loads((root / 'submission' / name).read_text())
+              if 'gzip_base64' in doc:
+                  encoded = doc['gzip_base64']
+                  if not isinstance(encoded, str) or len(encoded) > 2000000:
+                      raise SystemExit('Oversized reviewed submission')
+                  with gzip.GzipFile(fileobj=io.BytesIO(base64.b64decode(encoded, validate=True))) as stream:
+                      raw = stream.read(2000001)
+                  if len(raw) > 2000000 or hashlib.sha256(raw).hexdigest() != doc['sha256']:
+                      raise SystemExit('Reviewed submission digest mismatch')
+                  doc = json.loads(raw)
+              commits.append(doc)
           def git(*args, **kw):
               return subprocess.check_output(['git', *args], **kw)
           remote = git('ls-remote', 'origin', 'refs/heads/' + target, text=True).split()[0]
@@ -94,8 +104,8 @@ jobs:
           root.mkdir()
           pins = {'openpine-contracts':'904e8f660834a10d3382cd1b2ed7380c24b73072',
                   'pine2ast':'892fee8c2b0443e702918248f2d2642c877723e7',
-                  'ast2python':'2655b31a826d43b9df5a88c25186a69377eb09e2',
-                  'pinelib':'66f08b901fabba45ae733cc05cb217066fefa646',
+                  'ast2python':'ad1ece63c05270051138523eab290f7ca6cd396e',
+                  'pinelib':'c6eb153b7ed57d7c20293c20077a1b63a2d439da',
                   'backtest_engine':'7532fb34d7b1586f4a49075d29007d00f45527e1',
                   'marketdata-provider':'0342759363ebe168f89871a481cb5711a022ee7d',
                   'optimizer':'5a62efc672a08e05f7443d3b678fa2595249935a'}
@@ -109,6 +119,13 @@ jobs:
           with open(os.environ['GITHUB_ENV'], 'a') as stream:
               stream.write('PINE_STACK_ROOT=' + str(root) + '\n')
           PY
+      - name: Run complete PineLib and Ast2Python suites against the selected stack
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          set -euo pipefail
+          (cd "$PINE_STACK_ROOT/pinelib" && python -m pytest -q --junitxml="$RUNNER_TEMP/review-evidence/pinelib.xml")
+          (cd "$PINE_STACK_ROOT/ast2python" && python -m pytest -q --junitxml="$RUNNER_TEMP/review-evidence/ast2python.xml")
       - name: Install sandbox without disabling its protections
         run: |
           sudo apt-get update -qq
@@ -134,6 +151,10 @@ jobs:
             tests/test_strategy_fanout.py tests/test_phase_a_hot_paths.py \
             tests/test_periodic_fetcher_grouping.py tests/test_market_provider_runtime.py \
             tests/test_render_immutable_identity_env.py tests/test_infra_hardening.py \
+            tests/test_run_admission_integration.py tests/test_runtime_engine_adapter.py \
+            tests/test_optimizer_isolated_search.py tests/test_optimizer_search_route.py \
+            tests/test_optimizer_semantic_profile.py tests/test_backtest_gateway_market_metadata.py \
+            tests/test_backtest_semantic_profile.py tests/test_cli_semantic_profile.py tests/test_bulk_backtest.py \
             --junitxml="$RUNNER_TEMP/review-evidence/regressions.xml"
       - name: Fast-forward only the reviewed candidate
         shell: bash
