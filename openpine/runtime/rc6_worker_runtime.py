@@ -36,6 +36,8 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession, na
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
 from pinelib.runtime.session import CallbackResult
 
+from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
+
 
 _PROTOCOL_COMPONENT = {
     "HELLO": "openpine",
@@ -434,18 +436,13 @@ def _strategy_values(projection: Mapping[str, Any]) -> dict[str, object]:
     }
 
 
-def _bar_values(raw_bar: Mapping[str, Any]) -> BarValues:
-    validate_payload("openpine.marketdata.bar.v2", raw_bar)
-    if not verify_content_hash(raw_bar, schema_id="openpine.marketdata.bar.v2"):
-        raise ValueError("bar content hash is invalid")
+def _bar_values(
+    raw_bar: Mapping[str, Any], *, context: Mapping[str, Any] | None = None,
+) -> BarValues:
+    bar = decode_canonical_bar(raw_bar, context=context)
     return BarValues(
-        open=float(raw_bar["open"]),
-        high=float(raw_bar["high"]),
-        low=float(raw_bar["low"]),
-        close=float(raw_bar["close"]),
-        volume=float(raw_bar["volume"]),
-        time=int(raw_bar["open_time_utc_ms"]),
-        time_close=int(raw_bar["close_time_utc_ms"]),
+        open=bar.open, high=bar.high, low=bar.low, close=bar.close,
+        volume=bar.volume, time=bar.time, time_close=bar.time_close,
     )
 
 
@@ -517,7 +514,7 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
         projection = body["broker_projection"]
         if not isinstance(raw_bar, Mapping) or not isinstance(projection, Mapping):
             raise ValueError("interactive bar or broker projection is malformed")
-        values = _bar_values(raw_bar)
+        values = _bar_values(raw_bar, context=context)
         if body["bar_hash"] != raw_bar["bar_content_hash"]:
             raise ValueError("bar identity mismatch")
         execution = session.execute_bar(
@@ -564,20 +561,7 @@ def _jsonable(value: Any) -> Any:
 
 
 def _engine_bar(envelope: Mapping[str, Any]) -> Any:
-    from backtest_engine.models import Bar as EngineBar
-    from openpine_contracts import Finality
-
-    closed = envelope.get("closed", True)
-    return EngineBar(
-        time=int(envelope["open_time_utc_ms"]),
-        open=float(envelope["open"]),
-        high=float(envelope["high"]),
-        low=float(envelope["low"]),
-        close=float(envelope["close"]),
-        volume=float(envelope.get("volume") or 0),
-        time_close=int(envelope["close_time_utc_ms"]),
-        finality=Finality.FINAL if closed else Finality.OPEN,
-    )
+    return decode_canonical_bar(envelope)
 
 
 def _execute_protocol_bar(
@@ -632,6 +616,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     loaded = False
     initialized = False
     engine_bars: list[Any] = []
+    bar_admission = RC6BarAdmission(context)
     for line in sys.stdin:
         if len(line) > WORKER_STDIN_LIMIT_BYTES:
             raise ValueError("interactive message exceeds size limit")
@@ -643,7 +628,10 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
             batch = message.get("bars")
             if not isinstance(batch, list):
                 raise ValueError("bulk bars payload is invalid")
-            engine_bars.extend(_engine_bar(item) for item in batch)
+            for item in batch:
+                admitted_bar = bar_admission.accept(item)
+                if admitted_bar is not None:
+                    engine_bars.append(admitted_bar)
             if message.get("last") is True:
                 break
             continue

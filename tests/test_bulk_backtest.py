@@ -120,7 +120,8 @@ def test_run_bulk_converts_bar_envelopes_immediately() -> None:
 
     text = inspect.getsource(runtime.run_bulk)
     assert "envelopes.extend" not in text
-    assert "_engine_bar" in text
+    assert "bar_admission.accept(item)" in text
+    assert "engine_bars.append(admitted_bar)" in text
 
 
 def test_bulk_bootstrap_drops_htf_bars_interactive_keeps_them() -> None:
