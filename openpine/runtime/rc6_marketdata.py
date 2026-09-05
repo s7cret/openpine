@@ -57,8 +57,18 @@ def decode_canonical_bar(
     if closed != close_time_ms(opened, envelope["timeframe"]):
         raise ValueError("bar close time does not match its timeframe")
     numbers = {key: Decimal(str(envelope[key])) for key in ("open", "high", "low", "close", "volume")}
-    if not all(value.is_finite() and math.isfinite(float(value)) for value in numbers.values()):
-        raise ValueError("bar values must be finite in the runtime numeric range")
+    converted: dict[str, float] = {}
+    for field, value in numbers.items():
+        if not value.is_finite():
+            raise ValueError(f"bar {field} must be finite in the runtime numeric range")
+        runtime_value = float(value)
+        if not math.isfinite(runtime_value):
+            raise ValueError(f"bar {field} must be finite in the runtime numeric range")
+        # A nonzero canonical decimal must not silently become a zero price or
+        # volume. Representable subnormal floats and genuine zero remain valid.
+        if value != 0 and runtime_value == 0:
+            raise ValueError(f"bar {field} underflows the runtime numeric range")
+        converted[field] = runtime_value
     if not (numbers["low"] <= min(numbers["open"], numbers["close"])
             <= max(numbers["open"], numbers["close"]) <= numbers["high"]):
         raise ValueError("bar OHLC invariants are invalid")
@@ -66,7 +76,7 @@ def decode_canonical_bar(
         raise ValueError("bar volume must be nonnegative")
     return Bar(
         time=opened, time_close=closed, finality=Finality(envelope["finality"]),
-        **{key: float(value) for key, value in numbers.items()},
+        **converted,
     )
 
 
