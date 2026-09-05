@@ -1,0 +1,323 @@
+diff --git a/openpine/runtime/generated_checkpoint.py b/openpine/runtime/generated_checkpoint.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..46cc1ed432f10b192f9632d0ea9d24307ceba9c2
+--- /dev/null
++++ b/openpine/runtime/generated_checkpoint.py
+@@ -0,0 +1,108 @@
++"""Complete generated-session checkpoints at committed bar boundaries.
++
++These include Pine state, request contexts and callback/intent cursors, not a
++complete broker/IPC resume protocol. Checksums are not signatures or TV proofs.
++"""
++
++from __future__ import annotations
++
++from collections.abc import Mapping
++from dataclasses import asdict
++from typing import Any
++
++from openpine_contracts import ExecutionEvent
++from pinelib import RuntimeSession
++from pinelib.state.checkpoint import canonical_json, sha
++
++from openpine.runtime.rc6_config import serialize_engine_config
++from openpine.runtime.rc6_lifecycle import ExecutionCursor
++
++SCHEMA = "openpine.rc6.generated_checkpoint.v1"
++_FIELDS = {"schema_id", "identity", "runtime", "last_event", "intent_sequence", "content_hash"}
++
++
++class GeneratedCheckpointMixin:
++    """Shared by the native generated-script session in both execution modes."""
++
++    def _checkpoint_identity(self) -> dict[str, Any]:
++        config = serialize_engine_config(self.intent_config, self.identity.semantic_profile)
++        return {
++            "artifact_hash": self._artifact_hash,
++            "runtime_identity": self.session.identity_hash,
++            "run": asdict(self.identity),
++            "producer_commit": self.producer_commit,
++            "effective_config_hash": config["effective_config_hash"],
++            "inputs_hash": self.inputs.identity_hash,
++            "host_surface_hash": self.strategy_host["surface_hash"],
++        }
++
++    def export_state(self) -> dict[str, Any]:
++        if self.execution_cursor.open_bar is not None:
++            raise ValueError("cannot export a generated session with an uncommitted bar")
++        body = {
++            "schema_id": SCHEMA,
++            "identity": self._checkpoint_identity(),
++            "runtime": self.session.checkpoint().to_dict(),
++            "last_event": None
++            if self.execution_cursor.last is None
++            else self.execution_cursor.last.to_dict(),
++            "intent_sequence": self._intent_sequence,
++        }
++        body["content_hash"] = sha(body)
++        if len(canonical_json(body)) > self.session.policies.resource.max_checkpoint_bytes:
++            raise ValueError("generated session checkpoint exceeds the configured limit")
++        return body
++
++    def restore_state(self, state: Mapping[str, Any]) -> None:
++        if self.execution_cursor.open_bar is not None:
++            raise ValueError("cannot restore a generated session with an uncommitted bar")
++        self.session.checkpoint()
++        if not isinstance(state, Mapping) or set(state) != _FIELDS or state["schema_id"] != SCHEMA:
++            raise ValueError("generated session checkpoint schema mismatch")
++        if len(canonical_json(state)) > self.session.policies.resource.max_checkpoint_bytes:
++            raise ValueError("generated session checkpoint exceeds the configured limit")
++        body = {key: value for key, value in state.items() if key != "content_hash"}
++        if state["content_hash"] != sha(body):
++            raise ValueError("generated session checkpoint hash mismatch")
++        if state["identity"] != self._checkpoint_identity():
++            raise ValueError("generated session checkpoint identity mismatch")
++        sequence = state["intent_sequence"]
++        if type(sequence) is not int or sequence < 0:
++            raise ValueError("generated checkpoint intent sequence is invalid")
++        event = (
++            None if state["last_event"] is None else ExecutionEvent.from_dict(state["last_event"])
++        )
++        previous = self.session
++        candidate = RuntimeSession(
++            previous.language,
++            previous.policies,
++            inputs=previous.inputs,
++            instrument=previous.instrument,
++            timeframe=previous.timeframe,
++            request_provider=previous.requests.provider,
++        )
++        candidate.commit_full_identity = previous.commit_full_identity
++        candidate.restore(state["runtime"])
++        entries = candidate.transcript.entries
++        if event is not None:
++            if (
++                not entries
++                or entries[-1]["phase"] != "BAR_COMMIT"
++                or entries[-1]["bar_index"] != event.bar_index
++            ):
++                raise ValueError("generated checkpoint cursor differs from committed runtime")
++            callbacks = [entry for entry in entries if entry["phase"] != "BAR_COMMIT"]
++            if (
++                len(callbacks) != event.sequence + 1
++                or callbacks[-1]["bar_index"] != event.bar_index
++            ):
++                raise ValueError("generated checkpoint callback sequence differs from runtime")
++        elif any(entry["phase"] == "BAR_COMMIT" for entry in entries):
++            raise ValueError("generated checkpoint is missing its deferred execution cursor")
++        if candidate.sequence == -1 and sequence != 0:
++            raise ValueError("empty generated checkpoint cannot contain committed intents")
++        # Replace only after complete validation. Bad input leaves the current
++        # runtime, caches and cursors unchanged, including on partial decode.
++        self.session = candidate
++        self.execution_cursor = ExecutionCursor(last=event)
++        self._intent_sequence = sequence
+diff --git a/openpine/runtime/rc6_worker_runtime.py b/openpine/runtime/rc6_worker_runtime.py
+index fabdcdbaa070b920e18f2c4c2ae248fd4232eaa9..71184736919658f889a8d25cc8be243543115269 100644
+--- a/openpine/runtime/rc6_worker_runtime.py
++++ b/openpine/runtime/rc6_worker_runtime.py
+@@ -37,6 +37,7 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
+ from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
+ from pinelib.runtime.session import CallbackResult
+ 
++from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin
+ from openpine.runtime.rc6_lifecycle import ExecutionCursor
+ from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
+ from openpine.runtime.rc6_config import resolve_engine_config
+@@ -225,7 +226,7 @@ class RC6BarExecution:
+     intents: tuple[dict[str, Any], ...]
+ 
+ 
+-class RC6GeneratedScriptSession:
++class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
+     """Execute persistent ``GeneratedScript(runtime).run()`` callbacks.
+ 
+     The PineLib session owns series/runtime state. A fresh immutable delegated
+@@ -299,6 +300,7 @@ class RC6GeneratedScriptSession:
+             "self",
+         ):
+             raise ValueError("GeneratedScript.run must accept only self")
++        self._artifact_hash = envelope["content_hash"]
+         self.generated_class = generated_class
+         self.namespace = MappingProxyType(namespace)
+         from ast2python.artifacts.script_metadata import admitted_script_metadata
+@@ -789,10 +791,10 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+             )
+ 
+         def export_state(self) -> dict[str, Any]:
+-            return {"bulk_worker": True}
++            return session.export_state()
+ 
+         def restore_state(self, state: Any) -> None:
+-            del state
++            session.restore_state(state)
+ 
+     from openpine.runtime.progress import ProgressReporter
+     total = len(engine_bars)
+@@ -854,6 +856,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+         "config_snapshot": _jsonable(result.config_snapshot),
+         **input_evidence(session.inputs),
+     }
++    if config.export_resume_state:
++        raw["resume_state"] = _jsonable(result.resume_state)
+     payload = {
+         "kind": "BULK_RESULT",
+         "bars_received": bar_admission.received,
+diff --git a/rc6_tests/test_rc6_generated_checkpoint.py b/rc6_tests/test_rc6_generated_checkpoint.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..20e73fcf89e82353dd803a11cd9a1c1dde02d47e
+--- /dev/null
++++ b/rc6_tests/test_rc6_generated_checkpoint.py
+@@ -0,0 +1,152 @@
++"""Exact generated state and command cursors across committed-bar checkpoints."""
++
++from copy import deepcopy
++from dataclasses import replace
++import json
++
++import pytest
++from openpine_contracts import ExecutionEvent
++from pinelib.runtime.metadata import BarValues
++from pinelib.state.checkpoint import sha
++from openpine.runtime.rc6_worker_runtime import _session_from_request
++from openpine.runtime.rc6_config import serialize_engine_config
++from rc6_tests.test_rc6_requests import ID, case_for, source_rows
++from rc6_tests.test_rc6_bulk_execution import execute_bulk
++
++
++def session(case):
++    compiled, context, config = case
++    return _session_from_request(
++        dict(
++            generated_artifact=compiled.generated_artifact,
++            execution_context=context,
++            source=compiled.python_code,
++            engine_config=serialize_engine_config(config, "strict_5x"),
++            params={},
++        )
++    )
++
++
++def advance(runtime, candles, start=0, stop=None):
++    tape = []
++    for i in range(start, len(candles) if stop is None else stop):
++        b = candles[i]
++        values = BarValues(
++            **{k: float(b[k]) for k in ("open", "high", "low", "close", "volume")},
++            time=b["open_time_utc_ms"],
++            time_close=b["close_time_utc_ms"],
++        )
++        event = ExecutionEvent(
++            i,
++            i,
++            len(candles) - 1,
++            len(candles) - 1,
++            values.time,
++            "HISTORICAL_EVAL",
++            False,
++            True,
++            0,
++            0,
++            "BAR_CLOSE",
++        )
++        tape.extend(runtime.execute_callback(values, event, strategy_values={}).intents)
++        runtime.finalize_bar(i)
++    return tape
++
++
++def request_case():
++    return case_for(
++        f'var int n=0\nn:=n+1\nx=request.security("{ID}","5",ta.sma(close,2))\nif x>0 and n>8\n    strategy.order("state",strategy.long,qty=n)'
++    )
++
++
++def test_restored_state_and_intent_suffix_equal_uninterrupted():
++    case, candles = request_case()
++    whole = session(case)
++    expected = advance(whole, candles)
++    split = session(case)
++    prefix = advance(split, candles, stop=7)
++    checkpoint = json.loads(json.dumps(split.export_state()))
++    restored = session(case)
++    restored.restore_state(checkpoint)
++    suffix = advance(restored, candles, start=7)
++    assert prefix + suffix == expected
++    assert restored.export_state() == whole.export_state()
++    assert restored.session.state_hash == whole.session.state_hash
++    assert restored.session.semantic_state_hash == whole.session.semantic_state_hash
++    assert restored.session.requests.registry.dataset_count == 1
++
++
++@pytest.mark.parametrize(
++    "fault", ["hash", "identity", "counter", "runtime", "cursor", "missing_cursor"]
++)
++def test_failed_restore_is_atomic(fault):
++    case, candles = request_case()
++    obj = session(case)
++    advance(obj, candles, stop=4)
++    saved = obj.export_state()
++    bad = deepcopy(saved)
++    if fault == "hash":
++        bad["intent_sequence"] += 1
++    elif fault == "identity":
++        bad["identity"]["artifact_hash"] = "sha256:" + "f" * 64
++    elif fault == "counter":
++        bad["intent_sequence"] = True
++    elif fault == "runtime":
++        bad["runtime"]["state"]["sequence"] = 999
++    elif fault == "cursor":
++        bad["last_event"]["bar_index"] = 2
++    else:
++        bad["last_event"] = None
++    if fault != "hash":
++        bad["content_hash"] = sha({k: v for k, v in bad.items() if k != "content_hash"})
++    with pytest.raises((ValueError, RuntimeError)):
++        obj.restore_state(bad)
++    assert obj.export_state() == saved
++
++
++def test_uncommitted_bar_cannot_be_exported_or_overwritten():
++    case, candles = request_case()
++    obj = session(case)
++    empty = obj.export_state()
++    b = candles[0]
++    values = BarValues(100, 102, 99, 101, 1, b["open_time_utc_ms"], b["close_time_utc_ms"])
++    obj.execute_callback(
++        values,
++        ExecutionEvent(
++            0, 0, 14, 14, values.time, "HISTORICAL_EVAL", False, True, 0, 0, "BAR_CLOSE"
++        ),
++        strategy_values={},
++    )
++    with pytest.raises(ValueError, match="uncommitted"):
++        obj.export_state()
++    with pytest.raises(ValueError, match="uncommitted"):
++        obj.restore_state(empty)
++    obj.finalize_bar(0)
++    assert obj.export_state()["last_event"]["bar_index"] == 0
++
++
++def test_changed_requested_data_cannot_reuse_checkpoint():
++    from openpine.runtime.request_data import build_request_manifest
++
++    case, candles = request_case()
++    a = session(case)
++    advance(a, candles, stop=4)
++    cfg = replace(case[2])
++    cfg.request_manifest = build_request_manifest(case[1], [source_rows(prices=(11, 21, 31))])
++    b = session((case[0], case[1], cfg))
++    with pytest.raises(ValueError, match="identity"):
++        b.restore_state(a.export_state())
++    assert b.session.sequence == -1
++
++
++def test_bulk_resume_export_contains_real_series_requests_and_counter(monkeypatch):
++    case, candles = request_case()
++    cfg = replace(case[2], export_resume_state=True)
++    cfg.request_manifest = case[2].request_manifest
++    result = execute_bulk(monkeypatch, case, config=cfg, bars=candles)
++    state = result["raw_result"]["resume_state"]["strategy_state"]
++    assert state["schema_id"] == "openpine.rc6.generated_checkpoint.v1"
++    assert state["runtime"]["state"]["series"] and state["runtime"]["state"]["requests"]
++    assert state["last_event"]["bar_index"] == 14
++    assert state["intent_sequence"] == len(result["intent_tape"])

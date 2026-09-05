@@ -1,0 +1,293 @@
+diff --git a/docs/RC6_LIFECYCLE_SOURCES.json b/docs/RC6_LIFECYCLE_SOURCES.json
+index f9c7ed8557a8e9436b3e0cc48e84bbb019838809..0ad24dd41badd5a27741d2261cef660f891b92d6 100644
+--- a/docs/RC6_LIFECYCLE_SOURCES.json
++++ b/docs/RC6_LIFECYCLE_SOURCES.json
+@@ -2,8 +2,8 @@
+   "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+   "openpine-contracts": "d1382d1c0a1f867cc184016d8ac670a9264a7938",
+   "optimizer": "5a62efc672a08e05f7443d3b678fa2595249935a",
+-  "ast2python": "f7429a36932323dc11313a88406338720278061f",
+-  "pinelib": "6637c18eeb2130690ae8c9388a2173afc534f215",
++  "ast2python": "439a68b2d513e7e54f142c18b7ca3f31330a4b0d",
++  "pinelib": "cf933d43f31ff90f1f191edcdfb4abf5e49f5da9",
+   "backtest_engine": "70dd7ccfecaabafa3000d359770305acb32c8b9e",
+-  "pine2ast": "892fee8c2b0443e702918248f2d2642c877723e7"
++  "pine2ast": "6ba935eceee505bcbe80bf1f5908588407d2f546"
+ }
+diff --git a/openpine/runtime/isolated_worker.py b/openpine/runtime/isolated_worker.py
+index 1a6cd8363cd64585f2effbe482731b3d6f83e79a..8bfeaa4ad1f16d863c9ff8e352f6961439494f52 100644
+--- a/openpine/runtime/isolated_worker.py
++++ b/openpine/runtime/isolated_worker.py
+@@ -599,6 +599,11 @@ class InteractiveWorkerSession:
+         self.bulk_idle_timeout_s = float(bulk_idle_timeout_s)
+         self.bulk_backtest = bool(bulk_backtest)
+         self.engine_config = dict(engine_config) if engine_config is not None else {}
++        from openpine.runtime.request_data import admit_request_data
++        try:
++            admit_request_data(source, self.engine_config, execution_context)
++        except ValueError as exc:
++            raise IsolatedWorkerError(str(exc)) from exc
+         self.max_line_bytes = 1_000_000
+         self._closed = False
+         self._stdout_buffer = bytearray()
+diff --git a/openpine/runtime/rc6_config.py b/openpine/runtime/rc6_config.py
+index 12a107318cbd703c39490ccba6f677d33feda86f..964c013798584f5dbc50983c73638a997a726d7a 100644
+--- a/openpine/runtime/rc6_config.py
++++ b/openpine/runtime/rc6_config.py
+@@ -17,7 +17,7 @@ _LOCAL_ONLY = frozenset({
+     "runtime", "realtime_ticks", "realtime_tick_provider", "bar_magnifier_bars",
+     "tradingview_reference_path", "output_dir",
+ })
+-_EXTRA = frozenset({"exchange", "market_type"})
++_EXTRA = frozenset({"exchange", "market_type", "request_manifest"})
+ _HASH_FIELD = "effective_config_hash"
+ 
+ 
+diff --git a/openpine/runtime/rc6_worker_runtime.py b/openpine/runtime/rc6_worker_runtime.py
+index a6a475413f6691e3a15601e83e60e630ddc5fb99..fabdcdbaa070b920e18f2c4c2ae248fd4232eaa9 100644
+--- a/openpine/runtime/rc6_worker_runtime.py
++++ b/openpine/runtime/rc6_worker_runtime.py
+@@ -243,6 +243,7 @@ class RC6GeneratedScriptSession:
+         identity: IntentReplayIdentity,
+         producer_commit: str,
+         default_qty_value: object = 1,
++        request_provider=None,
+         engine_config: BacktestConfig | None = None,
+         params: Mapping[str, object] | None = None,
+         expected_input_values_hash: str | None = None,
+@@ -300,11 +301,20 @@ class RC6GeneratedScriptSession:
+             raise ValueError("GeneratedScript.run must accept only self")
+         self.generated_class = generated_class
+         self.namespace = MappingProxyType(namespace)
++        from ast2python.artifacts.script_metadata import admitted_script_metadata
++        from pinelib.runtime.policies import RequestPolicy, RuntimePolicies
++        declaration = admitted_script_metadata(namespace, envelope).get("declaration", {}).get("arguments", {})
++        dynamic = declaration.get("dynamic_requests")
++        if dynamic is not None and type(dynamic) is not bool:
++            raise ValueError("dynamic_requests must be a compile-time bool")
++        policies = RuntimePolicies(request=RequestPolicy(dynamic_requests=(
++            "version_default" if dynamic is None else "enabled" if dynamic else "disabled")))
+         self.session = RuntimeSession(
+-            language,
++            language, policies,
+             inputs=self.inputs,
+             instrument=instrument,
+             timeframe=timeframe,
++            request_provider=request_provider,
+         )
+         self.session.commit_full_identity = False
+         if not isinstance(identity, IntentReplayIdentity):
+@@ -439,7 +449,10 @@ def _session_from_request(
+     base_currency = symbol.removesuffix(currency) or symbol
+     if engine_config is None and "engine_config" in request:
+         engine_config = resolve_engine_config(request["engine_config"], context)
++    from openpine.runtime.request_data import admit_request_data
++    provider = admit_request_data(request["source"], request.get("engine_config", {}), context)
+     return RC6GeneratedScriptSession(
++        request_provider=provider,
+         artifact={"generated_artifact": generated, "python_code": source},
+         language=RuntimeLanguageContext(
+             int(version_context["pine_version"]),
+diff --git a/openpine/runtime/request_data.py b/openpine/runtime/request_data.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..df1e300fd92e65f443acd43e59bd2abef0841ba9
+--- /dev/null
++++ b/openpine/runtime/request_data.py
+@@ -0,0 +1,197 @@
++"""Admission of bounded immutable request datasets for isolated RC6 execution.
++
++The caller supplies MarketData Provider envelopes and explicit metadata. This
++boundary does not grant network or filesystem access, or resample chart bars.
++"""
++
++from __future__ import annotations
++
++import ast
++import dataclasses
++from decimal import Decimal, DecimalException
++import json
++import math
++from collections.abc import Mapping, Sequence
++from typing import Any
++
++from openpine_contracts import content_hash, decimal_string, verify_content_hash
++from pinelib.request import CanonicalBar, DataFinality
++from pinelib.request.snapshots import RequestSource, SnapshotRequestProvider, normalized_period
++from pinelib.runtime.metadata import InstrumentContext
++from pinelib.errors import PineRuntimeError
++from marketdata_provider.errors import MarketDataError
++from marketdata_provider.timeframes import to_pine_timeframe
++from openpine.runtime.rc6_marketdata import decode_canonical_bar
++
++SCHEMA = "openpine.request_snapshots.v1"
++MAX_MANIFEST_BYTES = 4 * 1024 * 1024
++MAX_SOURCE_BARS = 250_000
++MAX_DATASETS = 64
++_NUMERIC_METADATA = frozenset({"mintick", "pointvalue", "mincontract"})
++_METADATA = frozenset(field.name for field in dataclasses.fields(InstrumentContext))
++
++
++def build_request_manifest(
++    context: Mapping[str, Any], datasets: Sequence[Mapping[str, Any]]
++) -> dict[str, Any]:
++    """Seal detached original envelopes and explicit requested metadata.
++
++    Descriptors contain instrument_id, timeframe (provider units), market,
++    InstrumentContext fields, and an ordered list of original FINAL bar envelopes.
++    """
++    rows = []
++    for dataset in datasets:
++        row = dict(dataset)
++        instrument = dict(row["instrument"])
++        for name in _NUMERIC_METADATA:
++            value = instrument[name]
++            if type(value) not in (str, int, float):
++                raise ValueError("numeric instrument metadata is required")
++            instrument[name] = decimal_string(Decimal(str(value)))
++        row["instrument"] = instrument
++        rows.append(row)
++    manifest = {
++        "schema_id": SCHEMA,
++        "execution_context_hash": context["content_hash"],
++        "datasets": rows,
++    }
++    manifest["content_hash"] = content_hash(manifest, schema_id=SCHEMA)
++    detached = json.loads(json.dumps(manifest, allow_nan=False))
++    request_provider_from_manifest(detached, context)
++    return detached
++
++
++def request_provider_from_manifest(
++    manifest: object, context: Mapping[str, Any]
++) -> SnapshotRequestProvider:
++    """Normalize data errors before staging without concealing implementation bugs."""
++    try:
++        return _request_provider_from_manifest(manifest, context)
++    except (PineRuntimeError, MarketDataError, DecimalException) as exc:
++        raise ValueError(f"invalid request snapshots: {exc}") from exc
++
++
++def _request_provider_from_manifest(
++    manifest: object, context: Mapping[str, Any]
++) -> SnapshotRequestProvider:
++    if not isinstance(manifest, Mapping) or set(manifest) != {
++        "schema_id",
++        "execution_context_hash",
++        "datasets",
++        "content_hash",
++    }:
++        raise ValueError("request snapshot manifest has an invalid schema")
++    if manifest["schema_id"] != SCHEMA or not verify_content_hash(manifest, schema_id=SCHEMA):
++        raise ValueError("request snapshot manifest hash is invalid")
++    if manifest["execution_context_hash"] != context["content_hash"]:
++        raise ValueError("request snapshots belong to another execution context")
++    if (
++        len(
++            json.dumps(
++                manifest, ensure_ascii=False, separators=(",", ":"), allow_nan=False
++            ).encode()
++        )
++        > MAX_MANIFEST_BYTES
++    ):
++        raise ValueError("request snapshot preload exceeds the 4 MiB transport limit")
++    datasets = manifest["datasets"]
++    if not isinstance(datasets, list) or not 1 <= len(datasets) <= MAX_DATASETS:
++        raise ValueError("request snapshot dataset count is invalid")
++    sources = []
++    for dataset in datasets:
++        if not isinstance(dataset, Mapping) or set(dataset) != {
++            "instrument_id",
++            "timeframe",
++            "market",
++            "instrument",
++            "bars",
++        }:
++            raise ValueError("request dataset descriptor is incomplete")
++        for field in ("instrument_id", "timeframe", "market"):
++            value = dataset[field]
++            if type(value) is not str or not value or value.strip() != value:
++                raise ValueError("request dataset identity must be canonical text")
++        meta = dataset["instrument"]
++        if not isinstance(meta, Mapping) or set(meta) != _METADATA:
++            raise ValueError("request instrument metadata must be explicit")
++        converted = dict(meta)
++        for name, value in meta.items():
++            if type(value) is not str or not value or value.strip() != value:
++                raise ValueError("request instrument metadata must be canonical text")
++            if name in _NUMERIC_METADATA:
++                number = Decimal(value)
++                if (
++                    not number.is_finite()
++                    or number <= 0
++                    or not math.isfinite(float(number))
++                    or float(number) == 0
++                ):
++                    raise ValueError("request instrument numeric metadata is invalid")
++                if decimal_string(number) != value:
++                    raise ValueError("request metadata decimal is not canonical")
++                converted[name] = float(number)
++        instrument = InstrumentContext(**converted)
++        period = normalized_period(to_pine_timeframe(dataset["timeframe"]))
++        envelopes = dataset["bars"]
++        if not isinstance(envelopes, list) or len(envelopes) > MAX_SOURCE_BARS:
++            raise ValueError("request dataset bar count is invalid")
++        bars, snapshot_id = [], None
++        for envelope in envelopes:
++            checked = decode_canonical_bar(
++                envelope,
++                context={
++                    "stack_manifest_hash": context["stack_manifest_hash"],
++                    "producer_commits": context["producer_commits"],
++                    "instrument_id": dataset["instrument_id"],
++                    "series_id": dataset["instrument_id"] + ":" + dataset["timeframe"],
++                    "timeframe": dataset["timeframe"],
++                },
++            )
++            if checked.finality.value != "FINAL":
++                raise ValueError("compiled historical requests require original final snapshots")
++            if snapshot_id is not None and snapshot_id != envelope["snapshot_id"]:
++                raise ValueError("request dataset snapshot changes within one source")
++            snapshot_id = envelope["snapshot_id"]
++            bars.append(
++                CanonicalBar(
++                    dataset["instrument_id"],
++                    period,
++                    checked.time,
++                    checked.time_close + 1,
++                    *(envelope[name] for name in ("open", "high", "low", "close", "volume")),
++                    DataFinality.FINAL,
++                    0,
++                )
++            )
++        sources.append(
++            RequestSource(
++                dataset["instrument_id"],
++                instrument,
++                dataset["market"],
++                period,
++                tuple(bars),
++                manifest["content_hash"],
++            )
++        )
++    return SnapshotRequestProvider(tuple(sources), max_bars=MAX_SOURCE_BARS)
++
++
++def admit_request_data(
++    source: str | bytes, engine_config: Mapping[str, Any], context: Mapping[str, Any]
++):
++    """Reject a missing/invalid provider before staging or starting a worker."""
++    tree = ast.parse(source)
++    required = any(
++        isinstance(node, ast.ImportFrom)
++        and node.module == "pinelib.abi.compiled_request"
++        and any(alias.name in {"security_v1", "security_lower_tf_v1"} for alias in node.names)
++        for node in ast.walk(tree)
++    )
++    manifest = engine_config.get("request_manifest")
++    if manifest is None:
++        if required:
++            raise ValueError(
++                "RC6_REQUEST_DATA: compiled requests require preloaded immutable request snapshots"
++            )
++        return None
++    return request_provider_from_manifest(manifest, context)
