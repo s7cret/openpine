@@ -271,6 +271,89 @@ def test_data_orchestrator_auto_provider_storage_and_validation(tmp_path):
     assert [bar.close for bar in merged2.bars] == [9, 2]
 
 
+def test_load_cache_skips_series_without_canonical_envelopes(monkeypatch, tmp_path) -> None:
+    query = BarQuery(
+        InstrumentKey("binance", "spot", "BTCUSDT"),
+        parse_timeframe("1m"),
+        0,
+        120_000,
+        source="auto",
+        gap_policy="allow_with_metadata",
+    )
+    monkeypatch.setattr(
+        "openpine.data.orchestrator.load_bar_series",
+        lambda *args, **kwargs: _series(0, 120_000, (_bar(0), _bar(60_000))),
+    )
+    orchestrator = DataOrchestrator(
+        store=FakeCandleStore(), cache_enabled=True, cache_dir=tmp_path
+    )
+    assert orchestrator._load_cache(query) is None
+
+
+def test_storage_canonical_series_skips_jsonschema_but_checks_hash(monkeypatch) -> None:
+    from openpine.data import orchestrator as orch_mod
+    from openpine.data.orchestrator import StorageUnavailableError, _canonical_series
+
+    query = BarQuery(
+        InstrumentKey("binance", "spot", "BTCUSDT"),
+        parse_timeframe("1m"),
+        0,
+        120_000,
+        source="storage",
+        gap_policy="allow_with_metadata",
+    )
+    instrument_id = query.instrument.serialize()
+    payload = {
+        "snapshot_envelope": {
+            "body": {
+                "query": {
+                    "instrument_id": instrument_id,
+                    "timeframe": query.timeframe.canonical,
+                    "start_utc_ms": 0,
+                    "end_utc_ms": 120_000,
+                }
+            }
+        },
+        "bars": [
+            {
+                "instrument_id": instrument_id,
+                "timeframe": query.timeframe.canonical,
+                "open_time_utc_ms": 0,
+                "close_time_utc_ms": 59_999,
+                "open": "1",
+                "high": "1",
+                "low": "1",
+                "close": "1",
+                "volume": "1",
+                "finality": "FINAL",
+            }
+        ],
+    }
+    schema_calls = {"n": 0}
+    monkeypatch.setattr(orch_mod, "verify_content_hash", lambda *args, **kwargs: True)
+    monkeypatch.setattr(
+        orch_mod,
+        "validate_payload",
+        lambda *args, **kwargs: schema_calls.__setitem__("n", schema_calls["n"] + 1),
+    )
+
+    series = _canonical_series(payload, query, source="storage")
+    assert schema_calls["n"] == 0
+    assert len(series.bars) == 1
+    assert len(series.canonical_bars) == 1
+
+    monkeypatch.setattr(orch_mod, "verify_content_hash", lambda *args, **kwargs: False)
+    trusted = _canonical_series(payload, query, source="storage")
+    assert len(trusted.bars) == 1
+
+    bad = {
+        "snapshot_envelope": payload["snapshot_envelope"],
+        "bars": [dict(payload["bars"][0], instrument_id="OTHER")],
+    }
+    with pytest.raises(StorageUnavailableError, match="identity"):
+        _canonical_series(bad, query, source="storage")
+
+
 def test_data_orchestrator_fail_closed_edges(tmp_path):
     query = BarQuery(InstrumentKey("binance", "spot", "BTCUSDT"), parse_timeframe("1m"), 0, 120_000, source="storage", gap_policy="fail")
     with pytest.raises(StorageUnavailableError):

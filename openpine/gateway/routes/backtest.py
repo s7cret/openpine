@@ -1274,6 +1274,7 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
             ("bar_envelopes", spec.bar_envelopes),
             ("run_hash", spec.run_hash),
             ("protocol_artifact_dir", spec.protocol_artifact_dir),
+            ("isolated_protocol", "bulk_backtest"),
         ):
             object.__setattr__(config, name, value)
         htf_bars = spec.htf_bars

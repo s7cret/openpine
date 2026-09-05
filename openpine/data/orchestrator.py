@@ -129,14 +129,16 @@ def _canonical_series(
         return payload
     if not isinstance(payload, Mapping):
         raise StorageUnavailableError("marketdata boundary returned an invalid snapshot")
-    snapshot = deepcopy(dict(payload))
+    schema_validate = source != "storage"
+    snapshot = deepcopy(dict(payload)) if schema_validate else dict(payload)
     envelope = snapshot.get("snapshot_envelope")
     raw_bars = snapshot.get("bars")
     if not isinstance(envelope, Mapping) or not isinstance(raw_bars, list):
         raise StorageUnavailableError("marketdata snapshot envelope is required")
-    validate_payload("openpine.marketdata.v2", envelope)
-    if not verify_content_hash(envelope, schema_id="openpine.marketdata.v2"):
-        raise StorageUnavailableError("marketdata snapshot content hash is invalid")
+    if schema_validate:
+        validate_payload("openpine.marketdata.v2", envelope)
+        if not verify_content_hash(envelope, schema_id="openpine.marketdata.v2"):
+            raise StorageUnavailableError("marketdata snapshot content hash is invalid")
     body = envelope.get("body")
     contract_query = body.get("query") if isinstance(body, Mapping) else None
     expected = {
@@ -154,14 +156,15 @@ def _canonical_series(
     for index, raw_bar in enumerate(raw_bars):
         if not isinstance(raw_bar, Mapping):
             raise StorageUnavailableError(f"marketdata bar {index} is invalid")
-        bar_envelope = deepcopy(dict(raw_bar))
-        validate_payload("openpine.marketdata.bar.v2", bar_envelope)
-        if not verify_content_hash(
-            bar_envelope, schema_id="openpine.marketdata.bar.v2"
-        ):
-            raise StorageUnavailableError(
-                f"marketdata bar {index} content hash is invalid"
-            )
+        bar_envelope = deepcopy(dict(raw_bar)) if schema_validate else dict(raw_bar)
+        if schema_validate:
+            validate_payload("openpine.marketdata.bar.v2", bar_envelope)
+            if not verify_content_hash(
+                bar_envelope, schema_id="openpine.marketdata.bar.v2"
+            ):
+                raise StorageUnavailableError(
+                    f"marketdata bar {index} content hash is invalid"
+                )
         if (
             bar_envelope.get("instrument_id") != expected["instrument_id"]
             or bar_envelope.get("timeframe") != expected["timeframe"]
@@ -268,7 +271,14 @@ class DataOrchestrator:
         )
         if provider_series.bars and not self.provider_persists_fetches:
             self._write_provider_series(provider_series)
-        merged = _merge_series(query, storage_series, provider_series)
+        if provider_series.bars:
+            stored = self._load_storage(query, require_complete=False)
+            if isinstance(stored, CanonicalBarSeries) and stored.bars:
+                merged = stored
+            else:
+                merged = _merge_series(query, storage_series, provider_series)
+        else:
+            merged = storage_series
         merged = (
             self._require_complete(merged, "auto")
             if query.gap_policy == "fail"
@@ -377,6 +387,10 @@ class DataOrchestrator:
         )
         if series is None:
             return None
+        if not isinstance(series, CanonicalBarSeries) and not getattr(
+            series, "canonical_bars", None
+        ):
+            return None
         self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
         return (
             self._require_complete(series, "persistent_cache")
@@ -385,7 +399,7 @@ class DataOrchestrator:
         )
 
     def _save_cache(self, series: LoadedBarSeries) -> None:
-        if not self._cache_enabled or isinstance(series, CanonicalBarSeries):
+        if not self._cache_enabled or not isinstance(series, CanonicalBarSeries):
             return
         try:
             save_bar_series(self._cache_dir, series)

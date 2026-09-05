@@ -15,6 +15,7 @@ from backtest_engine.core.intent_replay import (
     require_live_tape,
 )
 
+from openpine.runtime.bulk_worker import BulkWorkerSession
 from openpine.runtime.isolated_worker import (
     InteractiveWorkerSession,
     IsolatedWorkerError,
@@ -228,6 +229,42 @@ def _strategy_projection(callback: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _bulk_engine_config(config: Any, semantic_profile: str) -> dict[str, Any]:
+    rounding = getattr(config, "qty_rounding_mode", None)
+    qty_rounding = "floor" if rounding in {None, "none", "truncate"} else rounding
+    return {
+        "symbol": str(getattr(config, "symbol")),
+        "timeframe": str(getattr(config, "timeframe")),
+        "start_time": int(getattr(config, "start_time")),
+        "end_time": int(getattr(config, "end_time")),
+        "exchange": getattr(config, "exchange", "binance"),
+        "market_type": getattr(config, "market_type", "spot"),
+        "initial_capital": float(getattr(config, "initial_capital", 100_000.0) or 100_000.0),
+        "default_qty_type": str(getattr(config, "default_qty_type", "fixed") or "fixed"),
+        "default_qty_value": float(getattr(config, "default_qty_value", 1.0) or 1.0),
+        "commission_type": str(getattr(config, "commission_type", "none") or "none"),
+        "commission_value": float(getattr(config, "commission_value", 0.0) or 0.0),
+        "slippage": float(getattr(config, "slippage", 0.0) or 0.0),
+        "slippage_type": str(getattr(config, "slippage_type", "tick") or "tick"),
+        "exit_matching": str(getattr(config, "exit_matching", "fifo") or "fifo"),
+        "pyramiding": int(getattr(config, "pyramiding", 0) or 0),
+        "margin_long": float(getattr(config, "margin_long", 100.0) or 100.0),
+        "margin_short": float(getattr(config, "margin_short", 100.0) or 100.0),
+        "process_orders_on_close": bool(getattr(config, "process_orders_on_close", False)),
+        "calc_on_order_fills": bool(getattr(config, "calc_on_order_fills", False)),
+        "calc_on_every_tick": bool(getattr(config, "calc_on_every_tick", False)),
+        "use_bar_magnifier": bool(getattr(config, "use_bar_magnifier", False)),
+        "qty_step": getattr(config, "qty_step", None),
+        "qty_rounding": qty_rounding,
+        "mintick": getattr(config, "mintick", None),
+        "max_bars_back": int(getattr(config, "max_bars_back", 0) or 0),
+        "score_start_time": getattr(config, "score_start_time", None),
+        "score_end_time": getattr(config, "score_end_time", None),
+        "max_pre_bars": int(getattr(config, "max_pre_bars", 0) or 0),
+        "semantic_profile": semantic_profile,
+    }
+
+
 def run_isolated_artifact(
     source: bytes,
     *,
@@ -245,6 +282,41 @@ def run_isolated_artifact(
     chart_timeframe = str(getattr(config, "timeframe", "") or "")
     if not chart_timeframe:
         raise IsolatedRunError("chart timeframe is required")
+    protocol_mode = str(getattr(config, "isolated_protocol", "") or "interactive")
+    if protocol_mode == "bulk_backtest":
+        envelopes = getattr(config, "bar_envelopes", None)
+        if not isinstance(envelopes, list) or not envelopes:
+            raise IsolatedRunError("bulk backtest requires canonical bar envelopes")
+        engine_config = _bulk_engine_config(config, semantic_profile)
+        try:
+            with BulkWorkerSession(
+                source,
+                getattr(config, "execution_context", {}),
+                str(getattr(config, "instrument_id", None) or getattr(config, "symbol", "")),
+                getattr(config, "admitted_manifest", {}),
+                getattr(config, "generated_artifact", {}),
+                str(getattr(config, "run_hash", "")),
+                getattr(config, "protocol_artifact_dir", ""),
+                semantic_profile=semantic_profile,
+                chart_timeframe=chart_timeframe,
+                htf_bars=_stamp_confirmed_htf_bars(htf_bars),
+                params=params,
+                engine_config=engine_config,
+            ) as session:
+                bulk = session.run_bars(envelopes, engine_config)
+        except IsolatedWorkerError as exc:
+            raise IsolatedRunError(str(exc)) from exc
+        return {
+            "ok": True,
+            "intent_tape": bulk["intent_tape"],
+            "score_ledger_hash": bulk["score_ledger_hash"],
+            "raw_result": bulk["raw_result"],
+            "isolation": {
+                "protocol": "openpine.worker.protocol.v2",
+                "mode": "bulk_backtest",
+            },
+            "execution_protocol": "openpine.worker.protocol.v2",
+        }
     accumulated_events: list[dict[str, Any]] = []
     pending_batch: dict[str, Any] = {}
 

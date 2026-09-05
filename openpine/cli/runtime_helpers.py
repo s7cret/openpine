@@ -79,6 +79,7 @@ def _bind_cli_isolated_config(
         supplemental_bars=htf_bars,
         created_at_utc_ms=created_at_utc_ms,
     )
+    object.__setattr__(config, "isolated_protocol", "bulk_backtest")
 
 
 def _fmt_utc_ms(timestamp_ms: int) -> str:
@@ -1375,11 +1376,11 @@ def _load_strategy_backtest_bars(
     if callable(load_bars):
         series = load_bars(query)
         canonical_bars = getattr(series, "canonical_bars", None)
-        bars = (
-            CanonicalCliBars(list(series.bars), canonical_bars)
-            if isinstance(canonical_bars, (list, tuple))
-            else list(series.bars)
-        )
+        if not isinstance(canonical_bars, (list, tuple)) or len(canonical_bars) != len(
+            series.bars
+        ):
+            raise IsolatedRunError("canonical marketdata bar envelopes are required")
+        bars = CanonicalCliBars(list(series.bars), canonical_bars)
     else:
         bars = orch.get_bars(query)
     data_load_sec = _time.perf_counter() - t0

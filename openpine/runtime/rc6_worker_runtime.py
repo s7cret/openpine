@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 import ast
+import dataclasses
 import hashlib
 import inspect
 import json
 import re
 import sys
+import time
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
+
+WORKER_STDIN_LIMIT_BYTES = 10_000_000
 
 from ast2python.artifacts import verify_generated_artifact_v3
 from backtest_engine import BacktestConfig
@@ -282,6 +286,7 @@ class RC6GeneratedScriptSession:
             instrument=instrument,
             timeframe=timeframe,
         )
+        self.session.commit_full_identity = False
         if not isinstance(identity, IntentReplayIdentity):
             raise TypeError("identity must be IntentReplayIdentity")
         self.identity = identity
@@ -467,7 +472,7 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
     loaded = False
     initialized = False
     for line in sys.stdin:
-        if len(line) > 1_000_000:
+        if len(line) > WORKER_STDIN_LIMIT_BYTES:
             raise ValueError("interactive message exceeds size limit")
         message = json.loads(line)
         protocol.accept(message)
@@ -544,4 +549,301 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
     return 0
 
 
-__all__ = ["RC6BarExecution", "RC6GeneratedScriptSession", "run_interactive"]
+def _jsonable(value: Any) -> Any:
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {key: _jsonable(item) for key, item in dataclasses.asdict(value).items()}
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(item) for item in value]
+    if isinstance(value, set):
+        return [_jsonable(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
+def _engine_bar(envelope: Mapping[str, Any]) -> Any:
+    from backtest_engine.models import Bar as EngineBar
+    from openpine_contracts import Finality
+
+    closed = envelope.get("closed", True)
+    return EngineBar(
+        time=int(envelope["open_time_utc_ms"]),
+        open=float(envelope["open"]),
+        high=float(envelope["high"]),
+        low=float(envelope["low"]),
+        close=float(envelope["close"]),
+        volume=float(envelope.get("volume") or 0),
+        time_close=int(envelope["close_time_utc_ms"]),
+        finality=Finality.FINAL if closed else Finality.OPEN,
+    )
+
+
+def _execute_protocol_bar(
+    session: RC6GeneratedScriptSession, event: Mapping[str, Any]
+) -> dict[str, Any]:
+    raw_bar = event["bar"]
+    projection = event["broker_projection"]
+    if not isinstance(raw_bar, Mapping) or not isinstance(projection, Mapping):
+        raise ValueError("interactive bar or broker projection is malformed")
+    values = _bar_values(raw_bar)
+    if event["bar_hash"] != raw_bar["bar_content_hash"]:
+        raise ValueError("bar identity mismatch")
+    execution = session.execute_bar(
+        values,
+        bar_index=int(event["bar_index"]),
+        last_bar_index=int(event["bar_index"]),
+        tick_index=int(event["recalc_iteration"]),
+        strategy_values=_strategy_values(projection),
+    )
+    return {"intents": [dict(intent) for intent in execution.intents]}
+
+
+def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+    """Run the engine+generated loop inside the sandbox. Host sees no per-bar IPC."""
+
+    from backtest_engine import BacktestCallbacks, BacktestEngine
+    from backtest_engine.core.intent_replay import (
+        admit_sealed_intent_tape,
+        apply_live_intents_for_bar,
+    )
+
+    generated = request["generated_artifact"]
+    context = request["execution_context"]
+    engine_config = request.get("engine_config")
+    if not isinstance(generated, Mapping) or not isinstance(context, Mapping):
+        raise ValueError("bulk RC6 request identity is malformed")
+    if not isinstance(engine_config, Mapping):
+        raise ValueError("bulk engine config is required")
+    session = _session_from_request(request)
+    hello = protocol.append(
+        "HELLO",
+        {
+            "worker_id": context["session_id"],
+            "protocol_version": "2.3.0",
+            "capabilities": ["closed_bar", "checkpoint_v1"],
+        },
+        0,
+    )
+    json.dump(hello, sys.stdout)
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+    loaded = False
+    initialized = False
+    engine_bars: list[Any] = []
+    for line in sys.stdin:
+        if len(line) > WORKER_STDIN_LIMIT_BYTES:
+            raise ValueError("interactive message exceeds size limit")
+        message = json.loads(line)
+        kind = message.get("kind") if isinstance(message, dict) else None
+        if kind == "BULK_BARS":
+            if not initialized:
+                raise ValueError("run must be initialized before bulk bars")
+            batch = message.get("bars")
+            if not isinstance(batch, list):
+                raise ValueError("bulk bars payload is invalid")
+            engine_bars.extend(_engine_bar(item) for item in batch)
+            if message.get("last") is True:
+                break
+            continue
+        protocol.accept(message)
+        body = message["body"]
+        if kind == "LOAD_ARTIFACT":
+            entrypoint = generated["entrypoint"]
+            expected = {
+                "artifact_hash": generated["content_hash"],
+                "module_hash": generated["emitted_module_hash"],
+                "entrypoint_module": entrypoint["module"],
+                "entrypoint_class": entrypoint["class"],
+            }
+            if body != expected:
+                raise ValueError("loaded artifact identity mismatch")
+            loaded = True
+            continue
+        if kind == "INIT_RUN":
+            if not loaded:
+                raise ValueError("artifact must be loaded before run initialization")
+            if (
+                body["execution_context"] != context
+                or body["execution_context_hash"] != context["content_hash"]
+                or body["run_id"] != context["run_id"]
+            ):
+                raise ValueError("run initialization identity mismatch")
+            initialized = True
+            continue
+        if kind == "ABORT":
+            return 2
+        raise ValueError("unsupported bulk handshake message kind")
+    if not initialized or not engine_bars:
+        raise ValueError("bulk backtest did not receive bars")
+
+    last_progress = 0.0
+    last_bar_index = len(engine_bars) - 1
+
+    def _strategy_values_from_state(state: Any) -> dict[str, object]:
+        signed = float(getattr(state, "position_size", 0.0) or 0.0)
+        avg = getattr(state, "position_avg_price", None)
+        opens = getattr(state, "_open_trades_ref", None) or []
+        entry = str(opens[0].entry_id) if opens else None
+        return {
+            "strategy.position_size": signed,
+            "strategy.position_avg_price": na if avg is None else float(avg),
+            "strategy.position_entry_name": na if entry is None else entry,
+        }
+
+    class _BulkStrategy:
+        required_runtime_capabilities: tuple[str, ...] = ()
+
+        def __init__(self, params: dict[str, Any], runtime: Any, ctx: Any) -> None:
+            del params, runtime
+            self.ctx = ctx
+
+        def run_bar(self, bar: Any, bar_index: int) -> None:
+            values = BarValues(
+                open=float(bar.open),
+                high=float(bar.high),
+                low=float(bar.low),
+                close=float(bar.close),
+                volume=float(bar.volume or 0),
+                time=int(bar.time),
+                time_close=int(bar.time_close or bar.time),
+            )
+            execution = session.execute_bar(
+                values,
+                bar_index=int(bar_index),
+                last_bar_index=last_bar_index,
+                strategy_values=_strategy_values_from_state(self.ctx.state),
+            )
+            batch = [dict(intent) for intent in execution.intents]
+            if not batch:
+                return
+            origin = int(batch[0]["sequence"])
+            current = admit_sealed_intent_tape(batch, sequence_origin=origin)
+            apply_live_intents_for_bar(
+                self.ctx,
+                current,
+                bar_index,
+                bar_open_time_utc_ms=int(bar.time),
+            )
+
+        def export_state(self) -> dict[str, Any]:
+            return {"bulk_worker": True}
+
+        def restore_state(self, state: Any) -> None:
+            del state
+
+    rounding = engine_config.get("qty_rounding") or engine_config.get("qty_rounding_mode")
+    qty_rounding = "floor" if rounding in {None, "none", "truncate"} else str(rounding)
+    config = BacktestConfig(
+        symbol=str(engine_config["symbol"]),
+        timeframe=str(engine_config["timeframe"]),
+        start_time=int(engine_config["start_time"]),
+        end_time=int(engine_config["end_time"]),
+        initial_capital=float(engine_config.get("initial_capital") or 100_000.0),
+        default_qty_type=str(engine_config.get("default_qty_type") or "fixed"),
+        default_qty_value=float(engine_config.get("default_qty_value") or 1.0),
+        commission_type=str(engine_config.get("commission_type") or "none"),
+        commission_value=float(engine_config.get("commission_value") or 0.0),
+        slippage=float(engine_config.get("slippage") or 0.0),
+        slippage_type=str(engine_config.get("slippage_type") or "tick"),
+        exit_matching=str(engine_config.get("exit_matching") or "fifo"),
+        pyramiding=int(engine_config.get("pyramiding") or 0),
+        margin_long=float(engine_config.get("margin_long") or 100.0),
+        margin_short=float(engine_config.get("margin_short") or 100.0),
+        process_orders_on_close=bool(engine_config.get("process_orders_on_close") or False),
+        calc_on_order_fills=bool(engine_config.get("calc_on_order_fills") or False),
+        calc_on_every_tick=bool(engine_config.get("calc_on_every_tick") or False),
+        use_bar_magnifier=bool(engine_config.get("use_bar_magnifier") or False),
+        qty_step=engine_config.get("qty_step"),
+        qty_rounding=qty_rounding,  # type: ignore[arg-type]
+        mintick=engine_config.get("mintick"),
+        max_bars_back=int(engine_config.get("max_bars_back") or 0),
+        score_start_time=engine_config.get("score_start_time"),
+        score_end_time=engine_config.get("score_end_time"),
+        max_pre_bars=int(engine_config.get("max_pre_bars") or 0),
+        semantic_profile=str(
+            engine_config.get("semantic_profile") or context["semantic_profile"]
+        ),
+        collect_events=False,
+        collect_order_lifecycle=False,
+        collect_equity_curve=False,
+        content_hash_enabled=False,
+    )
+    exchange = engine_config.get("exchange")
+    market_type = engine_config.get("market_type")
+    if exchange is not None:
+        object.__setattr__(config, "exchange", exchange)
+    if market_type is not None:
+        object.__setattr__(config, "market_type", market_type)
+
+    total = len(engine_bars)
+
+    def on_bar_end(_bar: Any, index: int, _state: Any) -> None:
+        nonlocal last_progress
+        now = time.monotonic()
+        done = index + 1
+        if done == total or now - last_progress >= 1.0:
+            last_progress = now
+            json.dump(
+                {"kind": "BULK_PROGRESS", "bars_done": done, "bars_total": total},
+                sys.stdout,
+            )
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+
+    result = BacktestEngine(config).run(
+        _BulkStrategy,
+        params=dict(request.get("params") or {}),
+        bars=engine_bars,
+        callbacks=BacktestCallbacks(on_bar_end=on_bar_end),
+    )
+    tape_events: list[dict[str, Any]] = []
+    raw = {
+        "status": getattr(result, "status", "completed"),
+        "bars_processed": int(getattr(result, "bars_processed", 0) or 0),
+        "initial_capital": getattr(result, "initial_capital", None),
+        "final_equity": getattr(result, "final_equity", None),
+        "net_profit": getattr(result, "net_profit", None),
+        "net_profit_percent": getattr(result, "net_profit_percent", None),
+        "gross_profit": getattr(result, "gross_profit", None),
+        "gross_loss": getattr(result, "gross_loss", None),
+        "profit_factor": getattr(result, "profit_factor", None),
+        "max_drawdown": getattr(result, "max_drawdown", None),
+        "max_drawdown_percent": getattr(result, "max_drawdown_percent", None),
+        "sharpe_ratio": getattr(result, "sharpe_ratio", None),
+        "sortino_ratio": getattr(result, "sortino_ratio", None),
+        "win_rate": getattr(result, "win_rate", None),
+        "total_trades": getattr(result, "total_trades", 0),
+        "winning_trades": getattr(result, "winning_trades", 0),
+        "losing_trades": getattr(result, "losing_trades", 0),
+        "avg_trade": getattr(result, "avg_trade", None),
+        "score_ledger_hash": result.score_ledger_hash,
+        "trades": _jsonable(list(getattr(result, "trades", None) or [])),
+        "closed_trades": _jsonable(list(getattr(result, "closed_trades", None) or [])),
+        "open_trades": _jsonable(list(getattr(result, "open_trades", None) or [])),
+        "equity_curve": _jsonable(list(getattr(result, "equity_curve", None) or [])),
+    }
+    payload = {
+        "kind": "BULK_RESULT",
+        "bars_processed": total,
+        "intent_tape": tape_events,
+        "score_ledger_hash": result.score_ledger_hash,
+        "raw_result": raw,
+    }
+    json.dump(payload, sys.stdout, default=str)
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+    for line in sys.stdin:
+        if len(line) > WORKER_STDIN_LIMIT_BYTES:
+            raise ValueError("interactive message exceeds size limit")
+        message = json.loads(line)
+        kind = message.get("kind") if isinstance(message, dict) else None
+        if kind == "ABORT":
+            return 2
+        if kind == "FINALIZE":
+            return 0
+    return 0
+
+
+__all__ = ["RC6BarExecution", "RC6GeneratedScriptSession", "run_bulk", "run_interactive"]

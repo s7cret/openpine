@@ -246,6 +246,7 @@ class BacktestEngineAdapter:
             "bar_envelopes",
             "run_hash",
             "protocol_artifact_dir",
+            "isolated_protocol",
         ):
             value = getattr(config, name, None)
             if value is not None:

@@ -116,3 +116,26 @@ def test_adapter_run_isolated_rejects_unconfirmed_htf_bars() -> None:
                 }
             ],
         )
+
+
+def test_adapter_run_isolated_forwards_bulk_protocol(monkeypatch: pytest.MonkeyPatch) -> None:
+    import openpine.runtime.isolated_run as isolated_run
+
+    seen: dict[str, object] = {}
+
+    def _capture(source, *, bars, config, resume_state=None, htf_bars=None, params=None):
+        seen["isolated_protocol"] = getattr(config, "isolated_protocol", None)
+        raise IsolatedRunError("stop")
+
+    monkeypatch.setattr(isolated_run, "run_isolated_artifact", _capture)
+    config = BacktestRunConfig(
+        symbol="BTCUSDT",
+        timeframe="1m",
+        start_time=0,
+        end_time=60_000,
+        semantic_profile="strict_5x",
+    )
+    object.__setattr__(config, "isolated_protocol", "bulk_backtest")
+    with pytest.raises(IsolatedRunError, match="stop"):
+        BacktestEngineAdapter().run_isolated(b"VALUE = 1\\n", [], config)
+    assert seen["isolated_protocol"] == "bulk_backtest"

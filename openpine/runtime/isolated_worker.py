@@ -37,11 +37,20 @@ from openpine.runtime.worker_protocol import WorkerProtocolError, WorkerProtocol
 ExecutionContext = dict[str, Any]
 AdmittedManifest = Mapping[str, Any]
 
+
+def htf_bars_for_bootstrap(*, bulk_backtest: bool, htf_bars: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    """Bulk bootstrap cannot carry HTF series; INTERACTIVE still gets the stamped rows."""
+
+    if bulk_backtest:
+        return []
+    return list(htf_bars or [])
+
 BWRAP = "/usr/bin/bwrap"
 SANDBOX_PYTHON = "/usr/bin/python3"
 WORKER_USER = "openpine-worker"
 TMPFS_BYTES = 16 * 1024 * 1024
 TRUSTED_DEST = "/tmp/openpine-trusted"
+WORKER_LINE_LIMIT_BYTES = 10_000_000
 
 # Child bootstrap is stdlib-only. Host env and host home are not visible.
 _BOOTSTRAP = (
@@ -49,7 +58,7 @@ _BOOTSTRAP = (
     + r"""
 import json
 
-from openpine_rc6_worker_runtime import RC6WorkerProtocol, run_interactive
+from openpine_rc6_worker_runtime import RC6WorkerProtocol, run_bulk, run_interactive
 
 
 def main():
@@ -62,6 +71,8 @@ def main():
     if request.get("stack_id") != context.get("stack_manifest_hash"):
         raise RuntimeError("RC6 request stack identity mismatch")
     protocol = RC6WorkerProtocol(context)
+    if request.get("bulk_backtest") is True:
+        return run_bulk(request, protocol)
     return run_interactive(request, protocol)
 
 
@@ -533,6 +544,9 @@ class InteractiveWorkerSession:
         htf_bars: list[dict[str, Any]] | None = None,
         timeout_s: float = 5.0,
         cgroup_dir: str | Path | None = None,
+        bulk_backtest: bool = False,
+        engine_config: Mapping[str, Any] | None = None,
+        bulk_idle_timeout_s: float = 60.0,
     ) -> None:
         if len(source) > 500_000:
             raise IsolatedWorkerError("artifact source exceeds size limit")
@@ -568,7 +582,13 @@ class InteractiveWorkerSession:
             raise IsolatedWorkerError("params must be an object")
         if not str(protocol_artifact_dir):
             raise IsolatedWorkerError("protocol artifact directory is required")
+        if bulk_backtest and not isinstance(engine_config, Mapping):
+            raise IsolatedWorkerError("bulk backtest engine config is required")
         self.timeout_s = timeout_s
+        self.bulk_idle_timeout_s = float(bulk_idle_timeout_s)
+        self.bulk_backtest = bool(bulk_backtest)
+        self.engine_config = dict(engine_config) if engine_config is not None else {}
+        self.max_line_bytes = 32_000_000 if self.bulk_backtest else 1_000_000
         self._closed = False
         self._stdout_buffer = bytearray()
         self.unit_name = _worker_unit_name()
@@ -604,20 +624,24 @@ class InteractiveWorkerSession:
                 self._kill()
                 raise IsolatedWorkerError(str(exc)) from exc
         try:
-            self._write_bootstrap(
-                {
-                    "interactive": True,
-                    "source": source.decode("utf-8"),
-                    "stack_id": stack_manifest_hash,
-                    "execution_context": execution_context,
-                    "generated_artifact": generated_artifact,
-                    "instrument_id": instrument_id,
-                    "semantic_profile": semantic_profile,
-                    "chart_timeframe": chart_timeframe,
-                    "htf_bars": htf_bars or [],
-                    "params": {} if params is None else params,
-                }
-            )
+            bootstrap = {
+                "interactive": True,
+                "bulk_backtest": self.bulk_backtest,
+                "source": source.decode("utf-8"),
+                "stack_id": stack_manifest_hash,
+                "execution_context": execution_context,
+                "generated_artifact": generated_artifact,
+                "instrument_id": instrument_id,
+                "semantic_profile": semantic_profile,
+                "chart_timeframe": chart_timeframe,
+                "htf_bars": htf_bars_for_bootstrap(
+                    bulk_backtest=self.bulk_backtest, htf_bars=htf_bars
+                ),
+                "params": {} if params is None else params,
+            }
+            if self.bulk_backtest:
+                bootstrap["engine_config"] = self.engine_config
+            self._write_bootstrap(bootstrap)
             hello = self._read_message()
             if hello.get("kind") != "HELLO":
                 self._raise_response(hello)
@@ -661,7 +685,7 @@ class InteractiveWorkerSession:
             raise IsolatedWorkerError("interactive worker is closed")
         encoded = json.dumps(payload, separators=(",", ":")) + "\n"
         encoded_size = len(encoded.encode("utf-8"))
-        if encoded_size > 1_000_000:
+        if encoded_size > WORKER_LINE_LIMIT_BYTES:
             raise IsolatedWorkerError("interactive message exceeds size limit")
         try:
             self.proc.stdin.write(encoded)
@@ -686,7 +710,7 @@ class InteractiveWorkerSession:
             raise IsolatedWorkerError("worker protocol message content hash is invalid")
         self._write_json_line(payload)
 
-    def _read_message(self) -> dict[str, Any]:
+    def _read_message(self, *, require_protocol: bool = True) -> dict[str, Any]:
         if self.proc.stdout is None:
             raise IsolatedWorkerError("interactive worker stdout unavailable")
         deadline = time.monotonic() + self.timeout_s
@@ -709,13 +733,14 @@ class InteractiveWorkerSession:
                 raise IsolatedWorkerError(stderr.strip() or "interactive worker exited")
             self._stdout_buffer.extend(chunk)
             newline = self._stdout_buffer.find(b"\n")
-            if newline < 0 and len(self._stdout_buffer) > 1_000_000:
+            limit = getattr(self, "max_line_bytes", 1_000_000)
+            if newline < 0 and len(self._stdout_buffer) > limit:
                 self._kill()
                 raise IsolatedWorkerError("excessive worker output")
         line_bytes = bytes(self._stdout_buffer[: newline + 1])
         del self._stdout_buffer[: newline + 1]
         line_size = len(line_bytes)
-        if line_size > 1_000_000:
+        if line_size > getattr(self, "max_line_bytes", 1_000_000):
             self._kill()
             raise IsolatedWorkerError("excessive worker output")
         self.bytes_received += line_size
@@ -725,6 +750,8 @@ class InteractiveWorkerSession:
             raise IsolatedWorkerError("malformed worker output") from exc
         if not isinstance(response, dict):
             raise IsolatedWorkerError("worker response must be an object")
+        if not require_protocol:
+            return response
         if response.get("schema_id") != "openpine.worker.protocol.v2":
             self._raise_response(response)
         try:
