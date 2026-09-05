@@ -1,0 +1,41 @@
+# Functional UI/build checks; not a browser E2E or visual acceptance gate.
+name: RC6 frontend checks
+'on':
+  push:
+    branches: ['release/5.0.0rc6']
+  pull_request:
+    branches: ['release/5.0.0rc6']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rc6-ui-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: openpine-ui
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - run: npm ci
+      - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
+      - run: npm run test:node
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rc6-ui-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ui-tests.xml
+            openpine-ui/dist/
+          retention-days: 30
