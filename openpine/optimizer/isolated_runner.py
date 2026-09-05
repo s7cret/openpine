@@ -28,7 +28,9 @@ def _identity(value: Any) -> Any:
     for name in ("time", "time_close", "open", "high", "low", "close", "volume"):
         if hasattr(value, name):
             payload[name] = getattr(value, name)
-    return payload or {"type": f"{type(value).__module__}.{type(value).__qualname__}"}
+    if not payload:
+        raise TypeError(f"unsupported optimizer identity value: {type(value).__name__}")
+    return payload
 
 
 def _stable_hash(value: Any) -> str:
@@ -73,25 +75,32 @@ class IsolatedOptimizerRunner:
     ) -> None:
         self.source = bytes(source)
         self.bars = tuple(bars)
-        self.config = copy.copy(config)
-        self.execution_context = dict(execution_context)
-        self.admitted_manifest = dict(admitted_manifest)
+        self.config = copy.deepcopy(config)
+        self.execution_context = copy.deepcopy(execution_context)
+        self.admitted_manifest = copy.deepcopy(admitted_manifest)
         self.instrument_id = instrument_id
-        self.generated_artifact = dict(generated_artifact)
-        self.bar_envelopes = [dict(item) for item in bar_envelopes]
-        self.run_identity = dict(run_identity)
+        self.generated_artifact = copy.deepcopy(generated_artifact)
+        self.bar_envelopes = copy.deepcopy(bar_envelopes)
+        self._envelope_hash = _stable_hash(self.bar_envelopes)
+        self.run_identity = copy.deepcopy(run_identity)
         self.data_dir = Path(data_dir)
         self.protocol_artifact_dir = Path(protocol_artifact_dir)
         self.expected_data_snapshot_hash = expected_data_snapshot_hash
-        self.base_params = dict(base_params or {})
-        self.htf_bars = list(htf_bars or [])
+        self.base_params = copy.deepcopy(dict(base_params or {}))
+        self.htf_bars = copy.deepcopy(list(htf_bars or []))
         self.data_fingerprint = _stable_hash(self.bars)
-        self.engine_config_hash = _stable_hash(config)
+        from openpine.runtime.inputs import applied_config_hash, resolve_inputs
+
+        inputs = resolve_inputs(self.source, self.base_params, envelope=self.generated_artifact)
+        self.engine_config_hash = applied_config_hash(self.config, inputs)
         self.runner_fingerprint = _stable_hash(
             {
                 "contract": "openpine.isolated_optimizer_runner.v1",
                 "source_sha256": hashlib.sha256(self.source).hexdigest(),
-                "base_params": self.base_params,
+                "generated_artifact_hash": self.generated_artifact["content_hash"],
+                "applied_config_hash": self.engine_config_hash,
+                "data_snapshot_hash": self.expected_data_snapshot_hash,
+                "canonical_envelopes_hash": self._envelope_hash,
             }
         )
 
@@ -118,8 +127,35 @@ class IsolatedOptimizerRunner:
         )
         if actual_snapshot_hash != self.expected_data_snapshot_hash:
             raise RuntimeError("data snapshot hash mismatch before optimizer trial")
-        if isinstance(request.trial_id, bool) or not isinstance(request.trial_id, int):
+        if _stable_hash(self.bar_envelopes) != self._envelope_hash:
+            raise RuntimeError("canonical envelope identity drift before optimizer trial")
+        if (
+            isinstance(request.trial_id, bool)
+            or not isinstance(request.trial_id, int)
+            or request.trial_id < 0
+        ):
             raise RuntimeError("optimizer trial_id must be an integer")
+        from optimizer.core.contracts import RUNNER_CONTRACT
+        from openpine.runtime.inputs import applied_config_hash, resolve_inputs
+
+        if getattr(request, "contract", RUNNER_CONTRACT) != RUNNER_CONTRACT:
+            raise ValueError("unsupported optimizer runner contract")
+        for field in ("range", "seed"):
+            if getattr(request, field, None) is not None:
+                raise ValueError(f"isolated optimizer does not support {field}")
+        if getattr(request, "early_stop_conditions", None):
+            raise ValueError("isolated optimizer does not support early_stop_conditions")
+        outputs = set(getattr(request, "required_outputs", ()))
+        if outputs - self.capabilities.supported_outputs:
+            raise ValueError("unsupported required optimizer outputs")
+        trial_params = {**self.base_params, **dict(request.params)}
+        inputs = resolve_inputs(self.source, trial_params, envelope=self.generated_artifact)
+        trial_params = dict(inputs.values)
+        trial_config = copy.deepcopy(self.config)
+        object.__setattr__(trial_config, "required_outputs", outputs)
+        object.__setattr__(trial_config, "required_metrics", set(request.required_metrics))
+        config_hash = applied_config_hash(trial_config, inputs)
+        object.__setattr__(trial_config, "applied_config_hash", config_hash)
         trial_run_id = f"{self.execution_context['run_id']}.trial-{request.trial_id}"
         trial_context_payload = dict(self.execution_context)
         trial_context_payload.pop("content_hash", None)
@@ -132,11 +168,11 @@ class IsolatedOptimizerRunner:
         trial_run_payload = dict(self.run_identity)
         trial_run_payload.pop("content_hash", None)
         trial_run_payload["run_id"] = trial_run_id
+        trial_run_payload["config_hash"] = config_hash
         trial_run = seal_content_hash(trial_run_payload, schema_id="openpine.run.v2")
         validate_payload("openpine.run.v2", trial_run)
         persist_run_identity(self.data_dir, trial_run_id, trial_run)
 
-        trial_config = copy.copy(self.config)
         object.__setattr__(trial_config, "execution_context", trial_context)
         object.__setattr__(trial_config, "admitted_manifest", self.admitted_manifest)
         object.__setattr__(trial_config, "instrument_id", self.instrument_id)
@@ -148,7 +184,6 @@ class IsolatedOptimizerRunner:
             "protocol_artifact_dir",
             str(self.protocol_artifact_dir / f"trial-{request.trial_id}"),
         )
-        trial_params = {**self.base_params, **dict(request.params)}
         isolated = BacktestEngineAdapter().run_isolated(
             self.source,
             list(self.bars),
@@ -157,6 +192,8 @@ class IsolatedOptimizerRunner:
             params=trial_params,
         )
         result = isolated.raw_result
+        if getattr(result, "input_values_hash", None) != inputs.values_hash:
+            raise RuntimeError("optimizer result does not attest the applied input values")
         metrics: dict[str, float] = {}
         diagnostics: list[dict[str, Any]] = []
         for name in set(request.required_metrics):
@@ -186,7 +223,7 @@ class IsolatedOptimizerRunner:
                 )
                 continue
             metrics[name] = metric
-        if getattr(result, "status", "completed") != "completed":
+        if getattr(result, "status", None) != "completed":
             diagnostics.append(
                 {
                     "code": "ISOLATED_OPTIMIZER_BACKTEST_FAILED",
@@ -201,7 +238,9 @@ class IsolatedOptimizerRunner:
                 getattr(result, "data_fingerprint", None) or self.data_fingerprint
             ),
             "runner_fingerprint": self.runner_fingerprint,
-            "engine_config_hash": self.engine_config_hash,
+            "engine_config_hash": config_hash,
+            "input_values_hash": inputs.values_hash,
+            "run_identity_hash": trial_run["content_hash"],
             "score_ledger_hash": str(getattr(result, "score_ledger_hash", None) or ""),
         }
         if callable(content_hash):

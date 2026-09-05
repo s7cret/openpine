@@ -61,9 +61,9 @@ def make_sealed_artifact(
     python_code: str = "generated-source",
     semantic_profile: str = "strict_5x",
     producer_commits: dict[str, str] | None = None,
+    source_text: str = '//@version=6\nstrategy("fixture")\n',
 ) -> dict[str, object]:
     del python_code
-    source_text = "//@version=6\nstrategy(\"fixture\")\n"
     compiled = NativeRC6CompilerAdapter().compile(
         source_text,
         producer_commits=dict(producer_commits or _FAKE_COMMITS),

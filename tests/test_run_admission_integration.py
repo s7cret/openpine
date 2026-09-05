@@ -577,6 +577,7 @@ def test_optimizer_runner_rehashes_bars_before_each_trial(
         timeframe="1m",
         start_time=0,
         end_time=60_000,
+        semantic_profile="strict_5x",
     )
     htf_bars = [
         {
@@ -607,12 +608,11 @@ def test_optimizer_runner_rehashes_bars_before_each_trial(
     from tests.admission_helpers import make_sealed_artifact
     from tests.rc4_fixtures import admitted_manifest, execution_context, run_identity
 
-    generated_artifact = make_sealed_artifact(python_code="source")[
-        "generated_artifact"
-    ]
+    sealed = make_sealed_artifact()
+    generated_artifact = sealed["generated_artifact"]
     context = execution_context()
     runner = IsolatedOptimizerRunner(
-        source=b"source",
+        source=sealed["python_code"].encode(),
         bars=[_bar()],
         config=config,
         expected_data_snapshot_hash=expected,

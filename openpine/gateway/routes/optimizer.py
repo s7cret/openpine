@@ -312,6 +312,8 @@ async def optimizer_search(
         data_dir = getattr(state_config, "data_dir", None)
         if data_dir is None:
             raise HTTPException(503, "RUN_IDENTITY_STORAGE_REQUIRED")
+        from openpine.runtime.inputs import applied_config_hash, resolve_inputs
+        base_config_hash = applied_config_hash(engine_config, resolve_inputs(artifact["python_code"], base_params))
         run_identity = admit_and_persist_run_identity(
             data_dir=data_dir,
             deployment=deployment,
@@ -339,6 +341,7 @@ async def optimizer_search(
                 "intent_tape_v2",
             ),
             created_at_utc_ms=int(time.time() * 1000),
+            config_hash=base_config_hash,
         )
         canonical_bars = getattr(series, "canonical_bars", None)
         if not isinstance(canonical_bars, (list, tuple)) or len(canonical_bars) != len(

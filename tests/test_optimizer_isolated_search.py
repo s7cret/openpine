@@ -53,7 +53,7 @@ def _config() -> BacktestRunConfig:
 def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -> None:
     bars = _bars()
     config = _config()
-    sealed = make_sealed_artifact()
+    sealed = make_sealed_artifact(source_text='//@version=6\nstrategy("fixture")\nqty=input.int(1,minval=1,maxval=3)\n')
     artifact = sealed["generated_artifact"]
     context = execution_context(
         generated_artifact_hash=artifact["content_hash"],
@@ -115,7 +115,7 @@ def test_external_optimizer_selects_champion_through_isolated_worker(tmp_path) -
     result = adapter.get_result(ref.optimization_id)
 
     assert ref.optimization_id == "opt-fixed"
-    assert result.status == "completed"
+    assert result.status == "completed", result
     assert result.trials_requested == 3
     assert result.trials_completed == 3
     assert result.best_params == {"qty": 1}

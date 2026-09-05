@@ -74,6 +74,17 @@ class BacktestArtifactError(RuntimeError):
     """Raised when a compiled strategy artifact cannot be loaded safely."""
 
 
+def _forward_optional_engine_settings(config: Any, engine_config: Any) -> None:
+    """Keep optimizer requirements and warmup settings at the adapter boundary."""
+    for name in (
+        "required_outputs", "required_metrics", "warmup_policy", "score_end_policy",
+        "min_pre_bars", "allow_short", "force_close_on_end", "currency",
+        "collect_equity_curve", "capture_plots", "plot_from_ms", "plot_to_ms",
+    ):
+        if hasattr(config, name):
+            object.__setattr__(engine_config, name, getattr(config, name))
+
+
 class BacktestEngineAdapter:
     """Narrow OpenPine adapter over the local backtest-engine package."""
 
@@ -154,6 +165,7 @@ class BacktestEngineAdapter:
             collect_order_lifecycle=config.collect_order_lifecycle,
             semantic_profile=admitted.value,
         )
+        _forward_optional_engine_settings(config, engine_config)
         engine_config.exchange = config.exchange
         engine_config.market_type = config.market_type
         engine = self._module.BacktestEngine(engine_config)
@@ -236,6 +248,7 @@ class BacktestEngineAdapter:
             collect_order_lifecycle=config.collect_order_lifecycle,
             semantic_profile=getattr(config, "semantic_profile", None),
         )
+        _forward_optional_engine_settings(config, engine_config)
         engine_config.exchange = config.exchange
         engine_config.market_type = config.market_type
         for name in (

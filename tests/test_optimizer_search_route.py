@@ -19,7 +19,9 @@ from tests.rc4_fixtures import (
 
 
 def _artifact() -> dict[str, object]:
-    return make_sealed_artifact()
+    return make_sealed_artifact(
+        source_text='//@version=6\nstrategy("fixture")\nqty=input.int(1,minval=1,maxval=3)\nfee_buffer=input.int(1)\n'
+    )
 
 
 def _strategy() -> StrategyInstance:
