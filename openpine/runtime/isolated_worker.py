@@ -794,6 +794,7 @@ class InteractiveWorkerSession:
             "bar_hash",
             "bar",
             "broker_projection",
+            "execution_event",
         }
         if not required.issubset(event):
             raise IsolatedWorkerError("engine BAR_BEGIN artifact is incomplete")
@@ -808,6 +809,8 @@ class InteractiveWorkerSession:
         body = response.get("body")
         if not isinstance(body, dict):
             raise IsolatedWorkerError("worker INTENT_BATCH body is invalid")
+        if any(body.get(key) != event[key] for key in ("run_id", "bar_index", "recalc_iteration")):
+            raise IsolatedWorkerError("worker intent callback identity mismatch")
         return body
 
     def _persist_artifact(self, artifact: Mapping[str, Any]) -> dict[str, Any]:
@@ -854,6 +857,7 @@ class InteractiveWorkerSession:
                 "bar_index": event["bar_index"],
                 "recalc_iteration": recalc_iteration,
                 "cause_sequence": broker_batch["sequence"],
+                "execution_event": event["execution_event"],
                 "broker_projection_hash": event["broker_projection_hash"],
                 "broker_projection": event["broker_projection"],
             },
@@ -869,6 +873,12 @@ class InteractiveWorkerSession:
         body = response.get("body")
         if not isinstance(body, dict):
             raise IsolatedWorkerError("worker recalculated INTENT_BATCH body is invalid")
+        recalc = result.get("body", {})
+        if (any(body.get(key) != event[key] or recalc.get(key) != event[key]
+                for key in ("run_id", "bar_index", "recalc_iteration"))
+                or recalc.get("intent_batch_message_id") != response.get("message_id")
+                or recalc.get("intent_batch_hash") != body.get("intent_batch_hash")):
+            raise IsolatedWorkerError("recalculation response identity mismatch")
         return body
 
     def commit_bar(self, event: Mapping[str, Any]) -> dict[str, Any]:

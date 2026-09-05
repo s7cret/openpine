@@ -26,6 +26,7 @@ from backtest_engine.core.delegated_strategy_intents import (
 )
 from backtest_engine.core.intent_replay import IntentReplayIdentity
 from openpine_contracts import (
+    ExecutionEvent,
     aggregate_batch_hash,
     seal_content_hash,
     validate_payload,
@@ -36,6 +37,7 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession, na
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
 from pinelib.runtime.session import CallbackResult
 
+from openpine.runtime.rc6_lifecycle import ExecutionCursor
 from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
 from openpine.runtime.rc6_config import resolve_engine_config
 from openpine.runtime.inputs import resolve_inputs, input_evidence
@@ -310,6 +312,7 @@ class RC6GeneratedScriptSession:
             default_qty_value=default_qty_value,
         )
         self._intent_sequence = 0
+        self.execution_cursor = ExecutionCursor()
 
     def execute_bar(
         self,
@@ -322,15 +325,24 @@ class RC6GeneratedScriptSession:
         tick_index: int = 0,
         final_tick: bool = True,
         broker_equity: object | None = None,
+        execution_event: ExecutionEvent | None = None,
     ) -> RC6BarExecution:
         bar_time = values.time
         if type(bar_time) is not int or bar_time < 0:
             raise ValueError("bar time must be a nonnegative integer")
+        if execution_event is not None:
+            self.execution_cursor.validate(execution_event, values)
+            if (bar_index, last_bar_index) != (execution_event.bar_index, execution_event.last_bar_index):
+                raise ValueError("callback coordinates differ from execution event")
+            realtime, final_tick, tick_index = (
+                execution_event.realtime, execution_event.final_tick, execution_event.tick_index
+            )
         handler = DelegatedStrategyIntentHandler(
             identity=self.identity,
             producer_commit=self.producer_commit,
             bar_open_time_utc_ms={bar_index: bar_time},
             config=self.intent_config,
+            recalc_iteration=None if execution_event is None else execution_event.recalc_iteration,
             bar_close={bar_index: values.close},
             bar_equity={} if broker_equity is None else {bar_index: broker_equity},
         )
@@ -342,7 +354,7 @@ class RC6GeneratedScriptSession:
         )
         transaction = self.session.begin(
             CallbackFrame(
-                "REALTIME_EVAL" if realtime else "HISTORICAL_EVAL",
+                execution_event.phase if execution_event is not None else ("REALTIME_EVAL" if realtime else "HISTORICAL_EVAL"),
                 self.session.sequence + 1,
                 realtime=realtime,
                 final_tick=final_tick,
@@ -350,9 +362,11 @@ class RC6GeneratedScriptSession:
                 tick_index=tick_index,
                 is_last_bar=bar_index == last_bar_index,
                 is_last_confirmed_history=(
-                    not realtime and bar_index == last_bar_index
+                    execution_event.is_last_confirmed_history if execution_event is not None
+                    else not realtime and bar_index == last_bar_index
                 ),
                 last_bar_index=last_bar_index,
+                defer_bar_commit=execution_event is not None,
             ),
             values=values,
         )
@@ -369,7 +383,26 @@ class RC6GeneratedScriptSession:
             start_sequence=self._intent_sequence,
         )
         self._intent_sequence += len(intents)
+        if execution_event is not None:
+            self.execution_cursor.accept(execution_event)
         return RC6BarExecution(committed=committed, intents=intents)
+
+
+    def execute_callback(
+        self, values: BarValues, event: ExecutionEvent, *,
+        strategy_values: Mapping[str, object], broker_equity: object | None = None,
+    ) -> RC6BarExecution:
+        return self.execute_bar(
+            values, bar_index=event.bar_index, last_bar_index=event.last_bar_index,
+            strategy_values=strategy_values, broker_equity=broker_equity,
+            execution_event=event,
+        )
+
+    def finalize_bar(self, bar_index: int) -> CallbackResult:
+        self.execution_cursor.require_commit(bar_index)
+        result = self.session.finalize_bar(bar_index)
+        self.execution_cursor.finish(bar_index)
+        return result
 
 
 def _pine_timeframe(value: object) -> str:
@@ -465,105 +498,138 @@ def _bar_values(
     )
 
 
-def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
-    """Run the protocol-v2 transport with an RC6 generated-script session."""
+class RC6InteractiveCallbacks:
+    """Validate broker-bound callbacks and publish history only at BAR_COMMIT."""
 
-    generated = request["generated_artifact"]
-    context = request["execution_context"]
-    if not isinstance(generated, Mapping) or not isinstance(context, Mapping):
-        raise ValueError("interactive RC6 request identity is malformed")
+    def __init__(self, session: RC6GeneratedScriptSession, context: Mapping[str, Any]) -> None:
+        self.session, self.context = session, context
+        self.current_bar: Mapping[str, Any] | None = None
+        self.last_broker_message: Mapping[str, Any] | None = None
+        self.last_commit: Mapping[str, Any] | None = None
+
+    def process(self, message: Mapping[str, Any], protocol: RC6WorkerProtocol) -> list[dict[str, Any]]:
+        kind, body = message["kind"], message["body"]
+        if body.get("run_id") != self.context["run_id"]:
+            raise ValueError("callback run identity mismatch")
+        if kind == "BROKER_EVENT_BATCH":
+            expected_hash = aggregate_batch_hash(body["broker_events"], batch_kind="BROKER_EVENT_BATCH",
+                                                  item_schema_id="openpine.broker.v2")
+            if body["broker_event_batch_hash"] != expected_hash:
+                raise ValueError("broker event batch hash mismatch")
+            self.last_broker_message = message
+            return []
+        if kind == "BAR_COMMIT":
+            last = self.session.execution_cursor.last
+            if (last is None or body["bar_index"] != last.bar_index
+                    or body["recalc_iteration"] != last.recalc_iteration):
+                raise ValueError("bar commit callback coordinates mismatch")
+            self.session.finalize_bar(body["bar_index"])
+            self.last_commit = message
+            self.current_bar = self.last_broker_message = None
+            return []
+        if kind not in {"BAR_BEGIN", "RECALC_REQUEST"}:
+            raise ValueError("unsupported interactive callback")
+        event = ExecutionEvent.from_dict(body.get("execution_event"))
+        if (event.bar_index != body["bar_index"]
+                or event.recalc_iteration != body["recalc_iteration"]):
+            raise ValueError("execution event callback coordinates mismatch")
+        if kind == "BAR_BEGIN":
+            if self.current_bar is not None:
+                raise ValueError("previous bar has not been committed")
+            raw_bar = body["bar"]
+            if body["bar_hash"] != raw_bar["bar_content_hash"]:
+                raise ValueError("bar identity mismatch")
+        else:
+            raw_bar = self.current_bar
+            cause = self.last_broker_message
+            if raw_bar is None or cause is None or body["cause_sequence"] != cause["sequence"]:
+                raise ValueError("recalculation has no matching causal broker batch")
+            if (cause["body"]["bar_index"] != event.bar_index
+                    or cause["body"]["recalc_iteration"] + 1 != event.recalc_iteration):
+                raise ValueError("recalculation broker coordinates mismatch")
+            if body["broker_projection_hash"] != body["broker_projection"]["content_hash"]:
+                raise ValueError("recalculation projection hash mismatch")
+        projection = body["broker_projection"]
+        expected = {key: self.context[key] for key in ("run_id", "series_id", "instrument_id")}
+        expected.update(stack_id=self.context["stack_manifest_hash"], producer="backtest_engine",
+                        bar_open_time_utc_ms=event.bar_open_time_utc_ms,
+                        producer_commit=self.context["producer_commits"]["backtest_engine"],
+                        bar_index=event.bar_index, recalc_iteration=event.recalc_iteration)
+        mismatched = [key for key, value in expected.items() if projection.get(key) != value]
+        if mismatched:
+            raise ValueError(f"broker projection execution identity mismatch: {mismatched}")
+        values = _bar_values(raw_bar, context=self.context)
+        execution = self.session.execute_callback(values, event,
+            strategy_values=_strategy_values(projection), broker_equity=projection["equity"])
+        self.current_bar = raw_bar
+        intents = [dict(intent) for intent in execution.intents]
+        batch_hash = aggregate_batch_hash(intents, batch_kind="INTENT_BATCH", item_schema_id="openpine.intent.v2")
+        response_body = {"run_id": self.context["run_id"], "bar_index": event.bar_index,
+                        "recalc_iteration": event.recalc_iteration,
+                        "intent_batch_hash": batch_hash, "intents": intents}
+        responses = []
+        if kind == "RECALC_REQUEST":
+            responses.append(protocol.append("RECALC_RESULT", {
+                "run_id": self.context["run_id"], "bar_index": event.bar_index,
+                "recalc_iteration": event.recalc_iteration,
+                "intent_batch_message_id": f"{self.context['session_id']}:{protocol._sequence + 1}:INTENT_BATCH",
+                "intent_batch_hash": batch_hash}, event.bar_open_time_utc_ms))
+        responses.append(protocol.append("INTENT_BATCH", response_body, event.bar_open_time_utc_ms))
+        return responses
+
+    def finalize(self, body: Mapping[str, Any]) -> None:
+        commit = self.last_commit
+        if commit is None or self.session.execution_cursor.open_bar is not None:
+            raise ValueError("cannot finalize without a completed bar")
+        expected = {
+            "run_id": self.context["run_id"], "final_sequence": commit["sequence"],
+            "final_state_hash": commit["body"]["state_hash"],
+            "broker_projection_hash": commit["body"]["broker_projection_hash"],
+            "last_commit_message_id": commit["message_id"],
+            "last_committed_sequence": commit["sequence"],
+        }
+        if dict(body) != expected:
+            raise ValueError("finalization does not bind the last committed bar")
+
+
+def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
+    """Execute causal callback events using the same deferred session as bulk."""
+    generated, context = request["generated_artifact"], request["execution_context"]
     session = _session_from_request(request)
-    hello = protocol.append(
-        "HELLO",
-        {
-            "worker_id": context["session_id"],
-            "protocol_version": "2.3.0",
-            "capabilities": ["closed_bar", "checkpoint_v1"],
-        },
-        0,
-    )
-    json.dump(hello, sys.stdout)
-    sys.stdout.write("\n")
-    sys.stdout.flush()
-    loaded = False
-    initialized = False
+    driver = RC6InteractiveCallbacks(session, context)
+    hello = protocol.append("HELLO", {"worker_id": context["session_id"],
+        "protocol_version": "2.3.0", "capabilities": ["closed_bar", "checkpoint_v1"]}, 0)
+    print(json.dumps(hello), flush=True)
+    loaded = initialized = False
     for line in sys.stdin:
         if len(line) > WORKER_STDIN_LIMIT_BYTES:
             raise ValueError("interactive message exceeds size limit")
-        message = json.loads(line)
-        protocol.accept(message)
-        kind = message["kind"]
-        body = message["body"]
+        message = protocol.accept(json.loads(line))
+        kind, body = message["kind"], message["body"]
         if kind == "LOAD_ARTIFACT":
             entrypoint = generated["entrypoint"]
-            expected = {
-                "artifact_hash": generated["content_hash"],
-                "module_hash": generated["emitted_module_hash"],
-                "entrypoint_module": entrypoint["module"],
-                "entrypoint_class": entrypoint["class"],
-            }
-            if body != expected:
+            if body != {"artifact_hash": generated["content_hash"], "module_hash": generated["emitted_module_hash"],
+                        "entrypoint_module": entrypoint["module"], "entrypoint_class": entrypoint["class"]}:
                 raise ValueError("loaded artifact identity mismatch")
             loaded = True
-            continue
-        if kind == "INIT_RUN":
-            if not loaded:
-                raise ValueError("artifact must be loaded before run initialization")
-            if (
-                body["execution_context"] != context
-                or body["execution_context_hash"] != context["content_hash"]
-                or body["run_id"] != context["run_id"]
-            ):
+        elif kind == "INIT_RUN":
+            if (not loaded or body["execution_context"] != context
+                    or body["execution_context_hash"] != context["content_hash"] or body["run_id"] != context["run_id"]):
                 raise ValueError("run initialization identity mismatch")
             initialized = True
-            continue
-        if kind == "FINALIZE":
-            return 0
-        if kind == "ABORT":
+        elif kind == "ABORT":
             return 2
-        if not initialized:
-            raise ValueError("run must be initialized before bar execution")
-        if kind in {"BROKER_EVENT_BATCH", "BAR_COMMIT"}:
-            continue
-        if kind == "RECALC_REQUEST":
-            raise ValueError("RC6 recalculation requires a fresh broker-bound transaction")
-        if kind != "BAR_BEGIN":
-            raise ValueError("unsupported interactive message kind")
-        raw_bar = body["bar"]
-        projection = body["broker_projection"]
-        if not isinstance(raw_bar, Mapping) or not isinstance(projection, Mapping):
-            raise ValueError("interactive bar or broker projection is malformed")
-        values = _bar_values(raw_bar, context=context)
-        if body["bar_hash"] != raw_bar["bar_content_hash"]:
-            raise ValueError("bar identity mismatch")
-        execution = session.execute_bar(
-            values,
-            bar_index=int(body["bar_index"]),
-            last_bar_index=int(body["bar_index"]),
-            tick_index=int(body["recalc_iteration"]),
-            strategy_values=_strategy_values(projection),
-            broker_equity=projection["equity"],
-        )
-        intents = [dict(intent) for intent in execution.intents]
-        response = protocol.append(
-            "INTENT_BATCH",
-            {
-                "run_id": context["run_id"],
-                "bar_index": int(body["bar_index"]),
-                "recalc_iteration": int(body["recalc_iteration"]),
-                "intent_batch_hash": aggregate_batch_hash(
-                    intents,
-                    batch_kind="INTENT_BATCH",
-                    item_schema_id="openpine.intent.v2",
-                ),
-                "intents": intents,
-            },
-            int(values.time),
-        )
-        json.dump(response, sys.stdout)
-        sys.stdout.write("\n")
-        sys.stdout.flush()
-    return 0
+        elif kind == "FINALIZE":
+            if not initialized or session.execution_cursor.open_bar is not None:
+                raise ValueError("cannot finalize a provisional or uninitialized run")
+            driver.finalize(body)
+            return 0
+        else:
+            if not initialized:
+                raise ValueError("run must be initialized before execution")
+            for response in driver.process(message, protocol):
+                print(json.dumps(response), flush=True)
+    raise ValueError("interactive input ended without FINALIZE")
 
 
 def _jsonable(value: Any) -> Any:
@@ -582,27 +648,6 @@ def _jsonable(value: Any) -> Any:
 
 def _engine_bar(envelope: Mapping[str, Any]) -> Any:
     return decode_canonical_bar(envelope)
-
-
-def _execute_protocol_bar(
-    session: RC6GeneratedScriptSession, event: Mapping[str, Any]
-) -> dict[str, Any]:
-    raw_bar = event["bar"]
-    projection = event["broker_projection"]
-    if not isinstance(raw_bar, Mapping) or not isinstance(projection, Mapping):
-        raise ValueError("interactive bar or broker projection is malformed")
-    values = _bar_values(raw_bar)
-    if event["bar_hash"] != raw_bar["bar_content_hash"]:
-        raise ValueError("bar identity mismatch")
-    execution = session.execute_bar(
-        values,
-        bar_index=int(event["bar_index"]),
-        last_bar_index=int(event["bar_index"]),
-        tick_index=int(event["recalc_iteration"]),
-        strategy_values=_strategy_values(projection),
-        broker_equity=projection["equity"],
-    )
-    return {"intents": [dict(intent) for intent in execution.intents]}
 
 
 def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
@@ -695,7 +740,6 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     last_progress = 0.0
     completed_bars = 0
     tape_events: list[dict[str, Any]] = []
-    last_bar_index = len(engine_bars) - 1
 
     def _strategy_values_from_state(state: Any) -> dict[str, object]:
         signed = float(getattr(state, "position_size", 0.0) or 0.0)
@@ -717,7 +761,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
                 raise ValueError("bulk broker parameters differ from applied Pine inputs")
             self.ctx = ctx
 
-        def run_bar(self, bar: Any, bar_index: int) -> None:
+        def run_callback(self, bar: Any, event: ExecutionEvent) -> None:
+            bar_index = event.bar_index
             values = BarValues(
                 open=float(bar.open),
                 high=float(bar.high),
@@ -727,10 +772,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
                 time=int(bar.time),
                 time_close=int(bar.time_close or bar.time),
             )
-            execution = session.execute_bar(
-                values,
-                bar_index=int(bar_index),
-                last_bar_index=last_bar_index,
+            execution = session.execute_callback(
+                values, event,
                 strategy_values=_strategy_values_from_state(self.ctx.state),
                 broker_equity=self.ctx.state.equity,
             )
@@ -757,6 +800,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
 
     def on_bar_end(_bar: Any, index: int, _state: Any) -> None:
         nonlocal last_progress, completed_bars
+        session.finalize_bar(index)
         completed_bars += 1
         now = time.monotonic()
         done = index + 1
