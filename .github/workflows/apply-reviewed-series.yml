@@ -24,21 +24,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/review-evidence"
-          cp .github/maintenance/reviewed-series.json "$RUNNER_TEMP/review-evidence/submission.json"
+          cp -R .github/maintenance "$RUNNER_TEMP/review-evidence/submission"
           python - <<'PY'
-          import base64, gzip, hashlib, json, os, pathlib, re, subprocess
+          import hashlib, json, os, pathlib, re, subprocess
           root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'review-evidence'
-          submission = json.loads((root / 'submission.json').read_text())
+          submission = json.loads((root / 'submission/reviewed-series.json').read_text())
           target = submission['target']
           expected = submission['expected_head']
           if target != 'release/5.0.0rc6' or not re.fullmatch('[0-9a-f]{40}', expected):
               raise SystemExit('Only the exact RC6 candidate may be updated')
-          packed = base64.b64decode(submission['gzip_base64'], validate=True)
-          if hashlib.sha256(packed).hexdigest() != submission['sha256']:
-              raise SystemExit('Submission checksum mismatch')
-          series = json.loads(gzip.decompress(packed))
-          if series['schema'] != 'openpine.reviewed-series.v1' or series['target'] != target:
-              raise SystemExit('Invalid reviewed-series schema or target')
+          commits = []
+          for name in submission['commits']:
+              if not re.fullmatch(r'reviewed-[0-9]{2}\.json', name):
+                  raise SystemExit('Invalid reviewed commit document')
+              commits.append(json.loads((root / 'submission' / name).read_text()))
           def git(*args, **kw):
               return subprocess.check_output(['git', *args], **kw)
           remote = git('ls-remote', 'origin', 'refs/heads/' + target, text=True).split()[0]
@@ -46,7 +45,7 @@ jobs:
               raise SystemExit('Target moved; re-review required')
           subprocess.run(['git', 'checkout', '--detach', expected], check=True)
           mapping = []
-          for commit in series['commits']:
+          for commit in commits:
               for item in commit['files']:
                   path = item['path']
                   parts = pathlib.PurePosixPath(path).parts
