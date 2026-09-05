@@ -131,3 +131,17 @@ def test_receiver_closes_spool_on_caller_failure():
 def test_sender_rejects_non_contract_values(value):
     with pytest.raises(BulkResultError):
         list(encode_result(value, identity=IDENTITY))
+
+
+@pytest.mark.parametrize("value", [msgpack.Timestamp(0), msgpack.ExtType(1, b"x"), b"bytes"])
+def test_nested_extension_and_binary_values_are_rejected(value):
+    with pytest.raises(BulkResultError):
+        receive(_hostile(msgpack.packb({"value": value}, use_bin_type=True)))
+
+
+def test_nested_decoded_values_obey_depth_limit():
+    value = 0
+    for _ in range(110):
+        value = [value]
+    with pytest.raises(BulkResultError, match="nesting"):
+        receive(_hostile(msgpack.packb({"value": value}, use_bin_type=True)))

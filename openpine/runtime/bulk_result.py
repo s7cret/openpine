@@ -131,6 +131,19 @@ def _extension(_code: int, _data: bytes) -> Any:
     raise BulkResultError("result extensions are not supported")
 
 
+def _validate_decoded(value: Any, depth: int = 0) -> None:
+    if depth > 100:
+        raise BulkResultError("result nesting exceeds limit")
+    if type(value) is dict:
+        for item in value.values():
+            _validate_decoded(item, depth + 1)
+    elif type(value) is list:
+        for item in value:
+            _validate_decoded(item, depth + 1)
+    elif type(value) not in (str, int, float, bool, type(None)):
+        raise BulkResultError("decoded result contains a non-primitive value")
+
+
 class BulkResultReceiver:
     """Spool bounded chunks; decode exactly one object only after final validation."""
 
@@ -212,6 +225,7 @@ class BulkResultReceiver:
         payload = unpacker.unpack()
         if unpacker.tell() != self.size or not isinstance(payload, dict):
             raise BulkResultError("result must contain exactly one mapping")
+        _validate_decoded(payload)
         self.finished = True
         self.manifest = dict(message)
         self.close()
