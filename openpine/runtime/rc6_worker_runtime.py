@@ -37,6 +37,7 @@ from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeCont
 from pinelib.runtime.session import CallbackResult
 
 from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
+from openpine.runtime.rc6_config import resolve_engine_config
 
 
 _PROTOCOL_COMPONENT = {
@@ -237,6 +238,7 @@ class RC6GeneratedScriptSession:
         identity: IntentReplayIdentity,
         producer_commit: str,
         default_qty_value: object = 1,
+        engine_config: BacktestConfig | None = None,
     ) -> None:
         envelope = artifact.get("generated_artifact")
         source = artifact.get("python_code")
@@ -293,7 +295,7 @@ class RC6GeneratedScriptSession:
             raise TypeError("identity must be IntentReplayIdentity")
         self.identity = identity
         self.producer_commit = producer_commit
-        self.intent_config = BacktestConfig(
+        self.intent_config = engine_config if engine_config is not None else BacktestConfig(
             symbol=instrument.ticker,
             timeframe=identity.timeframe,
             start_time=0,
@@ -312,6 +314,7 @@ class RC6GeneratedScriptSession:
         realtime: bool = False,
         tick_index: int = 0,
         final_tick: bool = True,
+        broker_equity: object | None = None,
     ) -> RC6BarExecution:
         bar_time = values.time
         if type(bar_time) is not int or bar_time < 0:
@@ -321,6 +324,8 @@ class RC6GeneratedScriptSession:
             producer_commit=self.producer_commit,
             bar_open_time_utc_ms={bar_index: bar_time},
             config=self.intent_config,
+            bar_close={bar_index: values.close},
+            bar_equity={} if broker_equity is None else {bar_index: broker_equity},
         )
         self.session.delegated_dispatcher = (
             build_delegated_strategy_dispatcher(
@@ -368,7 +373,9 @@ def _pine_timeframe(value: object) -> str:
     return text
 
 
-def _session_from_request(request: Mapping[str, Any]) -> RC6GeneratedScriptSession:
+def _session_from_request(
+    request: Mapping[str, Any], *, engine_config: BacktestConfig | None = None,
+) -> RC6GeneratedScriptSession:
     context = request["execution_context"]
     generated = request["generated_artifact"]
     source = request["source"]
@@ -382,6 +389,8 @@ def _session_from_request(request: Mapping[str, Any]) -> RC6GeneratedScriptSessi
     symbol = str(context["symbol"])
     currency = str(context["currency"])
     base_currency = symbol.removesuffix(currency) or symbol
+    if engine_config is None and "engine_config" in request:
+        engine_config = resolve_engine_config(request["engine_config"], context)
     return RC6GeneratedScriptSession(
         artifact={"generated_artifact": generated, "python_code": source},
         language=RuntimeLanguageContext(
@@ -412,6 +421,7 @@ def _session_from_request(request: Mapping[str, Any]) -> RC6GeneratedScriptSessi
             timeframe=str(context["timeframe"]),
         ),
         producer_commit=str(context["producer_commits"]["backtest_engine"]),
+        engine_config=engine_config,
     )
 
 
@@ -523,6 +533,7 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
             last_bar_index=int(body["bar_index"]),
             tick_index=int(body["recalc_iteration"]),
             strategy_values=_strategy_values(projection),
+            broker_equity=projection["equity"],
         )
         intents = [dict(intent) for intent in execution.intents]
         response = protocol.append(
@@ -580,6 +591,7 @@ def _execute_protocol_bar(
         last_bar_index=int(event["bar_index"]),
         tick_index=int(event["recalc_iteration"]),
         strategy_values=_strategy_values(projection),
+        broker_equity=projection["equity"],
     )
     return {"intents": [dict(intent) for intent in execution.intents]}
 
@@ -600,7 +612,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         raise ValueError("bulk RC6 request identity is malformed")
     if not isinstance(engine_config, Mapping):
         raise ValueError("bulk engine config is required")
-    session = _session_from_request(request)
+    config = resolve_engine_config(engine_config, context)
+    session = _session_from_request(request, engine_config=config)
     hello = protocol.append(
         "HELLO",
         {
@@ -702,6 +715,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
                 bar_index=int(bar_index),
                 last_bar_index=last_bar_index,
                 strategy_values=_strategy_values_from_state(self.ctx.state),
+                broker_equity=self.ctx.state.equity,
             )
             batch = [dict(intent) for intent in execution.intents]
             if not batch:
@@ -720,50 +734,6 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
 
         def restore_state(self, state: Any) -> None:
             del state
-
-    rounding = engine_config.get("qty_rounding") or engine_config.get("qty_rounding_mode")
-    qty_rounding = "floor" if rounding in {None, "none", "truncate"} else str(rounding)
-    config = BacktestConfig(
-        symbol=str(engine_config["symbol"]),
-        timeframe=str(engine_config["timeframe"]),
-        start_time=int(engine_config["start_time"]),
-        end_time=int(engine_config["end_time"]),
-        initial_capital=float(engine_config.get("initial_capital") or 100_000.0),
-        default_qty_type=str(engine_config.get("default_qty_type") or "fixed"),
-        default_qty_value=float(engine_config.get("default_qty_value") or 1.0),
-        commission_type=str(engine_config.get("commission_type") or "none"),
-        commission_value=float(engine_config.get("commission_value") or 0.0),
-        slippage=float(engine_config.get("slippage") or 0.0),
-        slippage_type=str(engine_config.get("slippage_type") or "tick"),
-        exit_matching=str(engine_config.get("exit_matching") or "fifo"),
-        pyramiding=int(engine_config.get("pyramiding") or 0),
-        margin_long=float(engine_config.get("margin_long") or 100.0),
-        margin_short=float(engine_config.get("margin_short") or 100.0),
-        process_orders_on_close=bool(engine_config.get("process_orders_on_close") or False),
-        calc_on_order_fills=bool(engine_config.get("calc_on_order_fills") or False),
-        calc_on_every_tick=bool(engine_config.get("calc_on_every_tick") or False),
-        use_bar_magnifier=bool(engine_config.get("use_bar_magnifier") or False),
-        qty_step=engine_config.get("qty_step"),
-        qty_rounding=qty_rounding,  # type: ignore[arg-type]
-        mintick=engine_config.get("mintick"),
-        max_bars_back=int(engine_config.get("max_bars_back") or 0),
-        score_start_time=engine_config.get("score_start_time"),
-        score_end_time=engine_config.get("score_end_time"),
-        max_pre_bars=int(engine_config.get("max_pre_bars") or 0),
-        semantic_profile=str(
-            engine_config.get("semantic_profile") or context["semantic_profile"]
-        ),
-        collect_events=False,
-        collect_order_lifecycle=False,
-        collect_equity_curve=False,
-        content_hash_enabled=False,
-    )
-    exchange = engine_config.get("exchange")
-    market_type = engine_config.get("market_type")
-    if exchange is not None:
-        object.__setattr__(config, "exchange", exchange)
-    if market_type is not None:
-        object.__setattr__(config, "market_type", market_type)
 
     total = len(engine_bars)
 

@@ -639,7 +639,7 @@ class InteractiveWorkerSession:
                 ),
                 "params": {} if params is None else params,
             }
-            if self.bulk_backtest:
+            if self.engine_config:
                 bootstrap["engine_config"] = self.engine_config
             self._write_bootstrap(bootstrap)
             hello = self._read_message()
