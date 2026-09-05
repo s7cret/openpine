@@ -7,8 +7,8 @@ Base: `beddc87d852974a9814718f83f2dbc7059f8e3a8`.
 
 | Task | OpenPine commit | Implemented scope |
 | --- | --- | --- |
-| OP-03 | `2f8d8c25082fd92601b3a8b19da1ac96c180c749` | Preserve supported zero margins and all five rounding modes across worker transport. |
-| OP-05 | `a51d230a903c5d84566edea11d2e1e8f4292e1b6` | Common causal callback cursor, accurate dataset bounds, fill recalculation, deferred single history commit, protocol identity checks. |
+| OP-03 | `0df42766bf55b1bde0c600cc0d7325a19e2ab386` | Preserve supported zero margins and all five rounding modes across worker transport. |
+| OP-05 | `b3a4560cd087a12283b0f220e16f185f274fc420` | Common causal callback cursor, accurate dataset bounds, fill recalculation, deferred single history commit, protocol identity checks. |
 | OP-06 | `54d8dad9ae6d79f762599fc5de9031c28ce3fbd5` | Reject failed interactive broker results, nonzero/unverifiable exits and incomplete finalization. |
 | OP-05 tests | `295a6885f1094676ae1bfdc90631814daa9e8966` | Distinguish repeated entry intents after on-close fill recalculation from actual fills; assert one unit trade and exact causal callback coordinates. |
 
@@ -40,6 +40,8 @@ Downloaded artifacts were SHA256-verified and their Git bundles match the local 
 
 ## OP-36: reviewed branch retirement
 
+**Completed:** [RC6_BRANCH_CONSOLIDATION_RECEIPT.md](RC6_BRANCH_CONSOLIDATION_RECEIPT.md) records the successful cleanup run, final four-branch inventory and seven retained archive tags.
+
 The machine-readable source-to-preservation mapping is `RC6_BRANCH_SELECTION.json`. Ten functional commits from `fix/data-delete-semantic-profile` already have separate preservation commits in RC6. Deployment identity and the migration fix also have explicit preservation commits. Four RC5 dependency-only commits are deliberately not applied: their changes are limited to the RC5 candidate, old stack-lock and its version assertion. Their complete history is retained by the archive tag.
 
 Target branches:
@@ -53,7 +55,7 @@ release/5.0.0rc6
 
 Retired branches are archived as lightweight tags **with their original names** before their branch refs disappear in the same atomic transaction. This preserves commit history and old revision references, including `release/5.0.0rc5` and `release/5.0.0rc6-local-candidate`. Main and the two historical releases are not merged or rewritten. The current RC6 is not promoted to main.
 
-The maintenance publisher and verified source-archive workflow are retained in RC6. `scripts/consolidate_reviewed_branches.py` checks the exact 11-branch inventory, source preservation, successful integrated CI and expected branch/tag identities. Its atomic push uses explicit compare-and-delete leases: a concurrent commit aborts the whole transaction. Nine local bare-repository tests cover archival success, inventory/tag drift, unreviewed code and a racing commit. Cleanup execution and its final refs are recorded in a separate Actions artifact; this document describes the reviewed plan, not a fabricated completion receipt.
+The maintenance publisher and verified source-archive workflow are retained in RC6. `scripts/consolidate_reviewed_branches.py` checks the exact 11-branch inventory, source preservation, successful integrated CI and expected branch/tag identities. Its atomic push uses explicit compare-and-delete leases: a concurrent commit aborts the whole transaction. Nine local bare-repository tests cover archival success, inventory/tag drift, unreviewed code and a racing commit. The same nine tests passed in the separate consolidation Actions run before cleanup; the downloaded receipt verifies its final refs and archive bundle.
 
 Restore a retired branch deliberately from its archive tag, for example:
 
