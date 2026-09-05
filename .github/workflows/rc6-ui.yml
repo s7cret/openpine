@@ -29,8 +29,9 @@ jobs:
           cache-dependency-path: openpine-ui/package-lock.json
       - run: npm ci
       - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
-      - run: npm run test:node
+      # Production-package regressions consume the actual built dist tree.
       - run: npm run build
+      - run: npm run test:node
       - uses: actions/upload-artifact@v4
         if: always()
         with:
