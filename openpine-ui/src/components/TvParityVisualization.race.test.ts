@@ -1,6 +1,6 @@
 /** Actual component setup lifecycle; no browser layout or canvas pixels are simulated. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRenderer, h, nextTick, ref } from 'vue'
+import { createRenderer, h, nextTick, ref, ssrContextKey } from 'vue'
 import Visualization from './TvParityVisualization.vue'
 
 const api = vi.hoisted(() => ({ getTvParityChartData: vi.fn(), getTvParitySummaryCards: vi.fn(),
@@ -25,6 +25,9 @@ async function mount(id='A') {
   const run = ref(id)
   const component = {...Visualization,render:()=>null}
   const app = renderer.createApp({setup:()=>()=>h(component,{runId:run.value})})
+  // Vitest's Node transform registers SFC module IDs in the SSR context.
+  // Custom rendering still runs the real client setup and lifecycle hooks.
+  app.provide(ssrContextKey, { modules: new Set<string>() })
   const vm = app.mount({})
   unmount=()=>{app.unmount();unmount=()=>{}}
   const state=(vm as any).$.subTree.component.setupState

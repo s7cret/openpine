@@ -1,6 +1,6 @@
 /** Real Vue setup/watch/unmount lifecycle with an in-memory renderer, not a browser test. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRenderer, nextTick } from 'vue'
+import { createRenderer, nextTick, ssrContextKey } from 'vue'
 import TvParity from './TvParity.vue'
 
 const api = vi.hoisted(() => ({
@@ -47,6 +47,9 @@ let unmount: () => void
 async function mount() {
   // Keep actual setup/watch/unmount; DOM directives and visual layout are not under test.
   const app = renderer.createApp({ ...TvParity, render: () => null })
+  // Vitest's Node transform registers SFC module IDs in the SSR context.
+  // Custom rendering still runs the real client setup and lifecycle hooks.
+  app.provide(ssrContextKey, { modules: new Set<string>() })
   const vm = app.mount(node())
   unmount = () => app.unmount()
   await flush()
