@@ -1,0 +1,69 @@
+name: Archive reviewed branches and keep four release lines
+on:
+  push:
+    branches: ['ops/rc6-delivery-branch-selection']
+    paths: ['.github/maintenance/consolidation.json']
+permissions:
+  contents: read
+concurrency:
+  group: reviewed-rc6-publication
+  cancel-in-progress: false
+jobs:
+  verify-maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e90d657e97bf6e7b1431e87082cae3fb9dea6272
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install pytest==9.1.1
+      - name: Exercise real local Git atomic and racing-ref scenarios
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          mkdir -p "$RUNNER_TEMP/maintenance-test/scripts" "$RUNNER_TEMP/maintenance-test/tests"
+          cp scripts/consolidate_reviewed_branches.py "$RUNNER_TEMP/maintenance-test/scripts/"
+          cp tests/test_branch_consolidation.py "$RUNNER_TEMP/maintenance-test/tests/"
+          cd "$RUNNER_TEMP/maintenance-test"
+          python -m pytest -q tests --junitxml="$RUNNER_TEMP/maintenance-tests.xml"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consolidation-tests-${{ github.run_id }}
+          path: ${{ runner.temp }}/maintenance-tests.xml
+          retention-days: 30
+  consolidate:
+    needs: verify-maintenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: cp .github/maintenance/consolidation.json "$RUNNER_TEMP/consolidation-plan.json"
+      - uses: actions/checkout@v4
+        with:
+          ref: e90d657e97bf6e7b1431e87082cae3fb9dea6272
+          fetch-depth: 0
+      - name: Verify CI and preservation before atomic tag creation and branch deletion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/consolidate_reviewed_branches.py "$RUNNER_TEMP/consolidation-plan.json" "$RUNNER_TEMP/consolidation-evidence"
+      - name: Retain restoration evidence and complete source history
+        run: |
+          cp "$RUNNER_TEMP/consolidation-plan.json" "$RUNNER_TEMP/consolidation-evidence/plan.json"
+          git bundle create "$RUNNER_TEMP/consolidation-evidence/archive.bundle" --all
+          git bundle verify "$RUNNER_TEMP/consolidation-evidence/archive.bundle"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consolidation-${{ github.run_id }}
+          path: ${{ runner.temp }}/consolidation-evidence/
+          if-no-files-found: error
+          retention-days: 30
