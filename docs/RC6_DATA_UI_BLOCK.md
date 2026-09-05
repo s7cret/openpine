@@ -8,7 +8,7 @@ Provider hour intervals translate to Pine minute notation (1h -> 60, 4h -> 240);
 
 TV parity requests and polling callbacks are guarded by selection/lifecycle generations. Older detail, queued-run, list and preview responses cannot replace the newer selection. Stopped/restarted poll loops cannot apply stale results/errors or terminate a new loop. Deletion/unmount invalidates relevant results; a late preview cannot overwrite a report period. Canceled is terminal. Duplicate run submission is prevented while a POST is pending. Summary failures are retryable. Existing AbortSignal-based latest-request consumers remain compatible. The new epoch tokens suppress UI writes but do not abort HTTP or cancel a server job.
 
-The UI tests use actual Vue setup/watch/unmount with an in-memory renderer plus deferred network promises. They are not browser/visual/E2E acceptance. The existing native CI remains read-only and now includes the deterministic provider suite. A separate read-only UI workflow runs unit/component tests, node tests, type checks and production build. Existing release/coverage gates are not replaced.
+The UI tests use actual Vue setup/watch/unmount with an in-memory renderer plus deferred network promises. They are not browser/visual/E2E acceptance. The existing native CI remains read-only and now includes the deterministic provider suite. The same read-only workflow runs UI unit/component tests, type checks and a production build, then checks packaging and browser API paths against OpenAPI exported by its verified backend job. There is no unrelated or fabricated contract fixture. Existing release/coverage gates are not replaced.
 
 ## Request integration remains open
 

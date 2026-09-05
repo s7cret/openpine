@@ -106,6 +106,7 @@ jobs:
         run: |
           python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py
           python -m compileall -q openpine
+          python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
           mkdir -p "$RUNNER_TEMP/build-source"
           git archive HEAD | tar -x -C "$RUNNER_TEMP/build-source"
           python -m build --no-isolation --outdir "$RUNNER_TEMP/evidence/dist" "$RUNNER_TEMP/build-source"
@@ -117,4 +118,39 @@ jobs:
           name: rc6-checks-${{ matrix.python }}-${{ github.run_id }}
           path: ${{ runner.temp }}/evidence/
           if-no-files-found: error
+          retention-days: 30
+  frontend:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: openpine-ui
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: rc6-checks-3.13-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend-evidence
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - run: npm ci
+      - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
+      # Package tests use real dist; API checks use this same source revision.
+      - run: npm run build
+      - run: npm run test:node
+        env:
+          OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend-evidence/openapi.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rc6-ui-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ui-tests.xml
+            openpine-ui/dist/
           retention-days: 30
