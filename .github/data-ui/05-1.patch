@@ -1,0 +1,13 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index 049ad3e780ca3876302d70ed1324d4682168e50b..b76668b0f7ed34e0bcf4921b5900df1bc1e98736 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -55,7 +55,7 @@ jobs:
+               clean.mkdir()
+               archive = subprocess.check_output(['git','-C',str(path),'archive',sha])
+               subprocess.run(['tar','-x','-C',str(clean)],input=archive,check=True)
+-              sources.append(str(clean))
++              sources.append(str(clean) + ('[parquet,stream,zstd]' if name == 'marketdata-provider' else ''))
+           subprocess.run(['python','-m','pip','install',*sources,'.[dev]'],check=True)
+           (evidence / 'source-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
+           with open(os.environ['GITHUB_ENV'],'a') as stream:

@@ -1,0 +1,265 @@
+diff --git a/openpine-ui/src/lib/jobStatus.test.ts b/openpine-ui/src/lib/jobStatus.test.ts
+index f1f06f7ae1bf1fe8968742d023f3fdb1489ddf67..968f546f9f5f61772243bdb30d0efc283fc8f360 100644
+--- a/openpine-ui/src/lib/jobStatus.test.ts
++++ b/openpine-ui/src/lib/jobStatus.test.ts
+@@ -13,7 +13,7 @@ describe('canonical async job statuses', () => {
+     expect(isTerminalJobStatus(status)).toBe(true)
+   })
+ 
+-  it.each(['failed', 'cancelled'])('treats %s as terminal but unsuccessful', (status) => {
++  it.each(['failed', 'cancelled', 'canceled', ' CANCELED '])('treats %s as terminal but unsuccessful', (status) => {
+     expect(isTerminalJobStatus(status)).toBe(true)
+     expect(isSuccessfulJobStatus(status)).toBe(false)
+   })
+diff --git a/openpine-ui/src/lib/jobStatus.ts b/openpine-ui/src/lib/jobStatus.ts
+index b5e7a8be68895c82bab2d3c0fd4d862701b01b79..6892f11634ff195e9bdaf0ad816ca79c30227687 100644
+--- a/openpine-ui/src/lib/jobStatus.ts
++++ b/openpine-ui/src/lib/jobStatus.ts
+@@ -5,6 +5,7 @@ export function canonicalJobStatus(status?: string | null): string {
+   const value = String(status ?? '').trim().toLowerCase()
+   if (SUCCESS_STATUSES.has(value)) return 'completed'
+   if (value === 'error') return 'failed'
++  if (value === 'canceled') return 'cancelled'
+   return value || 'unknown'
+ }
+ 
+diff --git a/openpine-ui/src/lib/latestRequest.test.ts b/openpine-ui/src/lib/latestRequest.test.ts
+index 3c90f10cc3e4d784d7aa7c2e3c4b559e79c23be6..4f284c55f314a731874b65cf86a558d7ef41da0f 100644
+--- a/openpine-ui/src/lib/latestRequest.test.ts
++++ b/openpine-ui/src/lib/latestRequest.test.ts
+@@ -21,4 +21,26 @@ describe('latest request cancellation', () => {
+     expect(second.signal.aborted).toBe(true)
+     expect(second.isCurrent()).toBe(false)
+   })
+-})
+\ No newline at end of file
++})
++import { createRequestEpoch } from './latestRequest'
++
++describe('request epoch (does not cancel server jobs)', () => {
++  it('invalidates captures on selection and cannot revive after disposal', () => {
++    const epoch = createRequestEpoch()
++    const first = epoch.begin()
++    const poll = epoch.capture()
++    expect(first()).toBe(true)
++    expect(poll()).toBe(true)
++    const next = epoch.begin()
++    expect(first()).toBe(false)
++    expect(poll()).toBe(false)
++    expect(next()).toBe(true)
++    epoch.invalidate()
++    expect(next()).toBe(false)
++    const last = epoch.begin()
++    epoch.dispose()
++    expect(last()).toBe(false)
++    expect(epoch.begin()()).toBe(false)
++    expect(epoch.capture()()).toBe(false)
++  })
++})
+diff --git a/openpine-ui/src/lib/latestRequest.ts b/openpine-ui/src/lib/latestRequest.ts
+index 607d79d49ec2f8d5c18c2cf47533dbc3843621a2..fc1987c7ac06138bd2f336d75e2ef2aa99c41aa5 100644
+--- a/openpine-ui/src/lib/latestRequest.ts
++++ b/openpine-ui/src/lib/latestRequest.ts
+@@ -36,3 +36,20 @@ export function createLatestRequest(): LatestRequestController {
+ 
+   return { begin, cancel }
+ }
++
++
++/** Generation tokens suppress stale async writes; they do not cancel server work. */
++export function createRequestEpoch() {
++  let generation = 0
++  let disposed = false
++  const capture = () => {
++    const ticket = generation
++    return () => !disposed && ticket === generation
++  }
++  return {
++    capture,
++    begin: () => { generation += 1; return capture() },
++    invalidate: () => { generation += 1 },
++    dispose: () => { disposed = true; generation += 1 },
++  }
++}
+diff --git a/openpine-ui/src/lib/terminalPolling.test.ts b/openpine-ui/src/lib/terminalPolling.test.ts
+index 88a0639960624f51ec5b1397de5e26c85655ce07..8a21b7a753311598c825f5413f099c18418fdce8 100644
+--- a/openpine-ui/src/lib/terminalPolling.test.ts
++++ b/openpine-ui/src/lib/terminalPolling.test.ts
+@@ -58,3 +58,95 @@ describe('terminal poller', () => {
+     expect(poller.active()).toBe(false)
+   })
+ })
++
++function deferred<T>() {
++  let resolve!: (value: T) => void
++  let reject!: (error: unknown) => void
++  const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no })
++  return { promise, resolve, reject }
++}
++
++const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve() }
++
++describe('polling generation boundaries', () => {
++  it.each(['resolve', 'reject'] as const)('ignores %s after stop/disposal', async (outcome) => {
++    vi.useFakeTimers()
++    const request = deferred<{ status: string }>()
++    const onValue = vi.fn(), onTerminal = vi.fn(), onError = vi.fn()
++    const poll = vi.fn(() => request.promise)
++    const poller = createTerminalPoller({ poll, onValue, onTerminal, onError, getStatus: v => v.status })
++    poller.start()
++    poller.stop()
++    if (outcome === 'resolve') request.resolve({ status: 'done' })
++    else request.reject(new Error('stale'))
++    await flush()
++    await vi.advanceTimersByTimeAsync(5000)
++    expect(onValue).not.toHaveBeenCalled()
++    expect(onTerminal).not.toHaveBeenCalled()
++    expect(onError).not.toHaveBeenCalled()
++    expect(poll).toHaveBeenCalledTimes(1)
++  })
++
++  it.each(['resolve', 'reject'] as const)('old %s cannot stop or overwrite a restarted selection', async outcome => {
++    vi.useFakeTimers()
++    const old = deferred<{ status: string, id: string }>()
++    const current = deferred<{ status: string, id: string }>()
++    const poll = vi.fn().mockImplementationOnce(() => old.promise).mockImplementationOnce(() => current.promise)
++      .mockResolvedValue({ status: 'canceled', id: 'new' })
++    const onValue = vi.fn(), onError = vi.fn()
++    const poller = createTerminalPoller<{status: string, id: string}>({ poll, onValue, onError, getStatus: v => v.status, intervalMs: 50 })
++    poller.start()
++    poller.stop()
++    poller.start()
++    expect(poll).toHaveBeenCalledTimes(2)
++    if (outcome === 'resolve') old.resolve({status: 'completed', id: 'old'})
++    else old.reject(new Error('old failure'))
++    await flush()
++    expect(poller.active()).toBe(true)
++    expect(onValue).not.toHaveBeenCalled()
++    expect(onError).not.toHaveBeenCalled()
++    current.resolve({status: 'running', id: 'new'})
++    await flush()
++    expect(onValue).toHaveBeenCalledWith({status: 'running', id: 'new'})
++    await vi.advanceTimersByTimeAsync(50)
++    expect(poll).toHaveBeenCalledTimes(3)
++    expect(poller.active()).toBe(false)
++  })
++
++  it('does not overlap within a generation and keeps start idempotent', async () => {
++    const request = deferred<{status: string}>()
++    const poll = vi.fn(() => request.promise)
++    const poller = createTerminalPoller({poll, getStatus: v => v.status})
++    poller.start(); poller.start()
++    await poller.pollNow()
++    expect(poll).toHaveBeenCalledTimes(1)
++    request.resolve({status: 'completed'})
++    await flush()
++    expect(poller.active()).toBe(false)
++  })
++
++  it('does not stop a new generation started while terminal follow-up is awaiting', async () => {
++    vi.useFakeTimers()
++    const terminalWait = deferred<void>()
++    const newRequest = deferred<{status: string}>()
++    const poll = vi.fn().mockResolvedValueOnce({status: 'completed'}).mockImplementation(() => newRequest.promise)
++    const onTerminal = vi.fn(() => terminalWait.promise)
++    const poller = createTerminalPoller<{status: string}>({poll, onTerminal, getStatus: v => v.status})
++    poller.start()
++    await flush()
++    expect(onTerminal).toHaveBeenCalledTimes(1)
++    poller.stop(); poller.start()
++    terminalWait.resolve()
++    await flush()
++    expect(poller.active()).toBe(true)
++    expect(poll).toHaveBeenCalledTimes(2)
++    poller.stop()
++    newRequest.resolve({status: 'running'})
++    await flush()
++    expect(vi.getTimerCount()).toBe(0)
++  })
++
++  it.each([-1, NaN, Infinity])('rejects invalid interval %s', intervalMs => {
++    expect(() => createTerminalPoller({poll: async () => 'done', getStatus: x => x, intervalMs})).toThrow('interval')
++  })
++})
+diff --git a/openpine-ui/src/lib/terminalPolling.ts b/openpine-ui/src/lib/terminalPolling.ts
+index 0f71af5ce302e3008772c263c4cc7d437722cd6d..56faadf28b5624cff8c31fb5d888cf1fac61d22b 100644
+--- a/openpine-ui/src/lib/terminalPolling.ts
++++ b/openpine-ui/src/lib/terminalPolling.ts
+@@ -19,56 +19,61 @@ export type TerminalPoller = {
+ 
+ export function createTerminalPoller<T>(options: TerminalPollerOptions<T>): TerminalPoller {
+   const intervalMs = options.intervalMs ?? 1500
++  if (!Number.isFinite(intervalMs) || intervalMs < 0) throw new Error('Invalid polling interval')
+   const terminal = options.isTerminal ?? isTerminalJobStatus
+   let running = false
+-  let inFlight = false
++  let generation = 0
++  let inFlight: number | null = null
+   let timer: ReturnType<typeof setTimeout> | null = null
+ 
+   function clearTimer() {
+-    if (timer) clearTimeout(timer)
++    if (timer !== null) clearTimeout(timer)
+     timer = null
+   }
+ 
+   function stop() {
+     running = false
++    generation += 1
+     clearTimer()
+   }
+ 
+-  function schedule() {
++  function schedule(ticket: number) {
++    if (!running || ticket !== generation) return
+     clearTimer()
+-    if (!running) return
+     timer = setTimeout(() => { void pollNow() }, intervalMs)
+   }
+ 
+   async function pollNow() {
+-    if (!running || inFlight) return
+-    inFlight = true
++    const ticket = generation
++    if (!running || inFlight === ticket) return
++    clearTimer()
++    inFlight = ticket
++    const current = () => running && generation === ticket
+     try {
+       const value = await options.poll()
++      if (!current()) return
+       await options.onValue?.(value)
++      if (!current()) return
+       if (terminal(options.getStatus(value))) {
+         await options.onTerminal?.(value)
+-        stop()
++        // An asynchronous terminal callback may have started a new selection.
++        if (current()) stop()
+         return
+       }
+     } catch (error) {
+-      options.onError?.(error)
++      if (current()) options.onError?.(error)
+     } finally {
+-      inFlight = false
++      if (inFlight === ticket) inFlight = null
++      schedule(ticket)
+     }
+-    schedule()
+   }
+ 
+   function start() {
+     if (running) return
+     running = true
++    generation += 1
+     void pollNow()
+   }
+ 
+-  return {
+-    start,
+-    stop,
+-    pollNow,
+-    active: () => running,
+-  }
++  return { start, stop, pollNow, active: () => running }
+ }
