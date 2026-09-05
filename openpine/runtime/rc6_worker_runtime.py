@@ -630,6 +630,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     initialized = False
     engine_bars: list[Any] = []
     bar_admission = RC6BarAdmission(context)
+    received_last_batch = False
     for line in sys.stdin:
         if len(line) > WORKER_STDIN_LIMIT_BYTES:
             raise ValueError("interactive message exceeds size limit")
@@ -646,6 +647,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
                 if admitted_bar is not None:
                     engine_bars.append(admitted_bar)
             if message.get("last") is True:
+                received_last_batch = True
                 break
             continue
         protocol.accept(message)
@@ -676,10 +678,14 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         if kind == "ABORT":
             return 2
         raise ValueError("unsupported bulk handshake message kind")
+    if not received_last_batch:
+        raise ValueError("bulk bar stream ended before its final batch")
     if not initialized or not engine_bars:
         raise ValueError("bulk backtest did not receive bars")
 
     last_progress = 0.0
+    completed_bars = 0
+    tape_events: list[dict[str, Any]] = []
     last_bar_index = len(engine_bars) - 1
 
     def _strategy_values_from_state(state: Any) -> dict[str, object]:
@@ -718,6 +724,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
                 broker_equity=self.ctx.state.equity,
             )
             batch = [dict(intent) for intent in execution.intents]
+            tape_events.extend(batch)
             if not batch:
                 return
             origin = int(batch[0]["sequence"])
@@ -738,7 +745,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     total = len(engine_bars)
 
     def on_bar_end(_bar: Any, index: int, _state: Any) -> None:
-        nonlocal last_progress
+        nonlocal last_progress, completed_bars
+        completed_bars += 1
         now = time.monotonic()
         done = index + 1
         if done == total or now - last_progress >= 1.0:
@@ -756,7 +764,11 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         bars=engine_bars,
         callbacks=BacktestCallbacks(on_bar_end=on_bar_end),
     )
-    tape_events: list[dict[str, Any]] = []
+    if getattr(result, "status", None) != "completed":
+        raise ValueError(
+            f"bulk engine did not complete: {getattr(result, 'status', None)!r}; "
+            f"{getattr(result, 'errors', [])!r}"
+        )
     raw = {
         "status": getattr(result, "status", "completed"),
         "bars_processed": int(getattr(result, "bars_processed", 0) or 0),
@@ -781,10 +793,17 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         "closed_trades": _jsonable(list(getattr(result, "closed_trades", None) or [])),
         "open_trades": _jsonable(list(getattr(result, "open_trades", None) or [])),
         "equity_curve": _jsonable(list(getattr(result, "equity_curve", None) or [])),
+        "events": _jsonable(list(getattr(result, "events", None) or [])),
+        "warnings": _jsonable(list(getattr(result, "warnings", None) or [])),
+        "errors": _jsonable(list(getattr(result, "errors", None) or [])),
+        "effective_config_hash": config.effective_config_hash,
+        "config_snapshot": _jsonable(result.config_snapshot),
     }
     payload = {
         "kind": "BULK_RESULT",
-        "bars_processed": total,
+        "bars_received": bar_admission.received,
+        "bars_excluded_open": bar_admission.excluded_open,
+        "bars_processed": completed_bars,
         "intent_tape": tape_events,
         "score_ledger_hash": result.score_ledger_hash,
         "raw_result": raw,

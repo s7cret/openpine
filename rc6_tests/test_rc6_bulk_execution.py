@@ -49,7 +49,7 @@ def bulk_case():
     return compiled, context, config
 
 
-def execute_bulk(monkeypatch, case, *, config=None, bars=None):
+def execute_bulk(monkeypatch, case, *, config=None, bars=None, last_batch=True):
     compiled, context, default_config = case
     config = default_config if config is None else config
     generated = compiled.generated_artifact
@@ -68,7 +68,7 @@ def execute_bulk(monkeypatch, case, *, config=None, bars=None):
     ), 0)]
     if bars is None:
         bars = [bar(open_time_utc_ms=OPENED + index * 60_000) for index in range(3)]
-    frames += [{"kind": "BULK_BARS", "bars": bars, "last": True}]
+    frames += [{"kind": "BULK_BARS", "bars": bars, "last": last_batch}]
     output = io.StringIO()
     monkeypatch.setattr("sys.stdin", io.StringIO("".join(json.dumps(row) + "\n" for row in frames)))
     monkeypatch.setattr("sys.stdout", output)
@@ -91,3 +91,18 @@ def test_bulk_does_not_execute_open_tail(monkeypatch, bulk_case):
             bar(open_time_utc_ms=OPENED + 120_000, finality="OPEN")]
     result = execute_bulk(monkeypatch, bulk_case, bars=rows)
     assert result["bars_processed"] == 2
+
+
+def test_bulk_result_contains_actual_intents_and_equity(monkeypatch, bulk_case):
+    result = execute_bulk(monkeypatch, bulk_case)
+    assert len(result["intent_tape"]) == 1
+    assert result["intent_tape"][0]["qty"] == "7"
+    assert len(result["raw_result"]["equity_curve"]) == 3
+
+
+def test_bulk_does_not_publish_success_after_engine_failure(monkeypatch, bulk_case):
+    from types import SimpleNamespace
+    monkeypatch.setattr("backtest_engine.BacktestEngine.run", lambda *_a, **_k: SimpleNamespace(
+        status="failed", errors=["injected failure"], bars_processed=0, score_ledger_hash="bad"))
+    with pytest.raises(ValueError, match="did not complete"):
+        execute_bulk(monkeypatch, bulk_case)

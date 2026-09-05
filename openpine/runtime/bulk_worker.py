@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from collections.abc import Mapping, Sequence
 from types import SimpleNamespace
 from typing import Any
@@ -90,28 +91,58 @@ class BulkWorkerSession(InteractiveWorkerSession):
                 )
         finally:
             self.timeout_s = previous_timeout
+        raw = payload.get("raw_result")
+        if not isinstance(raw, Mapping) or raw.get("status") != "completed":
+            status = raw.get("status") if isinstance(raw, Mapping) else None
+            raise IsolatedWorkerError(f"bulk engine did not complete: {status!r}")
+        processed = payload.get("bars_processed")
+        received = payload.get("bars_received")
+        excluded = payload.get("bars_excluded_open")
+        if (type(processed) is not int or type(received) is not int or type(excluded) is not int
+                or received != len(envelopes) or not 0 <= excluded <= received
+                or not 0 <= processed <= received - excluded):
+            raise IsolatedWorkerError("bulk result bar counts are invalid")
         intent_tape = payload.get("intent_tape")
         if not isinstance(intent_tape, list):
             raise IsolatedWorkerError("bulk result intent tape is invalid")
+        if intent_tape:
+            from backtest_engine.core.intent_replay import IntentReplayError, require_live_tape
+            try:
+                require_live_tape(intent_tape)
+            except (IntentReplayError, ValueError) as exc:
+                raise IsolatedWorkerError("bulk result intent tape failed validation") from exc
+            context = self.protocol.execution_context
+            fields = ("run_id", "strategy_id", "series_id", "instrument_id", "timeframe")
+            if any(any(event.get(key) != context[key] for key in fields)
+                   or event.get("stack_id") != context["stack_manifest_hash"] for event in intent_tape):
+                raise IsolatedWorkerError("bulk result intent identity mismatch")
         return {
             "ok": True,
-            "bars_processed": int(payload.get("bars_processed") or 0),
+            "bars_processed": processed,
+            "bars_received": received,
+            "bars_excluded_open": excluded,
             "intent_tape": intent_tape,
             "score_ledger_hash": payload.get("score_ledger_hash"),
             "raw_result": hydrate_bulk_raw_result(payload),
         }
 
     def __exit__(self, exc_type, exc, traceback) -> None:
-        if exc_type is None:
+        if exc_type is not None:
+            return super().__exit__(exc_type, exc, traceback)
+        try:
+            if self.proc.stdin is not None and not self._closed:
+                self.proc.stdin.close()
             try:
-                if self.proc.stdin is not None and not self._closed:
-                    self.proc.stdin.close()
-                try:
-                    self.proc.wait(timeout=2)
-                except Exception:
-                    self._kill()
-            finally:
-                self._close_pipes()
-                self._closed = True
-            return None
-        return super().__exit__(exc_type, exc, traceback)
+                return_code = self.proc.wait(timeout=2)
+            except subprocess.TimeoutExpired as error:
+                self._kill()
+                raise IsolatedWorkerError("bulk worker did not exit after its result") from error
+            except OSError as error:
+                self._kill()
+                raise IsolatedWorkerError("bulk worker exit could not be verified") from error
+            if return_code != 0:
+                raise IsolatedWorkerError(f"bulk worker exited with status {return_code}")
+        finally:
+            self._close_pipes()
+            self._closed = True
+        return None
