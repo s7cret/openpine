@@ -10,7 +10,7 @@ from concurrent.futures import Future
 from dataclasses import dataclass, replace
 from pathlib import Path
 import re
-from typing import Protocol
+from typing import Protocol, cast
 
 from openpine_contracts import validate_payload, verify_content_hash
 
@@ -261,7 +261,9 @@ class DataOrchestrator:
             raise ValueError(f"unsupported data source: {query.source}")
 
         storage_series = self._load_storage(query, require_complete=False)
-        if storage_series.coverage.is_complete:
+        if storage_series.coverage.is_complete or (
+            storage_series.bars and query.gap_policy == "allow_with_metadata"
+        ):
             self._save_cache(storage_series)
             return storage_series
 
@@ -371,7 +373,12 @@ class DataOrchestrator:
     def _load_storage(self, query: BarQuery, *, require_complete: bool) -> LoadedBarSeries:
         try:
             try:
-                payload = self._store.read(query)
+                series_reader = getattr(self._store, "read_series", None)
+                payload = (
+                    cast(Callable[[BarQuery], object], series_reader)(query)
+                    if query.gap_policy == "allow_with_metadata" and callable(series_reader)
+                    else self._store.read(query)
+                )
             except MDValidationError as exc:
                 if str(exc) != "provider_revision is unavailable for an empty snapshot":
                     raise
