@@ -61,6 +61,7 @@ def admitted_manifest() -> dict[str, Any]:
                 "jsonschema",
                 "jsonschema_specifications",
                 "marketdata_provider",
+                "msgpack",
                 "openpine_rc6_worker_runtime",
                 "openpine_contracts",
                 "pinelib",
