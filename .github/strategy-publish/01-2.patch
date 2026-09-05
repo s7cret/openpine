@@ -1,0 +1,140 @@
+diff --git a/openpine/runtime/rc6_worker_runtime.py b/openpine/runtime/rc6_worker_runtime.py
+index 4f0f062bf09fcde9f0f47c84cea32b823c3df700..3417ad8efaf0eb290c6d5dee1cd34dbf87aa107f 100644
+--- a/openpine/runtime/rc6_worker_runtime.py
++++ b/openpine/runtime/rc6_worker_runtime.py
+@@ -22,6 +22,9 @@ from backtest_engine.core.delegated_strategy_intents import (
+     build_delegated_strategy_dispatcher,
+ )
+ from backtest_engine.core.intent_replay import IntentReplayIdentity
++from backtest_engine.core.strategy_capabilities import (
++    strategy_values_from_projection, strategy_values_from_state,
++)
+ from openpine_contracts import (
+     ExecutionEvent,
+     aggregate_batch_hash,
+@@ -30,7 +33,7 @@ from openpine_contracts import (
+     validate_worker_protocol_sequence,
+     verify_content_hash,
+ )
+-from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession, na
++from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
+ from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
+ from pinelib.runtime.session import CallbackResult
+ 
+@@ -278,6 +281,11 @@ class RC6GeneratedScriptSession:
+         self.inputs = resolve_inputs(source, params, envelope=envelope)
+         if expected_input_values_hash is not None and expected_input_values_hash != self.inputs.values_hash:
+             raise ValueError("applied input values differ from the admitted parameter hash")
++        from openpine.runtime.strategy_host import validate_strategy_host
++        self.strategy_host = validate_strategy_host(tree, envelope["version_context"]["pine_version"])
++        self.pine_version = envelope["version_context"]["pine_version"]
++        if language.pine_version != self.pine_version:
++            raise ValueError("runtime language differs from the admitted artifact")
+         namespace: dict[str, Any] = {"__name__": module_name}
+         exec(compile(tree, f"<{module_name}>", "exec"), namespace, namespace)
+         generated_class = namespace.get(entrypoint_name)
+@@ -325,6 +333,7 @@ class RC6GeneratedScriptSession:
+         final_tick: bool = True,
+         broker_equity: object | None = None,
+         execution_event: ExecutionEvent | None = None,
++        open_entry_ids: tuple[str, ...] = (),
+     ) -> RC6BarExecution:
+         bar_time = values.time
+         if type(bar_time) is not int or bar_time < 0:
+@@ -342,6 +351,7 @@ class RC6GeneratedScriptSession:
+             bar_open_time_utc_ms={bar_index: bar_time},
+             config=self.intent_config,
+             recalc_iteration=None if execution_event is None else execution_event.recalc_iteration,
++            pine_version=self.pine_version, open_entry_ids=open_entry_ids,
+             bar_close={bar_index: values.close},
+             bar_equity={} if broker_equity is None else {bar_index: broker_equity},
+         )
+@@ -390,11 +400,12 @@ class RC6GeneratedScriptSession:
+     def execute_callback(
+         self, values: BarValues, event: ExecutionEvent, *,
+         strategy_values: Mapping[str, object], broker_equity: object | None = None,
++        open_entry_ids: tuple[str, ...] = (),
+     ) -> RC6BarExecution:
+         return self.execute_bar(
+             values, bar_index=event.bar_index, last_bar_index=event.last_bar_index,
+             strategy_values=strategy_values, broker_equity=broker_equity,
+-            execution_event=event,
++            execution_event=event, open_entry_ids=open_entry_ids,
+         )
+ 
+     def finalize_bar(self, bar_index: int) -> CallbackResult:
+@@ -435,7 +446,7 @@ def _session_from_request(
+         language=RuntimeLanguageContext(
+             int(version_context["pine_version"]),
+             str(version_context["spec_snapshot_ref"]),
+-            "pine-v6",
++            f"pine-v{version_context['pine_version']}",
+             str(generated["target_manifest_hash"]),
+             str(version_context["origin"]),
+         ),
+@@ -466,25 +477,11 @@ def _session_from_request(
+     )
+ 
+ 
+-def _strategy_values(projection: Mapping[str, Any]) -> dict[str, object]:
++def _strategy_values(projection: Mapping[str, Any], config: BacktestConfig) -> dict[str, object]:
+     validate_payload("openpine.broker_projection.v1", projection)
+     if not verify_content_hash(projection, schema_id="openpine.broker_projection.v1"):
+         raise ValueError("broker projection content hash is invalid")
+-    position = projection["position"]
+-    if not isinstance(position, Mapping):
+-        raise ValueError("broker position projection is invalid")
+-    direction = str(position["direction"])
+-    qty = float(position["qty"])
+-    signed_qty = -qty if direction == "SHORT" else qty
+-    if direction == "FLAT":
+-        signed_qty = 0.0
+-    avg_price = position.get("avg_price")
+-    entry_name = position.get("entry_name")
+-    return {
+-        "strategy.position_size": signed_qty,
+-        "strategy.position_avg_price": na if avg_price is None else float(avg_price),
+-        "strategy.position_entry_name": na if entry_name is None else str(entry_name),
+-    }
++    return strategy_values_from_projection(projection, config)
+ 
+ 
+ def _bar_values(
+@@ -559,7 +556,8 @@ class RC6InteractiveCallbacks:
+             raise ValueError(f"broker projection execution identity mismatch: {mismatched}")
+         values = _bar_values(raw_bar, context=self.context)
+         execution = self.session.execute_callback(values, event,
+-            strategy_values=_strategy_values(projection), broker_equity=projection["equity"])
++            strategy_values=_strategy_values(projection, self.session.intent_config), broker_equity=projection["equity"],
++            open_entry_ids=tuple(trade["entry_name"] for trade in projection["open_trades"]))
+         self.current_bar = raw_bar
+         intents = [dict(intent) for intent in execution.intents]
+         batch_hash = aggregate_batch_hash(intents, batch_kind="INTENT_BATCH", item_schema_id="openpine.intent.v2")
+@@ -739,17 +737,6 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+     completed_bars = 0
+     tape_events: list[dict[str, Any]] = []
+ 
+-    def _strategy_values_from_state(state: Any) -> dict[str, object]:
+-        signed = float(getattr(state, "position_size", 0.0) or 0.0)
+-        avg = getattr(state, "position_avg_price", None)
+-        opens = getattr(state, "_open_trades_ref", None) or []
+-        entry = str(opens[0].entry_id) if opens else None
+-        return {
+-            "strategy.position_size": signed,
+-            "strategy.position_avg_price": na if avg is None else float(avg),
+-            "strategy.position_entry_name": na if entry is None else entry,
+-        }
+-
+     class _BulkStrategy:
+         required_runtime_capabilities: tuple[str, ...] = ()
+ 
+@@ -772,7 +759,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+             )
+             execution = session.execute_callback(
+                 values, event,
+-                strategy_values=_strategy_values_from_state(self.ctx.state),
++                strategy_values=strategy_values_from_state(self.ctx.state, self.ctx.config),
++                open_entry_ids=tuple(trade.entry_id for trade in self.ctx.state._open_trades_ref),
+                 broker_equity=self.ctx.state.equity,
+             )
+             batch = [dict(intent) for intent in execution.intents]
