@@ -110,10 +110,11 @@ jobs:
           subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-q','rc6_tests',*sorted(selected),
                           '--junitxml='+str(evidence/'openpine.xml')],check=True)
           PY
-      - name: Lint changed runtime and build clean distributions
+      - name: Lint changed runtime and build clean distributions with actual OpenAPI
         run: |
           python -m ruff check openpine/runtime/rc6_worker_runtime.py rc6_tests/test_rc6_chart_metadata.py
           python -m compileall -q openpine
+          python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
           mkdir -p "$RUNNER_TEMP/build-source"
           git archive HEAD | tar -x -C "$RUNNER_TEMP/build-source"
           python -m build --no-isolation --outdir "$RUNNER_TEMP/evidence/dist" "$RUNNER_TEMP/build-source"
@@ -127,6 +128,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
   frontend:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -145,6 +147,10 @@ jobs:
           persist-credentials: false
       - name: Restore the same verified source candidate
         run: python "$RUNNER_TEMP/restore.py" restore .github/data-ui/manifest.json "$RUNNER_TEMP/evidence"
+      - uses: actions/download-artifact@v4
+        with:
+          name: data-ui-3.13-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend-evidence
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -158,8 +164,10 @@ jobs:
       - name: Type check and production frontend build
         working-directory: openpine-ui
         run: npm run build | tee "$RUNNER_TEMP/evidence/ui-build.log"
-      - name: Node regressions against the actual production build
+      - name: Node regressions against actual production build and backend schema
         working-directory: openpine-ui
+        env:
+          OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend-evidence/openapi.json
         run: npm run test:node | tee "$RUNNER_TEMP/evidence/ui-node.log"
       - uses: actions/upload-artifact@v4
         if: always()

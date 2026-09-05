@@ -1,0 +1,112 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index b76668b0f7ed34e0bcf4921b5900df1bc1e98736..3db2c4d11e7f779318867865eda318c4dc686438 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -106,6 +106,7 @@ jobs:
+         run: |
+           python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py
+           python -m compileall -q openpine
++          python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+           mkdir -p "$RUNNER_TEMP/build-source"
+           git archive HEAD | tar -x -C "$RUNNER_TEMP/build-source"
+           python -m build --no-isolation --outdir "$RUNNER_TEMP/evidence/dist" "$RUNNER_TEMP/build-source"
+@@ -118,3 +119,38 @@ jobs:
+           path: ${{ runner.temp }}/evidence/
+           if-no-files-found: error
+           retention-days: 30
++  frontend:
++    needs: verify
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    defaults:
++      run:
++        working-directory: openpine-ui
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          persist-credentials: false
++      - uses: actions/download-artifact@v4
++        with:
++          name: rc6-checks-3.13-${{ github.run_id }}
++          path: ${{ runner.temp }}/backend-evidence
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '24'
++          cache: npm
++          cache-dependency-path: openpine-ui/package-lock.json
++      - run: npm ci
++      - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
++      # Package tests use real dist; API checks use this same source revision.
++      - run: npm run build
++      - run: npm run test:node
++        env:
++          OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend-evidence/openapi.json
++      - uses: actions/upload-artifact@v4
++        if: always()
++        with:
++          name: rc6-ui-${{ github.run_id }}
++          path: |
++            ${{ runner.temp }}/ui-tests.xml
++            openpine-ui/dist/
++          retention-days: 30
+diff --git a/.github/workflows/rc6-ui.yml b/.github/workflows/rc6-ui.yml
+deleted file mode 100644
+index e55c542cbaf1e736984a175aa4bc02888469f32a..0000000000000000000000000000000000000000
+--- a/.github/workflows/rc6-ui.yml
++++ /dev/null
+@@ -1,42 +0,0 @@
+-# Functional UI/build checks; not a browser E2E or visual acceptance gate.
+-name: RC6 frontend checks
+-'on':
+-  push:
+-    branches: ['release/5.0.0rc6']
+-  pull_request:
+-    branches: ['release/5.0.0rc6']
+-  workflow_dispatch:
+-permissions:
+-  contents: read
+-concurrency:
+-  group: rc6-ui-${{ github.ref }}
+-  cancel-in-progress: true
+-jobs:
+-  frontend:
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 15
+-    defaults:
+-      run:
+-        working-directory: openpine-ui
+-    steps:
+-      - uses: actions/checkout@v4
+-        with:
+-          persist-credentials: false
+-      - uses: actions/setup-node@v4
+-        with:
+-          node-version: '24'
+-          cache: npm
+-          cache-dependency-path: openpine-ui/package-lock.json
+-      - run: npm ci
+-      - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
+-      # Production-package regressions consume the actual built dist tree.
+-      - run: npm run build
+-      - run: npm run test:node
+-      - uses: actions/upload-artifact@v4
+-        if: always()
+-        with:
+-          name: rc6-ui-${{ github.run_id }}
+-          path: |
+-            ${{ runner.temp }}/ui-tests.xml
+-            openpine-ui/dist/
+-          retention-days: 30
+diff --git a/docs/RC6_DATA_UI_BLOCK.md b/docs/RC6_DATA_UI_BLOCK.md
+index 95cb3238d37af620753822610d1fb8362a8e83fe..0c78f4e7dec937a45c1831ac4f941cdcc2ef1397 100644
+--- a/docs/RC6_DATA_UI_BLOCK.md
++++ b/docs/RC6_DATA_UI_BLOCK.md
+@@ -8,7 +8,7 @@ Provider hour intervals translate to Pine minute notation (1h -> 60, 4h -> 240);
+ 
+ TV parity requests and polling callbacks are guarded by selection/lifecycle generations. Older detail, queued-run, list and preview responses cannot replace the newer selection. Stopped/restarted poll loops cannot apply stale results/errors or terminate a new loop. Deletion/unmount invalidates relevant results; a late preview cannot overwrite a report period. Canceled is terminal. Duplicate run submission is prevented while a POST is pending. Summary failures are retryable. Existing AbortSignal-based latest-request consumers remain compatible. The new epoch tokens suppress UI writes but do not abort HTTP or cancel a server job.
+ 
+-The UI tests use actual Vue setup/watch/unmount with an in-memory renderer plus deferred network promises. They are not browser/visual/E2E acceptance. The existing native CI remains read-only and now includes the deterministic provider suite. A separate read-only UI workflow runs unit/component tests, node tests, type checks and production build. Existing release/coverage gates are not replaced.
++The UI tests use actual Vue setup/watch/unmount with an in-memory renderer plus deferred network promises. They are not browser/visual/E2E acceptance. The existing native CI remains read-only and now includes the deterministic provider suite. The same read-only workflow runs UI unit/component tests, type checks and a production build, then checks packaging and browser API paths against OpenAPI exported by its verified backend job. There is no unrelated or fabricated contract fixture. Existing release/coverage gates are not replaced.
+ 
+ ## Request integration remains open
+ 
