@@ -496,6 +496,8 @@
       "calloutsTitle": "P092 diagnostics callouts",
       "calloutsEmpty": "Нет P092 маркеров в chart CSV",
       "calloutsCount": "{count} маркеров",
+      "displaySampling": "Для графика используется выборка с сохранением крайних точек и пиков. Метрики, вердикт и выгрузки используют исходные данные.",
+      "sampleNotice": "Тепловая карта и маркеры построены по загруженным top {count} расхождениям, а не по всей совокупности.",
       "heatmapTitle": "Heatmap расхождений (10 корзин)",
       "heatmapEmpty": "Нет расхождений",
       "leaderboardTitle": "Топ расхождений",

@@ -13,6 +13,8 @@ import {
   type TvParityTopMismatch,
 } from '@/api/client'
 import { downloadApiResource } from '@/api/auth'
+import { createRequestEpoch } from '@/lib/latestRequest'
+import { finiteEquityBounds, sampleEquityForDisplay } from '@/lib/tvParitySeries'
 
 const props = defineProps<{ runId: string }>()
 const { t } = useI18n()
@@ -24,6 +26,9 @@ const callouts = ref<TvParityDiagnosticsCallout[]>([])
 const loading = ref(false)
 const error = ref('')
 const mismatchesLimit = ref(20)
+const mismatchesTotal = ref<number | null>(null)
+const requests = createRequestEpoch()
+let renderFrame: number | null = null
 
 // (6) time-range scrubber state
 const scrubFrom = ref<number | null>(null)
@@ -40,7 +45,7 @@ const visiblePoints = computed(() => {
   if (!chart.value) return []
   return chart.value.series.filter((row) => {
     const t = Number(row.t)
-    if (Number.isNaN(t)) return true
+    if (!Number.isFinite(t)) return false
     if (scrubFrom.value !== null && t < scrubFrom.value) return false
     if (scrubTo.value !== null && t > scrubTo.value) return false
     return true
@@ -60,25 +65,16 @@ const sortedMismatches = computed(() => {
   return [...mismatches.value].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0))
 })
 
-const chartBounds = computed(() => {
-  const rows = visiblePoints.value
-  if (!rows.length) return null
-  const xs: number[] = []
-  const ys: number[] = []
-  for (const row of rows) {
-    const t = Number(row.t)
-    if (Number.isNaN(t)) continue
-    xs.push(t)
-    if (typeof row.v === 'number') ys.push(row.v)
-  }
-  if (!xs.length || !ys.length) return null
+const chartBounds = computed(() => finiteEquityBounds(visiblePoints.value))
+const displaySeries = computed(() => {
+  const bounds = chartBounds.value
+  if (!bounds) return { openpine: [], tv: [] }
   return {
-    tMin: Math.min(...xs),
-    tMax: Math.max(...xs),
-    yMin: Math.min(...ys),
-    yMax: Math.max(...ys),
+    openpine: sampleEquityForDisplay(visiblePoints.value, 'openpine_equity', bounds, canvasSize.value.width),
+    tv: sampleEquityForDisplay(visiblePoints.value, 'tv_equity', bounds, canvasSize.value.width),
   }
 })
+const sampledMismatches = computed(() => mismatchesTotal.value === null || mismatches.value.length < mismatchesTotal.value)
 
 const heatmapBuckets = computed(() => {
   if (!chart.value) return []
@@ -95,7 +91,9 @@ const heatmapBuckets = computed(() => {
   const sums = new Array(buckets).fill(0)
   const counts = new Array(buckets).fill(0)
   for (const row of matches) {
-    if (row.bar_time == null) continue
+    if (row.bar_time == null || !Number.isFinite(row.bar_time)
+        || row.bar_time < tMin || row.bar_time > tMax
+        || !Number.isFinite(row.delta_net_profit_abs)) continue
     let idx = Math.floor((row.bar_time - tMin) / span)
     if (idx >= buckets) idx = buckets - 1
     if (idx < 0) idx = 0
@@ -122,6 +120,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  requests.dispose()
+  cancelDraw()
   window.removeEventListener('resize', resizeCanvas)
 })
 
@@ -130,13 +130,12 @@ watch(
   () => {
     scrubFrom.value = null
     scrubTo.value = null
-    loadAll()
+    void loadAll()
   },
+  { flush: 'sync' },
 )
 
-watch([scrubFrom, scrubTo], () => {
-  drawCanvas()
-})
+watch([scrubFrom, scrubTo], queueDraw)
 
 function resizeCanvas() {
   if (!canvasRef.value) return
@@ -150,36 +149,67 @@ function resizeCanvas() {
     canvasRef.value.style.width = `${width}px`
     canvasRef.value.style.height = `${canvasSize.value.height}px`
   }
-  drawCanvas()
+  queueDraw()
+}
+
+function cancelDraw() {
+  if (renderFrame !== null) cancelAnimationFrame(renderFrame)
+  renderFrame = null
+}
+
+function queueDraw() {
+  if (renderFrame !== null) return
+  const current = requests.capture()
+  renderFrame = requestAnimationFrame(() => {
+    renderFrame = null
+    if (current()) drawCanvas()
+  })
 }
 
 async function loadAll() {
-  if (!props.runId) return
-  loading.value = true
+  const runId = props.runId
+  const current = requests.begin()
+  cancelDraw()
+  summary.value = null
+  chart.value = null
+  mismatches.value = []
+  callouts.value = []
+  mismatchesTotal.value = null
   error.value = ''
+  loading.value = !!runId
+  drawCanvas() // Clear the old plot immediately, even without new bounds.
+  if (!runId) return
+  const isCurrent = () => current() && props.runId === runId
   try {
     const [cardsResp, chartResp, mismatchesResp, calloutsResp] = await Promise.all([
-      getTvParitySummaryCards(props.runId),
-      getTvParityChartData(props.runId),
-      getTvParityTopMismatches(props.runId, mismatchesLimit.value),
-      getTvParityDiagnosticsCallouts(props.runId),
+      getTvParitySummaryCards(runId),
+      getTvParityChartData(runId),
+      getTvParityTopMismatches(runId, mismatchesLimit.value),
+      getTvParityDiagnosticsCallouts(runId),
     ])
+    if (!isCurrent()) return
+    if (chartResp.data.run_id !== runId || calloutsResp.data.run_id !== runId
+        || (cardsResp.data.run_id !== null && cardsResp.data.run_id !== runId)) {
+      throw new Error('Visualization response identity mismatch')
+    }
     summary.value = cardsResp.data
     chart.value = chartResp.data
     mismatches.value = mismatchesResp.data.items
+    mismatchesTotal.value = Number.isInteger(mismatchesResp.data.total) && mismatchesResp.data.total >= 0
+      ? mismatchesResp.data.total : null
     callouts.value = calloutsResp.data.callouts
-    requestAnimationFrame(drawCanvas)
+    queueDraw()
   } catch (err: any) {
-    error.value = err?.response?.data?.detail ?? err?.message ?? 'viz load failed'
+    if (isCurrent()) error.value = err?.response?.data?.detail ?? err?.message ?? 'viz load failed'
   } finally {
-    loading.value = false
+    if (isCurrent()) loading.value = false
   }
 }
 
 function drawCanvas() {
   const canvas = canvasRef.value
   const bounds = chartBounds.value
-  if (!canvas || !bounds) return
+  if (!canvas) return
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   const w = canvas.width
@@ -188,6 +218,7 @@ function drawCanvas() {
   // Background
   ctx.fillStyle = '#101418'
   ctx.fillRect(0, 0, w, h)
+  if (!bounds) return
   // Y grid
   ctx.strokeStyle = '#1f2a35'
   ctx.fillStyle = '#7e94a7'
@@ -216,16 +247,15 @@ function drawCanvas() {
     ((bounds.yMax - v) / (bounds.yMax - bounds.yMin || 1)) * h
 
   // OpenPine equity (green) and TV equity (blue dashed)
-  const drawSeries = (color: string, dash: number[], extractor: (row: any) => [number, number] | null) => {
+  const drawSeries = (color: string, dash: number[], rows: typeof visiblePoints.value) => {
     let prev: [number, number] | null = null
     ctx.strokeStyle = color
     ctx.setLineDash(dash)
     ctx.lineWidth = 3
     ctx.beginPath()
     let drew = false
-    for (const row of visiblePoints.value) {
-      const pt = extractor(row)
-      if (!pt) continue
+    for (const row of rows) {
+      const pt: [number, number] = [row.t, row.v as number]
       if (!drew) {
         ctx.moveTo(xScale(pt[0]), yScale(pt[1]))
         drew = true
@@ -237,18 +267,15 @@ function drawCanvas() {
     ctx.stroke()
     ctx.setLineDash([])
   }
-  drawSeries('#3ad29f', [], (row) =>
-    row.kind === 'openpine_equity' && typeof row.v === 'number' ? [row.t, row.v] : null,
-  )
-  drawSeries('#5aa9ff', [8, 6], (row) =>
-    row.kind === 'tv_equity' && typeof row.v === 'number' ? [row.t, row.v] : null,
-  )
+  drawSeries('#3ad29f', [], displaySeries.value.openpine)
+  drawSeries('#5aa9ff', [8, 6], displaySeries.value.tv)
 
   // Diagnostics callouts (P092 markers) as bright yellow dots.
   ctx.fillStyle = '#ffd166'
   ctx.strokeStyle = '#101418'
   ctx.lineWidth = 2
   for (const callout of visibleCallouts.value) {
+    if (!Number.isFinite(callout.bar_time)) continue
     const x = xScale(callout.bar_time)
     ctx.beginPath()
     ctx.arc(x, 8, 6, 0, Math.PI * 2)
@@ -259,7 +286,8 @@ function drawCanvas() {
   // Top mismatch markers (red triangles) — sized by delta.
   ctx.fillStyle = '#ff7479'
   for (const mismatch of sortedMismatches.value.slice(0, 50)) {
-    if (mismatch.bar_time == null) continue
+    if (mismatch.bar_time == null || !Number.isFinite(mismatch.bar_time)
+        || mismatch.bar_time < bounds.tMin || mismatch.bar_time > bounds.tMax) continue
     const x = xScale(mismatch.bar_time)
     if (Number.isNaN(x)) continue
     ctx.beginPath()
@@ -277,13 +305,13 @@ function onScrubChange(kind: 'from' | 'to') {
     if (kind === 'from') scrubTo.value = scrubFrom.value
     else scrubFrom.value = scrubTo.value
   }
-  drawCanvas()
+  queueDraw()
 }
 
 function resetScrub() {
   scrubFrom.value = null
   scrubTo.value = null
-  drawCanvas()
+  queueDraw()
 }
 
 function fmtMs(ms?: number | null) {
@@ -583,6 +611,10 @@ async function downloadReport(kind: 'html' | 'png' | 'zip') {
       </div>
     </div>
 
+    <p class="text-xs text-gray-400">{{ t('tvParity.viz.displaySampling') }}</p>
+    <p v-if="sampledMismatches" class="text-xs text-amber-300">
+      {{ t('tvParity.viz.sampleNotice', { count: mismatches.length }) }}
+    </p>
     <!-- (2) Heatmap + (3) leaderboard -->
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-3">
       <div class="rounded-lg border border-dark-500 bg-dark-700/30 p-3 xl:col-span-1">

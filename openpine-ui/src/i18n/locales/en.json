@@ -496,6 +496,8 @@
       "calloutsTitle": "P092 diagnostics callouts",
       "calloutsEmpty": "No P092 markers in the chart CSV",
       "calloutsCount": "{count} markers",
+      "displaySampling": "Chart-only min/max downsampling preserves endpoints and spikes. Metrics, verdicts and downloads use the original data.",
+      "sampleNotice": "Heatmap and markers use the returned top {count} mismatches, not the full mismatch population.",
       "heatmapTitle": "Mismatch heatmap (10 buckets)",
       "heatmapEmpty": "No mismatches to bucket",
       "leaderboardTitle": "Top mismatches",
