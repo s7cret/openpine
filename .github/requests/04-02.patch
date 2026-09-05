@@ -1,0 +1,13 @@
+diff --git a/rc6_tests/test_rc6_generated_checkpoint.py b/rc6_tests/test_rc6_generated_checkpoint.py
+index 20e73fcf89e82353dd803a11cd9a1c1dde02d47e..06a509d3635d4eec6b38cc39cf95a9fc3bd2de0a 100644
+--- a/rc6_tests/test_rc6_generated_checkpoint.py
++++ b/rc6_tests/test_rc6_generated_checkpoint.py
+@@ -146,7 +146,7 @@ def test_bulk_resume_export_contains_real_series_requests_and_counter(monkeypatc
+     cfg.request_manifest = case[2].request_manifest
+     result = execute_bulk(monkeypatch, case, config=cfg, bars=candles)
+     state = result["raw_result"]["resume_state"]["strategy_state"]
+-    assert state["schema_id"] == "openpine.rc6.generated_checkpoint.v1"
++    assert state["schema_id"] == "openpine.rc6.generated_checkpoint.v2"
+     assert state["runtime"]["state"]["series"] and state["runtime"]["state"]["requests"]
+     assert state["last_event"]["bar_index"] == 14
+     assert state["intent_sequence"] == len(result["intent_tape"])

@@ -1,0 +1,270 @@
+diff --git a/openpine/runtime/request_data.py b/openpine/runtime/request_data.py
+index df1e300fd92e65f443acd43e59bd2abef0841ba9..f713ef1a44b2c1cf551732bf709719358a21d80d 100644
+--- a/openpine/runtime/request_data.py
++++ b/openpine/runtime/request_data.py
+@@ -194,4 +194,12 @@ def admit_request_data(
+                 "RC6_REQUEST_DATA: compiled requests require preloaded immutable request snapshots"
+             )
+         return None
+-    return request_provider_from_manifest(manifest, context)
++    provider = request_provider_from_manifest(manifest, context)
++    from openpine.runtime.request_requirements import (
++        compiled_request_requirements, validate_static_request_sources,
++    )
++    try:
++        validate_static_request_sources(provider, compiled_request_requirements(tree, context), context)
++    except (PineRuntimeError, MarketDataError) as exc:
++        raise ValueError(f"RC6_REQUEST_DATA: {exc}") from exc
++    return provider
+diff --git a/openpine/runtime/request_requirements.py b/openpine/runtime/request_requirements.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..54b2820349cf6a649be53b63be2d6bbef7d193bb
+--- /dev/null
++++ b/openpine/runtime/request_requirements.py
+@@ -0,0 +1,109 @@
++"""Discover literal request contexts in compiler-emitted ABI calls without execution.
++
++Unresolved values stay unresolved. This is early dataset admission, not an
++automatic network loader, a Pine parser, or a substitute for runtime validation.
++"""
++
++from __future__ import annotations
++
++import ast
++from dataclasses import dataclass
++from collections.abc import Mapping
++
++from marketdata_provider.timeframes import to_pine_timeframe
++from pinelib.request.snapshots import normalized_period
++from pinelib.runtime.metadata import TimeframeContext
++
++_REQUEST_ABI = {"security_v1": "security", "security_lower_tf_v1": "security_lower_tf"}
++
++
++@dataclass(frozen=True, slots=True)
++class RequestRequirement:
++    kind: str
++    symbol: str | None
++    timeframe: str | None
++    ignore_invalid_timeframe: bool | None
++    generated_line: int
++
++
++def compiled_request_requirements(
++    tree: ast.Module, context: Mapping
++) -> tuple[RequestRequirement, ...]:
++    aliases = {
++        alias.asname or alias.name: _REQUEST_ABI[alias.name]
++        for node in ast.walk(tree)
++        if isinstance(node, ast.ImportFrom) and node.module == "pinelib.abi.compiled_request"
++        for alias in node.names
++        if alias.name in _REQUEST_ABI
++    }
++    requirements = []
++    for node in ast.walk(tree):
++        if (
++            not isinstance(node, ast.Call)
++            or not isinstance(node.func, ast.Name)
++            or node.func.id not in aliases
++        ):
++            continue
++        kwargs = {item.arg: item.value for item in node.keywords}
++
++        def text(name):
++            value = kwargs.get(name)
++            return (
++                value.value
++                if isinstance(value, ast.Constant) and type(value.value) is str
++                else None
++            )
++
++        symbol, period = text("symbol"), text("timeframe")
++        if symbol == "":
++            symbol = context["instrument_id"]
++        if period == "":
++            period = to_pine_timeframe(context["timeframe"])
++        if period is not None:
++            period = normalized_period(period)
++        flag = kwargs.get("ignore_invalid_timeframe")
++        requirements.append(
++            RequestRequirement(
++                aliases[node.func.id],
++                symbol,
++                period,
++                False
++                if flag is None
++                else flag.value
++                if isinstance(flag, ast.Constant) and type(flag.value) is bool
++                else None,
++                node.lineno,
++            )
++        )
++    return tuple(requirements)
++
++
++def validate_static_request_sources(
++    provider, requirements: tuple[RequestRequirement, ...], context: Mapping
++) -> None:
++    from pinelib.errors import PineRuntimeError
++
++    chart = TimeframeContext.parse(to_pine_timeframe(context["timeframe"]))
++    for requirement in requirements:
++        if requirement.timeframe is not None and requirement.kind == "security_lower_tf":
++            requested = TimeframeContext.parse(requirement.timeframe)
++            if requested.seconds is None or chart.seconds is None:
++                raise ValueError(
++                    "RC6_REQUEST_DATA: lower timeframe requests require fixed-duration intervals"
++                )
++            if requested.seconds > chart.seconds:
++                if requirement.ignore_invalid_timeframe is not False:
++                    # A dynamic ignore flag is a runtime decision, never guessed.
++                    continue
++                raise ValueError(
++                    "RC6_REQUEST_DATA: requested lower timeframe exceeds chart timeframe"
++                )
++        if requirement.symbol is None or requirement.timeframe is None:
++            continue
++        try:
++            provider.source(requirement.symbol, requirement.timeframe)
++        except PineRuntimeError as exc:
++            raise ValueError(
++                f"RC6_REQUEST_DATA: no admitted dataset for {requirement.symbol!r} "
++                f"at {requirement.timeframe!r} (generated line {requirement.generated_line})"
++            ) from exc
+diff --git a/rc6_tests/test_rc6_request_causality.py b/rc6_tests/test_rc6_request_causality.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..54ad229bf7a29810e97a3c880d3755f1711faa76
+--- /dev/null
++++ b/rc6_tests/test_rc6_request_causality.py
+@@ -0,0 +1,29 @@
++"""Future source changes must not alter past no-lookahead trading decisions."""
++
++import pytest
++from rc6_tests.test_rc6_requests import ID, case_for, source_rows
++from rc6_tests.test_rc6_bulk_execution import execute_bulk
++
++
++@pytest.mark.parametrize("expression", ["close", "ta.sma(close,2)", "close[1]"])
++def test_mutating_only_future_source_bars_preserves_past_decisions(monkeypatch, expression):
++    body = (
++        f'x=request.security("{ID}","5",{expression})\n'
++        'if not na(x)\n    strategy.order("requested",strategy.long,qty=x)'
++    )
++    baseline, candles = case_for(body, sources=[source_rows(prices=(10, 20, 30))])
++    mutated, _ = case_for(body, sources=[source_rows(prices=(10, 20, 999))])
++    a = execute_bulk(monkeypatch, baseline, bars=candles)
++    b = execute_bulk(monkeypatch, mutated, bars=candles)
++
++    # Identity hashes intentionally change with the source; compare semantic
++    # decision coordinates and parameters, not unrelated content hashes.
++    def past(result):
++        return [
++            (x["bar_index"], x["kind"], x["command_id"], x.get("qty"))
++            for x in result["intent_tape"]
++            if x["bar_index"] < 14
++        ]
++
++    assert past(a) == past(b)
++    assert past(a), "The comparison must include actual decisions, not two empty tapes"
+diff --git a/rc6_tests/test_rc6_request_preflight.py b/rc6_tests/test_rc6_request_preflight.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..583b6c33ad29ce6d9999639c08ee5ea0b5bada81
+--- /dev/null
++++ b/rc6_tests/test_rc6_request_preflight.py
+@@ -0,0 +1,96 @@
++"""Literal missing contexts fail before staging; unresolved contexts are not guessed."""
++
++import ast
++from unittest.mock import Mock
++
++import pytest
++
++from openpine.runtime import isolated_worker
++from openpine.runtime.request_data import admit_request_data
++from openpine.runtime.request_requirements import compiled_request_requirements
++from openpine.runtime.rc6_config import serialize_engine_config
++from rc6_tests.test_rc6_requests import ID, case_for, source_rows
++from rc6_tests.test_rc6_worker_admission import _manifest
++
++
++@pytest.mark.parametrize(
++    "call",
++    [
++        'request.security("MISSING","5",close)',
++        f'request.security("{ID}","15",close)',
++        'request.security("MISSING","5",close,ignore_invalid_symbol=true)',
++        'request.security_lower_tf("MISSING","1",close)',
++    ],
++)
++def test_missing_literal_context_fails_before_worker_staging(tmp_path, monkeypatch, call):
++    case, _ = case_for(f"x={call}")
++    compiled, context, config = case
++    stage, process = Mock(), Mock()
++    monkeypatch.setattr(isolated_worker, "_stage_trusted_packages", stage)
++    monkeypatch.setattr(isolated_worker.subprocess, "Popen", process)
++    with pytest.raises(isolated_worker.IsolatedWorkerError, match="no admitted dataset"):
++        isolated_worker.InteractiveWorkerSession(
++            compiled.python_code.encode(),
++            context,
++            ID,
++            _manifest(),
++            compiled.generated_artifact,
++            "sha256:" + "1" * 64,
++            tmp_path,
++            semantic_profile="strict_5x",
++            chart_timeframe="1m",
++            engine_config=serialize_engine_config(config, "strict_5x"),
++        )
++    stage.assert_not_called()
++    process.assert_not_called()
++
++
++def test_empty_literals_resolve_to_chart_identity():
++    case, _ = case_for('x=request.security("","",close)', sources=[source_rows("1m")])
++    compiled, context, config = case
++    (requirement,) = compiled_request_requirements(ast.parse(compiled.python_code), context)
++    assert (requirement.symbol, requirement.timeframe) == (ID, "1")
++    assert admit_request_data(
++        compiled.python_code, serialize_engine_config(config, "strict_5x"), context
++    )
++
++
++def test_dynamic_symbol_is_explicitly_unresolved_not_replaced_with_chart():
++    case, _ = case_for(f's=close>0 ? "{ID}" : "other"\nx=request.security(s,"5",close)')
++    compiled, context, config = case
++    (requirement,) = compiled_request_requirements(ast.parse(compiled.python_code), context)
++    assert requirement.symbol is None and requirement.timeframe == "5"
++    assert admit_request_data(
++        compiled.python_code, serialize_engine_config(config, "strict_5x"), context
++    )
++
++
++def test_ignored_invalid_lower_interval_does_not_require_unused_source():
++    case, _ = case_for(
++        'x=request.security_lower_tf("MISSING","5",close,ignore_invalid_timeframe=true)'
++    )
++    compiled, context, config = case
++    assert admit_request_data(
++        compiled.python_code, serialize_engine_config(config, "strict_5x"), context
++    )
++
++
++def test_nonignored_invalid_lower_interval_fails_at_admission():
++    case, _ = case_for(f'x=request.security_lower_tf("{ID}","5",close)')
++    compiled, context, config = case
++    with pytest.raises(ValueError, match="exceeds chart timeframe"):
++        admit_request_data(
++            compiled.python_code, serialize_engine_config(config, "strict_5x"), context
++        )
++
++
++def test_nonliteral_ignore_flag_is_not_treated_as_false():
++    case, _ = case_for(
++        'ignore=true\nx=request.security_lower_tf("MISSING","5",close,ignore_invalid_timeframe=ignore)'
++    )
++    compiled, context, config = case
++    (requirement,) = compiled_request_requirements(ast.parse(compiled.python_code), context)
++    assert requirement.ignore_invalid_timeframe is None
++    assert admit_request_data(
++        compiled.python_code, serialize_engine_config(config, "strict_5x"), context
++    )

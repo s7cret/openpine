@@ -1,0 +1,363 @@
+diff --git a/openpine/runtime/generated_checkpoint.py b/openpine/runtime/generated_checkpoint.py
+index 46cc1ed432f10b192f9632d0ea9d24307ceba9c2..033b44c98adb450fb6cfbce9a396e0bbe8423a08 100644
+--- a/openpine/runtime/generated_checkpoint.py
++++ b/openpine/runtime/generated_checkpoint.py
+@@ -12,18 +12,116 @@ from typing import Any
+ 
+ from openpine_contracts import ExecutionEvent
+ from pinelib import RuntimeSession
+-from pinelib.state.checkpoint import canonical_json, sha
++from pinelib.state.checkpoint import canonical_json, is_canonical_sha256, sha
++from pinelib.state.digest import AppendOnlyHistory
+ 
+ from openpine.runtime.rc6_config import serialize_engine_config
+ from openpine.runtime.rc6_lifecycle import ExecutionCursor
+ 
+-SCHEMA = "openpine.rc6.generated_checkpoint.v1"
+-_FIELDS = {"schema_id", "identity", "runtime", "last_event", "intent_sequence", "content_hash"}
++SCHEMA = "openpine.rc6.generated_checkpoint.v2"
++JOURNAL_DOMAIN = "openpine.generated-callback-receipts.v1"
++_FIELDS = {
++    "schema_id",
++    "identity",
++    "runtime",
++    "last_event",
++    "intent_sequence",
++    "content_hash",
++    "callback_receipts",
++    "callback_receipts_identity",
++}
++_RECEIPT_FIELDS = {"runtime_sequence", "event", "intent_count", "intent_batch_hash"}
++
++
++def validate_receipts(data, identity, runtime):
++    """Rebuild output cursors from receipts and cross-check committed runtime frames.
++
++    Receipts prove internal consistency, not authenticity against a malicious party
++    able to replace the runtime, journal and every checksum together.
++    """
++    if not isinstance(data, list):
++        raise ValueError("generated checkpoint callback receipts must be an array")
++    journal = AppendOnlyHistory(JOURNAL_DOMAIN)
++    for item in data:
++        if (
++            not isinstance(item, dict)
++            or set(item) != _RECEIPT_FIELDS
++            or type(item["runtime_sequence"]) is not int
++            or item["runtime_sequence"] < 0
++            or type(item["intent_count"]) is not int
++            or item["intent_count"] < 0
++            or not is_canonical_sha256(item["intent_batch_hash"])
++        ):
++            raise ValueError("generated checkpoint callback receipt is invalid")
++        journal.append(item)
++    if journal.identity() != identity:
++        raise ValueError("generated checkpoint callback receipt digest mismatch")
++    cursor = ExecutionCursor()
++    count = 0
++    ordinal = 0
++    bar_ordinal = 0
++    mode = None
++    time_storage = runtime.series.get("time")
++    times = () if time_storage is None else time_storage.committed
++    from pinelib.runtime.metadata import BarValues
++
++    for frame in runtime.transcript.entries:
++        if frame["phase"] == "BAR_COMMIT":
++            if mode != "event":
++                raise ValueError("generated checkpoint commit lacks its callback receipt")
++            cursor.finish(frame["bar_index"])
++            bar_ordinal += 1
++            continue
++        if ordinal >= len(journal):
++            raise ValueError("generated checkpoint is missing callback receipts")
++        item = journal[ordinal]
++        ordinal += 1
++        if item["runtime_sequence"] != frame["sequence"]:
++            raise ValueError("generated checkpoint receipt sequence differs from runtime")
++        count += item["intent_count"]
++        new_mode = "direct" if item["event"] is None else "event"
++        if mode is not None and mode != new_mode:
++            raise ValueError("generated checkpoint mixes direct and event callbacks")
++        mode = new_mode
++        if new_mode == "event":
++            event = ExecutionEvent.from_dict(item["event"])
++            if any(
++                getattr(event, key) != frame[key]
++                for key in ("phase", "bar_index", "tick_index", "realtime", "final_tick")
++            ):
++                raise ValueError("generated checkpoint callback flags differ from runtime")
++            if bar_ordinal >= len(times) or event.bar_open_time_utc_ms != times[bar_ordinal]:
++                raise ValueError("generated checkpoint callback time differs from committed data")
++            # Replay the same causal ordering checks as live execution, including
++            # recalculation ordinals, dataset bounds and per-bar commit boundaries.
++            values = BarValues(
++                **{
++                    key: runtime.series[key].committed[bar_ordinal]
++                    for key in ("open", "high", "low", "close", "volume", "time", "time_close")
++                }
++            )
++            cursor.validate(event, values)
++            cursor.accept(event)
++        else:
++            bar_ordinal += 1
++    if ordinal != len(journal) or cursor.open_bar is not None or bar_ordinal != len(times):
++        raise ValueError("generated checkpoint has extra or provisional callback receipts")
++    return journal, cursor, count
+ 
+ 
+ class GeneratedCheckpointMixin:
+     """Shared by the native generated-script session in both execution modes."""
+ 
++    def _record_callback(self, event, intents) -> None:
++        self._callback_receipts.append(
++            {
++                "runtime_sequence": self.session.sequence,
++                "event": None if event is None else event.to_dict(),
++                "intent_count": len(intents),
++                "intent_batch_hash": sha(list(intents)),
++            }
++        )
++
+     def _checkpoint_identity(self) -> dict[str, Any]:
+         config = serialize_engine_config(self.intent_config, self.identity.semantic_profile)
+         return {
+@@ -47,6 +145,8 @@ class GeneratedCheckpointMixin:
+             if self.execution_cursor.last is None
+             else self.execution_cursor.last.to_dict(),
+             "intent_sequence": self._intent_sequence,
++            "callback_receipts": list(self._callback_receipts),
++            "callback_receipts_identity": self._callback_receipts.identity(),
+         }
+         body["content_hash"] = sha(body)
+         if len(canonical_json(body)) > self.session.policies.resource.max_checkpoint_bytes:
+@@ -83,26 +183,16 @@ class GeneratedCheckpointMixin:
+         )
+         candidate.commit_full_identity = previous.commit_full_identity
+         candidate.restore(state["runtime"])
+-        entries = candidate.transcript.entries
+-        if event is not None:
+-            if (
+-                not entries
+-                or entries[-1]["phase"] != "BAR_COMMIT"
+-                or entries[-1]["bar_index"] != event.bar_index
+-            ):
+-                raise ValueError("generated checkpoint cursor differs from committed runtime")
+-            callbacks = [entry for entry in entries if entry["phase"] != "BAR_COMMIT"]
+-            if (
+-                len(callbacks) != event.sequence + 1
+-                or callbacks[-1]["bar_index"] != event.bar_index
+-            ):
+-                raise ValueError("generated checkpoint callback sequence differs from runtime")
+-        elif any(entry["phase"] == "BAR_COMMIT" for entry in entries):
+-            raise ValueError("generated checkpoint is missing its deferred execution cursor")
+-        if candidate.sequence == -1 and sequence != 0:
+-            raise ValueError("empty generated checkpoint cannot contain committed intents")
++        journal, cursor, derived_sequence = validate_receipts(
++            state["callback_receipts"], state["callback_receipts_identity"], candidate
++        )
++        if sequence != derived_sequence:
++            raise ValueError("generated checkpoint intent sequence differs from callback receipts")
++        if event != cursor.last:
++            raise ValueError("generated checkpoint last event differs from callback receipts")
+         # Replace only after complete validation. Bad input leaves the current
+         # runtime, caches and cursors unchanged, including on partial decode.
+         self.session = candidate
+-        self.execution_cursor = ExecutionCursor(last=event)
++        self.execution_cursor = cursor
++        self._callback_receipts = journal
+         self._intent_sequence = sequence
+diff --git a/openpine/runtime/rc6_worker_runtime.py b/openpine/runtime/rc6_worker_runtime.py
+index 71184736919658f889a8d25cc8be243543115269..e960fe551ed5c103e1580fd8d43dbdaa1524f685 100644
+--- a/openpine/runtime/rc6_worker_runtime.py
++++ b/openpine/runtime/rc6_worker_runtime.py
+@@ -37,7 +37,8 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
+ from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
+ from pinelib.runtime.session import CallbackResult
+ 
+-from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin
++from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin, JOURNAL_DOMAIN
++from pinelib.state.digest import AppendOnlyHistory
+ from openpine.runtime.rc6_lifecycle import ExecutionCursor
+ from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
+ from openpine.runtime.rc6_config import resolve_engine_config
+@@ -331,6 +332,7 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
+             default_qty_value=default_qty_value,
+         )
+         self._intent_sequence = 0
++        self._callback_receipts = AppendOnlyHistory(JOURNAL_DOMAIN)
+         self.execution_cursor = ExecutionCursor()
+ 
+     def execute_bar(
+@@ -403,6 +405,7 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
+             [output.value for output in committed.delegated_outputs],
+             start_sequence=self._intent_sequence,
+         )
++        self._record_callback(execution_event, intents)
+         self._intent_sequence += len(intents)
+         if execution_event is not None:
+             self.execution_cursor.accept(execution_event)
+diff --git a/rc6_tests/test_rc6_checkpoint_receipts.py b/rc6_tests/test_rc6_checkpoint_receipts.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..c5acf3cff8623d139b21a81f251f47136b64df97
+--- /dev/null
++++ b/rc6_tests/test_rc6_checkpoint_receipts.py
+@@ -0,0 +1,158 @@
++"""Checkpoint cursors are cross-checked, not merely trusted after outer rehashing."""
++
++from copy import deepcopy
++import json
++
++import pytest
++
++from openpine_contracts import ExecutionEvent
++from pinelib.runtime.metadata import BarValues
++from pinelib.state.checkpoint import sha
++from pinelib.state.digest import AppendOnlyHistory
++from openpine.runtime.generated_checkpoint import JOURNAL_DOMAIN
++from rc6_tests.test_rc6_generated_checkpoint import advance, request_case, session
++from rc6_tests.test_rc6_requests import case_for
++
++
++def reseal(state, *, receipts=False):
++    if receipts:
++        state["callback_receipts_identity"] = AppendOnlyHistory(
++            JOURNAL_DOMAIN, state["callback_receipts"]
++        ).identity()
++    state["content_hash"] = sha({k: v for k, v in state.items() if k != "content_hash"})
++    return state
++
++
++@pytest.fixture
++def checkpoint():
++    case, bars = request_case()
++    runtime = session(case)
++    advance(runtime, bars, stop=10)
++    return case, runtime.export_state()
++
++
++@pytest.mark.parametrize(
++    "field,value",
++    [
++        ("intent_sequence", 999),
++        ("intent_sequence", 0),
++        ("bar_open_time_utc_ms", 0),
++        ("tick_index", 4),
++        ("recalc_iteration", 2),
++        ("last_bar_index", 999),
++        ("last_historical_bar_index", 999),
++    ],
++)
++def test_rehashed_outer_cursor_cannot_override_saved_callback(checkpoint, field, value):
++    case, saved = checkpoint
++    damaged = deepcopy(saved)
++    if field == "intent_sequence":
++        damaged[field] = value
++    else:
++        damaged["last_event"][field] = value
++        if field == "last_historical_bar_index":
++            damaged["last_event"]["last_bar_index"] = value
++    target = session(case)
++    before = target.export_state()
++    with pytest.raises(ValueError):
++        target.restore_state(reseal(damaged))
++    assert target.export_state() == before
++
++
++@pytest.mark.parametrize(
++    "field,value",
++    [
++        ("bar_open_time_utc_ms", 0),
++        ("tick_index", 4),
++        ("recalc_iteration", 2),
++        ("last_bar_index", 999),
++    ],
++)
++def test_rehashed_receipt_still_must_match_runtime_and_causal_order(checkpoint, field, value):
++    case, saved = checkpoint
++    damaged = deepcopy(saved)
++    damaged["callback_receipts"][-1]["event"][field] = value
++    damaged["last_event"][field] = value
++    with pytest.raises(ValueError):
++        session(case).restore_state(reseal(damaged, receipts=True))
++
++
++@pytest.mark.parametrize(
++    "fault",
++    ["missing", "extra", "reordered", "sequence", "bool_count", "negative_count", "bad_hash"],
++)
++def test_receipt_structure_is_validated_even_after_rehash(checkpoint, fault):
++    case, saved = checkpoint
++    state = deepcopy(saved)
++    rows = state["callback_receipts"]
++    if fault == "missing":
++        rows.pop(0)
++    elif fault == "extra":
++        rows.append(deepcopy(rows[-1]))
++    elif fault == "reordered":
++        rows[0], rows[1] = rows[1], rows[0]
++    elif fault == "sequence":
++        rows[-1]["runtime_sequence"] += 1
++    elif fault == "bool_count":
++        rows[-1]["intent_count"] = True
++    elif fault == "negative_count":
++        rows[-1]["intent_count"] = -1
++    else:
++        rows[-1]["intent_batch_hash"] = "not-a-hash"
++    with pytest.raises(ValueError):
++        session(case).restore_state(reseal(state, receipts=True))
++
++
++def test_receipt_reads_do_not_mutate_committed_history(checkpoint):
++    case, saved = checkpoint
++    runtime = session(case)
++    runtime.restore_state(saved)
++    exported = runtime.export_state()
++    exported["callback_receipts"][0]["intent_count"] = 100
++    assert runtime.export_state() == saved
++
++
++def test_old_checkpoint_without_receipts_is_not_silently_accepted(checkpoint):
++    case, saved = checkpoint
++    state = deepcopy(saved)
++    state["schema_id"] = "openpine.rc6.generated_checkpoint.v1"
++    del state["callback_receipts"]
++    del state["callback_receipts_identity"]
++    with pytest.raises(ValueError, match="schema"):
++        session(case).restore_state(reseal(state))
++
++
++def test_restoration_at_fill_recalculation_boundary_preserves_contiguous_intents():
++    case, bars = case_for("strategy.cancel_all()", count=3)
++    whole = session(case)
++    b = bars[0]
++    values = BarValues(
++        **{k: float(b[k]) for k in ("open", "high", "low", "close", "volume")},
++        time=b["open_time_utc_ms"],
++        time_close=b["close_time_utc_ms"],
++    )
++    initial = ExecutionEvent(
++        0, 0, 2, 2, values.time, "HISTORICAL_EVAL", False, True, 0, 0, "BAR_CLOSE"
++    )
++    after_fill = ExecutionEvent(
++        1, 0, 2, 2, values.time, "ORDER_FILL_RECALC", False, True, 0, 1, "ORDER_FILL", "fill", "100"
++    )
++    first = whole.execute_callback(values, initial, strategy_values={})
++    second = whole.execute_callback(values, after_fill, strategy_values={})
++    whole.finalize_bar(0)
++    restored = session(case)
++    restored.restore_state(json.loads(json.dumps(whole.export_state())))
++    assert restored._intent_sequence == 2
++    assert [first.intents[0]["sequence"], second.intents[0]["sequence"]] == [0, 1]
++    b = bars[1]
++    values = BarValues(100, 102, 99, 101, 1, b["open_time_utc_ms"], b["close_time_utc_ms"])
++    event = ExecutionEvent(
++        2, 1, 2, 2, values.time, "HISTORICAL_EVAL", False, True, 0, 0, "BAR_CLOSE"
++    )
++    assert (
++        restored.execute_callback(values, event, strategy_values={}).intents
++        == whole.execute_callback(values, event, strategy_values={}).intents
++    )
++    restored.finalize_bar(1)
++    whole.finalize_bar(1)
++    assert restored.export_state() == whole.export_state()

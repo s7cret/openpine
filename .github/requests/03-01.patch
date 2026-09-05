@@ -1,0 +1,15 @@
+diff --git a/docs/RC6_LIFECYCLE_SOURCES.json b/docs/RC6_LIFECYCLE_SOURCES.json
+index 0ad24dd41badd5a27741d2261cef660f891b92d6..af5f4ae5718ebb760d972d6a00b9bbe0d61bc165 100644
+--- a/docs/RC6_LIFECYCLE_SOURCES.json
++++ b/docs/RC6_LIFECYCLE_SOURCES.json
+@@ -2,8 +2,8 @@
+   "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+   "openpine-contracts": "d1382d1c0a1f867cc184016d8ac670a9264a7938",
+   "optimizer": "5a62efc672a08e05f7443d3b678fa2595249935a",
+-  "ast2python": "439a68b2d513e7e54f142c18b7ca3f31330a4b0d",
+-  "pinelib": "cf933d43f31ff90f1f191edcdfb4abf5e49f5da9",
++  "ast2python": "0e956411d7dff8b1a68fba3b5af6e63d371c6781",
++  "pinelib": "10a03a46ffb5f94143c473139e8a2bcf0e593d3b",
+   "backtest_engine": "70dd7ccfecaabafa3000d359770305acb32c8b9e",
+   "pine2ast": "6ba935eceee505bcbe80bf1f5908588407d2f546"
+ }

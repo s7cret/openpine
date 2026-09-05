@@ -1,0 +1,276 @@
+diff --git a/openpine/runtime/isolated_worker.py b/openpine/runtime/isolated_worker.py
+index 8bfeaa4ad1f16d863c9ff8e352f6961439494f52..26574c322f17a2f171c25d21ca53b377c79c3362 100644
+--- a/openpine/runtime/isolated_worker.py
++++ b/openpine/runtime/isolated_worker.py
+@@ -32,6 +32,7 @@ from openpine_contracts import validate_payload, verify_content_hash
+ from openpine_contracts.errors import SchemaValidationError
+ 
+ from openpine.runtime.cgroup import CgroupError, attach_worker_tree, prepare_worker_cgroup
++from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES, require_worker_capabilities
+ from openpine.runtime.worker_protocol import WorkerProtocolError, WorkerProtocolTranscript
+ 
+ ExecutionContext = dict[str, Any]
+@@ -662,6 +663,10 @@ class InteractiveWorkerSession:
+             hello = self._read_message()
+             if hello.get("kind") != "HELLO":
+                 self._raise_response(hello)
++            try:
++                require_worker_capabilities(hello.get("body", {}).get("capabilities"))
++            except ValueError as exc:
++                raise IsolatedWorkerError(str(exc)) from exc
+             self.hello = hello
+             load = self.protocol.append(
+                 "LOAD_ARTIFACT",
+@@ -677,7 +682,7 @@ class InteractiveWorkerSession:
+                     "execution_context_hash": execution_context["content_hash"],
+                     "execution_context": execution_context,
+                     "semantic_profile": semantic_profile,
+-                    "capabilities": ["closed_bar", "checkpoint_v1"],
++                    "capabilities": list(WORKER_CAPABILITIES),
+                 },
+                 created_at_utc_ms=0,
+             )
+diff --git a/openpine/runtime/rc6_worker_runtime.py b/openpine/runtime/rc6_worker_runtime.py
+index e960fe551ed5c103e1580fd8d43dbdaa1524f685..8d9c19c9c4522736da2b4b273ad25f3f2dac317a 100644
+--- a/openpine/runtime/rc6_worker_runtime.py
++++ b/openpine/runtime/rc6_worker_runtime.py
+@@ -37,6 +37,7 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
+ from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
+ from pinelib.runtime.session import CallbackResult
+ 
++from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES, validate_requested_capabilities
+ from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin, JOURNAL_DOMAIN
+ from pinelib.state.digest import AppendOnlyHistory
+ from openpine.runtime.rc6_lifecycle import ExecutionCursor
+@@ -612,7 +613,7 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
+     session = _session_from_request(request)
+     driver = RC6InteractiveCallbacks(session, context)
+     hello = protocol.append("HELLO", {"worker_id": context["session_id"],
+-        "protocol_version": "2.3.0", "capabilities": ["closed_bar", "checkpoint_v1"]}, 0)
++        "protocol_version": "2.3.0", "capabilities": list(WORKER_CAPABILITIES)}, 0)
+     print(json.dumps(hello), flush=True)
+     loaded = initialized = False
+     for line in sys.stdin:
+@@ -627,6 +628,7 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
+                 raise ValueError("loaded artifact identity mismatch")
+             loaded = True
+         elif kind == "INIT_RUN":
++            validate_requested_capabilities(body["capabilities"])
+             if (not loaded or body["execution_context"] != context
+                     or body["execution_context_hash"] != context["content_hash"] or body["run_id"] != context["run_id"]):
+                 raise ValueError("run initialization identity mismatch")
+@@ -687,7 +689,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+         {
+             "worker_id": context["session_id"],
+             "protocol_version": "2.3.0",
+-            "capabilities": ["closed_bar", "checkpoint_v1"],
++            "capabilities": list(WORKER_CAPABILITIES),
+         },
+         0,
+     )
+@@ -733,6 +735,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+             loaded = True
+             continue
+         if kind == "INIT_RUN":
++            validate_requested_capabilities(body["capabilities"])
+             if not loaded:
+                 raise ValueError("artifact must be loaded before run initialization")
+             if (
+diff --git a/openpine/runtime/worker_capabilities.py b/openpine/runtime/worker_capabilities.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3777b37a5c93e0d086ca9d4c00ea451c9d947e2d
+--- /dev/null
++++ b/openpine/runtime/worker_capabilities.py
+@@ -0,0 +1,32 @@
++"""Protocol operations actually implemented by the isolated worker.
++
++Generated-session checkpoint export is not a worker-protocol resume operation.
++Keep it out of the advertised/requested protocol feature set until end-to-end
++broker, transport and output-cursor restoration exists.
++"""
++
++from __future__ import annotations
++
++WORKER_CAPABILITIES = ("closed_bar",)
++
++
++def validate_requested_capabilities(value: object) -> None:
++    if (
++        not isinstance(value, list)
++        or any(type(item) is not str for item in value)
++        or len(set(value)) != len(value)
++    ):
++        raise ValueError("worker capabilities must be a unique string list")
++    unknown = set(value).difference(WORKER_CAPABILITIES)
++    if unknown:
++        raise ValueError(f"unsupported worker protocol capabilities: {sorted(unknown)}")
++
++
++def require_worker_capabilities(value: object) -> None:
++    if (
++        not isinstance(value, list)
++        or any(type(item) is not str for item in value)
++        or len(set(value)) != len(value)
++        or not set(WORKER_CAPABILITIES).issubset(value)
++    ):
++        raise ValueError("worker does not advertise the required protocol capabilities")
+diff --git a/rc6_tests/test_rc6_bulk_execution.py b/rc6_tests/test_rc6_bulk_execution.py
+index b7097d1787c019f66cd3d5fabfd8b9df3e6a0465..d66547a01fdb521b22518969c241c1eed24030db 100644
+--- a/rc6_tests/test_rc6_bulk_execution.py
++++ b/rc6_tests/test_rc6_bulk_execution.py
+@@ -10,6 +10,7 @@ import json
+ from dataclasses import replace
+ 
+ import pytest
++from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES
+ 
+ from backtest_engine import BacktestConfig
+ from openpine.compile.native_rc6 import NativeRC6CompilerAdapter
+@@ -57,14 +58,14 @@ def execute_bulk(monkeypatch, case, *, config=None, bars=None, last_batch=True,
+                    source=compiled.python_code, engine_config=serialize_engine_config(config, "strict_5x"), params={} if params is None else params)
+     protocol = RC6WorkerProtocol(context)
+     protocol.append("HELLO", dict(worker_id=context["session_id"], protocol_version="2.3.0",
+-                                  capabilities=["closed_bar", "checkpoint_v1"]), 0)
++                                  capabilities=list(WORKER_CAPABILITIES)), 0)
+     frames = [protocol.append("LOAD_ARTIFACT", dict(
+         artifact_hash=generated["content_hash"], module_hash=generated["emitted_module_hash"],
+         entrypoint_module=generated["entrypoint"]["module"], entrypoint_class="GeneratedScript",
+     ), 0), protocol.append("INIT_RUN", dict(
+         run_id=context["run_id"], run_hash="sha256:" + "1" * 64,
+         execution_context_hash=context["content_hash"], execution_context=context,
+-        semantic_profile="strict_5x", capabilities=["closed_bar", "checkpoint_v1"],
++        semantic_profile="strict_5x", capabilities=list(WORKER_CAPABILITIES),
+     ), 0)]
+     if bars is None:
+         bars = [bar(open_time_utc_ms=OPENED + index * 60_000) for index in range(3)]
+diff --git a/rc6_tests/test_rc6_lifecycle.py b/rc6_tests/test_rc6_lifecycle.py
+index be150c8ad84b722a575b3e32c30c86ea00f430c6..9feb1d919a08281f5a45ab6951412ca6885d42c3 100644
+--- a/rc6_tests/test_rc6_lifecycle.py
++++ b/rc6_tests/test_rc6_lifecycle.py
+@@ -6,6 +6,7 @@ from copy import deepcopy
+ from dataclasses import replace
+ 
+ import pytest
++from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES
+ 
+ from backtest_engine import BacktestCallbacks, BacktestEngine
+ from backtest_engine.core.intent_replay import admit_sealed_intent_tape, apply_live_intents_for_bar
+@@ -79,7 +80,7 @@ def interactive(case, envelopes, tmp_path):
+ 
+     parent._write_message, parent._read_message = write, read
+     hello = worker.append("HELLO", {"worker_id": context["session_id"], "protocol_version": "2.3.0",
+-                                    "capabilities": ["closed_bar", "checkpoint_v1"]}, 0)
++                                    "capabilities": list(WORKER_CAPABILITIES)}, 0)
+     parent.protocol.accept(hello)
+     sent.append(hello)
+     write(parent.protocol.append("LOAD_ARTIFACT", dict(
+@@ -90,7 +91,7 @@ def interactive(case, envelopes, tmp_path):
+     write(parent.protocol.append("INIT_RUN", dict(
+         run_id=context["run_id"], run_hash="sha256:"+"1"*64,
+         execution_context_hash=context["content_hash"], execution_context=context,
+-        semantic_profile="strict_5x", capabilities=["closed_bar", "checkpoint_v1"]), created_at_utc_ms=0))
++        semantic_profile="strict_5x", capabilities=list(WORKER_CAPABILITIES)), created_at_utc_ms=0))
+     pending, tape, events = {}, [], []
+ 
+     def protocol_event(event):
+diff --git a/rc6_tests/test_rc6_worker_capabilities.py b/rc6_tests/test_rc6_worker_capabilities.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3cc7a4e61ce4f4bfa4f77aed6a35fc0933b662bb
+--- /dev/null
++++ b/rc6_tests/test_rc6_worker_capabilities.py
+@@ -0,0 +1,95 @@
++"""An isolated worker must not advertise or negotiate unimplemented resume."""
++
++import io
++import json
++
++import pytest
++
++from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_artifact
++from openpine.runtime.rc6_config import serialize_engine_config
++from openpine.runtime.rc6_worker_runtime import RC6WorkerProtocol, run_bulk, run_interactive
++from openpine.runtime.worker_capabilities import (
++    WORKER_CAPABILITIES,
++    require_worker_capabilities,
++    validate_requested_capabilities,
++)
++from rc6_tests.test_rc6_bulk_execution import bulk_case
++
++
++@pytest.mark.parametrize(
++    "value", [["checkpoint_v1"], ["unknown"], [True], "closed_bar", ["closed_bar", "closed_bar"]]
++)
++def test_unimplemented_or_malformed_protocol_request_is_rejected(value):
++    with pytest.raises(ValueError):
++        validate_requested_capabilities(value)
++
++
++@pytest.mark.parametrize(
++    "value", [None, [], ["checkpoint_v1"], [True], ["closed_bar", "closed_bar"]]
++)
++def test_host_rejects_missing_required_worker_advertisement(value):
++    with pytest.raises(ValueError):
++        require_worker_capabilities(value)
++
++
++def test_supported_protocol_set_is_explicit():
++    assert WORKER_CAPABILITIES == ("closed_bar",)
++    validate_requested_capabilities(list(WORKER_CAPABILITIES))
++    require_worker_capabilities(list(WORKER_CAPABILITIES))
++
++
++@pytest.mark.parametrize("runner", [run_bulk, run_interactive])
++def test_actual_handshake_rejects_checkpoint_before_bar_execution(monkeypatch, runner):
++    compiled, context, config = bulk_case.__wrapped__()
++    generated = compiled.generated_artifact
++    request = dict(
++        generated_artifact=generated,
++        execution_context=context,
++        source=compiled.python_code,
++        engine_config=serialize_engine_config(config, "strict_5x"),
++    )
++    producer = RC6WorkerProtocol(context)
++    producer.append(
++        "HELLO",
++        dict(
++            worker_id=context["session_id"],
++            protocol_version="2.3.0",
++            capabilities=list(WORKER_CAPABILITIES),
++        ),
++        0,
++    )
++    load = producer.append(
++        "LOAD_ARTIFACT",
++        dict(
++            artifact_hash=generated["content_hash"],
++            module_hash=generated["emitted_module_hash"],
++            entrypoint_module=generated["entrypoint"]["module"],
++            entrypoint_class="GeneratedScript",
++        ),
++        0,
++    )
++    init = producer.append(
++        "INIT_RUN",
++        dict(
++            run_id=context["run_id"],
++            run_hash="sha256:" + "1" * 64,
++            execution_context_hash=context["content_hash"],
++            execution_context=context,
++            semantic_profile="strict_5x",
++            capabilities=["closed_bar", "checkpoint_v1"],
++        ),
++        0,
++    )
++    output = io.StringIO()
++    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(load) + "\n" + json.dumps(init) + "\n"))
++    monkeypatch.setattr("sys.stdout", output)
++    with pytest.raises(ValueError, match="unsupported worker protocol capabilities"):
++        runner(request, RC6WorkerProtocol(context))
++    messages = [json.loads(line) for line in output.getvalue().splitlines()]
++    assert len(messages) == 1 and messages[0]["kind"] == "HELLO"
++    assert messages[0]["body"]["capabilities"] == ["closed_bar"]
++
++
++def test_outer_resume_remains_an_early_explicit_error():
++    with pytest.raises(IsolatedRunError, match="RESUME_UNSUPPORTED_FOR_WORKER_PROTOCOL"):
++        run_isolated_artifact(b"not even compiled", bars=[], config=object(), resume_state={})
