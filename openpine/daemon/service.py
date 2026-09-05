@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 from enum import StrEnum
 
-from openpine._compat import structlog
+import structlog
 
 log = structlog.get_logger(__name__)
 

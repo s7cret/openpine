@@ -10,7 +10,6 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
 import pytest
-import pandas as pd
 
 from openpine.artifacts.store import ArtifactStore
 from openpine.data.candle_storage import CandleStorage
@@ -26,7 +25,6 @@ from openpine.storage.adapters import DuckDBAnalyticsAdapter
 from openpine.workers.pool import AggregationWorkerPool, FeatureWorkerPool
 from openpine.cli import data as cli_data
 from openpine.registry.strategies import SQLiteStrategyRegistry
-import openpine._compat.parquet as parquet_compat
 import openpine.batch.runner as batch_runner
 import openpine.storage.backtest_storage as backtest_storage
 import openpine.storage.backup as backup_mod
@@ -408,60 +406,6 @@ def test_backtest_store_removes_backup_after_successful_publish_over_existing_di
         storage.close()
 
 
-
-
-def test_parquet_read_requires_concrete_pyarrow_backend(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(parquet_compat, "pyarrow_available", lambda: True)
-    monkeypatch.setattr(parquet_compat, "_pq", None)
-
-    with pytest.raises(RuntimeError, match="pyarrow parquet backend is unavailable"):
-        parquet_compat.read_dataframe(tmp_path / "bars.parquet")
-
-
-def test_parquet_fallback_round_trips_without_pickle(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(parquet_compat, "pyarrow_available", lambda: False)
-    monkeypatch.setattr(
-        pd,
-        "read_pickle",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("pickle used")),
-    )
-    path = tmp_path / "bars.parquet"
-    expected = pd.DataFrame([{"time": 1, "close": 2.5}])
-
-    parquet_compat.write_dataframe(expected, path)
-    actual = parquet_compat.read_dataframe(path)
-
-    assert actual.to_dict("records") == expected.to_dict("records")
-
-
-def test_parquet_fallback_legacy_pickle_requires_trusted_opt_in(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(parquet_compat, "pyarrow_available", lambda: False)
-    monkeypatch.delenv("OPENPINE_ALLOW_LEGACY_PICKLE_PARQUET", raising=False)
-    path = tmp_path / "legacy.parquet"
-    pd.DataFrame([{"time": 1}]).to_pickle(path)
-
-    with pytest.raises(RuntimeError, match="legacy pickle parquet fallback loading is disabled"):
-        parquet_compat.read_dataframe(path)
-
-
-def test_parquet_fallback_rejects_non_dataframe_json(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(parquet_compat, "pyarrow_available", lambda: False)
-    monkeypatch.setattr(pd, "read_json", lambda *_args, **_kwargs: {"not": "dataframe"})
-
-    with pytest.raises(RuntimeError, match="legacy pickle parquet fallback loading is disabled"):
-        parquet_compat.read_dataframe(tmp_path / "bad.parquet")
-
-
-def test_parquet_fallback_legacy_pickle_opt_in_loads_trusted_artifact(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(parquet_compat, "pyarrow_available", lambda: False)
-    monkeypatch.setenv("OPENPINE_ALLOW_LEGACY_PICKLE_PARQUET", "1")
-    path = tmp_path / "legacy.parquet"
-    expected = pd.DataFrame([{"time": 1, "close": 2.5}])
-    expected.to_pickle(path)
-
-    actual = parquet_compat.read_dataframe(path)
-
-    assert actual.to_dict("records") == expected.to_dict("records")
 
 
 def test_worker_pool_job_type_sets_are_immutable() -> None:

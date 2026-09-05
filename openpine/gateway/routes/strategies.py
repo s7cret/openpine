@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from openpine._compat import structlog
+import structlog
 from openpine.gateway.deps import GatewayState, get_state, get_strategy_registry
 from openpine.gateway.routes.activation_guard import (
     guarded_strategy_activation,

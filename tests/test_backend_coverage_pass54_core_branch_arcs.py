@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import runpy
 import sys
 from pathlib import Path
@@ -11,7 +10,6 @@ import pandas as pd
 import pytest
 from marketdata_provider.contracts import BarQuery, InstrumentKey, parse_timeframe
 
-from openpine._compat import structlog as structlog_compat
 from openpine.accounts.models import Account, AccountType
 from openpine.adapters.bars import from_provider_bars
 from openpine.batch import persistent_cache, runner as batch_runner
@@ -363,10 +361,6 @@ def test_batch_cache_and_periodic_na_remaining_branches(monkeypatch: pytest.Monk
 
 
 def test_small_core_singletons_and_empty_bar_coverage() -> None:
-    disabled_logger = logging.getLogger("openpine.pass54.structlog")
-    disabled_logger.disabled = True
-    structlog_compat.BoundLoggerAdapter(disabled_logger).exception("event", detail="value")
-
     query = BarQuery(
         instrument=InstrumentKey(exchange="binance", market="spot", symbol="BTCUSDT"),
         timeframe=parse_timeframe("1m"),

@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from openpine._compat import structlog
+import structlog
 from openpine.gateway.deps import GatewayState, get_state
 
 log = structlog.get_logger(__name__)

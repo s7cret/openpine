@@ -18,7 +18,7 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.requests import HTTPConnection
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from openpine._compat import structlog
+import structlog
 
 log = structlog.get_logger(__name__)
 

@@ -128,7 +128,7 @@ def test_direct_provider_uses_persistent_cache(monkeypatch, tmp_path):
 
 
 def test_snapshot_policy_domain_aliases_and_structlog(capsys):
-    from openpine._compat import structlog
+    import structlog
     from openpine.domain import Bar, InstrumentKey, Timeframe
     from openpine.state.policy import SnapshotPolicy
     from openpine.state.store import SavePolicy

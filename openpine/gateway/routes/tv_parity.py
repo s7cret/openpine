@@ -33,7 +33,7 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, Response
 
-from openpine._compat import structlog
+import structlog
 from openpine.cli.compare import _compare_csv_float, _compare_csv_time_ms
 from openpine.export import ExportWindow, export_strategy_result
 from openpine.gateway.deps import GatewayState, get_state

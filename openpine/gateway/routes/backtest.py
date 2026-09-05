@@ -22,7 +22,7 @@ from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 
-from openpine._compat import structlog
+import structlog
 from openpine.admission import admit_strategy_semantic_profile
 from openpine.exchange_metadata import (
     default_price_tick,

@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import WebSocket
 
-from openpine._compat import structlog
+import structlog
 
 log = structlog.get_logger(__name__)
 

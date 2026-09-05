@@ -159,7 +159,7 @@ def test_read_candles_defaults_missing_close_time_and_volume(tmp_path):
     from openpine.data.models import CandleManifest
 
     import pandas as pd
-    from openpine._compat import parquet
+    from openpine.storage import parquet
 
     parquet_path = tmp_path / "missing_optional.parquet"
     open_time = 1704067200000
@@ -277,7 +277,7 @@ def test_read_candles_deduplicates_identical_rows():
 
     # Write two parquet files with identical overlapping data
     import pandas as pd
-    from openpine._compat import parquet
+    from openpine.storage import parquet
 
     df_a = pd.DataFrame(
         {
@@ -346,7 +346,7 @@ def test_conflicting_duplicate_detection():
     storage = CandleStorage()
 
     import pandas as pd
-    from openpine._compat import parquet
+    from openpine.storage import parquet
     from openpine.data.candle_storage import PARQUET_SCHEMA
 
     df_a = pd.DataFrame(

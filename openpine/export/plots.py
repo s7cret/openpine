@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-from openpine._compat import parquet
+from openpine.storage import parquet
 from openpine.export.schemas import PLOT_COLUMNS
 
 

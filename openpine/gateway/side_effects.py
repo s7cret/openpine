@@ -7,7 +7,7 @@ from typing import Any, cast
 from fastapi import HTTPException
 
 from openpine.admission import DeploymentAdmissionIdentity, admit_deployment
-from openpine._compat import structlog
+import structlog
 from openpine.jobs.persist import JobV1Error
 from openpine_contracts import AdmitError, SemanticProfile
 

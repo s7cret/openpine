@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
-from openpine._compat import structlog
+import structlog
 from openpine.artifacts.store import ArtifactStore
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.ws_manager import ws_manager

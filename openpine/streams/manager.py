@@ -19,7 +19,7 @@ from dataclasses import asdict, dataclass, is_dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from openpine._compat import structlog
+import structlog
 
 if TYPE_CHECKING:
     from marketdata_provider.contracts import InstrumentKey, Timeframe

@@ -155,9 +155,8 @@ class SQLiteControlStorageAdapter(StorageBackend):
 class ParquetDataLakeAdapter(StorageBackend):
     """Parquet-based data lake for historical and large-format data.
 
-    Uses pyarrow when available and a local pandas-backed fallback for hermetic
-    development gates. Production deployments should install pyarrow for true
-    parquet interoperability.
+    Uses the required pyarrow backend for actual Parquet interoperability.
+    JSON and pickle files are never accepted as Parquet.
 
     Role: DATA_LAKE
     """
@@ -167,12 +166,6 @@ class ParquetDataLakeAdapter(StorageBackend):
 
         config = OpenPineConfig.load()
         self._data_dir: Path = data_dir or (config.data_dir / "parquet_lake")
-        self._pyarrow_available: bool = self._check_pyarrow()
-
-    def _check_pyarrow(self) -> bool:
-        from openpine._compat.parquet import pyarrow_available
-
-        return pyarrow_available()
 
     @property
     def name(self) -> str:
@@ -203,29 +196,21 @@ class ParquetDataLakeAdapter(StorageBackend):
                     error="data directory not writable",
                 )
 
-            # Read basic metadata from a known path if present.  Schema details
-            # are only available with pyarrow; the fallback still exposes the
-            # latest file for diagnostics.
+            # Read only the footer, not an entire historical dataset.
             schema_extra = {}
             latest = self._latest_parquet_file()
             if latest:
+                import pyarrow.parquet as pq
+
                 schema_extra["latest_file"] = str(latest)
-                if self._pyarrow_available:
-                    import pyarrow.parquet as pq
-
-                    pf = pq.ParquetFile(latest)
+                with pq.ParquetFile(latest) as pf:
                     schema_extra["schema"] = str(pf.schema_arrow)
-                else:
-                    from openpine._compat import parquet
-
-                    parquet.read_dataframe(latest)
-                    schema_extra["schema"] = "pandas-fallback"
 
             return BackendInfo(
                 name=self.name,
                 role=self.role,
                 health=BackendHealth.AVAILABLE,
-                version="pyarrow" if self._pyarrow_available else "pandas-fallback",
+                version="pyarrow",
                 extra={"backend": "parquet", **schema_extra},
             )
         except Exception as exc:
@@ -260,7 +245,7 @@ class ParquetDataLakeAdapter(StorageBackend):
     def _write_ohlcv_parquet(self, prefix: str, bars: list[dict]) -> None:
         import pandas as pd
 
-        from openpine._compat import parquet
+        from openpine.storage import parquet
 
         path = self._data_dir / f"{prefix}.parquet"
         parquet.write_dataframe(pd.DataFrame(bars), path)
@@ -274,7 +259,7 @@ class ParquetDataLakeAdapter(StorageBackend):
     def _read_ohlcv_parquet(
         self, symbol: str, timeframe: str, start_ts: int, end_ts: int
     ) -> list[dict]:
-        from openpine._compat import parquet
+        from openpine.storage import parquet
 
         prefix = f"{symbol.replace('/', '_')}_{timeframe}_"
         matches = list(self._data_dir.glob(f"{prefix}*.parquet"))

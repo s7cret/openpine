@@ -17,7 +17,7 @@ from typing import Any
 
 import pandas as pd
 
-from openpine._compat import parquet
+from openpine.storage import parquet
 from openpine.config import OpenPineConfig
 from openpine.storage.backtest_dto import (
     ARTIFACT_TYPE_BAR_OUTPUTS,

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from openpine._compat import structlog as structlog_compat
+import structlog
 from openpine.accounts import Account, AccountManager, AccountType
 from openpine.config.env import load_env_file
 from openpine.orders.models import OrderIntent, OrderSide, OrderType
@@ -36,14 +36,17 @@ from openpine.telegram_commands import (
 )
 
 
-def test_structlog_compat_fallback_exposes_structlog_like_logger(monkeypatch):
-    monkeypatch.setattr(structlog_compat, "_structlog", None)
-    logger = structlog_compat.get_logger("test")
-    assert logger.bind(component="x").new().unbind("component") is logger
-    logger.debug("debug", answer=42)
-    logger.info("info")
-    logger.warning("warn")
-    logger.error("error", detail="x")
+def test_structured_logging_preserves_bound_context():
+    from structlog.testing import capture_logs
+
+    with capture_logs() as entries:
+        logger = structlog.get_logger("test").bind(component="worker", run_id="r1")
+        logger.info("started", answer=42)
+        logger.unbind("component").warning("finished")
+    assert entries[0]["component"] == "worker"
+    assert entries[0]["run_id"] == entries[1]["run_id"] == "r1"
+    assert entries[0]["answer"] == 42
+    assert "component" not in entries[1]
 
 
 def test_manifest_store_roundtrip_and_missing(tmp_path: Path):

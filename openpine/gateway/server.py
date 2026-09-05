@@ -18,7 +18,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from openpine import __version__
-from openpine._compat import structlog
+import structlog
 from openpine.gateway.config import GatewayConfig
 from openpine.gateway.deps import GatewayState
 from openpine.gateway.security import (

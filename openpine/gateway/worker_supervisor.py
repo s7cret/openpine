@@ -9,7 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from openpine._compat import structlog
+import structlog
 
 log = structlog.get_logger(__name__)
 

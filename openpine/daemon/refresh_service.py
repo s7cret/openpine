@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 
-from openpine._compat import structlog
+import structlog
 from openpine.daemon.service import DaemonService
 from openpine.data.periodic_fetcher import PeriodicBarFetcher, RefreshConfig
 

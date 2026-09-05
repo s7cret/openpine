@@ -78,18 +78,17 @@ def test_sqlite_and_parquet_storage_adapters(tmp_path: Path):
     assert len(rows) == 1 and rows[0]["timestamp"] == 1000
     assert parquet.health_check().health == BackendHealth.AVAILABLE
 
-    fallback_parquet = ParquetDataLakeAdapter(tmp_path / "fallback")
-    fallback_parquet._pyarrow_available = False
-    assert fallback_parquet.available() is True
-    fallback_info = fallback_parquet.health_check()
-    assert fallback_info.health == BackendHealth.AVAILABLE
-    assert fallback_info.version == "pandas-fallback"
-    fallback_parquet.write_ohlcv(
+    empty_parquet = ParquetDataLakeAdapter(tmp_path / "empty")
+    assert empty_parquet.available() is True
+    empty_info = empty_parquet.health_check()
+    assert empty_info.health == BackendHealth.AVAILABLE
+    assert empty_info.version == "pyarrow"
+    empty_parquet.write_ohlcv(
         "ETH/USDT",
         "1m",
         [{"timestamp": 1000, "open": 1.0, "high": 2.0, "low": 0.5, "close": 1.5}],
     )
-    assert fallback_parquet.read_ohlcv("ETH/USDT", "1m", 0, 2000)[0]["timestamp"] == 1000
+    assert empty_parquet.read_ohlcv("ETH/USDT", "1m", 0, 2000)[0]["timestamp"] == 1000
 
 
 def test_duckdb_and_postgres_adapters_missing_and_fake_modules(

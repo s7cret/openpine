@@ -21,7 +21,7 @@ from marketdata_provider.contracts import (
     parse_timeframe,
 )
 
-from openpine._compat import structlog
+import structlog
 from openpine.data.orchestrator import DataOrchestrator, StorageUnavailableError
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance

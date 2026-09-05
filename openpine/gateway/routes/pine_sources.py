@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from openpine._compat import structlog
+import structlog
 from openpine.gateway.deps import GatewayState, get_pine_registry, get_state
 from openpine.gateway.schemas import (
     PineSourceCreate,

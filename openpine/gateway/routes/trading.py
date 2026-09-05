@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from openpine._compat import structlog
+import structlog
 from openpine.admission import admit_strategy_semantic_profile
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.side_effects import require_http_admit

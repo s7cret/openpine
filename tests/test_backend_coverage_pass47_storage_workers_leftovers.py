@@ -9,7 +9,7 @@ import pytest
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
 
 from openpine.config import OpenPineConfig
-from openpine.jobs import Job, JobScheduler, JobType
+from openpine.jobs import JobScheduler
 from openpine.registry.strategies import SQLiteStrategyRegistry, StrategyInstance
 from openpine.state.errors import InvalidSnapshotError
 from openpine.state.store import SavePolicy, SnapshotMetadata, StateStore, StrategyState
@@ -38,7 +38,6 @@ from openpine.workers.strategy_fanout import (
     StrategyBarFanout,
     StrategyBarFanoutConfig,
 )
-from openpine.workers.strategy_job_executor import StrategyJobExecutor
 
 
 class _DummyStrategy:
@@ -173,26 +172,19 @@ def _backtest_request(strategy_id: str = "strategy-1") -> BacktestRunRequest:
 
 
 def test_storage_adapters_leftover_health_paths(monkeypatch, tmp_path: Path) -> None:
-    from openpine._compat import parquet
+    from openpine.storage import parquet
 
     lake_dir = tmp_path / "lake"
     lake_dir.mkdir()
     latest = lake_dir / "BTCUSDT_1m_2026-06-12.parquet"
-    latest.write_bytes(b"placeholder")
-    parquet_reads: list[Path] = []
-    monkeypatch.setattr(
-        parquet,
-        "read_dataframe",
-        lambda path: parquet_reads.append(Path(path)) or SimpleNamespace(),
-    )
+    import pandas as pd
+    parquet.write_dataframe(pd.DataFrame({"close": [10.0]}), latest)
     parquet_adapter = ParquetDataLakeAdapter(data_dir=lake_dir)
-    parquet_adapter._pyarrow_available = False
-
     parquet_info = parquet_adapter.health_check()
-
     assert parquet_info.health == BackendHealth.AVAILABLE
-    assert parquet_reads == [latest]
-    assert parquet_info.extra["schema"] == "pandas-fallback"
+    assert parquet_info.extra["latest_file"] == str(latest)
+    assert "close: double" in parquet_info.extra["schema"]
+    assert parquet_info.version == "pyarrow"
 
     class _DuckConn:
         def __init__(self) -> None:

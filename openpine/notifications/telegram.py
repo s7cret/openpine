@@ -617,7 +617,7 @@ import asyncio
 import subprocess
 from types import ModuleType
 
-from openpine._compat import structlog
+import structlog
 
 logger = structlog.get_logger("telegram_bot")
 

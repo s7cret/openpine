@@ -7,7 +7,7 @@ import time
 
 from fastapi import APIRouter, Depends
 
-from openpine._compat import structlog
+import structlog
 from openpine.gateway.deps import (
     GatewayState,
     get_state,

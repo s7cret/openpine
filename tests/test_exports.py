@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 
 import pandas as pd
-from openpine._compat import parquet
+from openpine.storage import parquet
 
 from openpine.export import (
     ExportWindow,

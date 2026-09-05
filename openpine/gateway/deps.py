@@ -72,7 +72,7 @@ class GatewayState:
             recover_incomplete_runs() if callable(recover_incomplete_runs) else 0
         )
         if recovered_backtests:
-            from openpine._compat import structlog
+            import structlog
 
             structlog.get_logger(__name__).warning(
                 "incomplete_backtests_recovered", count=recovered_backtests
@@ -84,7 +84,7 @@ class GatewayState:
         try:
             self.event_bus = EventBus(self.storage)
         except Exception as exc:
-            from openpine._compat import structlog
+            import structlog
 
             structlog.get_logger(__name__).warning(
                 "event_bus_init_error_non_fatal", error=str(exc)
@@ -111,7 +111,7 @@ class GatewayState:
                 )
             )
         except Exception as exc:
-            from openpine._compat import structlog
+            import structlog
 
             structlog.get_logger(__name__).warning(
                 "marketdata_provider_init_error", error=str(exc)
@@ -137,7 +137,7 @@ class GatewayState:
             seed_achievements(self.storage)
             seed_achievement_i18n(self.storage)
         except Exception as exc:
-            from openpine._compat import structlog
+            import structlog
             structlog.get_logger(__name__).warning(
                 "achievement_seed_error_non_fatal", error=str(exc)
             )
@@ -149,7 +149,7 @@ class GatewayState:
             # 0 unlocked until the 5-min background tick fires.
             self.achievement_engine.refresh()
         except Exception as exc:
-            from openpine._compat import structlog
+            import structlog
             structlog.get_logger(__name__).warning(
                 "achievement_recompute_error_non_fatal", error=str(exc)
             )

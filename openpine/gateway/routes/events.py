@@ -6,7 +6,7 @@ import json
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 
-from openpine._compat import structlog
+import structlog
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.schemas import EventResponse
 from openpine.gateway.ws_manager import ws_manager

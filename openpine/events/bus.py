@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
-from openpine._compat import structlog
+import structlog
 from openpine.events.types import (
     CandleClosedEventPayload,
     Event,

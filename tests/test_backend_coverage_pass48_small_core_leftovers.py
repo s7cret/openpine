@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import runpy
 import sys
 import warnings
@@ -10,7 +9,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from urllib.error import URLError
 
-import pandas as pd
 import pytest
 from marketdata_provider.contracts import InstrumentKey, parse_timeframe
 
@@ -407,26 +405,6 @@ def test_release_report_aggregates_version_quality_and_script_guard(
             warnings.simplefilter("ignore", RuntimeWarning)
             runpy.run_module("openpine.release", run_name="__main__")
     assert exc.value.code == 1
-
-
-def test_parquet_fallback_schema_dataframe_io_and_count(monkeypatch, tmp_path: Path) -> None:
-    from openpine._compat import parquet
-
-    monkeypatch.setattr(parquet, "_pa", None)
-    monkeypatch.setattr(parquet, "_pq", None)
-
-    fallback_schema = parquet.schema(
-        [("symbol", "string"), ("quantity", "float64", True)]
-    )
-    assert str(fallback_schema) == "symbol: string\nquantity: float64 nullable"
-
-    output = tmp_path / "bars.parquet"
-    df = pd.DataFrame({"symbol": ["BTCUSDT"], "quantity": [1.25]})
-    parquet.write_dataframe(df, output, schema=fallback_schema)
-
-    loaded = parquet.read_dataframe(output)
-    assert loaded.to_dict("records") == [{"symbol": "BTCUSDT", "quantity": 1.25}]
-    assert parquet.row_count(output) == 1
 
 
 def test_event_bus_model_dump_payload_and_persist_failure() -> None:

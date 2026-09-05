@@ -20,7 +20,7 @@ from marketdata_provider import next_open_time_ms, search_symbols
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
 from marketdata_provider.errors import MarketDataError
 
-from openpine._compat import structlog
+import structlog
 from openpine.data.persistent_cache import default_cache_dir
 from openpine.exchange_metadata import marketdata_exchange_payloads
 from openpine.gateway.deps import GatewayState, get_state

@@ -17,7 +17,7 @@ from marketdata_provider.contracts import (
     parse_timeframe,
 )
 
-from openpine._compat import structlog
+import structlog
 from openpine.data.row_helpers import attr_or_item, duplicate_timestamps, has_any_field, has_field
 
 log = structlog.get_logger(__name__)

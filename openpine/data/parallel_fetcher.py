@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from marketdata_provider.contracts import Bar, BarQuery, InstrumentKey, parse_timeframe
 
-from openpine._compat import structlog
+import structlog
 from openpine.data.orchestrator import DataOrchestrator
 from openpine.data.provider_adapter import create_local_marketdata_provider_adapter
 

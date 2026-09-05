@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 from typing import Any, cast
 
-from openpine._compat import structlog
+import structlog
 from openpine.achievements.catalog import ALL
 from openpine.achievements.i18n_overrides import ACHIEVEMENT_I18N
 from openpine.storage.sqlite_storage import SQLiteStorage

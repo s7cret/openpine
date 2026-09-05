@@ -23,7 +23,7 @@ from typing import Self
 import pandas as pd
 from marketdata_provider.contracts import Bar, BarQuery
 
-from openpine._compat import parquet
+from openpine.storage import parquet
 from openpine.data.contracts import WriteMode
 from openpine.data.models import (
     CandleManifest,
