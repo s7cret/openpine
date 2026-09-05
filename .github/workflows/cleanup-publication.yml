@@ -1,0 +1,159 @@
+name: Verify RC6 cleanup and bounded execution
+on:
+  push:
+    branches: ['ops/rc6-cleanup-20260905']
+    paths: ['.github/maintenance/reviewed-series.json']
+permissions:
+  contents: read
+concurrency:
+  group: reviewed-rc6-publication
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pinelib
+          ref: 931252f637c86b3ffe872ceb4a4cda4453eb7da2
+          path: publisher-source
+          sparse-checkout: .github/maintenance/reviewed-publisher.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher-source/.github/maintenance/reviewed-publisher.py "$RUNNER_TEMP/reviewed-publisher.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Reconstruct exact reviewed commits
+        run: python "$RUNNER_TEMP/reviewed-publisher.py" reconstruct "$RUNNER_TEMP/evidence" .github/maintenance/reviewed-series.json
+      - name: Install pinned sibling sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install setuptools==84.0.0 wheel==0.48.0 hatchling==1.32.0 build==1.6.0
+          python - <<'PY'
+          import json, os, pathlib, re, subprocess
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'stack'
+          evidence = root.parent / 'evidence'
+          root.mkdir()
+          pins = json.loads((evidence / 'submission.json').read_text())['stack_sources']
+          expected = {'openpine-contracts','pine2ast','ast2python','pinelib','backtest_engine','marketdata-provider','optimizer'}
+          if set(pins) != expected or not all(re.fullmatch('[0-9a-f]{40}', sha) for sha in pins.values()):
+              raise SystemExit('Invalid source pins')
+          sources = []
+          for name, sha in pins.items():
+              path = root / name
+              subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(path)],check=True)
+              subprocess.run(['git','-C',str(path),'checkout','--detach',sha],check=True)
+              if subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip() != sha:
+                  raise SystemExit('Source identity mismatch')
+              sources.append(str(path))
+          subprocess.run(['python','-m','pip','install',*sources,'.[dev]'],check=True)
+          (evidence / 'source-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
+          with open(os.environ['GITHUB_ENV'],'a') as stream:
+              stream.write('PINE_STACK_ROOT='+str(root)+'\n')
+          PY
+      - name: Complete contracts runtime compiler and broker functional suites
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          set -euo pipefail
+          for repo in openpine-contracts pinelib ast2python backtest_engine; do
+            (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
+          done
+      - name: Enable the real protected worker environment
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y apparmor-profiles apparmor-utils bubblewrap
+          sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          if ! getent passwd openpine-worker >/dev/null; then
+            sudo useradd --system --no-create-home --shell /usr/sbin/nologin openpine-worker
+          fi
+          sudo -n -u openpine-worker -- /usr/bin/id -u
+          /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+      - name: Native sandbox plus affected storage CLI gateway and branch regressions
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'evidence'
+          submission = json.loads((evidence/'submission.json').read_text())
+          changed = subprocess.check_output(['git','diff','--name-only',submission['base'],'HEAD'],text=True).splitlines()
+          selected = set('''tests/test_migration_upgrade_020.py tests/test_migration_upgrade_021.py
+          tests/test_provider_adapter.py tests/test_data_orchestrator_source_policy.py
+          tests/test_data_series_delete_canonical_market.py tests/test_strategy_semantic_profile_immutable.py
+          tests/test_strategy_create_semantic_profile.py tests/test_strategy_update_semantic_profile.py
+          tests/test_gateway_worker_supervision.py tests/test_job_v1_transactions.py
+          tests/test_strategy_job_executor.py tests/test_strategy_ledger.py tests/test_strategy_registry.py
+          tests/test_strategy_fanout.py tests/test_phase_a_hot_paths.py
+          tests/test_periodic_fetcher_grouping.py tests/test_market_provider_runtime.py
+          tests/test_render_immutable_identity_env.py tests/test_infra_hardening.py
+          tests/test_run_admission_integration.py tests/test_runtime_engine_adapter.py
+          tests/test_optimizer_isolated_search.py tests/test_optimizer_search_route.py
+          tests/test_optimizer_semantic_profile.py tests/test_backtest_gateway_market_metadata.py
+          tests/test_backtest_semantic_profile.py tests/test_cli_semantic_profile.py tests/test_bulk_backtest.py
+          tests/test_artifact_source_stamp.py tests/test_backtest_run_config_semantic_profile.py
+          tests/test_strategy_replay_htf.py tests/test_backend_cov90_strategy_replay.py
+          tests/test_backend_correctness_pack.py tests/test_parquet_storage.py tests/test_candle_dedup.py tests/test_exports.py'''.split())
+          selected.update(p for p in changed if p.startswith('tests/test_') and p.endswith('.py') and pathlib.Path(p).is_file())
+          (evidence/'selected-tests.json').write_text(json.dumps(sorted(selected),indent=2)+'\n')
+          subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-q','rc6_tests',*sorted(selected),
+                          '--junitxml='+str(evidence/'openpine.xml')],check=True)
+          PY
+      - name: Validate changed runtime lint imports and build clean distributions
+        run: |
+          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py
+          python -m compileall -q openpine
+          mkdir -p "$RUNNER_TEMP/build-source"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/build-source"
+          python -m build --no-isolation --outdir "$RUNNER_TEMP/evidence/dist" "$RUNNER_TEMP/build-source"
+          python -m pip freeze > "$RUNNER_TEMP/evidence/environment.txt"
+          cp "$RUNNER_TEMP/reviewed-publisher.py" "$RUNNER_TEMP/evidence/reviewed-publisher.py"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cleanup-${{ matrix.python }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: error
+          retention-days: 30
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: cleanup-3.13-${{ github.run_id }}
+          path: evidence
+      - name: Publish verified commits without force
+        run: python evidence/reviewed-publisher.py publish evidence
+      - name: Archive this exact maintenance tip and retain four branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/ops/rc6-cleanup-20260905
+          branch=refs/heads/ops/rc6-cleanup-20260905
+          tag=refs/tags/ops/rc6-cleanup-20260905
+          git push --atomic --force-with-lease="$branch:$GITHUB_SHA" --force-with-lease="$tag:" origin "$GITHUB_SHA:$tag" ":$branch"
+          git ls-remote --heads origin > evidence/final-heads.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-publication-${{ github.run_id }}
+          path: evidence/
+          retention-days: 30
