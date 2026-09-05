@@ -194,4 +194,12 @@ def admit_request_data(
                 "RC6_REQUEST_DATA: compiled requests require preloaded immutable request snapshots"
             )
         return None
-    return request_provider_from_manifest(manifest, context)
+    provider = request_provider_from_manifest(manifest, context)
+    from openpine.runtime.request_requirements import (
+        compiled_request_requirements, validate_static_request_sources,
+    )
+    try:
+        validate_static_request_sources(provider, compiled_request_requirements(tree, context), context)
+    except (PineRuntimeError, MarketDataError) as exc:
+        raise ValueError(f"RC6_REQUEST_DATA: {exc}") from exc
+    return provider
