@@ -122,7 +122,7 @@ class _Adapter:
     def __init__(self) -> None:
         self.sources: list[bytes] = []
 
-    def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+    def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None, params=None):
         self.sources.append(source)
         return SimpleNamespace(ok=True)
 
@@ -174,7 +174,7 @@ def test_job_executor_forwards_confirmed_htf_bars(monkeypatch) -> None:
     seen: dict[str, object] = {}
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None, params=None):
             seen["htf_bars"] = htf_bars
             return SimpleNamespace(ok=True)
 
@@ -198,7 +198,7 @@ def test_job_executor_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
     seen: dict[str, object] = {}
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None, params=None):
             seen["htf_bars"] = htf_bars
             return SimpleNamespace(ok=True)
 
@@ -233,7 +233,7 @@ def test_job_executor_does_not_invent_time_close(monkeypatch) -> None:
     seen: dict[str, object] = {}
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None, params=None):
             seen["htf_bars"] = htf_bars
             return SimpleNamespace(ok=True)
 
@@ -270,7 +270,7 @@ def test_job_executor_fetches_explicit_htf_timeframe(monkeypatch) -> None:
     ]
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None, params=None):
             seen["htf_bars"] = htf_bars
             return SimpleNamespace(ok=True)
 
@@ -312,7 +312,7 @@ def test_job_executor_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
     loaded: list[object] = []
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None, params=None):
             seen["htf_bars"] = htf_bars
             return SimpleNamespace(ok=True)
 

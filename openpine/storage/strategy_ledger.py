@@ -224,6 +224,17 @@ class StrategyLedger:
         return _row_to_position(row) if row is not None else None
 
     def record_trade(self, trade: StrategyTrade) -> StrategyTrade:
+        existing_row = self.storage.execute(
+            "SELECT * FROM strategy_trades WHERE trade_id = ?",
+            (trade.trade_id,),
+        ).fetchone()
+        if existing_row is not None:
+            existing = _row_to_trade(existing_row)
+            if _trade_semantic_identity(existing) != _trade_semantic_identity(trade):
+                raise ValueError(
+                    f"strategy trade identity conflict: {trade.trade_id}"
+                )
+            return existing
         now = _now_ms()
         trade.updated_at = now
         self.storage.execute(
@@ -347,6 +358,35 @@ def _row_to_trade(row: tuple) -> StrategyTrade:
         metadata=_json_loads(row[24]),
         created_at=row[25],
         updated_at=row[26],
+    )
+
+
+def _trade_semantic_identity(trade: StrategyTrade) -> tuple[object, ...]:
+    return (
+        trade.strategy_id,
+        trade.account_id,
+        trade.run_id,
+        trade.order_id,
+        trade.exchange.lower(),
+        trade.market_type.lower(),
+        trade.symbol.upper(),
+        trade.price_type.lower(),
+        trade.timeframe,
+        trade.source,
+        trade.status,
+        trade.entry_id,
+        trade.exit_id,
+        trade.direction,
+        trade.entry_time,
+        trade.exit_time,
+        trade.entry_price,
+        trade.exit_price,
+        trade.qty,
+        trade.gross_pnl,
+        trade.net_pnl,
+        trade.fee,
+        trade.bars_held,
+        trade.metadata,
     )
 
 

@@ -319,6 +319,7 @@ def run_isolated_artifact(
         }
     accumulated_events: list[dict[str, Any]] = []
     pending_batch: dict[str, Any] = {}
+    received_intent_batches = 0
 
     try:
         with InteractiveWorkerSession(
@@ -336,9 +337,11 @@ def run_isolated_artifact(
         ) as session:
 
             def handle_protocol_event(event: dict[str, Any]) -> None:
+                nonlocal received_intent_batches
                 if event.get("kind") == "BAR_BEGIN":
                     pending_batch.clear()
                     pending_batch.update(session.evaluate_bar(event))
+                    received_intent_batches += 1
                     return
                 if event.get("kind") == "BAR_COMMIT":
                     session.commit_bar(event)
@@ -346,6 +349,7 @@ def run_isolated_artifact(
                 if event.get("kind") == "RECALC_REQUEST":
                     pending_batch.clear()
                     pending_batch.update(session.evaluate_recalc(event))
+                    received_intent_batches += 1
                     return
                 raise IsolatedRunError("engine emitted an unsupported protocol event")
 
@@ -404,8 +408,10 @@ def run_isolated_artifact(
         except IntentReplayError as exc:
             raise IsolatedRunError(str(exc)) from exc
         tape_events = list(tape.events)
-    else:
+    elif received_intent_batches:
         tape_events = []
+    else:
+        raise IsolatedRunError("worker did not return an admitted intent batch")
     return {
         "ok": True,
         "intent_tape": tape_events,

@@ -22,6 +22,9 @@ JOB_KINDS = (
     "backfill",
     "compile",
     "optimize",
+    "paper",
+    "observe",
+    "live",
     "parity",
     "report",
 )
@@ -258,6 +261,86 @@ class JobV1Store:
             self._append_event_in_transaction(job_id, "created", payload)
             return dict(payload)
 
+    def create_batch(self, specs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Atomically create an idempotent batch of independent jobs."""
+
+        if not specs:
+            return []
+        now = _now_ms()
+        results: list[dict[str, Any]] = []
+        with self._transaction():
+            for spec in specs:
+                job_id = spec.get("job_id")
+                kind = spec.get("kind")
+                idempotency_key = spec.get("idempotency_key")
+                max_retries = int(spec.get("max_retries", 3))
+                if not isinstance(job_id, str) or not job_id:
+                    raise JobV1Error("job_id required")
+                if kind not in JOB_KINDS:
+                    raise JobV1Error(f"unknown kind: {kind}")
+                if max_retries < 0:
+                    raise JobV1Error("max_retries must be >= 0")
+                if idempotency_key:
+                    existing = self._by_idempotency_in_transaction(
+                        str(idempotency_key)
+                    )
+                    if existing is not None:
+                        results.append(existing)
+                        continue
+                payload = _envelope(
+                    {
+                        "job_id": job_id,
+                        "kind": kind,
+                        "state": JobState.QUEUED.value,
+                        "version": 1,
+                        "progress": 0,
+                        "started_at_utc_ms": None,
+                        "updated_at_utc_ms": now,
+                        "finished_at_utc_ms": None,
+                        "actor": spec.get("actor"),
+                        "input_artifact_refs": list(
+                            spec.get("input_artifact_refs") or []
+                        ),
+                        "result_artifact_refs": [],
+                        "error_code": None,
+                        "idempotency_key": idempotency_key,
+                        "lease_owner": None,
+                        "lease_deadline_utc_ms": None,
+                        "retry_count": 0,
+                        "max_retries": max_retries,
+                        "parent_job_id": None,
+                        "child_job_ids": [],
+                        "event_cursor": None,
+                        "run_id": None,
+                    },
+                    created_at_utc_ms=now,
+                    stack_id=str(spec.get("stack_id") or "openpine-5.0"),
+                )
+                try:
+                    self._conn.execute(
+                        """INSERT INTO jobs(job_id, payload, idempotency_key, state, version)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (
+                            job_id,
+                            _json(payload),
+                            idempotency_key,
+                            JobState.QUEUED.value,
+                            1,
+                        ),
+                    )
+                except sqlite3.IntegrityError as exc:
+                    if idempotency_key:
+                        existing = self._by_idempotency_in_transaction(
+                            str(idempotency_key)
+                        )
+                        if existing is not None:
+                            results.append(existing)
+                            continue
+                    raise JobV1Error(f"job already exists: {job_id}") from exc
+                self._append_event_in_transaction(job_id, "created", payload)
+                results.append(dict(payload))
+        return results
+
     def get(self, job_id: str) -> dict[str, Any]:
         if not job_id:
             raise JobV1Error("job_id required")
@@ -364,6 +447,74 @@ class JobV1Store:
             self._append_event_in_transaction(job_id, "lease_renewed", job)
             return dict(job)
 
+    @contextmanager
+    def heartbeat_lease(
+        self,
+        job_id: str,
+        *,
+        lease_owner: str,
+        ttl_ms: int = 15 * 60_000,
+        interval_seconds: float = 30.0,
+    ) -> Iterator[None]:
+        """Renew a running job lease while long deterministic execution is active."""
+
+        if ttl_ms <= 0 or interval_seconds <= 0:
+            raise JobV1Error("lease heartbeat timing must be positive")
+        stop = threading.Event()
+        errors: list[JobV1Error] = []
+
+        def renew_loop() -> None:
+            while not stop.wait(interval_seconds):
+                now = _now_ms()
+                try:
+                    self.renew_lease(
+                        job_id,
+                        lease_owner=lease_owner,
+                        lease_deadline_utc_ms=now + ttl_ms,
+                        now_ms=now,
+                    )
+                except JobV1Error as exc:
+                    errors.append(exc)
+                    stop.set()
+                    return
+
+        now = _now_ms()
+        self.renew_lease(
+            job_id,
+            lease_owner=lease_owner,
+            lease_deadline_utc_ms=now + ttl_ms,
+            now_ms=now,
+        )
+        thread = threading.Thread(
+            target=renew_loop,
+            name=f"job-lease-heartbeat-{job_id}",
+            daemon=True,
+        )
+        thread.start()
+        try:
+            yield
+        finally:
+            stop.set()
+            thread.join(timeout=max(1.0, interval_seconds + 1.0))
+        if thread.is_alive():
+            raise JobV1Error("lease heartbeat thread did not stop")
+        if errors:
+            raise errors[0]
+
+    @contextmanager
+    def publication_lease(
+        self, job_id: str, *, lease_owner: str, now_ms: int | None = None
+    ) -> Iterator[None]:
+        """Hold the job-store write fence while cross-store results are published."""
+
+        now = _now_ms() if now_ms is None else now_ms
+        with self._transaction():
+            job = self._get_in_transaction(job_id)
+            if JobState(job["state"]) is not JobState.RUNNING:
+                raise JobV1Error("publication requires a RUNNING job")
+            self._require_live_lease(job, lease_owner=lease_owner, now_ms=now)
+            yield
+
     def mark_succeeded(
         self,
         job_id: str,
@@ -465,6 +616,49 @@ class JobV1Store:
                     "error_code": None,
                 },
             )
+
+    def recover_worker_leases(
+        self,
+        *,
+        active_lease_owner: str,
+        now_ms: int,
+        kinds: tuple[str, ...] | None = None,
+    ) -> int:
+        """Fence leases from a previous worker generation and expire stale own leases."""
+
+        if not active_lease_owner:
+            raise JobV1Error("active lease owner required")
+        recovered = 0
+        with self._transaction():
+            rows = self._conn.execute(
+                "SELECT payload FROM jobs WHERE state = ? ORDER BY job_id",
+                (JobState.RUNNING.value,),
+            ).fetchall()
+            for row in rows:
+                job = json.loads(row["payload"])
+                if kinds is not None and str(job.get("kind")) not in kinds:
+                    continue
+                owner = job.get("lease_owner")
+                deadline = job.get("lease_deadline_utc_ms")
+                if (
+                    owner == active_lease_owner
+                    and deadline is not None
+                    and int(deadline) >= now_ms
+                ):
+                    continue
+                self._transition_in_transaction(
+                    job,
+                    target=JobState.LOST,
+                    event_type="lost",
+                    now_ms=now_ms,
+                    updates={
+                        "finished_at_utc_ms": now_ms,
+                        "lease_owner": None,
+                        "lease_deadline_utc_ms": None,
+                    },
+                )
+                recovered += 1
+        return recovered
 
     def recover_lost_leases(self, *, now_ms: int) -> int:
         recovered = 0

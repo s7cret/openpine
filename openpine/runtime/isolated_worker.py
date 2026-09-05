@@ -729,6 +729,10 @@ class InteractiveWorkerSession:
             except OSError as exc:
                 raise IsolatedWorkerError("interactive worker stdout read failed") from exc
             if not chunk:
+                if self._stdout_buffer:
+                    # Preserve a final bootstrap diagnostic even without a newline.
+                    newline = len(self._stdout_buffer) - 1
+                    break
                 stderr = _read_available_stderr(self.proc)
                 raise IsolatedWorkerError(stderr.strip() or "interactive worker exited")
             self._stdout_buffer.extend(chunk)
