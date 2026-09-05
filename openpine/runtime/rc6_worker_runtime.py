@@ -37,7 +37,8 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
 from pinelib.runtime.session import CallbackResult
 
-from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin
+from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin, JOURNAL_DOMAIN
+from pinelib.state.digest import AppendOnlyHistory
 from openpine.runtime.rc6_lifecycle import ExecutionCursor
 from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
 from openpine.runtime.rc6_config import resolve_engine_config
@@ -331,6 +332,7 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
             default_qty_value=default_qty_value,
         )
         self._intent_sequence = 0
+        self._callback_receipts = AppendOnlyHistory(JOURNAL_DOMAIN)
         self.execution_cursor = ExecutionCursor()
 
     def execute_bar(
@@ -403,6 +405,7 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
             [output.value for output in committed.delegated_outputs],
             start_sequence=self._intent_sequence,
         )
+        self._record_callback(execution_event, intents)
         self._intent_sequence += len(intents)
         if execution_event is not None:
             self.execution_cursor.accept(execution_event)
