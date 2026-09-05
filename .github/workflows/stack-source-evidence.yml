@@ -3,7 +3,7 @@ name: Stack source evidence
 on:
   workflow_dispatch:
   push:
-    branches: ['release/5.0.0rc6']
+    branches: ['release/5.0.0rc6', 'ops/rc6-delivery-branch-selection']
     paths: ['.github/workflows/stack-source-evidence.yml']
 
 permissions:
