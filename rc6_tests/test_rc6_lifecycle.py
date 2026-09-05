@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import replace
 
 import pytest
+from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES
 
 from backtest_engine import BacktestCallbacks, BacktestEngine
 from backtest_engine.core.intent_replay import admit_sealed_intent_tape, apply_live_intents_for_bar
@@ -79,7 +80,7 @@ def interactive(case, envelopes, tmp_path):
 
     parent._write_message, parent._read_message = write, read
     hello = worker.append("HELLO", {"worker_id": context["session_id"], "protocol_version": "2.3.0",
-                                    "capabilities": ["closed_bar", "checkpoint_v1"]}, 0)
+                                    "capabilities": list(WORKER_CAPABILITIES)}, 0)
     parent.protocol.accept(hello)
     sent.append(hello)
     write(parent.protocol.append("LOAD_ARTIFACT", dict(
@@ -90,7 +91,7 @@ def interactive(case, envelopes, tmp_path):
     write(parent.protocol.append("INIT_RUN", dict(
         run_id=context["run_id"], run_hash="sha256:"+"1"*64,
         execution_context_hash=context["content_hash"], execution_context=context,
-        semantic_profile="strict_5x", capabilities=["closed_bar", "checkpoint_v1"]), created_at_utc_ms=0))
+        semantic_profile="strict_5x", capabilities=list(WORKER_CAPABILITIES)), created_at_utc_ms=0))
     pending, tape, events = {}, [], []
 
     def protocol_event(event):

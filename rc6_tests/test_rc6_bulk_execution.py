@@ -10,6 +10,7 @@ import json
 from dataclasses import replace
 
 import pytest
+from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES
 
 from backtest_engine import BacktestConfig
 from openpine.compile.native_rc6 import NativeRC6CompilerAdapter
@@ -57,14 +58,14 @@ def execute_bulk(monkeypatch, case, *, config=None, bars=None, last_batch=True, 
                    source=compiled.python_code, engine_config=serialize_engine_config(config, "strict_5x"), params={} if params is None else params)
     protocol = RC6WorkerProtocol(context)
     protocol.append("HELLO", dict(worker_id=context["session_id"], protocol_version="2.3.0",
-                                  capabilities=["closed_bar", "checkpoint_v1"]), 0)
+                                  capabilities=list(WORKER_CAPABILITIES)), 0)
     frames = [protocol.append("LOAD_ARTIFACT", dict(
         artifact_hash=generated["content_hash"], module_hash=generated["emitted_module_hash"],
         entrypoint_module=generated["entrypoint"]["module"], entrypoint_class="GeneratedScript",
     ), 0), protocol.append("INIT_RUN", dict(
         run_id=context["run_id"], run_hash="sha256:" + "1" * 64,
         execution_context_hash=context["content_hash"], execution_context=context,
-        semantic_profile="strict_5x", capabilities=["closed_bar", "checkpoint_v1"],
+        semantic_profile="strict_5x", capabilities=list(WORKER_CAPABILITIES),
     ), 0)]
     if bars is None:
         bars = [bar(open_time_utc_ms=OPENED + index * 60_000) for index in range(3)]

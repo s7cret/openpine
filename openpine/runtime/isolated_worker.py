@@ -32,6 +32,7 @@ from openpine_contracts import validate_payload, verify_content_hash
 from openpine_contracts.errors import SchemaValidationError
 
 from openpine.runtime.cgroup import CgroupError, attach_worker_tree, prepare_worker_cgroup
+from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES, require_worker_capabilities
 from openpine.runtime.worker_protocol import WorkerProtocolError, WorkerProtocolTranscript
 
 ExecutionContext = dict[str, Any]
@@ -662,6 +663,10 @@ class InteractiveWorkerSession:
             hello = self._read_message()
             if hello.get("kind") != "HELLO":
                 self._raise_response(hello)
+            try:
+                require_worker_capabilities(hello.get("body", {}).get("capabilities"))
+            except ValueError as exc:
+                raise IsolatedWorkerError(str(exc)) from exc
             self.hello = hello
             load = self.protocol.append(
                 "LOAD_ARTIFACT",
@@ -677,7 +682,7 @@ class InteractiveWorkerSession:
                     "execution_context_hash": execution_context["content_hash"],
                     "execution_context": execution_context,
                     "semantic_profile": semantic_profile,
-                    "capabilities": ["closed_bar", "checkpoint_v1"],
+                    "capabilities": list(WORKER_CAPABILITIES),
                 },
                 created_at_utc_ms=0,
             )

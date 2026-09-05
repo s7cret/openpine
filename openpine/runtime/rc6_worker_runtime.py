@@ -37,6 +37,7 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
 from pinelib.runtime.session import CallbackResult
 
+from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES, validate_requested_capabilities
 from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin, JOURNAL_DOMAIN
 from pinelib.state.digest import AppendOnlyHistory
 from openpine.runtime.rc6_lifecycle import ExecutionCursor
@@ -612,7 +613,7 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
     session = _session_from_request(request)
     driver = RC6InteractiveCallbacks(session, context)
     hello = protocol.append("HELLO", {"worker_id": context["session_id"],
-        "protocol_version": "2.3.0", "capabilities": ["closed_bar", "checkpoint_v1"]}, 0)
+        "protocol_version": "2.3.0", "capabilities": list(WORKER_CAPABILITIES)}, 0)
     print(json.dumps(hello), flush=True)
     loaded = initialized = False
     for line in sys.stdin:
@@ -627,6 +628,7 @@ def run_interactive(request: Mapping[str, Any], protocol: Any) -> int:
                 raise ValueError("loaded artifact identity mismatch")
             loaded = True
         elif kind == "INIT_RUN":
+            validate_requested_capabilities(body["capabilities"])
             if (not loaded or body["execution_context"] != context
                     or body["execution_context_hash"] != context["content_hash"] or body["run_id"] != context["run_id"]):
                 raise ValueError("run initialization identity mismatch")
@@ -687,7 +689,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         {
             "worker_id": context["session_id"],
             "protocol_version": "2.3.0",
-            "capabilities": ["closed_bar", "checkpoint_v1"],
+            "capabilities": list(WORKER_CAPABILITIES),
         },
         0,
     )
@@ -733,6 +735,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
             loaded = True
             continue
         if kind == "INIT_RUN":
+            validate_requested_capabilities(body["capabilities"])
             if not loaded:
                 raise ValueError("artifact must be loaded before run initialization")
             if (
