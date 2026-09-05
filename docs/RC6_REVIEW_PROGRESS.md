@@ -4,10 +4,12 @@ This is a partial implementation ledger, not acceptance of all 36 review tasks o
 
 ## Latest verified runtime block
 
-OpenPine code head: `295a6885f1094676ae1bfdc90631814daa9e8966`.
-Integrated CI `33977499788`: **1,822 tests passed on Python 3.11 and 1,822 on Python 3.13**, with no failures, errors or skipped cases. Both wheel/sdist builds passed. This is four complete library functional suites plus selected OpenPine/native/sandbox regressions, not every test of all seven libraries.
+OpenPine runtime head: `ff718ec6ef5b78732abd463b0c4c64e2c8560e3d`.
+Integrated cleanup/progress CI `33982457446`: **2,048 tests passed on Python 3.11 and 2,048 on Python 3.13**, with zero failures, errors or skips. Changed-runtime lint, wheel and sdist builds passed. These are four complete library functional suites plus native/sandbox and selected OpenPine regressions, not every test of all seven libraries.
 
-See [RC6_LIFECYCLE_BLOCK.md](RC6_LIFECYCLE_BLOCK.md) for OP-03 rounding/zero margins, OP-05 causal lifecycle/recalculation, OP-06 verified completion, exact commits and evidence. The compatible sibling revisions are [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json). Update the source set together rather than mixing stale same-version wheels.
+See [RC6_CLEANUP_EXECUTION_BLOCK.md](RC6_CLEANUP_EXECUTION_BLOCK.md) for the six exact source commits, cleanup boundaries, sealed chunk transport, progress, actual counts and CLI input fixes. The transport serialization microbenchmark is explicitly scoped and records its memory tradeoff. The worker policy now explicitly requires msgpack; stale admissions must be rebuilt/re-admitted, not bypassed.
+
+Previous lifecycle runtime `295a6885f1094676ae1bfdc90631814daa9e8966` passed 1,822 cases per interpreter; see [RC6_LIFECYCLE_BLOCK.md](RC6_LIFECYCLE_BLOCK.md). Historical counts overlap and must not be added. The sibling revisions remain [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json); no sibling repository was modified in the cleanup pass.
 
 ## OP-36 branch preservation
 
@@ -22,4 +24,4 @@ Earlier claims that inputs were unimplemented or zero margin was rejected are su
 
 ## Remaining acceptance
 
-Immutable production deployment, complete request integration, full strategy namespace, genuine checkpoints and state-hash equivalence, comprehensive realtime, UI and full Pine v1-v6 TradingView oracle coverage remain open. Complete configuration provenance and advanced optimizer request/parallel acceptance are not closed. No measured performance improvement or final production release is claimed.
+Immutable production deployment, complete request integration, full strategy namespace, genuine checkpoints and state-hash equivalence, comprehensive realtime, UI and full Pine v1-v6 TradingView oracle coverage remain open. Complete configuration provenance and advanced optimizer request/parallel acceptance are not closed. Only input-frame serialization was benchmarked; no whole-backtest speedup or final production release is claimed.
