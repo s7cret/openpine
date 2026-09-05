@@ -4,7 +4,17 @@ set -euo pipefail
 ROOT="${OPENPINE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$ROOT"
 
-if [[ -f .env ]]; then
+dotenv_loaded_by_systemd=false
+if [[ "${1:-}" == "--systemd-env-loaded" ]]; then
+  dotenv_loaded_by_systemd=true
+  shift
+fi
+if (( $# != 0 )); then
+  printf 'unexpected argument: %s\n' "$1" >&2
+  exit 2
+fi
+
+if [[ "$dotenv_loaded_by_systemd" == false && -f .env ]]; then
   set -a
   . ./.env
   set +a
