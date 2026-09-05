@@ -34,7 +34,9 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Reconstruct exact reviewed commits
-        run: python "$RUNNER_TEMP/reviewed-publisher.py" reconstruct "$RUNNER_TEMP/evidence" .github/maintenance/reviewed-series.json
+        run: |
+          python .github/maintenance/extend-reviewed-series.py .github/maintenance/reviewed-series.json "$RUNNER_TEMP/combined-series.json"
+          python "$RUNNER_TEMP/reviewed-publisher.py" reconstruct "$RUNNER_TEMP/evidence" "$RUNNER_TEMP/combined-series.json"
       - name: Install pinned sibling sources
         shell: bash
         run: |
