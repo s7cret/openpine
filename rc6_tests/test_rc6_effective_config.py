@@ -47,12 +47,19 @@ def test_resolved_config_is_hash_bound_and_preserves_sets_and_model():
         resolve_engine_config(payload, {})
 
 
-def test_unsupported_zero_margin_is_rejected_not_repaired_to_100():
-    from backtest_engine.errors import ConfigError
+@pytest.mark.parametrize("mode", ["floor", "ceil", "nearest", "none", "truncate"])
+def test_all_engine_rounding_modes_survive_worker_transport(mode):
     from openpine.runtime.rc6_config import resolve_engine_config
-    config = BacktestConfig("SOLUSDT", "1m", 0, 60_000, margin_long=0)
-    with pytest.raises(ConfigError, match="margin_long"):
-        resolve_engine_config(_bulk_engine_config(config, "strict_5x"), {})
+    config = BacktestConfig("SOLUSDT", "1m", 0, 60_000, qty_rounding=mode)
+    assert resolve_engine_config(_bulk_engine_config(config, "strict_5x"), {}).qty_rounding == mode
+
+
+@pytest.mark.parametrize("name", ["margin_long", "margin_short"])
+def test_zero_margin_is_preserved_end_to_end(name):
+    from openpine.runtime.rc6_config import resolve_engine_config
+    config = BacktestConfig("SOLUSDT", "1m", 0, 60_000)
+    setattr(config, name, 0)
+    assert getattr(resolve_engine_config(_bulk_engine_config(config, "strict_5x"), {}), name) == 0
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])

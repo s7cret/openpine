@@ -78,8 +78,8 @@ def serialize_engine_config(config: Any, semantic_profile: str) -> dict[str, Any
         value = config.qty_rounding_mode
         if value is not None:
             payload["qty_rounding"] = value
-    if payload["qty_rounding"] not in {"floor", "ceil", "nearest"}:
-        raise ValueError("RC6 qty_rounding must be floor, ceil or nearest")
+    if payload["qty_rounding"] not in {"floor", "ceil", "nearest", "none", "truncate"}:
+        raise ValueError("RC6 qty_rounding must be floor, ceil, nearest, none or truncate")
     payload["semantic_profile"] = semantic_profile
     for name in _EXTRA:
         value = getattr(config, name, None)
@@ -123,8 +123,8 @@ def resolve_engine_config(payload: Mapping[str, Any], context: Mapping[str, Any]
             raise ValueError("instrument_model must be an object")
         values["instrument_model"] = InstrumentModel(**model)
     config = BacktestConfig(**values)
-    if config.qty_rounding not in {"floor", "ceil", "nearest"}:
-        raise ValueError("RC6 qty_rounding must be floor, ceil or nearest")
+    if config.qty_rounding not in {"floor", "ceil", "nearest", "none", "truncate"}:
+        raise ValueError("RC6 qty_rounding must be floor, ceil, nearest, none or truncate")
     validate_backtest_config(config)
     for name, value in extras.items():
         setattr(config, name, value)
