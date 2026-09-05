@@ -37,6 +37,7 @@ from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
 from pinelib.runtime.session import CallbackResult
 
+from openpine.runtime.generated_checkpoint import GeneratedCheckpointMixin
 from openpine.runtime.rc6_lifecycle import ExecutionCursor
 from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_bar
 from openpine.runtime.rc6_config import resolve_engine_config
@@ -225,7 +226,7 @@ class RC6BarExecution:
     intents: tuple[dict[str, Any], ...]
 
 
-class RC6GeneratedScriptSession:
+class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
     """Execute persistent ``GeneratedScript(runtime).run()`` callbacks.
 
     The PineLib session owns series/runtime state. A fresh immutable delegated
@@ -299,6 +300,7 @@ class RC6GeneratedScriptSession:
             "self",
         ):
             raise ValueError("GeneratedScript.run must accept only self")
+        self._artifact_hash = envelope["content_hash"]
         self.generated_class = generated_class
         self.namespace = MappingProxyType(namespace)
         from ast2python.artifacts.script_metadata import admitted_script_metadata
@@ -789,10 +791,10 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
             )
 
         def export_state(self) -> dict[str, Any]:
-            return {"bulk_worker": True}
+            return session.export_state()
 
         def restore_state(self, state: Any) -> None:
-            del state
+            session.restore_state(state)
 
     from openpine.runtime.progress import ProgressReporter
     total = len(engine_bars)
@@ -854,6 +856,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         "config_snapshot": _jsonable(result.config_snapshot),
         **input_evidence(session.inputs),
     }
+    if config.export_resume_state:
+        raw["resume_state"] = _jsonable(result.resume_state)
     payload = {
         "kind": "BULK_RESULT",
         "bars_received": bar_admission.received,
