@@ -1063,6 +1063,15 @@ finally:
     raise RuntimeError(f"isolated backfill process returned no result: {stdout_tail}")
 
 
+def _load_backfill_source_series(state, query, progress_callback):
+    loader = getattr(
+        state.orchestrator,
+        "load_provider_series",
+        state.orchestrator.load_bars,
+    )
+    return loader(query, progress_callback=progress_callback)
+
+
 def _run_data_backfill_sync(
     payload: dict[str, object], state: GatewayState, progress_callback
 ):
@@ -1115,8 +1124,8 @@ def _run_data_backfill_sync(
         payload=payload,
         state=state,
         progress_callback=progress_callback,
-        source_series=state.orchestrator.load_bars(
-            query, progress_callback=progress_callback
+        source_series=_load_backfill_source_series(
+            state, query, progress_callback
         ),
         source_timeframe=source_timeframe,
         target_timeframe=target_timeframe,
@@ -1257,8 +1266,8 @@ def _run_data_backfill_chunked(
             None,
             "fetch",
         )
-        source_series = state.orchestrator.load_bars(
-            query, progress_callback=progress_callback
+        source_series = _load_backfill_source_series(
+            state, query, progress_callback
         )
         source_loaded, source_skipped = _store_backfill_series(state, source_series)
         source_loaded_total += source_loaded

@@ -423,6 +423,26 @@ class DataOrchestrator:
         except Exception:
             return
 
+    def load_provider_series(
+        self,
+        query: BarQuery,
+        progress_callback: Callable[..., None] | None = None,
+    ) -> LoadedBarSeries:
+        """Load provider bars without forcing a canonical snapshot envelope."""
+
+        if self._provider is None:
+            raise ProviderUnavailableError("market data provider is not configured")
+        fetch_series = getattr(self._provider, "fetch_series", None)
+        if not callable(fetch_series):
+            return self._load_provider(query, progress_callback=progress_callback)
+        if progress_callback is not None and _accepts_progress_callback(fetch_series):
+            raw_series = fetch_series(query, progress_callback=progress_callback)
+        else:
+            raw_series = fetch_series(query)
+        series = _canonical_series(raw_series, query, source="provider")
+        self._validator.validate(series, allow_gaps=query.gap_policy != "fail")
+        return series
+
     def _load_provider(
         self, query: BarQuery, progress_callback: Callable[..., None] | None = None
     ) -> LoadedBarSeries:

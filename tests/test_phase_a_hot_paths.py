@@ -157,6 +157,54 @@ def test_local_marketdata_provider_is_marked_as_persistence_owner(monkeypatch) -
     assert result.persists_fetches is True
 
 
+def test_backfill_provider_series_uses_lightweight_fetch_boundary() -> None:
+    query = _query(source="provider")
+    expected = _series(query, (_bar(query, 0), _bar(query, 60_000)), source="provider")
+    callback = object()
+
+    class Provider:
+        persists_fetches = True
+
+        def __init__(self) -> None:
+            self.calls: list[tuple[BarQuery, object]] = []
+
+        def fetch_series(self, request: BarQuery, progress_callback=None) -> BarSeries:
+            self.calls.append((request, progress_callback))
+            return expected
+
+        def fetch_bars(self, query: BarQuery) -> object:
+            del query
+            raise AssertionError("backfill must not build a canonical snapshot")
+
+    provider = Provider()
+    loaded = DataOrchestrator(
+        provider=provider, store=_EmptyStore(), cache_enabled=False
+    ).load_provider_series(query, progress_callback=callback)
+
+    assert loaded is expected
+    assert provider.calls == [(query, callback)]
+
+
+def test_backfill_route_prefers_lightweight_provider_series() -> None:
+    query = _query(source="provider")
+    expected = _series(query, (_bar(query, 0),), source="provider")
+    callback = object()
+
+    class Orchestrator:
+        def load_provider_series(self, request, progress_callback=None):
+            assert (request, progress_callback) == (query, callback)
+            return expected
+
+        def load_bars(self, *_args, **_kwargs):
+            raise AssertionError("canonical provider path must not be used")
+
+    loaded = accounts_data._load_backfill_source_series(
+        SimpleNamespace(orchestrator=Orchestrator()), query, callback
+    )
+
+    assert loaded is expected
+
+
 def test_periodic_refresh_does_not_rewrite_source_owned_by_provider(monkeypatch) -> None:
     class Orchestrator:
         provider_persists_fetches = True
