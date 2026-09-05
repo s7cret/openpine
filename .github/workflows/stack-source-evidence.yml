@@ -39,6 +39,10 @@ jobs:
               subprocess.run(['git', 'clone', '--mirror',
                               'https://github.com/s7cret/' + name + '.git', str(mirror)],
                              check=True)
+              # Verify object integrity before relying on this archive to preserve
+              # the only remaining copy of a selected or retired branch.
+              subprocess.run(['git', '-C', str(mirror), 'fsck', '--full', '--no-dangling'],
+                             check=True)
               bundle = (pathlib.Path('evidence') / (name + '.bundle')).resolve()
               subprocess.run(['git', '-C', str(mirror), 'bundle', 'create', str(bundle), '--all'],
                              check=True)
@@ -62,4 +66,4 @@ jobs:
           path: evidence/
           compression-level: 0
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
