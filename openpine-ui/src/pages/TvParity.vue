@@ -17,6 +17,8 @@ import {
 import { downloadApiResource } from '@/api/auth'
 import { EMPTY_MARKET_METADATA, exchangeLabel } from '@/lib/marketMetadata'
 import { createTerminalPoller } from '@/lib/terminalPolling'
+import { createRequestEpoch } from '@/lib/latestRequest'
+import { isTerminalJobStatus } from '@/lib/jobStatus'
 import TvParityVisualization from '@/components/TvParityVisualization.vue'
 import MtfSeriesEditor from '@/components/MtfSeriesEditor.vue'
 import {
@@ -47,19 +49,29 @@ const mtfValidationMessage = computed(() => {
   return key ? t(key) : ''
 })
 
+const resultRequests = createRequestEpoch()
+const historyRequests = createRequestEpoch()
+const previewRequests = createRequestEpoch()
+let selectedRunId: string | null = null
+let pageAlive = true
+
+// Fetching must be side-effect free: stale responses are checked before committing.
 const runPoller = createTerminalPoller({
   intervalMs: 1_500,
   poll: async () => {
-    const runId = result.value?.run_id
-    if (!runId) return { status: 'cancelled' }
+    const runId = selectedRunId
+    const current = resultRequests.capture()
+    if (!runId) return { data: { status: 'cancelled' }, current }
     const { data } = await getTvParityRun(runId)
-    result.value = data
-    return data
+    if (data?.run_id !== runId) throw new Error('Run response identity mismatch')
+    return { data, current }
   },
-  getStatus: value => String(value?.status ?? ''),
-  onTerminal: async value => {
+  onValue: ({ data, current }) => { if (current()) result.value = data },
+  getStatus: ({ data }) => String(data?.status ?? ''),
+  onTerminal: async ({ data, current }) => {
+    if (!current()) return
     await fetchHistory()
-    if (value?.status === 'completed' && value?.run_id) await loadSummary(value.run_id)
+    if (current() && data?.status === 'completed' && data?.run_id) await loadSummary(data.run_id)
   },
   onError: error => {
     const apiError = error as { response?: { data?: { detail?: string } }; message?: string }
@@ -69,7 +81,33 @@ const runPoller = createTerminalPoller({
   },
 })
 
-onUnmounted(() => runPoller.stop())
+function beginResultRequest(runId: string | null = null) {
+  previewRequests.invalidate()
+  loading.value = false
+  runPoller.stop()
+  selectedRunId = runId
+  return resultRequests.begin()
+}
+
+function acceptResult(data: any, current: () => boolean, expectedId?: string) {
+  if (!current()) return false
+  if (!data?.run_id || (expectedId && data.run_id !== expectedId)) {
+    throw new Error('Run response identity mismatch')
+  }
+  result.value = data
+  selectedRunId = data.run_id
+  lockedPeriod.value = data.locked_period ?? null
+  if (!isTerminalJobStatus(data.status)) runPoller.start()
+  return true
+}
+
+onUnmounted(() => {
+  pageAlive = false
+  runPoller.stop()
+  resultRequests.dispose()
+  historyRequests.dispose()
+  previewRequests.dispose()
+})
 
 const form = ref({
   source: 'tradingview_csv',
@@ -152,6 +190,7 @@ async function fetchPageData() {
 
 async function fetchStrategies() {
   const { data } = await getStrategies()
+  if (!pageAlive) return
   strategies.value = data.items ?? data.strategies ?? data ?? []
 }
 
@@ -159,6 +198,7 @@ async function fetchMarketMetadata() {
   marketMetadataError.value = ''
   try {
     const { data } = await getDataMetadata()
+    if (!pageAlive) return
     if (data?.exchanges?.length) {
       marketMetadata.value = data
     } else {
@@ -166,6 +206,7 @@ async function fetchMarketMetadata() {
       marketMetadataError.value = t('tvParity.metadataUnavailable')
     }
   } catch (err: any) {
+    if (!pageAlive) return
     marketMetadata.value = EMPTY_MARKET_METADATA
     marketMetadataError.value = t('tvParity.metadataUnavailableDetail', { error: apiErrorMessage(err, 'metadata request failed') })
   }
@@ -212,6 +253,7 @@ async function handleFiles(files: FileList | File[]) {
   const list = Array.from(files)
   for (const file of list) {
     const type = await detectFileType(file)
+    if (!pageAlive) return
     if (type === 'candles') candlesFile.value = file
     else if (type === 'chart') tvChartFile.value = file
     else if (type === 'trades') tvTradesFile.value = file
@@ -272,14 +314,19 @@ const fileStatusBadges = computed(() => {
   return isExchangeDataSource.value ? badges.filter((b) => b.key !== 'candles') : badges
 })
 
+const summaryPending = new Map<string, object>()
+
 async function loadSummary(runId: string) {
-  if (summaryCache[runId]) return
-  summaryCache[runId] = {} as TvParitySummaryCards
+  if (!pageAlive || summaryCache[runId] || summaryPending.has(runId)) return
+  const ticket = {}
+  summaryPending.set(runId, ticket)
   try {
     const { data } = await getTvParitySummaryCards(runId)
-    summaryCache[runId] = data
+    if (pageAlive && summaryPending.get(runId) === ticket) summaryCache[runId] = data
   } catch {
-    // keep placeholder; metrics simply stay hidden on failure
+    // Do not permanently cache failure: a later selection may retry.
+  } finally {
+    if (summaryPending.get(runId) === ticket) summaryPending.delete(runId)
   }
 }
 
@@ -343,6 +390,7 @@ async function previewCandles() {
     status.value = t('tvParity.missingMarket')
     return
   }
+  const current = previewRequests.begin()
   loading.value = true
   status.value = t('tvParity.previewingStatus')
   try {
@@ -353,19 +401,29 @@ async function previewCandles() {
       symbol: context.symbol,
       timeframe: context.timeframe,
     })
+    if (!current()) return
     preview.value = data
     lockedPeriod.value = data.locked_period ?? { from_time: data.from_time, to_time: data.to_time }
     form.value.compareFromTime = String(lockedPeriod.value?.from_time ?? '')
     form.value.compareToTime = String(lockedPeriod.value?.to_time ?? '')
     status.value = t('tvParity.previewedLocked', { count: data.valid_bars?.toLocaleString?.() ?? data.valid_bars })
   } catch (err: any) {
+    if (!current()) return
     status.value = t('tvParity.previewFailed', { error: err.response?.data?.detail ?? err.message })
   } finally {
-    loading.value = false
+    if (current()) loading.value = false
   }
 }
 
+watch([candlesFile, selectedStrategyId], () => {
+  previewRequests.invalidate()
+  preview.value = null
+  lockedPeriod.value = null
+  loading.value = false
+}, { flush: 'sync' })
+
 async function queueRun() {
+  if (runLoading.value) return
   if (!selectedStrategyId.value) {
     status.value = t('tvParity.selectCompiled2')
     return
@@ -387,6 +445,7 @@ async function queueRun() {
     status.value = mtfValidationMessage.value
     return
   }
+  const current = beginResultRequest()
   runLoading.value = true
   status.value = t('tvParity.queueingMessage')
   try {
@@ -408,56 +467,58 @@ async function queueRun() {
       includeBaseColumns: form.value.includeBaseColumns,
       mtfSeries: toMtfSeriesRequests(mtfSeries.value),
     })
-    result.value = data
-    lockedPeriod.value = data.locked_period ?? lockedPeriod.value
+    if (pageAlive) void fetchHistory()
+    if (!acceptResult(data, current)) return
     status.value = t('tvParity.queued', { id: data.run_id })
-    runPoller.start()
-    void fetchHistory()
   } catch (err: any) {
+    if (!current()) return
     status.value = t('tvParity.runFailed', { error: err.response?.data?.detail ?? err.message })
   } finally {
-    runLoading.value = false
+    if (pageAlive) runLoading.value = false
   }
 }
 
 async function refreshResult(runId?: string) {
-  const id = runId ?? result.value?.run_id
+  const id = runId ?? selectedRunId ?? result.value?.run_id
   if (!id) return
+  const current = beginResultRequest(id)
   try {
     const { data } = await getTvParityRun(id)
-    result.value = data
-    const state = String(data?.status ?? '').toLowerCase()
-    if (!['completed', 'failed', 'cancelled', 'canceled', 'done', 'error'].includes(state)) {
-      runPoller.start()
-    }
+    acceptResult(data, current, id)
   } catch (err: any) {
+    if (!current()) return
     status.value = t('tvParity.runFailed', { error: err?.response?.data?.detail ?? err?.message ?? String(err) })
   }
 }
 
 async function fetchHistory() {
+  const current = historyRequests.begin()
   historyLoading.value = true
   try {
     const { data } = await listTvParityRuns({ limit: 200 })
+    if (!current()) return
     history.value = data.items ?? []
     historyTotal.value = data.total ?? history.value.length
   } catch (err) {
+    if (!current()) return
     // Silent: history is decorative, not blocking
     history.value = []
     historyTotal.value = 0
   } finally {
-    historyLoading.value = false
+    if (current()) historyLoading.value = false
   }
 }
 
 async function loadHistoryEntry(entry: TvParityHistoryEntry) {
+  const current = beginResultRequest(entry.run_id)
   status.value = t('tvParity.previewingStatus')
   try {
     const { data } = await getTvParityRun(entry.run_id)
-    result.value = data
-    lockedPeriod.value = data.locked_period ?? lockedPeriod.value
+    if (!acceptResult(data, current, entry.run_id)) return
     status.value = ''
+    if (data.status === 'completed') void loadSummary(entry.run_id)
   } catch (err: any) {
+    if (!current()) return
     status.value = t('tvParity.history.loadFailed', {
       error: err?.response?.data?.detail ?? err?.message ?? '',
     })
@@ -469,13 +530,22 @@ async function deleteHistoryEntry(entry: TvParityHistoryEntry) {
     t('tvParity.history.deleteConfirm', { id: entry.run_id }),
   )
   if (!confirmed) return
+  const current = resultRequests.capture()
   try {
     await deleteTvParityRun(entry.run_id)
+    if (!pageAlive) return
+    historyRequests.invalidate()
+    historyLoading.value = false
+    summaryPending.delete(entry.run_id)
+    delete summaryCache[entry.run_id]
     history.value = history.value.filter((row) => row.run_id !== entry.run_id)
-    if (result.value?.run_id === entry.run_id) {
+    if (selectedRunId === entry.run_id) {
+      beginResultRequest()
       result.value = null
+      lockedPeriod.value = null
     }
   } catch (err: any) {
+    if (!current()) return
     status.value = t('tvParity.history.deleteFailed', {
       error: err?.response?.data?.detail ?? err?.message ?? '',
     })

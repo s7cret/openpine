@@ -13,7 +13,7 @@ describe('canonical async job statuses', () => {
     expect(isTerminalJobStatus(status)).toBe(true)
   })
 
-  it.each(['failed', 'cancelled'])('treats %s as terminal but unsuccessful', (status) => {
+  it.each(['failed', 'cancelled', 'canceled', ' CANCELED '])('treats %s as terminal but unsuccessful', (status) => {
     expect(isTerminalJobStatus(status)).toBe(true)
     expect(isSuccessfulJobStatus(status)).toBe(false)
   })

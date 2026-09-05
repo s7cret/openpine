@@ -36,3 +36,20 @@ export function createLatestRequest(): LatestRequestController {
 
   return { begin, cancel }
 }
+
+
+/** Generation tokens suppress stale async writes; they do not cancel server work. */
+export function createRequestEpoch() {
+  let generation = 0
+  let disposed = false
+  const capture = () => {
+    const ticket = generation
+    return () => !disposed && ticket === generation
+  }
+  return {
+    capture,
+    begin: () => { generation += 1; return capture() },
+    invalidate: () => { generation += 1 },
+    dispose: () => { disposed = true; generation += 1 },
+  }
+}

@@ -22,3 +22,25 @@ describe('latest request cancellation', () => {
     expect(second.isCurrent()).toBe(false)
   })
 })
+import { createRequestEpoch } from './latestRequest'
+
+describe('request epoch (does not cancel server jobs)', () => {
+  it('invalidates captures on selection and cannot revive after disposal', () => {
+    const epoch = createRequestEpoch()
+    const first = epoch.begin()
+    const poll = epoch.capture()
+    expect(first()).toBe(true)
+    expect(poll()).toBe(true)
+    const next = epoch.begin()
+    expect(first()).toBe(false)
+    expect(poll()).toBe(false)
+    expect(next()).toBe(true)
+    epoch.invalidate()
+    expect(next()).toBe(false)
+    const last = epoch.begin()
+    epoch.dispose()
+    expect(last()).toBe(false)
+    expect(epoch.begin()()).toBe(false)
+    expect(epoch.capture()()).toBe(false)
+  })
+})

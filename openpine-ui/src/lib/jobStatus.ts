@@ -5,6 +5,7 @@ export function canonicalJobStatus(status?: string | null): string {
   const value = String(status ?? '').trim().toLowerCase()
   if (SUCCESS_STATUSES.has(value)) return 'completed'
   if (value === 'error') return 'failed'
+  if (value === 'canceled') return 'cancelled'
   return value || 'unknown'
 }
 
