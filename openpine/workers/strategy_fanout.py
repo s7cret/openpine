@@ -131,6 +131,7 @@ class StrategyBarFanout:
             jobs = tuple(
                 self._enqueue_strategy_job(strategy, target_bar, market_key)
                 for strategy in group.strategies
+                if self._bar_is_in_active_epoch(strategy, target_bar)
             )
             targets.append(
                 TargetBarResult(
@@ -144,6 +145,17 @@ class StrategyBarFanout:
             strategies=len(strategies),
             targets=tuple(targets),
         )
+
+    def _bar_is_in_active_epoch(
+        self, strategy: StrategyInstance, bar: Bar
+    ) -> bool:
+        if strategy.mode.lower() != "paper":
+            return True
+        epoch_reader = getattr(self.registry, "execution_epoch_started_at", None)
+        if not callable(epoch_reader):
+            return True
+        epoch = epoch_reader(strategy.strategy_id, mode="paper")
+        return epoch is None or int(bar.time) >= int(epoch)
 
     def _target_bar_from_source(
         self, source_bar: Bar, target_timeframe: str
