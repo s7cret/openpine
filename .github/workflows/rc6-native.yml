@@ -61,12 +61,12 @@ jobs:
           with open(os.environ['GITHUB_ENV'],'a') as stream:
               stream.write('PINE_STACK_ROOT='+str(root)+'\n')
           PY
-      - name: Complete contracts runtime compiler and broker functional suites
+      - name: Complete contracts runtime frontend compiler and broker functional suites
         env:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: |
           set -euo pipefail
-          for repo in openpine-contracts pinelib ast2python backtest_engine; do
+          for repo in openpine-contracts pinelib pine2ast ast2python backtest_engine; do
             (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
           done
       - name: Deterministic provider suite (external network checks are separate)
@@ -104,13 +104,14 @@ jobs:
           PY
       - name: Validate changed runtime lint imports and build clean distributions
         run: |
-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py
+          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py
           python -m compileall -q openpine
           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
           mkdir -p "$RUNNER_TEMP/build-source"
           git archive HEAD | tar -x -C "$RUNNER_TEMP/build-source"
           python -m build --no-isolation --outdir "$RUNNER_TEMP/evidence/dist" "$RUNNER_TEMP/build-source"
           python -m pip freeze > "$RUNNER_TEMP/evidence/environment.txt"
+          git rev-parse HEAD > "$RUNNER_TEMP/evidence/code-head.txt"
           test -z "$(git status --porcelain --untracked-files=no)"
       - uses: actions/upload-artifact@v4
         if: always()

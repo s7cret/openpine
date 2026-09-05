@@ -1,28 +1,29 @@
-# RC6 review progress — 2026-09-05
+# RC6 review progress — 2026-09-06
 
 This ledger records implemented and verified scopes, not completion of all 36 review tasks or TradingView 1:1 compatibility.
 
-## Latest published data / chart metadata / UI block
+## Latest published request / checkpoint / capability block
 
-OpenPine reviewed source: `5a900fb7728b02a37f03e2ac0cd8004dbb03efd2`.
-MarketData Provider reviewed source: `4e269bb7e3d389cae6214da9e17898c32c7ead15`.
-The exact ten source commits are published in the respective RC6 branches. Subsequent receipt commits change documentation only.
+OpenPine runtime head: `53f0c2d6da67bf364e0962fb50a7107571182427`.
+Joint CI and publication `33998764352`: **3,246 Python cases per interpreter (3.11 and 3.13), 152 Vitest cases and 22 Node cases**, all passing. Four new actual protected-worker request cases ran. OpenPine wheel/sdist and frontend production builds passed. The first five library functional suites are complete; provider excludes five live-network cases, and OpenPine uses native plus selected regressions. No complete standalone optimizer/coverage/oracle acceptance is claimed.
 
-Joint CI `33991141948` verified **2774 Python cases per interpreter (3.11 and 3.13), 152 Vitest cases and 22 Node cases**. It includes protected worker processes, actual TypeScript/Vite build and current backend OpenAPI contract checks. Five provider live-network cases are excluded explicitly. Full OpenPine/Pine2AST/standalone optimizer/coverage/TradingView oracle coverage is not claimed. The initial Actions delivery-token failure was resolved by the authorized connector and a successful publication retry without altering tested source.
+[RC6_REQUESTS_CHECKPOINT_PUBLICATION.md](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md) records the six exact OpenPine commits, published sibling pins, artifact digests and remaining limits. Both earlier blockers, A2P_PINELIB_INJECTION and na(strategy.position_avg_price) type evidence, are resolved for the documented supported subset. The former unconfirmed-publication status is superseded by actual joint CI, publication receipts and fresh remote reads.
 
-- **OP-21:** strict offline CSV/Parquet input, explicit timestamp/volume policies and bounded batch parsing. Indexing, complete import provenance, row-group pushdown and repeated intrabar I/O acceptance remain open.
-- **OP-09:** provider hour/month/minute identity and admitted pointvalue survive both workers. Complete instrument metadata and non-crypto behavior remain open.
-- **OP-28:** original visualization loadAll and parity-page races fixed; finite one-pass bounds, display-only pixel sampling and top-mismatch labels are tested. Seventeen actual Vue lifecycle tests are in-memory component tests, not browser/visual E2E. No FPS or whole-backtest speed claim.
+- OP-08: independent compiled source expressions, typed lower-TF arrays, explicit snapshot admission, static preflight and no-lookahead causality tests. Automatic UI/CLI series discovery, nested/UDF and live requests remain open.
+- OP-10: real generated-state export, atomic restore, NA round-trip and receipt-derived counters. Full isolated-process broker/IPC resume remains open; v1 generated envelopes without receipts are rejected.
+- OP-14: request/NA/array type and version bindings are improved, not the entire Pine v1-v6 catalog.
+- OP-15: worker advertises and negotiates actual closed-bar support, not unimplemented checkpoint resume. The full producer/compiler/runtime/host capability graph is not closed.
 
-Details and migration notes: [RC6_DATA_UI_PUBLICATION_RECEIPT.md](RC6_DATA_UI_PUBLICATION_RECEIPT.md). Pre-publication implementation notes: [RC6_DATA_UI_BLOCK.md](RC6_DATA_UI_BLOCK.md). Current source pins: [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json). Same-version wheels must not be mixed without exact identity admission.
+Update all pinned sources together using [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json), and recompile artifacts against the new target manifest. Same version strings do not establish identical code. The retained read-only native CI now includes complete Pine2AST verification and new request/checkpoint/capability lint paths; runtime and UI code are unchanged by this ledger/CI update.
 
 ## Preserved branch state
 
-OpenPine still has exactly main, release/v2.17, release/v4.0.2 and release/5.0.0rc6. Maintenance branches are archived as same-name tags before removal. Main/historical releases are not promoted or rewritten. Earlier preservation evidence remains in [RC6_BRANCH_CONSOLIDATION_RECEIPT.md](RC6_BRANCH_CONSOLIDATION_RECEIPT.md) and [RC6_BRANCH_SELECTION.json](RC6_BRANCH_SELECTION.json). Cleanup of all sibling branches is not claimed.
+OpenPine still has main, release/v2.17, release/v4.0.2 and release/5.0.0rc6. The completed request publication archived its temporary branch as a same-name tag before removal. Main and historical release heads were untouched. Earlier preservation evidence remains in [RC6_BRANCH_CONSOLIDATION_RECEIPT.md](RC6_BRANCH_CONSOLIDATION_RECEIPT.md) and [RC6_BRANCH_SELECTION.json](RC6_BRANCH_SELECTION.json). Cleanup of all sibling branches is not claimed.
 
 ## Previous verified blocks (historical counts overlap)
 
-- [Strategy host publication](RC6_STRATEGY_PUBLICATION_RECEIPT.md): seven commands and 17 scalar values; OP-07 remains limited for exits/risk/indexed methods.
+- [Data and UI publication](RC6_DATA_UI_PUBLICATION_RECEIPT.md): strict offline input, chart timeframe/pointvalue, stale-response protection and display-only downsampling. Its request-compilation failure notes are historical and superseded by the new request block.
+- [Strategy host publication](RC6_STRATEGY_PUBLICATION_RECEIPT.md): seven commands and 17 scalar values; exits/risk/indexed methods remain partial.
 - [Cleanup / bounded results / progress](RC6_CLEANUP_EXECUTION_BLOCK.md): strict Parquet, no legacy pickle, sealed result chunks, explicit msgpack worker policy, input framing and progress.
 - [Lifecycle integration](RC6_LIFECYCLE_BLOCK.md): fill recalculation, history commit boundaries and rounding/margin transport.
 - [Inputs / optimizer](RC6_INPUTS_BLOCK.md): tested input overrides and effective trial settings.
@@ -30,4 +31,4 @@ OpenPine still has exactly main, release/v2.17, release/v4.0.2 and release/5.0.0
 
 ## Remaining high-priority acceptance
 
-Actual request.security/security_lower_tf probes still fail with A2P_PINELIB_INJECTION; request expression lowering, child-context execution and data integration must be implemented together. The separate na(strategy.position_avg_price) probe still fails type evidence. Immutable production deployment, full strategy exit/risk/indexed access, checkpoint/state-hash equivalence, whole-run cancellation/backpressure, comprehensive realtime, browser UX and Pine v1-v6 TradingView oracle coverage remain open. No production release or complete 36-task acceptance is claimed.
+Automatic requested-series loading, unsupported request forms/live data, full strategy exit/trailing/risk/indexed access, full-job recovery, immutable production delivery, cancellation/backpressure, complete version-specific signatures and capability coverage, browser UX and Pine v1-v6 TradingView oracle coverage remain open. No full 36-task acceptance, whole-backtest speedup or production release is claimed.
