@@ -599,6 +599,11 @@ class InteractiveWorkerSession:
         self.bulk_idle_timeout_s = float(bulk_idle_timeout_s)
         self.bulk_backtest = bool(bulk_backtest)
         self.engine_config = dict(engine_config) if engine_config is not None else {}
+        from openpine.runtime.request_data import admit_request_data
+        try:
+            admit_request_data(source, self.engine_config, execution_context)
+        except ValueError as exc:
+            raise IsolatedWorkerError(str(exc)) from exc
         self.max_line_bytes = 1_000_000
         self._closed = False
         self._stdout_buffer = bytearray()

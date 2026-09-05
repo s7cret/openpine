@@ -243,6 +243,7 @@ class RC6GeneratedScriptSession:
         identity: IntentReplayIdentity,
         producer_commit: str,
         default_qty_value: object = 1,
+        request_provider=None,
         engine_config: BacktestConfig | None = None,
         params: Mapping[str, object] | None = None,
         expected_input_values_hash: str | None = None,
@@ -300,11 +301,20 @@ class RC6GeneratedScriptSession:
             raise ValueError("GeneratedScript.run must accept only self")
         self.generated_class = generated_class
         self.namespace = MappingProxyType(namespace)
+        from ast2python.artifacts.script_metadata import admitted_script_metadata
+        from pinelib.runtime.policies import RequestPolicy, RuntimePolicies
+        declaration = admitted_script_metadata(namespace, envelope).get("declaration", {}).get("arguments", {})
+        dynamic = declaration.get("dynamic_requests")
+        if dynamic is not None and type(dynamic) is not bool:
+            raise ValueError("dynamic_requests must be a compile-time bool")
+        policies = RuntimePolicies(request=RequestPolicy(dynamic_requests=(
+            "version_default" if dynamic is None else "enabled" if dynamic else "disabled")))
         self.session = RuntimeSession(
-            language,
+            language, policies,
             inputs=self.inputs,
             instrument=instrument,
             timeframe=timeframe,
+            request_provider=request_provider,
         )
         self.session.commit_full_identity = False
         if not isinstance(identity, IntentReplayIdentity):
@@ -439,7 +449,10 @@ def _session_from_request(
     base_currency = symbol.removesuffix(currency) or symbol
     if engine_config is None and "engine_config" in request:
         engine_config = resolve_engine_config(request["engine_config"], context)
+    from openpine.runtime.request_data import admit_request_data
+    provider = admit_request_data(request["source"], request.get("engine_config", {}), context)
     return RC6GeneratedScriptSession(
+        request_provider=provider,
         artifact={"generated_artifact": generated, "python_code": source},
         language=RuntimeLanguageContext(
             int(version_context["pine_version"]),

@@ -1,0 +1,336 @@
+"""Real Pine, request data, alignment and broker; only IPC is in-memory outside process cases."""
+
+from copy import deepcopy
+from dataclasses import asdict, replace
+from unittest.mock import Mock
+
+import pytest
+from openpine.runtime.request_data import build_request_manifest, request_provider_from_manifest
+from openpine.runtime.rc6_config import serialize_engine_config
+from openpine.runtime.rc6_worker_runtime import _engine_bar
+from pinelib.runtime.metadata import InstrumentContext
+from rc6_tests.test_rc6_bulk_execution import bulk_case as _base, execute_bulk
+from rc6_tests.test_rc6_lifecycle import compile_case, interactive
+from rc6_tests.test_rc6_marketdata_boundary import OPENED, bar
+
+ID = "binance:spot:SOLUSDT"
+
+
+def source_rows(
+    timeframe="5m", prices=(10, 20, 30), *, instrument_id=ID, tickerid=ID, pointvalue=1
+):
+    step = {"1m": 60000, "5m": 300000}[timeframe]
+    inst = InstrumentContext(
+        "SOLUSDT", tickerid, "BINANCE", "USDT", "SOL", "UTC", "crypto", 0.01, pointvalue
+    )
+    return dict(
+        instrument_id=instrument_id,
+        timeframe=timeframe,
+        market="spot",
+        instrument=asdict(inst),
+        bars=[
+            bar(
+                instrument_id=instrument_id,
+                timeframe=timeframe,
+                open_time_utc_ms=OPENED + i * step,
+                open=p,
+                high=p + 1,
+                low=p - 1,
+                close=p,
+            )
+            for i, p in enumerate(prices)
+        ],
+    )
+
+
+def case_for(body, *, version=6, chart_tf="1m", count=15, sources=None):
+    compiled, context, config = compile_case(
+        _base.__wrapped__(), f'//@version={version}\nstrategy("requests")\n' + body + "\n"
+    )
+    if chart_tf != "1m":
+        from openpine_contracts import seal_content_hash
+
+        context = seal_content_hash(
+            {**context, "timeframe": chart_tf, "series_id": ID + ":" + chart_tf},
+            schema_id="openpine.execution_context.v1",
+        )
+    step = 60000 if chart_tf == "1m" else 300000
+    config = replace(config, timeframe=chart_tf, end_time=OPENED + (count - 1) * step)
+    config.request_manifest = build_request_manifest(
+        context, [source_rows()] if sources is None else sources
+    )
+    return (compiled, context, config), [
+        bar(timeframe=chart_tf, open_time_utc_ms=OPENED + i * step) for i in range(count)
+    ]
+
+
+CASES = [
+    (f'x=request.security("{ID}","5",close)', "bar_index==9 and x==20", 9),
+    (f'x=request.security("{ID}","5",close[1])', "bar_index==9 and x==10", 9),
+    (f'x=request.security("{ID}","5",ta.sma(close,2))', "bar_index==9 and x==15", 9),
+    (
+        f'n=input.int(2)\nma=ta.sma(close,n)\nx=request.security("{ID}","5",ma)',
+        "bar_index==9 and x==15",
+        9,
+    ),
+    (f'[x,y]=request.security("{ID}","5",[close,open])', "bar_index==9 and x==20 and y==20", 9),
+    (
+        f'x=request.security("{ID}","5",close,lookahead=barmerge.lookahead_on)',
+        "bar_index==5 and x==20",
+        5,
+    ),
+    (f'x=request.security("{ID}","5",close,gaps=barmerge.gaps_on)', "bar_index==9 and x==20", 9),
+]
+
+
+@pytest.mark.parametrize("assignment,condition,expected_bar", CASES)
+def test_requested_expression_drives_matching_real_broker_trades(
+    monkeypatch, tmp_path, assignment, condition, expected_bar
+):
+    case, candles = case_for(
+        assignment + "\nif " + condition + '\n    strategy.entry("requested",strategy.long,qty=1)'
+    )
+    bulk = execute_bulk(monkeypatch, case, bars=candles)
+    result, tape, *_ = interactive(case, candles, tmp_path)
+    assert bulk["intent_tape"] == tape
+    assert [(e["command_id"], e["bar_index"]) for e in tape] == [("requested", expected_bar)]
+    assert len(result.open_trades) == 1 and result.open_trades[0].qty == 1
+    assert bulk["raw_result"]["final_equity"] == result.final_equity
+
+
+@pytest.mark.parametrize("version", range(1, 7))
+def test_historical_lookahead_default_is_version_exact(monkeypatch, version):
+    fn = "security" if version < 5 else "request.security"
+    expected = 0 if version <= 2 else 4
+    body = f'x={fn}("{ID}","5",close)\n'
+    body += (
+        f'if bar_index=={expected} and x==10\n    strategy.entry("version",strategy.long,qty=1)'
+        if version == 6
+        else 'strategy.entry("version",strategy.long,qty=1,when=x==10)'
+    )
+    case, candles = case_for(body, version=version)
+    result = execute_bulk(monkeypatch, case, bars=candles)
+    assert result["intent_tape"][0]["bar_index"] == expected
+    assert all(e["command_id"] == "version" for e in result["intent_tape"])
+
+
+def test_default_security_does_not_leak_future_values(monkeypatch):
+    case, candles = case_for(
+        f'x=request.security("{ID}","5",close)\nif x==30\n    strategy.entry("last",strategy.long,qty=1)'
+    )
+    result = execute_bulk(monkeypatch, case, bars=candles)
+    assert [e["bar_index"] for e in result["intent_tape"]] == [14]
+
+
+@pytest.mark.parametrize("tuple_result", [False, True])
+def test_lower_tf_returns_independent_arrays(monkeypatch, tmp_path, tuple_result):
+    lhs, expr = "[a,b]", "[close,open]" if tuple_result else "close"
+    if not tuple_result:
+        lhs = "a"
+    body = f'{lhs}=request.security_lower_tf("{ID}","1",{expr})\nif array.size(a)==5 and array.get(a,4)==10\n    strategy.entry("intrabars",strategy.long,qty=1)'
+    case, candles = case_for(
+        body, chart_tf="5m", count=3, sources=[source_rows("1m", tuple(range(1, 16)))]
+    )
+    bulk = execute_bulk(monkeypatch, case, bars=candles)
+    result, tape, *_ = interactive(case, candles, tmp_path)
+    assert bulk["intent_tape"] == tape
+    assert [(e["command_id"], e["bar_index"]) for e in tape] == [("intrabars", 1)]
+    assert result.open_trades[0].qty == 1
+
+
+@pytest.mark.parametrize("lookahead,expected", [("on", 1), ("off", 5)])
+def test_lower_security_chooses_first_or_last_intrabar(monkeypatch, lookahead, expected):
+    case, candles = case_for(
+        f'x=request.security("{ID}","1",close,lookahead=barmerge.lookahead_{lookahead})\nif bar_index==0 and x=={expected}\n    strategy.entry("edge",strategy.long,qty=1)',
+        chart_tf="5m",
+        count=3,
+        sources=[source_rows("1m", tuple(range(1, 16)))],
+    )
+    result = execute_bulk(monkeypatch, case, bars=candles)
+    assert [(e["command_id"], e["bar_index"]) for e in result["intent_tape"]] == [("edge", 0)]
+
+
+def test_source_metadata_not_chart_metadata(monkeypatch):
+    other = "binance:spot:BTCUSDT"
+    case, candles = case_for(
+        f'x=request.security("{other}","5",syminfo.pointvalue)\nif bar_index==4 and x==50\n    strategy.entry("metadata",strategy.long,qty=1)',
+        sources=[source_rows(instrument_id=other, tickerid=other, pointvalue=50)],
+    )
+    assert [
+        e["command_id"] for e in execute_bulk(monkeypatch, case, bars=candles)["intent_tape"]
+    ] == ["metadata"]
+
+
+def test_empty_symbol_period_inherit_chart(monkeypatch):
+    case, candles = case_for(
+        'x=request.security("","",close)\nif bar_index==1 and x==20\n    strategy.entry("inherit",strategy.long,qty=1)',
+        count=3,
+        sources=[source_rows("1m")],
+    )
+    assert [
+        e["command_id"] for e in execute_bulk(monkeypatch, case, bars=candles)["intent_tape"]
+    ] == ["inherit"]
+
+
+@pytest.mark.parametrize(
+    "fault", ["content", "context", "identity", "open", "order", "metadata", "duplicate"]
+)
+def test_invalid_request_dataset_rejected(fault):
+    from openpine_contracts import seal_content_hash
+
+    case, _ = case_for(f'x=request.security("{ID}","5",close)')
+    manifest = deepcopy(case[2].request_manifest)
+    if fault == "content":
+        manifest["datasets"][0]["bars"][0]["close"] = "12"
+    elif fault == "context":
+        manifest["execution_context_hash"] = "sha256:" + "e" * 64
+    elif fault == "identity":
+        manifest["datasets"][0]["instrument_id"] = "other"
+    elif fault == "open":
+        manifest["datasets"][0]["bars"][0] = bar(timeframe="5m", finality="OPEN")
+    elif fault == "order":
+        manifest["datasets"][0]["bars"].reverse()
+    elif fault == "metadata":
+        manifest["datasets"][0]["instrument"]["pointvalue"] = "NaN"
+    else:
+        manifest["datasets"].append(deepcopy(manifest["datasets"][0]))
+    if fault != "content":
+        manifest = seal_content_hash(manifest, schema_id="openpine.request_snapshots.v1")
+    with pytest.raises(ValueError):
+        request_provider_from_manifest(manifest, case[1])
+
+
+def test_request_data_is_bound_to_effective_config():
+    case, _ = case_for(f'x=request.security("{ID}","5",close)')
+    cfg = case[2]
+    before = serialize_engine_config(cfg, "strict_5x")
+    cfg.request_manifest = build_request_manifest(case[1], [source_rows(prices=(11, 21, 31))])
+    assert (
+        before["effective_config_hash"]
+        != serialize_engine_config(cfg, "strict_5x")["effective_config_hash"]
+    )
+
+
+@pytest.mark.parametrize("missing", [True, False])
+def test_invalid_or_missing_preload_rejected_before_staging(tmp_path, monkeypatch, missing):
+    from openpine.runtime import isolated_worker
+    from rc6_tests.test_rc6_worker_admission import _manifest
+
+    case, _ = case_for(f'x=request.security("{ID}","5",close)')
+    compiled, ctx, cfg = case
+    payload = serialize_engine_config(cfg, "strict_5x")
+    if missing:
+        payload.pop("request_manifest")
+    else:
+        payload["request_manifest"]["datasets"][0]["bars"][0]["close"] = "888"
+    stage = Mock(side_effect=AssertionError("unexpected staging"))
+    process = Mock(side_effect=AssertionError("unexpected process"))
+    monkeypatch.setattr(isolated_worker, "_stage_trusted_packages", stage)
+    monkeypatch.setattr(isolated_worker.subprocess, "Popen", process)
+    with pytest.raises(isolated_worker.IsolatedWorkerError):
+        isolated_worker.InteractiveWorkerSession(
+            compiled.python_code.encode(),
+            ctx,
+            ctx["instrument_id"],
+            _manifest(),
+            compiled.generated_artifact,
+            "sha256:" + "1" * 64,
+            tmp_path,
+            semantic_profile="strict_5x",
+            chart_timeframe="1m",
+            engine_config=payload,
+        )
+    stage.assert_not_called()
+    process.assert_not_called()
+
+
+def test_named_reordered_expression_runs_on_requested_data(monkeypatch):
+    case, candles = case_for(
+        f'x=request.security(expression=ta.sma(close,2),timeframe="5",symbol="{ID}")\nif bar_index==9 and x==15\n    strategy.entry("named",strategy.long,qty=1)'
+    )
+    assert [
+        e["command_id"] for e in execute_bulk(monkeypatch, case, bars=candles)["intent_tape"]
+    ] == ["named"]
+
+
+def test_na_delegated_position_drives_real_order(monkeypatch, tmp_path):
+    case, candles = case_for(
+        'if bar_index==0 and na(strategy.position_avg_price)\n    strategy.entry("flat-na",strategy.long,qty=1)',
+        count=3,
+    )
+    bulk = execute_bulk(monkeypatch, case, bars=candles)
+    result, tape, *_ = interactive(case, candles, tmp_path)
+    assert tape == bulk["intent_tape"]
+    assert [e["command_id"] for e in tape] == ["flat-na"] and result.open_trades[0].qty == 1
+
+
+def test_invalid_lower_timeframe_na_usable_from_pine(monkeypatch):
+    case, candles = case_for(
+        f'a=request.security_lower_tf("{ID}","5",close,ignore_invalid_timeframe=true)\nif bar_index==0 and na(a)\n    strategy.entry("invalid-na",strategy.long,qty=1)',
+        count=3,
+    )
+    assert [
+        e["command_id"] for e in execute_bulk(monkeypatch, case, bars=candles)["intent_tape"]
+    ] == ["invalid-na"]
+
+
+@pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
+@pytest.mark.parametrize("lower", [False, True])
+def test_real_worker_request_data_expression(tmp_path, mode, lower):
+    from openpine.runtime.isolated_run import run_isolated_artifact
+    from rc6_tests.test_rc6_worker_admission import _manifest
+
+    body = (
+        f'a=request.security_lower_tf("{ID}","1",close)\nif array.size(a)==5 and array.get(a,4)==10\n    strategy.entry("requested",strategy.long,qty=1)'
+        if lower
+        else f'x=request.security("{ID}","5",ta.sma(close,2))\nif bar_index==9 and x==15\n    strategy.entry("requested",strategy.long,qty=1)'
+    )
+    case, candles = case_for(
+        body,
+        chart_tf="5m" if lower else "1m",
+        count=3 if lower else 15,
+        sources=[source_rows("1m", tuple(range(1, 16)))] if lower else None,
+    )
+    compiled, context, config = case
+    for name, value in dict(
+        execution_context=context,
+        admitted_manifest=_manifest(),
+        instrument_id=ID,
+        generated_artifact=compiled.generated_artifact,
+        bar_envelopes=candles,
+        run_hash="sha256:" + "1" * 64,
+        protocol_artifact_dir=str(tmp_path / "protocol"),
+        isolated_protocol=mode,
+    ).items():
+        setattr(config, name, value)
+    result = run_isolated_artifact(
+        compiled.python_code.encode(),
+        bars=[_engine_bar(b) for b in candles],
+        config=config,
+        params={},
+    )
+    assert result["ok"] and result["bars_processed"] == len(candles)
+    assert [e["command_id"] for e in result["intent_tape"]] == ["requested"]
+    assert result["raw_result"].open_trades[0].qty == 1
+
+
+def test_input_override_is_evaluated_in_requested_context(monkeypatch):
+    case, candles = case_for(
+        f'n=input.int(2)\nx=request.security("{ID}","5",ta.sma(close,n))\n'
+        'if bar_index==14 and x==20\n    strategy.entry("override",strategy.long,qty=1)'
+    )
+    short = execute_bulk(monkeypatch, case, bars=candles, params={"n": 2})
+    long = execute_bulk(monkeypatch, case, bars=candles, params={"n": 3})
+    assert not short["intent_tape"]
+    assert [e["command_id"] for e in long["intent_tape"]] == ["override"]
+
+
+@pytest.mark.parametrize("gaps,expected", [("on", [4, 9]), ("off", [4, 5, 6, 7, 8, 9])])
+def test_sparse_alignment_distinguishes_gaps_from_carry_forward(monkeypatch, gaps, expected):
+    case, candles = case_for(
+        f'x=request.security("{ID}","5",close,gaps=barmerge.gaps_{gaps})\n'
+        "if not na(x)\n    strategy.cancel_all()",
+        count=10,
+    )
+    result = execute_bulk(monkeypatch, case, bars=candles)
+    assert [e["bar_index"] for e in result["intent_tape"]] == expected

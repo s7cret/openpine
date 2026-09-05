@@ -17,7 +17,7 @@ _LOCAL_ONLY = frozenset({
     "runtime", "realtime_ticks", "realtime_tick_provider", "bar_magnifier_bars",
     "tradingview_reference_path", "output_dir",
 })
-_EXTRA = frozenset({"exchange", "market_type"})
+_EXTRA = frozenset({"exchange", "market_type", "request_manifest"})
 _HASH_FIELD = "effective_config_hash"
 
 
