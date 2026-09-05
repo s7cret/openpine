@@ -2,7 +2,11 @@
 
 This is a partial implementation ledger, not acceptance of all 36 review tasks or TradingView 1:1 compatibility.
 
-## Latest verified runtime block
+## Local strategy host candidate (not published)
+
+[RC6_STRATEGY_HOST_BLOCK.md](RC6_STRATEGY_HOST_BLOCK.md) records the new OP-07/OP-20 code, exact local engine dependency and 1,782 passing local cases on Python 3.13.5. The write tool blocked publication. Seven real-process cases (including two new) still require CI; do not treat this candidate as the published or fully accepted release. The source pin file in this local candidate includes the unpublished engine commit.
+
+## Last published and CI-verified runtime block
 
 OpenPine runtime head: `ff718ec6ef5b78732abd463b0c4c64e2c8560e3d`.
 Integrated cleanup/progress CI `33982457446`: **2,048 tests passed on Python 3.11 and 2,048 on Python 3.13**, with zero failures, errors or skips. Changed-runtime lint, wheel and sdist builds passed. These are four complete library functional suites plus native/sandbox and selected OpenPine regressions, not every test of all seven libraries.

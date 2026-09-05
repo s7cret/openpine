@@ -1,0 +1,142 @@
+"""Preflight compiler-emitted strategy delegation without executing Python.
+
+Runs at compilation and again on the hash-bound module before worker startup.
+Only literal host identities and the canonical argument envelope are accepted.
+This is capability admission, not a replacement for the process sandbox.
+"""
+
+from __future__ import annotations
+
+import ast
+from collections.abc import Mapping
+import hashlib
+import json
+from typing import Any
+
+from backtest_engine.core.strategy_capabilities import (
+    DELEGATION_SCHEMA_ID,
+    OWNER,
+    STRATEGY_COMMANDS,
+    STRATEGY_CONSTANTS,
+    STRATEGY_STATE_VALUES,
+)
+
+
+class StrategyHostError(ValueError):
+    code = "RC6_HOST_CAPABILITY"
+
+
+def strategy_host_surface() -> dict[str, Any]:
+    """Derive supported names from the same registry the dispatcher consumes."""
+    body = {
+        "schema_id": "openpine.strategy_host.v1",
+        "owner": OWNER,
+        "delegation_schema_id": DELEGATION_SCHEMA_ID,
+        "commands": {
+            name: {
+                "parameters": list(spec.parameters),
+                "required": list(spec.required),
+                "unsupported_parameters": sorted(spec.unsupported_parameters),
+            }
+            for name, spec in STRATEGY_COMMANDS.items()
+        },
+        "constants": sorted(STRATEGY_CONSTANTS),
+        "state_values": sorted(STRATEGY_STATE_VALUES),
+        "constraints": [
+            "historical_tail_arguments_named",
+            "exit_explicit_open_entry_only",
+            "exit_v6_relative_absolute_pairs_unavailable",
+            "alerts_tape_only",
+        ],
+    }
+    encoded = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    return {**body, "content_hash": "sha256:" + hashlib.sha256(encoded).hexdigest()}
+
+
+def _literal(node: ast.AST | None, label: str) -> Any:
+    try:
+        return ast.literal_eval(node)
+    except (TypeError, ValueError, SyntaxError, RecursionError) as exc:
+        raise StrategyHostError(f"{label} must be compiler-emitted literal data") from exc
+
+
+def _arguments(node: ast.AST | None) -> tuple[list[ast.AST], dict[str, ast.AST]]:
+    if not isinstance(node, ast.Dict) or len(node.keys) != 2:
+        raise StrategyHostError("strategy argument envelope is malformed")
+    keys = [_literal(key, "argument envelope key") for key in node.keys]
+    if sorted(keys) != ["named", "positional"]:
+        raise StrategyHostError("strategy argument envelope requires positional and named")
+    entries = dict(zip(keys, node.values))
+    pos, named = entries["positional"], entries["named"]
+    if not isinstance(pos, (ast.List, ast.Tuple)) or not isinstance(named, ast.Dict):
+        raise StrategyHostError("strategy argument containers must be static")
+    names = [_literal(key, "strategy named argument") for key in named.keys]
+    if any(type(key) is not str for key in names) or len(set(names)) != len(names):
+        raise StrategyHostError("strategy named arguments contain duplicate/invalid keys")
+    return pos.elts, dict(zip(names, named.values))
+
+
+def _location(keywords: Mapping[str, ast.AST], fallback: int) -> str:
+    span = keywords.get("source_span")
+    if isinstance(span, ast.Call):
+        fields = {item.arg: item.value for item in span.keywords}
+        line = fields.get("start_line")
+        if isinstance(line, ast.Constant) and type(line.value) is int:
+            return f"Pine line {line.value}"
+    return f"generated line {fallback}"
+
+
+def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) -> dict[str, Any]:
+    if type(pine_version) is not int or not 1 <= pine_version <= 6:
+        raise StrategyHostError("exact Pine version 1..6 is required")
+    tree = source if isinstance(source, ast.Module) else ast.parse(source)
+    required = set()
+    for call in ast.walk(tree):
+        if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Attribute):
+            continue
+        operation = call.func.attr
+        if operation not in {"dispatch_delegated", "resolve_delegated_value"}:
+            continue
+        keywords = {item.arg: item.value for item in call.keywords}
+        owner = _literal(keywords.get("owner"), "delegated owner")
+        if owner != OWNER:
+            continue  # Other namespaces have their own admission boundaries.
+        where = _location(keywords, call.lineno)
+        capability = _literal(keywords.get("capability_id"), "strategy capability")
+        try:
+            if call.args or None in keywords or len(keywords) != len(call.keywords):
+                raise StrategyHostError("malformed delegated invocation")
+            if _literal(keywords.get("schema_id"), "strategy schema") != DELEGATION_SCHEMA_ID:
+                raise StrategyHostError("strategy delegation schema mismatch")
+            if type(capability) is not str:
+                raise StrategyHostError("strategy capability must be a string")
+            required.add(capability)
+            if operation == "resolve_delegated_value":
+                if capability not in STRATEGY_CONSTANTS | STRATEGY_STATE_VALUES:
+                    raise StrategyHostError("no bound state/constant handler")
+                continue
+            spec = STRATEGY_COMMANDS.get(capability)
+            if spec is None:
+                raise StrategyHostError("no bound command handler")
+            if (
+                _literal(keywords.get("symbol_id"), "strategy symbol"),
+                _literal(keywords.get("overload_id"), "strategy overload"),
+            ) != (spec.symbol_id, spec.overload_id):
+                raise StrategyHostError("strategy symbol/overload binding mismatch")
+            pos, named = _arguments(keywords.get("arguments"))
+            bound = spec.bind(pos, named, pine_version)
+            if capability == "strategy.exit":
+                entry = bound["from_entry"]
+                if isinstance(entry, ast.Constant) and (
+                    type(entry.value) is not str or not entry.value.strip()
+                ):
+                    raise StrategyHostError("exit requires a nonempty explicit from_entry")
+                if not set(bound).intersection({"profit", "limit", "loss", "stop"}):
+                    raise StrategyHostError("exit requires a supported active price leg")
+                if pine_version == 6 and any(
+                    a in bound and b in bound for a, b in (("profit", "limit"), ("loss", "stop"))
+                ):
+                    raise StrategyHostError("v6 relative/absolute exit pairs are not supported")
+        except (TypeError, ValueError) as exc:
+            raise StrategyHostError(f"{capability} at {where}: {exc}") from exc
+    return {"surface_hash": strategy_host_surface()["content_hash"], "required": sorted(required)}

@@ -127,10 +127,13 @@ class NativeRC6CompilerAdapter:
             generated_artifact = compiled.artifact.to_dict()
             validate_payload("openpine.generated_artifact.v3", generated_artifact)
             source_map = compiled.emitted.source_map.to_dict()
+            from openpine.runtime.strategy_host import validate_strategy_host
+            host_evidence = validate_strategy_host(compiled.emitted.code, generated_artifact["version_context"]["pine_version"])
             linked = bundle.get("linked_artifacts")
             linked_artifacts = linked if isinstance(linked, Mapping) else {}
             compile_meta.update(
                 {
+                    "strategy_host": host_evidence,
                     "bundle_hash": bundle["content_hash"],
                     "target_manifest_hash": target.content_hash,
                     "lowering_plan_hash": compiled.plan.content_hash,

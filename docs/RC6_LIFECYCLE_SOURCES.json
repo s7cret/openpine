@@ -4,6 +4,6 @@
   "optimizer": "5a62efc672a08e05f7443d3b678fa2595249935a",
   "ast2python": "f7429a36932323dc11313a88406338720278061f",
   "pinelib": "6637c18eeb2130690ae8c9388a2173afc534f215",
-  "backtest_engine": "48520cec7e2dafc5755a2e003b1ebf9f48b2163a",
+  "backtest_engine": "70dd7ccfecaabafa3000d359770305acb32c8b9e",
   "pine2ast": "892fee8c2b0443e702918248f2d2642c877723e7"
 }

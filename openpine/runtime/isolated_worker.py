@@ -514,6 +514,11 @@ def _validate_interactive_generated_artifact(
         or not isinstance(entrypoint, Mapping)
     ):
         raise IsolatedWorkerError("generated artifact admission identity mismatch")
+    from openpine.runtime.strategy_host import StrategyHostError, validate_strategy_host
+    try:
+        validate_strategy_host(source, generated_artifact["version_context"]["pine_version"])
+    except StrategyHostError as exc:
+        raise IsolatedWorkerError(f"{exc.code}: {exc}") from exc
     module_name = entrypoint.get("module")
     class_name = entrypoint.get("class")
     if not isinstance(module_name, str) or class_name != "GeneratedScript":
