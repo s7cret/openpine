@@ -9,14 +9,11 @@ import inspect
 import json
 import re
 import sys
-import time
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
-
-WORKER_STDIN_LIMIT_BYTES = 10_000_000
 
 from ast2python.artifacts import verify_generated_artifact_v3
 from backtest_engine import BacktestConfig
@@ -42,6 +39,8 @@ from openpine.runtime.rc6_marketdata import RC6BarAdmission, decode_canonical_ba
 from openpine.runtime.rc6_config import resolve_engine_config
 from openpine.runtime.inputs import resolve_inputs, input_evidence
 
+
+WORKER_STDIN_LIMIT_BYTES = 10_000_000
 
 _PROTOCOL_COMPONENT = {
     "HELLO": "openpine",
@@ -737,7 +736,6 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     if not initialized or not engine_bars:
         raise ValueError("bulk backtest did not receive bars")
 
-    last_progress = 0.0
     completed_bars = 0
     tape_events: list[dict[str, Any]] = []
 
@@ -796,22 +794,22 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         def restore_state(self, state: Any) -> None:
             del state
 
+    from openpine.runtime.progress import ProgressReporter
     total = len(engine_bars)
 
+    def send_progress(done: int, count: int) -> None:
+        json.dump({"kind": "BULK_PROGRESS", "bars_done": done, "bars_total": count}, sys.stdout)
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+    progress = ProgressReporter(send_progress, max_total=total)
+    progress.report(0, total)
+
     def on_bar_end(_bar: Any, index: int, _state: Any) -> None:
-        nonlocal last_progress, completed_bars
+        nonlocal completed_bars
         session.finalize_bar(index)
         completed_bars += 1
-        now = time.monotonic()
-        done = index + 1
-        if done == total or now - last_progress >= 1.0:
-            last_progress = now
-            json.dump(
-                {"kind": "BULK_PROGRESS", "bars_done": done, "bars_total": total},
-                sys.stdout,
-            )
-            sys.stdout.write("\n")
-            sys.stdout.flush()
+        progress.report(completed_bars, total)
 
     result = BacktestEngine(config).run(
         _BulkStrategy,
@@ -824,9 +822,10 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
             f"bulk engine did not complete: {getattr(result, 'status', None)!r}; "
             f"{getattr(result, 'errors', [])!r}"
         )
+    progress.report(completed_bars, total, force=True)
     raw = {
         "status": getattr(result, "status", "completed"),
-        "bars_processed": int(getattr(result, "bars_processed", 0) or 0),
+        "bars_processed": completed_bars,
         "initial_capital": getattr(result, "initial_capital", None),
         "final_equity": getattr(result, "final_equity", None),
         "net_profit": getattr(result, "net_profit", None),

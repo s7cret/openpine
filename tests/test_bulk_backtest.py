@@ -10,7 +10,7 @@ from openpine.runtime.isolated_worker import InteractiveWorkerSession, _BOOTSTRA
 
 def test_chunk_bulk_frames_cover_all_bars_under_line_limit() -> None:
     bars = [{"i": index, "pad": "x" * 400} for index in range(50)]
-    frames = chunk_bulk_frames(bars, max_bytes=8_000)
+    frames = [json.loads(row) for row in chunk_bulk_frames(bars, max_bytes=8_000)]
 
     assert frames
     assert all(frame["kind"] == "BULK_BARS" for frame in frames)
@@ -25,7 +25,7 @@ def test_chunk_bulk_frames_cover_all_bars_under_line_limit() -> None:
 
 def test_chunk_bulk_frames_default_limit_stays_under_worker_line_cap() -> None:
     bars = [{"i": index, "pad": "y" * 8_000} for index in range(20)]
-    frames = chunk_bulk_frames(bars)
+    frames = [json.loads(row) for row in chunk_bulk_frames(bars)]
     assert frames[-1]["last"] is True
     for frame in frames:
         encoded = json.dumps(frame, separators=(",", ":")).encode("utf-8")
@@ -34,7 +34,7 @@ def test_chunk_bulk_frames_default_limit_stays_under_worker_line_cap() -> None:
 
 def test_chunk_bulk_frames_rejects_a_bar_that_cannot_fit() -> None:
     with pytest.raises(ValueError, match="bulk bar exceeds"):
-        chunk_bulk_frames([{"pad": "z" * 2_000_000}], max_bytes=1_000)
+        list(chunk_bulk_frames([{"pad": "z" * 2_000_000}], max_bytes=1_000))
 
 
 def test_worker_bootstrap_dispatches_bulk_backtest_to_run_bulk() -> None:

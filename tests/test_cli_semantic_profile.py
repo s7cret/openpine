@@ -277,7 +277,7 @@ def test_cli_strategy_replay_forwards_confirmed_htf_bars(monkeypatch) -> None:
 
     class Adapter:
         def run_isolated(self, source, bars, config, **kwargs):
-            captured["htf_bars"] = kwargs.get("htf_bars")
+            captured.update(kwargs)
             return SimpleNamespace(status="ok", bars_processed=1, uses_backtest_engine=True)
 
     monkeypatch.setattr("openpine.registry.SQLiteStrategyRegistry", Registry)
@@ -289,6 +289,7 @@ def test_cli_strategy_replay_forwards_confirmed_htf_bars(monkeypatch) -> None:
         "_prepare_strategy_replay_inputs",
         lambda **kwargs: SimpleNamespace(
             strategy_class=b"STAMPED",
+            params={"period": 7},
             bars=[],
             config=object(),
             htf_bars=htf_bars,
@@ -300,6 +301,8 @@ def test_cli_strategy_replay_forwards_confirmed_htf_bars(monkeypatch) -> None:
     result = CliRunner().invoke(cli_main.cli, ["strategy", "replay", "s1"])
     assert result.exit_code == 0, result.output
     assert captured["htf_bars"] == htf_bars
+    assert captured["params"] == {"period": 7}
+    assert callable(captured["progress_callback"])
 
 
 def test_prepare_strategy_replay_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:

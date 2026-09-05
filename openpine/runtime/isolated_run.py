@@ -243,6 +243,7 @@ def run_isolated_artifact(
     resume_state: Any | None = None,
     htf_bars: list[dict[str, Any]] | None = None,
     params: dict[str, Any] | None = None,
+    progress_callback: Any | None = None,
 ) -> dict[str, Any]:
     from backtest_engine import BacktestCallbacks, BacktestEngine
 
@@ -282,11 +283,16 @@ def run_isolated_artifact(
                 params=params,
                 engine_config=engine_config,
             ) as session:
-                bulk = session.run_bars(envelopes, engine_config)
+                kwargs = {} if progress_callback is None else {"progress_callback": progress_callback}
+                bulk = session.run_bars(envelopes, engine_config, **kwargs)
         except IsolatedWorkerError as exc:
             raise IsolatedRunError(str(exc)) from exc
         return {
             "ok": True,
+            "bars_processed": bulk["bars_processed"],
+            "bars_received": bulk.get("bars_received", len(envelopes)),
+            "bars_excluded_open": bulk.get("bars_excluded_open", 0),
+            "result_manifest": bulk.get("result_manifest"),
             "intent_tape": bulk["intent_tape"],
             "score_ledger_hash": bulk["score_ledger_hash"],
             "raw_result": bulk["raw_result"],
@@ -300,6 +306,15 @@ def run_isolated_artifact(
     accumulated_events: list[dict[str, Any]] = []
     pending_batch: dict[str, Any] = {}
     received_intent_batches = 0
+    completed_bars = 0
+    from openpine.runtime.progress import ProgressReporter
+    progress = ProgressReporter(progress_callback, max_total=len(bars))
+    progress.report(0, len(bars))
+
+    def on_bar_end(_bar: Any, _index: int, _state: Any) -> None:
+        nonlocal completed_bars
+        completed_bars += 1
+        progress.report(completed_bars, len(bars))
 
     try:
         with InteractiveWorkerSession(
@@ -374,7 +389,7 @@ def run_isolated_artifact(
             result = BacktestEngine(config).run(
                 _InteractiveStrategy,
                 bars=bars,
-                callbacks=BacktestCallbacks(on_protocol_callback=handle_protocol_event),
+                callbacks=BacktestCallbacks(on_protocol_callback=handle_protocol_event, on_bar_end=on_bar_end),
                 resume_state=resume_state,
                 execution_context=getattr(config, "execution_context", None),
                 bar_envelopes=getattr(config, "bar_envelopes", None),
@@ -397,10 +412,13 @@ def run_isolated_artifact(
         tape_events = []
     else:
         raise IsolatedRunError("worker did not return an admitted intent batch")
+    progress.report(completed_bars, len(bars), force=True)
+    result.bars_processed = completed_bars
     for key, value in input_evidence(inputs).items():
         setattr(result, key, value)
     return {
         "ok": True,
+        "bars_processed": completed_bars,
         **input_evidence(inputs),
         "intent_tape": tape_events,
         "score_ledger_hash": result.score_ledger_hash,
@@ -435,6 +453,7 @@ def run_isolated_from_store(
     config: Any,
     htf_bars: list[dict[str, Any]] | None = None,
     params: dict[str, Any] | None = None,
+    progress_callback: Any | None = None,
 ) -> dict[str, Any]:
     return run_isolated_artifact(
         capture_generated_source(source_id, artifact_id),
@@ -442,6 +461,7 @@ def run_isolated_from_store(
         config=config,
         htf_bars=htf_bars,
         params=params,
+        **({} if progress_callback is None else {"progress_callback": progress_callback}),
     )
 
 

@@ -2918,6 +2918,8 @@ def strategy_replay(
                 prepared.bars,
                 prepared.config,
                 htf_bars=getattr(prepared, "htf_bars", None),
+                params=prepared.params,
+                progress_callback=_build_progress_callback(bars_total=len(prepared.bars), console=console),
             )
         except Exception as exc:
             registry.update_status(strategy_id, "error")

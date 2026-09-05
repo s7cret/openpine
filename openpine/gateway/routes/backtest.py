@@ -1295,8 +1295,15 @@ def _artifact_backtest_process_entry(out, spec: _ArtifactBacktestSpec, bars, con
                 symbol=str(spec.symbol),
                 timeframe=str(spec.timeframe),
             )
+        def progress(done: int, total: int) -> None:
+            try:
+                out.put_nowait(("progress", done, total))
+            except queue.Full:
+                pass  # UI telemetry must not stall the worker; the final result is reliable.
+
         result = BacktestEngineAdapter().run_isolated(
-            source, bars, config, htf_bars=htf_bars, params=params
+            source, bars, config, htf_bars=htf_bars, params=params,
+            progress_callback=progress,
         )
         _put_backtest_process_result(out, result)
     except BaseException as exc:

@@ -256,8 +256,13 @@ if bar_index > 0 and m > close[1] and strategy.position_size > 0
             bar_envelopes=rows, run_hash="sha256:"+"1"*64,
             protocol_artifact_dir=str(tmp_path / "protocol"), isolated_protocol=mode).items():
         setattr(config, name, value)
+    progress = []
     result = run_isolated_artifact(compiled.python_code.encode(), bars=[_engine_bar(row) for row in rows],
-                                   config=config, params={})
+                                   config=config, params={}, progress_callback=lambda *x: progress.append(x))
+    assert progress[0] == (0, 4) and progress[-1] == (4, 4)
+    assert result["bars_processed"] == result["raw_result"].bars_processed == 4
+    if mode == "bulk_backtest":
+        assert result["result_manifest"]["identity"]["execution_context_hash"] == context["content_hash"]
     assert result["ok"] is True
     assert result["raw_result"].status == "completed"
     assert result["raw_result"].total_trades == 1

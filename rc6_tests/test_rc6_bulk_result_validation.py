@@ -29,7 +29,7 @@ def parent_session(payload, case):
     session.protocol = SimpleNamespace(execution_context=context)
     from pinelib.input import InputRegistry
     session.input_registry = InputRegistry()
-    session._write_json_line = Mock()
+    session._write_serialized_json_line = Mock()
     from openpine.runtime.bulk_result import encode_result, result_identity
     from openpine.runtime.rc6_config import serialize_engine_config, resolve_engine_config
     from openpine.runtime.inputs import input_evidence
@@ -135,3 +135,35 @@ def test_parent_rejects_eof_before_result_manifest_and_restores_timeout(monkeypa
     with pytest.raises(IsolatedWorkerError, match="stdout closed"):
         session.run_bars([bar(open_time_utc_ms=OPENED + i * 60_000) for i in range(3)], session.engine_config)
     assert session.timeout_s == 5
+
+
+@pytest.mark.parametrize("fault", ["regression", "changed_total", "bool", "beyond_total", "unknown_field", "false_completion"])
+def test_parent_rejects_untrusted_progress(monkeypatch, bulk_case, fault):
+    payload = execute_bulk(monkeypatch, bulk_case)
+    session = parent_session(payload, bulk_case)
+    frames = list(session._read_message.side_effect)
+    messages = [{"kind": "BULK_PROGRESS", "bars_done": 1, "bars_total": 3}]
+    second = {"kind": "BULK_PROGRESS", "bars_done": 2, "bars_total": 3}
+    if fault == "regression": second["bars_done"] = 0
+    elif fault == "changed_total": second["bars_total"] = 2
+    elif fault == "bool": second["bars_done"] = True
+    elif fault == "beyond_total": second["bars_done"] = 4
+    elif fault == "unknown_field": second["surprise"] = True
+    else:
+        messages[0]["bars_total"] = 2
+        second["bars_total"] = 2
+    session._read_message = Mock(side_effect=[*messages, second, *frames])
+    with pytest.raises(IsolatedWorkerError, match="progress"):
+        session.run_bars([bar(open_time_utc_ms=OPENED+i*60_000) for i in range(3)], session.engine_config)
+
+
+def test_parent_forwards_verified_progress_and_final_count(monkeypatch, bulk_case):
+    payload = execute_bulk(monkeypatch, bulk_case)
+    session = parent_session(payload, bulk_case)
+    frames = list(session._read_message.side_effect)
+    session._read_message = Mock(side_effect=[{"kind":"BULK_PROGRESS", "bars_done":0,"bars_total":3}, *frames])
+    events = []
+    result = session.run_bars([bar(open_time_utc_ms=OPENED+i*60_000) for i in range(3)],
+                              session.engine_config, progress_callback=lambda *x: events.append(x))
+    assert events == [(0,3),(3,3)]
+    assert result["bars_processed"] == result["raw_result"].bars_processed == 3

@@ -68,6 +68,7 @@ class BacktestRunResult:
     uses_backtest_engine: bool = True
     process_next_bar_available: bool = False
     resume_state: Any | None = None
+    result_manifest: dict[str, Any] | None = None
 
 
 class BacktestArtifactError(RuntimeError):
@@ -230,6 +231,7 @@ class BacktestEngineAdapter:
         resume_state: Any | None = None,
         htf_bars: list[dict[str, Any]] | None = None,
         params: dict[str, Any] | None = None,
+        progress_callback: Any | None = None,
     ) -> BacktestRunResult:
         from openpine.runtime.isolated_run import IsolatedRunError, run_isolated_artifact
 
@@ -237,30 +239,23 @@ class BacktestEngineAdapter:
             raise IsolatedRunError("semantic_profile is required")
         engine_bars = [self._to_engine_bar(bar) for bar in bars]
         engine_config = self._to_engine_config(config)
-        if params is None:
-            isolated = run_isolated_artifact(
-                source,
-                bars=engine_bars,
-                config=engine_config,
-                resume_state=resume_state,
-                htf_bars=htf_bars,
-            )
-        else:
-            isolated = run_isolated_artifact(
-                source,
-                bars=engine_bars,
-                config=engine_config,
-                resume_state=resume_state,
-                htf_bars=htf_bars,
-                params=params,
-            )
+        kwargs = {}
+        if params is not None:
+            kwargs["params"] = params
+        if progress_callback is not None:
+            kwargs["progress_callback"] = progress_callback
+        isolated = run_isolated_artifact(
+            source, bars=engine_bars, config=engine_config,
+            resume_state=resume_state, htf_bars=htf_bars, **kwargs,
+        )
         raw = isolated["raw_result"]
         return BacktestRunResult(
             status=getattr(raw, "status", "ok"),
-            bars_processed=len(engine_bars),
+            bars_processed=isolated["bars_processed"],
             raw_result=raw,
             process_next_bar_available=self.process_next_bar_available,
             resume_state=getattr(raw, "resume_state", None),
+            result_manifest=isolated.get("result_manifest"),
         )
 
     @staticmethod

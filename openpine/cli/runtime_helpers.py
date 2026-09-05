@@ -1610,7 +1610,8 @@ def _run_strategy_backtest_adapter(
     adapter = adapter_cls()
     if isinstance(selected_strategy_class, (bytes, bytearray)):
         result = adapter.run_isolated(
-            bytes(selected_strategy_class), bars, config, htf_bars=htf_bars
+            bytes(selected_strategy_class), bars, config, htf_bars=htf_bars, params=params,
+            progress_callback=_build_progress_callback(bars_total=len(bars), console=console),
         )
     else:
         result = adapter.run(

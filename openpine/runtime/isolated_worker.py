@@ -688,9 +688,14 @@ class InteractiveWorkerSession:
         _close_process_pipes(self.proc)
 
     def _write_json_line(self, payload: dict[str, Any]) -> None:
+        self._write_serialized_json_line(json.dumps(payload, separators=(",", ":")))
+
+    def _write_serialized_json_line(self, payload: str) -> None:
         if self._closed or self.proc.stdin is None:
             raise IsolatedWorkerError("interactive worker is closed")
-        encoded = json.dumps(payload, separators=(",", ":")) + "\n"
+        if not isinstance(payload, str) or "\n" in payload or "\r" in payload:
+            raise IsolatedWorkerError("serialized worker message must be one JSON line")
+        encoded = payload + "\n"
         encoded_size = len(encoded.encode("utf-8"))
         if encoded_size > WORKER_LINE_LIMIT_BYTES:
             raise IsolatedWorkerError("interactive message exceeds size limit")

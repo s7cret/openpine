@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from types import SimpleNamespace
 from typing import Any
 
 from openpine.runtime.bulk_result import BulkResultError, BulkResultReceiver, result_identity
 from openpine.runtime.rc6_config import resolve_engine_config
+from openpine.runtime.progress import ProgressError, ProgressReporter
 from openpine.runtime.isolated_worker import InteractiveWorkerSession, IsolatedWorkerError
 
 BULK_MESSAGE_LIMIT_BYTES = 900_000
@@ -19,28 +20,30 @@ def chunk_bulk_frames(
     bars: Sequence[Mapping[str, Any]],
     *,
     max_bytes: int = BULK_MESSAGE_LIMIT_BYTES,
-) -> list[dict[str, Any]]:
-    """Split sealed bar envelopes into stdin frames under the worker line cap."""
+) -> Iterator[str]:
+    """Serialize each envelope once and yield bounded JSON lines lazily.
 
-    if max_bytes < 64:
+    ASCII encoding makes the character count the byte count. The trusted sender
+    writes these already serialized frames without a second full JSON traversal.
+    """
+    if type(max_bytes) is not int or max_bytes < 64:
         raise ValueError("bulk bar exceeds message limit")
-    frames: list[dict[str, Any]] = []
-    current: list[Mapping[str, Any]] = []
+    prefix, suffix = '{"kind":"BULK_BARS","bars":[', '],"last":false}'
+    overhead = len(prefix) + len(suffix)
+    current: list[str] = []
     current_size = 0
-    overhead = len('{"kind":"BULK_BARS","bars":[],"last":false}')
     for bar in bars:
-        encoded = json.dumps(bar, separators=(",", ":")).encode("utf-8")
-        piece = len(encoded) + 1
-        if piece + overhead > max_bytes:
+        encoded = json.dumps(bar, separators=(",", ":"), ensure_ascii=True, allow_nan=False)
+        if len(encoded) + overhead > max_bytes:
             raise ValueError("bulk bar exceeds message limit")
+        piece = len(encoded) + bool(current)
         if current and current_size + piece + overhead > max_bytes:
-            frames.append({"kind": "BULK_BARS", "bars": current, "last": False})
-            current = []
-            current_size = 0
-        current.append(bar)
+            yield prefix + ",".join(current) + suffix
+            current, current_size = [], 0
+            piece = len(encoded)
+        current.append(encoded)
         current_size += piece
-    frames.append({"kind": "BULK_BARS", "bars": current, "last": True})
-    return frames
+    yield prefix + ",".join(current) + '],"last":true}'
 
 
 def hydrate_bulk_raw_result(payload: Mapping[str, Any]) -> Any:
@@ -71,18 +74,19 @@ class BulkWorkerSession(InteractiveWorkerSession):
         self,
         envelopes: Sequence[Mapping[str, Any]],
         engine_config: Mapping[str, Any],
+        *, progress_callback: Callable[[int, int], None] | None = None,
     ) -> dict[str, Any]:
         if not envelopes:
             raise IsolatedWorkerError("bulk backtest requires canonical bar envelopes")
-        frames = chunk_bulk_frames(envelopes)
-        for frame in frames:
-            self._write_json_line(frame)
         from openpine.runtime.inputs import input_evidence
         expected_inputs = input_evidence(self.input_registry)
         config = resolve_engine_config(engine_config, self.protocol.execution_context)
         identity = result_identity(self.protocol.execution_context, {
             **expected_inputs, "effective_config_hash": config.effective_config_hash,
         })
+        progress = ProgressReporter(progress_callback, max_total=len(envelopes))
+        for frame in chunk_bulk_frames(envelopes):
+            self._write_serialized_json_line(frame)
         previous_timeout = self.timeout_s
         self.timeout_s = self.bulk_idle_timeout_s
         try:
@@ -92,12 +96,15 @@ class BulkWorkerSession(InteractiveWorkerSession):
                     if message.get("kind") == "BULK_PROGRESS":
                         if receiver.chunks:
                             raise IsolatedWorkerError("progress after result transmission began")
+                        if set(message) != {"kind", "bars_done", "bars_total"}:
+                            raise IsolatedWorkerError("invalid bulk progress frame")
+                        progress.report(message["bars_done"], message["bars_total"])
                         continue
                     payload = receiver.accept(message)
                     if payload is not None:
                         manifest = receiver.manifest
                         break
-        except BulkResultError as exc:
+        except (BulkResultError, ProgressError) as exc:
             raise IsolatedWorkerError(str(exc)) from exc
         finally:
             self.timeout_s = previous_timeout
@@ -116,6 +123,8 @@ class BulkWorkerSession(InteractiveWorkerSession):
                 or received != len(envelopes) or not 0 <= excluded <= received
                 or not 0 <= processed <= received - excluded):
             raise IsolatedWorkerError("bulk result bar counts are invalid")
+        if progress.total is not None and (progress.total != received - excluded or progress.done > processed):
+            raise IsolatedWorkerError("bulk progress differs from the completed result")
         intent_tape = payload.get("intent_tape")
         if not isinstance(intent_tape, list):
             raise IsolatedWorkerError("bulk result intent tape is invalid")
@@ -130,6 +139,8 @@ class BulkWorkerSession(InteractiveWorkerSession):
             if any(any(event.get(key) != context[key] for key in fields)
                    or event.get("stack_id") != context["stack_manifest_hash"] for event in intent_tape):
                 raise IsolatedWorkerError("bulk result intent identity mismatch")
+        # Execution completion is reported only after the complete result checks.
+        progress.report(processed, received - excluded, force=True)
         return {
             "ok": True,
             "bars_processed": processed,
