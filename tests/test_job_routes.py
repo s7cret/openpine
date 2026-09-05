@@ -119,14 +119,19 @@ def test_live_start_without_typed_confirm_is_400(monkeypatch) -> None:
     assert denied.status_code == 400
 
 
-def test_live_and_paper_start_require_semantic_profile(monkeypatch) -> None:
+def test_live_and_paper_start_use_stored_semantic_profile(monkeypatch) -> None:
     import time
 
     from openpine.gateway.routes.trading import router as trading_router
     from openpine.live_preview import make_live_preview
 
     monkeypatch.setattr("openpine.live_release_gate.LIVE_RELEASE_ENABLED", True)
-    strategy = SimpleNamespace(status="paused", archived=False, mode="paper")
+    strategy = SimpleNamespace(
+        status="paused",
+        archived=False,
+        mode="paper",
+        semantic_profile="strict_5x",
+    )
     registry = SimpleNamespace(
         get_strategy=lambda strategy_id: strategy,
         activate_strategy=lambda *args, **kwargs: None,
@@ -149,14 +154,12 @@ def test_live_and_paper_start_require_semantic_profile(monkeypatch) -> None:
         "idempotency_key": "live-s1",
         "expires_at_utc_ms": preview["expires_at_utc_ms"],
     }
-    missing = client.post("/live/start", json=live_payload)
-    assert missing.status_code == 403
-    assert "semantic profile" in missing.json()["detail"].lower()
+    automatic = client.post("/live/start", json=live_payload)
+    assert automatic.status_code == 200
+    assert automatic.json()["mode"] == "live"
     legacy = client.post("/live/start", json={**live_payload, "semantic_profile": "legacy_4x"})
     assert legacy.status_code == 403
-    assert "legacy" in legacy.json()["detail"].lower()
-    paper_missing = client.post("/paper/start", json={"strategy_id": "s1"})
-    assert paper_missing.status_code == 403
-    ok = client.post("/live/start", json={**live_payload, "semantic_profile": "strict_5x"})
-    assert ok.status_code == 200
-    assert ok.json()["mode"] == "live"
+    assert "immutable" in legacy.json()["detail"].lower()
+    paper = client.post("/paper/start", json={"strategy_id": "s1"})
+    assert paper.status_code == 200
+    assert paper.json()["mode"] == "paper"

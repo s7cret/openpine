@@ -23,7 +23,7 @@ from typing import Annotated, Any, cast
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 
 from openpine._compat import structlog
-from openpine.admission import admit_semantic_profile
+from openpine.admission import admit_strategy_semantic_profile
 from openpine.exchange_metadata import (
     default_price_tick,
     default_qty_rounding_mode,
@@ -2164,9 +2164,10 @@ async def _run_backtest_background(
             collect_events=True,
             collect_order_lifecycle=True,
             capture_plots=capture_plots,
-            semantic_profile=admit_semantic_profile(
-                profile=semantic_profile or getattr(strategy, "semantic_profile", None),
+            semantic_profile=admit_strategy_semantic_profile(
+                strategy,
                 source="backtest",
+                requested_profile=semantic_profile,
             ).value,
         )
 
@@ -2417,11 +2418,10 @@ async def run_backtest(
         )
 
     try:
-        admitted_profile = admit_semantic_profile(
-            profile=getattr(body, "semantic_profile", None)
-            or getattr(strategy, "semantic_profile", None),
+        admitted_profile = admit_strategy_semantic_profile(
+            strategy,
             source="backtest",
-            allow_legacy=bool(getattr(body, "allow_legacy", False)),
+            requested_profile=getattr(body, "semantic_profile", None),
         )
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc

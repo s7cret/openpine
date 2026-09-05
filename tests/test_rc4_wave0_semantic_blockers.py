@@ -201,12 +201,6 @@ def test_p0_008_paper_start_requires_router_before_running_mutation(
             mutations.append((strategy_id, status, mode))
 
     monkeypatch.setattr(trading, "require_http_admit", lambda state, mode: None)
-    monkeypatch.setattr(
-        trading,
-        "_require_semantic_profile",
-        lambda **kwargs: SimpleNamespace(value="strict_5x"),
-    )
-    monkeypatch.setattr(trading, "_stamp_strategy_profile", lambda *args, **kwargs: None)
     monkeypatch.setattr(trading, "_stamp_strategy_mtf", lambda *args, **kwargs: None)
     monkeypatch.setattr(trading, "guarded_strategy_activation", lambda state: nullcontext())
     state = SimpleNamespace(strategy_registry=Registry(), execution_router=None)

@@ -1187,7 +1187,11 @@ def test_registry_patch_rolls_back_every_field_on_database_failure(tmp_path: Pat
 async def test_paper_start_uses_single_atomic_registry_activation() -> None:
     calls: list[tuple[str, str | None, str | None]] = []
     events: list[str] = []
-    strategy = SimpleNamespace(strategy_id="s1", status="paused")
+    strategy = SimpleNamespace(
+        strategy_id="s1",
+        status="paused",
+        semantic_profile="strict_5x",
+    )
 
     class Registry:
         def get_strategy(self, _strategy_id):
@@ -1217,7 +1221,7 @@ async def test_paper_start_uses_single_atomic_registry_activation() -> None:
     )
 
     result = await trading.start_paper(
-        PaperStartRequest(strategy_id="s1", semantic_profile="strict_5x"), state=cast(Any, state)
+        PaperStartRequest(strategy_id="s1"), state=cast(Any, state)
     )
 
     assert result.status == "running"

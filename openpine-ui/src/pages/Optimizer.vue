@@ -35,8 +35,6 @@ const fromTime = ref('')
 const toTime = ref('')
 const trials = ref(10)
 const objective = ref('net_profit')
-const semanticProfile = ref('')
-const allowLegacy = ref(false)
 const error = ref('')
 const result = ref<OptimizerSearchResult | null>(null)
 const running = ref(false)
@@ -73,10 +71,6 @@ function optimizerValidationMessage(): string {
     ) {
       return t('optimizer.parameterRangeInvalid')
     }
-  }
-  if (!semanticProfile.value) return t('optimizer.semanticProfileRequired')
-  if (semanticProfile.value === 'legacy_4x' && !allowLegacy.value) {
-    return t('optimizer.allowLegacyRequired')
   }
   const mtfError = mtfSeriesValidationKey(mtfSeries.value)
   if (mtfError) return t(mtfError)
@@ -127,8 +121,6 @@ async function runSearch() {
       trials: trials.value,
       objective: objective.value,
       parameters,
-      semantic_profile: semanticProfile.value,
-      allow_legacy: allowLegacy.value,
       mtf_series: toMtfSeriesRequests(mtfSeries.value),
     })
     result.value = data
@@ -175,25 +167,7 @@ async function runSearch() {
             <option value="max_drawdown_percent">max_drawdown_percent</option>
           </select>
         </label>
-        <label class="space-y-1 text-sm text-gray-300" for="optimizer-semantic-profile">
-          <span>{{ t('optimizer.semanticProfile') }}</span>
-          <select
-            id="optimizer-semantic-profile"
-            v-model="semanticProfile"
-            data-testid="optimizer-semantic-profile"
-            class="w-full rounded bg-dark-700 px-2 py-1 text-gray-100"
-          >
-            <option value="">{{ t('optimizer.semanticProfileRequired') }}</option>
-            <option value="strict_5x">strict_5x</option>
-            <option value="legacy_4x">legacy_4x</option>
-          </select>
-        </label>
       </div>
-
-      <label v-if="semanticProfile === 'legacy_4x'" class="text-sm text-gray-300" for="optimizer-allow-legacy">
-        <input id="optimizer-allow-legacy" v-model="allowLegacy" type="checkbox" data-testid="optimizer-allow-legacy" />
-        {{ t('optimizer.allowLegacy') }}
-      </label>
 
       <div class="space-y-2">
         <div class="flex items-center justify-between gap-3">

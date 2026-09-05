@@ -117,6 +117,7 @@ _DATA_SUMMARY_CACHE_TTL_SECONDS = 10.0
 _DATA_SUMMARY_CACHE_LOCK = threading.Lock()
 _DATA_SUMMARY_CACHE: tuple[tuple[str, str, str, str], float, dict[str, object]] | None = None
 _DATA_SUMMARY_REFRESHING: set[tuple[str, str, str, str]] = set()
+_DATA_SUMMARY_GENERATIONS: dict[tuple[str, str, str, str], int] = {}
 
 
 def _strategy_market_type_payload(market_type_id: str) -> dict[str, object]:
@@ -622,6 +623,9 @@ async def delete_data_series(
     deleted_files = _delete_persistent_cache_series(series)
     deleted_marketdata = _delete_marketdata_segment_series(state, series)
     deleted_manifests = _delete_candle_manifest_series(state, series)
+    _invalidate_data_summary_cache(state)
+    if series_id in _series_by_id(state):
+        raise HTTPException(409, f"Data series still present after delete: {series_id}")
     return {
         "status": "deleted",
         "series_id": series_id,
@@ -1698,6 +1702,7 @@ def _data_summary_cached(state: GatewayState) -> dict[str, object]:
     key = _data_summary_cache_key(state)
     now = time.monotonic()
     refresh_stale = False
+    refresh_generation = 0
     with _DATA_SUMMARY_CACHE_LOCK:
         if _DATA_SUMMARY_CACHE is not None:
             cached_key, cached_at, cached_payload = _DATA_SUMMARY_CACHE
@@ -1707,6 +1712,7 @@ def _data_summary_cached(state: GatewayState) -> dict[str, object]:
                 if key not in _DATA_SUMMARY_REFRESHING:
                     _DATA_SUMMARY_REFRESHING.add(key)
                     refresh_stale = True
+                    refresh_generation = _DATA_SUMMARY_GENERATIONS.get(key, 0)
                 stale_payload = cached_payload
             else:
                 stale_payload = None
@@ -1719,7 +1725,7 @@ def _data_summary_cached(state: GatewayState) -> dict[str, object]:
     if refresh_stale:
         threading.Thread(
             target=_refresh_data_summary_cache,
-            args=(state, key),
+            args=(state, key, refresh_generation),
             name="openpine-data-summary-refresh",
             daemon=True,
         ).start()
@@ -1727,7 +1733,9 @@ def _data_summary_cached(state: GatewayState) -> dict[str, object]:
 
 
 def _refresh_data_summary_cache(
-    state: GatewayState, key: tuple[str, str, str, str]
+    state: GatewayState,
+    key: tuple[str, str, str, str],
+    generation: int | None = None,
 ) -> None:
     global _DATA_SUMMARY_CACHE
 
@@ -1736,8 +1744,20 @@ def _refresh_data_summary_cache(
     except Exception:
         payload = None
     with _DATA_SUMMARY_CACHE_LOCK:
-        if payload is not None:
+        current_generation = _DATA_SUMMARY_GENERATIONS.get(key, 0)
+        if payload is not None and (generation is None or generation == current_generation):
             _DATA_SUMMARY_CACHE = (key, time.monotonic(), payload)
+        _DATA_SUMMARY_REFRESHING.discard(key)
+
+
+def _invalidate_data_summary_cache(state: GatewayState) -> None:
+    global _DATA_SUMMARY_CACHE
+
+    key = _data_summary_cache_key(state)
+    with _DATA_SUMMARY_CACHE_LOCK:
+        _DATA_SUMMARY_GENERATIONS[key] = _DATA_SUMMARY_GENERATIONS.get(key, 0) + 1
+        if _DATA_SUMMARY_CACHE is not None and _DATA_SUMMARY_CACHE[0] == key:
+            _DATA_SUMMARY_CACHE = None
         _DATA_SUMMARY_REFRESHING.discard(key)
 
 
@@ -1968,6 +1988,38 @@ def _series_entry(
     }
     groups[group_key] = entry
     return entry
+
+
+def _canonical_market_type(value: object) -> str:
+    normalized = str(value or "").strip().lower()
+    return _MARKET_TYPE_MAP.get(normalized, normalized)
+
+
+def _market_storage_aliases(value: object) -> tuple[str, ...]:
+    canonical = _canonical_market_type(value)
+    aliases = {canonical}
+    aliases.update(alias for alias, target in _MARKET_TYPE_MAP.items() if target == canonical)
+    return tuple(sorted(aliases))
+
+
+def _source_kind_price_type(value: object) -> str:
+    source_kind = str(value or "trade_kline").strip().lower()
+    return "trade" if "trade" in source_kind else source_kind
+
+
+def _source_kind_matches_price_type(source_kind: object, price_type: object) -> bool:
+    source_value = _source_kind_price_type(source_kind)
+    price_value = str(price_type or "trade").strip().lower()
+    return source_value == price_value or source_value.removesuffix("_kline") == price_value.removesuffix(
+        "_kline"
+    )
+
+
+def _default_source_kind(price_type: object) -> str:
+    value = str(price_type or "trade").strip().lower()
+    if value == "trade":
+        return "trade_kline"
+    return value if value.endswith("_kline") else f"{value}_kline"
 
 
 def _extend_series(
@@ -2258,6 +2310,8 @@ def _orders_summary(state: GatewayState) -> dict[str, object]:
 
 
 def _delete_persistent_cache_series(series: dict[str, object]) -> int:
+    if str(series.get("price_type") or "trade").strip().lower() != "trade":
+        return 0
     deleted = 0
     trash_dir = (
         Path.cwd() / ".openpine" / "trash" / f"data-cache-{int(time.time() * 1000)}"
@@ -2269,8 +2323,8 @@ def _delete_persistent_cache_series(series: dict[str, object]) -> int:
             instrument = key.get("instrument") or {}
             if (
                 str(instrument.get("exchange", "")).lower() == str(series["exchange"])
-                and str(instrument.get("market", "")).lower()
-                == str(series["market_type"])
+                and _canonical_market_type(instrument.get("market"))
+                == _canonical_market_type(series["market_type"])
                 and str(instrument.get("symbol", "")).upper() == str(series["symbol"])
                 and str(key.get("timeframe", "")) == str(series["timeframe"])
             ):
@@ -2290,23 +2344,47 @@ def _delete_marketdata_segment_series(
     root = _marketdata_store_root(state)
     index_path = root / "index.sqlite"
     exchange = str(series["exchange"]).lower()
-    market = str(series["market_type"]).lower()
+    markets = _market_storage_aliases(series["market_type"])
+    canonical_market = _canonical_market_type(series["market_type"])
+    price_type = str(series.get("price_type") or "trade").strip().lower()
     symbol = str(series["symbol"]).upper()
     timeframe = str(series["timeframe"])
-    source_kinds = series.get("source_kinds") or ["trade_kline"]
+    raw_source_kinds = series.get("source_kinds") or [_default_source_kind(price_type)]
+    source_kinds = (
+        {str(item) for item in raw_source_kinds}
+        if isinstance(raw_source_kinds, (list, tuple, set))
+        else {str(raw_source_kinds)}
+    )
     deleted = 0
 
     if index_path.exists():
         try:
             with closing(sqlite3.connect(index_path)) as db, db:
-                db.execute(
+                rows = db.execute(
                     """
-                    DELETE FROM marketdata_segments
-                    WHERE lower(exchange) = ? AND lower(market) = ? AND upper(symbol) = ? AND timeframe = ?
+                    SELECT id, lower(market), source_kind
+                    FROM marketdata_segments
+                    WHERE lower(exchange) = ? AND upper(symbol) = ? AND timeframe = ?
                     """,
-                    (exchange, market, symbol, timeframe),
-                )
-                deleted += db.total_changes
+                    (exchange, symbol, timeframe),
+                ).fetchall()
+                matching_rows = [
+                    row
+                    for row in rows
+                    if _canonical_market_type(row[1]) == canonical_market
+                    and _source_kind_matches_price_type(row[2], price_type)
+                ]
+                if matching_rows:
+                    ids = [int(row[0]) for row in matching_rows]
+                    source_kinds.update(
+                        str(row[2] or "trade_kline") for row in matching_rows
+                    )
+                    placeholders = ",".join("?" for _ in ids)
+                    cursor = db.execute(
+                        f"DELETE FROM marketdata_segments WHERE id IN ({placeholders})",
+                        tuple(ids),
+                    )
+                    deleted += max(0, int(cursor.rowcount))
         except Exception as exc:
             log.warning(
                 "marketdata_store_delete_index_error",
@@ -2321,39 +2399,45 @@ def _delete_marketdata_segment_series(
         / f"marketdata-store-{int(time.time() * 1000)}"
     )
     root_resolved = root.resolve()
-    for source_kind in source_kinds:
-        path = _marketdata_segment_dir(
-            root, exchange, market, symbol, timeframe, str(source_kind)
-        )
-        if not _path_is_under(path.resolve(strict=False), root_resolved):
-            log.warning(
-                "unsafe_marketdata_segment_path",
-                path=str(path),
-                allowed_root=str(root_resolved),
+    for market in markets:
+        for source_kind in source_kinds:
+            path = _marketdata_segment_dir(
+                root, exchange, market, symbol, timeframe, str(source_kind)
             )
-            continue
-        if not path.exists():
-            continue
-        trash_dir.mkdir(parents=True, exist_ok=True)
-        target = trash_dir / path.name
-        if target.exists():
-            target = trash_dir / f"{path.name}-{int(time.time() * 1000)}"
-        shutil.move(str(path), str(target))
-        deleted += 1
+            if not _path_is_under(path.resolve(strict=False), root_resolved):
+                log.warning(
+                    "unsafe_marketdata_segment_path",
+                    path=str(path),
+                    allowed_root=str(root_resolved),
+                )
+                continue
+            if not path.exists():
+                continue
+            trash_dir.mkdir(parents=True, exist_ok=True)
+            target = trash_dir / path.name
+            if target.exists():
+                target = trash_dir / f"{path.name}-{int(time.time() * 1000)}"
+            if target.exists():
+                target = trash_dir / f"market={market}-{path.name}-{int(time.time() * 1000)}"
+            shutil.move(str(path), str(target))
+            deleted += 1
     return deleted
 
 
 def _delete_candle_manifest_series(
     state: GatewayState, series: dict[str, object]
 ) -> int:
+    markets = _market_storage_aliases(series["market_type"])
+    placeholders = ",".join("?" for _ in markets)
     rows = state.storage.execute(
-        """
+        f"""
         SELECT manifest_id, partition_path FROM candle_manifests
-        WHERE exchange = ? AND market_type = ? AND symbol = ? AND price_type = ? AND timeframe = ?
+        WHERE exchange = ? AND lower(market_type) IN ({placeholders})
+          AND symbol = ? AND price_type = ? AND timeframe = ?
         """,
         (
             series["exchange"],
-            series["market_type"],
+            *markets,
             series["symbol"],
             series["price_type"],
             series["timeframe"],

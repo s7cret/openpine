@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from openpine._compat import structlog
-from openpine.admission import admit_semantic_profile
+from openpine.admission import admit_strategy_semantic_profile
 from openpine.gateway.deps import GatewayState, get_state
 from openpine.gateway.side_effects import require_http_admit
 from openpine.gateway.routes.activation_guard import (
@@ -45,21 +45,15 @@ def _activate_registry_strategy(
     registry.set_enabled(strategy_id, True)
 
 
-def _require_semantic_profile(*, profile: object | None, source: str, allow_legacy: bool = False):
+def _require_strategy_profile(strategy: Any, *, body: Any, source: str):
     try:
-        return admit_semantic_profile(profile=profile, source=source, allow_legacy=allow_legacy)
+        return admit_strategy_semantic_profile(
+            strategy,
+            source=source,
+            requested_profile=getattr(body, "semantic_profile", None),
+        )
     except AdmitError as exc:
         raise HTTPException(403, exc.message) from exc
-
-
-def _stamp_strategy_profile(strategy: Any, admitted: Any, registry: Any | None = None) -> None:
-    if strategy is None or admitted is None:
-        return
-    value = getattr(admitted, "value", admitted)
-    setattr(strategy, "semantic_profile", value)
-    persist = getattr(registry, "set_semantic_profile", None)
-    if callable(persist) and getattr(strategy, "strategy_id", None):
-        persist(strategy.strategy_id, value)
 
 
 def _stamp_strategy_mtf(strategy: Any, body: Any, registry: Any, runner: Any = None) -> None:
@@ -91,11 +85,6 @@ async def start_paper(
 ) -> TradingStatusResponse:
     """Start paper trading for a strategy."""
     require_http_admit(state, "paper")
-    admitted = _require_semantic_profile(
-        profile=getattr(body, "semantic_profile", None),
-        source="paper",
-        allow_legacy=bool(getattr(body, "allow_legacy", False)),
-    )
     registry = state.strategy_registry
     try:
         s = registry.get_strategy(body.strategy_id)
@@ -108,7 +97,7 @@ async def start_paper(
         raise HTTPException(400, "Archived strategy cannot be started")
     if hasattr(state, "execution_router") and getattr(state, "execution_router") is None:
         raise HTTPException(503, "CANONICAL_EXECUTION_ROUTER_REQUIRED")
-    _stamp_strategy_profile(s, admitted, registry)
+    _require_strategy_profile(s, body=body, source="paper")
     _stamp_strategy_mtf(s, body, registry, getattr(state, "_live_runner", None))
     try:
         with guarded_strategy_activation(state):
@@ -187,12 +176,6 @@ async def start_live(
         )
 
     require_http_admit(state, "live")
-    admitted = _require_semantic_profile(
-        profile=getattr(body, "semantic_profile", None),
-        source="live",
-        allow_legacy=bool(getattr(body, "allow_legacy", False)),
-    )
-
     registry = state.strategy_registry
     try:
         s = registry.get_strategy(body.strategy_id)
@@ -203,7 +186,7 @@ async def start_live(
         raise HTTPException(400, "Cannot start live: strategy is in error state.")
     if getattr(s, "archived", False):
         raise HTTPException(400, "Archived strategy cannot be started")
-    _stamp_strategy_profile(s, admitted, registry)
+    _require_strategy_profile(s, body=body, source="live")
     runner = getattr(state, "_live_runner", None)
     _stamp_strategy_mtf(s, body, registry, runner)
     try:
