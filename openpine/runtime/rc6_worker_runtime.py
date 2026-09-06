@@ -311,8 +311,12 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
         dynamic = declaration.get("dynamic_requests")
         if dynamic is not None and type(dynamic) is not bool:
             raise ValueError("dynamic_requests must be a compile-time bool")
-        policies = RuntimePolicies(request=RequestPolicy(dynamic_requests=(
-            "version_default" if dynamic is None else "enabled" if dynamic else "disabled")))
+        dynamic_policy = "version_default" if dynamic is None else "enabled" if dynamic else "disabled"
+        request_policy = RequestPolicy(dynamic_requests=dynamic_policy)
+        policies = RuntimePolicies(request=RequestPolicy(
+            dynamic_requests=dynamic_policy,
+            nested_requests="enabled" if request_policy.dynamic_enabled(self.pine_version) else "disabled",
+        ))
         self.session = RuntimeSession(
             language, policies,
             inputs=self.inputs,
