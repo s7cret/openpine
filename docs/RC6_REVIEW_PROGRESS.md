@@ -12,7 +12,30 @@ implemented scope, remaining acceptance and evidence paths. Snapshot status:
 29 partial, six requiring full verification, and one accepted (OpenPine branch
 consolidation only). These statuses do not discard prior implemented fixes.
 
-## Latest verified optimizer / request integration
+## Latest verified market-bracket / admitted-tick block
+
+OpenPine tested source: `0ddd7b32e91feedf4be377d07cf257d788e5b52f`.
+Backtest Engine: `6b52242bd7887344386646ed9ab99227ca04d9df`.
+Joint run `34026971028` passed **3,694 functional cases and 37 accounting checks
+on each of Python 3.11 and 3.13**, plus 152 Vitest and 22 Node cases. Four new
+protected-worker scenarios passed; clean Python and frontend builds passed.
+The seven task commits are published; publication retry resolved only the Actions
+workflow-write permission mismatch using the authorized connector, without force.
+
+OP-07/20 now cover explicit exits submitted after pending market entries, binding
+by order instance, cancellation/replacement, actual entry-gap levels, same-point
+bracket activation, initial entry-based percent sizing and correct reservations.
+OP-09 resolves broker mintick from admitted metadata in both modes and rejects
+conflicting explicit ticks before staging. These are not full exit/metadata parity.
+
+[RC6_EXIT_BRACKETS_PUBLICATION.md](RC6_EXIT_BRACKETS_PUBLICATION.md) records exact
+commits, observed counts, archive digests, preserved code and remaining limits.
+[RC6_EXIT_BRACKETS_BLOCK.md](RC6_EXIT_BRACKETS_BLOCK.md) provides implementation
+notes. IDs/titles and whole-task acceptance statuses in the 36-point ledger remain
+unchanged; their implemented scopes and evidence are extended. Seven important
+request/checkpoint/optimizer runtime files are preserved byte for byte.
+
+## Previous verified optimizer / request integration
 
 OpenPine tested head: `9328e45dc8d0aff8de1e4e7a0a9837afd785e2b8`.
 Optimizer tested head: `95570459e50492dea8872b0a25f094e29d3e821f`.
