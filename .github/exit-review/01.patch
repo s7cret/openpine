@@ -1,0 +1,131 @@
+diff --git a/openpine/runtime/isolated_run.py b/openpine/runtime/isolated_run.py
+index ecd4e8b735cbf527a173bdd7e6a450c51dfb473f..4884949180bf0773e716feafd286359167a6db08 100644
+--- a/openpine/runtime/isolated_run.py
++++ b/openpine/runtime/isolated_run.py
+@@ -386,7 +386,12 @@ def run_isolated_artifact(
+                 def restore_state(self, state: Any) -> None:
+                     del state
+ 
+-            result = BacktestEngine(config).run(
++            from openpine.runtime.rc6_config import resolve_engine_config
++            broker_config = resolve_engine_config(
++                _bulk_engine_config(config, semantic_profile),
++                getattr(config, "execution_context", {}),
++            )
++            result = BacktestEngine(broker_config).run(
+                 _InteractiveStrategy,
+                 bars=bars,
+                 callbacks=BacktestCallbacks(on_protocol_callback=handle_protocol_event, on_bar_end=on_bar_end),
+diff --git a/openpine/runtime/isolated_worker.py b/openpine/runtime/isolated_worker.py
+index f33ae6be2d2998217f7b084399664186e5ca3683..34f961723a3de4417821faca00ed8a079104e5cc 100644
+--- a/openpine/runtime/isolated_worker.py
++++ b/openpine/runtime/isolated_worker.py
+@@ -604,6 +604,9 @@ class InteractiveWorkerSession:
+         self.engine_config = dict(engine_config) if engine_config is not None else {}
+         from openpine.runtime.request_data import admit_request_data
+         try:
++            if self.engine_config:
++                from openpine.runtime.rc6_config import resolve_engine_config
++                resolve_engine_config(self.engine_config, execution_context)
+             admit_request_data(source, self.engine_config, execution_context)
+         except ValueError as exc:
+             raise IsolatedWorkerError(str(exc)) from exc
+diff --git a/openpine/runtime/rc6_config.py b/openpine/runtime/rc6_config.py
+index 964c013798584f5dbc50983c73638a997a726d7a..2afca4c830a282a75845592b0d11cb89ec54be17 100644
+--- a/openpine/runtime/rc6_config.py
++++ b/openpine/runtime/rc6_config.py
+@@ -3,8 +3,9 @@ from __future__ import annotations
+ 
+ import dataclasses
+ import json
++import math
+ from collections.abc import Mapping
+-from decimal import Decimal
++from decimal import Decimal, InvalidOperation
+ from typing import Any
+ 
+ from backtest_engine import BacktestConfig
+@@ -110,6 +111,23 @@ def resolve_engine_config(payload: Mapping[str, Any], context: Mapping[str, Any]
+     for name in ("symbol", "timeframe", "semantic_profile"):
+         if name in context and values.get(name) != context[name]:
+             raise ValueError(f"engine config {name} differs from execution context")
++    # The admitted instrument, not a sample of OHLC values, owns the tick size.
++    # Validate the submitted hash before deriving defaults from the bound context.
++    if "mintick" in context:
++        raw_tick = context["mintick"]
++        try:
++            if type(raw_tick) not in (str, int, float):
++                raise ValueError("invalid tick type")
++            tick = Decimal(str(raw_tick))
++            if not tick.is_finite() or tick <= 0 or not math.isfinite(float(tick)) or float(tick) == 0:
++                raise ValueError("tick is outside the finite positive runtime range")
++            explicit = values.get("mintick")
++            if explicit is not None and (type(explicit) not in (str, int, float)
++                    or Decimal(str(explicit)) != tick):
++                raise ValueError("explicit tick differs from admitted instrument")
++        except (InvalidOperation, ValueError, OverflowError) as exc:
++            raise ValueError(f"engine config mintick differs from execution context: {exc}") from exc
++        values["mintick"] = float(tick)
+     extras = {name: values.pop(name) for name in _EXTRA if name in values}
+     for name in ("required_outputs", "required_metrics"):
+         if name in values:
+diff --git a/rc6_tests/test_rc6_lifecycle.py b/rc6_tests/test_rc6_lifecycle.py
+index 9feb1d919a08281f5a45ab6951412ca6885d42c3..a43b91fe00239106bcc9ff1dd503f90ec88ef25a 100644
+--- a/rc6_tests/test_rc6_lifecycle.py
++++ b/rc6_tests/test_rc6_lifecycle.py
+@@ -116,7 +116,10 @@ def interactive(case, envelopes, tmp_path):
+         def export_state(self):
+             return {"test_transport": "in-memory"}
+ 
+-    result = BacktestEngine(config).run(Strategy, bars=[_engine_bar(b) for b in envelopes],
++    # Match the production parent: resolve instrument defaults exactly as the worker.
++    from openpine.runtime.rc6_config import resolve_engine_config
++    broker_config = resolve_engine_config(serialize_engine_config(config, "strict_5x"), context)
++    result = BacktestEngine(broker_config).run(Strategy, bars=[_engine_bar(b) for b in envelopes],
+         callbacks=BacktestCallbacks(on_protocol_callback=protocol_event), execution_context=context, bar_envelopes=envelopes)
+     assert not outgoing
+     assert session.execution_cursor.open_bar is None
+diff --git a/rc6_tests/test_rc6_mintick_binding.py b/rc6_tests/test_rc6_mintick_binding.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..3c34183f6f491138edce9f285b88643a10a9407e
+--- /dev/null
++++ b/rc6_tests/test_rc6_mintick_binding.py
+@@ -0,0 +1,38 @@
++"""Admitted ticks override inference, never explicit conflicting settings."""
++
++import pytest
++
++
++@pytest.mark.parametrize("bad_tick", [None, True, "0", "-1", "NaN", "Infinity", "1e-999", "1e999"])
++def test_admitted_tick_is_not_silently_repaired(bad_tick):
++    from openpine.runtime.rc6_config import resolve_engine_config, serialize_engine_config
++
++    from backtest_engine import BacktestConfig
++
++    cfg = BacktestConfig("S", "1m", 0, 60000)
++    with pytest.raises(ValueError, match="mintick"):
++        resolve_engine_config(serialize_engine_config(cfg, "strict_5x"), {"mintick": bad_tick})
++
++
++def test_tick_default_is_bound_to_resolved_hash_without_mutating_submission():
++    from copy import deepcopy
++    from openpine.runtime.rc6_config import resolve_engine_config, serialize_engine_config
++
++    from backtest_engine import BacktestConfig
++
++    config = BacktestConfig("S", "1m", 0, 60000)
++    payload = serialize_engine_config(config, "strict_5x")
++    before = deepcopy(payload)
++    one = resolve_engine_config(payload, {"mintick": "0.01"})
++    two = resolve_engine_config(payload, {"mintick": "0.02"})
++    assert one.mintick == 0.01 and two.mintick == 0.02
++    assert one.effective_config_hash != two.effective_config_hash
++    assert config.mintick is None and payload == before
++    assert (
++        resolve_engine_config(
++            serialize_engine_config(one, "strict_5x"), {"mintick": "0.010"}
++        ).mintick
++        == 0.01
++    )
++    with pytest.raises(ValueError, match="mintick"):
++        resolve_engine_config(serialize_engine_config(one, "strict_5x"), {"mintick": "0.02"})

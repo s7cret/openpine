@@ -1,0 +1,183 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index 7e5ead25f6b9523e4f8233cb645f9e5f205b50d0..47a41c249cceecaab7a0a1ce9cbe2515ac10d74c 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -106,3 +106,3 @@ jobs:
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py
+           python -m compileall -q openpine
+diff --git a/docs/RC6_EXIT_BRACKETS_BLOCK.md b/docs/RC6_EXIT_BRACKETS_BLOCK.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..04d8befbfb0c9e7669e51ad0720302003772c826
+--- /dev/null
++++ b/docs/RC6_EXIT_BRACKETS_BLOCK.md
+@@ -0,0 +1,93 @@
++# OP-07 / OP-09 / OP-20: explicit market-entry brackets and exit sizing
++
++## Implemented scope
++
++The broker retains an explicit `strategy.exit` issued after an already-created
++pending market `entry`/`order`, including within the same committed callback.
++The instruction is attached to that order instance, not only its reusable public
++ID. It is materialized after a real matching opening fill. A reducing opposite
++order which opens no matching trade cannot create an unrelated bracket.
++Cancellation and replacement update waiting instructions; a new order reusing a
++cancelled entry ID does not inherit the old exit. Relative profit/loss levels are
++based on the actual filled entry, not the submission candle close.
++
++Pre-submitted brackets become eligible at the current fill price point. An entry
++which gaps beyond an absolute TP or SL can therefore close at that same opening
++point, even with script fill recalculation disabled. Existing script recalculation
++and historical OHLC ordering are retained. This is documented OHLC emulation,
++not tick-by-tick or external TradingView execution-oracle evidence.
++
++Explicit exit sizing uses matching entry quantities rather than the entire
++position. Initial entry size is retained when partial exits reduce remaining size.
++Changing an existing exit's explicit quantity can reduce its reservation; it no
++longer keeps the maximum old quantity. Reservation accounting sums pyramided trades
++sharing an entry ID, rather than keeping only the last one. The existing partial
++exit tests remain in the full broker suite.
++
++The strategy bridge no longer rejects a valid entry+exit command batch based only
++on the pre-callback open-position snapshot. Binding belongs to the existing broker.
++A missing matching entry keeps the existing no-position diagnostic/no-op behavior.
++
++## Admitted instrument tick
++
++The new real Pine regression exposed a separate discrepancy: with admitted mintick
++0.01 and no explicit broker tick, integer OHLC data could make the broker infer 1.
++Pine's `profit=500` then used 500 price units instead of 5. Both parent and child
++broker configurations now resolve the missing tick from the admitted context after
++validating the submitted hash. Explicit conflicts, booleans, nonpositive,
++nonfinite and float-underflow/overflow ticks are rejected before package staging.
++The resolved tick participates in the effective configuration hash; the submitted
++configuration is not mutated. A context-free standalone broker retains its existing
++inference behavior. Other instrument defaults are not certified by this fix.
++
++## Tests and exact source set
++
++Backtest Engine source: `6b52242bd7887344386646ed9ab99227ca04d9df`.
++It contains four separate commits on top of `70dd7ccfecaabafa3000d359770305acb32c8b9e`:
++`f533c8555281422af2887f3d904032ced34ff4dc`,
++`9492f3f411fbce1691fa3123620d62ede7bb1391`,
++`6ca6a0deccdcc1922594834c881e675c8edcdc1c`, and the source head.
++
++OpenPine runtime changes are `fe300627d26ac0216342bd397db41b676c593b4d`
++and `df50d40b6cdf52f057c205463460bad10bb72858` on baseline
++`ffee029e1fc44ab907ea61313f1bd37ef58d2989`.
++`RC6_LIFECYCLE_SOURCES.json` pins the complete compatible stack.
++
++Local Python 3.13.5 verification: the complete broker functional suite passes 622
++cases, and the two new OpenPine files pass 41 non-process cases. Four new worker
++cases require the actual Bubblewrap/AppArmor CI environment and remain mandatory;
++no source-level skips or sandbox bypasses were introduced. Whole-stack CI results
++are recorded in a publication receipt only after they are actually observed.
++
++The 36 added broker cases include long/short, TP/SL, absolute/relative prices,
++process-on-close and fill recalculation, cancelled/reused IDs, replacement,
++reservation scope, repeated entry IDs and gaps. The 45 new host cases include
++versioned named-when sources, full tape/trade/equity comparisons, exact admitted
++ticks and four protected-worker runs. Local evidence overlaps later CI and is not
++added to the unique-case total. No timing or memory improvement was benchmarked.
++
++## Deliberate limits and compatibility
++
++This does not close the full OP-07, OP-09 or OP-20 acceptance. The bridge still
++requires explicit from_entry; all-entry/unqualified persistence, trailing and
++per-leg metadata, v6 mixed relative/absolute selection, risk and indexed trade
++methods remain open. Deferral for pending limit/stop/stop-limit entries is explicitly
++rejected pending continuous-segment activation, not silently approximated. Deferred
++relative exits across repeated entry IDs also fail explicitly because per-trade
++price levels are not implemented. Omitted-leg replacement semantics were not changed.
++
++The existing broker's same-ID weighted relative-level handling and bar magnifier
++semantics are not comprehensively accepted here. The new initial-entry-size and
++pending-instruction fields are plain snapshot data, but compatibility with old
++broker resume snapshots is not established. Full isolated-job restart was not
++implemented and no new worker checkpoint capability is advertised.
++
++Update the host, worker and pinned engine together; recompile modules after the
++host surface changes. An identical package version string is insufficient. Existing
++nested request, request transport, checkpoint v2 and capability code is retained.
++No main/historical release promotion, full 36-task closure, coverage certification
++or autonomous production installer is claimed.
++
++Reference semantics (not an execution oracle):
++- https://www.tradingview.com/pine-script-docs/concepts/strategies/
++- https://www.tradingview.com/pine-script-docs/release-notes/ (June 2022 qty_percent basis)
+diff --git a/docs/RC6_REVIEW_36.json b/docs/RC6_REVIEW_36.json
+index ef9301b60c1dc5f1236320b694229dab4c393509..85f7facf7fe74cb49eee9e10affeb9573a0aeb91 100644
+--- a/docs/RC6_REVIEW_36.json
++++ b/docs/RC6_REVIEW_36.json
+@@ -4,3 +4,3 @@
+   "source_spec_name": "OpenPine_RC6_Review_TZ_2026-09-05.md",
+-  "snapshot_base": "8d5c7bf26e293bd3007c98134cadd445198d23ee",
++  "snapshot_base": "ffee029e1fc44ab907ea61313f1bd37ef58d2989",
+   "status_policy": "Task status is full-scope acceptance, not implementation percentage. Partial records preserve implemented regressions; accepted requires no remaining acceptance work and an explicit receipt. CI verifies ledger consistency, not TradingView truth. New test claims require the publication receipt.",
+@@ -31,6 +31,7 @@
+       "status": "partial",
+-      "implemented": "Устранены потеря margin=0 и дубли конвертеров; сохранены режимы rounding.",
++      "implemented": "Устранены потеря margin=0 и дубли конвертеров; сохранены rounding. Допущенный mintick разрешается в обоих режимах и входит в effective config hash.",
+       "remaining": "Полная provenance конфигурации и версия defaults declaration; общий immutable effective config.",
+       "evidence_paths": [
+-        "rc6_tests/test_rc6_effective_config.py"
++        "rc6_tests/test_rc6_effective_config.py",
++        "rc6_tests/test_rc6_mintick_binding.py"
+       ]
+@@ -71,6 +72,7 @@
+       "status": "partial",
+-      "implemented": "Семь команд и 17 скалярных значений; ранний отказ неподдержанных host-вызовов.",
+-      "remaining": "Завершить exit/trailing/risk/indexed trade methods и исторические сигнатуры.",
++      "implemented": "Семь команд и 17 скаляров; явные выходы работают после pending market-entry в том же callback. Сохранён отказ неподдержанных форм.",
++      "remaining": "Завершить all-entry и price-entry exits, trailing/risk/indexed trade methods, v6 mixed levels и исторические сигнатуры.",
+       "evidence_paths": [
+-        "rc6_tests/test_rc6_strategy_surface.py"
++        "rc6_tests/test_rc6_strategy_surface.py",
++        "rc6_tests/test_rc6_deferred_exits.py"
+       ]
+@@ -91,6 +93,8 @@
+       "status": "partial",
+-      "implemented": "Исправлены language identity, часы/минуты/месяцы и передача pointvalue.",
++      "implemented": "Интервалы час/минута/месяц и pointvalue передаются в runtime. Брокер и Pine используют допущенный mintick; конфликт отклоняется до запуска.",
+       "remaining": "Явные crypto/stock/futures metadata, calendar/session и basecurrency без предположений.",
+       "evidence_paths": [
+-        "rc6_tests/test_rc6_chart_metadata.py"
++        "rc6_tests/test_rc6_chart_metadata.py",
++        "rc6_tests/test_rc6_mintick_binding.py",
++        "rc6_tests/test_rc6_deferred_exits.py"
+       ]
+@@ -195,6 +199,8 @@
+       "status": "partial",
+-      "implemented": "Брокерные и transport-тесты сравнивают команды/сделки/equity; отмена TP/SL по parent ID исправлена.",
+-      "remaining": "Независимый event oracle для всех order types, комиссии, fill phase и margin/liquidation.",
++      "implemented": "Отмена по public exit ID; pending market brackets, активация на цене fill, initial qty_percent, уменьшение резерва и повторяющиеся entry ID покрыты брокерными/сквозными тестами.",
++      "remaining": "Полная матрица ордеров, price-entry activation, all-entry/trailing, relative-уровни повторных входов, v6 смешанные уровни, комиссии, fill phase, margin/liquidation и независимый event oracle.",
+       "evidence_paths": [
+-        "docs/RC6_STRATEGY_PUBLICATION_RECEIPT.md"
++        "docs/RC6_STRATEGY_PUBLICATION_RECEIPT.md",
++        "docs/RC6_EXIT_BRACKETS_BLOCK.md",
++        "rc6_tests/test_rc6_deferred_exits.py"
+       ]
+diff --git a/docs/RC6_REVIEW_36.md b/docs/RC6_REVIEW_36.md
+index 8bd7e30e1832d78422c87048c000e2e097272339..470bc6b6d8d5e945d60a632d0719797ba44916f7 100644
+--- a/docs/RC6_REVIEW_36.md
++++ b/docs/RC6_REVIEW_36.md
+@@ -10,3 +10,3 @@
+ | **OP-02**. Довести пользовательские inputs до исполнения и оптимизации | Частично | Overrides поступают в runtime, CLI и trials; проверяются типы и hash применённых inputs. | Зафиксировать единый output digest для CLI/API/trial, включая одинаковые title и все допустимые нули. |
+-| **OP-03**. Единая конфигурация стратегии: нули, sizing и брокер | Частично | Устранены потеря margin=0 и дубли конвертеров; сохранены режимы rounding. | Полная provenance конфигурации и версия defaults declaration; общий immutable effective config. |
++| **OP-03**. Единая конфигурация стратегии: нули, sizing и брокер | Частично | Устранены потеря margin=0 и дубли конвертеров; сохранены rounding. Допущенный mintick разрешается в обоих режимах и входит в effective config hash. | Полная provenance конфигурации и версия defaults declaration; общий immutable effective config. |
+ | **OP-04**. Сохранить finality, revision и валидность marketdata envelope | Частично | Канонические envelopes проверяются в обоих режимах; finality и numeric underflow не подменяются. | Полная матрица приёмки revision policies и исправленных/отозванных рядов во всех входных путях. |
+@@ -14,5 +14,5 @@
+ | **OP-06**. Bulk-result без скрытой потери результатов | Частично | Полная tape и проверяемые result chunks; ошибки процесса и незавершённость не считаются успехом. | Явные full/metrics-only profiles с проверкой обещанных outputs и целостности больших результатов. |
+-| **OP-07**. Довести strategy bridge до полного покрываемого API | Частично | Семь команд и 17 скалярных значений; ранний отказ неподдержанных host-вызовов. | Завершить exit/trailing/risk/indexed trade methods и исторические сигнатуры. |
++| **OP-07**. Довести strategy bridge до полного покрываемого API | Частично | Семь команд и 17 скаляров; явные выходы работают после pending market-entry в том же callback. Сохранён отказ неподдержанных форм. | Завершить all-entry и price-entry exits, trailing/risk/indexed trade methods, v6 mixed levels и исторические сигнатуры. |
+ | **OP-08**. Подключить request engine к настоящим snapshot-данным | Частично | Работают source-context выражения, nested HTF/LTF, arrays и chunked preloads; добавлена привязка к trial. | Автоподготовка источников из UI/CLI, UDF/локальные capture, live/revision, FX и полный каталог request.*. |
+-| **OP-09**. Честные instrument, timeframe и language identities | Частично | Исправлены language identity, часы/минуты/месяцы и передача pointvalue. | Явные crypto/stock/futures metadata, calendar/session и basecurrency без предположений. |
++| **OP-09**. Честные instrument, timeframe и language identities | Частично | Интервалы час/минута/месяц и pointvalue передаются в runtime. Брокер и Pine используют допущенный mintick; конфликт отклоняется до запуска. | Явные crypto/stock/futures metadata, calendar/session и basecurrency без предположений. |
+ | **OP-10**. Настоящий checkpoint / resume вместо маркера состояния | Частично | Реальные Pine checkpoints, request caches и receipt-derived cursors; атомарный restore. | Полное возобновление broker+IPC+worker без дублирования orders/visuals после падения. |
+@@ -27,3 +27,3 @@
+ | **OP-19**. Отдельный пакет актуальных возможностей Pine 2026 | Требует проверки | Пакет новых возможностей Pine 2026 не принят как единое целое. | Сверить официальные изменения и реализовать positive/negative сквозные сценарии без объявления усечённого поведения полным. |
+-| **OP-20**. Проверка broker parity по событиям, а не только итоговому PnL | Частично | Брокерные и transport-тесты сравнивают команды/сделки/equity; отмена TP/SL по parent ID исправлена. | Независимый event oracle для всех order types, комиссии, fill phase и margin/liquidation. |
++| **OP-20**. Проверка broker parity по событиям, а не только итоговому PnL | Частично | Отмена по public exit ID; pending market brackets, активация на цене fill, initial qty_percent, уменьшение резерва и повторяющиеся entry ID покрыты брокерными/сквозными тестами. | Полная матрица ордеров, price-entry activation, all-entry/trailing, relative-уровни повторных входов, v6 смешанные уровни, комиссии, fill phase, margin/liquidation и независимый event oracle. |
+ | **OP-21**. Строгий импорт и эффективное чтение offline datasets | Частично | Строгие CSV/Parquet, явные timestamp/volume policies и bounded batches. | Индексировать повторные intrabar reads, provenance policies, row-group filtering и repeat-import canonical identity. |

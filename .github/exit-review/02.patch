@@ -1,0 +1,287 @@
+diff --git a/docs/RC6_LIFECYCLE_SOURCES.json b/docs/RC6_LIFECYCLE_SOURCES.json
+index e6ed05c65a936ba5fa335a4c21a32f423638da6f..8917bf30e8cfb2c2f134c072475114bc500b202e 100644
+--- a/docs/RC6_LIFECYCLE_SOURCES.json
++++ b/docs/RC6_LIFECYCLE_SOURCES.json
+@@ -4,6 +4,6 @@
+   "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+   "ast2python": "51552e7c1de339d8de4794290655e574d6447e82",
+   "pinelib": "cddaa0bf2324db36b4cd29e944a251032658c59d",
+-  "backtest_engine": "70dd7ccfecaabafa3000d359770305acb32c8b9e",
++  "backtest_engine": "6b52242bd7887344386646ed9ab99227ca04d9df",
+   "pine2ast": "6ba935eceee505bcbe80bf1f5908588407d2f546"
+ }
+diff --git a/openpine/runtime/strategy_host.py b/openpine/runtime/strategy_host.py
+index a36b46ea04210756a0e7467f0af36bfdc03c688e..d44ba6ccb817dfde14db2caac8f4fa17b8750b34 100644
+--- a/openpine/runtime/strategy_host.py
++++ b/openpine/runtime/strategy_host.py
+@@ -44,7 +44,9 @@ def strategy_host_surface() -> dict[str, Any]:
+         "state_values": sorted(STRATEGY_STATE_VALUES),
+         "constraints": [
+             "historical_tail_arguments_named",
+-            "exit_explicit_open_entry_only",
++            "exit_explicit_entry_with_market_deferral",
++            "exit_pending_price_entry_unavailable",
++            "exit_deferred_relative_repeated_entry_unavailable",
+             "exit_v6_relative_absolute_pairs_unavailable",
+             "alerts_tape_only",
+         ],
+diff --git a/rc6_tests/test_rc6_deferred_exits.py b/rc6_tests/test_rc6_deferred_exits.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..40a51014f9aa7d72d346a5ff64ae44fb1869e37a
+--- /dev/null
++++ b/rc6_tests/test_rc6_deferred_exits.py
+@@ -0,0 +1,254 @@
++"""Compiled market-entry brackets and scoped reservations through both transports.
++
++In-memory tests substitute IPC only. Real-process cases use the existing sandbox
++CI and do not relax policy. These cases are not full strategy.exit/TV acceptance.
++"""
++
++from dataclasses import replace
++
++import pytest
++
++from rc6_tests.test_rc6_bulk_execution import bulk_case, execute_bulk
++from rc6_tests.test_rc6_lifecycle import compile_case, interactive
++from rc6_tests.test_rc6_marketdata_boundary import OPENED, bar
++
++
++def prepare(body, ohlc, *, version=6, **settings):
++    compiled, context, config = compile_case(
++        bulk_case.__wrapped__(), f'//@version={version}\nstrategy("exit acceptance")\n' + body
++    )
++    candles = [
++        bar(open_time_utc_ms=OPENED + i * 60000, open=opened, high=high, low=low, close=closed)
++        for i, (opened, high, low, closed) in enumerate(ohlc)
++    ]
++    config = replace(config, end_time=OPENED + (len(candles) - 1) * 60000, **settings)
++    return (compiled, context, config), candles
++
++
++def compare_modes(monkeypatch, tmp_path, case, candles):
++    bulk = execute_bulk(monkeypatch, case, bars=candles)
++    result, tape, *_ = interactive(case, candles, tmp_path)
++    assert result.status == "completed", result.errors
++    assert tape == bulk["intent_tape"]
++    assert result.final_equity == bulk["raw_result"]["final_equity"]
++    fields = (
++        "entry_id",
++        "exit_id",
++        "entry_bar_index",
++        "exit_bar_index",
++        "entry_price",
++        "exit_price",
++        "qty",
++    )
++    assert [tuple(getattr(t, k) for k in fields) for t in result.closed_trades] == [
++        tuple(t[k] for k in fields) for t in bulk["raw_result"]["closed_trades"]
++    ]
++    assert [(t.entry_id, t.qty) for t in result.open_trades] == [
++        (t["entry_id"], t["qty"]) for t in bulk["raw_result"]["open_trades"]
++    ]
++    return result, tape
++
++
++@pytest.mark.parametrize("direction", ["long", "short"])
++@pytest.mark.parametrize("leg", ["profit", "loss"])
++@pytest.mark.parametrize("relative", [False, True])
++@pytest.mark.parametrize("on_close", [False, True])
++def test_entry_and_bracket_same_callback(monkeypatch, tmp_path, direction, leg, relative, on_close):
++    # Admitted tick is 0.01. 500 profit/loss ticks are 5 price units, not 500.
++    target = (
++        (105 if leg == "profit" else 95)
++        if direction == "long"
++        else (95 if leg == "profit" else 105)
++    )
++    argument = f"{leg}=500" if relative else f"{'limit' if leg == 'profit' else 'stop'}={target}"
++    case, candles = prepare(
++        f'if bar_index == 0\n    strategy.entry("L", strategy.{direction}, qty=2)\n'
++        f'    strategy.exit("X", "L", {argument})\n',
++        [(100, 101, 99, 100), (100, 106, 94, 100), (100, 101, 99, 100)],
++        process_orders_on_close=on_close,
++    )
++    result, tape = compare_modes(monkeypatch, tmp_path, case, candles)
++    assert [e["kind"] for e in tape] == ["entry", "exit"]
++    assert len(result.closed_trades) == 1 and not result.open_trades
++    t = result.closed_trades[0]
++    assert (t.entry_bar_index, t.exit_bar_index, t.entry_price, t.exit_price, t.qty) == (
++        0 if on_close else 1,
++        1,
++        100,
++        target,
++        2,
++    )
++
++
++@pytest.mark.parametrize("version", range(1, 6))
++def test_historical_named_when_retains_pending_bracket(monkeypatch, tmp_path, version):
++    case, candles = prepare(
++        f'strategy.entry("L", strategy.long, qty=1, when=time=={OPENED})\n'
++        f'strategy.exit("X", "L", limit=105, when=time=={OPENED})\n',
++        [(100, 101, 99, 100), (100, 106, 99, 100), (100, 101, 99, 100)],
++        version=version,
++    )
++    result, tape = compare_modes(monkeypatch, tmp_path, case, candles)
++    assert [e["kind"] for e in tape] == ["entry", "exit"]
++    assert [(t.exit_price, t.qty) for t in result.closed_trades] == [(105, 1)]
++
++
++@pytest.mark.parametrize(
++    "command", ['strategy.cancel("X")', 'strategy.cancel("L")', "strategy.cancel_all()"]
++)
++def test_cancel_before_fill_never_publishes_a_phantom_exit(monkeypatch, tmp_path, command):
++    case, candles = prepare(
++        'if bar_index==0\n    strategy.entry("L", strategy.long, qty=1)\n'
++        '    strategy.exit("X", "L", limit=105)\n    ' + command + "\n",
++        [(100, 101, 99, 100), (100, 106, 99, 100), (100, 101, 99, 100)],
++    )
++    result, _ = compare_modes(monkeypatch, tmp_path, case, candles)
++    assert not result.closed_trades
++    assert len(result.open_trades) == (1 if command == 'strategy.cancel("X")' else 0)
++
++
++def test_relative_exit_uses_actual_gapped_entry_not_submission_close(monkeypatch, tmp_path):
++    case, candles = prepare(
++        'if bar_index==0\n    strategy.entry("L", strategy.long, qty=1)\n'
++        '    strategy.exit("X", "L", profit=500)\n',
++        [(100, 101, 99, 100), (110, 116, 109, 110), (110, 111, 109, 110)],
++    )
++    result, _ = compare_modes(monkeypatch, tmp_path, case, candles)
++    assert [(t.entry_price, t.exit_price) for t in result.closed_trades] == [(110, 115)]
++
++
++@pytest.mark.parametrize("recalc", [False, True])
++def test_replacement_releases_reservation_and_uses_matching_entry(monkeypatch, tmp_path, recalc):
++    # Guard by persistent execution flag so fill recalculation cannot resend entries.
++    case, candles = prepare(
++        "varip int sent=-1\nif bar_index != sent\n    sent:=bar_index\n"
++        '    if bar_index==0\n        strategy.entry("A", strategy.long, qty=2)\n'
++        '        strategy.entry("B", strategy.long, qty=8)\n'
++        '    if bar_index==1\n        strategy.exit("X", "A", limit=110, qty=2)\n'
++        '    if bar_index==2\n        strategy.exit("X", "A", limit=110, qty_percent=50)\n'
++        '        strategy.exit("Y", "A", limit=105, qty=1)\n',
++        [
++            (100, 101, 99, 100),
++            (100, 101, 99, 100),
++            (100, 101, 99, 100),
++            (100, 106, 99, 100),
++            (100, 111, 99, 100),
++        ],
++        pyramiding=2,
++        calc_on_order_fills=recalc,
++    )
++    result, _ = compare_modes(monkeypatch, tmp_path, case, candles)
++    assert [(t.entry_id, t.exit_id, t.qty) for t in result.closed_trades] == [
++        ("A", "Y:L", 1),
++        ("A", "X:L", 1),
++    ]
++    assert [(t.entry_id, t.qty) for t in result.open_trades] == [("B", 8)]
++
++
++@pytest.mark.parametrize("on_close", [False, True])
++@pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
++def test_real_worker_entry_bracket_with_fill_recalculation(tmp_path, mode, on_close):
++    from openpine.runtime.isolated_run import run_isolated_artifact
++    from openpine.runtime.rc6_worker_runtime import _engine_bar
++    from rc6_tests.test_rc6_worker_admission import _manifest
++
++    case, candles = prepare(
++        "varip bool sent=false\nif bar_index==0 and not sent\n    sent:=true\n"
++        '    strategy.entry("L", strategy.long, qty=2)\n'
++        '    strategy.exit("X", "L", profit=500, loss=700)\n',
++        [(100, 101, 99, 100), (100, 106, 94, 100), (100, 101, 99, 100)],
++        calc_on_order_fills=True,
++        process_orders_on_close=on_close,
++    )
++    compiled, context, config = case
++    for name, value in dict(
++        execution_context=context,
++        admitted_manifest=_manifest(),
++        instrument_id=context["instrument_id"],
++        generated_artifact=compiled.generated_artifact,
++        bar_envelopes=candles,
++        run_hash="sha256:" + "1" * 64,
++        protocol_artifact_dir=str(tmp_path / "protocol"),
++        isolated_protocol=mode,
++    ).items():
++        setattr(config, name, value)
++    result = run_isolated_artifact(
++        compiled.python_code.encode(),
++        bars=[_engine_bar(b) for b in candles],
++        config=config,
++        params={},
++    )
++    assert result["ok"] and result["bars_processed"] == 3
++    assert [e["kind"] for e in result["intent_tape"]] == ["entry", "exit"]
++    raw = result["raw_result"]
++    assert raw.status == "completed" and not raw.open_trades and len(raw.closed_trades) == 1
++    trade = raw.closed_trades[0]
++    assert (trade.entry_bar_index, trade.exit_bar_index, trade.exit_price, trade.qty) == (
++        0 if on_close else 1,
++        1,
++        105,
++        2,
++    )
++
++
++@pytest.mark.parametrize("on_close", [False, True])
++def test_fill_recalculation_bracket_tapes_match(monkeypatch, tmp_path, on_close):
++    case, candles = prepare(
++        "varip bool sent=false\nif bar_index==0 and not sent\n    sent:=true\n"
++        '    strategy.entry("L", strategy.long, qty=2)\n'
++        '    strategy.exit("X", "L", profit=500, loss=700)\n',
++        [(100, 101, 99, 100), (100, 106, 94, 100), (100, 101, 99, 100)],
++        calc_on_order_fills=True,
++        process_orders_on_close=on_close,
++    )
++    result, tape = compare_modes(monkeypatch, tmp_path, case, candles)
++    assert [e["kind"] for e in tape] == ["entry", "exit"]
++    assert [(t.exit_price, t.qty) for t in result.closed_trades] == [(105, 2)]
++
++
++@pytest.mark.parametrize("direction,opened,level", [("long", 110, 105), ("short", 90, 95)])
++def test_gap_through_absolute_bracket_matches_both_transports(
++    monkeypatch, tmp_path, direction, opened, level
++):
++    case, candles = prepare(
++        f'if bar_index==0\n    strategy.entry("L",strategy.{direction},qty=1)\n'
++        f'    strategy.exit("X","L",limit={level})\n',
++        [
++            (100, 101, 99, 100),
++            (opened, opened + 2, opened - 1, opened),
++            (opened, opened + 2, opened - 1, opened),
++        ],
++    )
++    result, _ = compare_modes(monkeypatch, tmp_path, case, candles)
++    assert [(t.entry_price, t.exit_price, t.exit_bar_index) for t in result.closed_trades] == [
++        (opened, opened, 1)
++    ]
++
++
++def test_mismatched_tick_is_rejected_before_worker_resources(tmp_path, monkeypatch):
++    from unittest.mock import Mock
++    from openpine.runtime import isolated_worker
++    from openpine.runtime.rc6_config import serialize_engine_config
++    from rc6_tests.test_rc6_worker_admission import _manifest
++
++    case, _ = prepare("strategy.cancel_all()\n", [(100, 101, 99, 100)], mintick=1)
++    compiled, context, config = case
++    stage = Mock(side_effect=AssertionError("unexpected staging"))
++    process = Mock(side_effect=AssertionError("unexpected process"))
++    monkeypatch.setattr(isolated_worker, "_stage_trusted_packages", stage)
++    monkeypatch.setattr(isolated_worker.subprocess, "Popen", process)
++    with pytest.raises(isolated_worker.IsolatedWorkerError, match="mintick"):
++        isolated_worker.InteractiveWorkerSession(
++            compiled.python_code.encode(),
++            context,
++            context["instrument_id"],
++            _manifest(),
++            compiled.generated_artifact,
++            "sha256:" + "1" * 64,
++            tmp_path,
++            semantic_profile="strict_5x",
++            chart_timeframe="1m",
++            engine_config=serialize_engine_config(config, "strict_5x"),
++        )
++    stage.assert_not_called()
++    process.assert_not_called()
