@@ -2,7 +2,7 @@
   "schema": "openpine.review.acceptance.v1",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
   "source_spec_name": "OpenPine_RC6_Review_TZ_2026-09-05.md",
-  "snapshot_base": "4ec4d177bf0d0dbc0ffc2891f79332ac2bb6785c",
+  "snapshot_base": "b770989098577440481fa9eb44b8217ccf970159",
   "status_policy": "Task status is full-scope acceptance, not implementation percentage. Partial records preserve implemented regressions; accepted requires no remaining acceptance work and an explicit receipt. CI verifies ledger consistency, not TradingView truth. New test claims require the publication receipt.",
   "tasks": [
     {
@@ -19,10 +19,11 @@
       "id": "OP-02",
       "title": "Довести пользовательские inputs до исполнения и оптимизации",
       "status": "partial",
-      "implemented": "Overrides поступают в runtime, CLI и trials; проверяются типы и hash применённых inputs.",
+      "implemented": "Overrides поступают в runtime, CLI и trials; проверяются типы и hash применённых inputs. Исправлены scalar input v1-v4 и source-input qualifier; max_position_size принимает применённый input, включая ноль, без утечки между запусками.",
       "remaining": "Зафиксировать единый output digest для CLI/API/trial, включая одинаковые title и все допустимые нули.",
       "evidence_paths": [
-        "rc6_tests/test_rc6_inputs.py"
+        "rc6_tests/test_rc6_inputs.py",
+        "rc6_tests/test_rc6_entry_risk.py"
       ]
     },
     {
@@ -70,8 +71,8 @@
       "id": "OP-07",
       "title": "Довести strategy bridge до полного покрываемого API",
       "status": "partial",
-      "implemented": "Семь команд и 17 скаляров; pending market/limit/stop/stop-limit exits, all-entry scope и per-fill relative уровни сохранены. Смешанные profit+limit/loss+stop v6 выбирают first_trigger на каждом фактическом исполнении; v1-v5 сохраняют absolute precedence. Новый intent 2.4.0 передаёт политику явно; bulk/interactive и version matrix проверены.",
-      "remaining": "Trailing, включая пары активации trail_points/trail_price; risk/indexed trade methods и полные исторические сигнатуры. Полная FIFO/ANY атрибуция и унификация quantity для именованных absolute exits с повторными ID.",
+      "implemented": "Сохранены семь торговых команд, 17 скаляров, all-entry/per-fill exits, смешанные цены v6, trailing/TP и метаданные выходов. Добавлены allow_entry_in и max_position_size через существующий RiskIntent; global/input параметры проверяются, scope/API строятся из общего engine registry. Позиционные exit и абсолютные повторные входы покрыты предыдущими этапами.",
+      "remaining": "Остальные risk и indexed trade methods; извлечение условных/локальных risk declarations, multiple direction conformance, full historical signatures, FIFO/ANY, fixed-stop/trailing arbitration и отложенное вычисление/доставка alerts.",
       "evidence_paths": [
         "rc6_tests/test_rc6_strategy_surface.py",
         "rc6_tests/test_rc6_deferred_exits.py",
@@ -82,7 +83,11 @@
         "docs/RC6_ALL_ENTRY_EXITS.md",
         "rc6_tests/test_rc6_exit_price_pairs.py",
         "docs/RC6_MIXED_EXIT_PRICES.md",
-        "docs/RC6_MIXED_EXIT_PUBLICATION.md"
+        "docs/RC6_MIXED_EXIT_PUBLICATION.md",
+        "docs/RC6_TRAILING_PUBLICATION.md",
+        "docs/RC6_METADATA_TRANSFER_PUBLICATION.md",
+        "docs/RC6_ENTRY_RISK.md",
+        "rc6_tests/test_rc6_entry_risk.py"
       ]
     },
     {
@@ -111,10 +116,11 @@
       "id": "OP-10",
       "title": "Настоящий checkpoint / resume вместо маркера состояния",
       "status": "partial",
-      "implemented": "Реальные Pine checkpoints, request caches и receipt-derived cursors; атомарный restore.",
+      "implemented": "Реальные Pine checkpoints, request caches и receipt-derived cursors; атомарный restore. Native broker/realtime snapshots теперь содержат проверяемый risk-state; правила до checkpoint сохраняются после resume. Старые снимки без risk-state не доказывают прежнюю политику.",
       "remaining": "Полное возобновление broker+IPC+worker без дублирования orders/visuals после падения.",
       "evidence_paths": [
-        "rc6_tests/test_rc6_checkpoint_receipts.py"
+        "rc6_tests/test_rc6_checkpoint_receipts.py",
+        "docs/RC6_ENTRY_RISK.md"
       ]
     },
     {
@@ -149,10 +155,11 @@
       "id": "OP-14",
       "title": "Полный version-exact реестр Pine v1–v6",
       "status": "partial",
-      "implemented": "Добавлены request/NA/array bindings и проверки версий v1–v6 для поддержанного поднабора.",
+      "implemented": "Добавлены request/NA/array bindings и проверки версий v1–v6 для поддержанного поднабора. Промежуточные namespaces выводятся только из активного каталога; simple entry-risk inputs, legacy input и source-series различаются в парных тестах v1-v6.",
       "remaining": "Полный version-exact каталог, overload denominator и отрицательные пары доступности.",
       "evidence_paths": [
-        "rc6_tests/test_rc6_requests.py"
+        "rc6_tests/test_rc6_requests.py",
+        "docs/RC6_ENTRY_RISK.md"
       ]
     },
     {
@@ -205,8 +212,8 @@
       "id": "OP-20",
       "title": "Проверка broker parity по событиям, а не только итоговому PnL",
       "status": "partial",
-      "implemented": "Сохранены forward-only price events, хронологический Bar Magnifier, all-entry lifetime, per-fill relative уровни/резервы, отмена/замена и native resume. Добавлен выбор фиксированных TP/SL из относительной/абсолютной пары по версии Pine и фактической цене каждого исполнения, включая гэпы, нули, NA и частичные количества.",
-      "remaining": "Полная матрица ордеров, trailing и его activation pairs, FIFO/ANY и именованные absolute repeated-entry quantities, комиссии, fill phase, margin/liquidation и независимый event oracle.",
+      "implemented": "Сохранены causal price scanner/Bar Magnifier, all-entry lifetime, per-fill relative/absolute цены и резервы, trailing и native resume. Entry-risk ограничивает фактическую позицию при отправке и исполнении, не strategy.order; запрещённый reverse становится полным market close. Учтены closing component, qty-step/minimum, одновременные pending orders, невозможность роста clipped order и сохранение risk state.",
+      "remaining": "Остальные risk, FIFO/ANY, fixed-stop/trailing arbitration, полная матрица комиссий/margin/liquidation/realtime/seed и независимый event oracle. Native policy updates и legacy snapshot compatibility не равны полной Pine conformance.",
       "evidence_paths": [
         "docs/RC6_STRATEGY_PUBLICATION_RECEIPT.md",
         "docs/RC6_EXIT_BRACKETS_BLOCK.md",
@@ -218,7 +225,11 @@
         "docs/RC6_ALL_ENTRY_EXITS.md",
         "rc6_tests/test_rc6_exit_price_pairs.py",
         "docs/RC6_MIXED_EXIT_PRICES.md",
-        "docs/RC6_MIXED_EXIT_PUBLICATION.md"
+        "docs/RC6_MIXED_EXIT_PUBLICATION.md",
+        "docs/RC6_TRAILING_PUBLICATION.md",
+        "docs/RC6_METADATA_TRANSFER_PUBLICATION.md",
+        "docs/RC6_ENTRY_RISK.md",
+        "rc6_tests/test_rc6_entry_risk.py"
       ]
     },
     {
