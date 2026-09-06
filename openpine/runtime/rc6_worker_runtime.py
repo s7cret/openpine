@@ -837,6 +837,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     progress.report(completed_bars, total, force=True)
     raw = {
         "status": getattr(result, "status", "completed"),
+        # Export the broker's actual collection evidence, not requested-output guesses.
+        "available_outputs": sorted(result.available_outputs),
         "bars_processed": completed_bars,
         "initial_capital": getattr(result, "initial_capital", None),
         "final_equity": getattr(result, "final_equity", None),
