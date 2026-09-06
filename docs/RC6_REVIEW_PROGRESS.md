@@ -2,23 +2,32 @@
 
 This ledger records implemented and verified scopes, not completion of all 36 review tasks or TradingView 1:1 compatibility.
 
-## Latest verified continuation
+## Latest published nested-request reconciliation
+
+OpenPine source head: `17430a5638d299245b19d30c0d6f5a0166af6ff0`.
+PineLib source: `cddaa0bf2324db36b4cd29e944a251032658c59d`; Ast2Python source: `51552e7c1de339d8de4794290655e574d6447e82`.
+Joint CI/publication `34001163455` passed **3,315 Python cases on each of 3.11 and 3.13**, 152 Vitest cases, Node checks, actual frontend build and Python wheel/sdist builds. New real protected workers verify nested expressions and multi-frame preloads. Both library publications preserve the original local commit SHAs.
+
+[RC6_NESTED_MERGE_PUBLICATION.md](RC6_NESTED_MERGE_PUBLICATION.md) records exact source commits, independent artifact checks, publication retry and four-branch inventory. [RC6_NESTED_REQUEST_MERGE.md](RC6_NESTED_REQUEST_MERGE.md) documents behavior and limits. The old local OpenPine tree was not written over RC6. Published checkpoint v2 receipts, worker capability negotiation, numeric-underflow checks and their regression files were retained byte-for-byte.
+
+OP-08 now includes supported historical nested requests with enclosing-context preflight and shared request budgets/cache/rollback. One public request_manifest API is retained; its bounded chunk transport replaces large bootstrap JSON. Dynamic unknown contexts are not guessed. Auto-loading from UI/CLI/gateway, UDF/live requests and static nested-syntax extraction with dynamic_requests=false remain open. Full isolated-job restart is still not implemented. The prior optimizer containment diagnostic and dependency audit notices remain unaddressed, not hidden by the successful functional suite.
+
+Five provider live-network tests were explicitly excluded; full OpenPine, standalone optimizer, coverage, browser visual and external TradingView oracle acceptance is not claimed. Historical test counts below overlap and must not be added.
+
+## Previous numeric-boundary verification
 
 Code head: `0ab826a7a71a6010f0eed680405cdc36b68bc88a`.
-Permanent read-only CI `33999714708` passed **3,277 Python cases per interpreter (3.11/3.13), 152 Vitest cases and 22 Node cases**. Actual protected worker tests, OpenPine wheel/sdist, TypeScript and production UI builds passed. The new OP-04 commit prevents finite nonzero canonical decimals from silently becoming zero in both worker paths and request preloads, with 31 additional regressions. Genuine zero and representable subnormals remain valid.
+Permanent read-only CI `33999714708` passed **3,277 Python cases per interpreter (3.11/3.13), 152 Vitest cases and 22 Node cases**. Actual protected worker tests, OpenPine wheel/sdist, TypeScript and production UI builds passed. The OP-04 commit prevents finite nonzero canonical decimals from silently becoming zero in both worker paths and request preloads, with 31 additional regressions. Genuine zero and representable subnormals remain valid.
 
-See [RC6_NUMERIC_REQUEST_VERIFICATION.md](RC6_NUMERIC_REQUEST_VERIFICATION.md) for exact test scope, artifact digests and unresolved diagnostics. A separate local standalone optimizer containment probe failed and remains unaccepted. The frontend install reported one high and one low dependency vulnerability, not investigated here. Functional CI success is not a complete optimizer, security or release gate. This ledger update is documentation only.
+See [RC6_NUMERIC_REQUEST_VERIFICATION.md](RC6_NUMERIC_REQUEST_VERIFICATION.md) for exact test scope, artifact digests and unresolved diagnostics. A separate local standalone optimizer containment probe failed and remains unaccepted. That frontend install reported one high and one low dependency vulnerability, not investigated by this merge. Functional CI success is not a complete optimizer, security or release gate.
 
 ## Preserved request / checkpoint / capability block
 
-The six source commits through `53f0c2d6da67bf364e0962fb50a7107571182427` are already published; the numeric continuation does not replace them with the older recovery copy. Their original joint verification/publication `33998764352` passed 3,246 Python cases per interpreter, 152 Vitest and 22 Node cases. Historical counts overlap the current suite and must not be added.
+The six source commits through `53f0c2d6da67bf364e0962fb50a7107571182427` are already published; the later changes do not replace them with the older recovery copy. Their original joint verification/publication `33998764352` passed 3,246 Python cases per interpreter, 152 Vitest and 22 Node cases.
 
-[RC6_REQUESTS_CHECKPOINT_PUBLICATION.md](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md) records exact source commits, sibling pins, publication receipts and limits. Both former blockers, A2P_PINELIB_INJECTION and na(strategy.position_avg_price) type evidence, are resolved for the documented supported subset.
+[RC6_REQUESTS_CHECKPOINT_PUBLICATION.md](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md) records exact source commits, sibling pins, publication receipts and historical limits. Both former blockers, A2P_PINELIB_INJECTION and na(strategy.position_avg_price) type evidence, are resolved for the documented supported subset. Its nested-request restriction is superseded by the latest scoped implementation above.
 
-- OP-08: independent source expressions, typed lower-TF arrays, explicit snapshot admission, static preflight and no-lookahead causality tests. Automatic UI/CLI data loading, nested/UDF and live requests remain open.
-- OP-10: real generated-state export, atomic restore, NA round-trip and receipt-derived counters. Full broker/IPC/process resume remains open; v1 generated envelopes without receipts are rejected.
-- OP-14: request/NA/array type and version bindings are improved, not the entire Pine v1-v6 catalog.
-- OP-15: worker negotiates implemented closed-bar support, not unimplemented checkpoint resume. The full cross-library capability graph remains open.
+OP-10 retains real generated-state export, atomic restore, NA round-trip and receipt-derived counters. Full broker/IPC/process resume remains open; v1 generated envelopes without receipts are rejected. OP-14 improves request/NA/array type and version bindings, not the whole catalog. OP-15 negotiates implemented closed-bar support, not unimplemented checkpoint resume; the full cross-library capability graph remains open.
 
 Update the exact source set in [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json) together and recompile artifacts against the target manifest. Identical version strings alone are insufficient.
 
