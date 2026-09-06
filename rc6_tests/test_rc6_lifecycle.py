@@ -116,7 +116,10 @@ def interactive(case, envelopes, tmp_path):
         def export_state(self):
             return {"test_transport": "in-memory"}
 
-    result = BacktestEngine(config).run(Strategy, bars=[_engine_bar(b) for b in envelopes],
+    # Match the production parent: resolve instrument defaults exactly as the worker.
+    from openpine.runtime.rc6_config import resolve_engine_config
+    broker_config = resolve_engine_config(serialize_engine_config(config, "strict_5x"), context)
+    result = BacktestEngine(broker_config).run(Strategy, bars=[_engine_bar(b) for b in envelopes],
         callbacks=BacktestCallbacks(on_protocol_callback=protocol_event), execution_context=context, bar_envelopes=envelopes)
     assert not outgoing
     assert session.execution_cursor.open_bar is None

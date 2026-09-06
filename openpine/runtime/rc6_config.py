@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import math
 from collections.abc import Mapping
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from backtest_engine import BacktestConfig
@@ -110,6 +111,23 @@ def resolve_engine_config(payload: Mapping[str, Any], context: Mapping[str, Any]
     for name in ("symbol", "timeframe", "semantic_profile"):
         if name in context and values.get(name) != context[name]:
             raise ValueError(f"engine config {name} differs from execution context")
+    # The admitted instrument, not a sample of OHLC values, owns the tick size.
+    # Validate the submitted hash before deriving defaults from the bound context.
+    if "mintick" in context:
+        raw_tick = context["mintick"]
+        try:
+            if type(raw_tick) not in (str, int, float):
+                raise ValueError("invalid tick type")
+            tick = Decimal(str(raw_tick))
+            if not tick.is_finite() or tick <= 0 or not math.isfinite(float(tick)) or float(tick) == 0:
+                raise ValueError("tick is outside the finite positive runtime range")
+            explicit = values.get("mintick")
+            if explicit is not None and (type(explicit) not in (str, int, float)
+                    or Decimal(str(explicit)) != tick):
+                raise ValueError("explicit tick differs from admitted instrument")
+        except (InvalidOperation, ValueError, OverflowError) as exc:
+            raise ValueError(f"engine config mintick differs from execution context: {exc}") from exc
+        values["mintick"] = float(tick)
     extras = {name: values.pop(name) for name in _EXTRA if name in values}
     for name in ("required_outputs", "required_metrics"):
         if name in values:

@@ -604,6 +604,9 @@ class InteractiveWorkerSession:
         self.engine_config = dict(engine_config) if engine_config is not None else {}
         from openpine.runtime.request_data import admit_request_data
         try:
+            if self.engine_config:
+                from openpine.runtime.rc6_config import resolve_engine_config
+                resolve_engine_config(self.engine_config, execution_context)
             admit_request_data(source, self.engine_config, execution_context)
         except ValueError as exc:
             raise IsolatedWorkerError(str(exc)) from exc

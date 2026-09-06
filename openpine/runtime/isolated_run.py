@@ -386,7 +386,12 @@ def run_isolated_artifact(
                 def restore_state(self, state: Any) -> None:
                     del state
 
-            result = BacktestEngine(config).run(
+            from openpine.runtime.rc6_config import resolve_engine_config
+            broker_config = resolve_engine_config(
+                _bulk_engine_config(config, semantic_profile),
+                getattr(config, "execution_context", {}),
+            )
+            result = BacktestEngine(broker_config).run(
                 _InteractiveStrategy,
                 bars=bars,
                 callbacks=BacktestCallbacks(on_protocol_callback=handle_protocol_event, on_bar_end=on_bar_end),
