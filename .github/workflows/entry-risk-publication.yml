@@ -1,0 +1,221 @@
+name: Verify the entry risk stack and native recovery before publication
+'on':
+  push:
+    branches: ['ops/rc6-entry-risk-20260906']
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: rc6-entry-risk-publication
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pine2ast
+          ref: 66d107310fcd9a8868667906f47de5fb5737ee93
+          path: publisher-source
+          sparse-checkout: .github/entry-risk/restore.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher-source/.github/entry-risk/restore.py "$RUNNER_TEMP/restore.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Reassemble patches and restore exact reviewed source commits
+        run: |
+          python - <<'PY'
+          import os, pathlib, shutil
+          source=pathlib.Path('.github/entry-risk')
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'submission'
+          out.mkdir()
+          shutil.copy(source/'plan.json',out/'plan.json')
+          for prefix in ('01','02'):
+              data=b''.join((source/f'{prefix}-{i}.patch').read_bytes() for i in (1,2))
+              (out/f'{prefix}.patch').write_bytes(data.replace(b'\n diff --git ',b'\ndiff --git '))
+          PY
+          python "$RUNNER_TEMP/restore.py" restore "$RUNNER_TEMP/submission/plan.json" "$RUNNER_TEMP/evidence"
+          cp "$RUNNER_TEMP/restore.py" "$RUNNER_TEMP/evidence/restore.py"
+      - name: Install pinned sibling sources from clean copies
+        run: |
+          python -m pip install setuptools==84.0.0 wheel==0.48.0 hatchling==1.32.0 build==1.6.0
+          python - <<'PY'
+          import json, os, pathlib, re, subprocess
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'stack'
+          evidence = root.parent / 'evidence'
+          root.mkdir()
+          pins = json.loads(pathlib.Path('docs/RC6_LIFECYCLE_SOURCES.json').read_text())
+          expected = {'openpine-contracts','pine2ast','ast2python','pinelib','backtest_engine','marketdata-provider','optimizer'}
+          if set(pins) != expected or not all(re.fullmatch('[0-9a-f]{40}', sha) for sha in pins.values()):
+              raise SystemExit('Invalid source pins')
+          sources = []
+          build_root = root.parent / 'install-sources'
+          build_root.mkdir()
+          for name, sha in pins.items():
+              path = root / name
+              subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(path)],check=True)
+              subprocess.run(['git','-C',str(path),'checkout','--detach',sha],check=True)
+              if subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip() != sha:
+                  raise SystemExit('Source identity mismatch')
+              clean = build_root / name
+              clean.mkdir()
+              archive = subprocess.check_output(['git','-C',str(path),'archive',sha])
+              subprocess.run(['tar','-x','-C',str(clean)],input=archive,check=True)
+              sources.append(str(clean) + ('[parquet,stream,zstd]' if name == 'marketdata-provider' else '[dev]' if name == 'optimizer' else ''))
+          subprocess.run(['python','-m','pip','install',*sources,'.[dev]'],check=True)
+          (evidence / 'source-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
+          with open(os.environ['GITHUB_ENV'],'a') as stream:
+              stream.write('PINE_STACK_ROOT='+str(root)+'\n')
+          PY
+      - name: Complete contracts runtime compiler broker and optimizer functional suites
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          for repo in openpine-contracts pinelib pine2ast ast2python backtest_engine optimizer; do
+            (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
+          done
+      - name: Deterministic provider suite (external network checks are separate)
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          cd "$PINE_STACK_ROOT/marketdata-provider"
+          python -m pytest -q -m 'not live_network' --junitxml="$RUNNER_TEMP/evidence/marketdata-provider.xml"
+      - name: Enable the real protected worker environment
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y apparmor-profiles apparmor-utils bubblewrap
+          sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          if ! getent passwd openpine-worker >/dev/null; then
+            sudo useradd --system --no-create-home --shell /usr/sbin/nologin openpine-worker
+          fi
+          sudo -n -u openpine-worker -- /usr/bin/id -u
+          /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+      - name: Native protected-worker and explicit affected-path regressions
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'evidence'
+          selected = json.loads(pathlib.Path('rc6_tests/selected_regressions.json').read_text())
+          if (not isinstance(selected,list) or len(set(selected)) != len(selected)
+                  or any(not isinstance(p,str) or not p.startswith('tests/test_')
+                         or not p.endswith('.py') or not pathlib.Path(p).is_file() for p in selected)):
+              raise SystemExit('Invalid explicit regression inventory')
+          (evidence/'selected-tests.json').write_text(json.dumps(sorted(selected),indent=2)+'\n')
+          subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-q','rc6_tests',*sorted(selected),
+                          '--junitxml='+str(evidence/'openpine.xml')],check=True)
+          PY
+      - name: Retain the actual permanent lint gate and build distributions
+        run: |
+          python - <<'PY'
+          import pathlib, subprocess
+          import yaml
+          workflow = yaml.safe_load(pathlib.Path('.github/workflows/rc6-native.yml').read_text())
+          step = next(s for s in workflow['jobs']['verify']['steps'] if s.get('name') == 'Validate changed runtime lint imports and build clean distributions')
+          subprocess.run(['bash','-euo','pipefail','-c',step['run']],check=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: entry-risk-${{ matrix.python }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: 30
+          if-no-files-found: error
+  frontend:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pine2ast
+          ref: 66d107310fcd9a8868667906f47de5fb5737ee93
+          path: publisher-source
+          sparse-checkout: .github/entry-risk/restore.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher-source/.github/entry-risk/restore.py "$RUNNER_TEMP/restore.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Restore the identical source for UI checks
+        run: |
+          python - <<'PY'
+          import os, pathlib, shutil
+          source=pathlib.Path('.github/entry-risk')
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'submission'
+          out.mkdir()
+          shutil.copy(source/'plan.json',out/'plan.json')
+          for prefix in ('01','02'):
+              data=b''.join((source/f'{prefix}-{i}.patch').read_bytes() for i in (1,2))
+              (out/f'{prefix}.patch').write_bytes(data.replace(b'\n diff --git ',b'\ndiff --git '))
+          PY
+          python "$RUNNER_TEMP/restore.py" restore "$RUNNER_TEMP/submission/plan.json" "$RUNNER_TEMP/evidence"
+      - uses: actions/download-artifact@v4
+        with:
+          name: entry-risk-3.13-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend-evidence
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - run: npm ci
+        working-directory: openpine-ui
+      - name: Full Vue and unit suite
+        working-directory: openpine-ui
+        run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/evidence/ui.xml"
+      - name: Actual type check and production build
+        working-directory: openpine-ui
+        run: npm run build | tee "$RUNNER_TEMP/evidence/ui-build.log"
+      - name: Node package and same-backend API checks
+        working-directory: openpine-ui
+        env:
+          OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend-evidence/openapi.json
+        run: npm run test:node | tee "$RUNNER_TEMP/evidence/ui-node.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: entry-risk-frontend-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/evidence/
+            openpine-ui/dist/
+          retention-days: 30
+          if-no-files-found: error
+  publish:
+    needs: [verify, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: entry-risk-3.13-${{ github.run_id }}
+          path: evidence
+      - name: Fast-forward verified RC6 and archive only the temporary ref
+        run: python evidence/restore.py publish evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: entry-risk-publication-${{ github.run_id }}
+          path: evidence/
+          retention-days: 30

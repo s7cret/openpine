@@ -1,0 +1,80 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index 12cb99531ba76c27f0e2c4a12840027a3a1bdfce..fa779a94be9bcbfaca73303583eaad9d4967440b 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -106,3 +106,3 @@ jobs:
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py rc6_tests/test_rc6_entry_risk.py
+           python -m compileall -q openpine
+diff --git a/docs/RC6_REVIEW_36.json b/docs/RC6_REVIEW_36.json
+index a37ae9c9d25b863e96d4e41611704e0e14635200..ffaa69be7871290c1d911cee713ffab2168ca2be 100644
+--- a/docs/RC6_REVIEW_36.json
++++ b/docs/RC6_REVIEW_36.json
+@@ -4,3 +4,3 @@
+   "source_spec_name": "OpenPine_RC6_Review_TZ_2026-09-05.md",
+-  "snapshot_base": "4ec4d177bf0d0dbc0ffc2891f79332ac2bb6785c",
++  "snapshot_base": "b770989098577440481fa9eb44b8217ccf970159",
+   "status_policy": "Task status is full-scope acceptance, not implementation percentage. Partial records preserve implemented regressions; accepted requires no remaining acceptance work and an explicit receipt. CI verifies ledger consistency, not TradingView truth. New test claims require the publication receipt.",
+@@ -21,6 +21,7 @@
+       "status": "partial",
+-      "implemented": "Overrides поступают в runtime, CLI и trials; проверяются типы и hash применённых inputs.",
++      "implemented": "Overrides поступают в runtime, CLI и trials; проверяются типы и hash применённых inputs. Исправлены scalar input v1-v4 и source-input qualifier; max_position_size принимает применённый input, включая ноль, без утечки между запусками.",
+       "remaining": "Зафиксировать единый output digest для CLI/API/trial, включая одинаковые title и все допустимые нули.",
+       "evidence_paths": [
+-        "rc6_tests/test_rc6_inputs.py"
++        "rc6_tests/test_rc6_inputs.py",
++        "rc6_tests/test_rc6_entry_risk.py"
+       ]
+@@ -72,4 +73,4 @@
+       "status": "partial",
+-      "implemented": "Семь команд и 17 скаляров; pending market/limit/stop/stop-limit exits, all-entry scope и per-fill relative уровни сохранены. Смешанные profit+limit/loss+stop v6 выбирают first_trigger на каждом фактическом исполнении; v1-v5 сохраняют absolute precedence. Новый intent 2.4.0 передаёт политику явно; bulk/interactive и version matrix проверены.",
+-      "remaining": "Trailing, включая пары активации trail_points/trail_price; risk/indexed trade methods и полные исторические сигнатуры. Полная FIFO/ANY атрибуция и унификация quantity для именованных absolute exits с повторными ID.",
++      "implemented": "Сохранены семь торговых команд, 17 скаляров, all-entry/per-fill exits, смешанные цены v6, trailing/TP и метаданные выходов. Добавлены allow_entry_in и max_position_size через существующий RiskIntent; global/input параметры проверяются, scope/API строятся из общего engine registry. Позиционные exit и абсолютные повторные входы покрыты предыдущими этапами.",
++      "remaining": "Остальные risk и indexed trade methods; извлечение условных/локальных risk declarations, multiple direction conformance, full historical signatures, FIFO/ANY, fixed-stop/trailing arbitration и отложенное вычисление/доставка alerts.",
+       "evidence_paths": [
+@@ -84,3 +85,7 @@
+         "docs/RC6_MIXED_EXIT_PRICES.md",
+-        "docs/RC6_MIXED_EXIT_PUBLICATION.md"
++        "docs/RC6_MIXED_EXIT_PUBLICATION.md",
++        "docs/RC6_TRAILING_PUBLICATION.md",
++        "docs/RC6_METADATA_TRANSFER_PUBLICATION.md",
++        "docs/RC6_ENTRY_RISK.md",
++        "rc6_tests/test_rc6_entry_risk.py"
+       ]
+@@ -113,6 +118,7 @@
+       "status": "partial",
+-      "implemented": "Реальные Pine checkpoints, request caches и receipt-derived cursors; атомарный restore.",
++      "implemented": "Реальные Pine checkpoints, request caches и receipt-derived cursors; атомарный restore. Native broker/realtime snapshots теперь содержат проверяемый risk-state; правила до checkpoint сохраняются после resume. Старые снимки без risk-state не доказывают прежнюю политику.",
+       "remaining": "Полное возобновление broker+IPC+worker без дублирования orders/visuals после падения.",
+       "evidence_paths": [
+-        "rc6_tests/test_rc6_checkpoint_receipts.py"
++        "rc6_tests/test_rc6_checkpoint_receipts.py",
++        "docs/RC6_ENTRY_RISK.md"
+       ]
+@@ -151,6 +157,7 @@
+       "status": "partial",
+-      "implemented": "Добавлены request/NA/array bindings и проверки версий v1–v6 для поддержанного поднабора.",
++      "implemented": "Добавлены request/NA/array bindings и проверки версий v1–v6 для поддержанного поднабора. Промежуточные namespaces выводятся только из активного каталога; simple entry-risk inputs, legacy input и source-series различаются в парных тестах v1-v6.",
+       "remaining": "Полный version-exact каталог, overload denominator и отрицательные пары доступности.",
+       "evidence_paths": [
+-        "rc6_tests/test_rc6_requests.py"
++        "rc6_tests/test_rc6_requests.py",
++        "docs/RC6_ENTRY_RISK.md"
+       ]
+@@ -207,4 +214,4 @@
+       "status": "partial",
+-      "implemented": "Сохранены forward-only price events, хронологический Bar Magnifier, all-entry lifetime, per-fill relative уровни/резервы, отмена/замена и native resume. Добавлен выбор фиксированных TP/SL из относительной/абсолютной пары по версии Pine и фактической цене каждого исполнения, включая гэпы, нули, NA и частичные количества.",
+-      "remaining": "Полная матрица ордеров, trailing и его activation pairs, FIFO/ANY и именованные absolute repeated-entry quantities, комиссии, fill phase, margin/liquidation и независимый event oracle.",
++      "implemented": "Сохранены causal price scanner/Bar Magnifier, all-entry lifetime, per-fill relative/absolute цены и резервы, trailing и native resume. Entry-risk ограничивает фактическую позицию при отправке и исполнении, не strategy.order; запрещённый reverse становится полным market close. Учтены closing component, qty-step/minimum, одновременные pending orders, невозможность роста clipped order и сохранение risk state.",
++      "remaining": "Остальные risk, FIFO/ANY, fixed-stop/trailing arbitration, полная матрица комиссий/margin/liquidation/realtime/seed и независимый event oracle. Native policy updates и legacy snapshot compatibility не равны полной Pine conformance.",
+       "evidence_paths": [
+@@ -220,3 +227,7 @@
+         "docs/RC6_MIXED_EXIT_PRICES.md",
+-        "docs/RC6_MIXED_EXIT_PUBLICATION.md"
++        "docs/RC6_MIXED_EXIT_PUBLICATION.md",
++        "docs/RC6_TRAILING_PUBLICATION.md",
++        "docs/RC6_METADATA_TRANSFER_PUBLICATION.md",
++        "docs/RC6_ENTRY_RISK.md",
++        "rc6_tests/test_rc6_entry_risk.py"
+       ]
