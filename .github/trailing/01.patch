@@ -1,0 +1,264 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index dc6541fb759ae581e6b178ca1ab34a66a88242ee..90e20a538c461dbd359b791b7d74b99a2f3eca2e 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -104,7 +104,7 @@ jobs:
+           PY
+       - name: Validate changed runtime lint imports and build clean distributions
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py
+           python -m compileall -q openpine
+           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+           mkdir -p "$RUNNER_TEMP/build-source"
+diff --git a/docs/RC6_LIFECYCLE_SOURCES.json b/docs/RC6_LIFECYCLE_SOURCES.json
+index 6c7d910706cf081a16a5380642d173d0c1f876a9..5a4a29669b60e69e7e2551550150434876dc6b77 100644
+--- a/docs/RC6_LIFECYCLE_SOURCES.json
++++ b/docs/RC6_LIFECYCLE_SOURCES.json
+@@ -1,9 +1,9 @@
+ {
+   "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+-  "openpine-contracts": "db372bc7b135a084667d3c726eca0465d21f008b",
++  "openpine-contracts": "9aa381dc0c1570fda1ea90221d9148194e506279",
+   "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+   "ast2python": "51552e7c1de339d8de4794290655e574d6447e82",
+   "pinelib": "cddaa0bf2324db36b4cd29e944a251032658c59d",
+-  "backtest_engine": "3e5271671afdd41d9cba7400ac70fc569edeb6ad",
++  "backtest_engine": "38818c614a425902f881321faec311f03009c810",
+   "pine2ast": "6ba935eceee505bcbe80bf1f5908588407d2f546"
+ }
+diff --git a/docs/RC6_TRAILING_EXITS.md b/docs/RC6_TRAILING_EXITS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..23156f309eb214595c971e1a7f74f4e793466268
+--- /dev/null
++++ b/docs/RC6_TRAILING_EXITS.md
+@@ -0,0 +1,44 @@
++# OP-07 / OP-20: versioned trailing exits
++
++Trailing activation and adverse stop crossings use the same forward-only price-event
++scanner as fixed orders. Historical paths cannot use a high/low before entry or
++activation. Newly attached all-entry policies observe the actual entry fill before
++continuing the path. Gaps are discrete observed prices, not interpolated segments.
++
++Each actual entry fill has its own activation, best observed price and reserved
++quantity. All-entry persistence, named IDs, cancellation/replacement and partial
++quantities use the existing scope/lifetime machinery. A repeated trail is modified
++in place; an already active trail keeps its best price. Explicit offset amendments
++use that best price rather than replaying historical bars. This is tested native
++behavior, not an independent TradingView oracle for every amendment combination.
++
++Pine v6 chooses the first activation reached from trail_points/trail_price. Versions
++1-5 retain absolute precedence. Native callers choose price_pair_policy explicitly,
++with absolute_first remaining the default. Distances use admitted mintick at the
++actual entry fill. Zero offset is valid; missing offset is not inferred. NA fields
++are absent values, not zero. Nonfinite/negative offsets are rejected.
++
++The compiled bridge supports a trail alone or with a fixed take-profit. It still
++rejects a fixed stop/loss and a trailing stop in the same call: arbitration between
++those two stop mechanisms is not implemented in this subset. Per-leg messages,
++full FIFO/ANY attribution and all historical signatures remain separate tasks.
++
++ExitIntent 2.5.0 explicitly carries price_pair_policy plus complete trailing
++parameters and exactly one target scope. Old 2.2/2.3/2.4 forms retain their validation.
++The host and worker require compatible Engine/Contracts revisions and recompiled
++artifacts. Matching package versions alone are insufficient.
++
++Native broker snapshots retain trail_best_price and activation state. Resume tests
++compare trades, fills and equity to uninterrupted execution. This is NOT full
++isolated-job/IPC recovery, and no full OP-10 completion is claimed.
++
++The new tests include 25 contract cases, 55 native broker cases and 28 compiled host
++cases (four require real protected workers). Local checks use Python 3.13.5. CI
++results are recorded only once observed in the publication receipt. Prior rejection
++expectations are replaced by incomplete/unsupported-combination tests, not skips.
++No live TradingView execution, timing, coverage threshold or production installation
++acceptance is claimed. Full OP-07/20 acceptance remains partial.
++
++Official semantic references:
++- https://www.tradingview.com/pine-script-docs/concepts/strategies/#trailing-stops
++- https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-6/#strategyexit-evaluates-parameter-pairs
+diff --git a/openpine/runtime/strategy_host.py b/openpine/runtime/strategy_host.py
+index a2659c445a8cb3a84e69815655932ca115b2b780..447b338de4c299b97c3d5de12929239a1f77dc45 100644
+--- a/openpine/runtime/strategy_host.py
++++ b/openpine/runtime/strategy_host.py
+@@ -50,6 +50,9 @@ def strategy_host_surface() -> dict[str, Any]:
+             "exit_relative_prices_per_opening_fill",
+             "exit_v6_first_trigger_pairs_intent_v2_4",
+             "alerts_tape_only",
++            "trailing_explicit_offset_and_activation",
++            "trailing_fixed_stop_combination_unavailable",
++            "trailing_versioned_activation_per_fill",
+         ],
+     }
+     encoded = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+@@ -132,7 +135,7 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int)
+                 entry = bound.get("from_entry")
+                 if isinstance(entry, ast.Constant) and type(entry.value) is not str:
+                     raise StrategyHostError("exit from_entry must be a string; omitted or empty means all entries")
+-                if not set(bound).intersection({"profit", "limit", "loss", "stop"}):
++                if not set(bound).intersection({"profit", "limit", "loss", "stop", "trail_price", "trail_points"}):
+                     raise StrategyHostError("exit requires a supported active price leg")
+         except (TypeError, ValueError) as exc:
+             raise StrategyHostError(f"{capability} at {where}: {exc}") from exc
+diff --git a/rc6_tests/test_rc6_strategy_surface.py b/rc6_tests/test_rc6_strategy_surface.py
+index ae49514beedea49cdb8c0ae6378ec55dcd0668c8..65962d1b24266415c4699d0394265c0a36ac0d60 100644
+--- a/rc6_tests/test_rc6_strategy_surface.py
++++ b/rc6_tests/test_rc6_strategy_surface.py
+@@ -119,7 +119,7 @@ def test_scalar_state_drives_actual_pine_orders(monkeypatch, tmp_path, name, con
+         ("float p = strategy.closedtrades.profit(0)", "strategy.closedtrades.profit"),
+         ("float p = strategy.margin_liquidation_price", "strategy.margin_liquidation_price"),
+         ('strategy.exit("X")', "active price leg"),
+-        ('strategy.exit("X", "L", trail_points=10, trail_offset=5)', "unsupported host parameters"),
++        ('strategy.exit("X", "L", trail_points=10, trail_offset=5, stop=99)', "fixed stop plus trailing"),
+         ('strategy.exit("X", "L", stop=99, comment_loss="SL")', "unsupported host parameters"),
+     ],
+ )
+diff --git a/rc6_tests/test_rc6_trailing_exits.py b/rc6_tests/test_rc6_trailing_exits.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..335e6eefa1d560ed441316671cee3f863d04cec9
+--- /dev/null
++++ b/rc6_tests/test_rc6_trailing_exits.py
+@@ -0,0 +1,143 @@
++"""Actual compiled Pine trailing exits, with exact trade comparisons between modes."""
++
++import pytest
++from rc6_tests.test_rc6_deferred_exits import prepare, compare_modes
++from rc6_tests.test_rc6_marketdata_boundary import OPENED
++
++
++def trailing_case(version=6, direction="long", **settings):
++    absolute = 110 if direction == "long" else 90
++    exit_args = f"trail_price={absolute},trail_points=500,trail_offset=200"
++    if version < 6:
++        body = (
++            f'strategy.entry("A",strategy.{direction},qty=2,when=time=={OPENED})\n'
++            f'strategy.exit("X","A",{exit_args},when=time=={OPENED})\n'
++        )
++    else:
++        body = (
++            "varip bool sent=false\nif bar_index==0 and not sent\n    sent:=true\n"
++            f'    strategy.entry("A",strategy.{direction},qty=2)\n'
++            f'    strategy.exit("X","A",{exit_args})\n'
++        )
++    rows = [(100, 101, 99, 100), (100, 108, 99, 104), (104, 113, 103, 107)]
++    if direction == "short":
++        rows = [(200 - a, 200 - c, 200 - b, 200 - d) for a, b, c, d in rows]
++    return prepare(body, rows, version=version, **settings)
++
++
++@pytest.mark.parametrize("version", range(1, 7))
++@pytest.mark.parametrize("direction", ["long", "short"])
++def test_versioned_activation_drives_real_trades(monkeypatch, tmp_path, version, direction):
++    case, rows = trailing_case(version, direction)
++    result, tape = compare_modes(monkeypatch, tmp_path, case, rows)
++    target = 106 if version == 6 else 111
++    assert [(t.exit_price, t.qty) for t in result.closed_trades] == [
++        (target if direction == "long" else 200 - target, 2)
++    ]
++    assert tape[-1]["schema_version"] == "2.5.0"
++    assert tape[-1]["price_pair_policy"] == ("first_trigger" if version == 6 else "absolute_first")
++    assert tape[-1]["trail_offset"] == "200"
++
++
++@pytest.mark.parametrize("kind", ["market", "limit", "stop", "stop_limit"])
++def test_trail_binds_after_actual_pending_fill(monkeypatch, tmp_path, kind):
++    extra = {
++        "market": "",
++        "limit": ",limit=99",
++        "stop": ",stop=101",
++        "stop_limit": ",stop=101,limit=99",
++    }[kind]
++    case, rows = prepare(
++        "if bar_index==0\n" + f'    strategy.entry("A",strategy.long,qty=1{extra})\n'
++        '    strategy.exit("X","A",trail_points=200,trail_offset=100)\n',
++        [(100, 101, 99, 100), (100, 104, 95, 96), (99, 112, 98, 100)],
++    )
++    result, tape = compare_modes(monkeypatch, tmp_path, case, rows)
++    entry = {"market": 100, "limit": 99, "stop": 101, "stop_limit": 99}[kind]
++    assert [(t.entry_price, t.exit_price) for t in result.closed_trades] == [
++        (entry, 111 if kind in {"stop_limit", "limit"} else 103)
++    ]
++    assert tape[-1]["schema_version"] == "2.5.0"
++
++
++@pytest.mark.parametrize("scope", ["named", "all"])
++def test_repeated_id_independent_trails_and_partial_quantities(monkeypatch, tmp_path, scope):
++    arg = '"A",' if scope == "named" else ""
++    case, rows = prepare(
++        'if bar_index==0\n    strategy.entry("A",strategy.long,qty=2)\n'
++        'if bar_index==1\n    strategy.entry("A",strategy.long,qty=6)\n'
++        f'if bar_index==2\n    strategy.exit("X",{arg}trail_points=1500,trail_offset=200,qty_percent=50)\n',
++        [
++            (100, 101, 99, 100),
++            (100, 101, 99, 100),
++            (110, 111, 109, 110),
++            (110, 120, 109, 117),
++            (117, 130, 116, 125),
++        ],
++        pyramiding=2,
++    )
++    result, tape = compare_modes(monkeypatch, tmp_path, case, rows)
++    assert [(t.entry_price, t.exit_price, t.qty) for t in result.closed_trades] == [
++        (100, 118, 1),
++        (110, 128, 3),
++    ]
++    assert [t.qty for t in result.open_trades] == [1, 3]
++    assert ("from_entry" in tape[-1]) == (scope == "named")
++
++
++@pytest.mark.parametrize("offset", [0, 100])
++def test_zero_offset_and_reissue_do_not_reset_or_duplicate(monkeypatch, tmp_path, offset):
++    case, rows = prepare(
++        'if bar_index==0\n    strategy.entry("A",strategy.long,qty=1)\n'
++        f'strategy.exit("X","A",trail_points=500,trail_offset={offset})\n',
++        [(100, 101, 99, 100), (100, 110, 99, 109), (109, 109, 105, 107)],
++    )
++    result, _ = compare_modes(monkeypatch, tmp_path, case, rows)
++    assert [t.exit_price for t in result.closed_trades] == [105 if offset == 0 else 109]
++
++
++@pytest.mark.parametrize(
++    "arguments,fragment",
++    [
++        ("trail_price=105", "production-blocking diagnostics"),
++        ("trail_offset=1", "production-blocking diagnostics"),
++        ("trail_points=5,trail_offset=2,stop=95", "fixed stop plus trailing"),
++        ("trail_price=105,trail_offset=2,loss=1", "fixed stop plus trailing"),
++    ],
++)
++def test_unsupported_or_incomplete_shapes_fail_before_execution(arguments, fragment):
++    from openpine.compile.native_rc6 import NativeRC6CompilerAdapter
++
++    result = NativeRC6CompilerAdapter().compile(
++        f'//@version=6\nstrategy("negative")\nstrategy.exit("X","A",{arguments})\n',
++        producer_commits={"pine2ast": "a" * 40, "ast2python": "b" * 40},
++    )
++    assert not result.success and fragment in str(result.errors)
++
++
++@pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
++@pytest.mark.parametrize("on_close", [False, True])
++def test_real_worker_trailing_pair(tmp_path, mode, on_close):
++    from openpine.runtime.isolated_run import run_isolated_artifact
++    from openpine.runtime.rc6_worker_runtime import _engine_bar
++    from rc6_tests.test_rc6_worker_admission import _manifest
++
++    case, rows = trailing_case(process_orders_on_close=on_close, calc_on_order_fills=True)
++    artifact, context, config = case
++    for name, value in dict(
++        execution_context=context,
++        admitted_manifest=_manifest(),
++        instrument_id=context["instrument_id"],
++        generated_artifact=artifact.generated_artifact,
++        bar_envelopes=rows,
++        run_hash="sha256:" + "1" * 64,
++        protocol_artifact_dir=str(tmp_path / "protocol"),
++        isolated_protocol=mode,
++    ).items():
++        setattr(config, name, value)
++    result = run_isolated_artifact(
++        artifact.python_code.encode(), bars=[_engine_bar(b) for b in rows], config=config, params={}
++    )
++    assert result["ok"] and result["bars_processed"] == len(rows)
++    assert [(t.exit_price, t.qty) for t in result["raw_result"].closed_trades] == [(106, 2)]
++    assert result["intent_tape"][-1]["schema_version"] == "2.5.0"
