@@ -1,59 +1,30 @@
 # RC6 review progress — 2026-09-06
 
-Implementation and full acceptance of the 36 tasks are tracked separately in
-[RC6_REVIEW_36.md](RC6_REVIEW_36.md) and [RC6_REVIEW_36.json](RC6_REVIEW_36.json).
-Original IDs, headings, specification checksum and whole-task statuses are retained.
-Test counts are not percentages of TradingView compatibility.
+The original 36 tasks remain in [RC6_REVIEW_36.md](RC6_REVIEW_36.md) and [RC6_REVIEW_36.json](RC6_REVIEW_36.json). Status is full-scope acceptance, not a percentage of code or TradingView compatibility. The snapshot still contains 29 partial tasks, six requiring verification and one accepted task (OpenPine branch consolidation only).
 
-## Latest verified price-entry bracket block
+## Latest verified all-entry / relative-per-fill exit block
 
-OpenPine tested source: `cc5f8d116660d40c6e42ffa1feef3cbcaada7d9e`.
-Backtest Engine: `891141faf482c76ed1f85a7f4b0076f26ed63336`.
-Joint CI/publication `34029925432` passed 3,789 functional cases and 37 accounting
-checks per interpreter (Python 3.11/3.13), plus 152 Vitest and 22 Node cases.
-Six new real protected worker scenarios passed. Both repository publications
-completed on their first attempts; source refs and downloaded evidence were verified.
+Tested OpenPine source: `b36b9ac6c74a1c84348e91d376dc16e9f4d33e3f`.
+Contracts: `7c20559e87b3f2342adb0b849d4239c133567f0a`.
+Backtest Engine: `884c7823d29344dbf847a0cf6c513d802b7c9ece`.
 
-OP-07/20 now include explicit brackets on pending limit, stop and stop-limit entries,
-nearest-forward price traversal, no retroactive low/high after activation, no close
-callback path replay, OCA price-event order and chronological magnifier subbar opens.
-Three obsolete negative assertions were upgraded, and 95 functional cases added.
-The source follows the newest remote RC6 without replacing prior request/checkpoint,
-configuration or optimizer work. Eight protected host runtime files are unchanged.
+Joint run `34034108879` passed 3,882 functional cases plus 37 ledger checks on each Python 3.11/3.13, with zero failures/errors/skips in executed selections. Four new actual worker cases ran with the sandbox enabled. Frontend has 152 passing Vitest and 22 Node cases with production build/API checks. Six library suites are complete; provider excludes five live-network tests and host uses native plus selected regressions. Whole-project coverage and external TradingView execution acceptance are not claimed.
 
-[RC6_PRICE_ENTRY_EXITS_PUBLICATION.md](RC6_PRICE_ENTRY_EXITS_PUBLICATION.md) records
-actual source identities, counts, artifact digests, preservation and limitations.
-[RC6_PRICE_ENTRY_EXITS_BLOCK.md](RC6_PRICE_ENTRY_EXITS_BLOCK.md) describes the implementation.
-This progress/receipt/ledger commit changes documentation only after the tested source;
-it does not assert an unobserved new full CI run for the later documentation revision.
+OP-07/20: omitted/empty from_entry now uses an explicit all_entries intent (2.3.0), while named exits remain 2.2.0. The broker persists all-entry protection through later same-direction entries until flat/reversal/cancellation. All-entry and relative exits use opening-fill identities for price, quantity and reserves. Replacement removes obsolete legs, native resume preserves the policy, and warmup reset clears it.
 
-## Preserved prior blocks
+[Publication receipt](RC6_ALL_ENTRY_EXITS_PUBLICATION.md) records source commits, actual results, artifact digests, the corrected frontend-vs-host negative test and branch preservation. [Implementation notes](RC6_ALL_ENTRY_EXITS.md) describe the boundaries. This progress/ledger/receipt commit changes documentation only after the verified source; no unobserved full rerun is claimed.
 
-- [Market brackets and admitted ticks](RC6_EXIT_BRACKETS_PUBLICATION.md): retained
-  sizing, reservation and actual instrument-tick behavior; its price-entry limitation
-  is superseded only for the subset documented in the new receipt.
-- [Optimizer integration](RC6_OPTIMIZER_PUBLICATION_RECEIPT.md): independent trials,
-  validated results, warmup and full optimizer checks.
-- [Nested requests](RC6_NESTED_MERGE_PUBLICATION.md) and
-  [checkpoints](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md): preserved child contexts,
-  chunked snapshots and receipt-checked state.
-- [Data/UI](RC6_DATA_UI_PUBLICATION_RECEIPT.md),
-  [strategy surface](RC6_STRATEGY_PUBLICATION_RECEIPT.md),
-  [cleanup/progress](RC6_CLEANUP_EXECUTION_BLOCK.md),
-  [lifecycle](RC6_LIFECYCLE_BLOCK.md) and [inputs](RC6_INPUTS_BLOCK.md).
+Named absolute repeated-entry quantities, full FIFO/ANY matching/report attribution, trailing, v6 mixed levels, per-leg metadata, risk and indexed trades remain open. Full isolated broker/IPC/worker recovery is not implemented by native resume tests. No performance improvement is claimed; per-fill exit orders can increase work.
 
-## Remaining acceptance and deployment
+## Preserved earlier work
 
-Explicit from_entry is still required. All-entry/trailing/repeated-entry relative
-levels, v6 mixed levels, leg metadata, risk/indexed trades, full broker/IPC recovery,
-automatic request loading, immutable installation, broader realtime, browser UX and
-an independent Pine v1-v6 oracle corpus remain open. No full OP-07/20 or 36-task
-acceptance, complete TV equivalence or performance improvement is claimed.
+- [Price-entry exits](RC6_PRICE_ENTRY_EXITS_BLOCK.md): forward-only market/limit/stop/stop-limit execution, price-order OCA and chronological Bar Magnifier. Earlier notes requiring from_entry or leaving all-entry/relative repeat levels wholly unimplemented are superseded by this new scoped block.
+- [Entry brackets](RC6_EXIT_BRACKETS_BLOCK.md): deferred market protection, admitted mintick and quantity/reservation fixes.
+- [Optimizer publication](RC6_OPTIMIZER_PUBLICATION_RECEIPT.md): trial isolation, request rebinding, metric controls, strict ranking and full optimizer CI.
+- [Nested requests](RC6_NESTED_MERGE_PUBLICATION.md), [requests/checkpoints](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md), and [data/UI](RC6_DATA_UI_PUBLICATION_RECEIPT.md): preserved source-context expressions, checkpoint v2, chunked transport and UI correctness.
 
-Six library suites are complete; provider excludes five network cases and OpenPine
-uses native plus selected regressions. Coverage and browser visual gates are separate.
-Use [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json), update host/worker/engine
-together and recompile for the changed host surface. Same version strings do not
-identify the source. OpenPine keeps four target branches; main and historical releases
-are untouched, maintenance refs archived as tags. No cleanup of all sibling branches
-or standalone production installer is claimed.
+Nine important host runtime files and the UI tree are unchanged from the preceding source. OpenPine still has main, release/v2.17, release/v4.0.2 and release/5.0.0rc6; historical heads are not rewritten. Temporary publication branches are preserved as tags before removal. Exact dependency pins are in [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json). Update the stack together and recompile artifacts; this is not a standalone production installer.
+
+## Remaining major work
+
+Complete broker/strategy semantics, request discovery/UDF/live contexts, full-job restart, immutable delivery/doctor, winner replay and validation, full version-specific catalog/conformance corpus, browser UX and all-36 acceptance remain open. Existing passing cases and explicit unsupported boundaries do not replace independent TradingView oracle evidence.
