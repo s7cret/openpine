@@ -1,0 +1,238 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index 90e20a538c461dbd359b791b7d74b99a2f3eca2e..1747c79d477f454d0c29d981fa472c21c7a684cc 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -104,7 +104,7 @@ jobs:
+           PY
+       - name: Validate changed runtime lint imports and build clean distributions
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py
+           python -m compileall -q openpine
+           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+           mkdir -p "$RUNNER_TEMP/build-source"
+diff --git a/docs/RC6_LIFECYCLE_SOURCES.json b/docs/RC6_LIFECYCLE_SOURCES.json
+index 5a4a29669b60e69e7e2551550150434876dc6b77..c98bc8617e4883c1c779f7a31a0eb70550d167bc 100644
+--- a/docs/RC6_LIFECYCLE_SOURCES.json
++++ b/docs/RC6_LIFECYCLE_SOURCES.json
+@@ -1,9 +1,9 @@
+ {
+   "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+-  "openpine-contracts": "9aa381dc0c1570fda1ea90221d9148194e506279",
++  "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+   "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+   "ast2python": "51552e7c1de339d8de4794290655e574d6447e82",
+   "pinelib": "cddaa0bf2324db36b4cd29e944a251032658c59d",
+-  "backtest_engine": "38818c614a425902f881321faec311f03009c810",
+-  "pine2ast": "6ba935eceee505bcbe80bf1f5908588407d2f546"
++  "backtest_engine": "d5d9c8e6cd1cad40dd5402bcf4521519a1de522e",
++  "pine2ast": "a0e548365eba137c247758a3da53c5514398043d"
+ }
+diff --git a/openpine/runtime/strategy_host.py b/openpine/runtime/strategy_host.py
+index 447b338de4c299b97c3d5de12929239a1f77dc45..2d5262c5abee43c909f03765cc5ad905c247b8b7 100644
+--- a/openpine/runtime/strategy_host.py
++++ b/openpine/runtime/strategy_host.py
+@@ -19,6 +19,7 @@ from backtest_engine.core.strategy_capabilities import (
+     STRATEGY_COMMANDS,
+     STRATEGY_CONSTANTS,
+     STRATEGY_STATE_VALUES,
++    validate_exit_shape,
+ )
+ 
+ 
+@@ -49,7 +50,8 @@ def strategy_host_surface() -> dict[str, Any]:
+             "intent_all_entry_exit_v2_3",
+             "exit_relative_prices_per_opening_fill",
+             "exit_v6_first_trigger_pairs_intent_v2_4",
+-            "alerts_tape_only",
++            "fill_metadata_captured_per_leg_intent_v2_6",
++            "no_external_alert_delivery",
+             "trailing_explicit_offset_and_activation",
+             "trailing_fixed_stop_combination_unavailable",
+             "trailing_versioned_activation_per_fill",
+@@ -132,10 +134,13 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int)
+             pos, named = _arguments(keywords.get("arguments"))
+             bound = spec.bind(pos, named, pine_version)
+             if capability == "strategy.exit":
++                active = {name for name, value in bound.items()
++                          if not (isinstance(value, ast.Constant) and value.value is None)}
++                validate_exit_shape(active)
+                 entry = bound.get("from_entry")
+                 if isinstance(entry, ast.Constant) and type(entry.value) is not str:
+                     raise StrategyHostError("exit from_entry must be a string; omitted or empty means all entries")
+-                if not set(bound).intersection({"profit", "limit", "loss", "stop", "trail_price", "trail_points"}):
++                if not active.intersection({"profit", "limit", "loss", "stop", "trail_price", "trail_points"}):
+                     raise StrategyHostError("exit requires a supported active price leg")
+         except (TypeError, ValueError) as exc:
+             raise StrategyHostError(f"{capability} at {where}: {exc}") from exc
+diff --git a/rc6_tests/test_rc6_order_metadata.py b/rc6_tests/test_rc6_order_metadata.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..258afbd37526151b090131bdab8cd4d84b7ebf1c
+--- /dev/null
++++ b/rc6_tests/test_rc6_order_metadata.py
+@@ -0,0 +1,152 @@
++"""Compiled Pine -> intent -> existing broker -> captured trade and fill events."""
++
++from dataclasses import asdict
++import pytest
++from rc6_tests.test_rc6_deferred_exits import prepare
++from rc6_tests.test_rc6_bulk_execution import execute_bulk
++from rc6_tests.test_rc6_lifecycle import interactive
++from rc6_tests.test_rc6_marketdata_boundary import OPENED
++
++ROWS = [(100, 101, 99, 100), (100, 110, 94, 104), (104, 105, 103, 104)]
++
++
++def build(leg="profit", scope="named", text="override", disabled=False, **opts):
++    arg = {
++        "profit": "profit=500",
++        "loss": "loss=500",
++        "trailing": "trail_points=500,trail_offset=200",
++    }[leg]
++    named = '"A",' if scope == "named" else ""
++    return prepare(
++        "varip bool sent=false\nif bar_index==0 and not sent\n    sent:=true\n"
++        '    strategy.entry("A",strategy.long,qty=2,comment="entry",alert_message="entry-alert")\n'
++        f'    strategy.exit("X:public",{named}{arg},comment="fallback",alert_message="fallback-alert",'
++        f'comment_{leg}="{text}",alert_{leg}="{text}",disable_alert={str(disabled).lower()})\n',
++        ROWS,
++        collect_events=True,
++        **opts,
++    )
++
++
++def compare(monkeypatch, tmp_path, case, rows):
++    bulk = execute_bulk(monkeypatch, case, bars=rows)
++    result, tape, *_ = interactive(case, rows, tmp_path)
++    assert result.status == "completed", result.errors
++    assert tape == bulk["intent_tape"]
++    assert [asdict(t) for t in result.closed_trades] == bulk["raw_result"]["closed_trades"]
++    assert [asdict(e) for e in result.events] == bulk["raw_result"]["events"]
++    return result, tape
++
++
++@pytest.mark.parametrize("leg", ["profit", "loss", "trailing"])
++@pytest.mark.parametrize("scope", ["named", "all"])
++@pytest.mark.parametrize("text", ["override", ""])
++def test_per_leg_text_reaches_exact_fill_in_both_modes(monkeypatch, tmp_path, leg, scope, text):
++    case, rows = build(leg, scope, text)
++    result, tape = compare(monkeypatch, tmp_path, case, rows)
++    assert len(result.closed_trades) == 1
++    assert result.closed_trades[0].entry_comment == "entry"
++    assert result.closed_trades[0].exit_comment == text
++    fills = [e.context for e in result.events if e.code == "ORDER_FILLED"]
++    assert fills[-1]["alert_message"] == text and fills[-1]["exit_leg"] == leg
++    assert fills[-1]["public_order_id"] == "X:public"
++    assert tape[-1]["schema_version"] == "2.6.0"
++
++
++@pytest.mark.parametrize("disabled", [False, True])
++@pytest.mark.parametrize("command", ["entry", "order", "close", "close_all"])
++def test_generic_alert_flags_are_not_lost_in_replay(monkeypatch, tmp_path, disabled, command):
++    flag = str(disabled).lower()
++    body = f'if bar_index==0\n    strategy.{command if command in {"entry", "order"} else "entry"}("A",strategy.long,qty=1,alert_message="ENTRY",disable_alert={flag})\n'
++    if command in {"close", "close_all"}:
++        target = '"A",' if command == "close" else ""
++        body += f'if bar_index==1\n    strategy.{command}({target}immediately=true,comment="CLOSE",alert_message="",disable_alert={flag})\n'
++    case, rows = prepare(body, ROWS, collect_events=True)
++    result, _ = compare(monkeypatch, tmp_path, case, rows)
++    fills = [e.context for e in result.events if e.code == "ORDER_FILLED"]
++    assert len(fills) == (1 if command in {"entry", "order"} else 2)
++    assert fills[-1]["alert_eligible"] is (not disabled)
++    assert fills[-1]["alert_message"] == ("ENTRY" if command in {"entry", "order"} else "")
++
++
++def test_pine_v6_positional_comment_is_not_misbound_as_oca_type(monkeypatch, tmp_path):
++    # Parameter 13 is comment, not the non-existent Pine exit oca_type argument.
++    body = 'if bar_index==0\n    strategy.entry("A",strategy.long,qty=1)\n'
++    body += '    strategy.exit("X","A",na,na,500,na,na,na,na,na,na,"group","POSITIONAL")\n'
++    case, rows = prepare(body, ROWS, collect_events=True)
++    result, tape = compare(monkeypatch, tmp_path, case, rows)
++    assert result.closed_trades[0].exit_comment == "POSITIONAL"
++    assert tape[-1]["comment"] == "POSITIONAL"
++
++
++def test_na_leg_metadata_falls_back_without_turning_into_text(monkeypatch, tmp_path):
++    case, rows = prepare(
++        'if bar_index==0\n    strategy.entry("A",strategy.long,qty=1)\n'
++        '    strategy.exit("X","A",profit=500,comment="general",comment_profit=na,alert_message="general-alert",alert_profit=na)\n',
++        ROWS,
++        collect_events=True,
++    )
++    result, tape = compare(monkeypatch, tmp_path, case, rows)
++    assert result.closed_trades[0].exit_comment == "general"
++    assert tape[-1]["schema_version"] == "2.2.0"
++    assert [e.context for e in result.events if e.code == "ORDER_FILLED"][-1][
++        "alert_message"
++    ] == "general-alert"
++
++
++@pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
++@pytest.mark.parametrize("disabled", [False, True])
++def test_real_worker_order_metadata(tmp_path, mode, disabled):
++    from openpine.runtime.isolated_run import run_isolated_artifact
++    from openpine.runtime.rc6_worker_runtime import _engine_bar
++    from rc6_tests.test_rc6_worker_admission import _manifest
++
++    case, rows = build("trailing", disabled=disabled, calc_on_order_fills=True)
++    artifact, ctx, cfg = case
++    for k, v in dict(
++        execution_context=ctx,
++        admitted_manifest=_manifest(),
++        instrument_id=ctx["instrument_id"],
++        generated_artifact=artifact.generated_artifact,
++        bar_envelopes=rows,
++        run_hash="sha256:" + "1" * 64,
++        protocol_artifact_dir=str(tmp_path / "protocol"),
++        isolated_protocol=mode,
++    ).items():
++        setattr(cfg, k, v)
++    result = run_isolated_artifact(
++        artifact.python_code.encode(), bars=[_engine_bar(b) for b in rows], config=cfg, params={}
++    )
++    assert result["ok"]
++    raw = result["raw_result"]
++    if isinstance(raw, dict):
++        assert raw["closed_trades"][0]["exit_comment"] == "override"
++        fill = [e["context"] for e in raw["events"] if e["code"] == "ORDER_FILLED"][-1]
++    else:
++        assert raw.closed_trades[0].exit_comment == "override"
++        fill = [e.context for e in raw.events if e.code == "ORDER_FILLED"][-1]
++    assert fill["alert_message"] == "override" and fill["alert_eligible"] is (not disabled)
++
++
++@pytest.mark.parametrize("version", [5, 6])
++def test_named_metadata_with_explicit_na_inactive_prices(monkeypatch, tmp_path, version):
++    condition = "bar_index==0" if version == 6 else f"time=={OPENED}"
++    body = (
++        f'if {condition}\n    strategy.entry("A",strategy.long,qty=1)\n'
++        '    strategy.exit("X","A",profit=500,stop=na,trail_price=na,trail_points=na,trail_offset=na,comment_profit="TP",alert_profit="done")\n'
++    )
++    case, rows = prepare(body, ROWS, collect_events=True, version=version)
++    result, tape = compare(monkeypatch, tmp_path, case, rows)
++    assert result.closed_trades[0].exit_comment == "TP"
++    assert tape[-1]["schema_version"] == "2.6.0"
++
++
++def test_required_order_events_retains_metadata_without_collect_flag(monkeypatch, tmp_path):
++    case, rows = build()
++    case[2].collect_events = False
++    case[2].required_outputs = {"order_events"}
++    result, _ = compare(monkeypatch, tmp_path, case, rows)
++    assert "order_events" in result.available_outputs
++    assert [e.context for e in result.events if e.code == "ORDER_FILLED"][-1][
++        "alert_message"
++    ] == "override"
+diff --git a/rc6_tests/test_rc6_strategy_surface.py b/rc6_tests/test_rc6_strategy_surface.py
+index 65962d1b24266415c4699d0394265c0a36ac0d60..e161a344e58b9daf0b61d6e4cc4b5e254ef41a51 100644
+--- a/rc6_tests/test_rc6_strategy_surface.py
++++ b/rc6_tests/test_rc6_strategy_surface.py
+@@ -120,7 +120,7 @@ def test_scalar_state_drives_actual_pine_orders(monkeypatch, tmp_path, name, con
+         ("float p = strategy.margin_liquidation_price", "strategy.margin_liquidation_price"),
+         ('strategy.exit("X")', "active price leg"),
+         ('strategy.exit("X", "L", trail_points=10, trail_offset=5, stop=99)', "fixed stop plus trailing"),
+-        ('strategy.exit("X", "L", stop=99, comment_loss="SL")', "unsupported host parameters"),
++        ('strategy.exit("X", "L", stop=99, trail_offset=2, trail_price=105)', "fixed stop plus trailing"),
+     ],
+ )
+ def test_unavailable_host_surface_fails_at_compilation_even_in_unexecuted_branch(source, fragment):

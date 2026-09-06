@@ -1,0 +1,149 @@
+name: Verify delivered metadata and absolute exit lots with the exact permanent gates
+'on':
+  push:
+    branches: ['ops/rc6-metadata-transfer-20260906']
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: metadata-transfer
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/openpine-contracts
+          ref: afa2351f07da94326382cf71a388b99e8f460f14
+          path: publisher-source
+          sparse-checkout: .github/exit-metadata/restore.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Select exact publication helper and stage name
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          src=Path('publisher-source/.github/exit-metadata/restore.py').read_text()
+          old="STAGING = 'ops/rc6-exit-metadata-20260906'"
+          assert src.count(old)==1
+          Path(os.environ['RUNNER_TEMP'],'restore.py').write_text(src.replace(old,"STAGING = 'ops/rc6-metadata-transfer-20260906'"))
+          PY
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Restore exact source and prepare unchanged permanent-gate runner
+        run: |
+          python "$RUNNER_TEMP/restore.py" restore .github/metadata-transfer/plan.json "$RUNNER_TEMP/restoration"
+          cp "$RUNNER_TEMP/restore.py" "$RUNNER_TEMP/restoration/restore.py"
+          python -m pip install PyYAML
+          cat > "$RUNNER_TEMP/run_gate.py" <<'PY'
+          import os, pathlib, subprocess, sys, yaml
+          path=pathlib.Path('.github/workflows/rc6-native.yml')
+          workflow=yaml.safe_load(path.read_text())
+          matches=[step for step in workflow['jobs']['verify']['steps'] if step.get('name')==sys.argv[1]]
+          if len(matches)!=1 or 'run' not in matches[0]: raise SystemExit('missing permanent gate')
+          step=matches[0]
+          subprocess.run(['bash','-euo','pipefail','-c',step['run']],env={**os.environ,**step.get('env',{})},check=True)
+          PY
+      - name: Install exact pinned sibling sources with permanent workflow commands
+        run: |
+          python "$RUNNER_TEMP/run_gate.py" 'Install pinned sibling sources'
+          cp -a "$RUNNER_TEMP/restoration/." "$RUNNER_TEMP/evidence/"
+      - name: Full contracts runtime parser compiler broker and optimizer suites
+        run: python "$RUNNER_TEMP/run_gate.py" 'Complete contracts runtime compiler broker and optimizer functional suites'
+      - name: Deterministic provider suite with explicit network exclusion
+        run: python "$RUNNER_TEMP/run_gate.py" 'Deterministic provider suite (external network checks are separate)'
+      - name: Real protected worker setup without sandbox fallback
+        run: python "$RUNNER_TEMP/run_gate.py" 'Enable the real protected worker environment'
+      - name: All native and selected regressions including eight new real-process cases
+        run: python "$RUNNER_TEMP/run_gate.py" 'Native sandbox plus affected storage CLI gateway and branch regressions'
+      - name: Permanent lint build source identity and actual OpenAPI gate
+        run: python "$RUNNER_TEMP/run_gate.py" 'Validate changed runtime lint imports and build clean distributions'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metadata-transfer-${{ matrix.python }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: 30
+          if-no-files-found: error
+  frontend:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: metadata-transfer-3.13-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend-evidence
+      - name: Restore the exact tested code from the verified Git bundle
+        run: |
+          git fetch "$RUNNER_TEMP/backend-evidence/verified.bundle" refs/heads/review-candidate
+          expected=$(cat "$RUNNER_TEMP/backend-evidence/source-head.txt")
+          test "$(git rev-parse FETCH_HEAD)" = "$expected"
+          git checkout --detach "$expected"
+          mkdir "$RUNNER_TEMP/frontend-evidence"
+          cp "$RUNNER_TEMP/backend-evidence/source-head.txt" "$RUNNER_TEMP/frontend-evidence/"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - run: npm ci
+        working-directory: openpine-ui
+      - name: Full Vue and unit suite
+        working-directory: openpine-ui
+        run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/frontend-evidence/ui.xml"
+      - name: Real TypeScript and Vite production build
+        working-directory: openpine-ui
+        run: npm run build | tee "$RUNNER_TEMP/frontend-evidence/ui-build.log"
+      - name: Node package and same-backend API checks
+        working-directory: openpine-ui
+        env:
+          OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend-evidence/openapi.json
+        run: npm run test:node | tee "$RUNNER_TEMP/frontend-evidence/ui-node.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metadata-transfer-frontend-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/frontend-evidence/
+            openpine-ui/dist/
+          retention-days: 30
+  publish:
+    needs: [verify, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: metadata-transfer-3.13-${{ github.run_id }}
+          path: evidence
+      - name: Fast-forward only verified RC6 and archive temporary history
+        run: python evidence/restore.py publish evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: metadata-transfer-publication-${{ github.run_id }}
+          path: evidence/
+          retention-days: 30
