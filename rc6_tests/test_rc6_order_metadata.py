@@ -1,6 +1,8 @@
 """Compiled Pine -> intent -> existing broker -> captured trade and fill events."""
 
 from dataclasses import asdict
+from types import SimpleNamespace
+from collections.abc import Mapping
 import pytest
 from rc6_tests.test_rc6_deferred_exits import prepare
 from rc6_tests.test_rc6_bulk_execution import execute_bulk
@@ -8,6 +10,14 @@ from rc6_tests.test_rc6_lifecycle import interactive
 from rc6_tests.test_rc6_marketdata_boundary import OPENED
 
 ROWS = [(100, 101, 99, 100), (100, 110, 94, 104), (104, 105, 103, 104)]
+
+
+def event_context(value):
+    """Both public transports retain values; bulk hydration is attribute-style."""
+    if isinstance(value, Mapping):
+        return dict(value)
+    assert isinstance(value, SimpleNamespace), type(value)
+    return vars(value)
 
 
 def build(leg="profit", scope="named", text="override", disabled=False, **opts):
@@ -125,6 +135,7 @@ def test_real_worker_order_metadata(tmp_path, mode, disabled):
     else:
         assert raw.closed_trades[0].exit_comment == "override"
         fill = [e.context for e in raw.events if e.code == "ORDER_FILLED"][-1]
+    fill = event_context(fill)
     assert fill["alert_message"] == "override" and fill["alert_eligible"] is (not disabled)
 
 

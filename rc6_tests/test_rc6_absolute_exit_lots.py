@@ -8,7 +8,7 @@ transports. They do not claim FIFO/ANY or live TradingView execution acceptance.
 import pytest
 
 from rc6_tests.test_rc6_deferred_exits import prepare
-from rc6_tests.test_rc6_order_metadata import compare
+from rc6_tests.test_rc6_order_metadata import compare, event_context
 
 
 def mirrored(rows, direction):
@@ -20,10 +20,12 @@ def lot_case(direction="long", leg="profit", scope="named", quantity="percent", 
     prices = f"limit={tp}" if leg == "profit" else f"stop={sl}" if leg == "loss" else f"limit={tp},stop={sl}"
     sizing = {"percent": "qty_percent=50", "units": "qty=1", "both": "qty=1,qty_percent=100"}[quantity]
     target = '"A",' if scope == "named" else ""
+    # An explicit second-entry trigger fixes its fill price even when the first
+    # entry invokes the script early through calc_on_order_fills.
     body = (
         "varip int sent=-1\nif bar_index!=sent\n    sent:=bar_index\n"
         f'    if bar_index==0\n        strategy.entry("A",strategy.{direction},qty=2,comment="first",alert_message="first-alert")\n'
-        f'    if bar_index==1\n        strategy.entry("A",strategy.{direction},qty=6,comment="second",alert_message="second-alert")\n'
+        f'    if bar_index==1\n        strategy.entry("A",strategy.{direction},qty=6,stop={110 if direction == "long" else 90},comment="second",alert_message="second-alert")\n'
         f'    if bar_index==2\n        strategy.exit("X:lots",{target}{prices},{sizing},comment_profit="TP",comment_loss="SL",alert_profit="tp-alert",alert_loss="sl-alert",disable_alert=true)\n'
     )
     event = (110, 111, 94, 100) if leg == "loss" else (110, 121, 109, 115)
@@ -43,7 +45,7 @@ def assert_lots(result, direction="long", leg="profit", quantity="percent"):
     assert [t.entry_comment for t in result.closed_trades] == ["first","second"]
     assert [t.exit_comment for t in result.closed_trades] == ["SL" if leg=="loss" else "TP"]*2
     assert all(t.exit_leg==actual_leg and t.exit_disable_alert for t in result.closed_trades)
-    events = [event.context for event in result.events if event.code=="ORDER_FILLED"]
+    events = [event_context(event.context) for event in result.events if event.code=="ORDER_FILLED"]
     assert [event["fill_index"] for event in events] == [0,1,2,3]
     assert [event["alert_message"] for event in events] == ["first-alert","second-alert"]+[
         "sl-alert" if leg=="loss" else "tp-alert"]*2
@@ -113,3 +115,12 @@ def test_real_worker_absolute_lots_and_required_metadata(tmp_path, mode, directi
     assert "order_events" in raw.available_outputs
     assert_lots(raw,direction,"bracket")
     assert [event["kind"] for event in result["intent_tape"]]==["entry","entry","exit"]
+
+
+@pytest.mark.parametrize("direction", ["long", "short"])
+@pytest.mark.parametrize("recalc", [False, True])
+def test_second_fill_price_is_explicit_under_recalculation(monkeypatch, tmp_path, direction, recalc):
+    case, rows = lot_case(direction, "bracket", calc_on_order_fills=recalc)
+    result, tape = compare(monkeypatch, tmp_path, case, rows)
+    assert_lots(result, direction, "bracket")
+    assert [event["kind"] for event in tape] == ["entry", "entry", "exit"]
