@@ -1,0 +1,73 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index 1419acb5106dced110ccb6c37b263a76ee65245c..dc6541fb759ae581e6b178ca1ab34a66a88242ee 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -104,7 +104,7 @@ jobs:
+           PY
+       - name: Validate changed runtime lint imports and build clean distributions
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py
+           python -m compileall -q openpine
+           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+           mkdir -p "$RUNNER_TEMP/build-source"
+diff --git a/docs/RC6_MIXED_EXIT_PRICES.md b/docs/RC6_MIXED_EXIT_PRICES.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..a2b6681130cf866b3ecdf760783b6b63252748a8
+--- /dev/null
++++ b/docs/RC6_MIXED_EXIT_PRICES.md
+@@ -0,0 +1,54 @@
++# OP-07 / OP-20 — versioned fixed exit price pairs
++
++## Implemented scope
++
++Pine v6 commands containing active profit+limit or loss+stop pairs use one explicit
++first_trigger policy per exit. The existing broker resolves candidates separately
++for each actual entry fill: long TP selects the lower candidate and long SL the
++higher; short mirrors these inequalities. Relative distances use the actual fill
++price and admitted mintick, not the chart close or an average of separate lots.
++Only one TP and one SL are materialized, preserving existing reservations/OCA,
++pending market/limit/stop/stop-limit activation and position-lifetime policies.
++
++Pine v1-v5 and old replay records retain absolute precedence. The wire format uses
++ExitIntent 2.4.0 with price_pair_policy=first_trigger and exactly one named/all-entry
++scope; at least one active pair is mandatory. Old 2.2.0 named and 2.3.0 all-entry
++records remain valid but cannot carry the new policy. Other intent kinds are not
++reinterpreted as 2.4.0. Native StrategyContext.exit defaults to absolute_first;
++native users must explicitly request first_trigger because that API has no implicit
++Pine-version context. Zero is a real distance; NA is omitted rather than converted
++to zero. Recompile generated artifacts after updating the changed host surface.
++
++Per-fill example: entries of 2 at 100 and 6 at 110, mintick=1, profit=20,
++limit=125, qty_percent=50 produce exits of 1 at 120 and 3 at 125 in the synthetic
++v6-policy regression. Historical absolute precedence selects 125. The tests are
++explicit reference expectations, not an exported TradingView execution oracle.
++
++## Verification boundaries
++
++New regression cases cover both directions, TP/SL and both legs, zero/equal/NA
++members, gaps and actual pending-entry prices, replacements, partial quantities,
++repeated fills, native broker resume and the compiled Pine version matrix. Four
++ordinary mandatory process tests cover interactive/bulk and on-close off/on with
++fill recalculation. No sandbox bypass or test skip is added. Actual CI counts and
++publication identities belong in the subsequent observed publication receipt.
++
++The native full suite and local selected compiled-Pine tests are useful checks,
++not substitutes for the two-interpreter integrated protected-worker run. No new
++performance benchmark, coverage acceptance or browser visual test is claimed.
++
++## Remaining acceptance
++
++This block covers fixed profit/limit and loss/stop only. Trailing activation pairs,
++FIFO/ANY attribution, aggregate named-absolute quantities, per-leg metadata,
++risk/indexed methods, full historical optional signatures and all interactions
++with margin/realtime remain separate work. OP-07/20 and the full 36-task review
++remain partial. Existing all-entry/resume limits are unchanged; native broker
++resume is not full isolated-worker/IPC crash recovery.
++
++Install the exact source set in RC6_LIFECYCLE_SOURCES.json together. Old readers
++cannot consume new 2.4.0 mixed exits, and matching package version strings do not
++prove identical code. No production installer is supplied by this source block.
++
++Official semantic reference:
++https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-6/
