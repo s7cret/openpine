@@ -1,0 +1,76 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index fc951d8cc82fc97601af4607c8689e2b84eff5d2..12cb99531ba76c27f0e2c4a12840027a3a1bdfce 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -104,7 +104,7 @@ jobs:
+           PY
+       - name: Validate changed runtime lint imports and build clean distributions
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py
+           python -m compileall -q openpine
+           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+           mkdir -p "$RUNNER_TEMP/build-source"
+diff --git a/openpine/runtime/rc6_worker_runtime.py b/openpine/runtime/rc6_worker_runtime.py
+index 92a6e1bbfc2a1f34290c7768c0810db19a9546fe..4d2e96f088d3cdcf0725ed1f31cd03184c9bef6a 100644
+--- a/openpine/runtime/rc6_worker_runtime.py
++++ b/openpine/runtime/rc6_worker_runtime.py
+@@ -837,6 +837,8 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+     progress.report(completed_bars, total, force=True)
+     raw = {
+         "status": getattr(result, "status", "completed"),
++        # Export the broker's actual collection evidence, not requested-output guesses.
++        "available_outputs": sorted(result.available_outputs),
+         "bars_processed": completed_bars,
+         "initial_capital": getattr(result, "initial_capital", None),
+         "final_equity": getattr(result, "final_equity", None),
+diff --git a/rc6_tests/test_rc6_bulk_output_metadata.py b/rc6_tests/test_rc6_bulk_output_metadata.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..bcf8af65506fe82a5c284216c965eac7b537706c
+--- /dev/null
++++ b/rc6_tests/test_rc6_bulk_output_metadata.py
+@@ -0,0 +1,44 @@
++"""Keep actual broker output availability through serialization and hydration.
++
++An empty requested output is available; uncollected data is not. The parent must
++not guess collection status from required_outputs or a synthesized empty list.
++"""
++
++import pytest
++
++from backtest_engine import BacktestEngine
++from openpine.runtime.bulk_worker import hydrate_bulk_raw_result
++from rc6_tests.test_rc6_bulk_execution import execute_bulk
++from rc6_tests.test_rc6_deferred_exits import prepare
++
++
++@pytest.mark.parametrize("requested", [False, True])
++@pytest.mark.parametrize("has_orders", [False, True])
++def test_bulk_roundtrip_keeps_actual_output_availability(monkeypatch, requested, has_orders):
++    body = ('if bar_index==0\n    strategy.entry("A",strategy.long,qty=1,alert_message="filled")\n'
++            if has_orders else 'x=close\n')
++    case, rows = prepare(body, [(100,101,99,100),(100,101,99,100)],
++                         collect_events=False, required_outputs={"order_events"} if requested else set())
++    observed = []
++    original = BacktestEngine.run
++
++    def capture(*args, **kwargs):
++        result = original(*args, **kwargs)
++        observed.append(result)
++        return result
++
++    monkeypatch.setattr(BacktestEngine, "run", capture)
++    payload = execute_bulk(monkeypatch, case, bars=rows)
++    assert len(observed) == 1
++    expected = observed[0].available_outputs
++    raw = payload["raw_result"]
++    hydrated = hydrate_bulk_raw_result(payload)
++    assert raw["available_outputs"] == hydrated.available_outputs == sorted(expected)
++    assert ("order_events" in expected) is requested
++    if not requested:
++        assert observed[0].events is None and not raw["events"]
++    else:
++        fills = [event for event in hydrated.events if event.code == "ORDER_FILLED"]
++        assert len(fills) == int(has_orders)
++        if fills:
++            assert fills[0].context.alert_message == "filled"

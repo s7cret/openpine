@@ -1,0 +1,85 @@
+diff --git a/rc6_tests/test_rc6_absolute_exit_lots.py b/rc6_tests/test_rc6_absolute_exit_lots.py
+index 21534eceb370e1ffc66572052b3e0a60ed71957d..dad39f9cb3176639b99b9d5e1d438f3c21486265 100644
+--- a/rc6_tests/test_rc6_absolute_exit_lots.py
++++ b/rc6_tests/test_rc6_absolute_exit_lots.py
+@@ -8,7 +8,7 @@ transports. They do not claim FIFO/ANY or live TradingView execution acceptance.
+ import pytest
+ 
+ from rc6_tests.test_rc6_deferred_exits import prepare
+-from rc6_tests.test_rc6_order_metadata import compare
++from rc6_tests.test_rc6_order_metadata import compare, event_context
+ 
+ 
+ def mirrored(rows, direction):
+@@ -20,10 +20,12 @@ def lot_case(direction="long", leg="profit", scope="named", quantity="percent",
+     prices = f"limit={tp}" if leg == "profit" else f"stop={sl}" if leg == "loss" else f"limit={tp},stop={sl}"
+     sizing = {"percent": "qty_percent=50", "units": "qty=1", "both": "qty=1,qty_percent=100"}[quantity]
+     target = '"A",' if scope == "named" else ""
++    # An explicit second-entry trigger fixes its fill price even when the first
++    # entry invokes the script early through calc_on_order_fills.
+     body = (
+         "varip int sent=-1\nif bar_index!=sent\n    sent:=bar_index\n"
+         f'    if bar_index==0\n        strategy.entry("A",strategy.{direction},qty=2,comment="first",alert_message="first-alert")\n'
+-        f'    if bar_index==1\n        strategy.entry("A",strategy.{direction},qty=6,comment="second",alert_message="second-alert")\n'
++        f'    if bar_index==1\n        strategy.entry("A",strategy.{direction},qty=6,stop={110 if direction == "long" else 90},comment="second",alert_message="second-alert")\n'
+         f'    if bar_index==2\n        strategy.exit("X:lots",{target}{prices},{sizing},comment_profit="TP",comment_loss="SL",alert_profit="tp-alert",alert_loss="sl-alert",disable_alert=true)\n'
+     )
+     event = (110, 111, 94, 100) if leg == "loss" else (110, 121, 109, 115)
+@@ -43,7 +45,7 @@ def assert_lots(result, direction="long", leg="profit", quantity="percent"):
+     assert [t.entry_comment for t in result.closed_trades] == ["first","second"]
+     assert [t.exit_comment for t in result.closed_trades] == ["SL" if leg=="loss" else "TP"]*2
+     assert all(t.exit_leg==actual_leg and t.exit_disable_alert for t in result.closed_trades)
+-    events = [event.context for event in result.events if event.code=="ORDER_FILLED"]
++    events = [event_context(event.context) for event in result.events if event.code=="ORDER_FILLED"]
+     assert [event["fill_index"] for event in events] == [0,1,2,3]
+     assert [event["alert_message"] for event in events] == ["first-alert","second-alert"]+[
+         "sl-alert" if leg=="loss" else "tp-alert"]*2
+@@ -113,3 +115,12 @@ def test_real_worker_absolute_lots_and_required_metadata(tmp_path, mode, directi
+     assert "order_events" in raw.available_outputs
+     assert_lots(raw,direction,"bracket")
+     assert [event["kind"] for event in result["intent_tape"]]==["entry","entry","exit"]
++
++
++@pytest.mark.parametrize("direction", ["long", "short"])
++@pytest.mark.parametrize("recalc", [False, True])
++def test_second_fill_price_is_explicit_under_recalculation(monkeypatch, tmp_path, direction, recalc):
++    case, rows = lot_case(direction, "bracket", calc_on_order_fills=recalc)
++    result, tape = compare(monkeypatch, tmp_path, case, rows)
++    assert_lots(result, direction, "bracket")
++    assert [event["kind"] for event in tape] == ["entry", "entry", "exit"]
+diff --git a/rc6_tests/test_rc6_order_metadata.py b/rc6_tests/test_rc6_order_metadata.py
+index 258afbd37526151b090131bdab8cd4d84b7ebf1c..5fbd3b6813068841add3f6908ab0e95e1a09ac51 100644
+--- a/rc6_tests/test_rc6_order_metadata.py
++++ b/rc6_tests/test_rc6_order_metadata.py
+@@ -1,6 +1,8 @@
+ """Compiled Pine -> intent -> existing broker -> captured trade and fill events."""
+ 
+ from dataclasses import asdict
++from types import SimpleNamespace
++from collections.abc import Mapping
+ import pytest
+ from rc6_tests.test_rc6_deferred_exits import prepare
+ from rc6_tests.test_rc6_bulk_execution import execute_bulk
+@@ -10,6 +12,14 @@ from rc6_tests.test_rc6_marketdata_boundary import OPENED
+ ROWS = [(100, 101, 99, 100), (100, 110, 94, 104), (104, 105, 103, 104)]
+ 
+ 
++def event_context(value):
++    """Both public transports retain values; bulk hydration is attribute-style."""
++    if isinstance(value, Mapping):
++        return dict(value)
++    assert isinstance(value, SimpleNamespace), type(value)
++    return vars(value)
++
++
+ def build(leg="profit", scope="named", text="override", disabled=False, **opts):
+     arg = {
+         "profit": "profit=500",
+@@ -125,6 +135,7 @@ def test_real_worker_order_metadata(tmp_path, mode, disabled):
+     else:
+         assert raw.closed_trades[0].exit_comment == "override"
+         fill = [e.context for e in raw.events if e.code == "ORDER_FILLED"][-1]
++    fill = event_context(fill)
+     assert fill["alert_message"] == "override" and fill["alert_eligible"] is (not disabled)
+ 
+ 
