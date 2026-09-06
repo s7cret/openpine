@@ -2,7 +2,7 @@
   "schema": "openpine.review.acceptance.v1",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
   "source_spec_name": "OpenPine_RC6_Review_TZ_2026-09-05.md",
-  "snapshot_base": "8d5c7bf26e293bd3007c98134cadd445198d23ee",
+  "snapshot_base": "ffee029e1fc44ab907ea61313f1bd37ef58d2989",
   "status_policy": "Task status is full-scope acceptance, not implementation percentage. Partial records preserve implemented regressions; accepted requires no remaining acceptance work and an explicit receipt. CI verifies ledger consistency, not TradingView truth. New test claims require the publication receipt.",
   "tasks": [
     {
@@ -29,10 +29,11 @@
       "id": "OP-03",
       "title": "Единая конфигурация стратегии: нули, sizing и брокер",
       "status": "partial",
-      "implemented": "Устранены потеря margin=0 и дубли конвертеров; сохранены режимы rounding.",
+      "implemented": "Устранены потеря margin=0 и дубли конвертеров; сохранены rounding. Допущенный mintick разрешается в обоих режимах и входит в effective config hash.",
       "remaining": "Полная provenance конфигурации и версия defaults declaration; общий immutable effective config.",
       "evidence_paths": [
-        "rc6_tests/test_rc6_effective_config.py"
+        "rc6_tests/test_rc6_effective_config.py",
+        "rc6_tests/test_rc6_mintick_binding.py"
       ]
     },
     {
@@ -69,10 +70,11 @@
       "id": "OP-07",
       "title": "Довести strategy bridge до полного покрываемого API",
       "status": "partial",
-      "implemented": "Семь команд и 17 скалярных значений; ранний отказ неподдержанных host-вызовов.",
-      "remaining": "Завершить exit/trailing/risk/indexed trade methods и исторические сигнатуры.",
+      "implemented": "Семь команд и 17 скаляров; явные выходы работают после pending market-entry в том же callback. Сохранён отказ неподдержанных форм.",
+      "remaining": "Завершить all-entry и price-entry exits, trailing/risk/indexed trade methods, v6 mixed levels и исторические сигнатуры.",
       "evidence_paths": [
-        "rc6_tests/test_rc6_strategy_surface.py"
+        "rc6_tests/test_rc6_strategy_surface.py",
+        "rc6_tests/test_rc6_deferred_exits.py"
       ]
     },
     {
@@ -89,10 +91,12 @@
       "id": "OP-09",
       "title": "Честные instrument, timeframe и language identities",
       "status": "partial",
-      "implemented": "Исправлены language identity, часы/минуты/месяцы и передача pointvalue.",
+      "implemented": "Интервалы час/минута/месяц и pointvalue передаются в runtime. Брокер и Pine используют допущенный mintick; конфликт отклоняется до запуска.",
       "remaining": "Явные crypto/stock/futures metadata, calendar/session и basecurrency без предположений.",
       "evidence_paths": [
-        "rc6_tests/test_rc6_chart_metadata.py"
+        "rc6_tests/test_rc6_chart_metadata.py",
+        "rc6_tests/test_rc6_mintick_binding.py",
+        "rc6_tests/test_rc6_deferred_exits.py"
       ]
     },
     {
@@ -193,10 +197,12 @@
       "id": "OP-20",
       "title": "Проверка broker parity по событиям, а не только итоговому PnL",
       "status": "partial",
-      "implemented": "Брокерные и transport-тесты сравнивают команды/сделки/equity; отмена TP/SL по parent ID исправлена.",
-      "remaining": "Независимый event oracle для всех order types, комиссии, fill phase и margin/liquidation.",
+      "implemented": "Отмена по public exit ID; pending market brackets, активация на цене fill, initial qty_percent, уменьшение резерва и повторяющиеся entry ID покрыты брокерными/сквозными тестами.",
+      "remaining": "Полная матрица ордеров, price-entry activation, all-entry/trailing, relative-уровни повторных входов, v6 смешанные уровни, комиссии, fill phase, margin/liquidation и независимый event oracle.",
       "evidence_paths": [
-        "docs/RC6_STRATEGY_PUBLICATION_RECEIPT.md"
+        "docs/RC6_STRATEGY_PUBLICATION_RECEIPT.md",
+        "docs/RC6_EXIT_BRACKETS_BLOCK.md",
+        "rc6_tests/test_rc6_deferred_exits.py"
       ]
     },
     {
