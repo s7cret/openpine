@@ -118,7 +118,7 @@ def test_scalar_state_drives_actual_pine_orders(monkeypatch, tmp_path, name, con
         ("strategy.risk.allow_entry_in(strategy.direction.long)", "strategy.risk.allow_entry_in"),
         ("float p = strategy.closedtrades.profit(0)", "strategy.closedtrades.profit"),
         ("float p = strategy.margin_liquidation_price", "strategy.margin_liquidation_price"),
-        ('strategy.exit("X", stop=99)', "from_entry"),
+        ('strategy.exit("X")', "active price leg"),
         ('strategy.exit("X", "L", trail_points=10, trail_offset=5)', "unsupported host parameters"),
         ('strategy.exit("X", "L", limit=105, profit=4)', "relative/absolute"),
         ('strategy.exit("X", "L", stop=99, comment_loss="SL")', "unsupported host parameters"),
@@ -154,6 +154,7 @@ def test_historical_named_when_reaches_the_broker(monkeypatch, version):
     assert [event["kind"] for event in result["intent_tape"]] == ["cancel_all", "cancel_all"]
     assert [event["sequence"] for event in result["intent_tape"]] == [0, 1]
     assert not result["raw_result"]["open_trades"]
+
 
 
 def test_registry_matches_all_exercised_operations_and_values():

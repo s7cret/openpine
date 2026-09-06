@@ -45,7 +45,9 @@ def strategy_host_surface() -> dict[str, Any]:
         "constraints": [
             "historical_tail_arguments_named",
             "exit_explicit_entry_with_price_path_deferral",
-            "exit_deferred_relative_repeated_entry_unavailable",
+            "exit_all_entry_position_lifetime_v1",
+            "intent_all_entry_exit_v2_3",
+            "exit_relative_prices_per_opening_fill",
             "exit_v6_relative_absolute_pairs_unavailable",
             "alerts_tape_only",
         ],
@@ -127,11 +129,9 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
             pos, named = _arguments(keywords.get("arguments"))
             bound = spec.bind(pos, named, pine_version)
             if capability == "strategy.exit":
-                entry = bound["from_entry"]
-                if isinstance(entry, ast.Constant) and (
-                    type(entry.value) is not str or not entry.value.strip()
-                ):
-                    raise StrategyHostError("exit requires a nonempty explicit from_entry")
+                entry = bound.get("from_entry")
+                if isinstance(entry, ast.Constant) and type(entry.value) is not str:
+                    raise StrategyHostError("exit from_entry must be a string; omitted or empty means all entries")
                 if not set(bound).intersection({"profit", "limit", "loss", "stop"}):
                     raise StrategyHostError("exit requires a supported active price leg")
                 if pine_version == 6 and any(

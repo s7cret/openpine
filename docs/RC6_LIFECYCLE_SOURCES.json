@@ -1,9 +1,9 @@
 {
   "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
-  "openpine-contracts": "d1382d1c0a1f867cc184016d8ac670a9264a7938",
+  "openpine-contracts": "7c20559e87b3f2342adb0b849d4239c133567f0a",
   "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
   "ast2python": "51552e7c1de339d8de4794290655e574d6447e82",
   "pinelib": "cddaa0bf2324db36b4cd29e944a251032658c59d",
-  "backtest_engine": "891141faf482c76ed1f85a7f4b0076f26ed63336",
+  "backtest_engine": "884c7823d29344dbf847a0cf6c513d802b7c9ece",
   "pine2ast": "6ba935eceee505bcbe80bf1f5908588407d2f546"
 }
