@@ -67,14 +67,14 @@ jobs:
         run: |
           set -euo pipefail
           for repo in openpine-contracts pinelib pine2ast ast2python backtest_engine optimizer; do
-            (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
+            (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q -p openpine.verification.pytest_gate --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-suite="$repo" --verification-output="$RUNNER_TEMP/evidence/$repo.inventory.json" --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
           done
       - name: Deterministic provider suite (external network checks are separate)
         env:
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: |
           cd "$PINE_STACK_ROOT/marketdata-provider"
-          python -m pytest -q -m 'not live_network' --junitxml="$RUNNER_TEMP/evidence/marketdata-provider.xml"
+          python -m pytest -q -p openpine.verification.pytest_gate --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-suite=marketdata-provider --verification-output="$RUNNER_TEMP/evidence/marketdata-provider.inventory.json" -m 'not live_network' --junitxml="$RUNNER_TEMP/evidence/marketdata-provider.xml"
       - name: Enable the real protected worker environment
         run: |
           sudo apt-get update -qq
@@ -88,6 +88,7 @@ jobs:
           /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
       - name: Native sandbox plus affected storage CLI gateway and branch regressions
         env:
+          OPENPINE_STAGE1_EVIDENCE: ${{ runner.temp }}/evidence
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: |
           python - <<'PY'
@@ -99,12 +100,17 @@ jobs:
                          or not p.endswith('.py') or not pathlib.Path(p).is_file() for p in selected)):
               raise SystemExit('Invalid explicit regression inventory')
           (evidence/'selected-tests.json').write_text(json.dumps(sorted(selected),indent=2)+'\n')
-          subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-q','rc6_tests',*sorted(selected),
+          subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-p','openpine.verification.pytest_gate',
+                          '--verification-lock='+str(pathlib.Path.cwd()/'verification/inventory.json'),
+                          '--verification-suite=openpine','--verification-output='+str(evidence/'openpine.inventory.json'),
+                          '-q','rc6_tests',*sorted(selected),
                           '--junitxml='+str(evidence/'openpine.xml')],check=True)
           PY
+      - name: Architecture capability and frozen conformance gate
+        run: python -m openpine.verification stage1 --host-root "$GITHUB_WORKSPACE" --stack-root "$PINE_STACK_ROOT" --evidence "$RUNNER_TEMP/evidence"
       - name: Validate changed runtime lint imports and build clean distributions
         run: |
-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py rc6_tests/test_rc6_entry_risk.py
+          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py rc6_tests/test_rc6_entry_risk.py openpine/verification openpine/runtime/effective_config.py rc6_tests/test_rc6_stage1_foundation.py rc6_tests/test_rc6_stage1_corpus.py
           python -m compileall -q openpine
           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
           mkdir -p "$RUNNER_TEMP/build-source"
