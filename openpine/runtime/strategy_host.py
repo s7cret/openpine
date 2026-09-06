@@ -45,6 +45,10 @@ def strategy_host_surface() -> dict[str, Any]:
         "state_values": sorted(STRATEGY_STATE_VALUES),
         "constraints": [
             "historical_tail_arguments_named",
+            "entry_risk_global_declarations_only",
+            "entry_risk_inputs_fixed_per_run",
+            "entry_risk_single_direction_declaration",
+            "max_position_size_clips_entry_not_order",
             "exit_explicit_entry_with_price_path_deferral",
             "exit_all_entry_position_lifetime_v1",
             "intent_all_entry_exit_v2_3",
@@ -98,7 +102,9 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
     if type(pine_version) is not int or not 1 <= pine_version <= 6:
         raise StrategyHostError("exact Pine version 1..6 is required")
     tree = source if isinstance(source, ast.Module) else ast.parse(source)
+    parents = {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
     required = set()
+    direction_declarations = 0
     for call in ast.walk(tree):
         if not isinstance(call, ast.Call) or not isinstance(call.func, ast.Attribute):
             continue
@@ -133,14 +139,48 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
                 raise StrategyHostError("strategy symbol/overload binding mismatch")
             pos, named = _arguments(keywords.get("arguments"))
             bound = spec.bind(pos, named, pine_version)
+            if capability == "strategy.risk.allow_entry_in":
+                direction_declarations += 1
+                if direction_declarations > 1:
+                    raise StrategyHostError("multiple direction rules are not yet admitted by this host")
+            if capability.startswith("strategy.risk."):
+                # Conditional declarations cannot acquire ordinary branch semantics.
+                # Until dependency-safe extraction exists, reject them explicitly
+                # instead of silently disabling a Pine risk rule with `if false`.
+                statement = parents.get(call)
+                function = parents.get(statement)
+                owner_class = parents.get(function)
+                if (
+                    not isinstance(statement, ast.Expr)
+                    or not isinstance(function, ast.FunctionDef)
+                    or function.name != "run"
+                    or not isinstance(owner_class, ast.ClassDef)
+                    or owner_class.name != "GeneratedScript"
+                ):
+                    raise StrategyHostError(
+                        "risk rules require unconditional global declarations in this host"
+                    )
+                if capability == "strategy.risk.max_position_size":
+                    value = bound["contracts"]
+                    if isinstance(value, (ast.Constant, ast.UnaryOp)):
+                        from backtest_engine.core.risk_rules import validate_position_limit
+
+                        validate_position_limit(_literal(value, "max_position_size"))
             if capability == "strategy.exit":
-                active = {name for name, value in bound.items()
-                          if not (isinstance(value, ast.Constant) and value.value is None)}
+                active = {
+                    name
+                    for name, value in bound.items()
+                    if not (isinstance(value, ast.Constant) and value.value is None)
+                }
                 validate_exit_shape(active)
                 entry = bound.get("from_entry")
                 if isinstance(entry, ast.Constant) and type(entry.value) is not str:
-                    raise StrategyHostError("exit from_entry must be a string; omitted or empty means all entries")
-                if not active.intersection({"profit", "limit", "loss", "stop", "trail_price", "trail_points"}):
+                    raise StrategyHostError(
+                        "exit from_entry must be a string; omitted or empty means all entries"
+                    )
+                if not active.intersection(
+                    {"profit", "limit", "loss", "stop", "trail_price", "trail_points"}
+                ):
                     raise StrategyHostError("exit requires a supported active price leg")
         except (TypeError, ValueError) as exc:
             raise StrategyHostError(f"{capability} at {where}: {exc}") from exc

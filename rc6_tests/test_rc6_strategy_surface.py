@@ -114,13 +114,22 @@ def test_scalar_state_drives_actual_pine_orders(monkeypatch, tmp_path, name, con
 @pytest.mark.parametrize(
     "source,fragment",
     [
-        ("strategy.risk.max_position_size(5)", "strategy.risk.max_position_size"),
-        ("strategy.risk.allow_entry_in(strategy.direction.long)", "strategy.risk.allow_entry_in"),
+        ("strategy.risk.max_cons_loss_days(5)", "strategy.risk.max_cons_loss_days"),
+        (
+            "strategy.risk.max_intraday_filled_orders(3)",
+            "strategy.risk.max_intraday_filled_orders",
+        ),
         ("float p = strategy.closedtrades.profit(0)", "strategy.closedtrades.profit"),
         ("float p = strategy.margin_liquidation_price", "strategy.margin_liquidation_price"),
         ('strategy.exit("X")', "active price leg"),
-        ('strategy.exit("X", "L", trail_points=10, trail_offset=5, stop=99)', "fixed stop plus trailing"),
-        ('strategy.exit("X", "L", stop=99, trail_offset=2, trail_price=105)', "fixed stop plus trailing"),
+        (
+            'strategy.exit("X", "L", trail_points=10, trail_offset=5, stop=99)',
+            "fixed stop plus trailing",
+        ),
+        (
+            'strategy.exit("X", "L", stop=99, trail_offset=2, trail_price=105)',
+            "fixed stop plus trailing",
+        ),
     ],
 )
 def test_unavailable_host_surface_fails_at_compilation_even_in_unexecuted_branch(source, fragment):
@@ -141,8 +150,9 @@ def test_unavailable_host_surface_fails_at_compilation_even_in_unexecuted_branch
 
         assert "production-blocking diagnostics" in result.errors[0]
         diagnostics = parse_code(program).diagnostics
-        assert any(d.is_error and d.code == "P2A1404" and d.span.start_line == 4
-                   for d in diagnostics)
+        assert any(
+            d.is_error and d.code == "P2A1404" and d.span.start_line == 4 for d in diagnostics
+        )
     else:
         assert "RC6_HOST_CAPABILITY" in result.errors[0]
         assert fragment in result.errors[0]
@@ -166,7 +176,7 @@ def test_historical_named_when_reaches_the_broker(monkeypatch, version):
 
 def test_registry_matches_all_exercised_operations_and_values():
     surface = strategy_host_surface()
-    assert len(surface["commands"]) == 7
+    assert len(surface["commands"]) == 9
     assert set(surface["state_values"]) == {"strategy." + name for name in STATE_CONDITIONS}
     assert surface["content_hash"].startswith("sha256:")
     case = compiled('strategy.order("L", strategy.long)\n')
@@ -225,7 +235,7 @@ def test_external_artifact_with_missing_host_is_rejected_before_staging(tmp_path
     from rc6_tests.test_rc6_worker_admission import ALL_COMMITS, _deployment, _manifest
     from unittest.mock import Mock
 
-    source = '//@version=6\nstrategy("external")\nstrategy.risk.max_position_size(2)\n'
+    source = '//@version=6\nstrategy("external")\nstrategy.risk.max_cons_loss_days(5)\n'
     bundle = build_consumer_bundle(source, producer_commit=ALL_COMMITS["pine2ast"])
     result = compile_consumer_bundle(
         bundle,
