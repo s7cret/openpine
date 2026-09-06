@@ -28,19 +28,32 @@ jobs:
           import json
           import os
           import pathlib
+          import re
           import subprocess
 
           repos = ['openpine', 'openpine-contracts', 'pine2ast', 'ast2python',
                    'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer']
-          manifest = {'schema_version': 1, 'purpose': 'source evidence, not release approval',
-                      'openpine_trigger_sha': os.environ['GITHUB_SHA'], 'repositories': []}
+          pins = json.loads(pathlib.Path('docs/RC6_LIFECYCLE_SOURCES.json').read_text())
+          if set(pins) != set(repos) - {'openpine'} or not all(
+                  isinstance(sha, str) and re.fullmatch('[0-9a-f]{40}', sha)
+                  for sha in pins.values()):
+              raise SystemExit('Invalid triggering stack source identities')
+          pins['openpine'] = os.environ['GITHUB_SHA']
+          manifest = {'schema_version': 2, 'purpose': 'source evidence, not release approval',
+                      'openpine_trigger_sha': os.environ['GITHUB_SHA'],
+                      'source_pins': pins, 'repositories': []}
           for name in repos:
               mirror = pathlib.Path('mirrors') / (name + '.git')
               subprocess.run(['git', 'clone', '--mirror',
                               'https://github.com/s7cret/' + name + '.git', str(mirror)],
                              check=True)
-              # Verify object integrity before relying on this archive to preserve
-              # the only remaining copy of a selected or retired branch.
+              actual = subprocess.check_output(
+                  ['git', '-C', str(mirror), 'rev-parse', pins[name] + '^{commit}'],
+                  text=True).strip()
+              if actual != pins[name]:
+                  raise SystemExit('Pinned source commit is missing: ' + name)
+              subprocess.run(['git', '-C', str(mirror), 'update-ref',
+                              'refs/evidence/trigger-source', actual], check=True)
               subprocess.run(['git', '-C', str(mirror), 'fsck', '--full', '--no-dangling'],
                              check=True)
               bundle = (pathlib.Path('evidence') / (name + '.bundle')).resolve()
@@ -56,6 +69,7 @@ jobs:
                       digest.update(chunk)
               manifest['repositories'].append({'repository': 's7cret/' + name,
                                                 'bundle': bundle.name,
+                                                'source_sha': actual,
                                                 'sha256': digest.hexdigest(), 'refs': refs})
           pathlib.Path('evidence/source-manifest.json').write_text(
               json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
