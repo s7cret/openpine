@@ -19,6 +19,7 @@ from backtest_engine.core.strategy_capabilities import (
     STRATEGY_COMMANDS,
     STRATEGY_CONSTANTS,
     STRATEGY_STATE_VALUES,
+    validate_exit_shape,
 )
 
 
@@ -49,7 +50,8 @@ def strategy_host_surface() -> dict[str, Any]:
             "intent_all_entry_exit_v2_3",
             "exit_relative_prices_per_opening_fill",
             "exit_v6_first_trigger_pairs_intent_v2_4",
-            "alerts_tape_only",
+            "fill_metadata_captured_per_leg_intent_v2_6",
+            "no_external_alert_delivery",
             "trailing_explicit_offset_and_activation",
             "trailing_fixed_stop_combination_unavailable",
             "trailing_versioned_activation_per_fill",
@@ -132,10 +134,13 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
             pos, named = _arguments(keywords.get("arguments"))
             bound = spec.bind(pos, named, pine_version)
             if capability == "strategy.exit":
+                active = {name for name, value in bound.items()
+                          if not (isinstance(value, ast.Constant) and value.value is None)}
+                validate_exit_shape(active)
                 entry = bound.get("from_entry")
                 if isinstance(entry, ast.Constant) and type(entry.value) is not str:
                     raise StrategyHostError("exit from_entry must be a string; omitted or empty means all entries")
-                if not set(bound).intersection({"profit", "limit", "loss", "stop", "trail_price", "trail_points"}):
+                if not active.intersection({"profit", "limit", "loss", "stop", "trail_price", "trail_points"}):
                     raise StrategyHostError("exit requires a supported active price leg")
         except (TypeError, ValueError) as exc:
             raise StrategyHostError(f"{capability} at {where}: {exc}") from exc

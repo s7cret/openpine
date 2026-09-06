@@ -120,7 +120,7 @@ def test_scalar_state_drives_actual_pine_orders(monkeypatch, tmp_path, name, con
         ("float p = strategy.margin_liquidation_price", "strategy.margin_liquidation_price"),
         ('strategy.exit("X")', "active price leg"),
         ('strategy.exit("X", "L", trail_points=10, trail_offset=5, stop=99)', "fixed stop plus trailing"),
-        ('strategy.exit("X", "L", stop=99, comment_loss="SL")', "unsupported host parameters"),
+        ('strategy.exit("X", "L", stop=99, trail_offset=2, trail_price=105)', "fixed stop plus trailing"),
     ],
 )
 def test_unavailable_host_surface_fails_at_compilation_even_in_unexecuted_branch(source, fragment):
