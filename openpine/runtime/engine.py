@@ -56,6 +56,7 @@ class BacktestRunConfig:
     generated_artifact: dict | None = None
     execution_context: dict | None = None
     instrument_id: str | None = None
+    request_manifest: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -217,10 +218,12 @@ class BacktestEngineAdapter:
             "applied_config_hash",
             "protocol_artifact_dir",
             "isolated_protocol",
+            "request_manifest",
         ):
             value = getattr(config, name, None)
             if value is not None:
-                object.__setattr__(engine_config, name, value)
+                from copy import deepcopy
+                object.__setattr__(engine_config, name, deepcopy(value))
         return engine_config
 
     def run_isolated(

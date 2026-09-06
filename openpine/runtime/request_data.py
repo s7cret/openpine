@@ -207,3 +207,34 @@ def admit_request_data(
     except (PineRuntimeError, MarketDataError) as exc:
         raise ValueError(f"RC6_REQUEST_DATA: {exc}") from exc
     return provider
+
+
+def rebind_request_manifest(
+    manifest: Mapping[str, Any],
+    original_context: Mapping[str, Any],
+    trial_context: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Bind verified, unchanged request data to a new trial of the same run setup.
+
+    Only run/session IDs may differ. Validate the source before resealing so a
+    malformed or unrelated manifest cannot be laundered by assigning a new hash.
+    """
+    from copy import deepcopy
+    from openpine_contracts import seal_content_hash, validate_payload
+
+    for context in (original_context, trial_context):
+        validate_payload("openpine.execution_context.v1", context)
+        if not verify_content_hash(context, schema_id="openpine.execution_context.v1"):
+            raise ValueError("request rebind context hash is invalid")
+    transient = {"run_id", "session_id", "content_hash"}
+    original = {key: value for key, value in original_context.items() if key not in transient}
+    target = {key: value for key, value in trial_context.items() if key not in transient}
+    if original != target:
+        raise ValueError("request rebind cannot change execution semantics or source identity")
+    request_provider_from_manifest(manifest, original_context)
+    payload = deepcopy(dict(manifest))
+    payload.pop("content_hash")
+    payload["execution_context_hash"] = trial_context["content_hash"]
+    rebound = seal_content_hash(payload, schema_id=SCHEMA)
+    request_provider_from_manifest(rebound, trial_context)
+    return rebound

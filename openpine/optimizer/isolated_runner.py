@@ -19,7 +19,9 @@ def _identity(value: Any) -> Any:
     if is_dataclass(value) and not isinstance(value, type):
         return _identity(asdict(value))
     if isinstance(value, dict):
-        return {str(key): _identity(item) for key, item in value.items()}
+        if any(type(key) is not str for key in value):
+            raise TypeError("optimizer identity mapping keys must be strings")
+        return {key: _identity(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_identity(item) for item in value]
     if isinstance(value, (str, int, float, bool, type(None))):
@@ -39,6 +41,7 @@ def _stable_hash(value: Any) -> str:
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=True,
+        allow_nan=False,
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
@@ -74,7 +77,7 @@ class IsolatedOptimizerRunner:
         htf_bars: list[dict[str, Any]] | None = None,
     ) -> None:
         self.source = bytes(source)
-        self.bars = tuple(bars)
+        self.bars = copy.deepcopy(tuple(bars))
         self.config = copy.deepcopy(config)
         self.execution_context = copy.deepcopy(execution_context)
         self.admitted_manifest = copy.deepcopy(admitted_manifest)
@@ -154,8 +157,6 @@ class IsolatedOptimizerRunner:
         trial_config = copy.deepcopy(self.config)
         object.__setattr__(trial_config, "required_outputs", outputs)
         object.__setattr__(trial_config, "required_metrics", set(request.required_metrics))
-        config_hash = applied_config_hash(trial_config, inputs)
-        object.__setattr__(trial_config, "applied_config_hash", config_hash)
         trial_run_id = f"{self.execution_context['run_id']}.trial-{request.trial_id}"
         trial_context_payload = dict(self.execution_context)
         trial_context_payload.pop("content_hash", None)
@@ -165,6 +166,15 @@ class IsolatedOptimizerRunner:
             trial_context_payload, schema_id="openpine.execution_context.v1"
         )
         validate_payload("openpine.execution_context.v1", trial_context)
+        manifest = getattr(self.config, "request_manifest", None)
+        if manifest is not None:
+            from openpine.runtime.request_data import rebind_request_manifest
+
+            # Reseal only the execution binding, never replace or reinterpret data.
+            manifest = rebind_request_manifest(manifest, self.execution_context, trial_context)
+            object.__setattr__(trial_config, "request_manifest", manifest)
+        config_hash = applied_config_hash(trial_config, inputs)
+        object.__setattr__(trial_config, "applied_config_hash", config_hash)
         trial_run_payload = dict(self.run_identity)
         trial_run_payload.pop("content_hash", None)
         trial_run_payload["run_id"] = trial_run_id
@@ -186,9 +196,9 @@ class IsolatedOptimizerRunner:
         )
         isolated = BacktestEngineAdapter().run_isolated(
             self.source,
-            list(self.bars),
+            copy.deepcopy(list(self.bars)),
             trial_config,
-            htf_bars=self.htf_bars or None,
+            htf_bars=copy.deepcopy(self.htf_bars) or None,
             params=trial_params,
         )
         result = isolated.raw_result
@@ -210,7 +220,7 @@ class IsolatedOptimizerRunner:
                 continue
             try:
                 metric = float(value)
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, OverflowError):
                 metric = math.nan
             if not math.isfinite(metric):
                 diagnostics.append(
@@ -243,6 +253,9 @@ class IsolatedOptimizerRunner:
             "run_identity_hash": trial_run["content_hash"],
             "score_ledger_hash": str(getattr(result, "score_ledger_hash", None) or ""),
         }
+        if manifest is not None:
+            hashes["source_request_manifest_hash"] = self.config.request_manifest["content_hash"]
+            hashes["trial_request_manifest_hash"] = manifest["content_hash"]
         if callable(content_hash):
             hashes["content_hash"] = str(content_hash())
         return RunnerResponse(
