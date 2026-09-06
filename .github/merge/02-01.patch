@@ -1,0 +1,72 @@
+diff --git a/openpine/runtime/isolated_worker.py b/openpine/runtime/isolated_worker.py
+index 26574c322f17a2f171c25d21ca53b377c79c3362..f33ae6be2d2998217f7b084399664186e5ca3683 100644
+--- a/openpine/runtime/isolated_worker.py
++++ b/openpine/runtime/isolated_worker.py
+@@ -71,6 +71,8 @@ def main():
+         raise RuntimeError("RC6 execution context is required")
+     if request.get("stack_id") != context.get("stack_manifest_hash"):
+         raise RuntimeError("RC6 request stack identity mismatch")
++    from openpine.runtime.request_transport import inflate_request_config
++    inflate_request_config(request, sys.stdin)
+     protocol = RC6WorkerProtocol(context)
+     if request.get("bulk_backtest") is True:
+         return run_bulk(request, protocol)
+@@ -623,6 +625,11 @@ class InteractiveWorkerSession:
+                 prepare_worker_cgroup(cgroup_dir)
+             except CgroupError as exc:
+                 raise IsolatedWorkerError(str(exc)) from exc
++        # Serialize and detach preloads before acquiring worker resources. The
++        # public config still binds the full manifest; only bootstrap is compact.
++        from openpine.runtime.request_transport import RequestPreload
++        manifest = self.engine_config.get("request_manifest")
++        preload = None if manifest is None else RequestPreload(manifest)
+         try:
+             self.proc = subprocess.Popen(  # noqa: S603
+                 _bwrap_argv(admitted_manifest, self.unit_name),
+@@ -632,12 +639,18 @@ class InteractiveWorkerSession:
+                 text=True,
+                 bufsize=1,
+             )
+-        except OSError as exc:
+-            raise IsolatedWorkerError("worker spawn failed") from exc
++        except BaseException as exc:
++            if preload is not None:
++                preload.close()
++            if isinstance(exc, OSError):
++                raise IsolatedWorkerError("worker spawn failed") from exc
++            raise
+         if cgroup_dir is not None:
+             try:
+                 attach_worker_tree(cgroup_dir, self.proc.pid)
+             except CgroupError as exc:
++                if preload is not None:
++                    preload.close()
+                 self._kill()
+                 raise IsolatedWorkerError(str(exc)) from exc
+         try:
+@@ -658,8 +671,14 @@ class InteractiveWorkerSession:
+                 "input_values_hash": self.input_registry.values_hash,
+             }
+             if self.engine_config:
+-                bootstrap["engine_config"] = self.engine_config
++                bootstrap["engine_config"] = {key: value for key, value in self.engine_config.items()
++                                                if preload is None or key != "request_manifest"}
++            if preload is not None:
++                bootstrap["request_preload"] = preload.descriptor
+             self._write_bootstrap(bootstrap)
++            if preload is not None:
++                for frame in preload.frames():
++                    self._write_serialized_json_line(frame)
+             hello = self._read_message()
+             if hello.get("kind") != "HELLO":
+                 self._raise_response(hello)
+@@ -690,6 +709,9 @@ class InteractiveWorkerSession:
+         except Exception:
+             self._kill()
+             raise
++        finally:
++            if preload is not None:
++                preload.close()
+ 
+     def _kill(self) -> None:
+         if getattr(self, "proc", None) is None:

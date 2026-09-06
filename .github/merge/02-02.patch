@@ -1,0 +1,37 @@
+diff --git a/openpine/runtime/request_data.py b/openpine/runtime/request_data.py
+index f713ef1a44b2c1cf551732bf709719358a21d80d..d48d8bbcf9c231f8a2912f50fe8c9f7f01ea86fc 100644
+--- a/openpine/runtime/request_data.py
++++ b/openpine/runtime/request_data.py
+@@ -24,7 +24,7 @@ from marketdata_provider.timeframes import to_pine_timeframe
+ from openpine.runtime.rc6_marketdata import decode_canonical_bar
+ 
+ SCHEMA = "openpine.request_snapshots.v1"
+-MAX_MANIFEST_BYTES = 4 * 1024 * 1024
++MAX_MANIFEST_BYTES = 64 * 1024 * 1024
+ MAX_SOURCE_BARS = 250_000
+ MAX_DATASETS = 64
+ _NUMERIC_METADATA = frozenset({"mintick", "pointvalue", "mincontract"})
+@@ -93,11 +93,12 @@ def _request_provider_from_manifest(
+         )
+         > MAX_MANIFEST_BYTES
+     ):
+-        raise ValueError("request snapshot preload exceeds the 4 MiB transport limit")
++        raise ValueError("request snapshot preload exceeds the 64 MiB transport limit")
+     datasets = manifest["datasets"]
+     if not isinstance(datasets, list) or not 1 <= len(datasets) <= MAX_DATASETS:
+         raise ValueError("request snapshot dataset count is invalid")
+     sources = []
++    total_bars = 0
+     for dataset in datasets:
+         if not isinstance(dataset, Mapping) or set(dataset) != {
+             "instrument_id",
+@@ -135,6 +136,9 @@ def _request_provider_from_manifest(
+         envelopes = dataset["bars"]
+         if not isinstance(envelopes, list) or len(envelopes) > MAX_SOURCE_BARS:
+             raise ValueError("request dataset bar count is invalid")
++        total_bars += len(envelopes)
++        if total_bars > MAX_SOURCE_BARS:
++            raise ValueError("request snapshot total bar count exceeds limit")
+         bars, snapshot_id = [], None
+         for envelope in envelopes:
+             checked = decode_canonical_bar(

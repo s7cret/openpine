@@ -1,0 +1,157 @@
+diff --git a/rc6_tests/test_rc6_nested_integration.py b/rc6_tests/test_rc6_nested_integration.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..e851170b6a5059fe5e439bc1874f6ea1d16793e6
+--- /dev/null
++++ b/rc6_tests/test_rc6_nested_integration.py
+@@ -0,0 +1,151 @@
++"""Nested requests reconciled with the published manifest and receipt APIs."""
++
++import ast
++import json
++import pytest
++from openpine.runtime.request_data import admit_request_data
++from openpine.runtime.request_requirements import compiled_request_requirements
++from openpine.runtime.rc6_config import serialize_engine_config
++from rc6_tests.test_rc6_requests import ID, case_for, source_rows
++from rc6_tests.test_rc6_bulk_execution import execute_bulk
++from rc6_tests.test_rc6_lifecycle import interactive
++from rc6_tests.test_rc6_generated_checkpoint import session, advance
++
++
++def nested_case(body=None):
++    other = "BINANCE:BTCUSDT"
++    return case_for(
++        body
++        or (
++            f'x=request.security("{other}","5",request.security("","",ta.sma(close,2)))\n'
++            'if bar_index==9 and x==1500\n    strategy.order("nested",strategy.long,qty=1)'
++        ),
++        sources=[
++            source_rows(
++                instrument_id="binance:spot:BTCUSDT", tickerid=other, prices=(1000, 2000, 3000)
++            )
++        ],
++    )
++
++
++def test_nested_empty_context_preflight_and_broker_agree(monkeypatch, tmp_path):
++    case, candles = nested_case()
++    compiled, ctx, cfg = case
++    requirements = compiled_request_requirements(ast.parse(compiled.python_code), ctx)
++    assert len(requirements) == 2
++    assert {(r.symbol, r.timeframe) for r in requirements} == {("BINANCE:BTCUSDT", "5")}
++    assert admit_request_data(compiled.python_code, serialize_engine_config(cfg, "strict_5x"), ctx)
++    bulk = execute_bulk(monkeypatch, case, bars=candles)
++    result, tape, *_ = interactive(case, candles, tmp_path)
++    assert tape == bulk["intent_tape"]
++    assert [(e["command_id"], e["bar_index"]) for e in tape] == [("nested", 9)]
++    assert result.open_trades[0].qty == 1
++
++
++def test_nested_lower_interval_compared_to_parent_not_chart(monkeypatch, tmp_path):
++    body = (
++        f'x=request.security("{ID}","5",array.size(request.security_lower_tf("","5",close)))\n'
++        'if bar_index==4 and x==1\n    strategy.order("parent",strategy.long,qty=1)'
++    )
++    case, candles = case_for(body)
++    assert admit_request_data(
++        case[0].python_code, serialize_engine_config(case[2], "strict_5x"), case[1]
++    )
++    bulk = execute_bulk(monkeypatch, case, bars=candles)
++    result, tape, *_ = interactive(case, candles, tmp_path)
++    assert bulk["intent_tape"] == tape
++    assert [e["command_id"] for e in tape] == ["parent"]
++
++
++def test_nested_missing_literal_still_rejected_before_execution():
++    case, _ = nested_case(
++        'x=request.security("BINANCE:BTCUSDT","5",request.security("MISSING","5",close))'
++    )
++    with pytest.raises(ValueError, match="no admitted dataset"):
++        admit_request_data(
++            case[0].python_code, serialize_engine_config(case[2], "strict_5x"), case[1]
++        )
++
++
++def test_nested_resume_preserves_published_receipts_and_cached_children():
++    case, candles = nested_case()
++    whole = session(case)
++    expected = advance(whole, candles)
++    split = session(case)
++    prefix = advance(split, candles, stop=7)
++    saved = json.loads(json.dumps(split.export_state()))
++    resumed = session(case)
++    resumed.restore_state(saved)
++    assert prefix + advance(resumed, candles, start=7) == expected
++    assert resumed.export_state() == whole.export_state()
++    assert resumed.session.requests.registry.dataset_count == 2
++
++
++def test_nested_future_only_mutation_cannot_change_earlier_decisions(monkeypatch):
++    from openpine.runtime.request_data import build_request_manifest
++
++    body = (
++        f'x=request.security("{ID}","5",request.security("","",close))\n'
++        "if x==20\n    strategy.cancel_all()"
++    )
++    case, candles = case_for(body)
++    first = execute_bulk(monkeypatch, case, bars=candles)
++    case[2].request_manifest = build_request_manifest(case[1], [source_rows(prices=(10, 20, 9000))])
++    second = execute_bulk(monkeypatch, case, bars=candles)
++    assert first["intent_tape"] == second["intent_tape"]
++    assert [e["bar_index"] for e in first["intent_tape"]] == [9, 10, 11, 12, 13]
++
++
++def test_nested_depth_failure_rolls_back_and_clears_context():
++    from pinelib.abi.compiled_request import _ACTIVE_CHILD
++    from openpine_contracts import ExecutionEvent
++    from pinelib.runtime.metadata import BarValues
++
++    expression = "close"
++    for _ in range(6):
++        expression = f'request.security("{ID}","5",{expression})'
++    case, candles = case_for("x=" + expression)
++    obj = session(case)
++    b = candles[0]
++    event = ExecutionEvent(
++        0, 0, 14, 14, b["open_time_utc_ms"], "HISTORICAL_EVAL", False, True, 0, 0, "BAR_CLOSE"
++    )
++    with pytest.raises(RuntimeError, match="depth"):
++        obj.execute_callback(
++            BarValues(100, 102, 99, 101, 1, b["open_time_utc_ms"], b["close_time_utc_ms"]),
++            event,
++            strategy_values={},
++        )
++    assert obj.session.requests.registry.dataset_count == 0
++    assert _ACTIVE_CHILD.get() is None
++
++
++def test_dynamic_parent_does_not_invent_an_inherited_timeframe():
++    body = f'p=close>0 ? "5" : "1"\nx=request.security("{ID}",p,request.security("","",close))'
++    case, _ = case_for(body)
++    requirements = compiled_request_requirements(ast.parse(case[0].python_code), case[1])
++    assert len(requirements) == 2
++    assert all(r.timeframe is None for r in requirements)
++    assert admit_request_data(
++        case[0].python_code, serialize_engine_config(case[2], "strict_5x"), case[1]
++    )
++
++
++@pytest.mark.parametrize("ignored", [True, None, False])
++def test_dynamic_parent_defers_ignored_lower_dataset_admission(ignored):
++    from unittest.mock import Mock
++    from pinelib.errors import PineRuntimeError
++    from openpine.runtime.request_requirements import (
++        RequestRequirement,
++        validate_static_request_sources,
++    )
++
++    provider = Mock()
++    provider.source.side_effect = PineRuntimeError("missing")
++    requirement = RequestRequirement("security_lower_tf", "EX:S", "5", ignored, 1, None, True)
++    if ignored is False:
++        with pytest.raises(ValueError, match="no admitted dataset"):
++            validate_static_request_sources(provider, (requirement,), {"timeframe": "1m"})
++    else:
++        validate_static_request_sources(provider, (requirement,), {"timeframe": "1m"})
++        provider.source.assert_not_called()

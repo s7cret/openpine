@@ -1,0 +1,27 @@
+diff --git a/rc6_tests/test_rc6_request_transport.py b/rc6_tests/test_rc6_request_transport.py
+index 763bbf33804aab4b3a6c7a2d04d94da488be4d27..fe877daa96919d5d51c637e8826b94066235a7da 100644
+--- a/rc6_tests/test_rc6_request_transport.py
++++ b/rc6_tests/test_rc6_request_transport.py
+@@ -133,6 +133,22 @@ def test_real_worker_nested_streamed_requests(tmp_path, mode):
+ 
+     case, candles = nested_case()
+     compiled, ctx, cfg = case
++    from openpine.runtime.request_data import build_request_manifest
++    from rc6_tests.test_rc6_requests import source_rows
++
++    cfg.request_manifest = build_request_manifest(
++        ctx,
++        [
++            source_rows(
++                instrument_id="binance:spot:BTCUSDT",
++                tickerid="BINANCE:BTCUSDT",
++                prices=tuple(1000 * (i + 1) for i in range(200)),
++            )
++        ],
++    )
++    with RequestPreload(cfg.request_manifest) as preload:
++        # Exercise multiple real production-size frames, not only a mocked pipe.
++        assert len(list(preload.frames())) >= 3
+     for name, value in dict(
+         execution_context=ctx,
+         admitted_manifest=_manifest(),

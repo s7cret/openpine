@@ -1,0 +1,13 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index 058d6cbd7e2cc2bb72004335ea1f4dde4e0398e0..02f91fc2251626e9bc7b2c6b948d29b904fb43cf 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -104,7 +104,7 @@ jobs:
+           PY
+       - name: Validate changed runtime lint imports and build clean distributions
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py
+           python -m compileall -q openpine
+           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+           mkdir -p "$RUNNER_TEMP/build-source"
