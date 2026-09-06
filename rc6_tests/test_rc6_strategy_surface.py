@@ -135,6 +135,15 @@ def test_unavailable_host_surface_fails_at_compilation_even_in_unexecuted_branch
     assert not result.success
     if "closedtrades.profit" in source:
         assert "A2P_DELEGATED_RESULT_REQUIRES_COMMIT" in result.errors[0]
+    elif source == 'strategy.exit("X")':
+        # This invalid form is already rejected by the Pine frontend. The
+        # separate host-gate test checks malformed externally supplied modules.
+        from pine2ast import parse_code
+
+        assert "production-blocking diagnostics" in result.errors[0]
+        diagnostics = parse_code(program).diagnostics
+        assert any(d.is_error and d.code == "P2A1404" and d.span.start_line == 4
+                   for d in diagnostics)
     else:
         assert "RC6_HOST_CAPABILITY" in result.errors[0]
         assert fragment in result.errors[0]
@@ -154,7 +163,6 @@ def test_historical_named_when_reaches_the_broker(monkeypatch, version):
     assert [event["kind"] for event in result["intent_tape"]] == ["cancel_all", "cancel_all"]
     assert [event["sequence"] for event in result["intent_tape"]] == [0, 1]
     assert not result["raw_result"]["open_trades"]
-
 
 
 def test_registry_matches_all_exercised_operations_and_values():
