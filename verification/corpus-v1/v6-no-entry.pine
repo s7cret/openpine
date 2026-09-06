@@ -1,0 +1,4 @@
+//@version=6
+strategy("stage1 corpus")
+if false
+    strategy.entry("L",strategy.long,qty=1)

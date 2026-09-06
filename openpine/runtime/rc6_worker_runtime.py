@@ -336,6 +336,9 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
             end_time=0,
             default_qty_value=default_qty_value,
         )
+        snapshot = getattr(self.intent_config, "effective_strategy_config", None)
+        if snapshot is not None:
+            snapshot.assert_matches(self.intent_config)
         self._intent_sequence = 0
         self._callback_receipts = AppendOnlyHistory(JOURNAL_DOMAIN)
         self.execution_cursor = ExecutionCursor()
@@ -865,6 +868,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
         "warnings": _jsonable(list(getattr(result, "warnings", None) or [])),
         "errors": _jsonable(list(getattr(result, "errors", None) or [])),
         "effective_config_hash": config.effective_config_hash,
+        "effective_config_evidence": config.effective_strategy_config.evidence(),
         "config_snapshot": _jsonable(result.config_snapshot),
         **input_evidence(session.inputs),
     }

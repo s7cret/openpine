@@ -1,0 +1,90 @@
+{
+  "schema_id": "openpine.required_capabilities.v1",
+  "minimum_rows": 8000,
+  "required": [
+    {
+      "symbol_id": "pine:variable:close",
+      "pine_version": 1
+    },
+    {
+      "symbol_id": "pine:function:strategy.entry",
+      "pine_version": 1
+    },
+    {
+      "symbol_id": "pine:function:na",
+      "pine_version": 1
+    },
+    {
+      "symbol_id": "pine:variable:close",
+      "pine_version": 2
+    },
+    {
+      "symbol_id": "pine:function:strategy.entry",
+      "pine_version": 2
+    },
+    {
+      "symbol_id": "pine:function:na",
+      "pine_version": 2
+    },
+    {
+      "symbol_id": "pine:variable:close",
+      "pine_version": 3
+    },
+    {
+      "symbol_id": "pine:function:strategy.entry",
+      "pine_version": 3
+    },
+    {
+      "symbol_id": "pine:function:na",
+      "pine_version": 3
+    },
+    {
+      "symbol_id": "pine:variable:close",
+      "pine_version": 4
+    },
+    {
+      "symbol_id": "pine:function:strategy.entry",
+      "pine_version": 4
+    },
+    {
+      "symbol_id": "pine:function:na",
+      "pine_version": 4
+    },
+    {
+      "symbol_id": "pine:variable:close",
+      "pine_version": 5
+    },
+    {
+      "symbol_id": "pine:function:strategy.entry",
+      "pine_version": 5
+    },
+    {
+      "symbol_id": "pine:function:na",
+      "pine_version": 5
+    },
+    {
+      "symbol_id": "pine:variable:close",
+      "pine_version": 6
+    },
+    {
+      "symbol_id": "pine:function:strategy.entry",
+      "pine_version": 6
+    },
+    {
+      "symbol_id": "pine:function:na",
+      "pine_version": 6
+    },
+    {
+      "symbol_id": "pine:function:strategy.exit",
+      "pine_version": 6
+    },
+    {
+      "symbol_id": "pine:function:request.security",
+      "pine_version": 6
+    },
+    {
+      "symbol_id": "pine:function:ta.sma",
+      "pine_version": 6
+    }
+  ]
+}

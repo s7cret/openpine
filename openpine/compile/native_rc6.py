@@ -124,6 +124,14 @@ class NativeRC6CompilerAdapter:
                 producer_commit=ast2python_commit,
                 expected_pine2ast_commit=pine2ast_commit,
             )
+            from openpine.verification.capabilities import (
+                effective_target_identity, require_plan_bindings,
+            )
+            require_plan_bindings(compiled.plan, target)
+            compile_meta["effective_target"] = effective_target_identity(
+                compiled.plan.pine_version, target.content_hash,
+                str(kwargs.get("execution_mode", "interactive")),
+            )
             generated_artifact = compiled.artifact.to_dict()
             validate_payload("openpine.generated_artifact.v3", generated_artifact)
             source_map = compiled.emitted.source_map.to_dict()

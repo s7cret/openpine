@@ -1,0 +1,1 @@
+{"compile": true, "events": [{"kind": "entry", "bar": 0, "phase": "HISTORICAL_EVAL", "id": "L", "qty": 1, "source_span": {"start_line": 4}}, {"kind": "open_trade", "bar": 1, "phase": "BROKER_FILL", "entry_price": 110, "qty": 1}]}

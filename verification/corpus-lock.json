@@ -1,0 +1,5 @@
+{
+  "schema_id": "openpine.corpus_lock.v1",
+  "manifest": "corpus-v1/manifest.json",
+  "content_hash": "sha256:b9df6e14c3cc1acdd9744e320d9d52d14437fd733b4be854c224383ff9e285f5"
+}

@@ -149,4 +149,6 @@ def resolve_engine_config(payload: Mapping[str, Any], context: Mapping[str, Any]
     # This hashes the resolved settings, including engine-enforced output flags.
     resolved = serialize_engine_config(config, config.semantic_profile)
     config.effective_config_hash = resolved[_HASH_FIELD]
+    from openpine.runtime.effective_config import EffectiveStrategyConfig
+    config.effective_strategy_config = EffectiveStrategyConfig.capture(resolved, payload, context)
     return config

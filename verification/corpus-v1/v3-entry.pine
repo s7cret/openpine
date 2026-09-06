@@ -1,0 +1,3 @@
+//@version=3
+strategy("stage1 corpus")
+strategy.entry("L",strategy.long,qty=1,when=time==1725145620000)

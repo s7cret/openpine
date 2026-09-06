@@ -419,6 +419,7 @@ def run_isolated_artifact(
         raise IsolatedRunError("worker did not return an admitted intent batch")
     progress.report(completed_bars, len(bars), force=True)
     result.bars_processed = completed_bars
+    result.effective_config_evidence = broker_config.effective_strategy_config.evidence()
     for key, value in input_evidence(inputs).items():
         setattr(result, key, value)
     return {

@@ -1,0 +1,184 @@
+{
+  "schema_id": "openpine.delivery_stages.v1",
+  "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
+  "baseline": "b738fcce4e34d13b718720a900e5f9eab66a797a",
+  "policy": "Stage completion is not whole-task TradingView acceptance. OP-12/15/32/35 stay cross-cutting through final release. No denominator reduction or self-generated TV oracle.",
+  "preserved_tasks": [
+    "OP-36"
+  ],
+  "stages": [
+    {
+      "id": 1,
+      "title": "Архитектура и критерии приёмки",
+      "tasks": [
+        "OP-03",
+        "OP-12",
+        "OP-15",
+        "OP-32",
+        "OP-35"
+      ],
+      "depends_on": [],
+      "exit_criteria": [
+        "immutable_admission_config",
+        "installed_capability_graph",
+        "ownership_boundaries",
+        "frozen_conformance_corpus",
+        "non_shrinking_test_gate"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Язык Pine v1–v6",
+      "tasks": [
+        "OP-02",
+        "OP-13",
+        "OP-14",
+        "OP-16",
+        "OP-17",
+        "OP-18",
+        "OP-19",
+        "OP-31"
+      ],
+      "depends_on": [
+        1
+      ],
+      "exit_criteria": [
+        "versioned_catalog",
+        "stateful_language_matrix",
+        "imports",
+        "independent_builtin_expected"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Данные и запросы",
+      "tasks": [
+        "OP-04",
+        "OP-08",
+        "OP-09",
+        "OP-21",
+        "OP-22"
+      ],
+      "depends_on": [
+        1,
+        2
+      ],
+      "exit_criteria": [
+        "automatic_request_sources",
+        "revision_matrix",
+        "instrument_sessions",
+        "offline_identity"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Исполнение и восстановление",
+      "tasks": [
+        "OP-05",
+        "OP-06",
+        "OP-10",
+        "OP-11",
+        "OP-25",
+        "OP-33"
+      ],
+      "depends_on": [
+        1,
+        2,
+        3
+      ],
+      "exit_criteria": [
+        "realtime_transition",
+        "atomic_full_job_resume",
+        "output_profiles",
+        "cancel_fault_matrix"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Стратегии и брокер",
+      "tasks": [
+        "OP-07",
+        "OP-20"
+      ],
+      "depends_on": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "exit_criteria": [
+        "complete_strategy_surface",
+        "broker_event_matrix",
+        "independent_fill_expected"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Скорость и оптимизатор",
+      "tasks": [
+        "OP-23",
+        "OP-24",
+        "OP-26",
+        "OP-27"
+      ],
+      "depends_on": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "exit_criteria": [
+        "measured_runtime_scaling",
+        "cache_invalidation",
+        "winner_replay",
+        "locked_holdout"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Пользовательский продукт",
+      "tasks": [
+        "OP-28",
+        "OP-29",
+        "OP-30"
+      ],
+      "depends_on": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "exit_criteria": [
+        "browser_e2e",
+        "large_chart_visuals",
+        "alert_delivery_recovery"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Поставка и общая приёмка",
+      "tasks": [
+        "OP-01",
+        "OP-34"
+      ],
+      "depends_on": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "exit_criteria": [
+        "wheel_only_install",
+        "doctor",
+        "all_task_evidence",
+        "single_release_regression"
+      ]
+    }
+  ]
+}

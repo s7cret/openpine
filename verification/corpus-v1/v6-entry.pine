@@ -1,0 +1,4 @@
+//@version=6
+strategy("stage1 corpus")
+if time==1725145620000
+    strategy.entry("L",strategy.long,qty=1)
