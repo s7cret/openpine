@@ -120,7 +120,6 @@ def test_scalar_state_drives_actual_pine_orders(monkeypatch, tmp_path, name, con
         ("float p = strategy.margin_liquidation_price", "strategy.margin_liquidation_price"),
         ('strategy.exit("X")', "active price leg"),
         ('strategy.exit("X", "L", trail_points=10, trail_offset=5)', "unsupported host parameters"),
-        ('strategy.exit("X", "L", limit=105, profit=4)', "relative/absolute"),
         ('strategy.exit("X", "L", stop=99, comment_loss="SL")', "unsupported host parameters"),
     ],
 )

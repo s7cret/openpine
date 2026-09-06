@@ -48,7 +48,7 @@ def strategy_host_surface() -> dict[str, Any]:
             "exit_all_entry_position_lifetime_v1",
             "intent_all_entry_exit_v2_3",
             "exit_relative_prices_per_opening_fill",
-            "exit_v6_relative_absolute_pairs_unavailable",
+            "exit_v6_first_trigger_pairs_intent_v2_4",
             "alerts_tape_only",
         ],
     }
@@ -134,10 +134,6 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
                     raise StrategyHostError("exit from_entry must be a string; omitted or empty means all entries")
                 if not set(bound).intersection({"profit", "limit", "loss", "stop"}):
                     raise StrategyHostError("exit requires a supported active price leg")
-                if pine_version == 6 and any(
-                    a in bound and b in bound for a, b in (("profit", "limit"), ("loss", "stop"))
-                ):
-                    raise StrategyHostError("v6 relative/absolute exit pairs are not supported")
         except (TypeError, ValueError) as exc:
             raise StrategyHostError(f"{capability} at {where}: {exc}") from exc
     return {"surface_hash": strategy_host_surface()["content_hash"], "required": sorted(required)}
