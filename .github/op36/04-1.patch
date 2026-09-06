@@ -1,0 +1,113 @@
+diff --git a/openpine/optimizer/isolated_runner.py b/openpine/optimizer/isolated_runner.py
+index eb3f19d54611f043c5d2f116d4427e3c0cfd2c4e..cc4462acee66f76b6cf18c2185f43c91deb479a7 100644
+--- a/openpine/optimizer/isolated_runner.py
++++ b/openpine/optimizer/isolated_runner.py
+@@ -46,6 +46,27 @@ def _stable_hash(value: Any) -> str:
+     return hashlib.sha256(encoded).hexdigest()
+ 
+ 
++def _engine_metric_requirements(names: set[str]) -> set[str]:
++    """Translate result-field requirements into the broker's calculation switches.
++
++    Ordinary numeric fields are always produced. The broker's required_metrics
++    currently accepts special computations (sharpe/sortino), not field names.
++    Returned values are still checked for presence and finiteness after execution.
++    """
++    from typing import get_type_hints
++    from backtest_engine.results.result import BacktestResult
++
++    types = get_type_hints(BacktestResult)
++    unknown = {name for name in names if types.get(name) not in (int, float, float | None)}
++    if unknown:
++        raise ValueError(f"unsupported optimizer result metrics: {sorted(unknown)}")
++    switches = {
++        "sharpe_ratio": "sharpe", "sortino_ratio": "sortino",
++        "score_sharpe_ratio": "sharpe", "score_sortino_ratio": "sortino",
++    }
++    return {switches[name] for name in names if name in switches}
++
++
+ class IsolatedOptimizerRunner:
+     """Run each optimizer trial through captured bytes and Bubblewrap."""
+ 
+@@ -151,12 +172,13 @@ class IsolatedOptimizerRunner:
+         outputs = set(getattr(request, "required_outputs", ()))
+         if outputs - self.capabilities.supported_outputs:
+             raise ValueError("unsupported required optimizer outputs")
++        metric_switches = _engine_metric_requirements(set(request.required_metrics))
+         trial_params = {**self.base_params, **dict(request.params)}
+         inputs = resolve_inputs(self.source, trial_params, envelope=self.generated_artifact)
+         trial_params = dict(inputs.values)
+         trial_config = copy.deepcopy(self.config)
+         object.__setattr__(trial_config, "required_outputs", outputs)
+-        object.__setattr__(trial_config, "required_metrics", set(request.required_metrics))
++        object.__setattr__(trial_config, "required_metrics", metric_switches)
+         trial_run_id = f"{self.execution_context['run_id']}.trial-{request.trial_id}"
+         trial_context_payload = dict(self.execution_context)
+         trial_context_payload.pop("content_hash", None)
+diff --git a/rc6_tests/test_rc6_optimizer_requests.py b/rc6_tests/test_rc6_optimizer_requests.py
+index 17196609b9d23845df4972bf169d57a9012b62b4..d56d08fff295793be3b9b21936867ce6e7c8cf72 100644
+--- a/rc6_tests/test_rc6_optimizer_requests.py
++++ b/rc6_tests/test_rc6_optimizer_requests.py
+@@ -34,7 +34,17 @@ def runner_case(tmp_path, monkeypatch=None, mode="bulk_backtest"):
+     compiled, context, config = case
+     config.exchange, config.market_type = "binance", "spot"
+     config.isolated_protocol = mode
+-    bars = [decode_canonical_bar(row) for row in rows]
++    from backtest_engine.models.bar import to_contract_bar
++    from marketdata_provider.contracts import InstrumentKey, parse_timeframe
++
++    instrument = InstrumentKey(exchange="binance", market="spot", symbol="SOLUSDT")
++    timeframe = parse_timeframe("1m")
++    bars = [
++        to_contract_bar(
++            decode_canonical_bar(row), instrument=instrument, timeframe=timeframe, closed=True
++        )
++        for row in rows
++    ]
+     snapshot = execution_data_snapshot_hash(
+         bars=bars,
+         supplemental_bars=None,
+@@ -202,3 +212,42 @@ def test_real_optimizer_worker_requests_and_repeat(tmp_path, mode):
+ 
+     assert fills(parallel[0]) == fills(responses[1])
+     assert fills(parallel[1]) == fills(responses[0])
++
++
++def test_ordinary_numeric_metrics_do_not_become_broker_compute_switches(monkeypatch, tmp_path):
++    from dataclasses import replace
++    from optimizer import OptimizerConfig
++    from optimizer.core.trial_runner import run_one
++
++    runner, seen, _, _ = runner_case(tmp_path, monkeypatch)
++    config = OptimizerConfig(
++        output_dir=tmp_path,
++        timeout_per_trial_sec=0,
++        report_profiles=False,
++        use_profile_auto_constraints=False,
++    )
++    trial = run_one(1, {"period": 2}, runner, config, "space", "config")
++    assert trial.status == "completed", trial.error_message
++    assert trial.metrics["net_profit"] == 1.0
++    assert seen[0][0].required_metrics == set()
++    assert not seen[0][1]["raw_result"]["errors"]
++    response = runner(replace(request(2, 2), required_metrics={"sharpe_ratio"}))
++    assert seen[-1][0].required_metrics == {"sharpe"}
++    assert response.metrics["sharpe_ratio"] == seen[-1][1]["raw_result"]["sharpe_ratio"]
++
++
++@pytest.mark.parametrize("metric", ["unknown", "status", "errors", "config_snapshot"])
++def test_unbound_or_nonnumeric_metric_is_rejected_before_execution(monkeypatch, tmp_path, metric):
++    from dataclasses import replace
++
++    runner, seen, _, _ = runner_case(tmp_path, monkeypatch)
++    with pytest.raises(ValueError, match="unsupported optimizer result metrics"):
++        runner(replace(request(2), required_metrics={metric}))
++    assert not seen
++
++
++def test_special_ratio_calculation_switches_use_canonical_broker_names():
++    from openpine.optimizer.isolated_runner import _engine_metric_requirements
++
++    assert _engine_metric_requirements({"net_profit", "final_equity", "total_trades"}) == set()
++    assert _engine_metric_requirements({"sharpe_ratio", "sortino_ratio"}) == {"sharpe", "sortino"}
