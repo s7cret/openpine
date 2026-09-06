@@ -1,0 +1,363 @@
+diff --git a/docs/RC6_REVIEW_36.json b/docs/RC6_REVIEW_36.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ef9301b60c1dc5f1236320b694229dab4c393509
+--- /dev/null
++++ b/docs/RC6_REVIEW_36.json
+@@ -0,0 +1,357 @@
++{
++  "schema": "openpine.review.acceptance.v1",
++  "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
++  "source_spec_name": "OpenPine_RC6_Review_TZ_2026-09-05.md",
++  "snapshot_base": "8d5c7bf26e293bd3007c98134cadd445198d23ee",
++  "status_policy": "Task status is full-scope acceptance, not implementation percentage. Partial records preserve implemented regressions; accepted requires no remaining acceptance work and an explicit receipt. CI verifies ledger consistency, not TradingView truth. New test claims require the publication receipt.",
++  "tasks": [
++    {
++      "id": "OP-01",
++      "title": "Одна воспроизводимая поставка вместо расходящихся идентификаторов",
++      "status": "partial",
++      "implemented": "Закреплён совместимый набор commit SHA; CI устанавливает чистые копии источников.",
++      "remaining": "Материализовать весь wheel manifest, dependency closure и doctor; проверить установку без исходников.",
++      "evidence_paths": [
++        "docs/RC6_LIFECYCLE_SOURCES.json"
++      ]
++    },
++    {
++      "id": "OP-02",
++      "title": "Довести пользовательские inputs до исполнения и оптимизации",
++      "status": "partial",
++      "implemented": "Overrides поступают в runtime, CLI и trials; проверяются типы и hash применённых inputs.",
++      "remaining": "Зафиксировать единый output digest для CLI/API/trial, включая одинаковые title и все допустимые нули.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_inputs.py"
++      ]
++    },
++    {
++      "id": "OP-03",
++      "title": "Единая конфигурация стратегии: нули, sizing и брокер",
++      "status": "partial",
++      "implemented": "Устранены потеря margin=0 и дубли конвертеров; сохранены режимы rounding.",
++      "remaining": "Полная provenance конфигурации и версия defaults declaration; общий immutable effective config.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_effective_config.py"
++      ]
++    },
++    {
++      "id": "OP-04",
++      "title": "Сохранить finality, revision и валидность marketdata envelope",
++      "status": "partial",
++      "implemented": "Канонические envelopes проверяются в обоих режимах; finality и numeric underflow не подменяются.",
++      "remaining": "Полная матрица приёмки revision policies и исправленных/отозванных рядов во всех входных путях.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_marketdata_boundary.py"
++      ]
++    },
++    {
++      "id": "OP-05",
++      "title": "Общий lifecycle для historical, realtime и fill-recalculation",
++      "status": "partial",
++      "implemented": "Общий cursor и fill recalculation; история фиксируется один раз на бар.",
++      "remaining": "Сквозной historical→realtime, несколько тиков и var/varip с реальным транспортом.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_lifecycle.py"
++      ]
++    },
++    {
++      "id": "OP-06",
++      "title": "Bulk-result без скрытой потери результатов",
++      "status": "partial",
++      "implemented": "Полная tape и проверяемые result chunks; ошибки процесса и незавершённость не считаются успехом.",
++      "remaining": "Явные full/metrics-only profiles с проверкой обещанных outputs и целостности больших результатов.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_bulk_result_validation.py"
++      ]
++    },
++    {
++      "id": "OP-07",
++      "title": "Довести strategy bridge до полного покрываемого API",
++      "status": "partial",
++      "implemented": "Семь команд и 17 скалярных значений; ранний отказ неподдержанных host-вызовов.",
++      "remaining": "Завершить exit/trailing/risk/indexed trade methods и исторические сигнатуры.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_strategy_surface.py"
++      ]
++    },
++    {
++      "id": "OP-08",
++      "title": "Подключить request engine к настоящим snapshot-данным",
++      "status": "partial",
++      "implemented": "Работают source-context выражения, nested HTF/LTF, arrays и chunked preloads; добавлена привязка к trial.",
++      "remaining": "Автоподготовка источников из UI/CLI, UDF/локальные capture, live/revision, FX и полный каталог request.*.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_nested_integration.py"
++      ]
++    },
++    {
++      "id": "OP-09",
++      "title": "Честные instrument, timeframe и language identities",
++      "status": "partial",
++      "implemented": "Исправлены language identity, часы/минуты/месяцы и передача pointvalue.",
++      "remaining": "Явные crypto/stock/futures metadata, calendar/session и basecurrency без предположений.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_chart_metadata.py"
++      ]
++    },
++    {
++      "id": "OP-10",
++      "title": "Настоящий checkpoint / resume вместо маркера состояния",
++      "status": "partial",
++      "implemented": "Реальные Pine checkpoints, request caches и receipt-derived cursors; атомарный restore.",
++      "remaining": "Полное возобновление broker+IPC+worker без дублирования orders/visuals после падения.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_checkpoint_receipts.py"
++      ]
++    },
++    {
++      "id": "OP-11",
++      "title": "Быстрый content-sensitive state hash",
++      "status": "partial",
++      "implemented": "Проверены content-sensitive full/semantic hashes и равенство после восстановления.",
++      "remaining": "Дифференциальные мутации всех сегментов, включая references/requests/orders; стоимость хеширования на больших рядах.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_generated_checkpoint.py"
++      ]
++    },
++    {
++      "id": "OP-12",
++      "title": "Включить RC6 и cross-library проверки в обязательный release gate",
++      "status": "partial",
++      "implemented": "Постоянный CI включает native и все семь библиотек; provider network cases выделены отдельно.",
++      "remaining": "Immutable wheel-release gate, coverage thresholds, обязательная матрица capabilities и установка пакетов без source paths.",
++      "evidence_paths": [
++        ".github/workflows/rc6-native.yml"
++      ]
++    },
++    {
++      "id": "OP-13",
++      "title": "Pine v6 once: весь путь от lexer до rollback",
++      "status": "unverified",
++      "implemented": "Отдельная реализация и приёмка once в этом этапе не выполнены.",
++      "remaining": "Проверить актуальную официальную семантику; lexer→IR→runtime→rollback и независимый oracle.",
++      "evidence_paths": []
++    },
++    {
++      "id": "OP-14",
++      "title": "Полный version-exact реестр Pine v1–v6",
++      "status": "partial",
++      "implemented": "Добавлены request/NA/array bindings и проверки версий v1–v6 для поддержанного поднабора.",
++      "remaining": "Полный version-exact каталог, overload denominator и отрицательные пары доступности.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_requests.py"
++      ]
++    },
++    {
++      "id": "OP-15",
++      "title": "Замкнуть capability graph producer → compiler → runtime → host",
++      "status": "partial",
++      "implemented": "Worker объявляет closed_bar и отвергает неподдержанный checkpoint_v1; host surface строится из registry.",
++      "remaining": "Единый producer/compiler/runtime/host capability graph с ABI invalidation и проверяемыми statuses.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_worker_capabilities.py"
++      ]
++    },
++    {
++      "id": "OP-16",
++      "title": "Проверить и закрыть bool-history v6 без поломки старых версий",
++      "status": "unverified",
++      "implemented": "Полная парная приёмка bool-history v5/v6 ещё не зафиксирована в этом реестре.",
++      "remaining": "Проверить прямой ABI и generated path, первый бар, offsets, if/switch и bool fields; исправлять только воспроизведённые расхождения.",
++      "evidence_paths": []
++    },
++    {
++      "id": "OP-17",
++      "title": "Stateful semantics: callsite, функция, ветка, цикл и история",
++      "status": "partial",
++      "implemented": "Есть транзакции состояния, callsite identity, rollback и проверки повторных callbacks.",
++      "remaining": "Корпус независимых callsites в функциях/ветках/циклах с точными трассами до и после оптимизаций.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_lifecycle.py"
++      ]
++    },
++    {
++      "id": "OP-18",
++      "title": "Численное и функциональное покрытие builtins",
++      "status": "partial",
++      "implemented": "Есть runtime/TA-наборы и точные проверки NA/типов для отдельных операций.",
++      "remaining": "Для каждой supported overload определить численный oracle/tolerance и версии; отдельно считать TV coverage.",
++      "evidence_paths": [
++        "docs/RC6_REQUESTS_CHECKPOINT_PUBLICATION.md"
++      ]
++    },
++    {
++      "id": "OP-19",
++      "title": "Отдельный пакет актуальных возможностей Pine 2026",
++      "status": "unverified",
++      "implemented": "Пакет новых возможностей Pine 2026 не принят как единое целое.",
++      "remaining": "Сверить официальные изменения и реализовать positive/negative сквозные сценарии без объявления усечённого поведения полным.",
++      "evidence_paths": []
++    },
++    {
++      "id": "OP-20",
++      "title": "Проверка broker parity по событиям, а не только итоговому PnL",
++      "status": "partial",
++      "implemented": "Брокерные и transport-тесты сравнивают команды/сделки/equity; отмена TP/SL по parent ID исправлена.",
++      "remaining": "Независимый event oracle для всех order types, комиссии, fill phase и margin/liquidation.",
++      "evidence_paths": [
++        "docs/RC6_STRATEGY_PUBLICATION_RECEIPT.md"
++      ]
++    },
++    {
++      "id": "OP-21",
++      "title": "Строгий импорт и эффективное чтение offline datasets",
++      "status": "partial",
++      "implemented": "Строгие CSV/Parquet, явные timestamp/volume policies и bounded batches.",
++      "remaining": "Индексировать повторные intrabar reads, provenance policies, row-group filtering и repeat-import canonical identity.",
++      "evidence_paths": [
++        "docs/RC6_DATA_UI_PUBLICATION_RECEIPT.md"
++      ]
++    },
++    {
++      "id": "OP-22",
++      "title": "Расширение рынков и видов графиков без выдуманной точности",
++      "status": "partial",
++      "implemented": "Существующий криптовалютный путь не выдаётся за полную поддержку иных рынков.",
++      "remaining": "Корпус stock/futures/FX, vendor quality, календари и честная политика synthetic charts.",
++      "evidence_paths": [
++        "docs/RC6_DATA_UI_BLOCK.md"
++      ]
++    },
++    {
++      "id": "OP-23",
++      "title": "Оптимизация runtime storage и горячего барового цикла",
++      "status": "partial",
++      "implemented": "Убраны отдельные лишние сериализации и копии timestamp-массивов при alignment.",
++      "remaining": "Замер времени/памяти на 1k/10k/100k/1M bars и оптимизация storage без изменения доступной истории.",
++      "evidence_paths": [
++        "docs/RC6_CLEANUP_EXECUTION_BLOCK.md"
++      ]
++    },
++    {
++      "id": "OP-24",
++      "title": "Кеш компиляции и безопасная специализация",
++      "status": "unverified",
++      "implemented": "Cache/identity код существует; полная приёмка OP-24 этим этапом не выполнена.",
++      "remaining": "Проверить cold/warm, ABI/library/flags invalidation, concurrent atomic writes и равенство hit/miss outputs.",
++      "evidence_paths": []
++    },
++    {
++      "id": "OP-25",
++      "title": "Потоковый bulk, видимый прогресс и надёжная отмена",
++      "status": "partial",
++      "implemented": "Есть монотонный прогресс и bounded result/request frames; inputs сериализуются однократно.",
++      "remaining": "Fault-проверки отмены при загрузке/расчёте/экспорте, backpressure и partial/resume UX.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_progress.py"
++      ]
++    },
++    {
++      "id": "OP-26",
++      "title": "Строгий optimizer runner contract и независимость trials",
++      "status": "partial",
++      "implemented": "Устранена потеря warmup, добавлены private copies, explicit SHA identities и trial-bound request snapshots.",
++      "remaining": "Закрепить полный serial/parallel/seed/replay контракт всех runner-типов и внешнего изменяемого состояния.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_optimizer_requests.py"
++      ]
++    },
++    {
++      "id": "OP-27",
++      "title": "Полезная оптимизация: воспроизводимость победителя и устойчивость",
++      "status": "partial",
++      "implemented": "Failed/partial/nonfinite trials исключены из ranking; нулевые метрики сохранены; проверен обычный replay чувствительного trial.",
++      "remaining": "Воспроизведение победителя из отчёта/UI с digest; locked train/validation/warmup и независимый holdout.",
++      "evidence_paths": [
++        "docs/RC6_OPTIMIZER_INTEGRITY.md"
++      ]
++    },
++    {
++      "id": "OP-28",
++      "title": "Исправить гонку загрузки и масштабирование parity UI",
++      "status": "partial",
++      "implemented": "Защищены page/loadAll гонки; finite bounds, 300k-point sampling и top-N labels покрыты тестами.",
++      "remaining": "Финальная приёмка больших реальных экранов; browser/visual UX отдельно от in-memory Vue lifecycle.",
++      "evidence_paths": [
++        "docs/RC6_DATA_UI_PUBLICATION_RECEIPT.md"
++      ]
++    },
++    {
++      "id": "OP-29",
++      "title": "Единый пользовательский путь: редактор → настройки → результат",
++      "status": "unverified",
++      "implemented": "Пять обязательных пользовательских UI E2E ещё не приняты.",
++      "remaining": "Editor→inputs→result, missing MTF, unsupported capability, cancel; стабильные source/data/config при повторе.",
++      "evidence_paths": []
++    },
++    {
++      "id": "OP-30",
++      "title": "Довести visuals, alerts и logs до продукта",
++      "status": "partial",
++      "implemented": "Семантические visual/alert/log tapes предусмотрены в runtime.",
++      "remaining": "Численный экспорт и renderer UI, rollback объектов и отсутствие дублей alerts после полного resume.",
++      "evidence_paths": [
++        "docs/ARCHITECTURE.md"
++      ]
++    },
++    {
++      "id": "OP-31",
++      "title": "Pine library imports и воспроизводимое разрешение зависимостей",
++      "status": "unverified",
++      "implemented": "Полный независимый тест versioned Pine library imports не принят.",
++      "remaining": "Транзитивные функции/типы, конфликты имён, отсутствующая версия и cache invalidation без соседних checkout.",
++      "evidence_paths": []
++    },
++    {
++      "id": "OP-32",
++      "title": "Один сквозной conformance pipeline и first-divergence report",
++      "status": "partial",
++      "implemented": "TV parity UI и диагностические отчёты существуют.",
++      "remaining": "Единый versioned corpus с независимым expected и первым bar/phase/source divergence; отделить vendor/data mismatch.",
++      "evidence_paths": [
++        "docs/RC6_DATA_UI_PUBLICATION_RECEIPT.md"
++      ]
++    },
++    {
++      "id": "OP-33",
++      "title": "Fault tests и границы изоляции без ослабления sandbox",
++      "status": "partial",
++      "implemented": "Protected worker regressions и полный optimizer process-containment suite входят в CI без fallback.",
++      "remaining": "Полный fault matrix от загрузки до экспорта и доказательства освобождения ресурсов/запрета путей и сети.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_worker_admission.py"
++      ]
++    },
++    {
++      "id": "OP-34",
++      "title": "Документация, doctor и сборка без ловушек",
++      "status": "partial",
++      "implemented": "Документированы точные source pins, migration limits и фактические CI receipts.",
++      "remaining": "Чистая установка/doctor от wheel manifest без editable/PYTHONPATH и автоматической модификации пользовательских данных.",
++      "evidence_paths": [
++        "docs/RC6_LIFECYCLE_SOURCES.json"
++      ]
++    },
++    {
++      "id": "OP-35",
++      "title": "Сохранить семь компонентов, убрать дублирование семантики в адаптерах",
++      "status": "partial",
++      "implemented": "Удалены подтверждённые заглушки/legacy; общие владельцы config, lifecycle, request transport сохранены.",
++      "remaining": "Architecture checks для всех семи библиотек и отсутствие повторной бизнес-семантики в адаптерах.",
++      "evidence_paths": [
++        "rc6_tests/test_rc6_no_legacy_surfaces.py"
++      ]
++    },
++    {
++      "id": "OP-36",
++      "title": "Сохранение полезных изменений и консолидация веток OpenPine",
++      "status": "accepted",
++      "implemented": "В OpenPine оставлены четыре линии; полезные изменения перенесены, исходные tips сохранены тегами.",
++      "remaining": "",
++      "evidence_paths": [
++        "docs/RC6_BRANCH_CONSOLIDATION_RECEIPT.md"
++      ]
++    }
++  ]
++}

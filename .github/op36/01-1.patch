@@ -1,0 +1,363 @@
+diff --git a/openpine/optimizer/isolated_runner.py b/openpine/optimizer/isolated_runner.py
+index 94d0101e10de8e7e56fe0b8e9320a6a7f749eb95..eb3f19d54611f043c5d2f116d4427e3c0cfd2c4e 100644
+--- a/openpine/optimizer/isolated_runner.py
++++ b/openpine/optimizer/isolated_runner.py
+@@ -19,7 +19,9 @@ def _identity(value: Any) -> Any:
+     if is_dataclass(value) and not isinstance(value, type):
+         return _identity(asdict(value))
+     if isinstance(value, dict):
+-        return {str(key): _identity(item) for key, item in value.items()}
++        if any(type(key) is not str for key in value):
++            raise TypeError("optimizer identity mapping keys must be strings")
++        return {key: _identity(item) for key, item in value.items()}
+     if isinstance(value, (list, tuple)):
+         return [_identity(item) for item in value]
+     if isinstance(value, (str, int, float, bool, type(None))):
+@@ -39,6 +41,7 @@ def _stable_hash(value: Any) -> str:
+         sort_keys=True,
+         separators=(",", ":"),
+         ensure_ascii=True,
++        allow_nan=False,
+     ).encode("utf-8")
+     return hashlib.sha256(encoded).hexdigest()
+ 
+@@ -74,7 +77,7 @@ class IsolatedOptimizerRunner:
+         htf_bars: list[dict[str, Any]] | None = None,
+     ) -> None:
+         self.source = bytes(source)
+-        self.bars = tuple(bars)
++        self.bars = copy.deepcopy(tuple(bars))
+         self.config = copy.deepcopy(config)
+         self.execution_context = copy.deepcopy(execution_context)
+         self.admitted_manifest = copy.deepcopy(admitted_manifest)
+@@ -154,8 +157,6 @@ class IsolatedOptimizerRunner:
+         trial_config = copy.deepcopy(self.config)
+         object.__setattr__(trial_config, "required_outputs", outputs)
+         object.__setattr__(trial_config, "required_metrics", set(request.required_metrics))
+-        config_hash = applied_config_hash(trial_config, inputs)
+-        object.__setattr__(trial_config, "applied_config_hash", config_hash)
+         trial_run_id = f"{self.execution_context['run_id']}.trial-{request.trial_id}"
+         trial_context_payload = dict(self.execution_context)
+         trial_context_payload.pop("content_hash", None)
+@@ -165,6 +166,15 @@ class IsolatedOptimizerRunner:
+             trial_context_payload, schema_id="openpine.execution_context.v1"
+         )
+         validate_payload("openpine.execution_context.v1", trial_context)
++        manifest = getattr(self.config, "request_manifest", None)
++        if manifest is not None:
++            from openpine.runtime.request_data import rebind_request_manifest
++
++            # Reseal only the execution binding, never replace or reinterpret data.
++            manifest = rebind_request_manifest(manifest, self.execution_context, trial_context)
++            object.__setattr__(trial_config, "request_manifest", manifest)
++        config_hash = applied_config_hash(trial_config, inputs)
++        object.__setattr__(trial_config, "applied_config_hash", config_hash)
+         trial_run_payload = dict(self.run_identity)
+         trial_run_payload.pop("content_hash", None)
+         trial_run_payload["run_id"] = trial_run_id
+@@ -186,9 +196,9 @@ class IsolatedOptimizerRunner:
+         )
+         isolated = BacktestEngineAdapter().run_isolated(
+             self.source,
+-            list(self.bars),
++            copy.deepcopy(list(self.bars)),
+             trial_config,
+-            htf_bars=self.htf_bars or None,
++            htf_bars=copy.deepcopy(self.htf_bars) or None,
+             params=trial_params,
+         )
+         result = isolated.raw_result
+@@ -210,7 +220,7 @@ class IsolatedOptimizerRunner:
+                 continue
+             try:
+                 metric = float(value)
+-            except (TypeError, ValueError):
++            except (TypeError, ValueError, OverflowError):
+                 metric = math.nan
+             if not math.isfinite(metric):
+                 diagnostics.append(
+@@ -243,6 +253,9 @@ class IsolatedOptimizerRunner:
+             "run_identity_hash": trial_run["content_hash"],
+             "score_ledger_hash": str(getattr(result, "score_ledger_hash", None) or ""),
+         }
++        if manifest is not None:
++            hashes["source_request_manifest_hash"] = self.config.request_manifest["content_hash"]
++            hashes["trial_request_manifest_hash"] = manifest["content_hash"]
+         if callable(content_hash):
+             hashes["content_hash"] = str(content_hash())
+         return RunnerResponse(
+diff --git a/openpine/runtime/engine.py b/openpine/runtime/engine.py
+index 75d7e3c6a078d884b0fe868d59559419b0a54003..c55f29a6f723103235dd075c063849a5b44a4609 100644
+--- a/openpine/runtime/engine.py
++++ b/openpine/runtime/engine.py
+@@ -56,6 +56,7 @@ class BacktestRunConfig:
+     generated_artifact: dict | None = None
+     execution_context: dict | None = None
+     instrument_id: str | None = None
++    request_manifest: dict[str, Any] | None = None
+ 
+ 
+ @dataclass(frozen=True)
+@@ -217,10 +218,12 @@ class BacktestEngineAdapter:
+             "applied_config_hash",
+             "protocol_artifact_dir",
+             "isolated_protocol",
++            "request_manifest",
+         ):
+             value = getattr(config, name, None)
+             if value is not None:
+-                object.__setattr__(engine_config, name, value)
++                from copy import deepcopy
++                object.__setattr__(engine_config, name, deepcopy(value))
+         return engine_config
+ 
+     def run_isolated(
+diff --git a/openpine/runtime/request_data.py b/openpine/runtime/request_data.py
+index d48d8bbcf9c231f8a2912f50fe8c9f7f01ea86fc..7f15cfb31077c696f34fe8e4f2ca79612382fb29 100644
+--- a/openpine/runtime/request_data.py
++++ b/openpine/runtime/request_data.py
+@@ -207,3 +207,34 @@ def admit_request_data(
+     except (PineRuntimeError, MarketDataError) as exc:
+         raise ValueError(f"RC6_REQUEST_DATA: {exc}") from exc
+     return provider
++
++
++def rebind_request_manifest(
++    manifest: Mapping[str, Any],
++    original_context: Mapping[str, Any],
++    trial_context: Mapping[str, Any],
++) -> dict[str, Any]:
++    """Bind verified, unchanged request data to a new trial of the same run setup.
++
++    Only run/session IDs may differ. Validate the source before resealing so a
++    malformed or unrelated manifest cannot be laundered by assigning a new hash.
++    """
++    from copy import deepcopy
++    from openpine_contracts import seal_content_hash, validate_payload
++
++    for context in (original_context, trial_context):
++        validate_payload("openpine.execution_context.v1", context)
++        if not verify_content_hash(context, schema_id="openpine.execution_context.v1"):
++            raise ValueError("request rebind context hash is invalid")
++    transient = {"run_id", "session_id", "content_hash"}
++    original = {key: value for key, value in original_context.items() if key not in transient}
++    target = {key: value for key, value in trial_context.items() if key not in transient}
++    if original != target:
++        raise ValueError("request rebind cannot change execution semantics or source identity")
++    request_provider_from_manifest(manifest, original_context)
++    payload = deepcopy(dict(manifest))
++    payload.pop("content_hash")
++    payload["execution_context_hash"] = trial_context["content_hash"]
++    rebound = seal_content_hash(payload, schema_id=SCHEMA)
++    request_provider_from_manifest(rebound, trial_context)
++    return rebound
+diff --git a/rc6_tests/test_rc6_optimizer_requests.py b/rc6_tests/test_rc6_optimizer_requests.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..17196609b9d23845df4972bf169d57a9012b62b4
+--- /dev/null
++++ b/rc6_tests/test_rc6_optimizer_requests.py
+@@ -0,0 +1,204 @@
++"""Trial-bound request snapshots execute real Pine; only IPC is replaced in unit cases."""
++
++from copy import deepcopy
++import json
++from types import SimpleNamespace
++
++import pytest
++from optimizer import RunnerRequest
++from openpine_contracts import seal_content_hash, verify_content_hash
++
++from openpine.optimizer.isolated_runner import IsolatedOptimizerRunner
++from openpine.run_identity import execution_data_snapshot_hash, run_identity_path
++from openpine.runtime.inputs import applied_config_hash, resolve_inputs
++from openpine.runtime.request_data import rebind_request_manifest
++from openpine.runtime.rc6_marketdata import decode_canonical_bar
++from rc6_tests.test_rc6_bulk_execution import execute_bulk
++from rc6_tests.test_rc6_requests import ID, case_for, source_rows
++from rc6_tests.test_rc6_worker_admission import _manifest
++from tests.rc4_fixtures import run_identity
++
++
++def request(period, trial_id=1):
++    return RunnerRequest({"period": period}, trial_id, {"final_equity"}, {"equity_curve"}, [])
++
++
++def runner_case(tmp_path, monkeypatch=None, mode="bulk_backtest"):
++    case, rows = case_for(
++        f'period=input.int(2,minval=1,maxval=4)\nx=request.security("{ID}","5",ta.sma(close,period))\n'
++        'if bar_index==9 and x==15\n    strategy.entry("matched",strategy.long,qty=1)\n'
++        "if bar_index==11\n    strategy.close_all(immediately=true)",
++        sources=[source_rows(prices=(10, 20, 30, 40))],
++        count=20,
++    )
++    compiled, context, config = case
++    config.exchange, config.market_type = "binance", "spot"
++    config.isolated_protocol = mode
++    bars = [decode_canonical_bar(row) for row in rows]
++    snapshot = execution_data_snapshot_hash(
++        bars=bars,
++        supplemental_bars=None,
++        exchange="binance",
++        market="spot",
++        symbol="SOLUSDT",
++        timeframe="1m",
++        start_ms=config.start_time,
++        end_ms=config.end_time,
++        finality_policy="CLOSED_BAR_ONLY",
++    )
++    seen = []
++    if monkeypatch is not None:
++
++        class InMemoryTransport:
++            def run_isolated(self, source, bars, trial, **kwargs):
++                payload = execute_bulk(
++                    monkeypatch,
++                    (compiled, trial.execution_context, trial),
++                    bars=rows,
++                    params=kwargs["params"],
++                )
++                seen.append((trial, payload))
++                return SimpleNamespace(raw_result=SimpleNamespace(**payload["raw_result"]))
++
++        monkeypatch.setattr(
++            "openpine.optimizer.isolated_runner.BacktestEngineAdapter", InMemoryTransport
++        )
++    runner = IsolatedOptimizerRunner(
++        source=compiled.python_code.encode(),
++        bars=bars,
++        config=config,
++        expected_data_snapshot_hash=snapshot,
++        execution_context=context,
++        admitted_manifest=_manifest(),
++        instrument_id=ID,
++        generated_artifact=compiled.generated_artifact,
++        bar_envelopes=rows,
++        run_identity=run_identity(context, data_snapshot_hash=snapshot),
++        data_dir=tmp_path,
++        protocol_artifact_dir=str(tmp_path / "protocol"),
++    )
++    return runner, seen, case, rows
++
++
++def test_repeated_reordered_trials_match_independent_backtests(monkeypatch, tmp_path):
++    runner, seen, case, rows = runner_case(tmp_path, monkeypatch)
++    original = deepcopy(runner.config.request_manifest)
++    outputs = [runner(request(period, i)) for i, period in enumerate((2, 3, 2), 1)]
++    assert all(not response.diagnostics for response in outputs)
++    assert outputs[0].metrics == outputs[2].metrics != outputs[1].metrics
++    for response, (trial, payload) in zip(outputs, seen):
++        manifest = trial.request_manifest
++        assert manifest["datasets"] == original["datasets"]
++        assert manifest["execution_context_hash"] == trial.execution_context["content_hash"]
++        assert verify_content_hash(manifest, schema_id="openpine.request_snapshots.v1")
++        inputs = resolve_inputs(case[0].python_code, payload["raw_result"]["effective_inputs"])
++        assert response.hashes["engine_config_hash"] == applied_config_hash(trial, inputs)
++        persisted = json.loads(
++            run_identity_path(tmp_path, trial.execution_context["run_id"]).read_text()
++        )
++        assert persisted["config_hash"] == response.hashes["engine_config_hash"]
++        assert response.hashes["source_request_manifest_hash"] == original["content_hash"]
++        # Replay the selected trial as an ordinary backtest with the same admitted inputs.
++        direct = execute_bulk(
++            monkeypatch,
++            (case[0], trial.execution_context, trial),
++            bars=rows,
++            params=payload["raw_result"]["effective_inputs"],
++        )
++        assert direct["intent_tape"] == payload["intent_tape"]
++        assert direct["raw_result"]["closed_trades"] == payload["raw_result"]["closed_trades"]
++        assert direct["raw_result"]["final_equity"] == payload["raw_result"]["final_equity"]
++        assert (
++            direct["raw_result"]["score_ledger_hash"] == payload["raw_result"]["score_ledger_hash"]
++        )
++    assert runner.config.request_manifest == original
++    assert len({r.hashes["trial_request_manifest_hash"] for r in outputs}) == 3
++    fresh, _, _, _ = runner_case(tmp_path / "reordered", monkeypatch)
++    assert fresh(request(3, 2)).metrics == outputs[1].metrics
++    assert fresh(request(2, 1)).metrics == outputs[0].metrics
++
++
++@pytest.mark.parametrize("fault", ["data", "root", "foreign_context"])
++def test_rebind_does_not_launder_tampered_or_unrelated_snapshots(monkeypatch, tmp_path, fault):
++    runner, seen, _, _ = runner_case(tmp_path, monkeypatch)
++    manifest = runner.config.request_manifest
++    if fault == "data":
++        manifest["datasets"][0]["bars"][0]["close"] = "999"
++    elif fault == "root":
++        manifest["content_hash"] = "sha256:" + "f" * 64
++    else:
++        manifest["execution_context_hash"] = "sha256:" + "e" * 64
++        runner.config.request_manifest = seal_content_hash(
++            manifest, schema_id="openpine.request_snapshots.v1"
++        )
++    with pytest.raises(ValueError):
++        runner(request(2))
++    assert not seen
++    assert not run_identity_path(tmp_path, runner.execution_context["run_id"] + ".trial-1").exists()
++
++
++def test_rebind_rejects_semantic_context_change(monkeypatch, tmp_path):
++    runner, _, _, _ = runner_case(tmp_path, monkeypatch)
++    target = seal_content_hash(
++        {**runner.execution_context, "pointvalue": "50"}, schema_id="openpine.execution_context.v1"
++    )
++    with pytest.raises(ValueError, match="cannot change execution semantics"):
++        rebind_request_manifest(runner.config.request_manifest, runner.execution_context, target)
++
++
++def test_host_conversion_preserves_detached_request_manifest():
++    from openpine.runtime.engine import BacktestEngineAdapter, BacktestRunConfig
++
++    host = BacktestRunConfig(
++        "S",
++        "1m",
++        0,
++        1000,
++        semantic_profile="strict_5x",
++        request_manifest={"datasets": [{"bars": [{"close": "10"}]}]},
++    )
++    native = BacktestEngineAdapter()._to_engine_config(host)
++    assert native.request_manifest == host.request_manifest
++    native.request_manifest["datasets"][0]["bars"][0]["close"] = "11"
++    assert host.request_manifest["datasets"][0]["bars"][0]["close"] == "10"
++
++
++@pytest.mark.parametrize(
++    "value", [{1: "numeric", "1": "text"}, {"value": float("nan")}, {"value": float("inf")}]
++)
++def test_ambiguous_or_nonfinite_identity_is_rejected(value):
++    from openpine.optimizer.isolated_runner import _stable_hash
++
++    with pytest.raises((ValueError, TypeError)):
++        _stable_hash(value)
++
++
++@pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
++def test_real_optimizer_worker_requests_and_repeat(tmp_path, mode):
++    runner, _, _, _ = runner_case(tmp_path, mode=mode)
++    responses = [runner(request(period, i)) for i, period in enumerate((2, 3, 2), 1)]
++    assert all(not response.diagnostics for response in responses)
++    assert responses[0].metrics == responses[2].metrics != responses[1].metrics
++    assert all(r.raw_result.status == "completed" for r in responses)
++    # Independent IDs/paths permit overlap. Use actual worker processes, never
++    # the in-memory test transport (which temporarily replaces stdin/stdout).
++    from concurrent.futures import ThreadPoolExecutor
++
++    with ThreadPoolExecutor(max_workers=2) as pool:
++        futures = [
++            pool.submit(runner, request(period, trial_id))
++            for period, trial_id in [(3, 12), (2, 11)]
++        ]
++        parallel = [future.result() for future in futures]
++    assert all(not response.diagnostics for response in parallel)
++    assert parallel[0].metrics == responses[1].metrics
++    assert parallel[1].metrics == responses[0].metrics
++
++    def fills(response):
++        return [
++            (t.entry_bar_index, t.exit_bar_index, t.direction, t.qty, t.entry_price, t.exit_price)
++            for t in response.raw_result.closed_trades
++        ]
++
++    assert fills(parallel[0]) == fills(responses[1])
++    assert fills(parallel[1]) == fills(responses[0])

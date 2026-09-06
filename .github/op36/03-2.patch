@@ -1,0 +1,58 @@
+diff --git a/docs/RC6_REVIEW_36.md b/docs/RC6_REVIEW_36.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..8bd7e30e1832d78422c87048c000e2e097272339
+--- /dev/null
++++ b/docs/RC6_REVIEW_36.md
+@@ -0,0 +1,52 @@
++# OpenPine RC6 — реестр всех 36 пунктов
++
++Статус означает приёмку всего пункта, а не процент уже написанного кода. «Частично» сохраняет подтверждённые исправления и явно отделяет оставшиеся критерии. Число тестов не является процентом совместимости с TradingView.
++
++Исходное ТЗ: `OpenPine_RC6_Review_TZ_2026-09-05.md`, SHA256 `4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515`. OP-36 — отдельное поручение пользователя о ветках. Фактические результаты новых тестов и публикации фиксируются в отчёте этапа, не предполагаются из наличия файла теста.
++
++| Пункт | Статус | Что реализовано | Что осталось до приёмки |
++|---|---|---|---|
++| **OP-01**. Одна воспроизводимая поставка вместо расходящихся идентификаторов | Частично | Закреплён совместимый набор commit SHA; CI устанавливает чистые копии источников. | Материализовать весь wheel manifest, dependency closure и doctor; проверить установку без исходников. |
++| **OP-02**. Довести пользовательские inputs до исполнения и оптимизации | Частично | Overrides поступают в runtime, CLI и trials; проверяются типы и hash применённых inputs. | Зафиксировать единый output digest для CLI/API/trial, включая одинаковые title и все допустимые нули. |
++| **OP-03**. Единая конфигурация стратегии: нули, sizing и брокер | Частично | Устранены потеря margin=0 и дубли конвертеров; сохранены режимы rounding. | Полная provenance конфигурации и версия defaults declaration; общий immutable effective config. |
++| **OP-04**. Сохранить finality, revision и валидность marketdata envelope | Частично | Канонические envelopes проверяются в обоих режимах; finality и numeric underflow не подменяются. | Полная матрица приёмки revision policies и исправленных/отозванных рядов во всех входных путях. |
++| **OP-05**. Общий lifecycle для historical, realtime и fill-recalculation | Частично | Общий cursor и fill recalculation; история фиксируется один раз на бар. | Сквозной historical→realtime, несколько тиков и var/varip с реальным транспортом. |
++| **OP-06**. Bulk-result без скрытой потери результатов | Частично | Полная tape и проверяемые result chunks; ошибки процесса и незавершённость не считаются успехом. | Явные full/metrics-only profiles с проверкой обещанных outputs и целостности больших результатов. |
++| **OP-07**. Довести strategy bridge до полного покрываемого API | Частично | Семь команд и 17 скалярных значений; ранний отказ неподдержанных host-вызовов. | Завершить exit/trailing/risk/indexed trade methods и исторические сигнатуры. |
++| **OP-08**. Подключить request engine к настоящим snapshot-данным | Частично | Работают source-context выражения, nested HTF/LTF, arrays и chunked preloads; добавлена привязка к trial. | Автоподготовка источников из UI/CLI, UDF/локальные capture, live/revision, FX и полный каталог request.*. |
++| **OP-09**. Честные instrument, timeframe и language identities | Частично | Исправлены language identity, часы/минуты/месяцы и передача pointvalue. | Явные crypto/stock/futures metadata, calendar/session и basecurrency без предположений. |
++| **OP-10**. Настоящий checkpoint / resume вместо маркера состояния | Частично | Реальные Pine checkpoints, request caches и receipt-derived cursors; атомарный restore. | Полное возобновление broker+IPC+worker без дублирования orders/visuals после падения. |
++| **OP-11**. Быстрый content-sensitive state hash | Частично | Проверены content-sensitive full/semantic hashes и равенство после восстановления. | Дифференциальные мутации всех сегментов, включая references/requests/orders; стоимость хеширования на больших рядах. |
++| **OP-12**. Включить RC6 и cross-library проверки в обязательный release gate | Частично | Постоянный CI включает native и все семь библиотек; provider network cases выделены отдельно. | Immutable wheel-release gate, coverage thresholds, обязательная матрица capabilities и установка пакетов без source paths. |
++| **OP-13**. Pine v6 once: весь путь от lexer до rollback | Требует проверки | Отдельная реализация и приёмка once в этом этапе не выполнены. | Проверить актуальную официальную семантику; lexer→IR→runtime→rollback и независимый oracle. |
++| **OP-14**. Полный version-exact реестр Pine v1–v6 | Частично | Добавлены request/NA/array bindings и проверки версий v1–v6 для поддержанного поднабора. | Полный version-exact каталог, overload denominator и отрицательные пары доступности. |
++| **OP-15**. Замкнуть capability graph producer → compiler → runtime → host | Частично | Worker объявляет closed_bar и отвергает неподдержанный checkpoint_v1; host surface строится из registry. | Единый producer/compiler/runtime/host capability graph с ABI invalidation и проверяемыми statuses. |
++| **OP-16**. Проверить и закрыть bool-history v6 без поломки старых версий | Требует проверки | Полная парная приёмка bool-history v5/v6 ещё не зафиксирована в этом реестре. | Проверить прямой ABI и generated path, первый бар, offsets, if/switch и bool fields; исправлять только воспроизведённые расхождения. |
++| **OP-17**. Stateful semantics: callsite, функция, ветка, цикл и история | Частично | Есть транзакции состояния, callsite identity, rollback и проверки повторных callbacks. | Корпус независимых callsites в функциях/ветках/циклах с точными трассами до и после оптимизаций. |
++| **OP-18**. Численное и функциональное покрытие builtins | Частично | Есть runtime/TA-наборы и точные проверки NA/типов для отдельных операций. | Для каждой supported overload определить численный oracle/tolerance и версии; отдельно считать TV coverage. |
++| **OP-19**. Отдельный пакет актуальных возможностей Pine 2026 | Требует проверки | Пакет новых возможностей Pine 2026 не принят как единое целое. | Сверить официальные изменения и реализовать positive/negative сквозные сценарии без объявления усечённого поведения полным. |
++| **OP-20**. Проверка broker parity по событиям, а не только итоговому PnL | Частично | Брокерные и transport-тесты сравнивают команды/сделки/equity; отмена TP/SL по parent ID исправлена. | Независимый event oracle для всех order types, комиссии, fill phase и margin/liquidation. |
++| **OP-21**. Строгий импорт и эффективное чтение offline datasets | Частично | Строгие CSV/Parquet, явные timestamp/volume policies и bounded batches. | Индексировать повторные intrabar reads, provenance policies, row-group filtering и repeat-import canonical identity. |
++| **OP-22**. Расширение рынков и видов графиков без выдуманной точности | Частично | Существующий криптовалютный путь не выдаётся за полную поддержку иных рынков. | Корпус stock/futures/FX, vendor quality, календари и честная политика synthetic charts. |
++| **OP-23**. Оптимизация runtime storage и горячего барового цикла | Частично | Убраны отдельные лишние сериализации и копии timestamp-массивов при alignment. | Замер времени/памяти на 1k/10k/100k/1M bars и оптимизация storage без изменения доступной истории. |
++| **OP-24**. Кеш компиляции и безопасная специализация | Требует проверки | Cache/identity код существует; полная приёмка OP-24 этим этапом не выполнена. | Проверить cold/warm, ABI/library/flags invalidation, concurrent atomic writes и равенство hit/miss outputs. |
++| **OP-25**. Потоковый bulk, видимый прогресс и надёжная отмена | Частично | Есть монотонный прогресс и bounded result/request frames; inputs сериализуются однократно. | Fault-проверки отмены при загрузке/расчёте/экспорте, backpressure и partial/resume UX. |
++| **OP-26**. Строгий optimizer runner contract и независимость trials | Частично | Устранена потеря warmup, добавлены private copies, explicit SHA identities и trial-bound request snapshots. | Закрепить полный serial/parallel/seed/replay контракт всех runner-типов и внешнего изменяемого состояния. |
++| **OP-27**. Полезная оптимизация: воспроизводимость победителя и устойчивость | Частично | Failed/partial/nonfinite trials исключены из ranking; нулевые метрики сохранены; проверен обычный replay чувствительного trial. | Воспроизведение победителя из отчёта/UI с digest; locked train/validation/warmup и независимый holdout. |
++| **OP-28**. Исправить гонку загрузки и масштабирование parity UI | Частично | Защищены page/loadAll гонки; finite bounds, 300k-point sampling и top-N labels покрыты тестами. | Финальная приёмка больших реальных экранов; browser/visual UX отдельно от in-memory Vue lifecycle. |
++| **OP-29**. Единый пользовательский путь: редактор → настройки → результат | Требует проверки | Пять обязательных пользовательских UI E2E ещё не приняты. | Editor→inputs→result, missing MTF, unsupported capability, cancel; стабильные source/data/config при повторе. |
++| **OP-30**. Довести visuals, alerts и logs до продукта | Частично | Семантические visual/alert/log tapes предусмотрены в runtime. | Численный экспорт и renderer UI, rollback объектов и отсутствие дублей alerts после полного resume. |
++| **OP-31**. Pine library imports и воспроизводимое разрешение зависимостей | Требует проверки | Полный независимый тест versioned Pine library imports не принят. | Транзитивные функции/типы, конфликты имён, отсутствующая версия и cache invalidation без соседних checkout. |
++| **OP-32**. Один сквозной conformance pipeline и first-divergence report | Частично | TV parity UI и диагностические отчёты существуют. | Единый versioned corpus с независимым expected и первым bar/phase/source divergence; отделить vendor/data mismatch. |
++| **OP-33**. Fault tests и границы изоляции без ослабления sandbox | Частично | Protected worker regressions и полный optimizer process-containment suite входят в CI без fallback. | Полный fault matrix от загрузки до экспорта и доказательства освобождения ресурсов/запрета путей и сети. |
++| **OP-34**. Документация, doctor и сборка без ловушек | Частично | Документированы точные source pins, migration limits и фактические CI receipts. | Чистая установка/doctor от wheel manifest без editable/PYTHONPATH и автоматической модификации пользовательских данных. |
++| **OP-35**. Сохранить семь компонентов, убрать дублирование семантики в адаптерах | Частично | Удалены подтверждённые заглушки/legacy; общие владельцы config, lifecycle, request transport сохранены. | Architecture checks для всех семи библиотек и отсутствие повторной бизнес-семантики в адаптерах. |
++| **OP-36**. Сохранение полезных изменений и консолидация веток OpenPine | Принят в указанном объёме | В OpenPine оставлены четыре линии; полезные изменения перенесены, исходные tips сохранены тегами. | Консолидация только s7cret/openpine; другие репозитории не объявлены очищенными. |
++
++## Связь с проверками
++
++Машинный реестр — `RC6_REVIEW_36.json`. Пути в `evidence_paths` указывают на тесты, код или отчёт, но сам факт существования пути не означает прохождения теста. Отдельная проверка CI запрещает пропущенные/дублированные ID, отсутствующие доказательства и отметку «принят» при незакрытых критериях.
++
++Это не новый урезанный план: номера и названия OP-01–OP-35 сохранены из исходного ТЗ. Полные исходные формулировки остаются нормативными; перечисленные здесь остатки — краткое описание, не замена критериев.
++
++Ближайшие функциональные блоки: полные выходы/risk/indexed trades, автоматическая подготовка request-данных, полное восстановление задания, immutable установка и внешний Pine v1–v6 conformance corpus.
