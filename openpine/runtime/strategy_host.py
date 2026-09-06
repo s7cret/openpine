@@ -50,6 +50,9 @@ def strategy_host_surface() -> dict[str, Any]:
             "exit_relative_prices_per_opening_fill",
             "exit_v6_first_trigger_pairs_intent_v2_4",
             "alerts_tape_only",
+            "trailing_explicit_offset_and_activation",
+            "trailing_fixed_stop_combination_unavailable",
+            "trailing_versioned_activation_per_fill",
         ],
     }
     encoded = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
@@ -132,7 +135,7 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
                 entry = bound.get("from_entry")
                 if isinstance(entry, ast.Constant) and type(entry.value) is not str:
                     raise StrategyHostError("exit from_entry must be a string; omitted or empty means all entries")
-                if not set(bound).intersection({"profit", "limit", "loss", "stop"}):
+                if not set(bound).intersection({"profit", "limit", "loss", "stop", "trail_price", "trail_points"}):
                     raise StrategyHostError("exit requires a supported active price leg")
         except (TypeError, ValueError) as exc:
             raise StrategyHostError(f"{capability} at {where}: {exc}") from exc
