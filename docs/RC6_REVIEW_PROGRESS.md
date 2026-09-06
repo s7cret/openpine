@@ -1,49 +1,72 @@
 # RC6 review progress — 2026-09-06
 
-This ledger records implemented and verified scopes, not completion of all 36 review tasks or TradingView 1:1 compatibility.
+This ledger distinguishes implementation from full acceptance of the original 36
+tasks. Test counts are not percentages of TradingView compatibility.
 
-## Latest published nested-request reconciliation
+## Current complete task inventory
 
-OpenPine source head: `17430a5638d299245b19d30c0d6f5a0166af6ff0`.
-PineLib source: `cddaa0bf2324db36b4cd29e944a251032658c59d`; Ast2Python source: `51552e7c1de339d8de4794290655e574d6447e82`.
-Joint CI/publication `34001163455` passed **3,315 Python cases on each of 3.11 and 3.13**, 152 Vitest cases, Node checks, actual frontend build and Python wheel/sdist builds. New real protected workers verify nested expressions and multi-frame preloads. Both library publications preserve the original local commit SHAs.
+[RC6_REVIEW_36.md](RC6_REVIEW_36.md) and [RC6_REVIEW_36.json](RC6_REVIEW_36.json)
+preserve every original OP-01–OP-35 heading and the separately authorized OP-36
+branch task, plus the original specification checksum. Every task records its
+implemented scope, remaining acceptance and evidence paths. Snapshot status:
+29 partial, six requiring full verification, and one accepted (OpenPine branch
+consolidation only). These statuses do not discard prior implemented fixes.
 
-[RC6_NESTED_MERGE_PUBLICATION.md](RC6_NESTED_MERGE_PUBLICATION.md) records exact source commits, independent artifact checks, publication retry and four-branch inventory. [RC6_NESTED_REQUEST_MERGE.md](RC6_NESTED_REQUEST_MERGE.md) documents behavior and limits. The old local OpenPine tree was not written over RC6. Published checkpoint v2 receipts, worker capability negotiation, numeric-underflow checks and their regression files were retained byte-for-byte.
+## Latest verified optimizer / request integration
 
-OP-08 now includes supported historical nested requests with enclosing-context preflight and shared request budgets/cache/rollback. One public request_manifest API is retained; its bounded chunk transport replaces large bootstrap JSON. Dynamic unknown contexts are not guessed. Auto-loading from UI/CLI/gateway, UDF/live requests and static nested-syntax extraction with dynamic_requests=false remain open. Full isolated-job restart is still not implemented. The prior optimizer containment diagnostic and dependency audit notices remain unaddressed, not hidden by the successful functional suite.
+OpenPine tested head: `9328e45dc8d0aff8de1e4e7a0a9837afd785e2b8`.
+Optimizer tested head: `95570459e50492dea8872b0a25f094e29d3e821f`.
+Joint run `34005041354` passed 3,613 functional cases plus 37 ledger consistency
+checks on each of Python 3.11 and 3.13: 3,650 total per interpreter, zero failures,
+errors or skips in executed selections. Six full library suites now include the
+optimizer and its unchanged process-containment suite; provider excludes five
+live-network cases and OpenPine remains a native/affected-path selection.
+Frontend has 152 passing Vitest cases, successful Node regressions, type/build/API
+checks. Real serial/concurrent optimizer workers ran with the sandbox enabled.
 
-Five provider live-network tests were explicitly excluded; full OpenPine, standalone optimizer, coverage, browser visual and external TradingView oracle acceptance is not claimed. Historical test counts below overlap and must not be added.
+- OP-26: trial warmup including zero, independent mutable inputs and explicit durable
+  identities; verified request snapshots rebound to each trial without altering data;
+  public host conversion retains the manifest. Numeric result fields are translated
+  to actual broker computation controls rather than passed as unsupported switches.
+- OP-27: failed/partial/error-bearing/nonfinite results cannot win ranking. Real zero
+  metrics remain zero. Supported response contracts enforce required-output metadata.
+  Repeated/reordered trials are compared with ordinary backtests under the same
+  context, including intent tapes, trades, equity and score-ledger identity.
+- OP-12: permanent read-only CI now includes all seven libraries, with the provider
+  network exception above, plus native workers and frontend/API checks.
 
-## Previous numeric-boundary verification
+[Publication receipt](RC6_OPTIMIZER_PUBLICATION_RECEIPT.md) contains the seven exact
+commits, observed results, artifact digests, retry history and limitations. This
+progress/receipt update changes no tested runtime, UI or workflow code. New CI
+results after documentation updates are not assumed.
 
-Code head: `0ab826a7a71a6010f0eed680405cdc36b68bc88a`.
-Permanent read-only CI `33999714708` passed **3,277 Python cases per interpreter (3.11/3.13), 152 Vitest cases and 22 Node cases**. Actual protected worker tests, OpenPine wheel/sdist, TypeScript and production UI builds passed. The OP-04 commit prevents finite nonzero canonical decimals from silently becoming zero in both worker paths and request preloads, with 31 additional regressions. Genuine zero and representable subnormals remain valid.
+## Preserved code and branches
 
-See [RC6_NUMERIC_REQUEST_VERIFICATION.md](RC6_NUMERIC_REQUEST_VERIFICATION.md) for exact test scope, artifact digests and unresolved diagnostics. A separate local standalone optimizer containment probe failed and remains unaccepted. That frontend install reported one high and one low dependency vulnerability, not investigated by this merge. Functional CI success is not a complete optimizer, security or release gate.
+Nested requests, checkpoint v2, canonical bars/underflow checks, request transport
+and worker capability negotiation remain unchanged. Full source pins are in
+[RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json); update them as a set rather
+than trusting identical version strings. No independent production installer is
+claimed. OpenPine keeps main, release/v2.17, release/v4.0.2 and release/5.0.0rc6;
+main and historical heads are unchanged. Temporary publication branches are archived
+as tags before deletion. Cleanup of all sibling repositories is not claimed.
 
-## Preserved request / checkpoint / capability block
+## Earlier verified blocks (test counts overlap)
 
-The six source commits through `53f0c2d6da67bf364e0962fb50a7107571182427` are already published; the later changes do not replace them with the older recovery copy. Their original joint verification/publication `33998764352` passed 3,246 Python cases per interpreter, 152 Vitest and 22 Node cases.
+- [Nested requests](RC6_NESTED_MERGE_PUBLICATION.md): inherited nested contexts and
+  chunked immutable request manifest transfer.
+- [Requests and checkpoints](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md): source-context
+  expressions, receipt-checked state and honest protocol capabilities.
+- [Data and UI](RC6_DATA_UI_PUBLICATION_RECEIPT.md): strict imports, metadata,
+  stale-response fixes and display-only sampling.
+- [Strategy host](RC6_STRATEGY_PUBLICATION_RECEIPT.md): seven commands, 17 scalars;
+  full exits/risk/indexed access remains partial.
+- [Cleanup/progress](RC6_CLEANUP_EXECUTION_BLOCK.md), [lifecycle](RC6_LIFECYCLE_BLOCK.md)
+  and [inputs](RC6_INPUTS_BLOCK.md): preserved previous work.
 
-[RC6_REQUESTS_CHECKPOINT_PUBLICATION.md](RC6_REQUESTS_CHECKPOINT_PUBLICATION.md) records exact source commits, sibling pins, publication receipts and historical limits. Both former blockers, A2P_PINELIB_INJECTION and na(strategy.position_avg_price) type evidence, are resolved for the documented supported subset. Its nested-request restriction is superseded by the latest scoped implementation above.
+## Remaining acceptance
 
-OP-10 retains real generated-state export, atomic restore, NA round-trip and receipt-derived counters. Full broker/IPC/process resume remains open; v1 generated envelopes without receipts are rejected. OP-14 improves request/NA/array type and version bindings, not the whole catalog. OP-15 negotiates implemented closed-bar support, not unimplemented checkpoint resume; the full cross-library capability graph remains open.
-
-Update the exact source set in [RC6_LIFECYCLE_SOURCES.json](RC6_LIFECYCLE_SOURCES.json) together and recompile artifacts against the target manifest. Identical version strings alone are insufficient.
-
-## Branch preservation
-
-The four branches remain main, release/v2.17, release/v4.0.2 and release/5.0.0rc6. Main/historical heads were untouched. Completed maintenance history is retained in same-name archive tags. Earlier evidence remains in [RC6_BRANCH_CONSOLIDATION_RECEIPT.md](RC6_BRANCH_CONSOLIDATION_RECEIPT.md) and [RC6_BRANCH_SELECTION.json](RC6_BRANCH_SELECTION.json). Cleanup of every sibling repository is not claimed.
-
-## Previous blocks
-
-- [Data/UI](RC6_DATA_UI_PUBLICATION_RECEIPT.md): strict offline input, metadata and stale-response/display fixes; its request failure notes are historical.
-- [Strategy host](RC6_STRATEGY_PUBLICATION_RECEIPT.md): seven commands and 17 scalar values; advanced exits/risk/indexed methods remain partial.
-- [Cleanup/results/progress](RC6_CLEANUP_EXECUTION_BLOCK.md): real Parquet, sealed result chunks, explicit codec policy and progress.
-- [Lifecycle](RC6_LIFECYCLE_BLOCK.md): fill recalculation, history boundaries and margin/rounding transport.
-- [Inputs/optimizer](RC6_INPUTS_BLOCK.md): tested overrides and trial settings.
-- [First publication](RC6_REVIEW_PROGRESS_FIRST_PUBLICATION.md): historical evidence, superseded only where stated.
-
-## Open acceptance
-
-Automatic and advanced requests, full strategy namespace, full-job recovery, immutable deployment, cancellation/backpressure, complete language signatures/capabilities, standalone optimizer, dependency audit, browser UX and external Pine v1-v6 TradingView oracle coverage remain open. No complete 36-task acceptance, measured whole-backtest speedup or production release is claimed.
+Complete exits/trailing/risk/indexed trades, automatic requested-series discovery,
+unsupported UDF/live contexts, full-job restart, immutable wheels/doctor, locked
+validation/holdout and user-facing winner replay, full version-specific signatures,
+conformance corpus and browser UX remain open. No full OP-26/OP-27 or 36-task closure,
+external TradingView 1:1 proof, speedup or final production release is claimed.
