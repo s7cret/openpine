@@ -1,0 +1,104 @@
+diff --git a/.github/workflows/rc6-native.yml b/.github/workflows/rc6-native.yml
+index fa779a94be9bcbfaca73303583eaad9d4967440b..f57444d1a8c4d76e8da10a9ee4693c2b4b3f92fd 100644
+--- a/.github/workflows/rc6-native.yml
++++ b/.github/workflows/rc6-native.yml
+@@ -67,14 +67,14 @@ jobs:
+         run: |
+           set -euo pipefail
+           for repo in openpine-contracts pinelib pine2ast ast2python backtest_engine optimizer; do
+-            (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
++            (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q -p openpine.verification.pytest_gate --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-suite="$repo" --verification-output="$RUNNER_TEMP/evidence/$repo.inventory.json" --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
+           done
+       - name: Deterministic provider suite (external network checks are separate)
+         env:
+           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+         run: |
+           cd "$PINE_STACK_ROOT/marketdata-provider"
+-          python -m pytest -q -m 'not live_network' --junitxml="$RUNNER_TEMP/evidence/marketdata-provider.xml"
++          python -m pytest -q -p openpine.verification.pytest_gate --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-suite=marketdata-provider --verification-output="$RUNNER_TEMP/evidence/marketdata-provider.inventory.json" -m 'not live_network' --junitxml="$RUNNER_TEMP/evidence/marketdata-provider.xml"
+       - name: Enable the real protected worker environment
+         run: |
+           sudo apt-get update -qq
+@@ -88,6 +88,7 @@ jobs:
+           /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+       - name: Native sandbox plus affected storage CLI gateway and branch regressions
+         env:
++          OPENPINE_STAGE1_EVIDENCE: ${{ runner.temp }}/evidence
+           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+         run: |
+           python - <<'PY'
+@@ -99,12 +100,17 @@ jobs:
+                          or not p.endswith('.py') or not pathlib.Path(p).is_file() for p in selected)):
+               raise SystemExit('Invalid explicit regression inventory')
+           (evidence/'selected-tests.json').write_text(json.dumps(sorted(selected),indent=2)+'\n')
+-          subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-q','rc6_tests',*sorted(selected),
++          subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-p','openpine.verification.pytest_gate',
++                          '--verification-lock='+str(pathlib.Path.cwd()/'verification/inventory.json'),
++                          '--verification-suite=openpine','--verification-output='+str(evidence/'openpine.inventory.json'),
++                          '-q','rc6_tests',*sorted(selected),
+                           '--junitxml='+str(evidence/'openpine.xml')],check=True)
+           PY
++      - name: Architecture capability and frozen conformance gate
++        run: python -m openpine.verification stage1 --host-root "$GITHUB_WORKSPACE" --stack-root "$PINE_STACK_ROOT" --evidence "$RUNNER_TEMP/evidence"
+       - name: Validate changed runtime lint imports and build clean distributions
+         run: |
+-          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py rc6_tests/test_rc6_entry_risk.py
++          python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py rc6_tests/test_rc6_entry_risk.py openpine/verification openpine/runtime/effective_config.py rc6_tests/test_rc6_stage1_foundation.py rc6_tests/test_rc6_stage1_corpus.py
+           python -m compileall -q openpine
+           python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+           mkdir -p "$RUNNER_TEMP/build-source"
+diff --git a/docs/RC6_STAGE1_ARCHITECTURE.md b/docs/RC6_STAGE1_ARCHITECTURE.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d80bb9685abf4956a3af66401a8506868944fbb6
+--- /dev/null
++++ b/docs/RC6_STAGE1_ARCHITECTURE.md
+@@ -0,0 +1,131 @@
++# Этап 1 из 8 — архитектурные контракты и проверяемая приёмка
++
++База: `b738fcce4e34d13b718720a900e5f9eab66a797a`. Исходные 36 задач не заменяются
++новым сокращённым списком. `verification/stages.json` связывает каждый OP-01–OP-35
++ровно с одним этапом; OP-36 сохраняется принятым в прежнем объёме. Связь с исходным
++ТЗ проверяется по SHA256 из `docs/RC6_REVIEW_36.json`.
++
++## Что означает завершение этого этапа
++
++Принимается инфраструктура, на которой заканчиваются следующие подсистемы: один
++контракт конфигурации на границе исполнения, проверяемые владельцы семантики,
++карта установленных возможностей, фиксированный корпус и обязательный CI без
++молчаливого сокращения тестов. Это **не полное закрытие широких OP-03/12/15/32/35**:
++они остаются сквозными до финальной поставки. Версионная семантика и полный каталог
++принимаются на этапе 2, брокер на 5, immutable wheel-only поставка на 8.
++
++| Критерий этапа 1 | Реализация и исполнимая проверка |
++|---|---|
++| Единая граница разрешённой конфигурации | Существующий `resolve_engine_config` остаётся единственным владельцем; результат содержит неизменяемый `EffectiveStrategyConfig`. Нули/false не теряются, обе стороны используют тот же settings hash. |
++| Прозрачное происхождение полей | Снимок содержит последовательность submitted / admitted_instrument / engine_default / engine_normalization. Неизвестное происхождение до границы не приписывается декларации Pine. |
++| Проверяемая цепочка возможностей | Отчёт строится из каталогов v1–v6, exact target, фактических callable и host registry для каждого режима. Обязательные отсутствующие операции/обработчики останавливают допуск. |
++| Границы ответственности | AST-проверка импортов всех восьми компонентов, литеральных dynamic imports и известных точек семантики. Запрет отсутствующего компонента и копирования проверяемых владельцев. |
++| Фиксированное сравнение | 12 вручную выведенных Pine-сценариев, отдельные source/data/settings/expected hashes, фиксированный знаменатель и первый divergence. Это engineering corpus, не TV oracle. |
++| Нельзя получить зелёный CI пропусками | Для восьми наборов закреплены ID всех тестов, количество и разрешённое число исключённых live-network случаев. Skip/xfail/пустая выборка/изменение состава означают отказ. |
++| Реальный интеграционный прогон | Полные существующие библиотечные наборы, native/выбранные OpenPine регрессии, защищённые процессы, frontend и сборки сохранены. Новые два process-теста сверяют config receipt. |
++
++## Конфигурация без второй бизнес-логики
++
++`openpine.runtime.rc6_config.resolve_engine_config` по-прежнему проверяет транспорт,
++хеш, допущенный инструмент и правила существующего BacktestConfig. Новый снимок
++содержит уже разрешённые значения и проверяемую цепочку происхождения. Он хранит
++канонические bytes, не отдаёт изменяемые внутренние словари и позволяет обнаружить
++изменение settings после допуска через `assert_matches()`.
++
++В generated session сверка выполняется при создании, не на каждом баре. Движок
++сохраняет свой рабочий mutable объект; принудительной заморозки его внутренних
++переходов не добавлено. В bulk и interactive возвращается компактный
++`effective_config_evidence`, без дублирования большого request dataset в отчёте.
++Существующий effective_config_hash не заменён несовместимой формулой.
++
++Граница существенна: старый вызов уже приносит частично объединённые настройки.
++Его нельзя честно разложить обратно на пользовательские overrides, Pine declaration
++и version defaults. Такие значения отмечаются `submitted`, а receipt содержит
++`upstream_provenance=unresolved_before_admission`. Полное происхождение на входах
++CLI/API и version-defaults остаётся критерием OP-03; архитектурный контракт теперь
++явный, но его отсутствие у старого вызывающего кода не замаскировано.
++
++## Владельцы семантики
++

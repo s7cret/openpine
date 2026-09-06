@@ -1,0 +1,280 @@
+diff --git a/docs/RC6_LIFECYCLE_SOURCES.json b/docs/RC6_LIFECYCLE_SOURCES.json
+index 0abb17a122f876fe387aa032cf5616475e6a0ad3..7feb59a9e125af5a0a46f53c0c500490c0067469 100644
+--- a/docs/RC6_LIFECYCLE_SOURCES.json
++++ b/docs/RC6_LIFECYCLE_SOURCES.json
+@@ -2,7 +2,7 @@
+   "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+   "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+   "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+-  "ast2python": "51552e7c1de339d8de4794290655e574d6447e82",
++  "ast2python": "25797f6484d3cbdbd47963db79fd235aae9d26d8",
+   "pinelib": "cddaa0bf2324db36b4cd29e944a251032658c59d",
+   "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+   "pine2ast": "2a6f16d20d8d9beba49dcede62dc0c5607e9d92c"
+diff --git a/openpine/compile/native_rc6.py b/openpine/compile/native_rc6.py
+index d8b6265b2f059d11f2d3a8cbf58cb302acb2dca3..c00580a7678f05a5e156c3d22fe1f145aa76927b 100644
+--- a/openpine/compile/native_rc6.py
++++ b/openpine/compile/native_rc6.py
+@@ -124,6 +124,14 @@ class NativeRC6CompilerAdapter:
+                 producer_commit=ast2python_commit,
+                 expected_pine2ast_commit=pine2ast_commit,
+             )
++            from openpine.verification.capabilities import (
++                effective_target_identity, require_plan_bindings,
++            )
++            require_plan_bindings(compiled.plan, target)
++            compile_meta["effective_target"] = effective_target_identity(
++                compiled.plan.pine_version, target.content_hash,
++                str(kwargs.get("execution_mode", "interactive")),
++            )
+             generated_artifact = compiled.artifact.to_dict()
+             validate_payload("openpine.generated_artifact.v3", generated_artifact)
+             source_map = compiled.emitted.source_map.to_dict()
+diff --git a/openpine/runtime/effective_config.py b/openpine/runtime/effective_config.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ed48203592753d93316e00ced841cb2a99ec981
+--- /dev/null
++++ b/openpine/runtime/effective_config.py
+@@ -0,0 +1,113 @@
++"""Immutable evidence for the one resolved RC6 configuration.
++
++The engine keeps its established mutable execution object. This snapshot is the
++immutable authority at admission; a new mapping is returned to every caller.
++Legacy callers cannot reconstruct pre-boundary provenance: it is marked submitted,
++never falsely attributed to a Pine declaration or a user setting.
++"""
++
++from __future__ import annotations
++
++from collections.abc import Mapping
++from dataclasses import dataclass
++import json
++from typing import Any
++
++from openpine.verification.identity import canonical, seal, verify
++
++SCHEMA = "openpine.effective_strategy_config.v1"
++
++
++@dataclass(frozen=True, slots=True)
++class EffectiveStrategyConfig:
++    _encoded: bytes
++
++    @classmethod
++    def capture(
++        cls, resolved: Mapping[str, Any], submitted: Mapping[str, Any], context: Mapping[str, Any]
++    ) -> "EffectiveStrategyConfig":
++        from openpine.runtime.rc6_config import effective_config_hash
++
++        settings = {k: v for k, v in resolved.items() if k != "effective_config_hash"}
++        provenance = {}
++        for name, value in settings.items():
++            chain = [{"source": "submitted", "value": submitted[name]}] if name in submitted else []
++            if name == "mintick" and "mintick" in context:
++                chain.append({"source": "admitted_instrument", "value": context[name]})
++            if not chain:
++                chain.append({"source": "engine_default", "value": value})
++            elif canonical(chain[-1]["value"]) != canonical(value):
++                chain.append({"source": "engine_normalization", "value": value})
++            provenance[name] = chain
++        value = seal(
++            {
++                "schema_id": SCHEMA,
++                "settings": settings,
++                "settings_hash": effective_config_hash(settings),
++                "provenance": provenance,
++            }
++        )
++        return cls(canonical(value))
++
++    def to_dict(self) -> dict[str, Any]:
++        return json.loads(self._encoded)
++
++    def evidence(self) -> dict[str, Any]:
++        """Compact receipt; large request datasets are not duplicated in results."""
++        value = self.to_dict()
++        return seal(
++            {
++                "schema_id": "openpine.effective_config_receipt.v1",
++                "snapshot_hash": value["content_hash"],
++                "settings_hash": value["settings_hash"],
++                "provenance": {
++                    name: [row["source"] for row in chain]
++                    for name, chain in value["provenance"].items()
++                },
++                "upstream_provenance": "unresolved_before_admission",
++            }
++        )
++
++    @property
++    def settings_hash(self) -> str:
++        return self.to_dict()["settings_hash"]
++
++    def assert_matches(self, config: Any) -> None:
++        from openpine.runtime.rc6_config import serialize_engine_config
++
++        actual = serialize_engine_config(config, config.semantic_profile)
++        if actual["effective_config_hash"] != self.settings_hash:
++            raise ValueError("resolved strategy config changed after admission")
++
++    @classmethod
++    def parse(cls, value: dict) -> "EffectiveStrategyConfig":
++        from openpine.runtime.rc6_config import effective_config_hash
++
++        body = verify(value, SCHEMA)
++        if set(body) != {"schema_id", "settings", "settings_hash", "provenance"}:
++            raise ValueError("effective configuration fields mismatch")
++        if body["settings_hash"] != effective_config_hash(body["settings"]):
++            raise ValueError("effective settings hash mismatch")
++        if set(body["settings"]) != set(body["provenance"]):
++            raise ValueError("effective provenance is incomplete")
++        for name, chain in body["provenance"].items():
++            if (
++                not isinstance(chain, list)
++                or not chain
++                or any(
++                    not isinstance(row, dict)
++                    or set(row) != {"source", "value"}
++                    or row["source"]
++                    not in {
++                        "submitted",
++                        "admitted_instrument",
++                        "engine_default",
++                        "engine_normalization",
++                    }
++                    for row in chain
++                )
++            ):
++                raise ValueError("effective provenance chain is invalid")
++            if canonical(chain[-1]["value"]) != canonical(body["settings"][name]):
++                raise ValueError("effective provenance terminal value differs from settings")
++        return cls(canonical(value))
+diff --git a/openpine/runtime/isolated_run.py b/openpine/runtime/isolated_run.py
+index 4884949180bf0773e716feafd286359167a6db08..33bec96b1b8639dced15bd295aab1dd150a29c3e 100644
+--- a/openpine/runtime/isolated_run.py
++++ b/openpine/runtime/isolated_run.py
+@@ -419,6 +419,7 @@ def run_isolated_artifact(
+         raise IsolatedRunError("worker did not return an admitted intent batch")
+     progress.report(completed_bars, len(bars), force=True)
+     result.bars_processed = completed_bars
++    result.effective_config_evidence = broker_config.effective_strategy_config.evidence()
+     for key, value in input_evidence(inputs).items():
+         setattr(result, key, value)
+     return {
+diff --git a/openpine/runtime/rc6_config.py b/openpine/runtime/rc6_config.py
+index 2afca4c830a282a75845592b0d11cb89ec54be17..d0a4b1f8fe3094f80d21583a03d4f2b492be2d2e 100644
+--- a/openpine/runtime/rc6_config.py
++++ b/openpine/runtime/rc6_config.py
+@@ -149,4 +149,6 @@ def resolve_engine_config(payload: Mapping[str, Any], context: Mapping[str, Any]
+     # This hashes the resolved settings, including engine-enforced output flags.
+     resolved = serialize_engine_config(config, config.semantic_profile)
+     config.effective_config_hash = resolved[_HASH_FIELD]
++    from openpine.runtime.effective_config import EffectiveStrategyConfig
++    config.effective_strategy_config = EffectiveStrategyConfig.capture(resolved, payload, context)
+     return config
+diff --git a/openpine/runtime/rc6_worker_runtime.py b/openpine/runtime/rc6_worker_runtime.py
+index 4d2e96f088d3cdcf0725ed1f31cd03184c9bef6a..5e6eedc7f56acf9ea7435ef5cd4794abb13bbc3b 100644
+--- a/openpine/runtime/rc6_worker_runtime.py
++++ b/openpine/runtime/rc6_worker_runtime.py
+@@ -336,6 +336,9 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
+             end_time=0,
+             default_qty_value=default_qty_value,
+         )
++        snapshot = getattr(self.intent_config, "effective_strategy_config", None)
++        if snapshot is not None:
++            snapshot.assert_matches(self.intent_config)
+         self._intent_sequence = 0
+         self._callback_receipts = AppendOnlyHistory(JOURNAL_DOMAIN)
+         self.execution_cursor = ExecutionCursor()
+@@ -865,6 +868,7 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
+         "warnings": _jsonable(list(getattr(result, "warnings", None) or [])),
+         "errors": _jsonable(list(getattr(result, "errors", None) or [])),
+         "effective_config_hash": config.effective_config_hash,
++        "effective_config_evidence": config.effective_strategy_config.evidence(),
+         "config_snapshot": _jsonable(result.config_snapshot),
+         **input_evidence(session.inputs),
+     }
+diff --git a/openpine/verification/__init__.py b/openpine/verification/__init__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..c402b5a5efc5b31784b7257134f045dfe389d713
+--- /dev/null
++++ b/openpine/verification/__init__.py
+@@ -0,0 +1 @@
++"""Versioned architecture and conformance gates; not a second execution engine."""
+diff --git a/openpine/verification/__main__.py b/openpine/verification/__main__.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..6db50e38f0674d0ddf0670e849b75628d508454b
+--- /dev/null
++++ b/openpine/verification/__main__.py
+@@ -0,0 +1,54 @@
++"""Read-only verification commands. Reports never modify sources or user datasets."""
++
++from __future__ import annotations
++
++import argparse
++from pathlib import Path
++
++from openpine.verification.identity import read_json, write_json
++
++
++def main(argv=None) -> int:
++    parser = argparse.ArgumentParser(prog="python -m openpine.verification")
++    commands = parser.add_subparsers(dest="command", required=True)
++    arch = commands.add_parser("architecture")
++    arch.add_argument("--stack-root", type=Path, required=True)
++    arch.add_argument("--output", type=Path, required=True)
++    graph = commands.add_parser("capabilities")
++    graph.add_argument("--mode", choices=("interactive", "bulk_backtest"), default="interactive")
++    graph.add_argument("--output", type=Path, required=True)
++    compare = commands.add_parser("compare")
++    compare.add_argument("--corpus", type=Path, required=True)
++    compare.add_argument("--observations", type=Path, required=True)
++    compare.add_argument("--expected-hash", required=True)
++    compare.add_argument("--output", type=Path, required=True)
++    stage = commands.add_parser("stage1")
++    stage.add_argument("--host-root", type=Path, required=True)
++    stage.add_argument("--stack-root", type=Path, required=True)
++    stage.add_argument("--evidence", type=Path, required=True)
++    args = parser.parse_args(argv)
++    if args.command == "stage1":
++        from openpine.verification.stage_gate import run_stage_gate
++
++        run_stage_gate(args.host_root, args.stack_root, args.evidence)
++        return 0
++    if args.command == "architecture":
++        from openpine.verification.architecture import check_architecture
++
++        report = check_architecture(args.stack_root)
++    elif args.command == "capabilities":
++        from openpine.verification.capabilities import build_capability_graph
++
++        report = build_capability_graph(args.mode)
++    else:
++        from openpine.verification.conformance import compare_corpus
++
++        report = compare_corpus(
++            args.corpus, read_json(args.observations), expected_corpus_hash=args.expected_hash
++        )
++    write_json(args.output, report)
++    return 0 if report.get("ok", True) else 1
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/openpine/verification/architecture.py b/openpine/verification/architecture.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..061daef6512263528b4f4e414e6295e3f0331185
+--- /dev/null
++++ b/openpine/verification/architecture.py
+@@ -0,0 +1,164 @@
++"""Static cross-component ownership gates, not a proof of semantic equivalence."""
++
++from __future__ import annotations
++
++import ast
++import hashlib
++from collections import Counter
++from pathlib import Path
++
++from openpine.verification.identity import digest, seal
++

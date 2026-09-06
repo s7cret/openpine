@@ -1,0 +1,315 @@
+index 0000000000000000000000000000000000000000..a8490b0a2f3b943d6c4b9862ce43f4d00626a1d7
+--- /dev/null
++++ b/openpine/verification/identity.py
+@@ -0,0 +1,57 @@
++"""Strict JSON artifacts for verification, with explicit domains and size bounds."""
++
++from __future__ import annotations
++
++import hashlib
++import json
++from pathlib import Path
++from typing import Any
++
++
++def canonical(value: Any) -> bytes:
++    return json.dumps(
++        value, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False
++    ).encode("utf-8")
++
++
++def digest(value: Any) -> str:
++    return "sha256:" + hashlib.sha256(canonical(value)).hexdigest()
++
++
++def seal(body: dict) -> dict:
++    if "content_hash" in body:
++        raise ValueError("cannot seal an artifact containing an old content_hash")
++    return {**body, "content_hash": digest(body)}
++
++
++def verify(value: dict, schema: str) -> dict:
++    if not isinstance(value, dict) or value.get("schema_id") != schema:
++        raise ValueError("verification artifact schema mismatch")
++    body = {k: v for k, v in value.items() if k != "content_hash"}
++    if value.get("content_hash") != digest(body):
++        raise ValueError("verification artifact hash mismatch")
++    return body
++
++
++def read_json(path: Path, limit: int = 32 * 1024 * 1024) -> Any:
++    def pairs(items):
++        result = {}
++        for key, value in items:
++            if key in result:
++                raise ValueError(f"duplicate JSON key: {key}")
++            result[key] = value
++        return result
++
++    def nonfinite(value):
++        raise ValueError(f"nonfinite JSON value: {value}")
++
++    with path.open("rb") as stream:
++        data = stream.read(limit + 1)
++    if len(data) > limit:
++        raise ValueError("verification input exceeds size limit")
++    return json.loads(data, object_pairs_hook=pairs, parse_constant=nonfinite)
++
++
++def write_json(path: Path, value: Any) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_bytes(canonical(value) + b"\n")
+diff --git a/openpine/verification/pytest_gate.py b/openpine/verification/pytest_gate.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..9fd907115208746f207ce85b74b829722a0ae3a3
+--- /dev/null
++++ b/openpine/verification/pytest_gate.py
+@@ -0,0 +1,103 @@
++"""Opt-in pytest gate: exact collection identity; skip/xfail never counts as pass.
++
++Used explicitly with -p, including when third-party plugin auto-loading is off.
++Collect-only can write a proposed inventory but cannot satisfy execution acceptance.
++"""
++
++from __future__ import annotations
++
++import hashlib
++import json
++from pathlib import Path
++
++import pytest
++
++
++def collection_hash(nodeids: list[str]) -> str:
++    data = json.dumps(sorted(nodeids), ensure_ascii=False, separators=(",", ":")).encode()
++    return "sha256:" + hashlib.sha256(data).hexdigest()
++
++
++def validate_inventory(nodeids: list[str], expected: dict, deselected: int) -> None:
++    if not nodeids or len(set(nodeids)) != len(nodeids):
++        raise ValueError("empty or duplicate test inventory")
++    if (
++        expected.get("count") != len(nodeids)
++        or expected.get("sha256") != collection_hash(nodeids)
++        or expected.get("deselected", 0) != deselected
++    ):
++        raise ValueError("test inventory changed; explicit review/rebaseline required")
++
++
++def pytest_addoption(parser):
++    group = parser.getgroup("openpine-verification")
++    group.addoption("--verification-lock", default=None)
++    group.addoption("--verification-suite", default=None)
++    group.addoption("--verification-output", default=None)
++
++
++def pytest_configure(config):
++    if config.getoption("--verification-output"):
++        config.pluginmanager.register(InventoryGate(config), "openpine-inventory-gate")
++
++
++class InventoryGate:
++    def __init__(self, config):
++        self.config = config
++        self.nodes = []
++        self.deselected = 0
++        self.reports = {}
++        self.errors = []
++
++    def pytest_deselected(self, items):
++        self.deselected += len(items)
++
++    def pytest_collection_finish(self, session):
++        self.nodes = [item.nodeid for item in session.items]
++        lock = self.config.getoption("--verification-lock")
++        if lock:
++            try:
++                expected = json.loads(Path(lock).read_text())[
++                    self.config.getoption("--verification-suite")
++                ]
++                validate_inventory(self.nodes, expected, self.deselected)
++            except (KeyError, ValueError) as error:
++                self.errors.append(str(error))
++
++    def pytest_runtest_logreport(self, report):
++        self.reports.setdefault(report.nodeid, []).append(
++            {
++                "when": report.when,
++                "outcome": report.outcome,
++                "xfail": bool(getattr(report, "wasxfail", False)),
++            }
++        )
++
++    @pytest.hookimpl(trylast=True)
++    def pytest_sessionfinish(self, session, exitstatus):
++        collect = bool(self.config.option.collectonly)
++        if not collect:
++            for node in self.nodes:
++                rows = self.reports.get(node, [])
++                if (
++                    len(rows) != 3
++                    or {r["when"] for r in rows} != {"setup", "call", "teardown"}
++                    or any(r["outcome"] != "passed" or r["xfail"] for r in rows)
++                ):
++                    self.errors.append("required test did not pass all phases: " + node)
++        result = {
++            "schema_id": "openpine.test_inventory.v1",
++            "suite": self.config.getoption("--verification-suite"),
++            "count": len(self.nodes),
++            "sha256": collection_hash(self.nodes),
++            "nodeids": sorted(self.nodes),
++            "deselected": self.deselected,
++            "collect_only": collect,
++            "errors": self.errors,
++            "ok": not collect and not self.errors and exitstatus == 0,
++        }
++        path = Path(self.config.getoption("--verification-output"))
++        path.parent.mkdir(parents=True, exist_ok=True)
++        path.write_text(json.dumps(result, indent=2) + "\n")
++        if self.errors:
++            session.exitstatus = 1
+diff --git a/openpine/verification/stage_gate.py b/openpine/verification/stage_gate.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..24ccc680276b771dfb02d49c42cd723f4fb11ad5
+--- /dev/null
++++ b/openpine/verification/stage_gate.py
+@@ -0,0 +1,115 @@
++"""Aggregate Stage 1 evidence. No unobserved execution can satisfy this gate."""
++
++from __future__ import annotations
++
++from pathlib import Path
++import re
++
++from openpine.verification.architecture import COMPONENTS, check_architecture
++from openpine.verification.capabilities import build_capability_graph
++from openpine.verification.conformance import compare_corpus, load_corpus
++from openpine.verification.identity import read_json, seal, write_json
++from openpine.verification.pytest_gate import validate_inventory
++
++
++def validate_stages(plan: dict, ledger: dict) -> None:
++    if plan.get("schema_id") != "openpine.delivery_stages.v1":
++        raise ValueError("invalid stage plan")
++    if plan.get("source_spec_sha256") != ledger["source_spec_sha256"]:
++        raise ValueError("stage plan is not bound to the original specification")
++    if not re.fullmatch("[0-9a-f]{40}", plan.get("baseline", "")):
++        raise ValueError("stage plan needs a source baseline")
++    stages = plan.get("stages", [])
++    if [s["id"] for s in stages] != list(range(1, 9)):
++        raise ValueError("all eight stages must be present exactly once")
++    tasks = list(plan.get("preserved_tasks", []))
++    for stage in stages:
++        if (
++            not stage["title"]
++            or not stage["exit_criteria"]
++            or len(set(stage["exit_criteria"])) != len(stage["exit_criteria"])
++        ):
++            raise ValueError("stage needs distinct exit criteria")
++        if any(type(n) is not int or not 1 <= n < stage["id"] for n in stage["depends_on"]):
++            raise ValueError("stage dependency is missing or cyclic")
++        tasks.extend(stage["tasks"])
++    expected = {r["id"] for r in ledger["tasks"]}
++    if (
++        set(tasks) != expected
++        or len(tasks) != len(expected)
++        or plan["preserved_tasks"] != ["OP-36"]
++    ):
++        raise ValueError("original task mapping is incomplete or duplicated")
++
++
++def validate_capabilities(graph: dict, policy: dict) -> None:
++    if policy.get("schema_id") != "openpine.required_capabilities.v1":
++        raise ValueError("invalid capability policy")
++    if len(graph["rows"]) < policy["minimum_rows"]:
++        raise ValueError("installed capability denominator shrank unexpectedly")
++    for required in policy["required"]:
++        rows = [
++            r
++            for r in graph["rows"]
++            if r["symbol_id"] == required["symbol_id"]
++            and r["pine_version"] == required["pine_version"]
++        ]
++        if not rows or any(r["status"] != "BOUND" for r in rows):
++            raise ValueError("required capability chain is incomplete: " + str(required))
++
++
++def run_stage_gate(host: Path, stack: Path, evidence: Path) -> dict:
++    plan = read_json(host / "verification/stages.json")
++    validate_stages(plan, read_json(host / "docs/RC6_REVIEW_36.json"))
++    sources = read_json(host / "docs/RC6_LIFECYCLE_SOURCES.json")
++    if sources != read_json(evidence / "source-pins.json"):
++        raise ValueError("verification sources differ from the admitted stack")
++    inventory_lock = read_json(host / "verification/inventory.json")
++    if set(inventory_lock) != set(COMPONENTS):
++        raise ValueError("test inventory must include all eight components")
++    receipts = {}
++    for name in sorted(COMPONENTS):
++        receipt = read_json(evidence / (name + ".inventory.json"))
++        if receipt.get("suite") != name or not receipt.get("ok") or receipt.get("collect_only"):
++            raise ValueError("missing or unsuccessful mandatory test suite: " + name)
++        validate_inventory(receipt["nodeids"], inventory_lock[name], receipt["deselected"])
++        receipts[name] = {k: receipt[k] for k in ("count", "sha256", "deselected")}
++    architecture = check_architecture(stack, host_root=host)
++    write_json(evidence / "architecture.json", architecture)
++    if not architecture["ok"]:
++        raise ValueError("component ownership violations")
++    graphs = {}
++    policy = read_json(host / "verification/capability-policy.json")
++    for mode in ("interactive", "bulk_backtest"):
++        graph = build_capability_graph(mode)
++        write_json(evidence / ("capabilities-" + mode + ".json"), graph)
++        validate_capabilities(graph, policy)
++        graphs[mode] = {"hash": graph["content_hash"], "counts": graph["counts"]}
++    corpus = host / "verification/corpus-v1/manifest.json"
++    cases = load_corpus(corpus)["cases"]
++    observations = {
++        c["id"]: read_json(evidence / "observations" / (c["id"] + ".json")) for c in cases
++    }
++    result = compare_corpus(
++        corpus,
++        observations,
++        expected_corpus_hash=read_json(host / "verification/corpus-lock.json")["content_hash"],
++    )
++    write_json(evidence / "conformance.json", result)
++    if not result["ok"]:
++        raise ValueError("critical manual corpus regression")
++    report = seal(
++        {
++            "schema_id": "openpine.stage1_receipt.v1",
++            "ok": True,
++            "source_pins": sources,
++            "test_inventory": receipts,
++            "architecture_hash": architecture["content_hash"],
++            "capability_graphs": graphs,
++            "conformance_hash": result["content_hash"],
++            "tradingview_verified": False,
++            "scope": "stage1_foundation_not_full_OP03_12_15_32_35_acceptance",
++        }
++    )
++    write_json(evidence / "stage1.json", report)
++    return report
+diff --git a/rc6_tests/test_rc6_stage1_corpus.py b/rc6_tests/test_rc6_stage1_corpus.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..7cf7c727688c40ed3ee40358174883a4e38c75c4
+--- /dev/null
++++ b/rc6_tests/test_rc6_stage1_corpus.py
+@@ -0,0 +1,117 @@
++"""Frozen manual corpus through real Pine+broker, not expected generated by the SUT."""
++
++import json
++import os
++from dataclasses import replace
++from pathlib import Path
++
++import pytest
++from openpine.verification.conformance import compare_corpus, load_corpus
++from openpine.verification.identity import write_json
++from rc6_tests.test_rc6_bulk_execution import bulk_case
++from rc6_tests.test_rc6_lifecycle import compile_case
++from rc6_tests.test_rc6_deferred_exits import compare_modes
++from rc6_tests.test_rc6_marketdata_boundary import OPENED, bar
++
++ROOT = Path(__file__).resolve().parents[1]
++PATH = ROOT / "verification/corpus-v1/manifest.json"
++MANIFEST = load_corpus(PATH)

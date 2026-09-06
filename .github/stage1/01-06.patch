@@ -1,0 +1,254 @@
++        compare_corpus(path, actual, expected_corpus_hash=original)
++    if fault != "shrunk_corpus":
++        report = compare_corpus(path, actual, expected_corpus_hash=manifest["content_hash"])
++        assert not report["ok"] and not report["tradingview_verified"]
++
++
++def test_numeric_comparator_distinguishes_false_zero_and_missing_na():
++    tol = {"absolute": 0, "relative": 0}
++    assert first_difference(False, 0, tol)
++    assert first_difference({"$na": True}, None, tol)
++    assert first_difference({"v": None}, {}, tol)
++    assert first_difference([1, 2], [2, 1], tol)
++    assert first_difference(1.0, 1.0001, {"absolute": 0.001, "relative": 0}) is None
++
++
++@pytest.mark.parametrize("text", ['{"a":1,"a":2}', '{"x":NaN}', '{"x":Infinity}'])
++def test_duplicate_or_nonfinite_artifact_json_rejected(tmp_path, text):
++    path = tmp_path / "bad.json"
++    path.write_text(text)
++    with pytest.raises(ValueError):
++        read_json(path)
++
++
++@pytest.mark.parametrize("fault", ["deleted", "duplicated", "renamed", "deselected"])
++def test_required_collection_cannot_shrink_silently(fault):
++    ids = ["tests/test_a.py::test_a", "tests/test_b.py::test_b"]
++    expected = {"count": 2, "sha256": collection_hash(ids), "deselected": 0}
++    validate_inventory(ids, expected, 0)
++    if fault == "deleted":
++        ids.pop()
++    elif fault == "duplicated":
++        ids[1] = ids[0]
++    elif fault == "renamed":
++        ids[1] = "tests/test_c.py::test_c"
++    with pytest.raises(ValueError):
++        validate_inventory(ids, expected, int(fault == "deselected"))
++
++
++@pytest.mark.parametrize("outcome", ["pass", "skip", "xfail", "empty"])
++def test_real_pytest_gate_cannot_report_skips_xfails_or_empty_as_success(tmp_path, outcome):
++    import os
++    import subprocess
++    import sys
++
++    body = {
++        "pass": "def test_required(): assert True\n",
++        "skip": "import pytest\n@pytest.mark.skip(reason='required')\ndef test_required(): pass\n",
++        "xfail": "import pytest\n@pytest.mark.xfail(reason='required')\ndef test_required(): assert False\n",
++        "empty": "# no tests\n",
++    }[outcome]
++    (tmp_path / "test_required.py").write_text(body)
++    env = {**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1", "PYTHONPATH": str(ROOT)}
++    output = tmp_path / "receipt.json"
++    # Fixed test interpreter/module and private test paths; no user-supplied shell.
++    run = subprocess.run(  # noqa: S603
++        [
++            sys.executable,
++            "-m",
++            "pytest",
++            "-q",
++            "-p",
++            "openpine.verification.pytest_gate",
++            "--verification-output",
++            str(output),
++        ],
++        cwd=tmp_path,
++        env=env,
++        capture_output=True,
++        text=True,
++        timeout=30,
++    )
++    receipt = read_json(output)
++    assert (run.returncode == 0) == (outcome == "pass"), run.stdout + run.stderr
++    assert receipt["ok"] == (outcome == "pass")
++
++
++def test_missing_runtime_callable_prevents_compilation(monkeypatch):
++    from openpine.compile.native_rc6 import NativeRC6CompilerAdapter
++    import pinelib.abi.primitives as primitive
++
++    monkeypatch.setattr(primitive, "operator_binary_v1", None)
++    result = NativeRC6CompilerAdapter().compile(
++        '//@version=6\nstrategy("missing primitive")\nx=close+1\n',
++        producer_commits={"pine2ast": "a" * 40, "ast2python": "b" * 40},
++    )
++    assert not result.success
++    assert "missing runtime operation" in str(result.errors)
++
++
++def test_rehashed_config_cannot_lie_about_terminal_provenance():
++    config = resolve_engine_config(dict(symbol="S", timeframe="1m", start_time=0, end_time=1), {})
++    value = config.effective_strategy_config.to_dict()
++    value["provenance"]["initial_capital"][-1]["value"] = 1
++    value = seal({k: v for k, v in value.items() if k != "content_hash"})
++    with pytest.raises(ValueError, match="terminal"):
++        EffectiveStrategyConfig.parse(value)
++
++
++@pytest.mark.parametrize(
++    "fault", ["missing_task", "duplicate_task", "bad_dependency", "missing_stage", "empty_exit"]
++)
++def test_stage_plan_preserves_original_scope(fault):
++    from openpine.verification.stage_gate import validate_stages
++
++    plan = read_json(ROOT / "verification/stages.json")
++    ledger = read_json(ROOT / "docs/RC6_REVIEW_36.json")
++    validate_stages(plan, ledger)
++    if fault == "missing_task":
++        plan["stages"][0]["tasks"].pop()
++    elif fault == "duplicate_task":
++        plan["stages"][0]["tasks"].append("OP-01")
++    elif fault == "bad_dependency":
++        plan["stages"][0]["depends_on"] = [8]
++    elif fault == "missing_stage":
++        plan["stages"].pop()
++    else:
++        plan["stages"][0]["exit_criteria"] = []
++    with pytest.raises(ValueError):
++        validate_stages(plan, ledger)
++
++
++def test_missing_handler_blocks_required_capability_gate():
++    from openpine.verification.stage_gate import validate_capabilities
++
++    graph = build_capability_graph()
++    policy = read_json(ROOT / "verification/capability-policy.json")
++    validate_capabilities(graph, policy)
++    next(
++        r
++        for r in graph["rows"]
++        if r["symbol_id"] == "pine:function:strategy.entry" and r["pine_version"] == 6
++    )["status"] = "UNAVAILABLE"
++    with pytest.raises(ValueError, match="incomplete"):
++        validate_capabilities(graph, policy)
+diff --git a/verification/capability-policy.json b/verification/capability-policy.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..06b55d27cff69a0a8a426d7f7ef37f5220c1c921
+--- /dev/null
++++ b/verification/capability-policy.json
+@@ -0,0 +1,90 @@
++{
++  "schema_id": "openpine.required_capabilities.v1",
++  "minimum_rows": 8000,
++  "required": [
++    {
++      "symbol_id": "pine:variable:close",
++      "pine_version": 1
++    },
++    {
++      "symbol_id": "pine:function:strategy.entry",
++      "pine_version": 1
++    },
++    {
++      "symbol_id": "pine:function:na",
++      "pine_version": 1
++    },
++    {
++      "symbol_id": "pine:variable:close",
++      "pine_version": 2
++    },
++    {
++      "symbol_id": "pine:function:strategy.entry",
++      "pine_version": 2
++    },
++    {
++      "symbol_id": "pine:function:na",
++      "pine_version": 2
++    },
++    {
++      "symbol_id": "pine:variable:close",
++      "pine_version": 3
++    },
++    {
++      "symbol_id": "pine:function:strategy.entry",
++      "pine_version": 3
++    },
++    {
++      "symbol_id": "pine:function:na",
++      "pine_version": 3
++    },
++    {
++      "symbol_id": "pine:variable:close",
++      "pine_version": 4
++    },
++    {
++      "symbol_id": "pine:function:strategy.entry",
++      "pine_version": 4
++    },
++    {
++      "symbol_id": "pine:function:na",
++      "pine_version": 4
++    },
++    {
++      "symbol_id": "pine:variable:close",
++      "pine_version": 5
++    },
++    {
++      "symbol_id": "pine:function:strategy.entry",
++      "pine_version": 5
++    },
++    {
++      "symbol_id": "pine:function:na",
++      "pine_version": 5
++    },
++    {
++      "symbol_id": "pine:variable:close",
++      "pine_version": 6
++    },
++    {
++      "symbol_id": "pine:function:strategy.entry",
++      "pine_version": 6
++    },
++    {
++      "symbol_id": "pine:function:na",
++      "pine_version": 6
++    },
++    {
++      "symbol_id": "pine:function:strategy.exit",
++      "pine_version": 6
++    },
++    {
++      "symbol_id": "pine:function:request.security",
++      "pine_version": 6
++    },
++    {
++      "symbol_id": "pine:function:ta.sma",
++      "pine_version": 6
++    }
++  ]
++}
+diff --git a/verification/corpus-lock.json b/verification/corpus-lock.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..22bc2749e11ce03d2ead580e202f42954b4245ae
+--- /dev/null
++++ b/verification/corpus-lock.json
+@@ -0,0 +1,5 @@
++{
++  "schema_id": "openpine.corpus_lock.v1",
++  "manifest": "corpus-v1/manifest.json",
++  "content_hash": "sha256:b9df6e14c3cc1acdd9744e320d9d52d14437fd733b4be854c224383ff9e285f5"
++}
+diff --git a/verification/corpus-v1/bars.json b/verification/corpus-v1/bars.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ce8319d1a568a1565892f692a98ea424578cb12
+--- /dev/null
++++ b/verification/corpus-v1/bars.json
+@@ -0,0 +1 @@
++[[100, 101, 99, 100], [110, 111, 109, 110], [115, 116, 114, 115]]
+diff --git a/verification/corpus-v1/manifest.json b/verification/corpus-v1/manifest.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..edd6780afd6589972c905ddf2103a0b2d33fc8b6
+--- /dev/null
++++ b/verification/corpus-v1/manifest.json
+@@ -0,0 +1 @@

@@ -1,0 +1,78 @@
++{"cases":[{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v1-entry.expected.json","sha256":"2b0e02063a36713e971ba816302492603fdbddd5a2b0f5fec94f4cdda8cc8c94"},"id":"v1-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":1,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v1-entry.pine","sha256":"7df3923ee50107567fce0be7384073e5c48ff54bc046f368f8169856268070c9"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v1-no-entry.expected.json","sha256":"c21d6f3d29f2faa6c8e7022b1c736add7871bba9f6a8c8c65b660aa80a4bbfb7"},"id":"v1-no-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":1,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v1-no-entry.pine","sha256":"432a11abfb5363ddc698f8ac22ee9292f3d4011d96218b50af8ab642dba80cb5"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v2-entry.expected.json","sha256":"2b0e02063a36713e971ba816302492603fdbddd5a2b0f5fec94f4cdda8cc8c94"},"id":"v2-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":2,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v2-entry.pine","sha256":"e841e1b4d8ba55b9d1ad4de56280412a04db596192c3a595e5083d43bbfdc00e"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v2-no-entry.expected.json","sha256":"c21d6f3d29f2faa6c8e7022b1c736add7871bba9f6a8c8c65b660aa80a4bbfb7"},"id":"v2-no-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":2,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v2-no-entry.pine","sha256":"e428cbf29087959b350136a48f355e12cd75c50a66e1cdefaf60f04d346a01d3"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v3-entry.expected.json","sha256":"2b0e02063a36713e971ba816302492603fdbddd5a2b0f5fec94f4cdda8cc8c94"},"id":"v3-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":3,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v3-entry.pine","sha256":"51fde20ca5788a42441d4f3f8e6d3e1e752c6b63f789fec060fdfc945872e7d5"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v3-no-entry.expected.json","sha256":"c21d6f3d29f2faa6c8e7022b1c736add7871bba9f6a8c8c65b660aa80a4bbfb7"},"id":"v3-no-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":3,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v3-no-entry.pine","sha256":"31c94e1a7c70ecf1398227ce7011caca4d1cbe9beaaccd5cf3e96ffb31573f79"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v4-entry.expected.json","sha256":"2b0e02063a36713e971ba816302492603fdbddd5a2b0f5fec94f4cdda8cc8c94"},"id":"v4-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":4,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v4-entry.pine","sha256":"1ca13ea8b9d106d9088868ba5cfac32fbe3638db5787af4ae0425956dfabdb73"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v4-no-entry.expected.json","sha256":"c21d6f3d29f2faa6c8e7022b1c736add7871bba9f6a8c8c65b660aa80a4bbfb7"},"id":"v4-no-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":4,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v4-no-entry.pine","sha256":"5a014a7e07ae04464f42569616925b62d83f2d6f8f9c46b637d23819401e2a70"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v5-entry.expected.json","sha256":"2b0e02063a36713e971ba816302492603fdbddd5a2b0f5fec94f4cdda8cc8c94"},"id":"v5-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":5,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v5-entry.pine","sha256":"3c84885e7a5670dea5584b7ede215edc69b4fe354413e7873fcf02d0b159ae70"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v5-no-entry.expected.json","sha256":"c21d6f3d29f2faa6c8e7022b1c736add7871bba9f6a8c8c65b660aa80a4bbfb7"},"id":"v5-no-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":5,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v5-no-entry.pine","sha256":"7661784c9885b19a035b25158639a36943cdbba04c6511bcb1c9f2997108a07b"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v6-entry.expected.json","sha256":"683f445eac2f7cdaecd90491c01542fc29c048a91e933e12d36e19f1272420ea"},"id":"v6-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":6,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v6-entry.pine","sha256":"c7747f2c3497ba1b10b841859ea3ea14b6c9eb2b8e0a261ad41304c7fdc580ce"},"tolerance":{"absolute":0,"relative":0},"weight":1},{"critical":true,"data":{"path":"bars.json","sha256":"69f6c2fa0a397addfde32f8019f5714b4408e32307a70106233950d164578878"},"expected":{"path":"v6-no-entry.expected.json","sha256":"c21d6f3d29f2faa6c8e7022b1c736add7871bba9f6a8c8c65b660aa80a4bbfb7"},"id":"v6-no-entry","layer":"broker","oracle":{"kind":"manual_fixture","provenance":"Hand-derived: command at first bar; market entry at next open 110; no forced end-close. No TradingView execution used."},"pine_version":6,"settings":{"path":"settings.json","sha256":"cde6235a7c30709525528b757d7cd817ccd799ae377da386ecc1eefa5997bad6"},"source":{"path":"v6-no-entry.pine","sha256":"325a93ba5ca9272fa75cddf78c56ea2e53da498f1f5a2a211331f083fb7c6600"},"tolerance":{"absolute":0,"relative":0},"weight":1}],"content_hash":"sha256:b9df6e14c3cc1acdd9744e320d9d52d14437fd733b4be854c224383ff9e285f5","profile":"engineering","revision":1,"schema_id":"openpine.conformance_corpus.v1"}
+diff --git a/verification/corpus-v1/settings.json b/verification/corpus-v1/settings.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..1d0116e3b251d464e12441e51bddbf82f5c4ef22
+--- /dev/null
++++ b/verification/corpus-v1/settings.json
+@@ -0,0 +1 @@
++{"commission_type": "none", "commission_value": 0, "force_close_on_end": false, "default_qty_value": 1, "end_time": 1725145740000}
+diff --git a/verification/corpus-v1/v1-entry.expected.json b/verification/corpus-v1/v1-entry.expected.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4459392afef1365dada791fe2f078ea5955132e9
+--- /dev/null
++++ b/verification/corpus-v1/v1-entry.expected.json
+@@ -0,0 +1 @@
++{"compile": true, "events": [{"kind": "entry", "bar": 0, "phase": "HISTORICAL_EVAL", "id": "L", "qty": 1, "source_span": {"start_line": 3}}, {"kind": "open_trade", "bar": 1, "phase": "BROKER_FILL", "entry_price": 110, "qty": 1}]}
+diff --git a/verification/corpus-v1/v1-entry.pine b/verification/corpus-v1/v1-entry.pine
+new file mode 100644
+index 0000000000000000000000000000000000000000..18d0c2e67e26f487a768498649383750f550d665
+--- /dev/null
++++ b/verification/corpus-v1/v1-entry.pine
+@@ -0,0 +1,3 @@
++//@version=1
++strategy("stage1 corpus")
++strategy.entry("L",strategy.long,qty=1,when=time==1725145620000)
+diff --git a/verification/corpus-v1/v1-no-entry.expected.json b/verification/corpus-v1/v1-no-entry.expected.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..bedf3f2229790eab8a015d497247ee0e00dc6a80
+--- /dev/null
++++ b/verification/corpus-v1/v1-no-entry.expected.json
+@@ -0,0 +1 @@
++{"compile": true, "events": []}
+diff --git a/verification/corpus-v1/v1-no-entry.pine b/verification/corpus-v1/v1-no-entry.pine
+new file mode 100644
+index 0000000000000000000000000000000000000000..2faae8301602488cc89029f8349164fc214533a4
+--- /dev/null
++++ b/verification/corpus-v1/v1-no-entry.pine
+@@ -0,0 +1,3 @@
++//@version=1
++strategy("stage1 corpus")
++strategy.entry("L",strategy.long,qty=1,when=false)
+diff --git a/verification/corpus-v1/v2-entry.expected.json b/verification/corpus-v1/v2-entry.expected.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4459392afef1365dada791fe2f078ea5955132e9
+--- /dev/null
++++ b/verification/corpus-v1/v2-entry.expected.json
+@@ -0,0 +1 @@
++{"compile": true, "events": [{"kind": "entry", "bar": 0, "phase": "HISTORICAL_EVAL", "id": "L", "qty": 1, "source_span": {"start_line": 3}}, {"kind": "open_trade", "bar": 1, "phase": "BROKER_FILL", "entry_price": 110, "qty": 1}]}
+diff --git a/verification/corpus-v1/v2-entry.pine b/verification/corpus-v1/v2-entry.pine
+new file mode 100644
+index 0000000000000000000000000000000000000000..f7f4f10e57215b9317227e0c06ad18ab0d021f7c
+--- /dev/null
++++ b/verification/corpus-v1/v2-entry.pine
+@@ -0,0 +1,3 @@
++//@version=2
++strategy("stage1 corpus")
++strategy.entry("L",strategy.long,qty=1,when=time==1725145620000)
+diff --git a/verification/corpus-v1/v2-no-entry.expected.json b/verification/corpus-v1/v2-no-entry.expected.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..bedf3f2229790eab8a015d497247ee0e00dc6a80
+--- /dev/null
++++ b/verification/corpus-v1/v2-no-entry.expected.json
+@@ -0,0 +1 @@
++{"compile": true, "events": []}
+diff --git a/verification/corpus-v1/v2-no-entry.pine b/verification/corpus-v1/v2-no-entry.pine
+new file mode 100644
+index 0000000000000000000000000000000000000000..57818cd0fdbafae6b0819ae638e402b763d47dff
+--- /dev/null
++++ b/verification/corpus-v1/v2-no-entry.pine
+@@ -0,0 +1,3 @@
++//@version=2
++strategy("stage1 corpus")
++strategy.entry("L",strategy.long,qty=1,when=false)
+diff --git a/verification/corpus-v1/v3-entry.expected.json b/verification/corpus-v1/v3-entry.expected.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..4459392afef1365dada791fe2f078ea5955132e9
+--- /dev/null
++++ b/verification/corpus-v1/v3-entry.expected.json
+@@ -0,0 +1 @@

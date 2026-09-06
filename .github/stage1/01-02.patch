@@ -1,0 +1,289 @@
++COMPONENTS = {
++    "openpine-contracts": ("openpine_contracts", (), "schemas and canonical identities"),
++    "pine2ast": ("pine2ast", (), "Pine syntax, versions, types and catalog"),
++    "ast2python": ("ast2python", ("pine2ast",), "IR, lowering and exact target binding"),
++    "pinelib": ("pinelib", (), "language, series, builtins and request evaluation"),
++    "marketdata-provider": (
++        "marketdata_provider",
++        ("openpine-contracts",),
++        "data, finality and calendars",
++    ),
++    "backtest_engine": (
++        "backtest_engine",
++        ("openpine-contracts", "pinelib", "marketdata-provider"),
++        "fills, sizing and ledger",
++    ),
++    "optimizer": (
++        "optimizer",
++        ("openpine-contracts", "backtest_engine"),
++        "search and trial contract",
++    ),
++    "openpine": (
++        "openpine",
++        (
++            "openpine-contracts",
++            "pine2ast",
++            "ast2python",
++            "pinelib",
++            "marketdata-provider",
++            "backtest_engine",
++            "optimizer",
++        ),
++        "orchestration, admission, storage and UX",
++    ),
++}
++# Guard known semantic entrypoints against accidental copies. This does not claim
++# to detect every possible reimplementation under arbitrary different names.
++SYMBOL_OWNERS = {
++    "resolve_engine_config": ("openpine", "openpine/runtime/rc6_config.py"),
++    "serialize_engine_config": ("openpine", "openpine/runtime/rc6_config.py"),
++    "process_bar_fills": ("backtest_engine", "backtest_engine/core/fill_scanner.py"),
++    "resolve_exit_prices": ("backtest_engine", "backtest_engine/core/exit_prices.py"),
++}
++
++
++def check_architecture(stack: Path, *, host_root: Path | None = None) -> dict:
++    owners = {spec[0]: name for name, spec in COMPONENTS.items()}
++    issues, edges, inventory = [], Counter(), {}
++    for component, (package, allowed, responsibility) in COMPONENTS.items():
++        component_root = (
++            host_root if component == "openpine" and host_root is not None else stack / component
++        )
++        root = component_root / package
++        if not root.is_dir():
++            issues.append({"code": "MISSING_COMPONENT", "component": component})
++            continue
++        files = sorted(root.rglob("*.py"))
++        if not files:
++            issues.append({"code": "EMPTY_COMPONENT", "component": component})
++        inventory[component] = {
++            "owner": responsibility,
++            "files": len(files),
++            "source_hash": digest(
++                {
++                    path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
++                    for path in files
++                    if not path.is_symlink()
++                }
++            ),
++        }
++        for path in files:
++            relative = path.relative_to(component_root).as_posix()
++            if path.is_symlink():
++                issues.append({"code": "SYMLINK_SOURCE", "component": component, "path": relative})
++                continue
++            try:
++                tree = ast.parse(path.read_text(encoding="utf-8"))
++            except (SyntaxError, UnicodeError) as error:
++                issues.append(
++                    {
++                        "code": "INVALID_SOURCE",
++                        "component": component,
++                        "path": relative,
++                        "detail": str(error),
++                    }
++                )
++                continue
++            for node in ast.walk(tree):
++                names = []
++                if isinstance(node, ast.Import):
++                    names = [item.name for item in node.names]
++                elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
++                    names = [node.module]
++                elif (
++                    isinstance(node, ast.Call)
++                    and node.args
++                    and isinstance(node.args[0], ast.Constant)
++                ):
++                    # Literal dynamic imports are checked too. Arbitrary computed
++                    # import strings require runtime sandbox checks, not guessing.
++                    func = node.func
++                    name = (
++                        func.id
++                        if isinstance(func, ast.Name)
++                        else func.attr
++                        if isinstance(func, ast.Attribute)
++                        else ""
++                    )
++                    if name in {"import_module", "__import__"} and isinstance(
++                        node.args[0].value, str
++                    ):
++                        names = [node.args[0].value]
++                for name in names:
++                    target = owners.get(name.split(".", 1)[0])
++                    if target is None or target == component:
++                        continue
++                    edges[(component, target)] += 1
++                    if target not in allowed:
++                        issues.append(
++                            {
++                                "code": "FORBIDDEN_DEPENDENCY",
++                                "component": component,
++                                "target": target,
++                                "path": relative,
++                                "line": node.lineno,
++                            }
++                        )
++                if (
++                    isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
++                    and node.name in SYMBOL_OWNERS
++                ):
++                    if (component, relative) != SYMBOL_OWNERS[node.name]:
++                        issues.append(
++                            {
++                                "code": "DUPLICATED_SEMANTIC_OWNER",
++                                "symbol": node.name,
++                                "component": component,
++                                "path": relative,
++                                "line": node.lineno,
++                            }
++                        )
++    return seal(
++        {
++            "schema_id": "openpine.architecture_report.v1",
++            "ok": not issues,
++            "policy_hash": digest({"components": COMPONENTS, "symbol_owners": SYMBOL_OWNERS}),
++            "inventory": inventory,
++            "edges": [
++                {"source": a, "target": b, "imports": count}
++                for (a, b), count in sorted(edges.items())
++            ],
++            "issues": issues,
++        }
++    )
+diff --git a/openpine/verification/capabilities.py b/openpine/verification/capabilities.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..59083ece12a021fdd790680a9bbfbcbcb11fbfbb
+--- /dev/null
++++ b/openpine/verification/capabilities.py
+@@ -0,0 +1,200 @@
++"""Installed frontend -> exact target -> runtime -> host capability evidence.
++
++BOUND is a checked binding, not numerical conformance. Unsupported and missing
++rows remain visible. Dataset availability and oracle evidence are independent.
++"""
++
++from __future__ import annotations
++
++from collections import Counter
++from importlib import import_module
++from typing import Any
++
++from ast2python.lowering import load_pinelib_target_manifest
++from pinelib.abi import load_target_manifest
++from pine2ast.catalog import CatalogRepository
++from openpine.runtime.strategy_host import strategy_host_surface
++from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES
++from openpine.verification.identity import seal
++
++MODES = ("interactive", "bulk_backtest")
++
++
++def _callable(path: object) -> bool:
++    if not isinstance(path, str) or not path.startswith("pinelib.") or "." not in path:
++        return False
++    module, name = path.rsplit(".", 1)
++    try:
++        return callable(getattr(import_module(module), name, None))
++    except ImportError:
++        return False
++
++
++def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
++    if mode not in MODES:
++        raise ValueError("unknown execution mode")
++    raw = load_target_manifest()
++    target = load_pinelib_target_manifest()
++    if target.release_acceptance != "EXACT_PINELIB_TARGET_MANIFEST_V2":
++        raise ValueError("reference targets cannot enter the production capability graph")
++    host = strategy_host_surface()
++    names = set(host["commands"]) | set(host["constants"]) | set(host["state_values"])
++    repo = CatalogRepository.default()
++    catalogs = {v: repo.readonly_view(v) for v in range(1, 7)}
++    rows, seen, covered = [], set(), set()
++    projected_symbols = {key[0] for key in target.call_bindings}
++    # Include every installed target row and all six version decisions. This is
++    # the installed catalog denominator, not a claim of complete TV coverage.
++    for row in raw["rows"]:
++        for version, catalog in catalogs.items():
++            category, name = row["category"], row["name"]
++            key = (version, row["symbol_id"], row.get("overload_id"), category)
++            if key in seen:
++                raise ValueError("duplicate capability identity")
++            seen.add(key)
++            covered.add((version, row["symbol_id"], category))
++            front = name in catalog.get(category, {})
++            version_ok = version in row["version_availability"]
++            disposition = row["disposition"]
++            reasons = []
++            if not front:
++                reasons.append("FRONTEND_UNAVAILABLE")
++            if not version_ok:
++                reasons.append("VERSION_UNAVAILABLE")
++            if disposition == "UNSUPPORTED_FAIL_CLOSED":
++                reasons.append("TARGET_UNSUPPORTED")
++            runtime = _callable(row["abi_callable"]) if disposition == "TARGET_DIRECT" else None
++            if disposition == "TARGET_DIRECT" and not runtime:
++                reasons.append("RUNTIME_CALLABLE_MISSING")
++            delegation = row.get("delegation")
++            handler = None
++            if disposition == "TARGET_DELEGATED":
++                handler = bool(
++                    delegation
++                    and delegation["owner"] == host["owner"]
++                    and delegation["schema_id"] == host["delegation_schema_id"]
++                    and delegation["capability_id"] in names
++                )
++                if not handler:
++                    reasons.append("HOST_HANDLER_MISSING")
++            binding_keys = {(row["symbol_id"], row["symbol_id"] + "#canonical", row["call_form"])}
++            projected = (
++                row["symbol_id"] in target.value_bindings
++                if category in {"variables", "constants"}
++                else any(k in target.call_bindings for k in binding_keys)
++            )
++            # Method and legacy spellings may have a different exact call form.
++            if not projected and category not in {"variables", "constants"}:
++                projected = row["symbol_id"] in projected_symbols
++            if not projected:
++                reasons.append("COMPILER_BINDING_MISSING")
++            datasets = name.startswith("request.") or name == "security"
++            rows.append(
++                {
++                    "pine_version": version,
++                    "symbol_id": row["symbol_id"],
++                    "overload_id": row.get("overload_id"),
++                    "category": category,
++                    "frontend": front,
++                    "target": disposition,
++                    "runtime_callable": runtime,
++                    "host_handler": handler,
++                    "dataset_requirement": "preload_required" if datasets else "none",
++                    "oracle": "missing",
++                    "status": "BOUND" if not reasons else "UNAVAILABLE",
++                    "reasons": reasons,
++                }
++            )
++    # Producer-only declarations/types/functions must not disappear from reports.
++    for version, catalog in catalogs.items():
++        for category in ("functions", "methods", "variables", "constants", "types", "declarations"):
++            for name, info in catalog.get(category, {}).items():
++                symbol = info.get("symbol_id", f"catalog:{category}:{name}")
++                if (version, symbol, category) in covered:
++                    continue
++                rows.append(
++                    {
++                        "pine_version": version,
++                        "symbol_id": symbol,
++                        "overload_id": None,
++                        "category": category,
++                        "frontend": True,
++                        "target": "NOT_MAPPED",
++                        "runtime_callable": None,
++                        "host_handler": None,
++                        "dataset_requirement": "unknown",
++                        "oracle": "missing",
++                        "status": "UNVERIFIED",
++                        "reasons": ["NO_TARGET_ROW"],
++                    }
++                )
