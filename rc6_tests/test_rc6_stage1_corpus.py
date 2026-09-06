@@ -112,6 +112,20 @@ def test_real_worker_exports_matching_effective_config_receipt(tmp_path, mode):
         if isinstance(result, dict)
         else result.effective_config_evidence
     )
+    # Bulk's established hydrator uses attribute objects recursively; normalize
+    # representation only, retaining exact receipt values and all assertions.
+    from types import SimpleNamespace
+
+    def plain(value):
+        if isinstance(value, SimpleNamespace):
+            value = vars(value)
+        if isinstance(value, dict):
+            return {key: plain(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [plain(item) for item in value]
+        return value
+
+    receipt = plain(receipt)
     assert receipt["settings_hash"] == expected.effective_config_hash
     assert receipt["provenance"]["mintick"][-1] in {"admitted_instrument", "engine_normalization"}
     assert receipt["upstream_provenance"] == "unresolved_before_admission"
