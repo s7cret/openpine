@@ -1,0 +1,115 @@
+"""Compiled absolute exits: per-opening-fill quantities, reserves and captured text.
+
+These are synthetic semantic fixtures; the same commands run through both existing
+transports. They do not claim FIFO/ANY or live TradingView execution acceptance.
+"""
+
+
+import pytest
+
+from rc6_tests.test_rc6_deferred_exits import prepare
+from rc6_tests.test_rc6_order_metadata import compare
+
+
+def mirrored(rows, direction):
+    return rows if direction == "long" else [(200-a, 200-c, 200-b, 200-d) for a,b,c,d in rows]
+
+
+def lot_case(direction="long", leg="profit", scope="named", quantity="percent", **settings):
+    tp, sl = (120, 95) if direction == "long" else (80, 105)
+    prices = f"limit={tp}" if leg == "profit" else f"stop={sl}" if leg == "loss" else f"limit={tp},stop={sl}"
+    sizing = {"percent": "qty_percent=50", "units": "qty=1", "both": "qty=1,qty_percent=100"}[quantity]
+    target = '"A",' if scope == "named" else ""
+    body = (
+        "varip int sent=-1\nif bar_index!=sent\n    sent:=bar_index\n"
+        f'    if bar_index==0\n        strategy.entry("A",strategy.{direction},qty=2,comment="first",alert_message="first-alert")\n'
+        f'    if bar_index==1\n        strategy.entry("A",strategy.{direction},qty=6,comment="second",alert_message="second-alert")\n'
+        f'    if bar_index==2\n        strategy.exit("X:lots",{target}{prices},{sizing},comment_profit="TP",comment_loss="SL",alert_profit="tp-alert",alert_loss="sl-alert",disable_alert=true)\n'
+    )
+    event = (110, 111, 94, 100) if leg == "loss" else (110, 121, 109, 115)
+    case, rows = prepare(body, mirrored([(100,101,99,100), (100,101,99,100), (110,111,109,110), event], direction),
+                         pyramiding=2, collect_events=True, **settings)
+    return case, rows
+
+
+def assert_lots(result, direction="long", leg="profit", quantity="percent"):
+    amounts = [1,3] if quantity == "percent" else [1,1]
+    actual_leg = "loss" if leg == "loss" else "profit"
+    entries = [100,110] if direction == "long" else [100,90]
+    exit_price = (95 if leg == "loss" else 120) if direction == "long" else (105 if leg == "loss" else 80)
+    assert [(t.entry_price,t.exit_price,t.qty) for t in result.closed_trades] == [
+        (price,exit_price,qty) for price,qty in zip(entries,amounts,strict=True)]
+    assert [t.qty for t in result.open_trades] == [2-amounts[0],6-amounts[1]]
+    assert [t.entry_comment for t in result.closed_trades] == ["first","second"]
+    assert [t.exit_comment for t in result.closed_trades] == ["SL" if leg=="loss" else "TP"]*2
+    assert all(t.exit_leg==actual_leg and t.exit_disable_alert for t in result.closed_trades)
+    events = [event.context for event in result.events if event.code=="ORDER_FILLED"]
+    assert [event["fill_index"] for event in events] == [0,1,2,3]
+    assert [event["alert_message"] for event in events] == ["first-alert","second-alert"]+[
+        "sl-alert" if leg=="loss" else "tp-alert"]*2
+    assert [event["alert_eligible"] for event in events] == [True,True,False,False]
+    assert [event["public_order_id"] for event in events[-2:]] == ["X:lots"]*2
+
+
+@pytest.mark.parametrize("direction", ["long", "short"])
+@pytest.mark.parametrize("leg", ["profit", "loss", "bracket"])
+@pytest.mark.parametrize("scope", ["named", "all"])
+@pytest.mark.parametrize("quantity", ["percent", "units", "both"])
+def test_absolute_exit_lots_match_transports_with_exact_metadata(monkeypatch, tmp_path, direction, leg, scope, quantity):
+    case, rows = lot_case(direction, leg, scope, quantity)
+    result, tape = compare(monkeypatch, tmp_path, case, rows)
+    assert_lots(result, direction, leg, quantity)
+    assert tape[-1]["schema_version"] == "2.6.0"
+    assert ("from_entry" in tape[-1]) == (scope=="named")
+    assert "exit_metadata" not in tape[-1] and "exit_semantics_version" not in tape[-1]
+
+
+@pytest.mark.parametrize("direction", ["long", "short"])
+@pytest.mark.parametrize("recalc", [False, True])
+def test_absolute_amendment_releases_each_lot_without_rewriting_history(monkeypatch, tmp_path, direction, recalc):
+    x,y = (125,120) if direction=="long" else (75,80)
+    body = (
+        "varip int sent=-1\nif bar_index!=sent\n    sent:=bar_index\n"
+        f'    if bar_index==0\n        strategy.entry("A",strategy.{direction},qty=2,comment="first")\n'
+        f'    if bar_index==1\n        strategy.entry("A",strategy.{direction},qty=6,comment="second")\n'
+        f'    if bar_index==2\n        strategy.exit("X","A",limit={x},qty_percent=100,comment_profit="old")\n'
+        f'    if bar_index==3\n        strategy.exit("X","A",limit={x},qty_percent=50,comment_profit="updated")\n'
+        f'        strategy.exit("Y","A",limit={y},qty_percent=100,comment_profit="released",alert_profit="released-alert")\n'
+    )
+    case, rows = prepare(body, mirrored([(100,101,99,100),(100,101,99,100),(110,111,109,110),
+        (110,111,109,110),(110,121,109,115),(115,126,114,120)],direction),
+        pyramiding=2,collect_events=True,calc_on_order_fills=recalc)
+    result,_ = compare(monkeypatch,tmp_path,case,rows)
+    assert [(t.exit_parent_id,t.qty,t.exit_comment) for t in result.closed_trades] == [
+        ("Y",1,"released"),("Y",3,"released"),("X",1,"updated"),("X",3,"updated")]
+    assert [t.entry_comment for t in result.closed_trades]==["first","second"]*2
+    assert not result.open_trades
+
+
+@pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
+@pytest.mark.parametrize("direction", ["long", "short"])
+def test_real_worker_absolute_lots_and_required_metadata(tmp_path, mode, direction):
+    from openpine.runtime.isolated_run import run_isolated_artifact
+    from openpine.runtime.rc6_worker_runtime import _engine_bar
+    from rc6_tests.test_rc6_worker_admission import _manifest
+
+    case, rows = lot_case(direction, "bracket", calc_on_order_fills=True)
+    artifact,context,config = case
+    config.collect_events=False
+    config.required_outputs={"order_events"}
+    for key,value in dict(execution_context=context,admitted_manifest=_manifest(),
+        instrument_id=context["instrument_id"],generated_artifact=artifact.generated_artifact,
+        bar_envelopes=rows,run_hash="sha256:"+"1"*64,
+        protocol_artifact_dir=str(tmp_path/"protocol"),isolated_protocol=mode).items():
+        setattr(config,key,value)
+    result=run_isolated_artifact(artifact.python_code.encode(),bars=[_engine_bar(row) for row in rows],config=config,params={})
+    assert result["ok"] and result["bars_processed"]==len(rows)
+    raw=result["raw_result"]
+    if isinstance(raw,dict):
+        from types import SimpleNamespace
+        raw=SimpleNamespace(**{**raw,"closed_trades":[SimpleNamespace(**v) for v in raw["closed_trades"]],
+            "open_trades":[SimpleNamespace(**v) for v in raw["open_trades"]],
+            "events":[SimpleNamespace(**v) for v in raw["events"]]})
+    assert "order_events" in raw.available_outputs
+    assert_lots(raw,direction,"bracket")
+    assert [event["kind"] for event in result["intent_tape"]]==["entry","entry","exit"]
