@@ -21,10 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 8b933622eacdd33b78fe1f45b413c0d736a54b78
+          ref: b36b9ac6c74a1c84348e91d376dc16e9f4d33e3f
           fetch-depth: 0
           persist-credentials: false
-      - run: test "$(git rev-parse HEAD)" = 8b933622eacdd33b78fe1f45b413c0d736a54b78
+      - run: test "$(git rev-parse HEAD)" = b36b9ac6c74a1c84348e91d376dc16e9f4d33e3f
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
@@ -127,7 +127,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 8b933622eacdd33b78fe1f45b413c0d736a54b78
+          ref: b36b9ac6c74a1c84348e91d376dc16e9f4d33e3f
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
@@ -172,7 +172,7 @@ jobs:
         run: |
           python - <<'PY'
           import json,os,pathlib,subprocess
-          head='8b933622eacdd33b78fe1f45b413c0d736a54b78'
+          head='b36b9ac6c74a1c84348e91d376dc16e9f4d33e3f'
           base='84657611816c540d9f447364f320134aa5f016e9'
           target='refs/heads/release/5.0.0rc6'
           branch='refs/heads/ops/rc6-all-exits-20260906'
