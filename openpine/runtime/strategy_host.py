@@ -44,8 +44,7 @@ def strategy_host_surface() -> dict[str, Any]:
         "state_values": sorted(STRATEGY_STATE_VALUES),
         "constraints": [
             "historical_tail_arguments_named",
-            "exit_explicit_entry_with_market_deferral",
-            "exit_pending_price_entry_unavailable",
+            "exit_explicit_entry_with_price_path_deferral",
             "exit_deferred_relative_repeated_entry_unavailable",
             "exit_v6_relative_absolute_pairs_unavailable",
             "alerts_tape_only",
