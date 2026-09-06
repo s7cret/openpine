@@ -34,7 +34,17 @@ def runner_case(tmp_path, monkeypatch=None, mode="bulk_backtest"):
     compiled, context, config = case
     config.exchange, config.market_type = "binance", "spot"
     config.isolated_protocol = mode
-    bars = [decode_canonical_bar(row) for row in rows]
+    from backtest_engine.models.bar import to_contract_bar
+    from marketdata_provider.contracts import InstrumentKey, parse_timeframe
+
+    instrument = InstrumentKey(exchange="binance", market="spot", symbol="SOLUSDT")
+    timeframe = parse_timeframe("1m")
+    bars = [
+        to_contract_bar(
+            decode_canonical_bar(row), instrument=instrument, timeframe=timeframe, closed=True
+        )
+        for row in rows
+    ]
     snapshot = execution_data_snapshot_hash(
         bars=bars,
         supplemental_bars=None,
@@ -202,3 +212,42 @@ def test_real_optimizer_worker_requests_and_repeat(tmp_path, mode):
 
     assert fills(parallel[0]) == fills(responses[1])
     assert fills(parallel[1]) == fills(responses[0])
+
+
+def test_ordinary_numeric_metrics_do_not_become_broker_compute_switches(monkeypatch, tmp_path):
+    from dataclasses import replace
+    from optimizer import OptimizerConfig
+    from optimizer.core.trial_runner import run_one
+
+    runner, seen, _, _ = runner_case(tmp_path, monkeypatch)
+    config = OptimizerConfig(
+        output_dir=tmp_path,
+        timeout_per_trial_sec=0,
+        report_profiles=False,
+        use_profile_auto_constraints=False,
+    )
+    trial = run_one(1, {"period": 2}, runner, config, "space", "config")
+    assert trial.status == "completed", trial.error_message
+    assert trial.metrics["net_profit"] == 1.0
+    assert seen[0][0].required_metrics == set()
+    assert not seen[0][1]["raw_result"]["errors"]
+    response = runner(replace(request(2, 2), required_metrics={"sharpe_ratio"}))
+    assert seen[-1][0].required_metrics == {"sharpe"}
+    assert response.metrics["sharpe_ratio"] == seen[-1][1]["raw_result"]["sharpe_ratio"]
+
+
+@pytest.mark.parametrize("metric", ["unknown", "status", "errors", "config_snapshot"])
+def test_unbound_or_nonnumeric_metric_is_rejected_before_execution(monkeypatch, tmp_path, metric):
+    from dataclasses import replace
+
+    runner, seen, _, _ = runner_case(tmp_path, monkeypatch)
+    with pytest.raises(ValueError, match="unsupported optimizer result metrics"):
+        runner(replace(request(2), required_metrics={metric}))
+    assert not seen
+
+
+def test_special_ratio_calculation_switches_use_canonical_broker_names():
+    from openpine.optimizer.isolated_runner import _engine_metric_requirements
+
+    assert _engine_metric_requirements({"net_profit", "final_equity", "total_trades"}) == set()
+    assert _engine_metric_requirements({"sharpe_ratio", "sortino_ratio"}) == {"sharpe", "sortino"}

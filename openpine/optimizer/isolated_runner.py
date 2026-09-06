@@ -46,6 +46,27 @@ def _stable_hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _engine_metric_requirements(names: set[str]) -> set[str]:
+    """Translate result-field requirements into the broker's calculation switches.
+
+    Ordinary numeric fields are always produced. The broker's required_metrics
+    currently accepts special computations (sharpe/sortino), not field names.
+    Returned values are still checked for presence and finiteness after execution.
+    """
+    from typing import get_type_hints
+    from backtest_engine.results.result import BacktestResult
+
+    types = get_type_hints(BacktestResult)
+    unknown = {name for name in names if types.get(name) not in (int, float, float | None)}
+    if unknown:
+        raise ValueError(f"unsupported optimizer result metrics: {sorted(unknown)}")
+    switches = {
+        "sharpe_ratio": "sharpe", "sortino_ratio": "sortino",
+        "score_sharpe_ratio": "sharpe", "score_sortino_ratio": "sortino",
+    }
+    return {switches[name] for name in names if name in switches}
+
+
 class IsolatedOptimizerRunner:
     """Run each optimizer trial through captured bytes and Bubblewrap."""
 
@@ -151,12 +172,13 @@ class IsolatedOptimizerRunner:
         outputs = set(getattr(request, "required_outputs", ()))
         if outputs - self.capabilities.supported_outputs:
             raise ValueError("unsupported required optimizer outputs")
+        metric_switches = _engine_metric_requirements(set(request.required_metrics))
         trial_params = {**self.base_params, **dict(request.params)}
         inputs = resolve_inputs(self.source, trial_params, envelope=self.generated_artifact)
         trial_params = dict(inputs.values)
         trial_config = copy.deepcopy(self.config)
         object.__setattr__(trial_config, "required_outputs", outputs)
-        object.__setattr__(trial_config, "required_metrics", set(request.required_metrics))
+        object.__setattr__(trial_config, "required_metrics", metric_switches)
         trial_run_id = f"{self.execution_context['run_id']}.trial-{request.trial_id}"
         trial_context_payload = dict(self.execution_context)
         trial_context_payload.pop("content_hash", None)
