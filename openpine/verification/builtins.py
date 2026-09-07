@@ -11,7 +11,12 @@ from collections import Counter
 from importlib import import_module
 from pathlib import Path
 
-from ast2python.lowering import audit_pinelib_call_binding, load_pinelib_target_manifest
+from ast2python.lowering import (
+    audit_pinelib_call_binding,
+    audit_pinelib_value_binding,
+    load_pinelib_target_manifest,
+)
+from ast2python.lowering.target import TargetCallBinding, TargetValueBinding
 from pine2ast.catalog import CatalogRepository
 from pine2ast.semantic.signatures import SignatureResolver
 from pine2ast.versioning import PineVersionResolver
@@ -44,8 +49,12 @@ def binding_reasons(binding, version: int, *, source_parameters=None) -> list[st
         f"{binding.python_module}.{binding.python_name}"
     ):
         reasons.append("RUNTIME_CALLABLE_MISSING")
-    if hasattr(binding, "parameters"):
+    if isinstance(binding, TargetCallBinding):
         reasons.extend(audit_pinelib_call_binding(binding, source_parameters, pine_version=version))
+    elif isinstance(binding, TargetValueBinding):
+        reasons.extend(audit_pinelib_value_binding(binding, pine_version=version))
+    else:
+        reasons.append("COMPILER_BINDING_TYPE_UNAVAILABLE")
     return sorted(set(reasons))
 
 
