@@ -15,6 +15,7 @@ from types import MappingProxyType
 from typing import Any
 
 from ast2python.artifacts import verify_generated_artifact_v3
+from ast2python.artifacts.nominal_registry import admitted_nominal_registry
 from backtest_engine import BacktestConfig
 from backtest_engine.core.delegated_strategy_intents import (
     DelegatedStrategyIntentHandler,
@@ -319,6 +320,7 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
         ))
         self.session = RuntimeSession(
             language, policies,
+            nominal_registry=admitted_nominal_registry(namespace, envelope),
             inputs=self.inputs,
             instrument=instrument,
             timeframe=timeframe,
