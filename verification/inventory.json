@@ -15,8 +15,8 @@
     "deselected": 0
   },
   "ast2python": {
-    "count": 914,
-    "sha256": "sha256:8169c85b9f94e15fa6605266b04d6a9bf1caeb3d475630ad66adb5a5c80d8c8a",
+    "count": 939,
+    "sha256": "sha256:803497fc92b963708072af39d85ff222fd9fdc97c1999c3044a870766261445a",
     "deselected": 0
   },
   "backtest_engine": {
