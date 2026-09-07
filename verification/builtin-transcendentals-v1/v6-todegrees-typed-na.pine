@@ -1,0 +1,4 @@
+//@version=6
+indicator("manual angles")
+float sample=na
+plot(math.todegrees(sample))

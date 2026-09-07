@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.tan_v1","abi_injections":[],"abi_result_type":"float","arguments":["close"],"declared_binding":["pine:function:math.tan","pine:function:math.tan#canonical","NAMESPACE_FUNCTION"],"source_name":"v5-tan-finite.pine","spelling":"math.tan","stateful":false}

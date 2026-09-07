@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.todegrees_v1","abi_injections":[],"abi_result_type":"float","arguments":[{"$na":true}],"declared_binding":["pine:function:math.todegrees","pine:function:math.todegrees#canonical","NAMESPACE_FUNCTION"],"source_name":"v5-todegrees-typed-na.pine","spelling":"math.todegrees","stateful":false}

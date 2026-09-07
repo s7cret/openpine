@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.asin_v1","abi_injections":[],"abi_result_type":"float","arguments":["close"],"declared_binding":["pine:function:math.asin","pine:function:math.asin#canonical","NAMESPACE_FUNCTION"],"source_name":"v5-asin-outside-domain.pine","spelling":"math.asin","stateful":false}

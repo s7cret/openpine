@@ -1,0 +1,3 @@
+//@version=6
+indicator("manual angles")
+plot(math.log10(close))
