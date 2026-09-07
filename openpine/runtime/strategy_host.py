@@ -98,10 +98,62 @@ def _location(keywords: Mapping[str, ast.AST], fallback: int) -> str:
     return f"generated line {fallback}"
 
 
+def _canonical_na_aliases(tree: ast.Module) -> frozenset[str]:
+    """Recognize stable compiler imports, not a magic variable spelling.
+
+    Conservatively reject aliases bound elsewhere, including nested shadowing.
+    This is static capability analysis, not an evaluator or a sandbox substitute.
+    """
+    imports: dict[str, ast.alias] = {}
+    ambiguous: set[str] = set()
+    for statement in tree.body:
+        if (
+            isinstance(statement, ast.ImportFrom)
+            and statement.level == 0
+            and statement.module == "pinelib.core.values"
+        ):
+            for alias in statement.names:
+                if alias.name == "na":
+                    name = alias.asname or alias.name
+                    if name in imports:
+                        ambiguous.add(name)
+                    imports[name] = alias
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                if alias.name == "*":
+                    return frozenset()  # A wildcard can overwrite any name.
+                name = alias.asname or (
+                    alias.name.split(".")[0] if isinstance(node, ast.Import) else alias.name
+                )
+                if name in imports and alias is not imports[name]:
+                    ambiguous.add(name)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            ambiguous.add(node.id)
+        elif isinstance(node, ast.arg):
+            ambiguous.add(node.arg)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            ambiguous.add(node.name)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            ambiguous.add(node.name)
+        elif isinstance(node, (ast.MatchAs, ast.MatchStar)) and node.name:
+            ambiguous.add(node.name)
+        elif isinstance(node, ast.MatchMapping) and node.rest:
+            ambiguous.add(node.rest)
+    return frozenset(imports).difference(ambiguous)
+
+
+def _missing_literal(node: ast.AST | None, na_aliases: frozenset[str]) -> bool:
+    return (isinstance(node, ast.Constant) and node.value is None) or (
+        isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node.id in na_aliases
+    )
+
+
 def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) -> dict[str, Any]:
     if type(pine_version) is not int or not 1 <= pine_version <= 6:
         raise StrategyHostError("exact Pine version 1..6 is required")
     tree = source if isinstance(source, ast.Module) else ast.parse(source)
+    na_aliases = _canonical_na_aliases(tree)
     parents = {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
     required = set()
     direction_declarations = 0
@@ -142,7 +194,9 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
             if capability == "strategy.risk.allow_entry_in":
                 direction_declarations += 1
                 if direction_declarations > 1:
-                    raise StrategyHostError("multiple direction rules are not yet admitted by this host")
+                    raise StrategyHostError(
+                        "multiple direction rules are not yet admitted by this host"
+                    )
             if capability.startswith("strategy.risk."):
                 # Conditional declarations cannot acquire ordinary branch semantics.
                 # Until dependency-safe extraction exists, reject them explicitly
@@ -162,19 +216,25 @@ def validate_strategy_host(source: str | bytes | ast.Module, pine_version: int) 
                     )
                 if capability == "strategy.risk.max_position_size":
                     value = bound["contracts"]
-                    if isinstance(value, (ast.Constant, ast.UnaryOp)):
+                    if _missing_literal(value, na_aliases) or isinstance(
+                        value, (ast.Constant, ast.UnaryOp)
+                    ):
                         from backtest_engine.core.risk_rules import validate_position_limit
 
-                        validate_position_limit(_literal(value, "max_position_size"))
+                        validate_position_limit(
+                            None
+                            if _missing_literal(value, na_aliases)
+                            else _literal(value, "max_position_size")
+                        )
             if capability == "strategy.exit":
                 active = {
-                    name
-                    for name, value in bound.items()
-                    if not (isinstance(value, ast.Constant) and value.value is None)
+                    name for name, value in bound.items() if not _missing_literal(value, na_aliases)
                 }
                 validate_exit_shape(active)
                 entry = bound.get("from_entry")
-                if isinstance(entry, ast.Constant) and type(entry.value) is not str:
+                if _missing_literal(entry, na_aliases) or (
+                    isinstance(entry, ast.Constant) and type(entry.value) is not str
+                ):
                     raise StrategyHostError(
                         "exit from_entry must be a string; omitted or empty means all entries"
                     )

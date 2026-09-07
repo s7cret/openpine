@@ -1,0 +1,17 @@
+{
+  "schema_id": "openpine.stage2_progress.v1",
+  "stage": 2,
+  "status": "in_progress",
+  "baseline": "c6ce8e41b49769605ef965825cef6c66317dcac4",
+  "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
+  "tasks": ["OP-02", "OP-13", "OP-14", "OP-16", "OP-17", "OP-18", "OP-19", "OP-31"],
+  "implemented_block": "scalar_lexical_state_conditional_values_and_versioned_evaluation",
+  "criteria": {
+    "versioned_catalog": "partial_once_overlay_not_full_catalog",
+    "stateful_language_matrix": "partial_scalar_control_subset",
+    "imports": "not_accepted",
+    "independent_builtin_expected": "not_accepted"
+  },
+  "evidence_paths": ["docs/RC6_STAGE2_LANGUAGE_CORE.md", "rc6_tests/test_rc6_stage2_language.py", "verification/inventory.json"],
+  "tradingview_verified": false
+}

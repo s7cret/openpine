@@ -1,22 +1,7 @@
 {
-  "openpine-contracts": {
-    "count": 557,
-    "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3",
-    "deselected": 0
-  },
-  "pine2ast": {
-    "count": 413,
-    "sha256": "sha256:d4041025d8e5f802904ecd19799a30556b0c4dce38d604dc67e384ac2d8d0e49",
-    "deselected": 0
-  },
-  "pinelib": {
-    "count": 229,
-    "sha256": "sha256:6246bc944187a4e805fa0c670dab74cafb50b867c97fb9cfaf2d61859517b8f4",
-    "deselected": 0
-  },
   "ast2python": {
-    "count": 377,
-    "sha256": "sha256:3832562114c77d1d702f91d603f210a76a80b5a00c4ee116aa2e176e21015081",
+    "count": 462,
+    "sha256": "sha256:7f5164798176bff49817c845a758cbd1e44a53a848fbf6006917c3971a23ba51",
     "deselected": 0
   },
   "backtest_engine": {
@@ -24,19 +9,34 @@
     "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641",
     "deselected": 0
   },
-  "optimizer": {
-    "count": 281,
-    "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb",
-    "deselected": 0
-  },
   "marketdata-provider": {
     "count": 601,
     "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892",
     "deselected": 5
   },
+  "openpine-contracts": {
+    "count": 557,
+    "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3",
+    "deselected": 0
+  },
   "openpine": {
-    "count": 1229,
-    "sha256": "sha256:e3d73fcff31928baae3f2c7f934d857e0d052324181f55f1de27e759b123c1ea",
+    "count": 1279,
+    "sha256": "sha256:f0006221ebce01aea0140d56df0238fb9c6418eb99f16819b33d8aa0c62c6a57",
+    "deselected": 0
+  },
+  "optimizer": {
+    "count": 281,
+    "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb",
+    "deselected": 0
+  },
+  "pine2ast": {
+    "count": 438,
+    "sha256": "sha256:0bfb3d46b32e270355dbe64c35be11d5df7218dffde0d8a2e5572658c34073db",
+    "deselected": 0
+  },
+  "pinelib": {
+    "count": 297,
+    "sha256": "sha256:047d3d228993fb1eca83086e6de1634b91aaa5a08c49fc33607deeabb5eca13e",
     "deselected": 0
   }
 }
