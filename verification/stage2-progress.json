@@ -12,6 +12,19 @@
     "imports": "not_accepted",
     "independent_builtin_expected": "not_accepted"
   },
-  "evidence_paths": ["docs/RC6_STAGE2_LANGUAGE_CORE.md", "rc6_tests/test_rc6_stage2_language.py", "verification/inventory.json"],
-  "tradingview_verified": false
+  "evidence_paths": ["docs/RC6_STAGE2_LANGUAGE_CORE.md", "rc6_tests/test_rc6_stage2_language.py", "verification/inventory.json", "docs/RC6_STAGE2_PUBLICATION.md", "rc6_tests/test_rc6_canonical_na_admission.py"],
+  "tradingview_verified": false,
+  "joint_test_count": 5017,
+  "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
+  "integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
+  "joint_verification_run": 34068163602,
+  "publication_receipt": "docs/RC6_STAGE2_PUBLICATION.md",
+  "gate_results": {
+    "python_3_11": "passed",
+    "python_3_13": "passed",
+    "architecture_and_frozen_stage1_corpus": "passed",
+    "protected_worker_cases": 4,
+    "frontend_build_api": "passed",
+    "full_stage2": "not_accepted"
+  }
 }
