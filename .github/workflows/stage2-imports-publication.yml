@@ -43,7 +43,9 @@ jobs:
                   if '=' in line:
                       key,value=line.split('=',1);env[key]=value
               for key,value in step.get('env',{}).items():
-                  env[key]=str(value).replace('${{ runner.temp }}',str(temp))
+                  # Do not let Actions interpolate this literal before Python
+                  # reads the external permanent workflow's environment mapping.
+                  env[key]=str(value).replace('$'+'{{ runner.temp }}',str(temp))
               subprocess.run(['bash','-euo','pipefail','-c',step['run']],env=env,check=True)
               print('::endgroup::',flush=True)
           shutil.copy(temp/'imports.bundle',temp/'evidence/imports.bundle')
