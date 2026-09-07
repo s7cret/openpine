@@ -7,7 +7,6 @@ rows remain visible. Dataset availability and oracle evidence are independent.
 from __future__ import annotations
 
 from collections import Counter
-from importlib import import_module
 from typing import Any
 
 from ast2python.lowering import load_pinelib_target_manifest
@@ -16,18 +15,11 @@ from pine2ast.catalog import CatalogRepository
 from openpine.runtime.strategy_host import strategy_host_surface
 from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES
 from openpine.verification.identity import seal
+from openpine.verification.builtins import binding_reasons, callable_exists as _callable
+from pine2ast.semantic.signatures import SignatureResolver
+from pine2ast.versioning import PineVersionResolver
 
 MODES = ("interactive", "bulk_backtest")
-
-
-def _callable(path: object) -> bool:
-    if not isinstance(path, str) or not path.startswith("pinelib.") or "." not in path:
-        return False
-    module, name = path.rsplit(".", 1)
-    try:
-        return callable(getattr(import_module(module), name, None))
-    except ImportError:
-        return False
 
 
 def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
@@ -42,20 +34,43 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
     repo = CatalogRepository.default()
     catalogs = {v: repo.readonly_view(v) for v in range(1, 7)}
     rows, seen, covered = [], set(), set()
-    projected_symbols = {key[0] for key in target.call_bindings}
+    resolvers = {
+        v: SignatureResolver(
+            version_context=PineVersionResolver(repo.identity_tuple)
+            .resolve(f"//@version={v}\n")
+            .context
+        )
+        for v in catalogs
+    }
     # Include every installed target row and all six version decisions. This is
     # the installed catalog denominator, not a claim of complete TV coverage.
     for row in raw["rows"]:
         for version, catalog in catalogs.items():
             category, name = row["category"], row["name"]
+            active_row = row
+            # A historical spelling is admitted only by its explicit supplemental
+            # row. Canonical identity alone never backports a modern namespace.
+            if name not in catalog.get(category, {}) and category == "functions":
+                historical = [
+                    item
+                    for item in raw.get("historical_call_bindings", [])
+                    if item["symbol_id"] == row["symbol_id"]
+                    and version in item["version_availability"]
+                    and item["name"] in catalog.get(category, {})
+                ]
+                if historical:
+                    if len({item["name"] for item in historical}) != 1:
+                        raise ValueError("ambiguous historical catalogue spelling")
+                    active_row = historical[0]
+                    name = active_row["name"]
             key = (version, row["symbol_id"], row.get("overload_id"), category)
             if key in seen:
                 raise ValueError("duplicate capability identity")
             seen.add(key)
             covered.add((version, row["symbol_id"], category))
             front = name in catalog.get(category, {})
-            version_ok = version in row["version_availability"]
-            disposition = row["disposition"]
+            version_ok = version in active_row["version_availability"]
+            disposition = active_row["disposition"]
             reasons = []
             if not front:
                 reasons.append("FRONTEND_UNAVAILABLE")
@@ -63,10 +78,12 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
                 reasons.append("VERSION_UNAVAILABLE")
             if disposition == "UNSUPPORTED_FAIL_CLOSED":
                 reasons.append("TARGET_UNSUPPORTED")
-            runtime = _callable(row["abi_callable"]) if disposition == "TARGET_DIRECT" else None
+            runtime = (
+                _callable(active_row["abi_callable"]) if disposition == "TARGET_DIRECT" else None
+            )
             if disposition == "TARGET_DIRECT" and not runtime:
                 reasons.append("RUNTIME_CALLABLE_MISSING")
-            delegation = row.get("delegation")
+            delegation = active_row.get("delegation")
             handler = None
             if disposition == "TARGET_DELEGATED":
                 handler = bool(
@@ -77,17 +94,36 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
                 )
                 if not handler:
                     reasons.append("HOST_HANDLER_MISSING")
-            binding_keys = {(row["symbol_id"], row["symbol_id"] + "#canonical", row["call_form"])}
-            projected = (
-                row["symbol_id"] in target.value_bindings
-                if category in {"variables", "constants"}
-                else any(k in target.call_bindings for k in binding_keys)
-            )
-            # Method and legacy spellings may have a different exact call form.
-            if not projected and category not in {"variables", "constants"}:
-                projected = row["symbol_id"] in projected_symbols
-            if not projected:
+            signature_bindings = []
+            if category in {"variables", "constants"}:
+                binding = target.value_bindings.get(row["symbol_id"])
+                reasons.extend(binding_reasons(binding, version))
+            elif front and category in {"functions", "methods"}:
+                entry = catalog[category][name]
+                form = (
+                    "METHOD"
+                    if category == "methods"
+                    else ("NAMESPACE_FUNCTION" if "." in name else "FUNCTION")
+                )
+                for candidate in resolvers[version].candidate_entries(entry):
+                    binding_key = (entry["symbol_id"], candidate["__overload_id"], form)
+                    missing = binding_reasons(
+                        target.call_bindings.get(binding_key),
+                        version,
+                        source_parameters=candidate.get("parameters"),
+                    )
+                    reasons.extend(missing)
+                    signature_bindings.append(
+                        {
+                            "symbol_id": binding_key[0],
+                            "overload_id": binding_key[1],
+                            "call_form": form,
+                            "reasons": missing,
+                        }
+                    )
+            else:
                 reasons.append("COMPILER_BINDING_MISSING")
+            reasons = sorted(set(reasons))
             datasets = name.startswith("request.") or name == "security"
             rows.append(
                 {
@@ -95,14 +131,23 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
                     "symbol_id": row["symbol_id"],
                     "overload_id": row.get("overload_id"),
                     "category": category,
+                    "catalog_spelling": name,
+                    "target_spelling": row["name"],
                     "frontend": front,
                     "target": disposition,
                     "runtime_callable": runtime,
                     "host_handler": handler,
                     "dataset_requirement": "preload_required" if datasets else "none",
                     "oracle": "missing",
-                    "status": "BOUND" if not reasons else "UNAVAILABLE",
+                    "status": "BOUND"
+                    if not reasons
+                    else (
+                        "UNVERIFIED"
+                        if all(r.endswith("_UNVERIFIED") for r in reasons)
+                        else "UNAVAILABLE"
+                    ),
                     "reasons": reasons,
+                    "signature_bindings": signature_bindings,
                 }
             )
     # Producer-only declarations/types/functions must not disappear from reports.

@@ -17,6 +17,14 @@ def main(argv=None) -> int:
     graph = commands.add_parser("capabilities")
     graph.add_argument("--mode", choices=("interactive", "bulk_backtest"), default="interactive")
     graph.add_argument("--output", type=Path, required=True)
+    builtins = commands.add_parser("builtin-surface")
+    builtins.add_argument("--output", type=Path, required=True)
+    builtin_expected = commands.add_parser("builtin-expected")
+    builtin_expected.add_argument("--corpus", type=Path, required=True)
+    builtin_expected.add_argument("--observations", type=Path, required=True)
+    builtin_expected.add_argument("--assignments", type=Path, required=True)
+    builtin_expected.add_argument("--expected-hash", required=True)
+    builtin_expected.add_argument("--output", type=Path, required=True)
     compare = commands.add_parser("compare")
     compare.add_argument("--corpus", type=Path, required=True)
     compare.add_argument("--observations", type=Path, required=True)
@@ -40,6 +48,18 @@ def main(argv=None) -> int:
         from openpine.verification.capabilities import build_capability_graph
 
         report = build_capability_graph(args.mode)
+    elif args.command in {"builtin-surface", "builtin-expected"}:
+        from openpine.verification.builtins import build_builtin_surface, builtin_evidence_report
+
+        report = build_builtin_surface()
+        if args.command == "builtin-expected":
+            report = builtin_evidence_report(
+                report,
+                args.corpus,
+                read_json(args.observations),
+                corpus_hash=args.expected_hash,
+                assignments=read_json(args.assignments),
+            )
     else:
         from openpine.verification.conformance import compare_corpus
 
