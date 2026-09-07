@@ -1,3 +1,14 @@
+# Local Stage 2 continuation — 2026-09-07
+
+**Not published; protected CI acceptance pending.** The locked-import block is
+recorded in [RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md](RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md).
+It adds same-version scalar library linking and explicit dependency identities;
+it does not complete Stage 2 or OP-31. The local inventory is 30 partial, five
+unverified and one accepted whole-task scope. Older publication/CI statements
+below apply to their named source revisions, not this local candidate.
+
+---
+
 # RC6 progress — 2026-09-06
 
 ## Stage 1 of the eight-stage plan: accepted architecture foundation

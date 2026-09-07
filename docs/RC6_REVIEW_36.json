@@ -2,7 +2,7 @@
   "schema": "openpine.review.acceptance.v1",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
   "source_spec_name": "OpenPine_RC6_Review_TZ_2026-09-05.md",
-  "snapshot_base": "b770989098577440481fa9eb44b8217ccf970159",
+  "snapshot_base": "ee15c446e684e1f120e83f51f8d340e2f06dfdd8",
   "status_policy": "Task status is full-scope acceptance, not implementation percentage. Partial records preserve implemented regressions; accepted requires no remaining acceptance work and an explicit receipt. CI verifies ledger consistency, not TradingView truth. New test claims require the publication receipt.",
   "tasks": [
     {
@@ -331,10 +331,13 @@
     {
       "id": "OP-31",
       "title": "Pine library imports и воспроизводимое разрешение зависимостей",
-      "status": "unverified",
-      "implemented": "Полный независимый тест versioned Pine library imports не принят.",
-      "remaining": "Транзитивные функции/типы, конфликты имён, отсутствующая версия и cache invalidation без соседних checkout.",
-      "evidence_paths": []
+      "status": "partial",
+      "implemented": "Локальный stage2-кандидат: pinned offline same-version scalar imports, транзитивные зависимости, isolated names, build identity и state/checkpoint регрессии. В GitHub не опубликовано.",
+      "remaining": "Согласованная процессная приёмка и публикация; межверсионные импорты, exported UDT/reference/method/enum/const/overloads, request capture, UI/gateway интеграция и полный независимый oracle.",
+      "evidence_paths": [
+        "docs/RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md",
+        "rc6_tests/test_rc6_library_imports.py"
+      ]
     },
     {
       "id": "OP-32",

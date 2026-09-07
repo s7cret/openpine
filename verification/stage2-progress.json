@@ -28,7 +28,8 @@
     "docs/RC6_STAGE2_PUBLICATION.md",
     "rc6_tests/test_rc6_canonical_na_admission.py",
     "rc6_tests/test_rc6_library_imports.py",
-    "docs/RC6_STAGE2_LOCKED_IMPORTS.md"
+    "docs/RC6_STAGE2_LOCKED_IMPORTS.md",
+    "docs/RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md"
   ],
   "tradingview_verified": false,
   "local_candidate": {
@@ -43,7 +44,14 @@
     "same_language_only": [
       5,
       6
-    ]
+    ],
+    "local_receipt": "docs/RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md",
+    "mandatory_collected_cases": 5137,
+    "new_cases": {
+      "count": 120,
+      "local_passed": 116,
+      "protected_process_not_passed": 4
+    }
   },
   "historical_joint_result": {
     "count": 5017,

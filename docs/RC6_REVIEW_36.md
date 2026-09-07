@@ -1,3 +1,5 @@
+> Локальный срез 2026-09-07: OP-31 частично реализован, но не опубликован и не принят целиком. 30 partial, 5 unverified, 1 accepted; это не процент совместимости.
+
 # OpenPine RC6 — все 36 пунктов после entry-risk блока
 
 Статусы означают полную приёмку исходных пунктов, не процент реализации или совместимости. Новый runtime проходит отдельную приёмку; наличие теста не означает наблюдённый CI-pass. Исходные ID и заголовки сохранены.
@@ -36,7 +38,7 @@
 | **OP-28**. Исправить гонку загрузки и масштабирование parity UI | Частично | Защищены page/loadAll гонки; finite bounds, 300k-point sampling и top-N labels покрыты тестами. | Финальная приёмка больших реальных экранов; browser/visual UX отдельно от in-memory Vue lifecycle. |
 | **OP-29**. Единый пользовательский путь: редактор → настройки → результат | Требует проверки | Пять обязательных пользовательских UI E2E ещё не приняты. | Editor→inputs→result, missing MTF, unsupported capability, cancel; стабильные source/data/config при повторе. |
 | **OP-30**. Довести visuals, alerts и logs до продукта | Частично | Семантические visual/alert/log tapes предусмотрены в runtime. | Численный экспорт и renderer UI, rollback объектов и отсутствие дублей alerts после полного resume. |
-| **OP-31**. Pine library imports и воспроизводимое разрешение зависимостей | Требует проверки | Полный независимый тест versioned Pine library imports не принят. | Транзитивные функции/типы, конфликты имён, отсутствующая версия и cache invalidation без соседних checkout. |
+| **OP-31**. Pine library imports и воспроизводимое разрешение зависимостей | Частично, локально | Локальный stage2-кандидат: pinned offline same-version scalar imports, транзитивные зависимости, isolated names, build identity и state/checkpoint регрессии. В GitHub не опубликовано. | Согласованная процессная приёмка и публикация; межверсионные импорты, exported UDT/reference/method/enum/const/overloads, request capture, UI/gateway интеграция и полный независимый oracle. |
 | **OP-32**. Один сквозной conformance pipeline и first-divergence report | Частично | TV parity UI и диагностические отчёты существуют. | Единый versioned corpus с независимым expected и первым bar/phase/source divergence; отделить vendor/data mismatch. |
 | **OP-33**. Fault tests и границы изоляции без ослабления sandbox | Частично | Protected worker regressions и полный optimizer process-containment suite входят в CI без fallback. | Полный fault matrix от загрузки до экспорта и доказательства освобождения ресурсов/запрета путей и сети. |
 | **OP-34**. Документация, doctor и сборка без ловушек | Частично | Документированы точные source pins, migration limits и фактические CI receipts. | Чистая установка/doctor от wheel manifest без editable/PYTHONPATH и автоматической модификации пользовательских данных. |
