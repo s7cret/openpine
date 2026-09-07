@@ -1,12 +1,12 @@
 {
-  "schema_id": "openpine.nominal_registry_joint_publication.v1",
-  "workflow_run_id": 34166526575,
-  "workflow_url": "https://github.com/s7cret/openpine/actions/runs/34166526575",
-  "operations_sha": "506a979ddb6a8985bd18ab045e41dd8619e6a39a",
+  "schema_id": "openpine.scalar_joint_publication.v1",
+  "workflow_run_id": 34168428781,
+  "workflow_url": "https://github.com/s7cret/openpine/actions/runs/34168428781",
+  "operations_sha": "5663db7b40f6d550def438ecb976de4b7c164562",
   "source_receipt": {
-    "source_sha": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
-    "source_tree": "3b1e7276a9badaf6fcfb4c31884b7454c2c1d3d1",
-    "inventory_sha256": "8cafd8990b420de79b5dd00fd30eb7829e5f35aaedf1fcb9e114bdcf1f9ce5a2",
+    "source_sha": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
+    "source_tree": "afbd13813cd3f7f637f6d1236e9e5800cb770ef4",
+    "inventory_sha256": "5a975b2efa88f94bc0d8617434f9f9bf6c70659913da16f18790e377d08c864f",
     "permanent_workflow_sha256": "c1eb7e8d5c5c02cf1183a534cfa7593aaaddcd65b1e0df90b6dd57a4010811f5",
     "digest_newlines": "LF",
     "inventory_rewritten_in_ci": false,
@@ -16,55 +16,62 @@
     "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
     "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
     "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
-    "ast2python": "d3bc3e68f5da52234013e922a62e22f97835e61b",
-    "pinelib": "2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
+    "ast2python": "70309934a05b29e1b1696109460c05db32a6f519",
+    "pinelib": "66890b5aeec8db206fc756681a414e33d7fe5b68",
     "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
-    "pine2ast": "61c503259744d1faa88959809776f4512d48c516"
+    "pine2ast": "cae5ad7b688bad9a542d1ea100ce38d20600c99c"
   },
-  "independent_review": "verification/nominal-registry-dependency-execution-review.json",
-  "independent_review_sha256": "5cb4a76c84b10f07ef3fdb8280d1f1e111d2da6987634dcb45c97fe9ba40e1f8",
+  "independent_review": "verification/scalar-execution-review.json",
+  "independent_review_sha256": "ed17216d2de789b64b22086ebd8719a9b0462347701110a3562a3bc9c6f31a04",
   "integrations": [
     {
+      "name": "pine2ast",
+      "prior": "61c503259744d1faa88959809776f4512d48c516",
+      "tested": "cae5ad7b688bad9a542d1ea100ce38d20600c99c",
+      "tree": "aebd919488a8119b5056c936cc5eda7df1dc76ea",
+      "integration": "663f042343548ea7c12d79fd01655396b89e0430"
+    },
+    {
       "name": "pinelib",
-      "prior": "7b53a898c79ca57cdc4b6f01d0df2a2b6704af0f",
-      "tested": "2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
-      "tree": "14b57e6ae5c2e7d3477d7ab4dcb27c101e0228f8",
-      "integration": "85e76ec5eab106b8e5700f8d6ee2efe10ebef127"
+      "prior": "85e76ec5eab106b8e5700f8d6ee2efe10ebef127",
+      "tested": "66890b5aeec8db206fc756681a414e33d7fe5b68",
+      "tree": "e8dfe2d5621cd70f982ec3d3c0392ff0413bddf9",
+      "integration": "4dd43f269b769c21baa859f434eea17afb74332a"
     },
     {
       "name": "ast2python",
-      "prior": "72a8148e50e6f445da48297ea592e7fe399ec1f2",
-      "tested": "d3bc3e68f5da52234013e922a62e22f97835e61b",
-      "tree": "52650d6cfe4bd047a12986c87e88635d05c8b66c",
-      "integration": "700682f5ffb9c343462c1a23db58a7e6e904fa62"
+      "prior": "700682f5ffb9c343462c1a23db58a7e6e904fa62",
+      "tested": "70309934a05b29e1b1696109460c05db32a6f519",
+      "tree": "7da3877797f717bab83614aa1f9ecb7cfe4278d9",
+      "integration": "53767c031e686c6df830b8ce9cc08be1812865a3"
     },
     {
       "name": "OpenPine",
-      "prior": "2b91a8d818d0729143a849d99952a49396bdb727",
-      "tested": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
-      "tree": "3b1e7276a9badaf6fcfb4c31884b7454c2c1d3d1",
-      "integration": "ceca4853caa4a07419e9d14cfafcc77e172e3c6d"
+      "prior": "58aa4f8aa76573eb1e9d1c3c6ca04eb606954fc8",
+      "tested": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
+      "tree": "afbd13813cd3f7f637f6d1236e9e5800cb770ef4",
+      "integration": "603fb836a2cca5273938b5c9b7eeb5380f1c8864"
     }
   ],
   "release_updates": "fast_forward_without_force",
   "complete_history_and_exact_tested_trees_preserved": true,
-  "backend_tests_each_python": 7243,
-  "baseline_tests": 6745,
-  "added_tests": 498,
+  "backend_tests_each_python": 7754,
+  "baseline_tests": 7243,
+  "added_tests": 511,
   "removed_tests": 0,
   "new_skips": 0,
   "existing_provider_deselections": 5,
   "frontend": {
-    "job_id": 101881056034,
+    "job_id": 101886437374,
     "status": "success",
-    "same_source_sha": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+    "same_source_sha": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
     "vitest_passed": 152,
     "node_passed": 22,
     "failures": 0,
     "skips": 0,
     "production_build": "passed",
     "artifact_files": {
-      "_temp/ui-tests.xml": "20c680ac91f7430c4eb9c4d8808f728948241aef64e750a017e225c6c4775055",
+      "_temp/ui-tests.xml": "c6631c4ac4a7e7f87412844bba55cb5991693871b2ec85d1b6556e57e9658e22",
       "openpine/openpine/openpine-ui/dist/assets/Achievements-BbauJzJz.js": "a5d390a1d45c45524e1eab17c0cb411cc9227d0eb32d04e800d2c6fabb66bd54",
       "openpine/openpine/openpine-ui/dist/assets/Backtests-TezrwpGY.js": "c13468a949d4a594b52d8c6208f3f35f7c681da717a15440a40448239514ecc4",
       "openpine/openpine/openpine-ui/dist/assets/client-Dhz9_LtG.js": "683194e7db11db031912f665b4f9275311b8156d4c2605c186d979c56f7a8d0d",
@@ -95,21 +102,20 @@
     }
   },
   "frozen_stage1_unchanged": true,
-  "builtin_manual_cases": 47,
-  "builtin_paths": 5,
-  "prior_failed_run_preserved": {
-    "workflow_run_id": 34163246799,
-    "receipt_sha256": "844b09a2af304fea99ce31c056d6b62d63a36cf586c1342ba3017a07d2cdabbd",
-    "failure": "forbidden compiler to runtime dependency",
-    "resolution": "required typed factory injected by host; unchanged architecture policy"
-  },
-  "cleanup_status": "archived_and_deleted_verified",
+  "manual_builtin_cases": 47,
+  "manual_scalar_cases": 75,
+  "paths_per_case": 5,
+  "cleanup_status": "pending_archive_and_guarded_delete",
   "full_stage2_accepted": false,
   "full_builtin_expected_accepted": false,
   "tradingview_verified": false,
-  "nextwave_scalar_input_abort_and_inference_excluded": true,
-  "independent_review_raw_artifact_sha256": "3201f0a60656a665f165fd0070e195fb48df4fd763a703f4215f05a42501ead5",
-  "independent_review_digest_newlines": "LF",
-  "cleanup_receipt": "verification/registry-cleanup-final-execution-review.json",
-  "cleanup_receipt_sha256": "7038e5f3ffdcaca2decd61250639b55387622bb7300c1d6333bdedbc4a90fc15"
+  "excluded_next_waves": [
+    "abort_control",
+    "input_qualifiers",
+    "parameter_inference",
+    "mathematical44",
+    "callable_result_qualifiers",
+    "varip_nominal_arrays",
+    "library_return_floor"
+  ]
 }

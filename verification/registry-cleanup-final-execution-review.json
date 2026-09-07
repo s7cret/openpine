@@ -1,0 +1,146 @@
+{
+  "schema_id": "openpine.registry_cleanup_final_execution_review.v1",
+  "status": "COMPLETE",
+  "repositories": {
+    "pinelib": {
+      "run_id": 34168483609,
+      "artifact": {
+        "id": 10034932580,
+        "name": "registry-cleanup-20260908-34166526575-pinelib-34168483609-1",
+        "size_in_bytes": 1185,
+        "url": "https://api.github.com/repos/s7cret/pinelib/actions/artifacts/10034932580",
+        "archive_download_url": "https://api.github.com/repos/s7cret/pinelib/actions/artifacts/10034932580/zip",
+        "expired": false,
+        "created_at": "2026-09-07T22:59:09Z",
+        "expires_at": "2026-12-06T22:58:57Z",
+        "updated_at": "2026-09-07T22:59:09Z",
+        "digest": "sha256:ab3212b30f03d468cebbcfeb66266beecfc9b0dfe7b4ccd4b0ec3f9bea98f432",
+        "workflow_run": {
+          "id": 34168483609,
+          "repository_id": 1223141461,
+          "head_repository_id": 1223141461,
+          "head_branch": "codex/registry-cleanup-20260908-34166526575",
+          "head_sha": "42d6082efdc9ca1d3bbad66a2a084e37e64f2c0e"
+        }
+      },
+      "receipt_sha256": "5cfbaf7f1828a73726cd05405b48e1c6d89f4b5e648dfacf9a142d7a466e1f13",
+      "plan_sha256": "147351a532ab0158a3148f6e767a5502712a4d432c8c2162a10d449e6c7dc353",
+      "archives": {
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/candidate": "2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/cleanup-workflow": "42d6082efdc9ca1d3bbad66a2a084e37e64f2c0e"
+      },
+      "deleted_refs": [
+        "refs/heads/stage2/nominal-registry-20260907",
+        "refs/heads/codex/registry-cleanup-20260908-34166526575"
+      ],
+      "remote_refs": {
+        "refs/heads/codex/scalar-oracles-20260908": "66890b5aeec8db206fc756681a414e33d7fe5b68",
+        "refs/heads/release/5.0.0rc6": "85e76ec5eab106b8e5700f8d6ee2efe10ebef127",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/candidate": "2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/cleanup-workflow": "42d6082efdc9ca1d3bbad66a2a084e37e64f2c0e"
+      },
+      "release_unchanged": true,
+      "scalar_preserved": true
+    },
+    "ast2python": {
+      "run_id": 34168485633,
+      "artifact": {
+        "id": 10034932365,
+        "name": "registry-cleanup-20260908-34166526575-ast2python-34168485633-1",
+        "size_in_bytes": 1195,
+        "url": "https://api.github.com/repos/s7cret/ast2python/actions/artifacts/10034932365",
+        "archive_download_url": "https://api.github.com/repos/s7cret/ast2python/actions/artifacts/10034932365/zip",
+        "expired": false,
+        "created_at": "2026-09-07T22:59:09Z",
+        "expires_at": "2026-12-06T22:58:59Z",
+        "updated_at": "2026-09-07T22:59:09Z",
+        "digest": "sha256:9110aac39b9e04e88fd47f284d84447ae8b9e3c17917b8c8716656649fcdb2fb",
+        "workflow_run": {
+          "id": 34168485633,
+          "repository_id": 1223141410,
+          "head_repository_id": 1223141410,
+          "head_branch": "codex/registry-cleanup-20260908-34166526575",
+          "head_sha": "859d8c336e633610b0500960e26f3d9e2d12ef7f"
+        }
+      },
+      "receipt_sha256": "2dac08f203df4c2c00278e4141711545846178d91f9c9654eaed93324b624e78",
+      "plan_sha256": "be3231ec7aa231411d43ea9f632453a994644bbfc9b92044ac9e962f4bda8dcb",
+      "archives": {
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/candidate": "d3bc3e68f5da52234013e922a62e22f97835e61b",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/cleanup-workflow": "859d8c336e633610b0500960e26f3d9e2d12ef7f"
+      },
+      "deleted_refs": [
+        "refs/heads/stage2/nominal-registry-20260907",
+        "refs/heads/codex/registry-cleanup-20260908-34166526575"
+      ],
+      "remote_refs": {
+        "refs/heads/codex/scalar-oracles-20260908": "70309934a05b29e1b1696109460c05db32a6f519",
+        "refs/heads/release/5.0.0rc6": "700682f5ffb9c343462c1a23db58a7e6e904fa62",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/candidate": "d3bc3e68f5da52234013e922a62e22f97835e61b",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/cleanup-workflow": "859d8c336e633610b0500960e26f3d9e2d12ef7f"
+      },
+      "release_unchanged": true,
+      "scalar_preserved": true
+    },
+    "openpine": {
+      "run_id": 34169130397,
+      "artifact": {
+        "id": 10035123271,
+        "name": "registry-cleanup-20260908-34166526575-openpine-34169130397-1",
+        "size_in_bytes": 1643,
+        "url": "https://api.github.com/repos/s7cret/openpine/actions/artifacts/10035123271",
+        "archive_download_url": "https://api.github.com/repos/s7cret/openpine/actions/artifacts/10035123271/zip",
+        "expired": false,
+        "created_at": "2026-09-07T23:10:37Z",
+        "expires_at": "2026-12-06T23:10:24Z",
+        "updated_at": "2026-09-07T23:10:37Z",
+        "digest": "sha256:afc30d5ec91303ef5512c2fdf68429efa96c17cc52e1fca3406f8de7d88bcece",
+        "workflow_run": {
+          "id": 34169130397,
+          "repository_id": 1260395287,
+          "head_repository_id": 1260395287,
+          "head_branch": "codex/registry-cleanup-20260908-34166526575",
+          "head_sha": "fbccf13e2da3a91ce97ff5e6ec126327a9a1a532"
+        }
+      },
+      "receipt_sha256": "b432982fa2d953a70c0c6ecbe49baef35aef8ffedd3cbf31517747b689439450",
+      "plan_sha256": "35c9886edff8a2f285eeed495cd45376b3b92d354b7a48e5babb41c45bc97207",
+      "archives": {
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/candidate": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/cleanup-workflow": "fbccf13e2da3a91ce97ff5e6ec126327a9a1a532"
+      },
+      "deleted_refs": [
+        "refs/heads/stage2/nominal-registry-20260907",
+        "refs/heads/codex/registry-cleanup-20260908-34166526575"
+      ],
+      "remote_refs": {
+        "refs/heads/codex/scalar-oracles-20260908": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
+        "refs/heads/release/5.0.0rc6": "58aa4f8aa76573eb1e9d1c3c6ca04eb606954fc8",
+        "refs/heads/stage2/nominal-ci-20260907": "5663db7b40f6d550def438ecb976de4b7c164562",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/candidate": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+        "refs/tags/archive/stage2/registry-cleanup-20260908-34166526575/cleanup-workflow": "fbccf13e2da3a91ce97ff5e6ec126327a9a1a532"
+      },
+      "release_unchanged": true,
+      "scalar_preserved": true
+    }
+  },
+  "archive_tags": 6,
+  "deleted_branches": 6,
+  "operations_branch_preserved": true,
+  "optional_operations_tag_created": false,
+  "repair_review_sha256": "6b41349f8ab2e9846b4622244d642fa1807bd10ac72628215842b678557ff2a3",
+  "repair_yaml_sha256": "d5752c15376ab5d28cb4c0a160bcde25fd8a85f66c9774a88bc056e2deb60e23",
+  "repair_parent_preserves_failed_workflow_commit": true,
+  "initial_permission_failure_preserved": {
+    "run_id": 34168487754,
+    "review_sha256": "5b50c0389926eb6d8c21e331d0e9864847ee301be3410a7c3754f6809c28d506",
+    "log_sha256": "8676eba07ae2af0cda114e8bb8e0bcbeb370d2565a6cb85f8e35ac247429b983"
+  },
+  "repair_job_log_sha256": "b0ecb35bb695e4e61e59bdf6d556b5e0878b84d99ff908cad62437f618126657",
+  "release_updated": false,
+  "full_stage2_accepted": false,
+  "limitations": [
+    "Read-back is an exact remote ref snapshot after the completed cleanup runs. Later authorized publications may advance preserved branches.",
+    "The optional operations archive tag was omitted under the independently reviewed plan flag; the persistent operations branch and verified ancestry guards were retained."
+  ]
+}
