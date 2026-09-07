@@ -112,6 +112,23 @@ Observed local failures remain visible:
   syntax. Parser fixes resolved all seven failures. Independent review then
   found an unused-export private-return leak; two negative regressions now pass.
 
+## Reviewed Linux inventory
+
+The collection-only run [34153408401](https://github.com/s7cret/openpine/actions/runs/34153408401)
+checked host `a58f94992f59c8bf010a56976d79e4f766bb6dcd` and its exact seven pins
+against the immutable baseline on Python 3.11 and 3.13. Both baseline inventories
+matched their frozen locks; both candidate proposals and full node-ID diffs were
+byte-identical. The reviewed diff is `verification/nominal-inventory-review.json`.
+
+The selected inventory increases from 5,573 to 5,842: Pine2AST +107, PineLib +78,
+Ast2Python +48, host +36. No old node ID was removed, no deselection count grew,
+and unchanged component hashes remain identical. The provider's five existing
+external live-network cases remain outside the deterministic gate. Each added
+node ID was reviewed against the nominal, lifecycle, locked-import and packaging
+scope above. `verification/inventory.json` now contains this reviewed proposal.
+Its SHA-256 is `c41729763baba34a43fa17c1d945a83a7a3a867aef5e126f18ebc1d3718ee278`.
+Collection success is not execution acceptance; the full coordinated run follows.
+
 ## Remaining acceptance
 
 This candidate does not accept any full Stage 2 criterion. Complete overload and

@@ -68,7 +68,11 @@
     ],
     "full_stage2_accepted": false,
     "tradingview_verified": false,
-    "inventory_rebaseline": "pending_exact_linux_baseline_superset_review",
+    "inventory_rebaseline": "reviewed_exact_linux_baseline_superset",
+    "inventory_collection_run": 34153408401,
+    "inventory_selected_count": 5842,
+    "inventory_added_count": 269,
+    "inventory_review": "verification/nominal-inventory-review.json",
     "joint_ci": "pending",
     "receipt": "docs/RC6_STAGE2_NOMINAL_TYPES.md"
   },
