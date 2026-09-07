@@ -1,0 +1,39 @@
+name: Preserve exact local intrabar collection commit
+'on':
+  push:
+    branches: ['ops/publish-intrabar-20260907']
+permissions:
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pine2ast
+          ref: a6d4c59fd03cde9750881e10507d3babd8571e53
+          path: publisher
+          sparse-checkout: .github/intrabar-upload/publish.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher/.github/intrabar-upload/publish.py "$RUNNER_TEMP/publish.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve original source without altering releases
+        env:
+          SOURCE_REPOSITORY: s7cret/openpine
+          SOURCE_HEAD: 648083aed1b11cba805e0c49095b797bac016327
+          SOURCE_TREE: f917e4667bf862f68c73c2c82c116aaa9880d3ab
+          SOURCE_BASE: 8607d23871cdcb79bf7470616970646645448290
+          SOURCE_PARTS: '13'
+          SOURCE_BUNDLE_SHA256: 8799887455cc99cfa9f78a0af60c08ba54e6cb10a684b13bb1d39a7792b13005
+        run: python "$RUNNER_TEMP/publish.py"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: intrabar-source-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/publication/
+          if-no-files-found: error
+          retention-days: 30
