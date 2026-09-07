@@ -72,8 +72,8 @@ The initial failure and closed reproduction are both retained as evidence.
 ## Validation status and limits
 
 The published baseline is `2b91a8d818d0729143a849d99952a49396bdb727`, with
-6745 mandatory tests per Python and the completed builtin receipt. Linux inventory
-proposal and complete joint execution for this registry block are pending.
+6745 mandatory tests per Python and the completed builtin receipt. The Linux inventory proposal passed on both Python versions; complete joint
+execution for this registry block remains pending.
 Collection is not execution. Windows host collection reports the real required
 `fcntl` import error; no fake module, platform skip or relaxed worker policy is
 introduced. The final runtime full local suite contains 946 tests: 943 passes and three
@@ -92,3 +92,40 @@ otherwise consistent rehashed snapshots are not an authenticated replay proof.
 Recursive varip collection persistence, special reference types and additional
 request expression syntax remain separate work. No TradingView execution oracle
 or performance result is claimed.
+
+## Reviewed Linux inventory
+
+[Collection run 34162643652](https://github.com/s7cret/openpine/actions/runs/34162643652)
+collected exact candidate `e255aff57cf6f8793f0df914d0b5b4b0faec2605` against
+published baseline `2b91a8d818d0729143a849d99952a49396bdb727`. Both proposed
+inventories are byte-identical, SHA256
+`e3d5f108b9df39d4965634eb9eed0f7a45330780cc126f120c5a31d069cbbf6a`.
+All 6745 baseline nodeids remain; the 473 additions produce 7218 mandatory cases,
+with no removals or extra deselections. The provider's five existing external
+live-network deselections remain unchanged.
+
+| Component | Baseline | Reviewed candidate |
+|---|---:|---:|
+| Contracts | 557 | 557 |
+| PineLib | 591 | 946 |
+| Pine2AST | 1107 | 1107 |
+| Ast2Python | 832 | 914 |
+| Backtest engine | 1102 | 1102 |
+| Optimizer | 281 | 281 |
+| Deterministic provider | 601 | 601 |
+| OpenPine | 1674 | 1710 |
+| Total | 6745 | 7218 |
+
+The independent inventory review reconstructs all 32 baseline/candidate source
+archive Git trees from file bytes and modes. Exact published runtime/compiler
+blobs also match their source review. The parser release `61c5032` has the same
+tree as the verified builtin candidate `d2b4a0f`. Receipts are
+`verification/nominal-registry-inventory-review.json` and
+`verification/nominal-registry-remote-source-review.json`. This accepts collection
+and the inventory change, not execution or full Stage 2.
+
+A separate read-only state audit reproduces a preexisting checkpoint failure
+immediately after an abort that retains a varip field. It occurs in both archived
+builtin runtime `c90c267` and this candidate; retry/final commit restores a valid
+checkpoint. That lifecycle gap and bounded `varip array<UDT>` persistence remain
+next language work, outside this declaration-admission block.

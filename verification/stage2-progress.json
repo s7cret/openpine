@@ -57,7 +57,9 @@
     "verification/nominal-registry-host-request-review.json",
     "verification/nominal-registry-initial-failures.json",
     "verification/nominal-registry-runtime-local-receipt.json",
-    "verification/nominal-registry-source-review.json"
+    "verification/nominal-registry-source-review.json",
+    "verification/nominal-registry-inventory-review.json",
+    "verification/nominal-registry-remote-source-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -167,7 +169,7 @@
     "cleanup_receipt": "verification/builtin-cleanup-receipt.json"
   },
   "nominal_registry": {
-    "status": "candidate_ready_pending_joint_linux_verification",
+    "status": "inventory_reviewed_pending_joint_linux_verification",
     "baseline": "2b91a8d818d0729143a849d99952a49396bdb727",
     "baseline_selected_count": 6745,
     "receipt": "docs/RC6_STAGE2_NOMINAL_REGISTRY.md",
@@ -176,6 +178,11 @@
     "closed_review_finding": "nested_compiled_request_child_checkpoint_admission",
     "expected_inventory_selected_count": 7218,
     "expected_inventory_added_count": 473,
-    "source_review": "verification/nominal-registry-source-review.json"
+    "source_review": "verification/nominal-registry-source-review.json",
+    "inventory_collection_run": 34162643652,
+    "inventory_selected_count": 7218,
+    "inventory_added_count": 473,
+    "inventory_review": "verification/nominal-registry-inventory-review.json",
+    "remote_source_review": "verification/nominal-registry-remote-source-review.json"
   }
 }

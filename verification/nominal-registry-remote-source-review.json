@@ -1,0 +1,182 @@
+{
+  "schema_id": "openpine.nominal_registry_remote_source_review.v1",
+  "status": "EXACT_REMOTE_TREE_FILES_MATCH_REVIEWED_LF_BYTES",
+  "source_review": {
+    "path": "verification/nominal-registry-source-review.json",
+    "sha256": "sha256:c8826b6d51e2a86b025a8a94ed4420bbd352802d11fadba4863123d0b2cb6352"
+  },
+  "repositories": [
+    {
+      "repository": "s7cret/pinelib",
+      "commit": "2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
+      "tree": "14b57e6ae5c2e7d3477d7ab4dcb27c101e0228f8",
+      "github_url": "https://github.com/s7cret/pinelib/commit/2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
+      "recursive_api_result_not_truncated": true,
+      "all_remote_files_count": 135,
+      "reviewed_changed_files_count": 14,
+      "all_changed_files_match_lf_blob_sha1": true,
+      "whole_tree_equals_builtin_baseline_plus_only_reviewed_files": true,
+      "unexpected_files_or_modes": [],
+      "reviewed_files": [
+        {
+          "path": "pinelib/reference/registry.py",
+          "lf_sha256": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+          "git_blob_sha1": "12a02fcf80cc8be41b9c6c3e29177d9b07b399e5"
+        },
+        {
+          "path": "pinelib/reference/heap.py",
+          "lf_sha256": "sha256:60a946fd1e4c884a6fc4fbf87aac7ee5ed77afaf19894a051c6d452605597751",
+          "git_blob_sha1": "d7ec51da2799c11b20891462f97b6b7a029d10be"
+        },
+        {
+          "path": "pinelib/reference/nominal.py",
+          "lf_sha256": "sha256:17a17502b0fcde7f49ce48f09e43af0c4640729ba2287b790660d94aa67d3746",
+          "git_blob_sha1": "68e184caa68b0ffd9afe0f9ada8b1b22d812a2a6"
+        },
+        {
+          "path": "pinelib/runtime/session.py",
+          "lf_sha256": "sha256:68e6f9802e8bda50f461e2ac834e86bb0428595c0455d8e0988c2e0ea1c3da75",
+          "git_blob_sha1": "c15f4b2fccea3fbcd0e89582ddfe6498d7f04baf"
+        },
+        {
+          "path": "pinelib/runtime/language.py",
+          "lf_sha256": "sha256:4d9a9aa88a3447963033086f2e3b6c319a3bec0d0d667dc52f61e1c6efd8d233",
+          "git_blob_sha1": "1330fe166f18280a0c2486cab306aaba135886bc"
+        },
+        {
+          "path": "pinelib/abi/compiled_request.py",
+          "lf_sha256": "sha256:a35cc2fb8b2280a4ce478db17def7c845d28ab1d6d5573ec5e2d7242722b61ec",
+          "git_blob_sha1": "f22a24ac743949f1da96773fe344c91cc89d7d70"
+        },
+        {
+          "path": "pinelib/abi/manifest_v2_builder.py",
+          "lf_sha256": "sha256:cb6bf36e05cad12e03181941f46f652f3e9dd35fb41857fa8c577b78fe3f8e3a",
+          "git_blob_sha1": "795ca9f0ed584d0c7afc708fb00d3c6a2a3e89af"
+        },
+        {
+          "path": "pinelib/abi/target_manifest.json",
+          "lf_sha256": "sha256:6706d7a54ee598b8f291c0e253c8afc2cdc10d2ad6b402122bb1c4bd2ba5c251",
+          "git_blob_sha1": "3624b0867791f08d2e4835d84c81e69d49ef6cd4"
+        },
+        {
+          "path": "tests/test_nominal_registry.py",
+          "lf_sha256": "sha256:02ed61a39e8b47a902106b702ea250816989ff23a869a3e4de2d31b62701f1c9",
+          "git_blob_sha1": "e33b1bbed6126395d75ee4f3d87e411686e25a8d"
+        },
+        {
+          "path": "tests/test_nominal_registry_runtime.py",
+          "lf_sha256": "sha256:fab74aeff438e34e00f1a5f6bb12f6442fa26916b391b971fe2538252ac72813",
+          "git_blob_sha1": "c1a60bad5363f43523e71f3bd4eddcc28b576a6f"
+        },
+        {
+          "path": "tests/test_nominal_registry_request_restore.py",
+          "lf_sha256": "sha256:2de604b6a47134dc6d5dceb5e5daf3e9e180bd672aa0bc390d3ae7bbfbb85dcf",
+          "git_blob_sha1": "68b8f1197c3f888de15d516c292a050cccf77a79"
+        },
+        {
+          "path": "tests/test_nominal_types.py",
+          "lf_sha256": "sha256:c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7",
+          "git_blob_sha1": "4293512d799156fbe934b113c0041a7b6b534d3d"
+        },
+        {
+          "path": "tests/test_reference_candidate_regressions.py",
+          "lf_sha256": "sha256:802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54",
+          "git_blob_sha1": "051f8f70b796befa087805f206f177636889d343"
+        },
+        {
+          "path": "docs/STAGE2_NOMINAL_REGISTRY.md",
+          "lf_sha256": "sha256:e56e9208c6c44a7a7500fa1691161288fa22c4613c8be925507676563868e2b3",
+          "git_blob_sha1": "ffa5353b3577cee7e85eb7f790cfbe5c7f7d6ba7"
+        }
+      ]
+    },
+    {
+      "repository": "s7cret/ast2python",
+      "commit": "e0829d7881024abb8bb1882bafa0dad009068bb2",
+      "tree": "f8cc6309f2f548540f37efb8584a373b18ca48af",
+      "github_url": "https://github.com/s7cret/ast2python/commit/e0829d7881024abb8bb1882bafa0dad009068bb2",
+      "recursive_api_result_not_truncated": true,
+      "all_remote_files_count": 164,
+      "reviewed_changed_files_count": 13,
+      "all_changed_files_match_lf_blob_sha1": true,
+      "whole_tree_equals_builtin_baseline_plus_only_reviewed_files": true,
+      "unexpected_files_or_modes": [],
+      "reviewed_files": [
+        {
+          "path": "ast2python/artifacts/nominal_registry.py",
+          "lf_sha256": "sha256:7faa72e63fd67dffd93d2d1453d19ac2f8110a4ea5acee1f3b1a1246e6adb23b",
+          "git_blob_sha1": "ff9508854af655ea57300cbc6deab4c22fe7d9a1"
+        },
+        {
+          "path": "ast2python/artifacts/__init__.py",
+          "lf_sha256": "sha256:2ce7b11257516ddc2d858502e87caeb753ac87444ccf7729bf6bd7e3b75c1ce5",
+          "git_blob_sha1": "e9e0e16374c41f52a942201e5b3297236af15037"
+        },
+        {
+          "path": "ast2python/emission/nominal.py",
+          "lf_sha256": "sha256:b994b049b9ccc87967e32497c55beabfc166975ae6bc701ef7c9d72415a3d2e7",
+          "git_blob_sha1": "afd131f882565f253f9e82c004b2e956208fb640"
+        },
+        {
+          "path": "ast2python/emission/python.py",
+          "lf_sha256": "sha256:788210626d7e9ce13d66cbce315812ed2e99e0ea684b80d483a548633a796141",
+          "git_blob_sha1": "4f225f274b742fa4734ef990b4fd668f056e9e13"
+        },
+        {
+          "path": "ast2python/lowering/builder.py",
+          "lf_sha256": "sha256:773883099f43658d09a5ef77fdf75ba832990820026c23db16b5f180f8bd491a",
+          "git_blob_sha1": "5123616852760cf750a254c80bdba811c1b419f8"
+        },
+        {
+          "path": "ast2python/lowering/pinelib_target.py",
+          "lf_sha256": "sha256:c8edcde2f0f1f88a177ef882347fb092df06885ad4f4bdb104fa18006771992c",
+          "git_blob_sha1": "0629dc1a7437dd2ba43fde162db2527cc28f82e2"
+        },
+        {
+          "path": "tests/test_nominal_registry_admission.py",
+          "lf_sha256": "sha256:4914818f3e7794d291d5aa190251e567f33c827d79ebfb2b3de4499fa766d37a",
+          "git_blob_sha1": "c3ad47aaab378d1f0643c4c920d427bd1b44c0c7"
+        },
+        {
+          "path": "tests/test_nominal_registry_emission.py",
+          "lf_sha256": "sha256:f82ce19420ded806a7590620816ddc0d25f90ceca70bc125e15dacfc8978fea9",
+          "git_blob_sha1": "cb70df2109322957a3cccbc4515c44e5a6be6475"
+        },
+        {
+          "path": "tests/fixtures/nominal_registry_legacy_v5.json",
+          "lf_sha256": "sha256:dd4a9a106a0a975d53563bd9dce564a702aeb10c9a77c4345fb71549b6753af6",
+          "git_blob_sha1": "a0826c2d90130dfb8956c0f1df5b0b04683c4b1a"
+        },
+        {
+          "path": "tests/fixtures/nominal_registry_legacy_v6.json",
+          "lf_sha256": "sha256:c3e4daeabe5a2418a68193a7704521c45fd5d3b8197b6bdbef6c070bf978fdaa",
+          "git_blob_sha1": "72de55de81183bc1a92f028e7b50f34526bc4897"
+        },
+        {
+          "path": "tests/test_locked_library_execution.py",
+          "lf_sha256": "sha256:3918ad230dd58436b910094edfb96c45eccf12668a1705e29d9c1e4d58e07fe6",
+          "git_blob_sha1": "9fd0343e32804080417fbf914cb0a82f3b985662"
+        },
+        {
+          "path": "tests/test_rc6_input_metadata.py",
+          "lf_sha256": "sha256:3fd9c4928645d564eea55e41ee6f0ff3902ce81a3684128ade4437ac0ce5a17b",
+          "git_blob_sha1": "3ee529aa205f768ead65b3a79ce8b97cb528af6e"
+        },
+        {
+          "path": "docs/STAGE2_NOMINAL_REGISTRY.md",
+          "lf_sha256": "sha256:30360474d39966e3771c7e454cdebfca8ebef2284abc81df3bc76d68b4e82d13",
+          "git_blob_sha1": "68c473fccf0063bff2192bfcf914f4b7e6a0a8d7"
+        }
+      ]
+    }
+  ],
+  "parser": {
+    "verified_builtin_commit": "d2b4a0f9796e23b33025d10a4918317fde4608ad",
+    "candidate_release_commit": "61c503259744d1faa88959809776f4512d48c516",
+    "tree": "16cd1da8fc89cbbb31963a95ebdda38970241f3c",
+    "exact_tree_equal": true
+  },
+  "full_stage2_accepted": false,
+  "joint_linux_registry_verification_complete": false,
+  "method": "Read immutable commits and untruncated recursive trees through GitHub GET API. Compare every reviewed LF-normalized Git blob hash, and compare the entire remote tree including modes to the original builtin baseline plus only those reviewed replacements. Source/HEAD/index were not changed."
+}
