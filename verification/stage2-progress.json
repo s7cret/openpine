@@ -48,7 +48,8 @@
     "verification/builtin-ci-generation-review.json",
     "docs/RC6_STAGE2_BUILTIN_PUBLICATION.md",
     "verification/builtin-joint-review.json",
-    "verification/builtin-joint-receipt.json"
+    "verification/builtin-joint-receipt.json",
+    "verification/builtin-cleanup-receipt.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -154,6 +155,7 @@
     "integrated_head": "a08c2d9d1fae143159304f3a1868fbbaf8b27e63",
     "publication_receipt": "docs/RC6_STAGE2_BUILTIN_PUBLICATION.md",
     "signatures_with_passing_examples": 41,
-    "signature_denominator": 2374
+    "signature_denominator": 2374,
+    "cleanup_receipt": "verification/builtin-cleanup-receipt.json"
   }
 }

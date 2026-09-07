@@ -56,8 +56,12 @@ This publication commit adds only documentation, progress and receipts.
 corpus and source review. `verification/builtin-joint-receipt.json` records exact
 integration trees and parents. Artifact names are `rc6-checks-3.11-34159064376`,
 `rc6-checks-3.13-34159064376` and `rc6-ui-34159064376`; copies are preserved under
-`.runtime/evidence/builtin-verify-*`. Branch cleanup follows separately with
-archive tags and guarded deletion, leaving release refs unchanged.
+`.runtime/evidence/builtin-verify-*`. Branch cleanup completed in four separate workflows. Nine archive tags were
+read back before eight exact candidate/workflow refs were deleted atomically
+within each repository. All four release refs remained unchanged.
+`verification/builtin-cleanup-receipt.json` records the run IDs, artifact hashes,
+archive identities and remote postconditions; the operations branch remains for
+the next CI wave.
 
 Stage 2 remains **in_progress**, `full_stage2_accepted=false`. The corpus covers
 41 of 2374 installed callable signatures; 2333 still lack passing examples.

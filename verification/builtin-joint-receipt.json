@@ -100,5 +100,6 @@
   "full_builtin_expected_accepted": false,
   "tradingview_verified": false,
   "local_nextwave_excluded": true,
-  "cleanup_status": "pending_archive_and_guarded_delete"
+  "cleanup_status": "complete",
+  "cleanup_receipt": "verification/builtin-cleanup-receipt.json"
 }

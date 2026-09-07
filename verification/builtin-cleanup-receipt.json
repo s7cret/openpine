@@ -1,0 +1,121 @@
+{
+  "schema_id": "openpine.builtin_cleanup_publication.v1",
+  "status": "complete",
+  "verified_builtin_run": 34159064376,
+  "archive_prefix": "archive/stage2/builtin-cleanup-20260907-34159064376",
+  "deleted_ref_count": 8,
+  "archive_tag_count": 9,
+  "release_updated_by_cleanup": false,
+  "retained_operations_branch": "stage2/nominal-ci-20260907",
+  "repositories": {
+    "ast2python": {
+      "workflow_run": 34161286699,
+      "workflow_sha": "9540508881c3ce621591b38ded7156cf280e5fcc",
+      "artifact": {
+        "id": 10032676074,
+        "name": "builtin-cleanup-20260907-34159064376-ast2python-34161286699-1",
+        "digest": "sha256:7d93066efe3ce5ddff3594b4ecbc7d146076de93cc150613af6613da5f64f204"
+      },
+      "candidate": "028b2f42ac816200aedf7837a7fc7f55b3b668cc",
+      "integration": "72a8148e50e6f445da48297ea592e7fe399ec1f2",
+      "release_at_cleanup": "72a8148e50e6f445da48297ea592e7fe399ec1f2",
+      "candidate_tree": "b3132d64b39203fcb88f6bd04d964b51b6673ef3",
+      "archives": {
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "028b2f42ac816200aedf7837a7fc7f55b3b668cc",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "9540508881c3ce621591b38ded7156cf280e5fcc"
+      },
+      "deleted_refs": [
+        "refs/heads/stage2/builtins-20260907",
+        "refs/heads/ops/builtin-cleanup-20260907-34159064376"
+      ],
+      "observed_after": {
+        "refs/heads/release/5.0.0rc6": "72a8148e50e6f445da48297ea592e7fe399ec1f2",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "028b2f42ac816200aedf7837a7fc7f55b3b668cc",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "9540508881c3ce621591b38ded7156cf280e5fcc"
+      }
+    },
+    "pinelib": {
+      "workflow_run": 34161285749,
+      "workflow_sha": "299d3b63a93d62d7dfad2b92727b486a8fcf6b04",
+      "artifact": {
+        "id": 10032675657,
+        "name": "builtin-cleanup-20260907-34159064376-pinelib-34161285749-1",
+        "digest": "sha256:bc4d021e74c752c9232ce5ea4196af0358d9bfd7d8c319a28adf8462d934018b"
+      },
+      "candidate": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+      "integration": "7b53a898c79ca57cdc4b6f01d0df2a2b6704af0f",
+      "release_at_cleanup": "7b53a898c79ca57cdc4b6f01d0df2a2b6704af0f",
+      "candidate_tree": "42cffb5475f8dd438844dba36832991366d54347",
+      "archives": {
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "299d3b63a93d62d7dfad2b92727b486a8fcf6b04"
+      },
+      "deleted_refs": [
+        "refs/heads/stage2/builtins-20260907",
+        "refs/heads/ops/builtin-cleanup-20260907-34159064376"
+      ],
+      "observed_after": {
+        "refs/heads/release/5.0.0rc6": "7b53a898c79ca57cdc4b6f01d0df2a2b6704af0f",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "299d3b63a93d62d7dfad2b92727b486a8fcf6b04"
+      }
+    },
+    "openpine": {
+      "workflow_run": 34161287259,
+      "workflow_sha": "ae66fa205f1e0513598077355e8df78136f45357",
+      "artifact": {
+        "id": 10032675889,
+        "name": "builtin-cleanup-20260907-34159064376-openpine-34161287259-1",
+        "digest": "sha256:a69ef2d1ec558a5a6bc08558a806af670e2e9f77f322fbbade3fa5cc7aa2d64c"
+      },
+      "candidate": "091a88668414a12fe0a2c2e13ff11715075562f8",
+      "integration": "a08c2d9d1fae143159304f3a1868fbbaf8b27e63",
+      "release_at_cleanup": "27b08e1a8e4a66739ca5e39a84bafb5aa11c67c1",
+      "candidate_tree": "c67b12cb78431d576e52636a1bd2dd8e1055c34f",
+      "archives": {
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "091a88668414a12fe0a2c2e13ff11715075562f8",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "ae66fa205f1e0513598077355e8df78136f45357",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/verification-operations": "1db2d1178b543a60ebc21c19a4a808141f5d5ad5"
+      },
+      "deleted_refs": [
+        "refs/heads/stage2/builtins-20260907",
+        "refs/heads/ops/builtin-cleanup-20260907-34159064376"
+      ],
+      "observed_after": {
+        "refs/heads/release/5.0.0rc6": "27b08e1a8e4a66739ca5e39a84bafb5aa11c67c1",
+        "refs/heads/stage2/nominal-ci-20260907": "1db2d1178b543a60ebc21c19a4a808141f5d5ad5",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "091a88668414a12fe0a2c2e13ff11715075562f8",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "ae66fa205f1e0513598077355e8df78136f45357",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/verification-operations": "1db2d1178b543a60ebc21c19a4a808141f5d5ad5"
+      }
+    },
+    "pine2ast": {
+      "workflow_run": 34161285182,
+      "workflow_sha": "187eaf9a54a8ae3bf21500183c96e24baeddc301",
+      "artifact": {
+        "id": 10032675303,
+        "name": "builtin-cleanup-20260907-34159064376-pine2ast-34161285182-1",
+        "digest": "sha256:c1043a229056f2b3e9e40c902589b1eb53372c66009a00f5cd720f43b70f8aa0"
+      },
+      "candidate": "d2b4a0f9796e23b33025d10a4918317fde4608ad",
+      "integration": "61c503259744d1faa88959809776f4512d48c516",
+      "release_at_cleanup": "61c503259744d1faa88959809776f4512d48c516",
+      "candidate_tree": "16cd1da8fc89cbbb31963a95ebdda38970241f3c",
+      "archives": {
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "d2b4a0f9796e23b33025d10a4918317fde4608ad",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "187eaf9a54a8ae3bf21500183c96e24baeddc301"
+      },
+      "deleted_refs": [
+        "refs/heads/stage2/builtins-20260907",
+        "refs/heads/ops/builtin-cleanup-20260907-34159064376"
+      ],
+      "observed_after": {
+        "refs/heads/release/5.0.0rc6": "61c503259744d1faa88959809776f4512d48c516",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/candidate": "d2b4a0f9796e23b33025d10a4918317fde4608ad",
+        "refs/tags/archive/stage2/builtin-cleanup-20260907-34159064376/cleanup-workflow": "187eaf9a54a8ae3bf21500183c96e24baeddc301"
+      }
+    }
+  },
+  "scope": "Only the four builtin candidate branches and their dedicated cleanup workflow branches; other repository branches are outside this receipt.",
+  "full_stage2_accepted": false
+}
