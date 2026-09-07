@@ -1,0 +1,36 @@
+{
+  "schema_id": "openpine.stage2_local_block.v1",
+  "stage": 2,
+  "status": "local_candidate_pending_joint_ci",
+  "full_stage2_accepted": false,
+  "source_baseline": "8607d23871cdcb79bf7470616970646645448290",
+  "remote_rc6_observed": "465cee7a3b6a09555db714edbe98bb56410d92b4",
+  "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
+  "block": "typed_intrabar_collections_and_map_matrix_iteration",
+  "library_source_pins": {
+    "pine2ast": "5adfc88952057fd255e6423219536d1f47c0b81d",
+    "pinelib": "75532c26665cff2b217b764f855e091042832899",
+    "ast2python": "1d79941c992c0523f1a4c7d632066a884ba18898"
+  },
+  "mandatory_collected_cases": 5573,
+  "new_cases": 244,
+  "new_protected_worker_cases": 4,
+  "local_completed_library_suites": {
+    "pine2ast": 628,
+    "pinelib": 405,
+    "ast2python": 636
+  },
+  "tradingview_verified": false,
+  "git_publication": "not_performed",
+  "evidence_paths": [
+    "docs/RC6_STAGE2_INTRABAR_COLLECTIONS_LOCAL.md",
+    "rc6_tests/test_rc6_intrabar_collections.py"
+  ],
+  "remaining": [
+    "complete_versioned_catalog",
+    "broader_udt_enum_generic_reference_semantics",
+    "once_historical_fill_recalculation",
+    "broader_import_export_profiles",
+    "independent_builtin_expected"
+  ]
+}
