@@ -110,6 +110,13 @@ class NativeRC6CompilerAdapter:
         compile_meta.update(self.library_status().versions)
 
         try:
+            linked_source = None
+            if kwargs.get("library_store") is not None:
+                from pine2ast.libraries import has_library_imports, link_libraries
+                if has_library_imports(source_text, source_name=source_name):
+                    linked_source = link_libraries(source_text, kwargs["library_store"], source_name=source_name)
+                    compile_meta["library_linkage"] = linked_source.receipt()
+                    source_text = linked_source.code
             bundle = build_consumer_bundle(
                 source_text,
                 source_name=source_name,
@@ -123,6 +130,7 @@ class NativeRC6CompilerAdapter:
                 module_name=module_name,
                 producer_commit=ast2python_commit,
                 expected_pine2ast_commit=pine2ast_commit,
+                **({"linked_source": linked_source} if linked_source is not None else {}),
             )
             from openpine.verification.capabilities import (
                 effective_target_identity, require_plan_bindings,
