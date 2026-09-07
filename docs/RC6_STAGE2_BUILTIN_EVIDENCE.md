@@ -110,3 +110,28 @@ The initial source audit and subsequent value-binding delta are preserved
 separately in `verification/builtin-source-review.json` and
 `verification/builtin-value-binding-review.json`. The CI generator review is
 `verification/builtin-ci-generation-review.json`.
+
+## Reviewed Linux inventory
+
+[Collection run 34158391385](https://github.com/s7cret/openpine/actions/runs/34158391385)
+completed successfully for Python 3.11 and 3.13 at candidate
+`62b7b19491d8a20dfebca23546ca110becbfcc6a`. Both proposals are byte-identical:
+SHA256 `0485ff3eb933c58e3bf1df57a9fd7e7b93ddcb1d8245bdb62de727478f80d09a`.
+All 5842 baseline nodeids remain; 903 new nodeids produce 6745 mandatory tests.
+There are no removals or additional deselections. The provider's five existing
+external live-network deselections remain a separate policy.
+
+| Component | Baseline | Reviewed candidate |
+| --- | ---: | ---: |
+| openpine-contracts | 557 | 557 |
+| pinelib | 483 | 591 |
+| pine2ast | 735 | 1107 |
+| ast2python | 684 | 832 |
+| backtest_engine | 1102 | 1102 |
+| optimizer | 281 | 281 |
+| marketdata-provider | 601 | 601 |
+| OpenPine | 1399 | 1674 |
+
+`verification/builtin-inventory-review.json` records the exact added nodeids,
+source archives and Python artifact hashes. This accepts the new inventory only;
+full execution and Stage 2 acceptance are still pending.

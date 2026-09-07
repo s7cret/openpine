@@ -41,7 +41,11 @@
     "verification/builtins-v1/manifest.json",
     "verification/nominal-cleanup-receipt.json",
     "rc6_tests/test_rc6_builtin_capabilities.py",
-    "verification/builtin-local-receipt.json"
+    "verification/builtin-local-receipt.json",
+    "verification/builtin-inventory-review.json",
+    "verification/builtin-source-review.json",
+    "verification/builtin-value-binding-review.json",
+    "verification/builtin-ci-generation-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -119,7 +123,7 @@
     ]
   },
   "builtin_evidence": {
-    "status": "candidate_pending_joint_linux_verification",
+    "status": "inventory_reviewed_pending_joint_linux_verification",
     "baseline": "6b3ac81b46575d2bc105cfda334348b1a62387c7",
     "baseline_selected_count": 5842,
     "corpus": "verification/builtins-v1/manifest.json",
@@ -136,7 +140,9 @@
     "full_builtin_expected_accepted": false,
     "full_stage2_accepted": false,
     "tradingview_verified": false,
-    "proposed_selected_count": 6745,
-    "proposed_selected_count_is_not_yet_accepted": true
+    "inventory_collection_run": 34158391385,
+    "inventory_selected_count": 6745,
+    "inventory_added_count": 903,
+    "inventory_review": "verification/builtin-inventory-review.json"
   }
 }
