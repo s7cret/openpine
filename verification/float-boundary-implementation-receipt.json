@@ -1,0 +1,48 @@
+{
+  "frozen": true,
+  "published": false,
+  "baselines": {
+    "pinelib": "2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
+    "ast2python": "e0829d7881024abb8bb1882bafa0dad009068bb2"
+  },
+  "files": {
+    "pinelib_functional": {
+      "pinelib/abi/manifest_v2_builder.py": "sha256:15ecff816c8e91796e5b0cfe61acd483dd45f70eb01dd7fe9c929222d2d43692",
+      "pinelib/abi/target_manifest.json": "sha256:de242cf51e1b402afccfd480f81a0952643b4d145ee1f54e8ed10ed4caa0adea"
+    },
+    "pinelib_new_tests": {
+      "tests/test_float_version_availability.py": "sha256:d0934454e549a361605d3a6cfc51bd07ace52f30805b52edcae96ba209c2cf73"
+    },
+    "pinelib_reviewed_expectation_correction": {
+      "tests/test_float_cast_abi.py": "sha256:bd727fb2441ba435cf201e643ca7103d95c54d2ffb651de4109f36e34d141382"
+    },
+    "compiler_functional": {},
+    "compiler_new_tests": {
+      "tests/test_float_version_boundary.py": "sha256:2eee549efc032c1dad63f27dd933f5f38779cfd620926efe9df34495990b6370"
+    },
+    "compiler_reviewed_setup_correction": {
+      "tests/test_builtin_binding_execution.py": "sha256:f9ff37948176aa737535bcc7c026c37ddb4a66a4831eb6387be24ae7e400ab6c"
+    }
+  },
+  "primary_authority": "https://www.tradingview.com/pine-script-docs/v4/language/type-system/#type-casting",
+  "review_date": "2026-09-08",
+  "manifest_hash": "sha256:75033f2f204ce94f08f4a55df754e1804ed049a13c69f86095fcf68b6aad412e",
+  "new_tests": {
+    "pinelib": 20,
+    "compiler": 21
+  },
+  "targeted_each_python": {
+    "pinelib_passed": 34,
+    "compiler_passed": 146
+  },
+  "old_runtime_expected_conflicts": 7,
+  "old_compiler_setup_conflicts": 3,
+  "old_test_function_and_parametrization_identity_unchanged": true,
+  "old_numerical_assertion_ASTs_unchanged": true,
+  "scope": "exact callable float v4-v6 only; no compiler production edits; no source-surface row removal; no kernel version inference",
+  "broader_runtime_each_python": {
+    "passed": 282,
+    "failed": 0,
+    "skipped": 0
+  }
+}

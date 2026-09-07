@@ -1,0 +1,43 @@
+{
+  "schema_id": "openpine.scalar_remote_source_review.v1",
+  "repositories": {
+    "pinelib": {
+      "base": "2a5dce3b5e2878c6d8c3c9004db65354d1ef425e",
+      "tip": "66890b5aeec8db206fc756681a414e33d7fe5b68",
+      "tree": "e8dfe2d5621cd70f982ec3d3c0392ff0413bddf9",
+      "full_tree_matches": true,
+      "files": 136,
+      "overlay_files": 4,
+      "observed_release": "7b53a898c79ca57cdc4b6f01d0df2a2b6704af0f"
+    },
+    "ast2python": {
+      "base": "d3bc3e68f5da52234013e922a62e22f97835e61b",
+      "tip": "70309934a05b29e1b1696109460c05db32a6f519",
+      "tree": "7da3877797f717bab83614aa1f9ecb7cfe4278d9",
+      "full_tree_matches": true,
+      "files": 166,
+      "overlay_files": 2,
+      "observed_release": "72a8148e50e6f445da48297ea592e7fe399ec1f2"
+    },
+    "OpenPine": {
+      "base": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+      "tip": "0981e6a3f718526bf57079b304e73f8f793237a6",
+      "tree": "c67a92dfd05d3e42cfade409c468e2b452d78999",
+      "full_tree_matches": true,
+      "files": 1128,
+      "overlay_files": 236,
+      "observed_release": "2b91a8d818d0729143a849d99952a49396bdb727"
+    },
+    "pine2ast": {
+      "base": "61c503259744d1faa88959809776f4512d48c516",
+      "tip": "cae5ad7b688bad9a542d1ea100ce38d20600c99c",
+      "tree": "aebd919488a8119b5056c936cc5eda7df1dc76ea",
+      "full_tree_matches": true,
+      "files": 357,
+      "overlay_files": 17,
+      "observed_release": "61c503259744d1faa88959809776f4512d48c516"
+    }
+  },
+  "release_integrated": false,
+  "full_stage2_accepted": false
+}

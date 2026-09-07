@@ -192,5 +192,28 @@
     "inventory_added_count": 498,
     "inventory_review": "verification/nominal-registry-dependency-inventory-review.json",
     "remote_source_review": "verification/nominal-registry-dependency-remote-source-review.json"
+  },
+  "scalar_oracle_block": {
+    "status": "published_candidate_pending_joint_linux_verification",
+    "corpus": "verification/builtin-scalars-v1/manifest.json",
+    "corpus_hash": "sha256:5266a87d8ce3681472856f378ba9df9731853357b77336edea26ba1f9ec7b4ef",
+    "manual_cases": 75,
+    "execution_paths": 5,
+    "new_scalar_tests_each_python": 381,
+    "old_runner_and_availability_windows": {
+      "tests": 266,
+      "passed": 260,
+      "errors": 6,
+      "failed": 0,
+      "skipped": 0,
+      "errors_reason": "native Windows fcntl unavailable"
+    },
+    "new_parser_tests": 71,
+    "new_runtime_tests": 20,
+    "new_compiler_tests": 21,
+    "new_host_availability_tests": 18,
+    "full_builtin_expected_accepted": false,
+    "tradingview_verified": false,
+    "source_scope": "float callable v4-v6 exact interval, producer-owned availability projection, scalar independent expected; input and pending-abort waves excluded"
   }
 }

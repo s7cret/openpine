@@ -1,0 +1,47 @@
+{
+  "baseline": "61c503259744d1faa88959809776f4512d48c516",
+  "branch": "stage2/scalar-oracles-20260908",
+  "source_frozen": true,
+  "published": false,
+  "files": {
+    "tools/catalog/build_catalog.py": "sha256:675535be16d1e02ac12e3bdf4b5c71dee31bc774d4c3167a3c0a01f69e643a7b",
+    "pine2ast/semantic/signatures.py": "sha256:32fc2f11037e81a68e6458540d65f0c108b62b668e79455bc04081ac65943d16",
+    "pine2ast/semantic/analyzer.py": "sha256:4817d1bfd670184b362e3394196e928988d58138a62d268342b91b25c350e0eb",
+    "catalog_source/historical_projection.json": "sha256:ac51737621e7a11c083fb415ec342e920b6659d941afba0c8fe6dabaa98dddb3",
+    "catalog_reports/migration_report.json": "sha256:10db0bc27ed12e601237bedbe7650f9a9ec9d7ba894046908dbc174597b67e5a",
+    "catalog_source/deltas/v1.jsonl": "sha256:0666705493a4c908196e6df7e0be0076820e073c533b964a5422b9f5ebf3e2ff",
+    "catalog_source/manifest.json": "sha256:5738ce5bfa1ca6dc11a9abcc4ae4b1586d2bf70a70e7f4ad7337ea0dc5638b98",
+    "catalog_source/semantics.jsonl": "sha256:349b4818ef02c7b2bb8676c102e2f444a3bb85c8453cc9cff0cef03edcd43780",
+    "pine2ast/catalog_data/packs/pine_v1.pack.json": "sha256:4ec944a6dab9bbf58bedef0d3aae9c44353e980a39b2df65eee6a13641740d21",
+    "pine2ast/catalog_data/packs/pine_v2.pack.json": "sha256:72aa2ada7558f9d4245b09551c88aff748fe984ac50cb058a38fc72ba5a469c8",
+    "pine2ast/catalog_data/packs/pine_v3.pack.json": "sha256:de1dcee54f4373facadcc4aa59ee728f5bfd2ccfa0c597fd27bbbcc27a44d078",
+    "pine2ast/catalog_data/packs/pine_v4.pack.json": "sha256:6c4f7fdc7e332541d47fc8d10dc704c7315e7e514627eeaaa687cc5df9e47b75",
+    "pine2ast/catalog_data/packs/pine_v5.pack.json": "sha256:f3eca0073b10ef7ffb8baf99a96b4f322a5ac75b38f321379f95db04dd60d479",
+    "pine2ast/catalog_data/packs/pine_v6.pack.json": "sha256:f1e9ded6007bedddd0e2561d8cebc8df8bc6f2328e773cbe160b1403cef71d52",
+    "tests/test_float_version_authority.py": "sha256:2537d44568849f98a08d0d7bb4ac4d2b1b690e2473a629befeaba957a9744397",
+    "tests/test_scalar_signature_contract.py": "sha256:b28435f5a6c9f8e7dcaa44160d69bf889b3e427deedeb73016dfcb857067f88a",
+    "docs/STAGE2_SCALAR_SIGNATURE_REVIEW.md": "sha256:9963a068e227c055c79c12e688c192c365d96af7dfbd0b48bff3e4313ff24d52"
+  },
+  "initial_63_tests": {
+    "failed": 22,
+    "passed": 41
+  },
+  "final_targeted_each_python": {
+    "passed": 443,
+    "failed": 0,
+    "skipped": 0
+  },
+  "new_test_cases": 71,
+  "retained_original_nodeids": 372,
+  "reviewed_expectation_corrections": 12,
+  "full_windows_each_python": {
+    "passed": 1165,
+    "failed": 10,
+    "collection_errors": 1,
+    "skipped": 0
+  },
+  "mypy_semantic_modules": "PASS",
+  "mypy_generator": "6 errors reproduced on exact baseline",
+  "catalog_delta": "Only float added_in=4; section membership, symbol IDs and overload IDs preserved in all 6 packs",
+  "rc5_snapshots_changed": false
+}
