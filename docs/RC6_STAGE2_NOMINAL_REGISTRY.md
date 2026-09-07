@@ -185,3 +185,12 @@ and abort changes are excluded. Evidence is recorded in
 `verification/nominal-registry-dependency-remote-source-review.json`. This accepts
 the inventory change only. Complete execution and all aggregate gates remain
 required before registry integration or publication of a successful receipt.
+
+## Completed registry joint execution
+
+The preceding inventory-only status is superseded by full run34166526575:
+7243 tests passed on each Python3.11/3.13, with all mandatory aggregate gates,
+frontend152+22 tests and builds. Exact tested trees are integrated in the three
+release branches. See `RC6_STAGE2_REGISTRY_PUBLICATION.md` and the independent
+execution review for source/archive identities and the preserved earlier failure.
+This accepts the registry block; Stage2 remains in progress.

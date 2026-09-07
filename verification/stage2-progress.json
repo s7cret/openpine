@@ -64,19 +64,22 @@
     "verification/nominal-registry-dependency-source-review.json",
     "verification/nominal-registry-dependency-implementation-receipt.json",
     "verification/nominal-registry-dependency-inventory-review.json",
-    "verification/nominal-registry-dependency-remote-source-review.json"
+    "verification/nominal-registry-dependency-remote-source-review.json",
+    "docs/RC6_STAGE2_REGISTRY_PUBLICATION.md",
+    "verification/nominal-registry-joint-receipt.json",
+    "verification/nominal-registry-dependency-execution-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
-  "joint_test_count": 6745,
+  "joint_test_count": 7243,
   "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
   "core_verification_run": 34068163602,
   "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-  "latest_verified_source": "091a88668414a12fe0a2c2e13ff11715075562f8",
-  "latest_verified_tree": "c67b12cb78431d576e52636a1bd2dd8e1055c34f",
-  "integrated_head": "a08c2d9d1fae143159304f3a1868fbbaf8b27e63",
-  "joint_verification_run": 34159064376,
-  "publication_receipt": "docs/RC6_STAGE2_BUILTIN_PUBLICATION.md",
+  "latest_verified_source": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+  "latest_verified_tree": "3b1e7276a9badaf6fcfb4c31884b7454c2c1d3d1",
+  "integrated_head": "ceca4853caa4a07419e9d14cfafcc77e172e3c6d",
+  "joint_verification_run": 34166526575,
+  "publication_receipt": "docs/RC6_STAGE2_REGISTRY_PUBLICATION.md",
   "gate_results": {
     "python_3_11": "passed",
     "python_3_13": "passed",
@@ -174,7 +177,7 @@
     "cleanup_receipt": "verification/builtin-cleanup-receipt.json"
   },
   "nominal_registry": {
-    "status": "architecture_repaired_pending_joint_linux_verification",
+    "status": "integrated_and_joint_linux_verified",
     "baseline": "2b91a8d818d0729143a849d99952a49396bdb727",
     "baseline_selected_count": 6745,
     "receipt": "docs/RC6_STAGE2_NOMINAL_REGISTRY.md",
@@ -191,7 +194,21 @@
     "inventory_selected_count": 7243,
     "inventory_added_count": 498,
     "inventory_review": "verification/nominal-registry-dependency-inventory-review.json",
-    "remote_source_review": "verification/nominal-registry-dependency-remote-source-review.json"
+    "remote_source_review": "verification/nominal-registry-dependency-remote-source-review.json",
+    "joint_ci_run": 34166526575,
+    "verified_source": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+    "verified_tree": "3b1e7276a9badaf6fcfb4c31884b7454c2c1d3d1",
+    "integration": "ceca4853caa4a07419e9d14cfafcc77e172e3c6d",
+    "joint_receipt": "verification/nominal-registry-joint-receipt.json"
+  },
+  "nominal_registry_publication": {
+    "status": "integrated_and_joint_linux_verified",
+    "verification_run": 34166526575,
+    "source": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+    "integration": "ceca4853caa4a07419e9d14cfafcc77e172e3c6d",
+    "receipt": "verification/nominal-registry-joint-receipt.json",
+    "independent_review": "verification/nominal-registry-dependency-execution-review.json",
+    "cleanup": "pending"
   },
   "scalar_oracle_block": {
     "status": "published_candidate_pending_joint_linux_verification",
