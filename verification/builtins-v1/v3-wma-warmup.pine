@@ -1,0 +1,3 @@
+//@version=3
+study("builtin expected")
+plot(wma(close,3))

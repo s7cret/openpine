@@ -35,7 +35,17 @@
     "docs/RC6_STAGE2_NOMINAL_TYPES.md",
     "rc6_tests/test_rc6_nominal_types.py",
     "docs/RC6_STAGE2_NOMINAL_PUBLICATION.md",
-    "verification/nominal-joint-receipt.json"
+    "verification/nominal-joint-receipt.json",
+    "docs/RC6_STAGE2_BUILTIN_EVIDENCE.md",
+    "rc6_tests/test_rc6_builtin_expected.py",
+    "verification/builtins-v1/manifest.json",
+    "verification/nominal-cleanup-receipt.json",
+    "rc6_tests/test_rc6_builtin_capabilities.py",
+    "verification/builtin-local-receipt.json",
+    "verification/builtin-inventory-review.json",
+    "verification/builtin-source-review.json",
+    "verification/builtin-value-binding-review.json",
+    "verification/builtin-ci-generation-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -111,5 +121,28 @@
       "complete_once_fill_recalculation",
       "full_versioned_builtin_oracle_coverage"
     ]
+  },
+  "builtin_evidence": {
+    "status": "inventory_reviewed_pending_joint_linux_verification",
+    "baseline": "6b3ac81b46575d2bc105cfda334348b1a62387c7",
+    "baseline_selected_count": 5842,
+    "corpus": "verification/builtins-v1/manifest.json",
+    "corpus_hash": "sha256:0c2ba86607654abd0eb34d7726272005c73f0f0d0b738efd7a630ed0664820a0",
+    "independent_examples": 47,
+    "execution_paths": [
+      "abi",
+      "compiled_historical",
+      "compiled_realtime",
+      "compiled_rollback",
+      "compiled_checkpoint"
+    ],
+    "receipt": "docs/RC6_STAGE2_BUILTIN_EVIDENCE.md",
+    "full_builtin_expected_accepted": false,
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "inventory_collection_run": 34158391385,
+    "inventory_selected_count": 6745,
+    "inventory_added_count": 903,
+    "inventory_review": "verification/builtin-inventory-review.json"
   }
 }

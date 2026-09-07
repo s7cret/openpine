@@ -1,0 +1,3 @@
+//@version=5
+indicator("builtin expected")
+plot(ta.rsi(close,2))

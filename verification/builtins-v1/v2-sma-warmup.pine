@@ -1,0 +1,3 @@
+//@version=2
+study("builtin expected")
+plot(sma(close,3))

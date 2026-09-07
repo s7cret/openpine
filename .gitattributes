@@ -1,0 +1,2 @@
+# Frozen corpus file checksums must survive Windows and Linux checkouts.
+verification/builtins-v1/* text eol=lf

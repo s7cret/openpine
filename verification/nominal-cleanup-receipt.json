@@ -1,0 +1,130 @@
+{
+  "schema_id": "openpine.nominal_cleanup_independent_verification.v1",
+  "checked_at_utc": "2026-09-07T19:35:13.465435+00:00",
+  "ok": true,
+  "remote_mutations_performed": false,
+  "full_stage2_accepted": false,
+  "repositories": {
+    "pine2ast": {
+      "run_id": 34155928451,
+      "run_url": "https://github.com/s7cret/pine2ast/actions/runs/34155928451",
+      "run_status": "completed",
+      "run_conclusion": "success",
+      "workflow_sha": "43c360bdc3e8132f728df03da9ab9a7527bdba0f",
+      "candidate_sha": "7107e797e32c360d2fce90a6416297ef2076351e",
+      "release_integration_sha": "c5923aeab0e914be244c5c085bb5be8b9f8ea0fb",
+      "verified_archive_tags": {
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "7107e797e32c360d2fce90a6416297ef2076351e",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "43c360bdc3e8132f728df03da9ab9a7527bdba0f"
+      },
+      "verified_absent_refs": [
+        "refs/heads/stage2/nominal-types-20260907",
+        "refs/heads/ops/nominal-cleanup-20260907-34153963095"
+      ],
+      "unchanged_protected_refs": {
+        "refs/heads/release/5.0.0rc6": "c5923aeab0e914be244c5c085bb5be8b9f8ea0fb"
+      },
+      "observed_matching_refs": {
+        "refs/heads/release/5.0.0rc6": "c5923aeab0e914be244c5c085bb5be8b9f8ea0fb",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "7107e797e32c360d2fce90a6416297ef2076351e",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "43c360bdc3e8132f728df03da9ab9a7527bdba0f"
+      }
+    },
+    "pinelib": {
+      "run_id": 34155932473,
+      "run_url": "https://github.com/s7cret/pinelib/actions/runs/34155932473",
+      "run_status": "completed",
+      "run_conclusion": "success",
+      "workflow_sha": "d9242b5a985edd76eb626229f492f6cd69a96d0b",
+      "candidate_sha": "ad235a8d7befc091808b20927139436eb4bdbf40",
+      "release_integration_sha": "9a6fe64657fda0b1eb7498382fdc86fa9de52205",
+      "verified_archive_tags": {
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "ad235a8d7befc091808b20927139436eb4bdbf40",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "d9242b5a985edd76eb626229f492f6cd69a96d0b"
+      },
+      "verified_absent_refs": [
+        "refs/heads/stage2/nominal-types-20260907",
+        "refs/heads/ops/nominal-cleanup-20260907-34153963095"
+      ],
+      "unchanged_protected_refs": {
+        "refs/heads/release/5.0.0rc6": "9a6fe64657fda0b1eb7498382fdc86fa9de52205"
+      },
+      "observed_matching_refs": {
+        "refs/heads/release/5.0.0rc6": "9a6fe64657fda0b1eb7498382fdc86fa9de52205",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "ad235a8d7befc091808b20927139436eb4bdbf40",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "d9242b5a985edd76eb626229f492f6cd69a96d0b"
+      }
+    },
+    "ast2python": {
+      "run_id": 34155936398,
+      "run_url": "https://github.com/s7cret/ast2python/actions/runs/34155936398",
+      "run_status": "completed",
+      "run_conclusion": "success",
+      "workflow_sha": "65986212ef51ea71baf70e3665721f75d0d8b89d",
+      "candidate_sha": "30512014a45db1be29def8fa8c83eb35b0d4b4c2",
+      "release_integration_sha": "7737d0e0d903268be37bee3c0cafc6341045ae0d",
+      "verified_archive_tags": {
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "30512014a45db1be29def8fa8c83eb35b0d4b4c2",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "65986212ef51ea71baf70e3665721f75d0d8b89d"
+      },
+      "verified_absent_refs": [
+        "refs/heads/stage2/nominal-types-20260907",
+        "refs/heads/ops/nominal-cleanup-20260907-34153963095"
+      ],
+      "unchanged_protected_refs": {
+        "refs/heads/release/5.0.0rc6": "7737d0e0d903268be37bee3c0cafc6341045ae0d"
+      },
+      "observed_matching_refs": {
+        "refs/heads/release/5.0.0rc6": "7737d0e0d903268be37bee3c0cafc6341045ae0d",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "30512014a45db1be29def8fa8c83eb35b0d4b4c2",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "65986212ef51ea71baf70e3665721f75d0d8b89d"
+      }
+    },
+    "openpine": {
+      "run_id": 34155940491,
+      "run_url": "https://github.com/s7cret/openpine/actions/runs/34155940491",
+      "run_status": "completed",
+      "run_conclusion": "success",
+      "workflow_sha": "65f9fe94f69a140ac0633a9cc3cb0c49116f70be",
+      "candidate_sha": "6de3116c011ec6f6a9e437f4d9d6ee92641d5b21",
+      "release_integration_sha": "b827e2e023e5d3bb2be7cc2e31abaddbe897f0e4",
+      "verified_archive_tags": {
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "6de3116c011ec6f6a9e437f4d9d6ee92641d5b21",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "65f9fe94f69a140ac0633a9cc3cb0c49116f70be",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/verification-operations": "dd82115a7d8df0c6d56a30cce6ca15710fa4f1ad"
+      },
+      "verified_absent_refs": [
+        "refs/heads/stage2/nominal-types-20260907",
+        "refs/heads/ops/nominal-cleanup-20260907-34153963095"
+      ],
+      "unchanged_protected_refs": {
+        "refs/heads/release/5.0.0rc6": "6b3ac81b46575d2bc105cfda334348b1a62387c7",
+        "refs/heads/stage2/nominal-ci-20260907": "dd82115a7d8df0c6d56a30cce6ca15710fa4f1ad"
+      },
+      "observed_matching_refs": {
+        "refs/heads/release/5.0.0rc6": "6b3ac81b46575d2bc105cfda334348b1a62387c7",
+        "refs/heads/stage2/nominal-ci-20260907": "dd82115a7d8df0c6d56a30cce6ca15710fa4f1ad",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/candidate": "6de3116c011ec6f6a9e437f4d9d6ee92641d5b21",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/cleanup-workflow": "65f9fe94f69a140ac0633a9cc3cb0c49116f70be",
+        "refs/tags/archive/stage2/nominal-cleanup-20260907-34153963095/verification-operations": "dd82115a7d8df0c6d56a30cce6ca15710fa4f1ad"
+      }
+    }
+  },
+  "independent_execution_audit": {
+    "run_id": 34153963095,
+    "source_sha": "6de3116c011ec6f6a9e437f4d9d6ee92641d5b21",
+    "source_tree": "ef5b22e1088f4f38f52a6e54d9a204ccdc601bcb",
+    "python_passed": {
+      "311": 5842,
+      "313": 5842
+    },
+    "junit_files": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inventory_gates_ok": true,
+    "source_and_stage1_identities_ok": true,
+    "audit_file": "nominal-verify-independent-audit.json",
+    "vitest_passed": 152
+  }
+}

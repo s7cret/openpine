@@ -1,0 +1,3 @@
+//@version=1
+study("builtin expected")
+plot(round(1.5))

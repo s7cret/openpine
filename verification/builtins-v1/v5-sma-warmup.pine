@@ -1,0 +1,3 @@
+//@version=5
+indicator("builtin expected")
+plot(ta.sma(close,3))
