@@ -42,3 +42,16 @@ The exact linked candidate still requires collection with a retained inventory,
 all eight suites on Linux Python 3.11/3.13, real AppArmor/bwrap protected workers,
 unchanged architecture and Stage 1 gates, frontend tests and builds. Publication
 to feature refs is not integration into `release/5.0.0rc6` or stage acceptance.
+
+## Reviewed scalar inventory
+
+Collection run34167536275 checked exact sourceff93520 against registry6bc502.
+Both Python proposals are byte-identical:7754 selected cases, all7243 retained,
+511 added (PineLib20, Pine2AST71, Ast2Python21 and OpenPine399). No removal,
+skip or additional provider deselection occurred. The 32 immutable baseline and
+candidate archive trees reproduce the reviewed Git source overlays. Proposal
+SHA256:5a975b2efa88f94bc0d8617434f9f9bf6c70659913da16f18790e377d08c864f.
+
+The later completed registry publication is merged into this candidate without
+changing scalar implementation or pins. This inventory review is collection-only;
+the full7754-case Linux execution and aggregate gates remain pending.
