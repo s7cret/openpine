@@ -80,7 +80,9 @@
     "verification/transcendental-local-receipt.json",
     "verification/language-state-remote-source-review.json",
     "docs/RC6_STAGE2_ABORT_CHECKPOINT.md",
-    "docs/RC6_STAGE2_TRANSCENDENTAL_EVIDENCE.md"
+    "docs/RC6_STAGE2_TRANSCENDENTAL_EVIDENCE.md",
+    "verification/language-state-inventory-review.json",
+    "verification/language-state-metadata-independent-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -253,7 +255,7 @@
     "cleanup": "pending"
   },
   "language_state_block": {
-    "status": "published_source_candidate_pending_inventory_and_joint_linux",
+    "status": "inventory_reviewed_pending_joint_linux",
     "scope": [
       "numeric_input_defval_const_v5_v6",
       "body_inferred_simple_parameters",
@@ -296,6 +298,11 @@
       "callable_result_qualifiers_44",
       "varip_nominal_arrays",
       "library_return_qualifier_floor"
-    ]
+    ],
+    "inventory_run": 34170596498,
+    "inventory_sha256": "ee96d6285f0b295bbeb681aa749c74053dfca10c8c4b8e4f53399b310888fe1d",
+    "inventory_review": "verification/language-state-inventory-review.json",
+    "selected_tests": 8470,
+    "removed_tests": 0
   }
 }
