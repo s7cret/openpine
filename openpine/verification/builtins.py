@@ -79,6 +79,7 @@ def build_builtin_surface(*, target=None) -> dict:
                     else ("NAMESPACE_FUNCTION" if "." in spelling else "FUNCTION")
                 )
                 for candidate in resolver.candidate_entries(entry):
+                    frontend_available = resolver.candidate_is_active(candidate)
                     symbol = entry["symbol_id"]
                     overload = candidate["__overload_id"]
                     key = (version, symbol, overload, form)
@@ -92,6 +93,8 @@ def build_builtin_surface(*, target=None) -> dict:
                     reasons = binding_reasons(
                         binding, version, source_parameters=contract["parameters"]
                     )
+                    if not frontend_available:
+                        reasons = sorted(set(reasons) | {"FRONTEND_VERSION_UNAVAILABLE"})
                     status = (
                         (
                             "UNVERIFIED"
@@ -108,7 +111,16 @@ def build_builtin_surface(*, target=None) -> dict:
                     if key in rows:
                         if rows[key]["contract"] != contract:
                             raise ValueError("conflicting producer builtin identity")
-                        rows[key]["spellings"].append(spelling)
+                        if spelling not in rows[key]["spellings"]:
+                            rows[key]["spellings"].append(spelling)
+                        # Disjoint version intervals may describe the same
+                        # overload shape. Admission of any producer candidate
+                        # admits this exact identity; inactive alternatives stay
+                        # in the denominator without hiding the active one.
+                        if frontend_available and not rows[key]["frontend_available"]:
+                            rows[key].update(
+                                frontend_available=True, status=status, reasons=reasons
+                            )
                         continue
                     rows[key] = {
                         "pine_version": version,
@@ -118,6 +130,7 @@ def build_builtin_surface(*, target=None) -> dict:
                         "spellings": [spelling],
                         "contract": contract,
                         "contract_hash": digest(contract),
+                        "frontend_available": frontend_available,
                         "status": status,
                         "reasons": reasons,
                         "target_binding": binding.to_dict() if binding else None,
