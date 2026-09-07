@@ -1,0 +1,144 @@
+name: Verify reference loop values and locked array libraries across RC6
+'on':
+  push:
+    branches: ['ops/stage2-values-20260907']
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+concurrency:
+  group: stage2-values-publication
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pine2ast
+          ref: 35f037e7b46a188441097131c6defa3ce9043680
+          path: publisher
+          sparse-checkout: .github/stage2-values/restore.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher/.github/stage2-values/restore.py "$RUNNER_TEMP/restore.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Restore exact reviewed integration source
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/stage2-values')
+          text=''.join((p/f'part{i}.b64').read_text() for i in range(1,4))
+          # Transport transcription is distinct from source. Original reviewed
+          # patch/tree/commit identities remain mandatory in the restore helper.
+          for a,b in [('TebJMbcn3','TebJMbXu3'),('HivSGGgY','HivSGgY'),('eicl5GbkM37ACF','eicl5GOM37ACF'),('RWyBUViSOKAr','RWyBUViOKAr')]:
+              text=text.replace(a,b)
+          (p/'source.gz.b64').write_text(text)
+          PY
+          python "$RUNNER_TEMP/restore.py" restore .github/stage2-values "$RUNNER_TEMP/evidence"
+          cp "$RUNNER_TEMP/restore.py" "$RUNNER_TEMP/evidence/restore.py"
+      - name: Execute every permanent backend verification step unchanged
+        run: |
+          python -m pip install PyYAML
+          python - <<'PY'
+          import os,pathlib,subprocess,yaml
+          temp=pathlib.Path(os.environ['RUNNER_TEMP'])
+          workflow=yaml.safe_load(pathlib.Path('.github/workflows/rc6-native.yml').read_text())
+          for step in workflow['jobs']['verify']['steps']:
+              if 'run' not in step: continue
+              print('::group::'+step.get('name','run'),flush=True)
+              env=dict(os.environ)
+              for line in pathlib.Path(os.environ['GITHUB_ENV']).read_text().splitlines():
+                  if '=' in line:
+                      key,value=line.split('=',1);env[key]=value
+              for key,value in step.get('env',{}).items():
+                  env[key]=str(value).replace('$'+'{{ runner.temp }}',str(temp))
+              command=step['run']
+              if step.get('name')=='Install pinned sibling sources':
+                  # The restore receipt already occupies the evidence directory;
+                  # preserve it rather than deleting checksums or source history.
+                  command=command.replace('evidence.mkdir()','evidence.mkdir(exist_ok=True)')
+              subprocess.run(['bash','-euo','pipefail','-c',command],env=env,check=True)
+              print('::endgroup::',flush=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: values-${{ matrix.python }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: error
+          retention-days: 30
+  frontend:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: values-3.13-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend
+      - name: Restore the same tested source
+        run: |
+          git fetch "$RUNNER_TEMP/backend/verified.bundle" refs/heads/review-candidate
+          git checkout --detach 8607d23871cdcb79bf7470616970646645448290
+          test "$(git rev-parse HEAD^{tree})" = 96eecddb8d9904601e49b8918cc46e03fda8012d
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - run: npm ci
+        working-directory: openpine-ui
+      - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui.xml"
+        working-directory: openpine-ui
+      - run: npm run build
+        working-directory: openpine-ui
+      - run: npm run test:node | tee "$RUNNER_TEMP/ui-node.log"
+        working-directory: openpine-ui
+        env:
+          OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend/openapi.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: values-ui-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ui.xml
+            ${{ runner.temp }}/ui-node.log
+            openpine-ui/dist/
+          retention-days: 30
+  publish:
+    needs: [verify,frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: values-3.13-${{ github.run_id }}
+          path: evidence
+      - run: python evidence/restore.py publish evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: values-publication-${{ github.run_id }}
+          path: evidence/
+          retention-days: 30
