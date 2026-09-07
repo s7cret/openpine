@@ -29,7 +29,8 @@ jobs:
           "integration": "ceca4853caa4a07419e9d14cfafcc77e172e3c6d", "release": "58aa4f8aa76573eb1e9d1c3c6ca04eb606954fc8",
           "publication_only_paths": ["verification/nominal-registry-dependency-execution-review.json", "verification/nominal-registry-joint-receipt.json",
           "verification/stage2-progress.json", "docs/RC6_STAGE2_REGISTRY_PUBLICATION.md", "docs/RC6_STAGE2_NOMINAL_REGISTRY.md"],
-          "verified_operations": "506a979ddb6a8985bd18ab045e41dd8619e6a39a", "candidate_tree": "3b1e7276a9badaf6fcfb4c31884b7454c2c1d3d1"}'
+          "verified_operations": "506a979ddb6a8985bd18ab045e41dd8619e6a39a", "candidate_tree": "3b1e7276a9badaf6fcfb4c31884b7454c2c1d3d1",
+          "archive_verified_operations": false}'
       run: |
         set -euo pipefail
         python - <<'BUILTIN_CLEANUP'
@@ -59,6 +60,9 @@ jobs:
 
         def execute():
             repo = os.environ['GITHUB_REPOSITORY'].lower()
+            archive_operations = plan.get('archive_verified_operations', True)
+            if type(archive_operations) is not bool:
+                raise RuntimeError('Optional operations archival flag must be boolean')
             if repo != plan['repository'].lower():
                 raise RuntimeError('This workflow may mutate only its explicitly named own repository')
             feature = 'refs/heads/'+plan['feature_branch']
@@ -76,7 +80,7 @@ jobs:
                 raise RuntimeError('Cleanup checkout has tracked modifications')
             tags = {'refs/tags/'+plan['archive_prefix']+'/candidate':plan['candidate'],
                     'refs/tags/'+plan['archive_prefix']+'/cleanup-workflow':workflow_sha}
-            if plan.get('verified_operations'):
+            if plan.get('verified_operations') and archive_operations:
                 tags['refs/tags/'+plan['archive_prefix']+'/verification-operations'] = plan['verified_operations']
             names = [feature,release,cleanup,operations,*tags]
             refs = remote_refs(names)
