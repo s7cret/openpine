@@ -1,0 +1,165 @@
+{
+  "schema_id": "openpine.nominal_registry_dependency_source_review.v1",
+  "status": "SOURCE_REVIEW_PASS_NOT_LINUX_ACCEPTANCE",
+  "baselines": {
+    "ast2python": "e0829d7881024abb8bb1882bafa0dad009068bb2",
+    "openpine": "93e6298977e17732c782b21d469d752727afee3f"
+  },
+  "frozen_compiler_files": 7,
+  "frozen_host_files": 2,
+  "files": {
+    "ast2python/ast2python/artifacts/nominal_registry.py": {
+      "raw_sha256": "1287b6e510cab9e7fd06e4528fd718c3b858381c656c807fa550cc850e9d03fc",
+      "lf_sha256": "1287b6e510cab9e7fd06e4528fd718c3b858381c656c807fa550cc850e9d03fc",
+      "git_blob_sha1": "188d78a09da50977f4944b0744e9cfbdad800306",
+      "baseline_lf_sha256": "7faa72e63fd67dffd93d2d1453d19ac2f8110a4ea5acee1f3b1a1246e6adb23b"
+    },
+    "ast2python/tests/test_nominal_registry_admission.py": {
+      "raw_sha256": "058cdb0728e8c532a6bd77747524aebd886472cadfc21a862da2f023f1657c88",
+      "lf_sha256": "058cdb0728e8c532a6bd77747524aebd886472cadfc21a862da2f023f1657c88",
+      "git_blob_sha1": "f2ac2e97406de092f6e0fccc1ac92b6d6329277e",
+      "baseline_lf_sha256": "4914818f3e7794d291d5aa190251e567f33c827d79ebfb2b3de4499fa766d37a"
+    },
+    "ast2python/tests/test_nominal_registry_emission.py": {
+      "raw_sha256": "9ba6ddad3af7ca6bd4369192b6a982fb970102371bf28ed8c082634698d1fe12",
+      "lf_sha256": "9ba6ddad3af7ca6bd4369192b6a982fb970102371bf28ed8c082634698d1fe12",
+      "git_blob_sha1": "58fa53e49a74c2464aee8bbcdbaf10577726dbdf",
+      "baseline_lf_sha256": "f82ce19420ded806a7590620816ddc0d25f90ceca70bc125e15dacfc8978fea9"
+    },
+    "ast2python/tests/test_locked_library_execution.py": {
+      "raw_sha256": "d46bd9969c25f14b3d042ae95ffc75866f953947ce99294dbe43cc96375faa3d",
+      "lf_sha256": "d46bd9969c25f14b3d042ae95ffc75866f953947ce99294dbe43cc96375faa3d",
+      "git_blob_sha1": "174f1059918d0f37b66d265c6f767aed01bfb1b9",
+      "baseline_lf_sha256": "3918ad230dd58436b910094edfb96c45eccf12668a1705e29d9c1e4d58e07fe6"
+    },
+    "ast2python/tests/test_rc6_input_metadata.py": {
+      "raw_sha256": "af143b19859a08c337dff4cec0c8d6fe47651bdab0b5d0e3a3208a769206af78",
+      "lf_sha256": "af143b19859a08c337dff4cec0c8d6fe47651bdab0b5d0e3a3208a769206af78",
+      "git_blob_sha1": "8ab9e61bdb6a3e86a9daf2b9ef6751c46b0c7473",
+      "baseline_lf_sha256": "3fd9c4928645d564eea55e41ee6f0ff3902ce81a3684128ade4437ac0ce5a17b"
+    },
+    "ast2python/tests/test_nominal_registry_dependency_boundary.py": {
+      "raw_sha256": "7ef08c07c51ff66c68e8aa1c0a6019dd2d89f828b0e57746759b0aefb885423e",
+      "lf_sha256": "7ef08c07c51ff66c68e8aa1c0a6019dd2d89f828b0e57746759b0aefb885423e",
+      "git_blob_sha1": "db2ed07c1c04da9969156e950becccce8b68ef30",
+      "baseline_lf_sha256": null
+    },
+    "ast2python/docs/STAGE2_NOMINAL_REGISTRY.md": {
+      "raw_sha256": "2b7ed3a780d939e1bb40a6ca86287b76a3c8bccf33c4bb32e4f1489cd3bfdffe",
+      "lf_sha256": "2b7ed3a780d939e1bb40a6ca86287b76a3c8bccf33c4bb32e4f1489cd3bfdffe",
+      "git_blob_sha1": "5782de7fd0badf9f2b8fcdc64aa48cf6e7732aa9",
+      "baseline_lf_sha256": "30360474d39966e3771c7e454cdebfca8ebef2284abc81df3bc76d68b4e82d13"
+    },
+    "openpine/openpine/runtime/rc6_executor.py": {
+      "raw_sha256": "6e10aa3372e45aa2cd2c87ebe89fe1dbb049634de9aec1d777d89cceb9c5e2ce",
+      "lf_sha256": "bb953fbc509b2651535a0675ca6b1e8900714b26c448a94ef0cee976253f5493",
+      "git_blob_sha1": "9f86a9aef5a711bf3441f0bb998718b8b35a7dab",
+      "baseline_lf_sha256": "0b5c8d7804534fb67a0920e8cfc870a57a6aaafefa7ec8b2bc07a416cff0e6b9"
+    },
+    "openpine/openpine/runtime/rc6_worker_runtime.py": {
+      "raw_sha256": "c66e920d1ceaefd02e819c6176cf3a1f6d100b5015ef4737ade9a9660fd62984",
+      "lf_sha256": "34ba63978a4a8ee5affb1e923e597104ef9f45a10096cf07c6fd75f70b4daa5e",
+      "git_blob_sha1": "b37e78c53ec1c4938cc2861ed336f75868462adc",
+      "baseline_lf_sha256": "ecab872dc092a6c2c7c35fe422b082883f61915922ed356ac908e7fd3dfae2c0"
+    }
+  },
+  "commit_split": {
+    "functional": [
+      "ast2python/artifacts/nominal_registry.py"
+    ],
+    "new_tests": [
+      "tests/test_nominal_registry_dependency_boundary.py"
+    ],
+    "old_test_setup_only": [
+      "tests/test_nominal_registry_admission.py",
+      "tests/test_nominal_registry_emission.py",
+      "tests/test_locked_library_execution.py",
+      "tests/test_rc6_input_metadata.py"
+    ],
+    "docs": [
+      "docs/STAGE2_NOMINAL_REGISTRY.md"
+    ],
+    "host_functional": [
+      "openpine/runtime/rc6_executor.py",
+      "openpine/runtime/rc6_worker_runtime.py"
+    ]
+  },
+  "checks": {
+    "compiler_runtime_imports": 0,
+    "dynamic_import_escape": false,
+    "compiler_existing_envelope_capability_version_literal_control_flow_AST_exact": true,
+    "required_keyword_factory_without_default": true,
+    "owner_called_once_after_compiler_checks_with_exact_payload_version_source": true,
+    "owner_result_and_exception_pass_through": true,
+    "host_changes_exact_explicit_owner_import_and_keyword_only": true,
+    "architecture_policy_unchanged": true,
+    "architecture_ok": true,
+    "architecture_issues": [],
+    "policy_hash": "sha256:7997472959c0152ac89ee9a92b540178287c60c72c1520bdf4d914b58463895c",
+    "old_test_whole_module_AST_preserved": [
+      {
+        "file": "tests/test_nominal_registry_admission.py",
+        "exact_whole_module_AST_preserved_after_removing_explicit_factory_setup": true,
+        "factory_calls": 14
+      },
+      {
+        "file": "tests/test_nominal_registry_emission.py",
+        "exact_whole_module_AST_preserved_after_removing_explicit_factory_setup": true,
+        "factory_calls": 1
+      },
+      {
+        "file": "tests/test_locked_library_execution.py",
+        "exact_whole_module_AST_preserved_after_removing_explicit_factory_setup": true,
+        "factory_calls": 1
+      },
+      {
+        "file": "tests/test_rc6_input_metadata.py",
+        "exact_whole_module_AST_preserved_after_removing_explicit_factory_setup": true,
+        "factory_calls": 1
+      }
+    ]
+  },
+  "focused_owner_execution_receipts": {
+    "initial_25_new_cases_failed": true,
+    "py311": "155 passed, 0 failed, 0 skipped",
+    "py313": "155 passed, 0 failed, 0 skipped",
+    "composition": "25 new dependency cases + 61 admission + 21 emission + 48 unchanged nominal/library cases",
+    "independently_rerun": false,
+    "reason": "Reviewed frozen files and existing completed execution logs; no repeated tests needed for unchanged source."
+  },
+  "existing_test_assertions_or_expected_corrected": false,
+  "expected_next_inventory": {
+    "baseline_per_python": 7218,
+    "added_compiler_cases": 25,
+    "candidate_per_python": 7243
+  },
+  "excluded_next_wave": {
+    "modified_compiler_baseline_files": [
+      "tests/test_builtin_binding_execution.py"
+    ],
+    "untracked_compiler_scalar_test": "tests/test_float_version_boundary.py",
+    "parser_float_availability": "all parser working changes excluded",
+    "host_scalar_files": [
+      "openpine/verification/builtins.py",
+      "openpine/verification/capabilities.py",
+      "rc6_tests/test_rc6_builtin_expected.py",
+      "verification/builtin-scalars-v1",
+      ".gitattributes"
+    ],
+    "runtime_pending_abort": "all runtime working changes excluded"
+  },
+  "prior_failed_run": {
+    "run_id": 34163246799,
+    "receipt": ".runtime/evidence/nominal-registry-failed-execution-review.json",
+    "receipt_sha256": "844b09a2af304fea99ce31c056d6b62d63a36cf586c1342ba3017a07d2cdabbd",
+    "preserved": true
+  },
+  "limitations": [
+    "The supplied factory is trusted host composition, not selected by the generated namespace. A malicious host factory is outside compiler proof; real host passes immutable PineLib owner.",
+    "Verified module-byte precondition and all compiler admission checks remain mandatory.",
+    "Local whole-stack architecture inspection is a dependency check only; runtime/scalar next-wave source is excluded from candidate publication.",
+    "Full Linux execution, inventory superset and frontend verification remain required. Stage2 not accepted."
+  ],
+  "full_stage2_accepted": false,
+  "receipt_body_sha256": "d84bf48bc41f562ae3530ba43879f116f2f268d99396767c3b6682e5bb284515"
+}

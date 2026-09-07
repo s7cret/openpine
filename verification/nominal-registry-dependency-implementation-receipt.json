@@ -1,0 +1,56 @@
+{
+  "baseline": "e0829d7881024abb8bb1882bafa0dad009068bb2",
+  "source_frozen": true,
+  "published": false,
+  "scalar_files_excluded": true,
+  "changed_files": {
+    "ast2python/artifacts/nominal_registry.py": "sha256:1287b6e510cab9e7fd06e4528fd718c3b858381c656c807fa550cc850e9d03fc",
+    "tests/test_nominal_registry_admission.py": "sha256:058cdb0728e8c532a6bd77747524aebd886472cadfc21a862da2f023f1657c88",
+    "tests/test_nominal_registry_emission.py": "sha256:9ba6ddad3af7ca6bd4369192b6a982fb970102371bf28ed8c082634698d1fe12",
+    "tests/test_locked_library_execution.py": "sha256:d46bd9969c25f14b3d042ae95ffc75866f953947ce99294dbe43cc96375faa3d",
+    "tests/test_rc6_input_metadata.py": "sha256:af143b19859a08c337dff4cec0c8d6fe47651bdab0b5d0e3a3208a769206af78",
+    "tests/test_nominal_registry_dependency_boundary.py": "sha256:7ef08c07c51ff66c68e8aa1c0a6019dd2d89f828b0e57746759b0aefb885423e",
+    "docs/STAGE2_NOMINAL_REGISTRY.md": "sha256:2b7ed3a780d939e1bb40a6ca86287b76a3c8bccf33c4bb32e4f1489cd3bfdffe"
+  },
+  "functional_files": [
+    "ast2python/artifacts/nominal_registry.py"
+  ],
+  "test_setup_migrations": [
+    {
+      "path": "tests/test_nominal_registry_admission.py",
+      "function_and_fixture_ASTs_unchanged_except_explicit_factory": true,
+      "parametrization_and_expected_assertions_unchanged": true
+    },
+    {
+      "path": "tests/test_nominal_registry_emission.py",
+      "function_and_fixture_ASTs_unchanged_except_explicit_factory": true,
+      "parametrization_and_expected_assertions_unchanged": true
+    },
+    {
+      "path": "tests/test_locked_library_execution.py",
+      "function_and_fixture_ASTs_unchanged_except_explicit_factory": true,
+      "parametrization_and_expected_assertions_unchanged": true
+    },
+    {
+      "path": "tests/test_rc6_input_metadata.py",
+      "function_and_fixture_ASTs_unchanged_except_explicit_factory": true,
+      "parametrization_and_expected_assertions_unchanged": true
+    }
+  ],
+  "new_test_count": 25,
+  "original_admission_tests": 61,
+  "original_emission_tests": 21,
+  "original_nominal_library_tests": 48,
+  "targeted_each_python": {
+    "passed": 155,
+    "failed": 0,
+    "skipped": 0
+  },
+  "initial_new_tests": {
+    "failed": 25,
+    "passed": 0
+  },
+  "architecture_policy_unchanged": true,
+  "compiler_runtime_imports": 0,
+  "factory": "required keyword admit_registry: NominalRegistryAdmission[T]; exact payload,pine_version,expected_source_hash; same owner T|None returned"
+}

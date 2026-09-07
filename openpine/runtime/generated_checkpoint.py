@@ -176,6 +176,7 @@ class GeneratedCheckpointMixin:
         candidate = RuntimeSession(
             previous.language,
             previous.policies,
+            nominal_registry=previous.nominal_registry,
             inputs=previous.inputs,
             instrument=previous.instrument,
             timeframe=previous.timeframe,
