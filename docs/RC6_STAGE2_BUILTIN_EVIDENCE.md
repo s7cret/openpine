@@ -106,3 +106,7 @@ or mixed-version imports. Stage 2 remains IN_PROGRESS.
 The preceding nominal branch cleanup is independently recorded in
 `verification/nominal-cleanup-receipt.json`; its release refs were unchanged.
 Original local outcomes are preserved in `verification/builtin-local-receipt.json`.
+The initial source audit and subsequent value-binding delta are preserved
+separately in `verification/builtin-source-review.json` and
+`verification/builtin-value-binding-review.json`. The CI generator review is
+`verification/builtin-ci-generation-review.json`.

@@ -1,0 +1,439 @@
+{
+  "schema_id": "openpine.builtin_value_audit_delta.v1",
+  "created_at_utc": "2026-09-07T20:12:14.422009+00:00",
+  "status": "FROZEN_DELTA_REVIEW",
+  "stage2_status": "in_progress",
+  "full_stage2_accepted": false,
+  "initial_publication_audit": {
+    "path": ".runtime/evidence/builtin-publication-audit.json",
+    "sha256": "sha256:77ff09378c032a5df0a4c882855d86ee415ef3fef5c128ac79c05aca2ebc9800",
+    "unchanged": true
+  },
+  "published_compiler_baseline_commit": "b9a065c5a3440c72f9d36e63991fc26b5856fd40",
+  "observed_local_head": "30512014a45db1be29def8fa8c83eb35b0d4b4c2",
+  "comparison_method": "Every path from the published baseline tree is read via git show and compared with the actual worktree using LF-normalized bytes, including paths untracked relative to the older local HEAD. Both raw and LF hashes are retained.",
+  "all_baseline_tree_paths_checked": 158,
+  "files": [
+    {
+      "path": "ast2python/lowering/__init__.py",
+      "category": "functional",
+      "baseline_blob_sha1": "ba55ff723d7387f8988b34afdacf5fc3fe8c13e2",
+      "baseline_sha256": "sha256:5691781b6f0f1f9929a7fd0bc893ef3daba2e761442400b40689dc12dc410282",
+      "worktree_sha256": "sha256:754e58d599835a083e5dbd66a51cc5656cff47867cb73e0fb8440a49f7d6c191",
+      "lf_normalized_sha256": "sha256:754e58d599835a083e5dbd66a51cc5656cff47867cb73e0fb8440a49f7d6c191",
+      "publication_blob_sha1": "947a8a3987f706cc353005ad7db45724ab14ce5a",
+      "lf_publication_blob_sha1": "947a8a3987f706cc353005ad7db45724ab14ce5a",
+      "byte_length": 1066
+    },
+    {
+      "path": "ast2python/lowering/binding_audit.py",
+      "category": "functional",
+      "baseline_blob_sha1": "8744093f1fe749f4dd871d6a7af873d782786bd2",
+      "baseline_sha256": "sha256:31fb3ddcc3368d8a03a4b1f645c97a4707e39503a96744e5a22e5e1a22a62232",
+      "worktree_sha256": "sha256:c05d8b21839a31b01c9009c9e7af97227427c904e0af004e144f999e3b69f8a1",
+      "lf_normalized_sha256": "sha256:c05d8b21839a31b01c9009c9e7af97227427c904e0af004e144f999e3b69f8a1",
+      "publication_blob_sha1": "cacc08f6fd9c1c8a860654751d5ac604979fccdd",
+      "lf_publication_blob_sha1": "cacc08f6fd9c1c8a860654751d5ac604979fccdd",
+      "byte_length": 9659
+    },
+    {
+      "path": "tests/test_binding_structure_audit.py",
+      "category": "new_tests",
+      "baseline_blob_sha1": "ae49edbfef35e18c91cb0be0f7539eb6a8cadeb1",
+      "baseline_sha256": "sha256:cc756f7688f62ddb850d5950146a6cab3a24fc6352dba0966e64bbcae248ab8f",
+      "worktree_sha256": "sha256:57f5a6bf166c1e0a0f58dfac4d29fbc958bd7a69906d6d2d6ed157ebe3b4d7d4",
+      "lf_normalized_sha256": "sha256:57f5a6bf166c1e0a0f58dfac4d29fbc958bd7a69906d6d2d6ed157ebe3b4d7d4",
+      "publication_blob_sha1": "56147eda5d9840a8422ed8b36d11e02ae65936b4",
+      "lf_publication_blob_sha1": "56147eda5d9840a8422ed8b36d11e02ae65936b4",
+      "byte_length": 9901
+    },
+    {
+      "path": "docs/STAGE2_BUILTIN_BINDINGS.md",
+      "category": "docs",
+      "baseline_blob_sha1": "f5c895bda33c481bd77c63383ab5a9b4a104a26f",
+      "baseline_sha256": "sha256:d5896954f93cec2e33264589e432553c16718948bf104db1321802d4afdf2d89",
+      "worktree_sha256": "sha256:c04f222c2184fd8a1a97586d34cf9cc538b26edb87070f24fce35a04d0521750",
+      "lf_normalized_sha256": "sha256:c04f222c2184fd8a1a97586d34cf9cc538b26edb87070f24fce35a04d0521750",
+      "publication_blob_sha1": "adcdee3608b2d745c19a2e47747daf2038ead465",
+      "lf_publication_blob_sha1": "adcdee3608b2d745c19a2e47747daf2038ead465",
+      "byte_length": 10247
+    }
+  ],
+  "proposed_commit_order": [
+    {
+      "category": "functional",
+      "files": [
+        "ast2python/lowering/__init__.py",
+        "ast2python/lowering/binding_audit.py"
+      ]
+    },
+    {
+      "category": "new_tests",
+      "files": [
+        "tests/test_binding_structure_audit.py"
+      ]
+    },
+    {
+      "category": "old_expected_or_input_corrections",
+      "files": []
+    },
+    {
+      "category": "docs",
+      "files": [
+        "docs/STAGE2_BUILTIN_BINDINGS.md"
+      ]
+    }
+  ],
+  "preexisting_definitions_ast_preserved": true,
+  "preexisting_test_definition_count": 12,
+  "preexisting_call_audit_ast_preserved": true,
+  "test_functions_added": [
+    "test_missing_or_unsupported_value_callable_cannot_be_certified",
+    "test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound",
+    "test_value_abi_keyword_identity_and_binding_kind_are_checked",
+    "test_value_delegation_requires_exact_host_identity_and_version",
+    "test_value_injections_do_not_inherit_general_call_injection_support",
+    "test_value_required_transaction_cannot_be_omitted_or_defaulted"
+  ],
+  "collection": {
+    "311": {
+      "path": ".runtime/evidence/builtin-value-delta-collect-py311.log",
+      "sha256": "sha256:23ecef2eba5160b6d7f7119a62f788f87c3849b5cb90e1cd84a3be1eb0de6414",
+      "count": 148,
+      "nodeids_sha256": "sha256:3249398b68b3b05ed849f02df7ce5a3d9adeacbcfe959b8dd65c9c6c7cd17d9b",
+      "exit_code": 0
+    },
+    "313": {
+      "path": ".runtime/evidence/builtin-value-delta-collect-py313.log",
+      "sha256": "sha256:9220774152b34e87c5190311137f6486e38258e96bb601ed385e503881242ee5",
+      "count": 148,
+      "nodeids_sha256": "sha256:3249398b68b3b05ed849f02df7ce5a3d9adeacbcfe959b8dd65c9c6c7cd17d9b",
+      "exit_code": 0
+    }
+  },
+  "python_nodeid_arrays_equal": true,
+  "original_builtin_new_nodeids_count": 122,
+  "original_builtin_new_nodeids_sha256": "sha256:16a77044ea62c1ac83913c30ba157c401b752576a2fa2e096657a90b1471a455",
+  "original_builtin_new_nodeids_preserved": true,
+  "delta_new_nodeids_count": 26,
+  "delta_new_nodeids_sha256": "sha256:af6b2f6c595de152d4b65c4933c1924d03467ff77119fbae8ab0ea55f324ed60",
+  "delta_new_nodeids": [
+    "tests/test_binding_structure_audit.py::test_missing_or_unsupported_value_callable_cannot_be_certified",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[1]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[2]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[3]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[4]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[5]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[6]",
+    "tests/test_binding_structure_audit.py::test_value_abi_keyword_identity_and_binding_kind_are_checked[duplicate]",
+    "tests/test_binding_structure_audit.py::test_value_abi_keyword_identity_and_binding_kind_are_checked[unknown_keyword]",
+    "tests/test_binding_structure_audit.py::test_value_abi_keyword_identity_and_binding_kind_are_checked[unknown_kind]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[1]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[2]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[3]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[4]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[5]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[6]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-COMPILED_REQUEST_EXPRESSION]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-REQUEST_TIMEFRAME_ARGUMENT]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-SEMANTIC_RETURN_TYPE]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-SOURCE_LOCATION_STATE_ID]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-SOURCE_SPAN]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[METHOD_RECEIVER-receiver]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[SOURCE_PARAMETER-x]",
+    "tests/test_binding_structure_audit.py::test_value_required_transaction_cannot_be_omitted_or_defaulted[mappings0]",
+    "tests/test_binding_structure_audit.py::test_value_required_transaction_cannot_be_omitted_or_defaulted[mappings1]",
+    "tests/test_binding_structure_audit.py::test_value_required_transaction_cannot_be_omitted_or_defaulted[mappings2]"
+  ],
+  "cumulative_builtin_compiler_new_nodeids": [
+    "tests/test_binding_structure_audit.py::test_absent_dynamic_source_signature_and_context_sensitive_rules_remain_unverified",
+    "tests/test_binding_structure_audit.py::test_exact_strategy_delegate_preserves_host_owned_validation[1]",
+    "tests/test_binding_structure_audit.py::test_exact_strategy_delegate_preserves_host_owned_validation[2]",
+    "tests/test_binding_structure_audit.py::test_exact_strategy_delegate_preserves_host_owned_validation[3]",
+    "tests/test_binding_structure_audit.py::test_exact_strategy_delegate_preserves_host_owned_validation[4]",
+    "tests/test_binding_structure_audit.py::test_exact_strategy_delegate_preserves_host_owned_validation[5]",
+    "tests/test_binding_structure_audit.py::test_exact_strategy_delegate_preserves_host_owned_validation[6]",
+    "tests/test_binding_structure_audit.py::test_extra_optional_source_mapping_and_explicit_abi_default_are_permitted",
+    "tests/test_binding_structure_audit.py::test_invalid_keyword_or_injection_mechanism_does_not_claim_a_binding[duplicate]",
+    "tests/test_binding_structure_audit.py::test_invalid_keyword_or_injection_mechanism_does_not_claim_a_binding[unknown]",
+    "tests/test_binding_structure_audit.py::test_invalid_keyword_or_injection_mechanism_does_not_claim_a_binding[unknown_abi]",
+    "tests/test_binding_structure_audit.py::test_invalid_keyword_or_injection_mechanism_does_not_claim_a_binding[unknown_injection]",
+    "tests/test_binding_structure_audit.py::test_method_receiver_is_injected_only_for_method_form",
+    "tests/test_binding_structure_audit.py::test_missing_or_unsupported_value_callable_cannot_be_certified",
+    "tests/test_binding_structure_audit.py::test_request_expression_and_exact_versioned_timeframe_use_existing_route[1]",
+    "tests/test_binding_structure_audit.py::test_request_expression_and_exact_versioned_timeframe_use_existing_route[2]",
+    "tests/test_binding_structure_audit.py::test_request_expression_and_exact_versioned_timeframe_use_existing_route[3]",
+    "tests/test_binding_structure_audit.py::test_request_expression_and_exact_versioned_timeframe_use_existing_route[4]",
+    "tests/test_binding_structure_audit.py::test_request_expression_and_exact_versioned_timeframe_use_existing_route[5]",
+    "tests/test_binding_structure_audit.py::test_request_expression_and_exact_versioned_timeframe_use_existing_route[6]",
+    "tests/test_binding_structure_audit.py::test_request_timeframe_and_expression_must_be_present_unambiguously",
+    "tests/test_binding_structure_audit.py::test_required_abi_argument_cannot_be_omitted_or_given_a_nonexistent_default",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[1]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[2]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[3]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[4]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[5]",
+    "tests/test_binding_structure_audit.py::test_runtime_value_transaction_and_zero_argument_constant_are_structurally_bound[6]",
+    "tests/test_binding_structure_audit.py::test_scalar_source_names_and_runtime_transaction_state_injections[1]",
+    "tests/test_binding_structure_audit.py::test_scalar_source_names_and_runtime_transaction_state_injections[2]",
+    "tests/test_binding_structure_audit.py::test_scalar_source_names_and_runtime_transaction_state_injections[3]",
+    "tests/test_binding_structure_audit.py::test_scalar_source_names_and_runtime_transaction_state_injections[4]",
+    "tests/test_binding_structure_audit.py::test_scalar_source_names_and_runtime_transaction_state_injections[5]",
+    "tests/test_binding_structure_audit.py::test_scalar_source_names_and_runtime_transaction_state_injections[6]",
+    "tests/test_binding_structure_audit.py::test_stale_source_name_and_missing_producer_argument_are_definite_failures",
+    "tests/test_binding_structure_audit.py::test_value_abi_keyword_identity_and_binding_kind_are_checked[duplicate]",
+    "tests/test_binding_structure_audit.py::test_value_abi_keyword_identity_and_binding_kind_are_checked[unknown_keyword]",
+    "tests/test_binding_structure_audit.py::test_value_abi_keyword_identity_and_binding_kind_are_checked[unknown_kind]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[1]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[2]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[3]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[4]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[5]",
+    "tests/test_binding_structure_audit.py::test_value_delegation_requires_exact_host_identity_and_version[6]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-COMPILED_REQUEST_EXPRESSION]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-REQUEST_TIMEFRAME_ARGUMENT]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-SEMANTIC_RETURN_TYPE]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-SOURCE_LOCATION_STATE_ID]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[INJECTED-SOURCE_SPAN]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[METHOD_RECEIVER-receiver]",
+    "tests/test_binding_structure_audit.py::test_value_injections_do_not_inherit_general_call_injection_support[SOURCE_PARAMETER-x]",
+    "tests/test_binding_structure_audit.py::test_value_required_transaction_cannot_be_omitted_or_defaulted[mappings0]",
+    "tests/test_binding_structure_audit.py::test_value_required_transaction_cannot_be_omitted_or_defaulted[mappings1]",
+    "tests/test_binding_structure_audit.py::test_value_required_transaction_cannot_be_omitted_or_defaulted[mappings2]",
+    "tests/test_builtin_binding_execution.py::test_abs_numeric_overloads_and_ceil_floor_exact_scalar_contracts[1]",
+    "tests/test_builtin_binding_execution.py::test_abs_numeric_overloads_and_ceil_floor_exact_scalar_contracts[2]",
+    "tests/test_builtin_binding_execution.py::test_abs_numeric_overloads_and_ceil_floor_exact_scalar_contracts[3]",
+    "tests/test_builtin_binding_execution.py::test_abs_numeric_overloads_and_ceil_floor_exact_scalar_contracts[4]",
+    "tests/test_builtin_binding_execution.py::test_abs_numeric_overloads_and_ceil_floor_exact_scalar_contracts[5]",
+    "tests/test_builtin_binding_execution.py::test_abs_numeric_overloads_and_ceil_floor_exact_scalar_contracts[6]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[sma-expected0-1]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[sma-expected0-2]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[sma-expected0-3]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[sma-expected0-4]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[sma-expected0-5]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[sma-expected0-6]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[wma-expected1-1]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[wma-expected1-2]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[wma-expected1-3]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[wma-expected1-4]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[wma-expected1-5]",
+    "tests/test_builtin_binding_execution.py::test_audited_moving_average_aliases_and_udf_state[wma-expected1-6]",
+    "tests/test_builtin_binding_execution.py::test_audited_sqrt_pow_aliases_use_exact_named_parameters[1]",
+    "tests/test_builtin_binding_execution.py::test_audited_sqrt_pow_aliases_use_exact_named_parameters[2]",
+    "tests/test_builtin_binding_execution.py::test_audited_sqrt_pow_aliases_use_exact_named_parameters[3]",
+    "tests/test_builtin_binding_execution.py::test_audited_sqrt_pow_aliases_use_exact_named_parameters[4]",
+    "tests/test_builtin_binding_execution.py::test_audited_sqrt_pow_aliases_use_exact_named_parameters[5]",
+    "tests/test_builtin_binding_execution.py::test_audited_sqrt_pow_aliases_use_exact_named_parameters[6]",
+    "tests/test_builtin_binding_execution.py::test_builtin_wrong_named_parameter_is_rejected_by_producer[1]",
+    "tests/test_builtin_binding_execution.py::test_builtin_wrong_named_parameter_is_rejected_by_producer[2]",
+    "tests/test_builtin_binding_execution.py::test_builtin_wrong_named_parameter_is_rejected_by_producer[3]",
+    "tests/test_builtin_binding_execution.py::test_builtin_wrong_named_parameter_is_rejected_by_producer[4]",
+    "tests/test_builtin_binding_execution.py::test_builtin_wrong_named_parameter_is_rejected_by_producer[5]",
+    "tests/test_builtin_binding_execution.py::test_builtin_wrong_named_parameter_is_rejected_by_producer[6]",
+    "tests/test_builtin_binding_execution.py::test_early_macd_executes_without_unavailable_tuple_declaration[1]",
+    "tests/test_builtin_binding_execution.py::test_early_macd_executes_without_unavailable_tuple_declaration[2]",
+    "tests/test_builtin_binding_execution.py::test_early_round_integer_ties_and_unavailable_precision[1]",
+    "tests/test_builtin_binding_execution.py::test_early_round_integer_ties_and_unavailable_precision[2]",
+    "tests/test_builtin_binding_execution.py::test_early_round_integer_ties_and_unavailable_precision[3]",
+    "tests/test_builtin_binding_execution.py::test_exp_and_round_propagate_typed_na[1]",
+    "tests/test_builtin_binding_execution.py::test_exp_and_round_propagate_typed_na[2]",
+    "tests/test_builtin_binding_execution.py::test_exp_and_round_propagate_typed_na[3]",
+    "tests/test_builtin_binding_execution.py::test_exp_and_round_propagate_typed_na[4]",
+    "tests/test_builtin_binding_execution.py::test_exp_and_round_propagate_typed_na[5]",
+    "tests/test_builtin_binding_execution.py::test_exp_and_round_propagate_typed_na[6]",
+    "tests/test_builtin_binding_execution.py::test_exp_exact_named_parameter_and_udf_path[1]",
+    "tests/test_builtin_binding_execution.py::test_exp_exact_named_parameter_and_udf_path[2]",
+    "tests/test_builtin_binding_execution.py::test_exp_exact_named_parameter_and_udf_path[3]",
+    "tests/test_builtin_binding_execution.py::test_exp_exact_named_parameter_and_udf_path[4]",
+    "tests/test_builtin_binding_execution.py::test_exp_exact_named_parameter_and_udf_path[5]",
+    "tests/test_builtin_binding_execution.py::test_exp_exact_named_parameter_and_udf_path[6]",
+    "tests/test_builtin_binding_execution.py::test_legacy_ratio_rsi_keeps_its_distinct_unsupported_binding[1]",
+    "tests/test_builtin_binding_execution.py::test_legacy_ratio_rsi_keeps_its_distinct_unsupported_binding[2]",
+    "tests/test_builtin_binding_execution.py::test_legacy_ratio_rsi_keeps_its_distinct_unsupported_binding[3]",
+    "tests/test_builtin_binding_execution.py::test_legacy_ratio_rsi_keeps_its_distinct_unsupported_binding[4]",
+    "tests/test_builtin_binding_execution.py::test_macd_three_results_exact_length_binding_and_udf_path[3]",
+    "tests/test_builtin_binding_execution.py::test_macd_three_results_exact_length_binding_and_udf_path[4]",
+    "tests/test_builtin_binding_execution.py::test_macd_three_results_exact_length_binding_and_udf_path[5]",
+    "tests/test_builtin_binding_execution.py::test_macd_three_results_exact_length_binding_and_udf_path[6]",
+    "tests/test_builtin_binding_execution.py::test_round_ties_and_precision_have_distinct_return_types[4]",
+    "tests/test_builtin_binding_execution.py::test_round_ties_and_precision_have_distinct_return_types[5]",
+    "tests/test_builtin_binding_execution.py::test_round_ties_and_precision_have_distinct_return_types[6]",
+    "tests/test_builtin_binding_execution.py::test_rsi_callback_rollback_does_not_double_advance_the_rma[ORDER_FILL_RECALC-4]",
+    "tests/test_builtin_binding_execution.py::test_rsi_callback_rollback_does_not_double_advance_the_rma[ORDER_FILL_RECALC-6]",
+    "tests/test_builtin_binding_execution.py::test_rsi_callback_rollback_does_not_double_advance_the_rma[REALTIME_TICK-4]",
+    "tests/test_builtin_binding_execution.py::test_rsi_callback_rollback_does_not_double_advance_the_rma[REALTIME_TICK-6]",
+    "tests/test_builtin_binding_execution.py::test_rsi_dynamic_length_and_removed_ratio_are_rejected[5]",
+    "tests/test_builtin_binding_execution.py::test_rsi_dynamic_length_and_removed_ratio_are_rejected[6]",
+    "tests/test_builtin_binding_execution.py::test_rsi_rma_seed_and_independent_udf_callsites[1]",
+    "tests/test_builtin_binding_execution.py::test_rsi_rma_seed_and_independent_udf_callsites[2]",
+    "tests/test_builtin_binding_execution.py::test_rsi_rma_seed_and_independent_udf_callsites[3]",
+    "tests/test_builtin_binding_execution.py::test_rsi_rma_seed_and_independent_udf_callsites[4]",
+    "tests/test_builtin_binding_execution.py::test_rsi_rma_seed_and_independent_udf_callsites[5]",
+    "tests/test_builtin_binding_execution.py::test_rsi_rma_seed_and_independent_udf_callsites[6]",
+    "tests/test_builtin_binding_execution.py::test_v1_user_function_syntax_is_unavailable",
+    "tests/test_historical_target_bindings.py::test_canonical_symbols_keep_distinct_source_parameters_and_call_forms",
+    "tests/test_historical_target_bindings.py::test_conflicting_historical_projection_does_not_merge_versions_or_parameters",
+    "tests/test_historical_target_bindings.py::test_explicit_producer_call_forms_are_validated[FUNCTION]",
+    "tests/test_historical_target_bindings.py::test_explicit_producer_call_forms_are_validated[None]",
+    "tests/test_historical_target_bindings.py::test_explicit_producer_call_forms_are_validated[forms1]",
+    "tests/test_historical_target_bindings.py::test_explicit_producer_call_forms_are_validated[forms3]",
+    "tests/test_historical_target_bindings.py::test_explicit_producer_call_forms_are_validated[forms4]",
+    "tests/test_historical_target_bindings.py::test_explicit_producer_call_forms_are_validated[forms5]",
+    "tests/test_historical_target_bindings.py::test_explicit_producer_call_forms_are_validated[forms6]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[call_form-namespace_function]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[disposition-TARGET_DELEGATED]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[producer_call_forms-value0]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[producer_overload_ids-value1]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[producer_overload_ids-value2]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[source_symbol_ids-value3]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[version_availability-value4]",
+    "tests/test_historical_target_bindings.py::test_historical_row_requires_exact_audited_producer_contract[version_availability-value5]",
+    "tests/test_historical_target_bindings.py::test_malformed_historical_table_fails_closed[FUNCTION]",
+    "tests/test_historical_target_bindings.py::test_malformed_historical_table_fails_closed[None]",
+    "tests/test_historical_target_bindings.py::test_malformed_historical_table_fails_closed[value1]",
+    "tests/test_historical_target_bindings.py::test_missing_historical_table_is_not_synthesized_from_modern_rows",
+    "tests/test_historical_target_bindings.py::test_modern_namespace_projection_cannot_silently_replace_historical_parameter_map",
+    "tests/test_historical_target_bindings.py::test_unbound_abi_parameter_remains_a_compilation_error"
+  ],
+  "cumulative_builtin_compiler_new_count": 148,
+  "nominal_compiler_baseline_count": 684,
+  "proposed_compiler_total_count": 832,
+  "proposed_compiler_total_nodeids_sha256": "sha256:897f9c4be2098db2fb8eccc63b6d1d4bc5f9fc86341d11ca70faa23369e23bdd",
+  "removed_nodeids": [],
+  "added_skip_or_xfail": [],
+  "changed_files_outside_reviewed_delta": [],
+  "unchanged_frozen_sibling_candidates": {
+    "pine2ast": {
+      "initial_candidate_files_verified": [
+        "catalog_reports/migration_report.json",
+        "catalog_source/deltas/v1.jsonl",
+        "catalog_source/deltas/v4.jsonl",
+        "catalog_source/deltas/v5.jsonl",
+        "catalog_source/semantics.jsonl",
+        "pine2ast/catalog_data/packs/pine_v1.pack.json",
+        "pine2ast/catalog_data/packs/pine_v2.pack.json",
+        "pine2ast/catalog_data/packs/pine_v3.pack.json",
+        "pine2ast/catalog_data/packs/pine_v4.pack.json",
+        "pine2ast/catalog_data/packs/pine_v5.pack.json",
+        "pine2ast/catalog_data/packs/pine_v6.pack.json",
+        "pine2ast/semantic/binder.py",
+        "pine2ast/semantic/inference.py",
+        "pine2ast/semantic/signatures.py",
+        "pine2ast/semantic/type_infer.py",
+        "tools/catalog/build_catalog.py",
+        "tests/test_scalar_signature_contract.py",
+        "tests/test_generic_collection_fact_identity.py",
+        "tests/test_nz_return_rule.py",
+        "docs/STAGE2_SCALAR_SIGNATURE_REVIEW.md",
+        "docs/stage2_scalar_signature_baseline.json"
+      ],
+      "all_initial_hashes_unchanged": true
+    },
+    "pinelib": {
+      "initial_candidate_files_verified": [
+        "pinelib/abi/catalog.py",
+        "pinelib/abi/manifest_v2_builder.py",
+        "pinelib/abi/math.py",
+        "pinelib/abi/primitives.py",
+        "pinelib/abi/target_manifest.json",
+        "pinelib/builtins/math.py",
+        "pinelib/core/__init__.py",
+        "pinelib/core/values.py",
+        "tests/test_audited_unary_math_bindings.py",
+        "tests/test_builtin_numeric_contracts.py",
+        "tests/test_builtin_stateful_oracles.py",
+        "tests/test_float_cast_abi.py",
+        "tests/test_stage3_math_string_time_input.py",
+        "docs/STAGE2_BUILTIN_BINDINGS.md"
+      ],
+      "all_initial_hashes_unchanged": true
+    }
+  },
+  "excluded_next_wave_runtime_files": [
+    "pinelib/reference/registry.py",
+    "tests/test_nominal_registry.py"
+  ],
+  "runtime_published_baseline": {
+    "commit": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+    "proposed_test_count": 591,
+    "content_hash": "sha256:739bcc3e7167e49ecbb1f37c76b4fdb4763fad724364ba9ab1cebc989e17d9aa"
+  },
+  "validation_receipts": {
+    "311": {
+      "compiler_value_suite": {
+        "path": ".runtime/stack/ast2python/.pytest_cache/value-binding-audit-py311.xml",
+        "sha256": "sha256:513f404976a7ed55847d37e140e66ff02202f9c33c2bc8828406267f2dcd805c",
+        "counts": {
+          "tests": 54,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "seconds": 14.061
+      },
+      "host_integration_suite": {
+        "path": ".runtime/evidence/builtin-capabilities-final-value-py311.xml",
+        "sha256": "sha256:0eeec7f728c9d38dff2b0c1b55837fbca9331fdf391ce0b8eaa552e44e1c0839",
+        "counts": {
+          "tests": 27,
+          "failures": 0,
+          "errors": 13,
+          "skipped": 0
+        },
+        "status": "NOT_GREEN_WINDOWS_FCNTL_IMPORT_ERRORS",
+        "passed": 14
+      }
+    },
+    "313": {
+      "compiler_value_suite": {
+        "path": ".runtime/stack/ast2python/.pytest_cache/value-binding-audit-py313.xml",
+        "sha256": "sha256:bd718b55d4bd890e31b27cc605b1eed6ad276e44d8f212c83e15049870459c81",
+        "counts": {
+          "tests": 54,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "seconds": 13.239
+      },
+      "host_integration_suite": {
+        "path": ".runtime/evidence/builtin-capabilities-final-value-py313.xml",
+        "sha256": "sha256:1f9dc73d41a1138279914c678a481121935238e1b15a83504e4307010403e497",
+        "counts": {
+          "tests": 27,
+          "failures": 0,
+          "errors": 13,
+          "skipped": 0
+        },
+        "status": "NOT_GREEN_WINDOWS_FCNTL_IMPORT_ERRORS",
+        "passed": 14
+      }
+    }
+  },
+  "global_candidate_count_arithmetic": {
+    "nominal": 5842,
+    "pine2ast_new": 372,
+    "pinelib_new": 108,
+    "ast2python_new_including_delta": 148,
+    "host_new_reported_by_root": 275,
+    "expected_total": 6745,
+    "status": "ARITHMETIC_ONLY_LINUX_COLLECTION_REQUIRED"
+  },
+  "findings": [
+    {
+      "id": "EXACT_NARROW_VALUE_INJECTION_CONTRACT",
+      "detail": "General call SOURCE_SPAN injection cannot certify a value. The new value API permits only RUNTIME_TRANSACTION injection; existing emitter and call-audit AST are unchanged."
+    },
+    {
+      "id": "APPEND_ONLY_PREEXISTING_TEST_DEFINITIONS",
+      "detail": "All 12 original top-level definitions (including decorators and assertions) in the changed test file are AST-identical; six new parametrized test functions add 26 nodeids. No previous nodeid was removed."
+    },
+    {
+      "id": "NO_STAGE2_ACCEPTANCE",
+      "detail": "Structural binding validation is not a runtime numerical oracle. Full Linux candidate inventory and execution remain unverified in this receipt."
+    }
+  ],
+  "linux_proposal_run_id": null,
+  "linux_proposal_review_status": "AWAITING_RUN_ARTIFACTS",
+  "audit_body_sha256": "sha256:34436bf3afd5b36601efc69fa5a424da5b78e223d19ba8eaae103c4779d5dc55"
+}

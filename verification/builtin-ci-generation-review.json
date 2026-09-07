@@ -1,0 +1,66 @@
+{
+  "schema_id": "openpine.builtin_ci_generation_audit.v1",
+  "status": "GENERATOR_STRUCTURAL_CHECKS_PASSED",
+  "candidate_fixture": "ffffffffffffffffffffffffffffffffffffffff",
+  "fixture_is_runnable_candidate": false,
+  "baseline_host_sha": "6b3ac81b46575d2bc105cfda334348b1a62387c7",
+  "baseline_count": 5842,
+  "proposal_python_versions": [
+    "3.11",
+    "3.13"
+  ],
+  "proposal_timeout_minutes": 35,
+  "verify_timeout_minutes": 40,
+  "frontend_timeout_minutes": 15,
+  "permanent_run_steps": {
+    "verify": {
+      "permanent_run_step_count": 7,
+      "copied_run_step_count": 7,
+      "all_run_step_objects_equal": true,
+      "job_settings_except_steps_equal": true,
+      "run_steps_sha256": "sha256:38fd4073f2227373c8a9c44e3214895800479702c25d96aacf07723196c7aad0"
+    },
+    "frontend": {
+      "permanent_run_step_count": 4,
+      "copied_run_step_count": 4,
+      "all_run_step_objects_equal": true,
+      "job_settings_except_steps_equal": true,
+      "run_steps_sha256": "sha256:87b272b921e97edca3daa58e708b99a495b5901450d08762e17dc68cb9613682"
+    }
+  },
+  "negative_checks": [
+    "removed baseline nodeids reported",
+    "increased deselections reported",
+    "baseline identity drift reported",
+    "missing reviewed inventory rejected",
+    "non-exact SHA rejected"
+  ],
+  "preserved_controls": [
+    "real AppArmor/Bubblewrap and worker identity steps",
+    "all eight full inventory-gated suites",
+    "Stage1 architecture/capability/frozen conformance",
+    "distribution builds and source hygiene",
+    "frontend tests/build/node tests and backend source equality",
+    "always artifact upload",
+    "contents read permissions"
+  ],
+  "inputs": [
+    {
+      "path": ".runtime/ci-tools/generate_nominal_ci.py",
+      "sha256": "sha256:1d4484f2e8f6e87f86c65b3d7754feb42c9a4af9cab49f9da094d2d27321ad59"
+    },
+    {
+      "path": ".runtime/ci-tools/collect_inventory.py",
+      "sha256": "sha256:2e3424d239b8bcdab11374be92e5030c33fedd0deae53ca1062062c064615a27"
+    },
+    {
+      "path": ".github/workflows/rc6-native.yml",
+      "sha256": "sha256:6b660b7526687d58b520e337956deff8b1c7b5e2356c41fa6236c22997851a8d"
+    },
+    {
+      "path": "verification/inventory.json",
+      "sha256": "sha256:c41729763baba34a43fa17c1d945a83a7a3a867aef5e126f18ebc1d3718ee278"
+    }
+  ],
+  "note": "This checks generator objects only. No workflow is published or executed; proposal run artifacts still require independent dual-Python nodeid review. Old .yml.in and nominal-ci.yml files are prior generated artifacts; final verify must be regenerated from the current permanent workflow and exact candidate."
+}
