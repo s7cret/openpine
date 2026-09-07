@@ -1,0 +1,3 @@
+//@version=1
+study("scalar expected")
+plot(na(close) ? 1 : 0)

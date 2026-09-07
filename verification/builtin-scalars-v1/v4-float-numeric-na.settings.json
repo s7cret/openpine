@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.primitives.float_v1","abi_injections":[],"abi_result_type":"float","arguments":[{"$na":true}],"declared_binding":["pine:function:float","pine:function:float#canonical","FUNCTION"],"source_name":"v4-float-numeric-na.pine","spelling":"float","stateful":false}

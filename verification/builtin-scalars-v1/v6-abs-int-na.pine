@@ -1,0 +1,4 @@
+//@version=6
+indicator("scalar expected")
+int sample = na
+plot(math.abs(sample))

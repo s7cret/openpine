@@ -1,0 +1,3 @@
+//@version=4
+study("scalar expected")
+plot(ceil(close))

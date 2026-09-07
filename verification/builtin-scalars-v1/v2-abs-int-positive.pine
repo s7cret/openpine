@@ -1,0 +1,3 @@
+//@version=2
+study("scalar expected")
+plot(abs(7))

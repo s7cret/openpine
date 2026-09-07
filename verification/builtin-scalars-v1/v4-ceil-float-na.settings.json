@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.ceil_v1","abi_injections":[],"abi_result_type":"int","arguments":[{"$na":true}],"declared_binding":["pine:function:math.ceil","pine:function:math.ceil#canonical","FUNCTION"],"source_name":"v4-ceil-float-na.pine","spelling":"ceil","stateful":false}
