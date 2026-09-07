@@ -22,7 +22,9 @@
     "rc6_tests/test_rc6_locked_library_imports.py",
     "docs/RC6_STAGE2_REFERENCE_LOOP_VALUES.md",
     "rc6_tests/test_rc6_reference_loop_values.py",
-    "docs/RC6_STAGE2_VALUES_PUBLICATION.md"
+    "docs/RC6_STAGE2_VALUES_PUBLICATION.md",
+    "docs/RC6_STAGE2_NOMINAL_TYPES.md",
+    "rc6_tests/test_rc6_nominal_types.py"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -52,6 +54,23 @@
     "cross_version_imports": "not_accepted",
     "ui_registry": "not_implemented",
     "automatic_projected_diagnostics": "projection_map_available_not_fully_integrated"
+  },
+  "nominal_language": {
+    "status": "published_candidate_pending_joint_linux_ci",
+    "baseline": "668d009a5754fac138431a83dfc7eb83f73f408e",
+    "baseline_ci_run": 34147625999,
+    "implemented": [
+      "udt_enum_nominal_types_and_receiver_typed_methods",
+      "typed_udt_fields_copy_reference_history_and_checkpoint",
+      "per_field_varip_rollback_and_retained_allocation_retry",
+      "locked_same_version_udt_enum_exports_and_transitive_type_identity",
+      "once_historical_fill_rollback_matrix"
+    ],
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "inventory_rebaseline": "pending_exact_linux_baseline_superset_review",
+    "joint_ci": "pending",
+    "receipt": "docs/RC6_STAGE2_NOMINAL_TYPES.md"
   },
   "reference_loop_values": {
     "status": "published_and_joint_verified",
