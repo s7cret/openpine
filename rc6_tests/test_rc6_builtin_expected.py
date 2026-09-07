@@ -14,7 +14,7 @@ import pytest
 from ast2python import compile_consumer_bundle
 from ast2python.lowering import load_pinelib_target_manifest
 from pine2ast.hardening.consumer_bundle import build_consumer_bundle
-from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession, is_na
+from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession, is_na, na
 from pinelib.input import InputRegistry
 from pinelib.runtime.metadata import BarValues
 from pinelib.state.checkpoint import from_portable
@@ -50,18 +50,37 @@ def _session(version, metadata):
 
 
 @lru_cache(maxsize=None)
-def _prepare_case(case_id):
+def _case_manifest(corpus_path):
+    # All files are checked before the corpus's first execution. Final evidence
+    # reports revalidate the whole lock, as for the original fixed corpus.
+    return MANIFEST if corpus_path == CORPUS else load_corpus(corpus_path)
+
+
+def _fixture_argument(value, close):
+    # The engineering corpus uses its own visible NA marker. Convert that
+    # exact fixture token to PineLib's canonical value at the runner boundary;
+    # it is not the runtime checkpoint transport ({"$pine": "na"}).
+    if type(value) is dict and set(value) == {"$na"} and value["$na"] is True:
+        return na
+    return close if value == "close" else from_portable(value)
+
+
+@lru_cache(maxsize=None)
+def _prepare_case(case_id, corpus_path=CORPUS):
     # One immutable compiled artifact is reused across five independent sessions.
     # This also detects accidental generated-class state leaking between paths.
-    case = next(row for row in MANIFEST["cases"] if row["id"] == case_id)
-    source = (CORPUS.parent / case["source"]["path"]).read_text()
-    settings = read_json(CORPUS.parent / case["settings"]["path"])
-    closes = read_json(CORPUS.parent / case["data"]["path"])
+    manifest = _case_manifest(corpus_path)
+    case = next(row for row in manifest["cases"] if row["id"] == case_id)
+    source = (corpus_path.parent / case["source"]["path"]).read_text()
+    settings = read_json(corpus_path.parent / case["settings"]["path"])
+    closes = read_json(corpus_path.parent / case["data"]["path"])
     bundle = build_consumer_bundle(
         source, source_name=settings["source_name"], producer_commit="1" * 40
     )
     call = next(c for c in bundle["semantic_facts"]["calls"] if c["callee"] == settings["spelling"])
     key = (call["symbol_id"], call["overload_id"], call["call_form"])
+    if "declared_binding" in settings:
+        assert list(key) == settings["declared_binding"]
     target = load_pinelib_target_manifest()
     binding = target.call_bindings[key]
     assert case["pine_version"] in binding.supported_pine_versions
@@ -75,8 +94,10 @@ def _prepare_case(case_id):
     return settings, closes, bundle, key, target, namespace, metadata
 
 
-def execute_case(case, path):
-    settings, closes, bundle, key, target, namespace, metadata = _prepare_case(case["id"])
+def execute_case(case, path, *, corpus_path=CORPUS):
+    settings, closes, bundle, key, target, namespace, metadata = _prepare_case(
+        case["id"], corpus_path
+    )
     runtime = _session(case["pine_version"], metadata)
     module, name = settings["abi_callable"].rsplit(".", 1)
     function = getattr(import_module(module), name)
@@ -100,12 +121,24 @@ def execute_case(case, path):
         )
         sequence += 1
         if path == "abi":
-            args = [close if value == "close" else value for value in settings["arguments"]]
-            value = (
-                function(tx, "independent-builtin", *args)
-                if settings["stateful"]
-                else function(*args)
+            arguments = (
+                settings["arguments_by_bar"][bar]
+                if "arguments_by_bar" in settings else settings["arguments"]
             )
+            args = [_fixture_argument(value, close) for value in arguments]
+            injections = settings.get(
+                "abi_injections", ["TX", "STATE_KEY"] if settings["stateful"] else []
+            )
+            assert all(item in {"TX", "STATE_KEY"} for item in injections)
+            injected = {"TX": tx, "STATE_KEY": "independent-builtin"}
+            value = function(*(injected[item] for item in injections), *args)
+            if "abi_result_type" in settings and not is_na(value):
+                assert type(value) is {"int": int, "float": float, "bool": bool}[
+                    settings["abi_result_type"]
+                ]
+            if settings.get("result_projection") == "bool_to_01":
+                assert type(value) is bool
+                value = 1 if value is True else 0
         else:
             namespace["GeneratedScript"](tx).run()
             value = from_portable(runtime.visuals.working[-1].payload["series"])
