@@ -1,82 +1,19 @@
-# Local Stage 2 continuation — 2026-09-07
+# OpenPine RC6 — прогресс на 2026-09-07
 
-**Not published; protected CI acceptance pending.** The locked-import block is
-recorded in [RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md](RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md).
-It adds same-version scalar library linking and explicit dependency identities;
-it does not complete Stage 2 or OP-31. The local inventory is 30 partial, five
-unverified and one accepted whole-task scope. Older publication/CI statements
-below apply to their named source revisions, not this local candidate.
+## Этап 2: импорты и ссылочно-цикловой блок опубликованы
 
----
+Архив импортов больше не локальный: исходный `79c89ea4e79f9925b4c7e3e9085f02eff0492492` опубликован, затем интегрирован `8607d23871cdcb79bf7470616970646645448290` с деревом `96eecddb8d9904601e49b8918cc46e03fda8012d`. Согласованные библиотеки закреплены в RC6_LIFECYCLE_SOURCES.json.
 
-# RC6 progress — 2026-09-06
+[Отчёт публикации](RC6_STAGE2_VALUES_PUBLICATION.md): совместный run 34106372808, 5329 успешных случаев на Python 3.11 и 3.13, 152 Vitest и 22 Node, реальные защищённые worker, сборки и API-проверки. Ноль failures/errors/skips в выполненных наборах. Скачанные XML, inventories, исходники и агрегированные отчёты проверены отдельно. Пять live-network случаев Provider исключены явно; OpenPine — native и закреплённая affected-path выборка. Инфраструктурные тесты и 37 проверок реестра не считаются внешним Pine oracle. Корпус этапа 1 не изменён, 12/12; tradingview_verified=false.
 
-## Stage 1 of the eight-stage plan: accepted architecture foundation
+Реализованы сохраняемые массивы в UDF, типизированные параметры и история ссылок, идентичности конструкторов по каждому вызову, значения for/while/array-for-in с break/continue и кортежами, общий бюджет вложенных циклов, scalar/array-экспорты закреплённых библиотек и проверяемое восстановление состояния. Второй интерпретатор или брокер не добавлены.
 
-Tested OpenPine source: `ecf6f196f2845f7ccf5ca5e24e8abaa28d267560`.
-Ast2Python: `25797f6484d3cbdbd47963db79fd235aae9d26d8`.
-Joint verification and successful publication: `34062106441`.
+**Весь этап 2 остаётся in_progress.** Исходные критерии не сокращены: полный версионный каталог и независимые builtin-ожидания, оставшиеся UDT/generic/method/enum/reference формы, varip-коллекции, map/matrix iteration, остальные импорты и once fill-recalculation требуют приёмки. Точные границы — verification/stage2-progress.json. Unsupported или успешный частичный корпус не являются реализацией отсутствующих возможностей.
 
-[Stage 1 publication receipt](RC6_STAGE1_PUBLICATION.md) records observed acceptance
-of five infrastructure criteria: immutable admission configuration, installed
-capability graph and required-call checks, component ownership, a frozen manual
-conformance corpus, and exact mandatory test inventories. The retained permanent
-CI executes and aggregates these gates; it does not substitute a report for tests.
+Публикация выполнена без force push после успешных verify/frontend jobs. Ограничение токена Actions на workflow разрешено через подключённый API без изменения прав аккаунта. Повтор publication-job сохранил maintenance tip тегом и удалил только временную ветку. Остались четыре целевые ветки; main и исторические релизы не менялись. Девять ключевых host runtime-файлов и UI-дерево сохранены байт в байт. Этот progress/receipt commit меняет только документацию; новый полный прогон ему не приписывается.
 
-Both Python 3.11/3.13 ran **4,789 cases with no failures, errors or skips** in the
-selected inventories. This count includes 37 existing accounting checks and new
-infrastructure tests; it is not a TradingView conformance count. Six library suites
-are complete, the provider excludes five live-network cases explicitly, and
-OpenPine uses native plus selected regressions. Two new protected-worker tests,
-152 Vitest cases, 22 Node cases, actual frontend build/API checks and host
-wheel/sdist builds passed. The first run's new bulk-test representation error was
-fixed without changing assertions, expected traces or the locked inventory.
+## Сохранённые основания
 
-Architecture and corpus reports match between interpreters. The corpus has 12/12
-manual expected cases; tradingview_verified remains false. Each execution-mode
-capability graph has 8,134 installed-catalog version decisions: 949 BOUND, 5,699
-UNAVAILABLE and 1,486 UNVERIFIED, not a percentage of official Pine support.
-Missing required runtime primitives can no longer inherit executable reference
-fallbacks. Known legacy upstream config provenance is explicitly unresolved.
+[Языковое ядро](RC6_STAGE2_PUBLICATION.md), [архитектурный этап 1](RC6_STAGE1_PUBLICATION.md), исходные OP-номера и checksum ТЗ в RC6_REVIEW_36.json и verification/stages.json остаются нормативной базой. Новые доказательства отменяют лишь прежние отметки о локальной непубликованной поставке, не оставшиеся критерии.
 
-[Architecture contract](RC6_STAGE1_ARCHITECTURE.md) and `verification/stages.json`
-preserve the complete original OP mapping and exact specification checksum.
-The stage is accepted as a foundation, not full acceptance of OP-03/12/15/32/35.
-The next principal stage is the complete agreed language block, not additional
-isolated trading features. This progress/receipt commit changes documentation only;
-new CI results after it are not assumed.
-
-## Previous verified entry-risk integration
-
-Tested OpenPine source: `17c65b7a5c0d1dd9dcb76105f7ba6a7428bb4b09`.
-Engine: `f7d286c2309ef8f8679c37cf5ba730414c13e575`.
-Pine2AST: `2a6f16d20d8d9beba49dcede62dc0c5607e9d92c`.
-
-[Publication receipt](RC6_ENTRY_RISK_PUBLICATION.md) records five original commits,
-actual joint run `34055095961`, source identities, archive digests and successful
-publication retry. Independently parsed JUnit: 4,690 functional cases plus 37
-accounting checks per Python 3.11/3.13. Historical counts overlap with Stage 1 and
-must not be added. Existing risk, metadata, trailing and per-fill exit semantics
-were not reimplemented by the architecture work.
-
-## All 36 tasks and preserved work
-
-[RC6_REVIEW_36.md](RC6_REVIEW_36.md) and [RC6_REVIEW_36.json](RC6_REVIEW_36.json)
-retain the original specification IDs and headings. Whole-task statuses remain
-29 partial, six unverified and one accepted (OpenPine branch consolidation).
-`verification/stages.json` adds eight delivery stages without erasing unresolved
-criteria or presenting local engineering fixtures as external TradingView evidence.
-
-Seven important host request/transport/checkpoint/capability/marketdata/strategy-host/
-optimizer files and the UI tree are byte-identical to the Stage 1 baseline. Only
-the Ast2Python sibling pin changed. Main and historical releases are unchanged;
-publication archived and removed its temporary branch. Use coordinated
-[source pins](RC6_LIFECYCLE_SOURCES.json), not identical version strings.
-
-## Remaining cross-stage acceptance
-
-Full upstream configuration provenance, complete versioned language/API conformance,
-data discovery and unsupported request contexts, full broker/IPC/worker restart,
-remaining broker semantics, cache/performance measurements, browser UX, external
-oracle coverage and immutable wheel-only delivery remain open. These are assigned
-to the remaining seven stages. No full 36-task closure or speedup is claimed.
+Архив содержит исходники и доказательства, не автономный production-установщик. Обновлять следует согласованный набор и перекомпилировать артефакты. Полное восстановление задания, данные, остальная брокерная семантика, измеренная производительность, продуктовый UX и immutable release относятся к следующим этапам. Полная приёмка 36 задач, TradingView 1:1 и ускорение всего бэктеста не заявляются.

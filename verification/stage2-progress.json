@@ -4,21 +4,12 @@
   "status": "in_progress",
   "baseline": "c6ce8e41b49769605ef965825cef6c66317dcac4",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
-  "tasks": [
-    "OP-02",
-    "OP-13",
-    "OP-14",
-    "OP-16",
-    "OP-17",
-    "OP-18",
-    "OP-19",
-    "OP-31"
-  ],
-  "implemented_block": "published_locked_imports_plus_reference_bindings_and_loop_values",
+  "tasks": ["OP-02", "OP-13", "OP-14", "OP-16", "OP-17", "OP-18", "OP-19", "OP-31"],
+  "implemented_block": "scalar_control_core_locked_scalar_array_imports_typed_reference_and_loop_values",
   "criteria": {
-    "versioned_catalog": "partial_once_overlay_not_full_catalog",
-    "stateful_language_matrix": "partial_scalar_and_array_reference_loop_value_subset",
-    "imports": "partial_locked_same_version_scalar_and_array_profiles",
+    "versioned_catalog": "partial_explicit_version_bindings_not_full_catalog",
+    "stateful_language_matrix": "partial_scalar_array_control_reference_history_and_checkpoint",
+    "imports": "partial_published_offline_same_version_scalar_array_functions",
     "independent_builtin_expected": "not_accepted"
   },
   "evidence_paths": [
@@ -27,72 +18,59 @@
     "verification/inventory.json",
     "docs/RC6_STAGE2_PUBLICATION.md",
     "rc6_tests/test_rc6_canonical_na_admission.py",
-    "rc6_tests/test_rc6_library_imports.py",
     "docs/RC6_STAGE2_LOCKED_IMPORTS.md",
-    "docs/RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md",
+    "rc6_tests/test_rc6_locked_library_imports.py",
     "docs/RC6_STAGE2_REFERENCE_LOOP_VALUES.md",
-    "rc6_tests/test_rc6_reference_loop_values.py"
+    "rc6_tests/test_rc6_reference_loop_values.py",
+    "docs/RC6_STAGE2_VALUES_PUBLICATION.md"
   ],
   "tradingview_verified": false,
-  "historical_joint_result": {
-    "count": 5017,
-    "source": "d09ff57721655918d3313634b2291c45a7e414e4",
-    "integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-    "run_id": 34068163602,
-    "receipt": "docs/RC6_STAGE2_PUBLICATION.md",
-    "gates": {
-      "python_3_11": "passed",
-      "python_3_13": "passed",
-      "architecture_and_frozen_stage1_corpus": "passed",
-      "protected_worker_cases": 4,
-      "frontend_build_api": "passed",
-      "full_stage2": "not_accepted"
-    }
-  },
-  "historical_local_candidate": {
-    "baseline": "85fa14ee7b95fa5c18314ba82c07379e8e0e2f80",
-    "block": "locked_library_imports",
-    "publication_status": "not_published",
-    "source_pins": {
-      "pine2ast": "5f88741c6a642675d6852d507a5451376f284e81",
-      "ast2python": "189e390d5a2b678a7b5e195b735eb63be1b434f6"
-    },
-    "process_acceptance": "pending",
-    "same_language_only": [
-      5,
-      6
-    ],
-    "local_receipt": "docs/RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md",
-    "mandatory_collected_cases": 5137,
-    "new_cases": {
-      "count": 120,
-      "local_passed": 116,
-      "protected_process_not_passed": 4
-    }
-  },
-  "imports_publication": {
-    "source": "79c89ea4e79f9925b4c7e3e9085f02eff0492492",
-    "run_id": 34100860965,
+  "full_stage2_accepted": false,
+  "joint_test_count": 5329,
+  "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
+  "core_verification_run": 34068163602,
+  "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
+  "latest_verified_source": "8607d23871cdcb79bf7470616970646645448290",
+  "latest_verified_tree": "96eecddb8d9904601e49b8918cc46e03fda8012d",
+  "integrated_head": "8607d23871cdcb79bf7470616970646645448290",
+  "joint_verification_run": 34106372808,
+  "publication_receipt": "docs/RC6_STAGE2_VALUES_PUBLICATION.md",
+  "gate_results": {
     "python_3_11": "passed",
     "python_3_13": "passed",
-    "frontend": "passed",
-    "count": 5137
-  },
-  "current_candidate": {
-    "block": "reference_loop_values",
-    "status": "awaiting_joint_verification",
-    "frozen_case_count": 5329,
-    "new_cases": 192,
-    "new_host_process_cases": 4,
-    "local_gate": "three_library_suites_and_25_host_cases_passed",
+    "architecture_and_frozen_stage1_corpus": "passed",
+    "new_protected_worker_cases": 4,
+    "frontend_build_api": "passed",
     "full_stage2": "not_accepted"
   },
-  "remaining_acceptance": [
-    "complete_version_exact_catalog",
-    "independent_expected_for_all_admitted_builtins",
-    "generic_UDT_enum_and_library_exports",
-    "varip_reference_semantics",
-    "once_historical_fill_recalculation",
-    "remaining_import_method_version_combinations"
-  ]
+  "locked_library_imports": {
+    "status": "published_and_joint_verified",
+    "initial_published_source": "79c89ea4e79f9925b4c7e3e9085f02eff0492492",
+    "profile": "offline_same_version_pine5_pine6_scalar_array_function_exports",
+    "external_tradingview_oracle": false,
+    "exported_types_methods_enums": "unsupported",
+    "cross_version_imports": "not_accepted",
+    "ui_registry": "not_implemented",
+    "automatic_projected_diagnostics": "projection_map_available_not_fully_integrated"
+  },
+  "reference_loop_values": {
+    "status": "published_and_joint_verified",
+    "implemented": [
+      "typed_default_and_var_array_bindings",
+      "array_parameters_aliases_returns_and_history_v5_v6",
+      "constructor_identity_per_callback_occurrence",
+      "shared_callback_loop_budget",
+      "for_while_array_for_in_values_break_continue_tuples",
+      "fixed_array_set_abi_binding",
+      "immutable_typed_scalar_array_library_exports",
+      "checkpoint_reference_history_and_atomic_restore"
+    ],
+    "remaining": [
+      "varip_reference_persistence",
+      "complete_udt_enum_method_and_generic_bindings",
+      "map_matrix_iteration",
+      "complete_once_fill_recalculation",
+      "full_versioned_builtin_oracle_coverage"
+    ]
+  }
 }
