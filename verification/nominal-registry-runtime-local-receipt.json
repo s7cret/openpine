@@ -1,0 +1,145 @@
+{
+  "schema_id": "openpine.nominal_registry_runtime_local_freeze.v1",
+  "base_candidate": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+  "status": "source_frozen_pending_linux_joint_verification",
+  "split": {
+    "functional": [
+      "pinelib/reference/registry.py",
+      "pinelib/reference/heap.py",
+      "pinelib/reference/nominal.py",
+      "pinelib/runtime/session.py",
+      "pinelib/runtime/language.py",
+      "pinelib/abi/compiled_request.py",
+      "pinelib/abi/manifest_v2_builder.py",
+      "pinelib/abi/target_manifest.json"
+    ],
+    "new_tests": [
+      "tests/test_nominal_registry.py",
+      "tests/test_nominal_registry_runtime.py",
+      "tests/test_nominal_registry_request_restore.py"
+    ],
+    "existing_test_setup_migration": [
+      "tests/test_nominal_types.py",
+      "tests/test_reference_candidate_regressions.py"
+    ],
+    "documentation": [
+      "docs/STAGE2_NOMINAL_REGISTRY.md"
+    ]
+  },
+  "new_tests_by_file": {
+    "tests/test_nominal_registry.py": 172,
+    "tests/test_nominal_registry_runtime.py": 112,
+    "tests/test_nominal_registry_request_restore.py": 71
+  },
+  "manifest_hash": "sha256:9226ba7a8404465ec416dd6f25bb92294083427a548761b678679b811648c546",
+  "classification_counts": {
+    "official": 1108,
+    "runtime_direct": 243,
+    "delegated": 339,
+    "unsupported": 526,
+    "unknown": 0
+  },
+  "results": {
+    "py311": {
+      "total": 946,
+      "passed": 943,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": 16.859,
+      "known_windows_failures": [
+        "tests.test_release_tools.test_deterministic_sdist_is_byte_identical_and_normalized",
+        "tests.test_release_tools.test_deterministic_sdist_rejects_symlinks",
+        "tests.test_release_tools.test_deterministic_sdist_normalizes_file_modes"
+      ],
+      "xml": ".runtime/stack/pinelib/.validation/registry-p1-final-py311.xml",
+      "xml_sha256": "f4a4fc8300d900d8af432cf9128e04be4f0da693d333f4d07db6ac860039791c"
+    },
+    "py313": {
+      "total": 946,
+      "passed": 943,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": 17.351,
+      "known_windows_failures": [
+        "tests.test_release_tools.test_deterministic_sdist_is_byte_identical_and_normalized",
+        "tests.test_release_tools.test_deterministic_sdist_rejects_symlinks",
+        "tests.test_release_tools.test_deterministic_sdist_normalizes_file_modes"
+      ],
+      "xml": ".runtime/stack/pinelib/.validation/registry-p1-final-py313.xml",
+      "xml_sha256": "a3d6d3eed7fd085a4f0f131593af199c508c3ad67478e048f4601aa2447788e9"
+    }
+  },
+  "files": {
+    "pinelib/reference/registry.py": {
+      "raw_sha256": "b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+      "lf_sha256": "b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0"
+    },
+    "pinelib/reference/heap.py": {
+      "raw_sha256": "45510ac157c6e5fecf159687719af9c9234a87dbaa3a50f6466b7b5b00c24226",
+      "lf_sha256": "60a946fd1e4c884a6fc4fbf87aac7ee5ed77afaf19894a051c6d452605597751"
+    },
+    "pinelib/reference/nominal.py": {
+      "raw_sha256": "17a17502b0fcde7f49ce48f09e43af0c4640729ba2287b790660d94aa67d3746",
+      "lf_sha256": "17a17502b0fcde7f49ce48f09e43af0c4640729ba2287b790660d94aa67d3746"
+    },
+    "pinelib/runtime/session.py": {
+      "raw_sha256": "40aa4db3cbc3414dd9780178267200c540c80aa5a0d90b1b354d4460f31b0c4a",
+      "lf_sha256": "68e6f9802e8bda50f461e2ac834e86bb0428595c0455d8e0988c2e0ea1c3da75"
+    },
+    "pinelib/runtime/language.py": {
+      "raw_sha256": "2ccbe538d42412aef1535ae7686ccf5ac8c23c5452402884381247aff9e07287",
+      "lf_sha256": "4d9a9aa88a3447963033086f2e3b6c319a3bec0d0d667dc52f61e1c6efd8d233"
+    },
+    "pinelib/abi/compiled_request.py": {
+      "raw_sha256": "23aebdfbeab3413fab628722666478654e053a24bbcffe6b201c952eb0968b51",
+      "lf_sha256": "a35cc2fb8b2280a4ce478db17def7c845d28ab1d6d5573ec5e2d7242722b61ec"
+    },
+    "pinelib/abi/manifest_v2_builder.py": {
+      "raw_sha256": "0e4a0e57c4465fdc8a4dfcae8c9fd83fb85ed2bf6ab5892e0d8cd56398431e9d",
+      "lf_sha256": "cb6bf36e05cad12e03181941f46f652f3e9dd35fb41857fa8c577b78fe3f8e3a"
+    },
+    "pinelib/abi/target_manifest.json": {
+      "raw_sha256": "6706d7a54ee598b8f291c0e253c8afc2cdc10d2ad6b402122bb1c4bd2ba5c251",
+      "lf_sha256": "6706d7a54ee598b8f291c0e253c8afc2cdc10d2ad6b402122bb1c4bd2ba5c251"
+    },
+    "tests/test_nominal_registry.py": {
+      "raw_sha256": "02ed61a39e8b47a902106b702ea250816989ff23a869a3e4de2d31b62701f1c9",
+      "lf_sha256": "02ed61a39e8b47a902106b702ea250816989ff23a869a3e4de2d31b62701f1c9"
+    },
+    "tests/test_nominal_registry_runtime.py": {
+      "raw_sha256": "fab74aeff438e34e00f1a5f6bb12f6442fa26916b391b971fe2538252ac72813",
+      "lf_sha256": "fab74aeff438e34e00f1a5f6bb12f6442fa26916b391b971fe2538252ac72813"
+    },
+    "tests/test_nominal_registry_request_restore.py": {
+      "raw_sha256": "2de604b6a47134dc6d5dceb5e5daf3e9e180bd672aa0bc390d3ae7bbfbb85dcf",
+      "lf_sha256": "2de604b6a47134dc6d5dceb5e5daf3e9e180bd672aa0bc390d3ae7bbfbb85dcf"
+    },
+    "tests/test_nominal_types.py": {
+      "raw_sha256": "c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7",
+      "lf_sha256": "c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7"
+    },
+    "tests/test_reference_candidate_regressions.py": {
+      "raw_sha256": "802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54",
+      "lf_sha256": "802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54"
+    },
+    "docs/STAGE2_NOMINAL_REGISTRY.md": {
+      "raw_sha256": "e56e9208c6c44a7a7500fa1691161288fa22c4613c8be925507676563868e2b3",
+      "lf_sha256": "e56e9208c6c44a7a7500fa1691161288fa22c4613c8be925507676563868e2b3"
+    }
+  },
+  "p1_original_reproduction": "nominal-registry-nested-child-repro.py",
+  "p1_before": [
+    "nominal-registry-nested-child-before-py311.json",
+    "nominal-registry-nested-child-before-py313.json"
+  ],
+  "p1_after": [
+    "nominal-registry-nested-child-after-py311.json",
+    "nominal-registry-nested-child-after-py313.json"
+  ],
+  "p1_behavior": "rehashed forged child enum rejected before parent replacement; no fetch or evaluation",
+  "recursive_varip_enabled": false,
+  "full_stage2_accepted": false,
+  "commits_or_publication_by_runtime_agent": false
+}

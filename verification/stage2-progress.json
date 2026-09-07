@@ -49,7 +49,15 @@
     "docs/RC6_STAGE2_BUILTIN_PUBLICATION.md",
     "verification/builtin-joint-review.json",
     "verification/builtin-joint-receipt.json",
-    "verification/builtin-cleanup-receipt.json"
+    "verification/builtin-cleanup-receipt.json",
+    "docs/RC6_STAGE2_NOMINAL_REGISTRY.md",
+    "rc6_tests/test_rc6_nominal_registry.py",
+    "verification/nominal-registry-runtime-fixture-review.json",
+    "verification/nominal-registry-compiler-fixture-review.json",
+    "verification/nominal-registry-host-request-review.json",
+    "verification/nominal-registry-initial-failures.json",
+    "verification/nominal-registry-runtime-local-receipt.json",
+    "verification/nominal-registry-source-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -157,5 +165,17 @@
     "signatures_with_passing_examples": 41,
     "signature_denominator": 2374,
     "cleanup_receipt": "verification/builtin-cleanup-receipt.json"
+  },
+  "nominal_registry": {
+    "status": "candidate_ready_pending_joint_linux_verification",
+    "baseline": "2b91a8d818d0729143a849d99952a49396bdb727",
+    "baseline_selected_count": 6745,
+    "receipt": "docs/RC6_STAGE2_NOMINAL_REGISTRY.md",
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "closed_review_finding": "nested_compiled_request_child_checkpoint_admission",
+    "expected_inventory_selected_count": 7218,
+    "expected_inventory_added_count": 473,
+    "source_review": "verification/nominal-registry-source-review.json"
   }
 }

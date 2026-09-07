@@ -1,0 +1,785 @@
+{
+  "schema_id": "openpine.nominal_registry_initial_failure_evidence.v1",
+  "original_nominal_reproduction": {
+    "checkout_heads": {
+      "pine2ast": "7107e797e32c360d2fce90a6416297ef2076351e",
+      "ast2python": "30512014a45db1be29def8fa8c83eb35b0d4b4c2",
+      "pinelib": "ad235a8d7befc091808b20927139436eb4bdbf40"
+    },
+    "fixture_provenance": "synthetic bundle commits 1*40 / 2*40; working edits are not represented by HEAD",
+    "versions": [
+      {
+        "version": 5,
+        "source": "//@version=5\nindicator(\"registry audit\")\nenum Side\n    buy = \"Bullish\"\n    sell = \"Bearish\"\nvar Side choice=Side.buy\ntype Box\n    int n=1\nvar Box box=Box.new()\nplot(box.n)\n",
+        "source_hash": "sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03",
+        "target_manifest_hash": "sha256:71fdc1f483eb831ef8d21fe05b3d5858f1c55369cbe5b5dac55bfa985185dace",
+        "cases": [
+          {
+            "name": "unaltered_control",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "unknown_enum_member",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "known_enum_wrong_ordinal",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "enum_member_ordinal_disagree",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "udt_redeclared_schema",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Box:n00000013",
+                "committed": {
+                  "n": "forged"
+                },
+                "working": {
+                  "n": "forged"
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "string"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "udt_forged_varip_field",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e69de018058caa383d380128fc470eccd834cd391af705d6f0325d0d2ee0fe03:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": [
+                    "n"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "negative_ordinal_control",
+            "accepted": false,
+            "error": "invalid enum value",
+            "error_type": "PineRuntimeError",
+            "atomic": true
+          },
+          {
+            "name": "foreign_enum_identity_control",
+            "accepted": false,
+            "error": "enum value differs from declared nominal type",
+            "error_type": "PineRuntimeError",
+            "atomic": true
+          }
+        ],
+        "admissibility": [
+          {
+            "name": "varip_udt_with_fundamental_fields",
+            "accepted": true,
+            "source_body": "type Counter\n    int n=0\nvarip Counter c=Counter.new()\nplot(c.n)"
+          },
+          {
+            "name": "empty_varip_array_udt",
+            "accepted": false,
+            "error_type": "BundleInvariantError",
+            "error": "A2P_VARIP_REFERENCE_TYPE: varip collections require supported fundamental element types",
+            "source_body": "type Counter\n    int n=0\nvarip array<Counter> counters=array.new<Counter>()\nplot(array.size(counters))"
+          },
+          {
+            "name": "empty_varip_array_udt_with_array_field",
+            "accepted": false,
+            "error_type": "BundleInvariantError",
+            "error": "A2P_VARIP_REFERENCE_TYPE: varip collections require supported fundamental element types",
+            "source_body": "type Counter\n    array<int> ns\nvarip array<Counter> counters=array.new<Counter>()\nplot(array.size(counters))"
+          },
+          {
+            "name": "varip_array_field",
+            "accepted": false,
+            "error_type": "PineRuntimeError",
+            "error": "varip UDT fields currently require fundamental or enum values",
+            "source_body": "type Bucket\n    varip array<int> values\nvar Bucket b=Bucket.new(array.new<int>(1,0))\nplot(array.get(b.values,0))"
+          },
+          {
+            "name": "varip_udt_field",
+            "accepted": false,
+            "error_type": "PineRuntimeError",
+            "error": "varip UDT fields currently require fundamental or enum values",
+            "source_body": "type Child\n    int n=0\ntype Parent\n    varip Child child\nvar Parent p=Parent.new(Child.new())\nplot(p.child.n)"
+          }
+        ]
+      },
+      {
+        "version": 6,
+        "source": "//@version=6\nindicator(\"registry audit\")\nenum Side\n    buy = \"Bullish\"\n    sell = \"Bearish\"\nvar Side choice=Side.buy\ntype Box\n    int n=1\nvar Box box=Box.new()\nplot(box.n)\n",
+        "source_hash": "sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa",
+        "target_manifest_hash": "sha256:71fdc1f483eb831ef8d21fe05b3d5858f1c55369cbe5b5dac55bfa985185dace",
+        "cases": [
+          {
+            "name": "unaltered_control",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "unknown_enum_member",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "not_declared",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "known_enum_wrong_ordinal",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 123
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "enum_member_ordinal_disagree",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "sell",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "udt_redeclared_schema",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Box:n00000013",
+                "committed": {
+                  "n": "forged"
+                },
+                "working": {
+                  "n": "forged"
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "string"
+                  },
+                  "varip_fields": []
+                }
+              }
+            ]
+          },
+          {
+            "name": "udt_forged_varip_field",
+            "accepted": true,
+            "same_runtime_identity": true,
+            "enum_markers": [
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              },
+              {
+                "enum_id": "enum:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Side:n00000006",
+                "member": "buy",
+                "ordinal": 0
+              }
+            ],
+            "udt_rows": [
+              {
+                "object_id": "allocation:sha256:64c72458140c432b95abac1ef547e9f9ea41183cfedd3377cb85d66ed524a351",
+                "kind": "udt",
+                "type_descriptor": "udt:sha256:e9fb69888d5ba466b382bb8b38206ef71931bba7d1aaeab5ccd255cbcd6e4efa:Box:n00000013",
+                "committed": {
+                  "n": 1
+                },
+                "working": {
+                  "n": 1
+                },
+                "committed_revision": 0,
+                "working_revision": 0,
+                "committed_exists": true,
+                "udt_schema": {
+                  "fields": {
+                    "n": "int"
+                  },
+                  "varip_fields": [
+                    "n"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "name": "negative_ordinal_control",
+            "accepted": false,
+            "error": "invalid enum value",
+            "error_type": "PineRuntimeError",
+            "atomic": true
+          },
+          {
+            "name": "foreign_enum_identity_control",
+            "accepted": false,
+            "error": "enum value differs from declared nominal type",
+            "error_type": "PineRuntimeError",
+            "atomic": true
+          }
+        ],
+        "admissibility": [
+          {
+            "name": "varip_udt_with_fundamental_fields",
+            "accepted": true,
+            "source_body": "type Counter\n    int n=0\nvarip Counter c=Counter.new()\nplot(c.n)"
+          },
+          {
+            "name": "empty_varip_array_udt",
+            "accepted": false,
+            "error_type": "BundleInvariantError",
+            "error": "A2P_VARIP_REFERENCE_TYPE: varip collections require supported fundamental element types",
+            "source_body": "type Counter\n    int n=0\nvarip array<Counter> counters=array.new<Counter>()\nplot(array.size(counters))"
+          },
+          {
+            "name": "empty_varip_array_udt_with_array_field",
+            "accepted": false,
+            "error_type": "BundleInvariantError",
+            "error": "A2P_VARIP_REFERENCE_TYPE: varip collections require supported fundamental element types",
+            "source_body": "type Counter\n    array<int> ns\nvarip array<Counter> counters=array.new<Counter>()\nplot(array.size(counters))"
+          },
+          {
+            "name": "varip_array_field",
+            "accepted": false,
+            "error_type": "PineRuntimeError",
+            "error": "varip UDT fields currently require fundamental or enum values",
+            "source_body": "type Bucket\n    varip array<int> values\nvar Bucket b=Bucket.new(array.new<int>(1,0))\nplot(array.get(b.values,0))"
+          },
+          {
+            "name": "varip_udt_field",
+            "accepted": false,
+            "error_type": "PineRuntimeError",
+            "error": "varip UDT fields currently require fundamental or enum values",
+            "source_body": "type Child\n    int n=0\ntype Parent\n    varip Child child\nvar Parent p=Parent.new(Child.new())\nplot(p.child.n)"
+          }
+        ]
+      }
+    ]
+  },
+  "nested_child_before": {
+    "311": {
+      "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+      "pine_version": 6,
+      "all_affected_hashes_recomputed": true,
+      "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+      "parent_restore": "ACCEPTED",
+      "runtime_source_hashes": {
+        "pinelib/runtime/session.py": "sha256:9c1f534b3097e755ff852f27b2a9fe1591b2e30d9332aef24e6258e54a9464ea",
+        "pinelib/abi/compiled_request.py": "sha256:285fc0a4f603adc7360d56b4d4094e3aa3aba8b022e36f801be0dcfe8b8de356",
+        "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+        "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+        "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+      },
+      "live_replaced": true
+    },
+    "313": {
+      "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+      "pine_version": 6,
+      "all_affected_hashes_recomputed": true,
+      "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+      "parent_restore": "ACCEPTED",
+      "runtime_source_hashes": {
+        "pinelib/runtime/session.py": "sha256:9c1f534b3097e755ff852f27b2a9fe1591b2e30d9332aef24e6258e54a9464ea",
+        "pinelib/abi/compiled_request.py": "sha256:285fc0a4f603adc7360d56b4d4094e3aa3aba8b022e36f801be0dcfe8b8de356",
+        "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+        "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+        "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+      },
+      "live_replaced": true
+    }
+  },
+  "interpretation": "Preserved independent failed admission before the owner fixes. Unkeyed hashes are recomputed; this is a declaration-consistency failure, not a claim of authenticated checkpoint replay.",
+  "full_stage2_accepted": false,
+  "nested_child_after": {
+    "311": {
+      "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+      "pine_version": 6,
+      "all_affected_hashes_recomputed": true,
+      "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+      "parent_restore": "PineRuntimeError: enum member/ordinal differs from its declaration",
+      "runtime_source_hashes": {
+        "pinelib/runtime/session.py": "sha256:40aa4db3cbc3414dd9780178267200c540c80aa5a0d90b1b354d4460f31b0c4a",
+        "pinelib/abi/compiled_request.py": "sha256:23aebdfbeab3413fab628722666478654e053a24bbcffe6b201c952eb0968b51",
+        "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+        "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+        "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+      },
+      "live_replaced": false
+    },
+    "313": {
+      "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+      "pine_version": 6,
+      "all_affected_hashes_recomputed": true,
+      "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+      "parent_restore": "PineRuntimeError: enum member/ordinal differs from its declaration",
+      "runtime_source_hashes": {
+        "pinelib/runtime/session.py": "sha256:40aa4db3cbc3414dd9780178267200c540c80aa5a0d90b1b354d4460f31b0c4a",
+        "pinelib/abi/compiled_request.py": "sha256:23aebdfbeab3413fab628722666478654e053a24bbcffe6b201c952eb0968b51",
+        "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+        "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+        "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+      },
+      "live_replaced": false
+    }
+  }
+}

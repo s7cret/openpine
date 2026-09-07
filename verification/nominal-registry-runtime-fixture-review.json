@@ -1,0 +1,187 @@
+{
+  "schema_id": "openpine.nominal_registry_test_setup_migration.v1",
+  "created_at_utc": "2026-09-07T20:33:01.673856+00:00",
+  "status": "FOCUSED_FIXTURE_MIGRATION_VERIFIED",
+  "scope": "Only the two assigned preexisting runtime test files were changed. Production registry/session/heap wiring is owned and still integrated separately by runtime_state.",
+  "baseline_commit": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+  "published_builtin_candidate_unchanged": true,
+  "separate_commit_required": true,
+  "proposed_commit_split": [
+    {
+      "category": "old_test_setup_corrections",
+      "files": [
+        "tests/test_nominal_types.py",
+        "tests/test_reference_candidate_regressions.py"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "tests/test_nominal_types.py",
+      "category": "old_test_setup_corrections",
+      "baseline_sha256": "sha256:88172ff689f0097508813c71afce843eca892490498d1edb05b2bbb81f53bd02",
+      "baseline_blob_sha1": "b0b1c0685a2ca2ab784645b80fb68e271db6dd4d",
+      "worktree_sha256": "sha256:c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7",
+      "lf_normalized_sha256": "sha256:c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7",
+      "publication_blob_sha1": "4293512d799156fbe934b113c0041a7b6b534d3d"
+    },
+    {
+      "path": "tests/test_reference_candidate_regressions.py",
+      "category": "old_test_setup_corrections",
+      "baseline_sha256": "sha256:225ae9c65f41ccf074f2699691eac4f86a5ae33ad46953f9aee15c556d2e602d",
+      "baseline_blob_sha1": "235f91121e628c93537e038c6251a39f47be6ed1",
+      "worktree_sha256": "sha256:802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54",
+      "lf_normalized_sha256": "sha256:802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54",
+      "publication_blob_sha1": "051f8f70b796befa087805f206f177636889d343"
+    }
+  ],
+  "setup_contract": {
+    "source_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "registry": "Immutable NominalTypeRegistry.from_json passed to RuntimeSession before first callback; deterministic complete declarations and exact source-qualified identities.",
+    "pre_v5_behavior": "No registry is admitted for versions1вЂ“4; all existing rejection assertions are retained.",
+    "declarations_in_test_nominal_types": {
+      "Point:decl-1": "bars:int(default), ticks:int(varip)",
+      "Side:decl-2": "long/title long ordinal0; short/title short ordinal1",
+      "Nested:decl-3": "child:Point; values:array<int>; side:Side; no varip fields",
+      "ArrayHolder:decl-4": "values:array<int>; no varip fields",
+      "WriteTarget:decl-5": "n:int; child:Point; side:Side; no varip fields",
+      "Flag:decl-6": "flag:bool; no varip fields",
+      "CheckpointRecord:decl-7": "n:int(varip); side:Side(default)",
+      "OtherPoint:decl-8": "bars:int(default), ticks:int(varip); distinct registered identity",
+      "OtherSide:decl-9": "long/title long ordinal0; short/title short ordinal1; distinct registered identity"
+    },
+    "declaration_in_test_reference_candidate_regressions": {
+      "RetryPoint:decl-10": "n:int(varip); an explicit different ID from Point:decl-1, so no fixture ID is reused with an incompatible schema, even across the two modules."
+    },
+    "foreign_type_cases": "Both other UDT and enum identities are declared in the same source-qualified registry; field writes/comparisons/checkpoint corruption test wrong nominal identity, rather than rejection of an undeclared or malformed input.",
+    "schema_learning_from_values": false
+  },
+  "test_contract_checks": {
+    "tests/test_nominal_types.py": {
+      "original_test_function_count": 16,
+      "original_test_names_preserved": true,
+      "parametrize_decorators_ast_identical": true,
+      "semantic_assertion_count": 39,
+      "semantic_assertions_preserved": true,
+      "raises_context_count": 14,
+      "raises_contexts_ast_identical": true,
+      "numeric_and_boolean_literals_unchanged": true,
+      "assertion_fixture_identity_substitution": {
+        "ARRAY_HOLDER": "POINT"
+      }
+    },
+    "tests/test_reference_candidate_regressions.py": {
+      "original_test_function_count": 4,
+      "original_test_names_preserved": true,
+      "parametrize_decorators_ast_identical": true,
+      "semantic_assertion_count": 10,
+      "semantic_assertions_preserved": true,
+      "raises_context_count": 1,
+      "raises_contexts_ast_identical": true,
+      "numeric_and_boolean_literals_unchanged": true,
+      "assertion_fixture_identity_substitution": {}
+    }
+  },
+  "collection": {
+    "311": {
+      "path": ".runtime/evidence/nominal-registry-fixture-final-collect-py311.log",
+      "sha256": "sha256:f38447e6097dd5d19aa624b6284dc2c2d2a31a35c21de4a16740e62701e4ff6b",
+      "count": 68,
+      "nodeids_sha256": "sha256:f317ba9dd41bfe22d209a9e6d1c7c776d2525be328c2a1b8d58f4f5f1797ba63",
+      "baseline_exact_nodeids_preserved": true
+    },
+    "313": {
+      "path": ".runtime/evidence/nominal-registry-fixture-final-collect-py313.log",
+      "sha256": "sha256:1fb9e5ec360bd8cff97fd1a7a66c19fe86255160c22216d1662eee60e86fceeb",
+      "count": 68,
+      "nodeids_sha256": "sha256:f317ba9dd41bfe22d209a9e6d1c7c776d2525be328c2a1b8d58f4f5f1797ba63",
+      "baseline_exact_nodeids_preserved": true
+    }
+  },
+  "baseline_test_count": 68,
+  "final_test_count": 68,
+  "new_nodeids": [],
+  "removed_nodeids": [],
+  "added_skip_or_xfail": [],
+  "validation_receipts": {
+    "original_before_wiring_py311": {
+      "path": ".runtime/evidence/nominal-registry-fixture-before-py311.xml",
+      "sha256": "sha256:5e020082d63f08fd3aa64ce1cff33bb1bd08baae599879dd2d4c521f8f46dfcb",
+      "counts": {
+        "tests": 68,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 68
+      },
+      "seconds": 0.46
+    },
+    "archived_original_setup_against_wired_owner_py311": {
+      "path": ".runtime/evidence/nominal-registry-old-setup-wired-py311.xml",
+      "sha256": "sha256:a7c3edbe0e714774780880f4b248c7714b559ac2f08e7e2f905458232d923077",
+      "counts": {
+        "tests": 68,
+        "failures": 45,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 23
+      },
+      "seconds": 2.521
+    },
+    "initial_migration_py311": {
+      "path": ".runtime/evidence/nominal-registry-fixture-after-py311.xml",
+      "sha256": "sha256:875a0ac16a36eebe655f100f417c786bf33a20a4a61dc57b6e0b4d860ff342bc",
+      "counts": {
+        "tests": 68,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 66
+      },
+      "seconds": 0.911
+    },
+    "initial_migration_py313": {
+      "path": ".runtime/evidence/nominal-registry-fixture-after-py313.xml",
+      "sha256": "sha256:7c9bb11828f0660f516fe16d84619f95a86dd82ce054be194c3adb52b944f16b",
+      "counts": {
+        "tests": 68,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 66
+      },
+      "seconds": 0.986
+    },
+    "final_py311": {
+      "path": ".runtime/evidence/nominal-registry-fixture-verified-py311.xml",
+      "sha256": "sha256:7d06caaf86430f40894b46eef531bb727d87dd7dcfea44a2e1a5256fd7d71b03",
+      "counts": {
+        "tests": 68,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 68
+      },
+      "seconds": 0.766
+    },
+    "final_py313": {
+      "path": ".runtime/evidence/nominal-registry-fixture-verified-py313.xml",
+      "sha256": "sha256:f8d0cc2d1dafed474f13413aab2600b8316a33fdceb49da81e4d7142b642b38f",
+      "counts": {
+        "tests": 68,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 68
+      },
+      "seconds": 0.7
+    }
+  },
+  "initial_failures_review": "Before wiring, original68 passed. Archived original setup against wired owner has45 failures because it supplies no admitted declarations. Initial migrated setup had2 failures in preserved enum error-message assertions because corrupted IDs were still undeclared. Changing those fixture values to the registered OTHER_SIDE preserved the wrong-type invariant and original match=enum, yielding68 passes on each Python.",
+  "old_failure_source_copies": ".runtime/evidence/nominal-registry-old-setup",
+  "full_stage2_accepted": false,
+  "stage2_status": "in_progress",
+  "builtin_full_ci_run_id": 34159064376,
+  "builtin_full_ci_note": "Independent immutable previous candidate; these local fixture migrations are not included in that run.",
+  "audit_body_sha256": "sha256:28af9ad945a8db4cff5fcf38450f2aaabdc72adcbd9253fe71d1252298254e98"
+}

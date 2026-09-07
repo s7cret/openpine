@@ -1,0 +1,810 @@
+{
+  "schema_id": "openpine.nominal_registry_source_review.v1",
+  "created_at_utc": "2026-09-07T21:14:50.958378+00:00",
+  "status": "BOUNDED_SOURCE_REVIEW_COMPLETE_P1_REPRODUCTION_CLOSED_LINUX_GATE_PENDING",
+  "scope": "Independent source and test review of immutable nominal registry admission/emission/wiring, including nested compiled request checkpoint admission. Production and test files were read only by this audit; evidence files are separate.",
+  "full_stage2_accepted": false,
+  "joint_linux_registry_verification_complete": false,
+  "tradingview_verified": false,
+  "spec_sections": [
+    "7.5 Reference Types rollback/checkpoint",
+    "7.6 UDT schemas and exact library type identity",
+    "7.7 Enum membership and serialization",
+    "7.11 Library artifact/checkpoint identity",
+    "7.13 Stage2 gate remains incomplete"
+  ],
+  "baselines": {
+    "pinelib": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+    "ast2python": "028b2f42ac816200aedf7837a7fc7f55b3b668cc",
+    "openpine": "2b91a8d818d0729143a849d99952a49396bdb727"
+  },
+  "unchanged_parser_commit": "d2b4a0f9796e23b33025d10a4918317fde4608ad",
+  "compiler_temporary_candidate": {
+    "commit": "e0829d7881024abb8bb1882bafa0dad009068bb2",
+    "branch": "stage2/nominal-registry-20260907",
+    "all_indexed_lf_file_bytes_match": true,
+    "release_unchanged_at_review": true
+  },
+  "publication_split": {
+    "pinelib": {
+      "functional": [
+        "pinelib/reference/registry.py",
+        "pinelib/reference/heap.py",
+        "pinelib/reference/nominal.py",
+        "pinelib/runtime/session.py",
+        "pinelib/runtime/language.py",
+        "pinelib/abi/compiled_request.py",
+        "pinelib/abi/manifest_v2_builder.py",
+        "pinelib/abi/target_manifest.json"
+      ],
+      "new_tests": [
+        "tests/test_nominal_registry.py",
+        "tests/test_nominal_registry_runtime.py",
+        "tests/test_nominal_registry_request_restore.py"
+      ],
+      "old_test_setup_corrections": [
+        "tests/test_nominal_types.py",
+        "tests/test_reference_candidate_regressions.py"
+      ],
+      "documentation": [
+        "docs/STAGE2_NOMINAL_REGISTRY.md"
+      ]
+    },
+    "ast2python": {
+      "functional": [
+        "ast2python/artifacts/nominal_registry.py",
+        "ast2python/artifacts/__init__.py",
+        "ast2python/emission/nominal.py",
+        "ast2python/emission/python.py",
+        "ast2python/lowering/builder.py",
+        "ast2python/lowering/pinelib_target.py"
+      ],
+      "new_tests": [
+        "tests/test_nominal_registry_admission.py",
+        "tests/test_nominal_registry_emission.py",
+        "tests/fixtures/nominal_registry_legacy_v5.json",
+        "tests/fixtures/nominal_registry_legacy_v6.json"
+      ],
+      "old_test_setup_corrections": [
+        "tests/test_locked_library_execution.py",
+        "tests/test_rc6_input_metadata.py"
+      ],
+      "documentation": [
+        "docs/STAGE2_NOMINAL_REGISTRY.md"
+      ]
+    },
+    "openpine": {
+      "functional": [
+        "openpine/runtime/generated_checkpoint.py",
+        "openpine/runtime/rc6_executor.py",
+        "openpine/runtime/rc6_worker_runtime.py"
+      ],
+      "new_tests": [
+        "rc6_tests/test_rc6_nominal_registry.py"
+      ]
+    }
+  },
+  "file_count": 31,
+  "files": [
+    {
+      "repository": "pinelib",
+      "path": "pinelib/reference/registry.py",
+      "category": "functional",
+      "raw_sha256": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+      "lf_sha256": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+      "raw_bytes": 16998,
+      "lf_bytes": 16998,
+      "git_blob_sha1": "12a02fcf80cc8be41b9c6c3e29177d9b07b399e5",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "pinelib",
+      "path": "pinelib/reference/heap.py",
+      "category": "functional",
+      "raw_sha256": "sha256:45510ac157c6e5fecf159687719af9c9234a87dbaa3a50f6466b7b5b00c24226",
+      "lf_sha256": "sha256:60a946fd1e4c884a6fc4fbf87aac7ee5ed77afaf19894a051c6d452605597751",
+      "raw_bytes": 37459,
+      "lf_bytes": 36863,
+      "git_blob_sha1": "d7ec51da2799c11b20891462f97b6b7a029d10be",
+      "baseline_sha256": "sha256:ca66ace0c2eaaf38b7eafaeec17f79dcc691af430875398abe75aa197f23f79c",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "pinelib/reference/nominal.py",
+      "category": "functional",
+      "raw_sha256": "sha256:17a17502b0fcde7f49ce48f09e43af0c4640729ba2287b790660d94aa67d3746",
+      "lf_sha256": "sha256:17a17502b0fcde7f49ce48f09e43af0c4640729ba2287b790660d94aa67d3746",
+      "raw_bytes": 5850,
+      "lf_bytes": 5850,
+      "git_blob_sha1": "68e184caa68b0ffd9afe0f9ada8b1b22d812a2a6",
+      "baseline_sha256": "sha256:61ef9d6a11d82d9f4ce049c34aa43e4283e4c705f1189b35c9031c312d536dd7",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "pinelib/runtime/session.py",
+      "category": "functional",
+      "raw_sha256": "sha256:40aa4db3cbc3414dd9780178267200c540c80aa5a0d90b1b354d4460f31b0c4a",
+      "lf_sha256": "sha256:68e6f9802e8bda50f461e2ac834e86bb0428595c0455d8e0988c2e0ea1c3da75",
+      "raw_bytes": 52057,
+      "lf_bytes": 50993,
+      "git_blob_sha1": "c15f4b2fccea3fbcd0e89582ddfe6498d7f04baf",
+      "baseline_sha256": "sha256:34ffd8a142046dc8c3d8c12ee6d82799b61ffc783a58512dbcf20ce1a1ef6511",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "pinelib/runtime/language.py",
+      "category": "functional",
+      "raw_sha256": "sha256:2ccbe538d42412aef1535ae7686ccf5ac8c23c5452402884381247aff9e07287",
+      "lf_sha256": "sha256:4d9a9aa88a3447963033086f2e3b6c319a3bec0d0d667dc52f61e1c6efd8d233",
+      "raw_bytes": 15577,
+      "lf_bytes": 15332,
+      "git_blob_sha1": "1330fe166f18280a0c2486cab306aaba135886bc",
+      "baseline_sha256": "sha256:6d1fc2f705333a7dbf4952bbb5cdfe8338207afe634868e97c9aed59b8e8f3b9",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "pinelib/abi/compiled_request.py",
+      "category": "functional",
+      "raw_sha256": "sha256:23aebdfbeab3413fab628722666478654e053a24bbcffe6b201c952eb0968b51",
+      "lf_sha256": "sha256:a35cc2fb8b2280a4ce478db17def7c845d28ab1d6d5573ec5e2d7242722b61ec",
+      "raw_bytes": 11782,
+      "lf_bytes": 11439,
+      "git_blob_sha1": "f22a24ac743949f1da96773fe344c91cc89d7d70",
+      "baseline_sha256": "sha256:058363c6e6326501a852d93356c0e15d8f7d9fbabd87c559ac6c82744198f9ad",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "pinelib/abi/manifest_v2_builder.py",
+      "category": "functional",
+      "raw_sha256": "sha256:0e4a0e57c4465fdc8a4dfcae8c9fd83fb85ed2bf6ab5892e0d8cd56398431e9d",
+      "lf_sha256": "sha256:cb6bf36e05cad12e03181941f46f652f3e9dd35fb41857fa8c577b78fe3f8e3a",
+      "raw_bytes": 30386,
+      "lf_bytes": 29784,
+      "git_blob_sha1": "795ca9f0ed584d0c7afc708fb00d3c6a2a3e89af",
+      "baseline_sha256": "sha256:7cc79ba595e8316656aafe0e8cccd07d4507708f365a5e13294dd806d6dfba7f",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "pinelib/abi/target_manifest.json",
+      "category": "functional",
+      "raw_sha256": "sha256:6706d7a54ee598b8f291c0e253c8afc2cdc10d2ad6b402122bb1c4bd2ba5c251",
+      "lf_sha256": "sha256:6706d7a54ee598b8f291c0e253c8afc2cdc10d2ad6b402122bb1c4bd2ba5c251",
+      "raw_bytes": 1217546,
+      "lf_bytes": 1217546,
+      "git_blob_sha1": "3624b0867791f08d2e4835d84c81e69d49ef6cd4",
+      "baseline_sha256": "sha256:21524789874059ea7d65b606c97f34be7dbdf76a0f3466d36fa3755b0ef4a14d",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_registry.py",
+      "category": "new_tests",
+      "raw_sha256": "sha256:02ed61a39e8b47a902106b702ea250816989ff23a869a3e4de2d31b62701f1c9",
+      "lf_sha256": "sha256:02ed61a39e8b47a902106b702ea250816989ff23a869a3e4de2d31b62701f1c9",
+      "raw_bytes": 16582,
+      "lf_bytes": 16582,
+      "git_blob_sha1": "e33b1bbed6126395d75ee4f3d87e411686e25a8d",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_registry_runtime.py",
+      "category": "new_tests",
+      "raw_sha256": "sha256:fab74aeff438e34e00f1a5f6bb12f6442fa26916b391b971fe2538252ac72813",
+      "lf_sha256": "sha256:fab74aeff438e34e00f1a5f6bb12f6442fa26916b391b971fe2538252ac72813",
+      "raw_bytes": 17299,
+      "lf_bytes": 17299,
+      "git_blob_sha1": "c1a60bad5363f43523e71f3bd4eddcc28b576a6f",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_registry_request_restore.py",
+      "category": "new_tests",
+      "raw_sha256": "sha256:2de604b6a47134dc6d5dceb5e5daf3e9e180bd672aa0bc390d3ae7bbfbb85dcf",
+      "lf_sha256": "sha256:2de604b6a47134dc6d5dceb5e5daf3e9e180bd672aa0bc390d3ae7bbfbb85dcf",
+      "raw_bytes": 16263,
+      "lf_bytes": 16263,
+      "git_blob_sha1": "68b8f1197c3f888de15d516c292a050cccf77a79",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_types.py",
+      "category": "old_test_setup_corrections",
+      "raw_sha256": "sha256:c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7",
+      "lf_sha256": "sha256:c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7",
+      "raw_bytes": 15848,
+      "lf_bytes": 15848,
+      "git_blob_sha1": "4293512d799156fbe934b113c0041a7b6b534d3d",
+      "baseline_sha256": "sha256:88172ff689f0097508813c71afce843eca892490498d1edb05b2bbb81f53bd02",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_reference_candidate_regressions.py",
+      "category": "old_test_setup_corrections",
+      "raw_sha256": "sha256:802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54",
+      "lf_sha256": "sha256:802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54",
+      "raw_bytes": 4672,
+      "lf_bytes": 4672,
+      "git_blob_sha1": "051f8f70b796befa087805f206f177636889d343",
+      "baseline_sha256": "sha256:225ae9c65f41ccf074f2699691eac4f86a5ae33ad46953f9aee15c556d2e602d",
+      "new_file": false
+    },
+    {
+      "repository": "pinelib",
+      "path": "docs/STAGE2_NOMINAL_REGISTRY.md",
+      "category": "documentation",
+      "raw_sha256": "sha256:e56e9208c6c44a7a7500fa1691161288fa22c4613c8be925507676563868e2b3",
+      "lf_sha256": "sha256:e56e9208c6c44a7a7500fa1691161288fa22c4613c8be925507676563868e2b3",
+      "raw_bytes": 6190,
+      "lf_bytes": 6190,
+      "git_blob_sha1": "ffa5353b3577cee7e85eb7f790cfbe5c7f7d6ba7",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "ast2python",
+      "path": "ast2python/artifacts/nominal_registry.py",
+      "category": "functional",
+      "raw_sha256": "sha256:7faa72e63fd67dffd93d2d1453d19ac2f8110a4ea5acee1f3b1a1246e6adb23b",
+      "lf_sha256": "sha256:7faa72e63fd67dffd93d2d1453d19ac2f8110a4ea5acee1f3b1a1246e6adb23b",
+      "raw_bytes": 2867,
+      "lf_bytes": 2867,
+      "git_blob_sha1": "ff9508854af655ea57300cbc6deab4c22fe7d9a1",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "ast2python",
+      "path": "ast2python/artifacts/__init__.py",
+      "category": "functional",
+      "raw_sha256": "sha256:b6c8fde13fa19aea23ca29aa3a917ee2221e0322c5b7f5d521ac5e527efba88e",
+      "lf_sha256": "sha256:2ce7b11257516ddc2d858502e87caeb753ac87444ccf7729bf6bd7e3b75c1ce5",
+      "raw_bytes": 364,
+      "lf_bytes": 361,
+      "git_blob_sha1": "e9e0e16374c41f52a942201e5b3297236af15037",
+      "baseline_sha256": "sha256:ae6b17241eea4006bc1b4609243c72af211d2d8438df06017745377c20e911f5",
+      "new_file": false
+    },
+    {
+      "repository": "ast2python",
+      "path": "ast2python/emission/nominal.py",
+      "category": "functional",
+      "raw_sha256": "sha256:b994b049b9ccc87967e32497c55beabfc166975ae6bc701ef7c9d72415a3d2e7",
+      "lf_sha256": "sha256:b994b049b9ccc87967e32497c55beabfc166975ae6bc701ef7c9d72415a3d2e7",
+      "raw_bytes": 9305,
+      "lf_bytes": 9305,
+      "git_blob_sha1": "afd131f882565f253f9e82c004b2e956208fb640",
+      "baseline_sha256": "sha256:fea3da6c3ef67f7af6d60c59b75a9448e99667fdb585d617b2dc1de6a9c55373",
+      "new_file": false
+    },
+    {
+      "repository": "ast2python",
+      "path": "ast2python/emission/python.py",
+      "category": "functional",
+      "raw_sha256": "sha256:eaafca2d6187f2645bb9d4abb715578acefdd27ce6880feed68b942a48188bb6",
+      "lf_sha256": "sha256:788210626d7e9ce13d66cbce315812ed2e99e0ea684b80d483a548633a796141",
+      "raw_bytes": 65775,
+      "lf_bytes": 64449,
+      "git_blob_sha1": "4f225f274b742fa4734ef990b4fd668f056e9e13",
+      "baseline_sha256": "sha256:ce1daab75a9efa6141780d85e80afb508d0118e346578eb963af369479a530d2",
+      "new_file": false
+    },
+    {
+      "repository": "ast2python",
+      "path": "ast2python/lowering/builder.py",
+      "category": "functional",
+      "raw_sha256": "sha256:6d23f370b25678ea565d259794f32b2b943e7dc3b528e4a1b4f4955ad276f3c0",
+      "lf_sha256": "sha256:773883099f43658d09a5ef77fdf75ba832990820026c23db16b5f180f8bd491a",
+      "raw_bytes": 7538,
+      "lf_bytes": 7361,
+      "git_blob_sha1": "5123616852760cf750a254c80bdba811c1b419f8",
+      "baseline_sha256": "sha256:fe485016e5061a8e3abf0c229416c9d821c3f22f01248cf61513286e1da31365",
+      "new_file": false
+    },
+    {
+      "repository": "ast2python",
+      "path": "ast2python/lowering/pinelib_target.py",
+      "category": "functional",
+      "raw_sha256": "sha256:2e71eb833915dfbb5cf8c19c888b22542b84ac473a79f7993240c361698618f2",
+      "lf_sha256": "sha256:c8edcde2f0f1f88a177ef882347fb092df06885ad4f4bdb104fa18006771992c",
+      "raw_bytes": 20345,
+      "lf_bytes": 19913,
+      "git_blob_sha1": "0629dc1a7437dd2ba43fde162db2527cc28f82e2",
+      "baseline_sha256": "sha256:5823db7ee932fb3342ecf3e419afe302fcb86c63d40cc781eb18efdab516ca1f",
+      "new_file": false
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_nominal_registry_admission.py",
+      "category": "new_tests",
+      "raw_sha256": "sha256:4914818f3e7794d291d5aa190251e567f33c827d79ebfb2b3de4499fa766d37a",
+      "lf_sha256": "sha256:4914818f3e7794d291d5aa190251e567f33c827d79ebfb2b3de4499fa766d37a",
+      "raw_bytes": 14046,
+      "lf_bytes": 14046,
+      "git_blob_sha1": "c3ad47aaab378d1f0643c4c920d427bd1b44c0c7",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_nominal_registry_emission.py",
+      "category": "new_tests",
+      "raw_sha256": "sha256:f82ce19420ded806a7590620816ddc0d25f90ceca70bc125e15dacfc8978fea9",
+      "lf_sha256": "sha256:f82ce19420ded806a7590620816ddc0d25f90ceca70bc125e15dacfc8978fea9",
+      "raw_bytes": 8365,
+      "lf_bytes": 8365,
+      "git_blob_sha1": "cb70df2109322957a3cccbc4515c44e5a6be6475",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/nominal_registry_legacy_v5.json",
+      "category": "new_tests",
+      "raw_sha256": "sha256:1b88ba4a0b9660b0178598fda6d0f665161b900ee220cc54a6cf51788f4e4073",
+      "lf_sha256": "sha256:dd4a9a106a0a975d53563bd9dce564a702aeb10c9a77c4345fb71549b6753af6",
+      "raw_bytes": 7265,
+      "lf_bytes": 7154,
+      "git_blob_sha1": "a0826c2d90130dfb8956c0f1df5b0b04683c4b1a",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/nominal_registry_legacy_v6.json",
+      "category": "new_tests",
+      "raw_sha256": "sha256:1cbe98b44b1a12de046074f566903123c5e226a12926e70fad3e9512f325a32a",
+      "lf_sha256": "sha256:c3e4daeabe5a2418a68193a7704521c45fd5d3b8197b6bdbef6c070bf978fdaa",
+      "raw_bytes": 7265,
+      "lf_bytes": 7154,
+      "git_blob_sha1": "72de55de81183bc1a92f028e7b50f34526bc4897",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_locked_library_execution.py",
+      "category": "old_test_setup_corrections",
+      "raw_sha256": "sha256:22b68e79affb93bbb6b6b840bb2885536e7f1d4a0aa5017b738c08920e36ccd6",
+      "lf_sha256": "sha256:3918ad230dd58436b910094edfb96c45eccf12668a1705e29d9c1e4d58e07fe6",
+      "raw_bytes": 10679,
+      "lf_bytes": 10418,
+      "git_blob_sha1": "9fd0343e32804080417fbf914cb0a82f3b985662",
+      "baseline_sha256": "sha256:e171d076f4af7fc55cfeb43a3f791584a82fd5481494d3efe20db4e17d5235ab",
+      "new_file": false
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_rc6_input_metadata.py",
+      "category": "old_test_setup_corrections",
+      "raw_sha256": "sha256:2cb6cd16342562296f7e6cc665a900bb6749daa81588649453b0c146cfef722e",
+      "lf_sha256": "sha256:3fd9c4928645d564eea55e41ee6f0ff3902ce81a3684128ade4437ac0ce5a17b",
+      "raw_bytes": 5308,
+      "lf_bytes": 5200,
+      "git_blob_sha1": "3ee529aa205f768ead65b3a79ce8b97cb528af6e",
+      "baseline_sha256": "sha256:bc3285178b88a7d98d9e1cb6b08541cc96f63239b9f60f2e80fb0c71d1b93299",
+      "new_file": false
+    },
+    {
+      "repository": "ast2python",
+      "path": "docs/STAGE2_NOMINAL_REGISTRY.md",
+      "category": "documentation",
+      "raw_sha256": "sha256:30360474d39966e3771c7e454cdebfca8ebef2284abc81df3bc76d68b4e82d13",
+      "lf_sha256": "sha256:30360474d39966e3771c7e454cdebfca8ebef2284abc81df3bc76d68b4e82d13",
+      "raw_bytes": 4930,
+      "lf_bytes": 4930,
+      "git_blob_sha1": "68c473fccf0063bff2192bfcf914f4b7e6a0a8d7",
+      "baseline_sha256": null,
+      "new_file": true
+    },
+    {
+      "repository": "openpine",
+      "path": "openpine/runtime/generated_checkpoint.py",
+      "category": "functional",
+      "raw_sha256": "sha256:e9aa15722842e3c1cec45dc7ea8949851665b8ea761924c695bffc049cae5991",
+      "lf_sha256": "sha256:60b160b355ba59248a4cbfabde9ea290a96b0fbfb3cc3c91b9668166a07fcee6",
+      "raw_bytes": 9289,
+      "lf_bytes": 9094,
+      "git_blob_sha1": "8a197c6514859af7214577cf299064ada04dbdf1",
+      "baseline_sha256": "sha256:25e875ff22d0ad8bac35b97f6ddb79ad40f014d453a6a95fbf16963a4896e908",
+      "new_file": false
+    },
+    {
+      "repository": "openpine",
+      "path": "openpine/runtime/rc6_executor.py",
+      "category": "functional",
+      "raw_sha256": "sha256:020a987a0315677f10313934fc061f528b0ce2ec3b26a4ca76da03ad557a1f5d",
+      "lf_sha256": "sha256:0b5c8d7804534fb67a0920e8cfc870a57a6aaafefa7ec8b2bc07a416cff0e6b9",
+      "raw_bytes": 4881,
+      "lf_bytes": 4775,
+      "git_blob_sha1": "0cd4930e9a50d7d9746e995a1ef374701be7b1cf",
+      "baseline_sha256": "sha256:51c9e2eb3153fde27e078cda9e898bcfd96b47b7290ef272688cc6b6defa7f99",
+      "new_file": false
+    },
+    {
+      "repository": "openpine",
+      "path": "openpine/runtime/rc6_worker_runtime.py",
+      "category": "functional",
+      "raw_sha256": "sha256:cc13a8d474702d2bdd4e54f9570bfff01cb27679fe42364b4da1340f6c0792e4",
+      "lf_sha256": "sha256:ecab872dc092a6c2c7c35fe422b082883f61915922ed356ac908e7fd3dfae2c0",
+      "raw_bytes": 42477,
+      "lf_bytes": 41577,
+      "git_blob_sha1": "2cfbd945a24b89b6477a043b7c47d48035e266f2",
+      "baseline_sha256": "sha256:47091f780959705448471a599c4ede13ef548f36f17320bc890b727925f4aaed",
+      "new_file": false
+    },
+    {
+      "repository": "openpine",
+      "path": "rc6_tests/test_rc6_nominal_registry.py",
+      "category": "new_tests",
+      "raw_sha256": "sha256:0650d1dbc1acb973e21bac08164032ec621c5a49b16e4d646a4e852ec091ea24",
+      "lf_sha256": "sha256:0650d1dbc1acb973e21bac08164032ec621c5a49b16e4d646a4e852ec091ea24",
+      "raw_bytes": 12276,
+      "lf_bytes": 12276,
+      "git_blob_sha1": "94c777ad51d7bd5afaec8ee0268fa271dce172e2",
+      "baseline_sha256": null,
+      "new_file": true
+    }
+  ],
+  "line_endings": "Raw worktree and LF publication hashes are distinct where Windows CRLF applies. Every compiler index hash matches LF-normalized local bytes, including captured legacy fixtures; no JSON payload or test body difference is implied by CRLF conversion.",
+  "host_publication_metadata_excluded": "Host docs/RC6_STAGE2_NOMINAL_REGISTRY.md, verification/stage2-progress.json and publication receipts are maintained by root after this review. Their evolving publication metadata is not part of this frozen production/test hash list.",
+  "findings": [
+    {
+      "id": "NOMINAL-REGISTRY-P1-NESTED-CHILD",
+      "priority": "P1",
+      "status": "CLOSED_BY_OWNER_FIX_AND_INDEPENDENT_RERUN",
+      "problem": "Parent restore accepted a fully rehashed undeclared enum in requests.registry.datasets[0].child_state[compiled-runtime].state.series[side].working and replaced live state, while direct child restore rejected it. Cached continuation could avoid the direct restore path.",
+      "original_repro_script": {
+        "path": ".runtime/evidence/nominal-registry-nested-child-repro.py",
+        "sha256": "sha256:42beda899420ef65199e8b90772f359aff8dc43a4b56fda6010aa5b2212828d0",
+        "bytes": 4104
+      },
+      "integrity_controls": "Child semantic digest, full/compact transcript chain/content, child checkpoint, request dataset content hash and parent transcript/checkpoint were recomputed; rejection is declared membership validation, not a stale checksum failure.",
+      "fix": "A shared live/admission child factory uses trusted snapshot source metadata, language, policies, inputs and the immutable registry. An explicit work list validates every reserved compiled-runtime child with ordinary segment decoders before any parent swap. Global child count/bytes/depth and portable transport bounds apply. No data fetch or generated evaluation occurs during restore.",
+      "reproductions": [
+        {
+          "python": "311",
+          "before": {
+            "path": ".runtime/evidence/nominal-registry-nested-child-before-py311.json",
+            "sha256": "sha256:4828d91497771b8c829b384aaf983f3d26da47d38dbf0fddca9ef4fec1dd05b2",
+            "bytes": 874,
+            "result": {
+              "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+              "pine_version": 6,
+              "all_affected_hashes_recomputed": true,
+              "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+              "parent_restore": "ACCEPTED",
+              "runtime_source_hashes": {
+                "pinelib/runtime/session.py": "sha256:9c1f534b3097e755ff852f27b2a9fe1591b2e30d9332aef24e6258e54a9464ea",
+                "pinelib/abi/compiled_request.py": "sha256:285fc0a4f603adc7360d56b4d4094e3aa3aba8b022e36f801be0dcfe8b8de356",
+                "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+                "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+                "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+              },
+              "live_replaced": true
+            }
+          },
+          "after": {
+            "path": ".runtime/evidence/nominal-registry-nested-child-after-py311.json",
+            "sha256": "sha256:8993e75be865985719638ea13d9b1649a1e7a58b18dcebba155fb2b5c2fb9ae6",
+            "bytes": 918,
+            "result": {
+              "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+              "pine_version": 6,
+              "all_affected_hashes_recomputed": true,
+              "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+              "parent_restore": "PineRuntimeError: enum member/ordinal differs from its declaration",
+              "runtime_source_hashes": {
+                "pinelib/runtime/session.py": "sha256:40aa4db3cbc3414dd9780178267200c540c80aa5a0d90b1b354d4460f31b0c4a",
+                "pinelib/abi/compiled_request.py": "sha256:23aebdfbeab3413fab628722666478654e053a24bbcffe6b201c952eb0968b51",
+                "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+                "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+                "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+              },
+              "live_replaced": false
+            }
+          }
+        },
+        {
+          "python": "313",
+          "before": {
+            "path": ".runtime/evidence/nominal-registry-nested-child-before-py313.json",
+            "sha256": "sha256:4828d91497771b8c829b384aaf983f3d26da47d38dbf0fddca9ef4fec1dd05b2",
+            "bytes": 874,
+            "result": {
+              "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+              "pine_version": 6,
+              "all_affected_hashes_recomputed": true,
+              "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+              "parent_restore": "ACCEPTED",
+              "runtime_source_hashes": {
+                "pinelib/runtime/session.py": "sha256:9c1f534b3097e755ff852f27b2a9fe1591b2e30d9332aef24e6258e54a9464ea",
+                "pinelib/abi/compiled_request.py": "sha256:285fc0a4f603adc7360d56b4d4094e3aa3aba8b022e36f801be0dcfe8b8de356",
+                "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+                "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+                "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+              },
+              "live_replaced": true
+            }
+          },
+          "after": {
+            "path": ".runtime/evidence/nominal-registry-nested-child-after-py313.json",
+            "sha256": "sha256:8993e75be865985719638ea13d9b1649a1e7a58b18dcebba155fb2b5c2fb9ae6",
+            "bytes": 918,
+            "result": {
+              "schema_id": "openpine.nominal_nested_child_reproduction.v1",
+              "pine_version": 6,
+              "all_affected_hashes_recomputed": true,
+              "child_direct": "PineRuntimeError: enum member/ordinal differs from its declaration",
+              "parent_restore": "PineRuntimeError: enum member/ordinal differs from its declaration",
+              "runtime_source_hashes": {
+                "pinelib/runtime/session.py": "sha256:40aa4db3cbc3414dd9780178267200c540c80aa5a0d90b1b354d4460f31b0c4a",
+                "pinelib/abi/compiled_request.py": "sha256:23aebdfbeab3413fab628722666478654e053a24bbcffe6b201c952eb0968b51",
+                "pinelib/reference/registry.py": "sha256:b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+                "pinelib/request/engine.py": "sha256:faa15f16750e8d76fa45311421546a7ba6cd329218ce30c0d71cdc0898bf4bcc",
+                "pinelib/request/models.py": "sha256:8dae400ff5301003f261640df8c919cbb240d9667295ee2ff67cf3ddf07ba4b1"
+              },
+              "live_replaced": false
+            }
+          }
+        }
+      ],
+      "focused_independent_tests": [
+        {
+          "python": "311",
+          "path": ".runtime/evidence/nominal-registry-independent-request-restore-py311.xml",
+          "sha256": "sha256:f83d04961c3e5b1345a79595f821b7fa43758182f5034ee604e88cd5e2eec902",
+          "bytes": 12087,
+          "tests": 71,
+          "failures": [],
+          "errors": [],
+          "skipped": [],
+          "test_identity_sha256": "sha256:60397f5b1c458402998710d9cf1612cbe91f7eb9f641ccb333e7243f09421ff0"
+        },
+        {
+          "python": "313",
+          "path": ".runtime/evidence/nominal-registry-independent-request-restore-py313.xml",
+          "sha256": "sha256:97bc76fd8607e6a8d6c5ff7d839aa2ca175877af8eb7b4806b9380db631aa012",
+          "bytes": 12087,
+          "tests": 71,
+          "failures": [],
+          "errors": [],
+          "skipped": [],
+          "test_identity_sha256": "sha256:60397f5b1c458402998710d9cf1612cbe91f7eb9f641ccb333e7243f09421ff0"
+        }
+      ],
+      "residual_status": "No additional reproducible blocker found within this bounded review; Linux mandatory regression gate remains pending."
+    }
+  ],
+  "reviewed_invariants": [
+    "The immutable registry is admitted from complete module literal declarations before callbacks; no schema/member learning from constructors, values or checkpoints.",
+    "Exact source-qualified declaration IDs, ordered enum names/titles, UDT types/varip flags and complete forward/cyclic closure are validated; serialized data cannot mutate frozen registry records/indexes.",
+    "Enum and UDT membership validation covers scalar/typed slots, heap values, typed array/matrix/map payloads, erasure and committed/working slice phases.",
+    "Runtime restore validates all candidate segments and all reserved nested compiled children before parent replacement; late-child failure retains parent segment identities and avoids fetch/evaluation.",
+    "Compiler literal emission preserves unused and linker-retained private declarations; existing module hash and artifact v3 envelope remain the authenticity owner.",
+    "Host verifies emitted bytes before execution and registry admission, injects registry into native/protected sessions and preserves it in checkpoint candidates.",
+    "Preexisting nonnominal identity inputs and all preexisting ABI manifest contents remain unchanged; registry capability admission is exact JSON, including bool/int distinctions."
+  ],
+  "manifest_review": {
+    "changed_top_level_keys_only": [
+      "compiled_nominal_registry",
+      "content_hash"
+    ],
+    "all_other_preexisting_values_exactly_preserved": true,
+    "old_content_hash": "sha256:739bcc3e7167e49ecbb1f37c76b4fdb4763fad724364ba9ab1cebc989e17d9aa",
+    "new_content_hash": "sha256:9226ba7a8404465ec416dd6f25bb92294083427a548761b678679b811648c546",
+    "catalog_or_overload_ids_removed": 0
+  },
+  "old_test_preservation": {
+    "preexisting_tracked_test_files_changed": {
+      "pinelib": [
+        "tests/test_nominal_types.py",
+        "tests/test_reference_candidate_regressions.py"
+      ],
+      "ast2python": [
+        "tests/test_locked_library_execution.py",
+        "tests/test_rc6_input_metadata.py"
+      ]
+    },
+    "unreviewed_preexisting_test_changes": [],
+    "compiler_ast_checks": [
+      {
+        "path": "tests/test_locked_library_execution.py",
+        "old_test_definition_count": 14,
+        "all_old_test_definitions_ast_identical": true,
+        "changed_existing_definitions": [
+          "runtime_for"
+        ],
+        "removed_definitions": []
+      },
+      {
+        "path": "tests/test_rc6_input_metadata.py",
+        "old_test_definition_count": 6,
+        "all_old_test_definitions_ast_identical": true,
+        "changed_existing_definitions": [
+          "run_source"
+        ],
+        "removed_definitions": []
+      },
+      {
+        "path": "tests/test_nominal_language_execution.py",
+        "old_test_definition_count": 13,
+        "all_old_test_definitions_ast_identical": true,
+        "changed_existing_definitions": [],
+        "removed_definitions": []
+      },
+      {
+        "path": "tests/test_nominal_library_execution.py",
+        "old_test_definition_count": 4,
+        "all_old_test_definitions_ast_identical": true,
+        "changed_existing_definitions": [],
+        "removed_definitions": []
+      }
+    ],
+    "runtime_fixture_receipt": {
+      "path": ".runtime/evidence/nominal-registry-test-setup-migration.json",
+      "sha256": "sha256:8105ebd5e64e49d263e3f84ced901c51dcf6991a5af60e9012233ad99aa7fe5f",
+      "bytes": 8721
+    },
+    "compiler_fixture_receipt": {
+      "path": ".runtime/evidence/nominal-registry-test-migration.json",
+      "sha256": "sha256:0fb4a1c25dc13679ba347ba982dc913eb33fbea2a8e592058f08bd41541df7d4",
+      "bytes": 2050
+    },
+    "runtime_test_contract": "All 68 original node IDs, 20 test definitions, 49 assertions, 15 raises contexts, parametrization and numeric/boolean expected literals were preserved. Explicit declaration fixtures replace incompatible schema reuse. One ARRAY_HOLDER versus POINT assertion symbol substitution is documented in the immutable migration receipt.",
+    "compiler_test_contract": "All old test bodies in both changed fixture modules and both nominal test modules are AST-identical; only runtime_for/run_source inject verified registry. All 48 prior nominal semantic cases and 61 isolated admission IDs remain. Two admission tests use captured pre-wiring legacy artifacts rather than recompiling now-upgraded output.",
+    "removed_or_relaxed_old_assertions": false,
+    "added_old_test_skip_xfail": false
+  },
+  "validation": {
+    "runtime_full_local": [
+      {
+        "python": "311",
+        "current": {
+          "path": ".runtime/stack/pinelib/.validation/registry-p1-final-py311.xml",
+          "sha256": "sha256:f4a4fc8300d900d8af432cf9128e04be4f0da693d333f4d07db6ac860039791c",
+          "bytes": 144121,
+          "tests": 946,
+          "failures": [
+            "tests.test_release_tools::test_deterministic_sdist_is_byte_identical_and_normalized",
+            "tests.test_release_tools::test_deterministic_sdist_rejects_symlinks",
+            "tests.test_release_tools::test_deterministic_sdist_normalizes_file_modes"
+          ],
+          "errors": [],
+          "skipped": [],
+          "test_identity_sha256": "sha256:b8b98becacf0cab944cc9c5a700d0118fc28ef29e8133c8be63196f3db9aead5"
+        },
+        "baseline": {
+          "path": ".runtime/evidence/builtin-verify-311/pinelib.xml",
+          "sha256": "sha256:cb669cce3ea062e7a84a4880b4d907a8e315cbc5b488e6e3b09cabba0a0e6b9a",
+          "bytes": 82054,
+          "tests": 591,
+          "failures": [],
+          "errors": [],
+          "skipped": [],
+          "test_identity_sha256": "sha256:65c9af59be172d98081e6ad30ef139a12d3b8c13b0df7b0396785625afc67787"
+        },
+        "baseline_test_identities_retained": 591,
+        "removed_test_identities": [],
+        "added_test_count": 355,
+        "added_test_counts": {
+          "tests.test_nominal_registry": 172,
+          "tests.test_nominal_registry_request_restore": 71,
+          "tests.test_nominal_registry_runtime": 112
+        },
+        "added_test_identity_sha256": "sha256:6986fa964633c64e08b02699bddbb36d05a2f31eddb2f5ac3214a2f9fc806a52",
+        "passed": 943,
+        "known_windows_packaging_failures_require_linux": true
+      },
+      {
+        "python": "313",
+        "current": {
+          "path": ".runtime/stack/pinelib/.validation/registry-p1-final-py313.xml",
+          "sha256": "sha256:a3d6d3eed7fd085a4f0f131593af199c508c3ad67478e048f4601aa2447788e9",
+          "bytes": 144003,
+          "tests": 946,
+          "failures": [
+            "tests.test_release_tools::test_deterministic_sdist_is_byte_identical_and_normalized",
+            "tests.test_release_tools::test_deterministic_sdist_rejects_symlinks",
+            "tests.test_release_tools::test_deterministic_sdist_normalizes_file_modes"
+          ],
+          "errors": [],
+          "skipped": [],
+          "test_identity_sha256": "sha256:b8b98becacf0cab944cc9c5a700d0118fc28ef29e8133c8be63196f3db9aead5"
+        },
+        "baseline": {
+          "path": ".runtime/evidence/builtin-verify-313/pinelib.xml",
+          "sha256": "sha256:598392e5c206ece59cb03c9517165ce71bfbc9c8cf4f1fb0ad33c78e2c919f3e",
+          "bytes": 82054,
+          "tests": 591,
+          "failures": [],
+          "errors": [],
+          "skipped": [],
+          "test_identity_sha256": "sha256:65c9af59be172d98081e6ad30ef139a12d3b8c13b0df7b0396785625afc67787"
+        },
+        "baseline_test_identities_retained": 591,
+        "removed_test_identities": [],
+        "added_test_count": 355,
+        "added_test_counts": {
+          "tests.test_nominal_registry": 172,
+          "tests.test_nominal_registry_request_restore": 71,
+          "tests.test_nominal_registry_runtime": 112
+        },
+        "added_test_identity_sha256": "sha256:6986fa964633c64e08b02699bddbb36d05a2f31eddb2f5ac3214a2f9fc806a52",
+        "passed": 943,
+        "known_windows_packaging_failures_require_linux": true
+      }
+    ],
+    "compiler_affected_regression": [
+      {
+        "python": "311",
+        "path": ".runtime/evidence/nominal-registry-regression-py311.xml",
+        "sha256": "sha256:b8cf213d650b4ec252c14aaa86f95a59922a443038df6d7da591e158e582819b",
+        "bytes": 88289,
+        "tests": 569,
+        "failures": [],
+        "errors": [],
+        "skipped": [],
+        "test_identity_sha256": "sha256:5f99a5c3608cdc939f3d82a79b5c2a36e6097b4e92abc54deb4a44ac6edcd0da"
+      },
+      {
+        "python": "313",
+        "path": ".runtime/evidence/nominal-registry-regression-py313.xml",
+        "sha256": "sha256:f745aba8738c8b46edb3b780cc51dbd59d3b95b662f709e06b68fafe3283b80a",
+        "bytes": 88289,
+        "tests": 569,
+        "failures": [],
+        "errors": [],
+        "skipped": [],
+        "test_identity_sha256": "sha256:5f99a5c3608cdc939f3d82a79b5c2a36e6097b4e92abc54deb4a44ac6edcd0da"
+      }
+    ],
+    "host_request_fixture_review": {
+      "path": ".runtime/evidence/nominal-registry-host-request-cases.json",
+      "sha256": "sha256:82847d1d709ef91dd623a5104862613a53b8f031bfb8adf861758ff924b48f45",
+      "bytes": 1069
+    },
+    "host_windows_collection": "Blocked by real required fcntl import; no fake module or skip. 36 host cases require Linux proposal and execution."
+  },
+  "expected_candidate_inventory": {
+    "baseline": 6745,
+    "runtime_additions": 355,
+    "compiler_additions": 82,
+    "host_additions": 36,
+    "total": 7218,
+    "per_repository": {
+      "openpine-contracts": 557,
+      "pinelib": 946,
+      "pine2ast": 1107,
+      "ast2python": 914,
+      "backtest_engine": 1102,
+      "optimizer": 281,
+      "marketdata-provider": 601,
+      "openpine": 1710
+    },
+    "status": "EXPECTED_COUNTS_NOT_LINUX_PROPOSAL_ACCEPTANCE",
+    "provider_existing_deselections_expected_unchanged": 5
+  },
+  "remaining_limits": [
+    "Full Linux 3.11/3.13 inventory superset and mandatory execution are still required; source review and Windows focused execution do not constitute joint acceptance.",
+    "Registry admission proves declaration membership and internal type consistency, not checkpoint authentication or a proof that every scalar value arose from execution.",
+    "Binding every serialized variable/storage ID to its source declaration remains a separate contract.",
+    "Recursive varip collection persistence, special reference types and unsupported request expression dependencies are not added by this wave.",
+    "The separate registry varip eligibility query has an initial array profile and is not wired to expand runtime persistence.",
+    "Independent builtin expected coverage and historical float cast version parity are not changed or accepted by this registry review."
+  ],
+  "review_body_sha256": "sha256:82f0f501a6ce7f5dc8aedf9d1bb0a0d3ae98197352c1411d4b93f0339dfe1769"
+}

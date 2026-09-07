@@ -1,0 +1,28 @@
+{
+  "source_matrix_case_count": 36,
+  "new_case_count": 2,
+  "source_counts_only_not_pytest_collection": true,
+  "matrix": {
+    "test_host_admits_complete_registry_before_any_callback": 4,
+    "test_resealed_unchanged_checkpoint_remains_valid": 4,
+    "test_forged_nominal_checkpoint_cannot_redeclare_source_types": 20,
+    "test_compact_restore_reuses_registry_and_preserves_exact_intent_trace": 4,
+    "test_native_executor_admits_registry_before_nominal_constructor": 2,
+    "test_cached_request_resume_and_extracted_child_restore_keep_registry": 2
+  },
+  "sha256": "0650d1dbc1acb973e21bac08164032ec621c5a49b16e4d646a4e852ec091ea24",
+  "host_collection": "ERROR: ModuleNotFoundError fcntl; no stubs or skips",
+  "independent_expected_request_prices": [
+    10,
+    20,
+    30
+  ],
+  "expected_order_bars": [
+    4,
+    9,
+    14
+  ],
+  "parent_checkpoint_cut": 7,
+  "actual_snapshot_child_sequence_at_cut": 2,
+  "coverage": "cached parent continuation plus genuine extracted child RuntimeSession restore, not natural append execution"
+}
