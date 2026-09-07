@@ -1,0 +1,3 @@
+//@version=2
+study("builtin expected")
+plot(exp(0))

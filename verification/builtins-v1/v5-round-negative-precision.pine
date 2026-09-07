@@ -1,0 +1,3 @@
+//@version=5
+indicator("builtin expected")
+plot(math.round(-1.25,1))

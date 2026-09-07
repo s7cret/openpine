@@ -1,0 +1,3 @@
+//@version=4
+study("builtin expected")
+plot(pow(2,3))

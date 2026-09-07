@@ -1,0 +1,3 @@
+//@version=6
+indicator("builtin expected")
+plot(ta.wma(close,3))
