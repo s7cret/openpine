@@ -1,0 +1,26 @@
+name: Archive verified Stage 2 delivery refs
+'on':
+  push:
+    branches: ['ops/rc6-stage2-finalize-20260907']
+permissions:
+  contents: write
+concurrency:
+  group: stage2-finalize-refs
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve exact merged feature and maintenance tips; keep releases unchanged
+        run: python .github/stage2-finalize/archive.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage2-final-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/publication/
+          retention-days: 30
+          if-no-files-found: error
