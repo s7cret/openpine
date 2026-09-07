@@ -1,0 +1,116 @@
+name: Verify locked imports against the complete permanent RC6 gate
+'on':
+  push:
+    branches: ['ops/stage2-imports-20260907']
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Restore the original archived commits
+        run: |
+          cp .github/stage2-imports/restore.py "$RUNNER_TEMP/restore-imports.py"
+          python "$RUNNER_TEMP/restore-imports.py"
+      - name: Execute every permanent backend verification step unchanged
+        run: |
+          python -m pip install PyYAML
+          python - <<'PY'
+          import os,pathlib,shutil,subprocess,yaml
+          temp=pathlib.Path(os.environ['RUNNER_TEMP'])
+          workflow=yaml.safe_load(pathlib.Path('.github/workflows/rc6-native.yml').read_text())
+          for step in workflow['jobs']['verify']['steps']:
+              if 'run' not in step:
+                  continue
+              print('::group::'+step.get('name','run'),flush=True)
+              env=dict(os.environ)
+              for line in pathlib.Path(os.environ['GITHUB_ENV']).read_text().splitlines():
+                  if '=' in line:
+                      key,value=line.split('=',1);env[key]=value
+              for key,value in step.get('env',{}).items():
+                  env[key]=str(value).replace('${{ runner.temp }}',str(temp))
+              subprocess.run(['bash','-euo','pipefail','-c',step['run']],env=env,check=True)
+              print('::endgroup::',flush=True)
+          shutil.copy(temp/'imports.bundle',temp/'evidence/imports.bundle')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: imports-${{ matrix.python }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: error
+  frontend:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: imports-3.13-${{ github.run_id }}
+          path: ${{ runner.temp }}/backend
+      - name: Restore exactly the tested source
+        run: |
+          git fetch "$RUNNER_TEMP/backend/imports.bundle" refs/heads/stage2/locked-library-imports-20260907
+          git checkout --detach 79c89ea4e79f9925b4c7e3e9085f02eff0492492
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: openpine-ui/package-lock.json
+      - run: npm ci
+        working-directory: openpine-ui
+      - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui.xml"
+        working-directory: openpine-ui
+      - run: npm run build
+        working-directory: openpine-ui
+      - run: npm run test:node | tee "$RUNNER_TEMP/ui-node.log"
+        working-directory: openpine-ui
+        env:
+          OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend/openapi.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: imports-ui-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ui.xml
+            ${{ runner.temp }}/ui-node.log
+            openpine-ui/dist/
+  publish:
+    needs: [verify,frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: imports-3.13-${{ github.run_id }}
+          path: evidence
+      - name: Fast-forward only the tested source and preserve temporary history
+        run: |
+          git fetch evidence/imports.bundle refs/heads/stage2/locked-library-imports-20260907
+          actual=$(git ls-remote origin refs/heads/release/5.0.0rc6 | cut -f1)
+          test "$actual" = 85fa14ee7b95fa5c18314ba82c07379e8e0e2f80 || test "$actual" = 79c89ea4e79f9925b4c7e3e9085f02eff0492492
+          git push origin 79c89ea4e79f9925b4c7e3e9085f02eff0492492:refs/heads/release/5.0.0rc6
+          git push --atomic --force-with-lease=refs/heads/ops/stage2-imports-20260907:${{ github.sha }} --force-with-lease=refs/tags/ops/stage2-imports-20260907: origin ${{ github.sha }}:refs/tags/ops/stage2-imports-20260907 :refs/heads/ops/stage2-imports-20260907
