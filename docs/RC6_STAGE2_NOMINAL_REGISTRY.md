@@ -26,8 +26,10 @@ artifact gains no wire fields. Nominal artifacts require the exact additive
 `compiler.nominal_registry.v1` capability. Pre-registry nominal artifacts must be
 recompiled; nonnominal artifacts retain their existing admission path.
 
-OpenPine verifies emitted module bytes, asks the compiler admission helper for
-the immutable runtime owner, and passes that owner to both native and protected
+OpenPine verifies emitted module bytes and explicitly supplies PineLib's
+`NominalTypeRegistry.from_json` factory to the compiler admission helper. The
+helper checks compiler artifact identity and capabilities before invoking that
+factory. OpenPine passes the immutable owner to both native and protected
 worker sessions before callbacks. Checkpoint candidates reuse the same owner.
 The compiler helper alone cannot authenticate a namespace: its caller must
 verify the bytes before executing them.
@@ -129,3 +131,35 @@ immediately after an abort that retains a varip field. It occurs in both archive
 builtin runtime `c90c267` and this candidate; retry/final commit restores a valid
 checkpoint. That lifecycle gap and bounded `varip array<UDT>` persistence remain
 next language work, outside this declaration-admission block.
+
+## Joint-run failure and explicit dependency repair
+
+[Run 34163246799](https://github.com/s7cret/openpine/actions/runs/34163246799)
+executed all 7218 mandatory functional tests successfully on each Python 3.11
+and 3.13, with no failures, errors or skips. The architecture gate then rejected
+two direct Ast2Python-to-PineLib imports in the new registry admission helper.
+Consequently the aggregate Stage 1 receipt, subsequent lint/package-build step
+and frontend verification were not completed. This run is **not accepted**.
+The twelve frozen Stage 1 observations and all 47 x 5 builtin observations were
+independently checked against the immutable candidate expected files; their
+success does not replace the missing aggregate gates.
+
+The repair preserves the architecture policy. Ast2Python now requires the
+host-injected `admit_registry` factory, returns its exact owner object, and
+propagates owner errors. It does not import PineLib or duplicate its schema
+validation. The generated namespace cannot select the factory. Both host
+execution paths explicitly supply the trusted PineLib owner. Existing compiler
+artifact, version, capability and literal checks remain unchanged; 25 new tests
+check dependency boundaries and admission ordering. Existing fixture migrations
+only supply the factory and preserve all behavioral expectations and nodeids.
+
+Local focused validation passes 155 tests on both Python versions, and the
+unchanged architecture policy reports zero issues. The corrected compiler
+candidate is `d3bc3e68f5da52234013e922a62e22f97835e61b`. The proposed mandatory
+inventory is now 7243 (7218 + 25), subject to fresh exact-source Linux collection,
+independent inventory review and the complete joint CI. Later scalar and retained
+abort changes remain excluded from this registry candidate.
+
+Receipts: `verification/nominal-registry-failed-execution-review.json`,
+`verification/nominal-registry-dependency-source-review.json`, and
+`verification/nominal-registry-dependency-implementation-receipt.json`.
