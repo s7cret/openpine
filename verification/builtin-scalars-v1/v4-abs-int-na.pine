@@ -1,0 +1,4 @@
+//@version=4
+study("scalar expected")
+int sample = na
+plot(abs(sample))

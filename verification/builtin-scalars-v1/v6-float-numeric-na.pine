@@ -1,0 +1,3 @@
+//@version=6
+indicator("scalar expected")
+plot(float(na))

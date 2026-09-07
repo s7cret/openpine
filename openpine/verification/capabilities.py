@@ -110,14 +110,20 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
                     if category == "methods"
                     else ("NAMESPACE_FUNCTION" if "." in name else "FUNCTION")
                 )
+                frontend_available = False
                 for candidate in resolvers[version].candidate_entries(entry):
+                    active = resolvers[version].candidate_is_active(candidate)
+                    frontend_available |= active
                     binding_key = (entry["symbol_id"], candidate["__overload_id"], form)
                     missing = binding_reasons(
                         target.call_bindings.get(binding_key),
                         version,
                         source_parameters=candidate.get("parameters"),
                     )
-                    reasons.extend(missing)
+                    if active:
+                        reasons.extend(missing)
+                    else:
+                        missing = sorted(set(missing) | {"FRONTEND_VERSION_UNAVAILABLE"})
                     signature_bindings.append(
                         {
                             "symbol_id": binding_key[0],
@@ -126,6 +132,8 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
                             "reasons": missing,
                         }
                     )
+                if not frontend_available:
+                    reasons.append("FRONTEND_VERSION_UNAVAILABLE")
             else:
                 reasons.append("COMPILER_BINDING_MISSING")
             reasons = sorted(set(reasons))

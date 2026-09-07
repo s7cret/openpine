@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.abs_v1","abi_injections":[],"abi_result_type":"float","arguments":["close"],"declared_binding":["pine:function:math.abs","pine:function:math.abs#canonical","FUNCTION"],"source_name":"v4-abs-float-signed.pine","spelling":"abs","stateful":false}

@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.primitives.na_v1","abi_injections":["TX"],"abi_result_type":"bool","arguments":["close"],"declared_binding":["pine:function:na","pine:function:na#canonical","FUNCTION"],"result_projection":"bool_to_01","source_name":"v5-na-finite.pine","spelling":"na","stateful":false}

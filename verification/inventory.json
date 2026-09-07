@@ -5,18 +5,18 @@
     "deselected": 0
   },
   "pinelib": {
-    "count": 946,
-    "sha256": "sha256:e17dbe0e26780e80092b5cf9df57abea2b13024288ca196a443278983a2a480f",
+    "count": 966,
+    "sha256": "sha256:2396d3b8e8a3ca07839f3387bed6d5f5f1361df7ea16244867de7d9d55adc5c9",
     "deselected": 0
   },
   "pine2ast": {
-    "count": 1107,
-    "sha256": "sha256:fb69615b286ddcb876682302376071d69b70cd3aa0fb3feecb2fe6971098f96c",
+    "count": 1178,
+    "sha256": "sha256:aa7edbf91ef652a9c4f9bb76dbe1833898ff3a9561c83cd998cff8c11f256992",
     "deselected": 0
   },
   "ast2python": {
-    "count": 939,
-    "sha256": "sha256:803497fc92b963708072af39d85ff222fd9fdc97c1999c3044a870766261445a",
+    "count": 960,
+    "sha256": "sha256:2ba189962ccfe86bfe73e059fa2fc0271b298e263a140b6208426094101a683e",
     "deselected": 0
   },
   "backtest_engine": {
@@ -35,8 +35,8 @@
     "deselected": 5
   },
   "openpine": {
-    "count": 1710,
-    "sha256": "sha256:d34ad2e60db036feed0168ef0a20d0e9ac99ca206851a1513d71bbfea8c4ab2c",
+    "count": 2109,
+    "sha256": "sha256:a81eea6a1b5bf5e25c62e42c8190a673c393177ed6702761996a8f3502e7fd7d",
     "deselected": 0
   }
 }

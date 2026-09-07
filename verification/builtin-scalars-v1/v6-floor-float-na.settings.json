@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.floor_v1","abi_injections":[],"abi_result_type":"int","arguments":[{"$na":true}],"declared_binding":["pine:function:math.floor","pine:function:math.floor#canonical","NAMESPACE_FUNCTION"],"source_name":"v6-floor-float-na.pine","spelling":"math.floor","stateful":false}

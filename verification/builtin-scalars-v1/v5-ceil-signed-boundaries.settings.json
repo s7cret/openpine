@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.ceil_v1","abi_injections":[],"abi_result_type":"int","arguments":["close"],"declared_binding":["pine:function:math.ceil","pine:function:math.ceil#canonical","NAMESPACE_FUNCTION"],"source_name":"v5-ceil-signed-boundaries.pine","spelling":"math.ceil","stateful":false}

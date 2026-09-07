@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.abs_v1","abi_injections":[],"abi_result_type":"int","arguments":[0],"declared_binding":["pine:function:math.abs","pine:function:math.abs#overload:0","NAMESPACE_FUNCTION"],"source_name":"v6-abs-int-zero.pine","spelling":"math.abs","stateful":false}
