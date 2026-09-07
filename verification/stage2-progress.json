@@ -14,11 +14,11 @@
     "OP-19",
     "OP-31"
   ],
-  "implemented_block": "scalar_core_plus_locked_library_imports_local_candidate",
+  "implemented_block": "published_locked_imports_plus_reference_bindings_and_loop_values",
   "criteria": {
     "versioned_catalog": "partial_once_overlay_not_full_catalog",
-    "stateful_language_matrix": "partial_scalar_control_subset",
-    "imports": "partial_locked_same_version_scalar_local_candidate_not_process_accepted",
+    "stateful_language_matrix": "partial_scalar_and_array_reference_loop_value_subset",
+    "imports": "partial_locked_same_version_scalar_and_array_profiles",
     "independent_builtin_expected": "not_accepted"
   },
   "evidence_paths": [
@@ -29,10 +29,27 @@
     "rc6_tests/test_rc6_canonical_na_admission.py",
     "rc6_tests/test_rc6_library_imports.py",
     "docs/RC6_STAGE2_LOCKED_IMPORTS.md",
-    "docs/RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md"
+    "docs/RC6_STAGE2_LOCKED_IMPORTS_LOCAL_RECEIPT.md",
+    "docs/RC6_STAGE2_REFERENCE_LOOP_VALUES.md",
+    "rc6_tests/test_rc6_reference_loop_values.py"
   ],
   "tradingview_verified": false,
-  "local_candidate": {
+  "historical_joint_result": {
+    "count": 5017,
+    "source": "d09ff57721655918d3313634b2291c45a7e414e4",
+    "integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
+    "run_id": 34068163602,
+    "receipt": "docs/RC6_STAGE2_PUBLICATION.md",
+    "gates": {
+      "python_3_11": "passed",
+      "python_3_13": "passed",
+      "architecture_and_frozen_stage1_corpus": "passed",
+      "protected_worker_cases": 4,
+      "frontend_build_api": "passed",
+      "full_stage2": "not_accepted"
+    }
+  },
+  "historical_local_candidate": {
     "baseline": "85fa14ee7b95fa5c18314ba82c07379e8e0e2f80",
     "block": "locked_library_imports",
     "publication_status": "not_published",
@@ -53,19 +70,29 @@
       "protected_process_not_passed": 4
     }
   },
-  "historical_joint_result": {
-    "count": 5017,
-    "source": "d09ff57721655918d3313634b2291c45a7e414e4",
-    "integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-    "run_id": 34068163602,
-    "receipt": "docs/RC6_STAGE2_PUBLICATION.md",
-    "gates": {
-      "python_3_11": "passed",
-      "python_3_13": "passed",
-      "architecture_and_frozen_stage1_corpus": "passed",
-      "protected_worker_cases": 4,
-      "frontend_build_api": "passed",
-      "full_stage2": "not_accepted"
-    }
-  }
+  "imports_publication": {
+    "source": "79c89ea4e79f9925b4c7e3e9085f02eff0492492",
+    "run_id": 34100860965,
+    "python_3_11": "passed",
+    "python_3_13": "passed",
+    "frontend": "passed",
+    "count": 5137
+  },
+  "current_candidate": {
+    "block": "reference_loop_values",
+    "status": "awaiting_joint_verification",
+    "frozen_case_count": 5329,
+    "new_cases": 192,
+    "new_host_process_cases": 4,
+    "local_gate": "three_library_suites_and_25_host_cases_passed",
+    "full_stage2": "not_accepted"
+  },
+  "remaining_acceptance": [
+    "complete_version_exact_catalog",
+    "independent_expected_for_all_admitted_builtins",
+    "generic_UDT_enum_and_library_exports",
+    "varip_reference_semantics",
+    "once_historical_fill_recalculation",
+    "remaining_import_method_version_combinations"
+  ]
 }
