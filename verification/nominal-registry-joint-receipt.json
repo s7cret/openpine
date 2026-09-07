@@ -22,7 +22,7 @@
     "pine2ast": "61c503259744d1faa88959809776f4512d48c516"
   },
   "independent_review": "verification/nominal-registry-dependency-execution-review.json",
-  "independent_review_sha256": "3201f0a60656a665f165fd0070e195fb48df4fd763a703f4215f05a42501ead5",
+  "independent_review_sha256": "5cb4a76c84b10f07ef3fdb8280d1f1e111d2da6987634dcb45c97fe9ba40e1f8",
   "integrations": [
     {
       "name": "pinelib",
@@ -107,5 +107,7 @@
   "full_stage2_accepted": false,
   "full_builtin_expected_accepted": false,
   "tradingview_verified": false,
-  "nextwave_scalar_input_abort_and_inference_excluded": true
+  "nextwave_scalar_input_abort_and_inference_excluded": true,
+  "independent_review_raw_artifact_sha256": "3201f0a60656a665f165fd0070e195fb48df4fd763a703f4215f05a42501ead5",
+  "independent_review_digest_newlines": "LF"
 }
