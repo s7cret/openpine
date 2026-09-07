@@ -1,0 +1,36 @@
+name: Stage 2 offline verification tooling
+'on':
+  push:
+    branches: ['ops/stage2-verification-tools-20260907']
+permissions:
+  contents: write
+jobs:
+  tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Download verification-only wheels and exact hashes
+        run: |
+          mkdir -p "$RUNNER_TEMP/tools"
+          python -m pip download --only-binary=:all: --dest "$RUNNER_TEMP/tools" ruff build hatchling wheel setuptools
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'tools'
+          manifest={f.name:hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(p.glob('*.whl'))}
+          (p/'SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage2-verification-tools-${{ github.run_id }}
+          path: ${{ runner.temp }}/tools/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Archive only the temporary tooling branch
+        run: |
+          git push --atomic --force-with-lease=refs/heads/ops/stage2-verification-tools-20260907:${{ github.sha }} --force-with-lease=refs/tags/ops/stage2-verification-tools-20260907: origin ${{ github.sha }}:refs/tags/ops/stage2-verification-tools-20260907 :refs/heads/ops/stage2-verification-tools-20260907
