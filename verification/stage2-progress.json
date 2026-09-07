@@ -62,7 +62,9 @@
     "verification/nominal-registry-remote-source-review.json",
     "verification/nominal-registry-failed-execution-review.json",
     "verification/nominal-registry-dependency-source-review.json",
-    "verification/nominal-registry-dependency-implementation-receipt.json"
+    "verification/nominal-registry-dependency-implementation-receipt.json",
+    "verification/nominal-registry-dependency-inventory-review.json",
+    "verification/nominal-registry-dependency-remote-source-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -185,10 +187,10 @@
     "failed_joint_ci_gate": "architecture_forbidden_compiler_runtime_dependency",
     "dependency_repair_compiler": "d3bc3e68f5da52234013e922a62e22f97835e61b",
     "source_review": "verification/nominal-registry-source-review.json",
-    "inventory_collection_run": 34162643652,
-    "inventory_selected_count": 7218,
-    "inventory_added_count": 473,
-    "inventory_review": "verification/nominal-registry-inventory-review.json",
-    "remote_source_review": "verification/nominal-registry-remote-source-review.json"
+    "inventory_collection_run": 34166004875,
+    "inventory_selected_count": 7243,
+    "inventory_added_count": 498,
+    "inventory_review": "verification/nominal-registry-dependency-inventory-review.json",
+    "remote_source_review": "verification/nominal-registry-dependency-remote-source-review.json"
   }
 }

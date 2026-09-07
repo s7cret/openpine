@@ -163,3 +163,25 @@ abort changes remain excluded from this registry candidate.
 Receipts: `verification/nominal-registry-failed-execution-review.json`,
 `verification/nominal-registry-dependency-source-review.json`, and
 `verification/nominal-registry-dependency-implementation-receipt.json`.
+
+## Repaired candidate inventory review
+
+[Collection run 34166004875](https://github.com/s7cret/openpine/actions/runs/34166004875)
+checked host `3b355b3d93e4560654228a5b3631e5eba86f2e94` with corrected compiler
+`d3bc3e68f5da52234013e922a62e22f97835e61b`, against published baseline
+`2b91a8d818d0729143a849d99952a49396bdb727`. Both inventories contain **7243**
+mandatory tests and are byte-identical, SHA256
+`8cafd8990b420de79b5dd00fd30eb7829e5f35aaedf1fcb9e114bdcf1f9ce5a2`.
+All 6745 baseline tests and all 7218 prior registry tests remain. The only
+further additions are 25 compiler dependency-boundary cases; no removals or
+additional deselections occurred. Ast2Python now has 939 cases; every other
+component count matches the preceding 7218-case table.
+
+Independent review reconstructed all 32 baseline/candidate source archive trees
+and compared commit identities, file modes and reviewed source blobs. The exact
+uploaded compiler and host trees contain only the reviewed repair; later scalar
+and abort changes are excluded. Evidence is recorded in
+`verification/nominal-registry-dependency-inventory-review.json` and
+`verification/nominal-registry-dependency-remote-source-review.json`. This accepts
+the inventory change only. Complete execution and all aggregate gates remain
+required before registry integration or publication of a successful receipt.

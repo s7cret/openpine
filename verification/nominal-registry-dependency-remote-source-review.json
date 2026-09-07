@@ -1,0 +1,41 @@
+{
+  "schema_id": "openpine.nominal_registry_dependency_remote_source_review.v1",
+  "status": "EXACT_SOURCE_PASS_NOT_JOINT_EXECUTION",
+  "components": {
+    "ast2python": {
+      "baseline": "e0829d7881024abb8bb1882bafa0dad009068bb2",
+      "candidate": "d3bc3e68f5da52234013e922a62e22f97835e61b",
+      "tree": "52650d6cfe4bd047a12986c87e88635d05c8b66c",
+      "changed_files": [
+        "ast2python/artifacts/nominal_registry.py",
+        "docs/STAGE2_NOMINAL_REGISTRY.md",
+        "tests/test_locked_library_execution.py",
+        "tests/test_nominal_registry_admission.py",
+        "tests/test_nominal_registry_dependency_boundary.py",
+        "tests/test_nominal_registry_emission.py",
+        "tests/test_rc6_input_metadata.py"
+      ],
+      "complete_tree_matches_reviewed_overlay": true,
+      "later_scalar_and_abort_files_excluded": true
+    },
+    "openpine": {
+      "baseline": "93e6298977e17732c782b21d469d752727afee3f",
+      "candidate": "3b355b3d93e4560654228a5b3631e5eba86f2e94",
+      "tree": "8adcfda9521769e79d4e1ea5e3f921c922516c05",
+      "changed_files": [
+        "docs/RC6_LIFECYCLE_SOURCES.json",
+        "docs/RC6_STAGE2_NOMINAL_REGISTRY.md",
+        "openpine/runtime/rc6_executor.py",
+        "openpine/runtime/rc6_worker_runtime.py",
+        "verification/nominal-registry-dependency-implementation-receipt.json",
+        "verification/nominal-registry-dependency-source-review.json",
+        "verification/nominal-registry-failed-execution-review.json",
+        "verification/stage2-progress.json"
+      ],
+      "complete_tree_matches_reviewed_overlay": true,
+      "later_scalar_and_abort_files_excluded": true
+    }
+  },
+  "full_stage2_accepted": false,
+  "tradingview_verified": false
+}
