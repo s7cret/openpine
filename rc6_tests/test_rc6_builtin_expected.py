@@ -16,7 +16,7 @@ from ast2python.lowering import load_pinelib_target_manifest
 from pine2ast.hardening.consumer_bundle import build_consumer_bundle
 from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession, is_na, na
 from pinelib.input import InputRegistry
-from pinelib.runtime.metadata import BarValues
+from pinelib.runtime.metadata import BarValues, InstrumentContext
 from pinelib.state.checkpoint import from_portable
 
 from openpine.verification.builtins import build_builtin_surface, builtin_evidence_report
@@ -36,7 +36,7 @@ PATHS = (
 )
 
 
-def _session(version, metadata):
+def _session(version, metadata, settings=None):
     return RuntimeSession(
         RuntimeLanguageContext(
             version,
@@ -46,6 +46,8 @@ def _session(version, metadata):
             "compiler_annotation",
         ),
         inputs=InputRegistry.from_descriptors(metadata.get("inputs", {})),
+        instrument=InstrumentContext(**settings["instrument"])
+        if settings is not None and "instrument" in settings else None,
     )
 
 
@@ -98,7 +100,7 @@ def execute_case(case, path, *, corpus_path=CORPUS):
     settings, closes, bundle, key, target, namespace, metadata = _prepare_case(
         case["id"], corpus_path
     )
-    runtime = _session(case["pine_version"], metadata)
+    runtime = _session(case["pine_version"], metadata, settings)
     module, name = settings["abi_callable"].rsplit(".", 1)
     function = getattr(import_module(module), name)
     sequence = 0
@@ -155,7 +157,7 @@ def execute_case(case, path, *, corpus_path=CORPUS):
         events.append({"bar": index, "value": callback(index, close)})
         if path == "compiled_checkpoint" and index == 1:
             checkpoint = json.loads(json.dumps(runtime.checkpoint().to_dict()))
-            runtime = _session(case["pine_version"], metadata)
+            runtime = _session(case["pine_version"], metadata, settings)
             runtime.restore(checkpoint)
     return {
         "status": "completed",
