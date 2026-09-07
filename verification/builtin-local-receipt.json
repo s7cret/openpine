@@ -1,0 +1,1088 @@
+{
+  "schema_id": "openpine.builtin_local_review.v1",
+  "purpose": "Preserve original failures and focused local verification; not Linux or Stage2 acceptance",
+  "runtime_manifest_hash": "sha256:739bcc3e7167e49ecbb1f37c76b4fdb4763fad724364ba9ab1cebc989e17d9aa",
+  "xml_receipts": [
+    {
+      "name": "host_initial_historical",
+      "local_original": ".runtime/evidence/builtin-initial-historical.xml",
+      "sha256": "5e390ab6c53441dafa888135ed6a0362a503682c57b978af752705fecb41dec9",
+      "cases": 47,
+      "failures": 19,
+      "skips": 0,
+      "details": [
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v4-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    observed = execute_case(case, path)\n               ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:48: in execute_case\n    binding = target.call_bindings[key]\n              ^^^^^^^^^^^^^^^^^^^^^^^^^\nE   KeyError: ('pine:function:math.round', 'pine:function:math.round#overload:0', 'FUNCTION')"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v5-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    observed = execute_case(case, path)\n               ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:48: in execute_case\n    binding = target.call_bindings[key]\n              ^^^^^^^^^^^^^^^^^^^^^^^^^\nE   KeyError: ('pine:function:math.round', 'pine:function:math.round#overload:0', 'NAMESPACE_FUNCTION')"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v6-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    observed = execute_case(case, path)\n               ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:48: in execute_case\n    binding = target.call_bindings[key]\n              ^^^^^^^^^^^^^^^^^^^^^^^^^\nE   KeyError: ('pine:function:math.round', 'pine:function:math.round#overload:0', 'NAMESPACE_FUNCTION')"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v1-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 1 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.sqrt', overload_id='pine:function:math.sqrt#canonical', call_form='FUN...lue'}),), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v2-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 2 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.sqrt', overload_id='pine:function:math.sqrt#canonical', call_form='FUN...lue'}),), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v3-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 3 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.sqrt', overload_id='pine:function:math.sqrt#canonical', call_form='FUN...lue'}),), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v4-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 4 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.sqrt', overload_id='pine:function:math.sqrt#canonical', call_form='FUN...lue'}),), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v1-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 1 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.pow', overload_id='pine:function:math.pow#canonical', call_form='FUNCT...nent'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v2-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 2 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.pow', overload_id='pine:function:math.pow#canonical', call_form='FUNCT...nent'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v3-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 3 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.pow', overload_id='pine:function:math.pow#canonical', call_form='FUNCT...nent'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v4-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 4 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:math.pow', overload_id='pine:function:math.pow#canonical', call_form='FUNCT...nent'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v1-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 1 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.sma', overload_id='pine:function:ta.sma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v2-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 2 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.sma', overload_id='pine:function:ta.sma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v3-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 3 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.sma', overload_id='pine:function:ta.sma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v4-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 4 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.sma', overload_id='pine:function:ta.sma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v1-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 1 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.wma', overload_id='pine:function:ta.wma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v2-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 2 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.wma', overload_id='pine:function:ta.wma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v3-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 3 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.wma', overload_id='pine:function:ta.wma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_historical-v4-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:102: in test_independent_builtin_expected\n    if trial and path == \"compiled_rollback\":\n           ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:49: in execute_case\n    ???\nE   AssertionError: assert 4 in (5, 6)\nE    +  where (5, 6) = TargetCallBinding(symbol_id='pine:function:ta.wma', overload_id='pine:function:ta.wma#canonical', call_form='FUNCTION'...ngth'})), disposition='TARGET_DIRECT', delegation_owner=None, delegation_schema_id=None, delegation_capability_id=None).supported_pine_versions"
+        }
+      ]
+    },
+    {
+      "name": "host_mutating_target_rejected",
+      "local_original": ".runtime/evidence/builtin-wave-py313.xml",
+      "sha256": "4dd03482e71dd0759a42ddc569029fb2ffa86531c1b930e126496ea3064e2128",
+      "cases": 241,
+      "failures": 137,
+      "skips": 0,
+      "details": [
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v1-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v2-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v3-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v4-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v5-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v6-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v1-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v2-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v3-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v4-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v5-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v6-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v1-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v2-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v3-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v4-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v5-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v6-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v1-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v2-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v3-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v4-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v5-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v6-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v1-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v2-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v3-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v4-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v5-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v6-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v1-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v2-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v3-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v4-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v5-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v6-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v5-rsi-rising]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-rsi-rising.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_realtime-v6-rsi-rising]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-rsi-rising.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v1-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v2-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v3-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-round-negative-precision.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-round-negative-precision.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-round-negative-precision.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v1-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v2-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v3-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v1-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v2-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v3-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v1-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v2-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v3-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v1-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v2-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v3-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v1-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v2-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v3-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v1-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v2-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v3-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v4-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v5-rsi-rising]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-rsi-rising.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_rollback-v6-rsi-rising]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:111: in execute_case\n    callback(index, close + 100, trial=True)\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-rsi-rising.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v1-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v2-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v3-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-round-negative-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-round-negative-tie.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-round-negative-precision.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-round-negative-precision.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-round-negative-precision]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-round-negative-precision.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v1-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v2-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v3-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-round-positive-tie]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-round-positive-tie.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v1-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v2-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v3-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-exp-zero]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-exp-zero.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v1-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v2-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v3-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-sqrt-four]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v1-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v2-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v3-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-pow-three]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-pow-three.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v1-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v2-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v3-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-sma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v1-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv1-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v2-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv2-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v3-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv3-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v4-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv4-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-wma-warmup]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-wma-warmup.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v5-rsi-rising]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv5-rsi-rising.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_builtin_expected[compiled_checkpoint-v6-rsi-rising]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:130: in test_independent_builtin_expected\n    @pytest.mark.parametrize(\"path\", PATHS)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-rsi-rising.pine.py:22: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_expected_cannot_be_relabelled_as_another_execution[path]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:154: in test_independent_expected_cannot_be_relabelled_as_another_execution\n    \"fault\", [\"path\", \"binding\", \"version\", \"contract\", \"duplicate\", \"target\", \"catalog\"]\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_expected_cannot_be_relabelled_as_another_execution[binding]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:154: in test_independent_expected_cannot_be_relabelled_as_another_execution\n    \"fault\", [\"path\", \"binding\", \"version\", \"contract\", \"duplicate\", \"target\", \"catalog\"]\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_expected_cannot_be_relabelled_as_another_execution[version]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:154: in test_independent_expected_cannot_be_relabelled_as_another_execution\n    \"fault\", [\"path\", \"binding\", \"version\", \"contract\", \"duplicate\", \"target\", \"catalog\"]\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_expected_cannot_be_relabelled_as_another_execution[contract]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:154: in test_independent_expected_cannot_be_relabelled_as_another_execution\n    \"fault\", [\"path\", \"binding\", \"version\", \"contract\", \"duplicate\", \"target\", \"catalog\"]\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        },
+        {
+          "nodeid": "rc6_tests.test_rc6_builtin_expected::test_independent_expected_cannot_be_relabelled_as_another_execution[duplicate]",
+          "kind": "failure",
+          "type": null,
+          "failure_tail": "rc6_tests\\test_rc6_builtin_expected.py:154: in test_independent_expected_cannot_be_relabelled_as_another_execution\n    \"fault\", [\"path\", \"binding\", \"version\", \"contract\", \"duplicate\", \"target\", \"catalog\"]\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:112: in execute_case\n    events.append({\"bar\": index, \"value\": callback(index, close)})\n                                          ^^^^^^^^^^^^^^^^^^^^^^\nrc6_tests\\test_rc6_builtin_expected.py:100: in callback\n    namespace[\"GeneratedScript\"](tx).run()\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nv6-sqrt-four.pine.py:21: in __init__\n    ???\nE   RuntimeError: PineLib target manifest mismatch: 'sha256:57375562e358725d22f96dbbd6045c6820a4217ab9b421b2d46721b13f1a5bfe'"
+        }
+      ]
+    },
+    {
+      "name": "host_final_py311",
+      "local_original": ".runtime/evidence/builtin-final-311.xml",
+      "sha256": "46f7ef3f5f2be22c8328717e830d94c3a2044965fe2793e634575e72832a34d7",
+      "cases": 247,
+      "failures": 0,
+      "skips": 0,
+      "details": []
+    },
+    {
+      "name": "host_final_py313",
+      "local_original": ".runtime/evidence/builtin-final-313.xml",
+      "sha256": "28117bfbd516669450f650ef2d17972392ab7d150aa3d4a77f56c7ff548bae1a",
+      "cases": 247,
+      "failures": 0,
+      "skips": 0,
+      "details": []
+    },
+    {
+      "name": "report_negative_gate_py313",
+      "local_original": ".runtime/evidence/builtin-report-gate-313.xml",
+      "sha256": "f5bb5abbaa85ab67a5c2b4fb7a1d51e6adceebf9458ddcecc0b7bc8d9a203a1b",
+      "cases": 8,
+      "failures": 0,
+      "skips": 0,
+      "details": []
+    },
+    {
+      "name": "report_matching_gate_py313",
+      "local_original": ".runtime/evidence/builtin-matching-313.xml",
+      "sha256": "ebdd82c0fcb4a91810c953c867ae3b411d749b88c8acbfc47496652438f4e2b5",
+      "cases": 1,
+      "failures": 0,
+      "skips": 0,
+      "details": []
+    }
+  ],
+  "runtime_initial_results": [
+    {
+      "local_original": ".runtime/stack/pinelib/.validation/builtin-numeric-baseline.log",
+      "sha256": "2bada07bfc600cf0dbc6145ffef8e901f11a90a0414b178d8f4775870a3c8467",
+      "original_summary": [
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_integer_ties_up[-0.5-0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_integer_ties_up[-1.5--1]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_integer_ties_up[-2.5--2]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_explicit_precision_always_returns_float[-1.25-1--1.2]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_explicit_precision_always_returns_float[2.5-0-3.0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_explicit_precision_always_returns_float[-2.5-0--2.0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_explicit_precision_always_returns_float[125.0--1-130.0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_explicit_precision_always_returns_float[-125.0--1--120.0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_explicit_precision_always_returns_float[0.0-0-0.0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_mintick_uses_the_same_ties_up_rule[-1.225-0.05--1.2]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_mintick_uses_the_same_ties_up_rule[-0.005-0.01-0.0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_mintick_uses_the_same_ties_up_rule[-0.125-0.25-0.0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_mintick_compiled_target_reads_injected_instrument[5]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_mintick_compiled_target_reads_injected_instrument[6]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_round_na_and_large_finite_numbers",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_audited_modern_targets_are_fully_bound[math.exp]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_audited_modern_targets_are_fully_bound[math.round]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_audited_modern_targets_are_fully_bound[math.round_to_mintick]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_audited_modern_targets_are_fully_bound[ta.macd]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_audited_modern_targets_are_fully_bound[ta.rsi]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_audited_source_parameter_names_and_qualifiers",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_historical_bindings_preserve_exact_version_and_identity[exp-math.exp-parameters0]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_historical_bindings_preserve_exact_version_and_identity[round-math.round-parameters1]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_historical_bindings_preserve_exact_version_and_identity[macd-ta.macd-parameters2]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_historical_bindings_preserve_exact_version_and_identity[rsi-ta.rsi-parameters3]",
+        "FAILED tests/test_builtin_numeric_contracts.py::test_historical_rsi_does_not_admit_ratio_overload",
+        "26 failed, 22 passed in 1.94s"
+      ]
+    },
+    {
+      "local_original": ".runtime/stack/pinelib/.validation/builtin-numeric-initial-fix.log",
+      "sha256": "1b40948787d140dd5ff8bb9a0fb6bd389ba2c4e4a04907cd8368099c5c0fe8b2",
+      "original_summary": [
+        "FAILED tests/test_stage3_math_string_time_input.py::test_math_na_domains_rounding_and_varargs",
+        "1 failed, 52 passed in 1.76s"
+      ]
+    },
+    {
+      "local_original": ".runtime/stack/pinelib/.validation/float-cast-baseline.log",
+      "sha256": "72c0ce90c40bc532bf8778a401786a7b15da7aacc161ce17b8c3b43ea4fdc8c8",
+      "original_summary": [
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_preserves_na_and_converts_only_pine_numbers[1]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_preserves_na_and_converts_only_pine_numbers[2]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_preserves_na_and_converts_only_pine_numbers[3]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_preserves_na_and_converts_only_pine_numbers[4]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_preserves_na_and_converts_only_pine_numbers[5]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_preserves_na_and_converts_only_pine_numbers[6]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_rejects_python_coercions_and_nonfinite_values[1]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_rejects_python_coercions_and_nonfinite_values[2]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_rejects_python_coercions_and_nonfinite_values[3]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_rejects_python_coercions_and_nonfinite_values[4]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_rejects_python_coercions_and_nonfinite_values[5]",
+        "FAILED tests/test_float_cast_abi.py::test_float_cast_rejects_python_coercions_and_nonfinite_values[6]",
+        "FAILED tests/test_float_cast_abi.py::test_float_target_has_exact_source_identity_and_complete_binding",
+        "13 failed, 1 passed in 3.29s"
+      ]
+    },
+    {
+      "local_original": ".runtime/stack/pinelib/.validation/unary-binding-baseline.log",
+      "sha256": "edaa6ba1c6bb98e1bc75e762978c820a1887c128ca9e2148f15de46768ae12ac",
+      "original_summary": [
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[abs-1.25-1]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[abs-1.25-2]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[abs-1.25-3]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[abs-1.25-4]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[abs-1.25-5]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[abs-1.25-6]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[ceil--1-1]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[ceil--1-2]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[ceil--1-3]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[ceil--1-4]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[ceil--1-5]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[ceil--1-6]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[floor--2-1]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[floor--2-2]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[floor--2-3]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[floor--2-4]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[floor--2-5]",
+        "FAILED tests/test_audited_unary_math_bindings.py::test_audited_unary_source_bindings_and_typed_results[floor--2-6]"
+      ]
+    }
+  ],
+  "full_stage2_accepted": false,
+  "tradingview_verified": false
+}
