@@ -1,0 +1,164 @@
+name: Archive verified registry history and remove exact merged branches
+'on':
+  push:
+    branches:
+    - codex/registry-cleanup-20260908-34166526575
+permissions:
+  contents: write
+concurrency:
+  group: registry-cleanup-20260908-34166526575-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  archive_and_cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.sha }}
+        fetch-depth: 0
+        persist-credentials: true
+        token: ${{ github.token }}
+    - name: Archive exact verified history then delete with old-SHA guards
+      shell: bash
+      env:
+        CLEANUP_PLAN: '{"repository": "s7cret/openpine", "feature_branch": "stage2/nominal-registry-20260907", "release_branch":
+          "release/5.0.0rc6", "cleanup_branch": "codex/registry-cleanup-20260908-34166526575", "operations_branch": "stage2/nominal-ci-20260907",
+          "archive_prefix": "archive/stage2/registry-cleanup-20260908-34166526575", "workflow_path": ".github/workflows/registry-cleanup-20260908-34166526575.yml",
+          "verified_run": "https://github.com/s7cret/openpine/actions/runs/34166526575", "candidate": "6bc502705d7f0210fc87e757a9d378fb07ad9c15",
+          "integration": "ceca4853caa4a07419e9d14cfafcc77e172e3c6d", "release": "58aa4f8aa76573eb1e9d1c3c6ca04eb606954fc8",
+          "publication_only_paths": ["verification/nominal-registry-dependency-execution-review.json", "verification/nominal-registry-joint-receipt.json",
+          "verification/stage2-progress.json", "docs/RC6_STAGE2_REGISTRY_PUBLICATION.md", "docs/RC6_STAGE2_NOMINAL_REGISTRY.md"],
+          "verified_operations": "506a979ddb6a8985bd18ab045e41dd8619e6a39a", "candidate_tree": "3b1e7276a9badaf6fcfb4c31884b7454c2c1d3d1"}'
+      run: |
+        set -euo pipefail
+        python - <<'BUILTIN_CLEANUP'
+        import json, os, pathlib, re, subprocess
+
+        plan = json.loads(os.environ['CLEANUP_PLAN'])
+        evidence = pathlib.Path(os.environ['RUNNER_TEMP'])/'builtin-cleanup-evidence'
+        evidence.mkdir(exist_ok=True)
+        receipt = {'schema_id':'openpine.builtin_branch_cleanup.v1', 'plan':plan,
+                   'status':'checking', 'release_updated':False, 'full_stage2_accepted':False}
+        (evidence/'plan.json').write_text(json.dumps(plan,indent=2)+'\n')
+
+        def git(*args):
+            result = subprocess.run(['git',*args],text=True,capture_output=True)
+            if result.returncode:
+                raise RuntimeError('Git operation failed: '+args[0]+'\n'+result.stderr)
+            return result.stdout.strip()
+
+        def ancestor(old,new):
+            result = subprocess.run(['git','merge-base','--is-ancestor',old,new],capture_output=True)
+            if result.returncode != 0:
+                raise RuntimeError('Required release/source ancestry is absent: '+old+' -> '+new)
+
+        def remote_refs(names):
+            text = git('ls-remote','--refs','origin',*names)
+            return {line.split()[1]:line.split()[0] for line in text.splitlines()}
+
+        def execute():
+            repo = os.environ['GITHUB_REPOSITORY'].lower()
+            if repo != plan['repository'].lower():
+                raise RuntimeError('This workflow may mutate only its explicitly named own repository')
+            feature = 'refs/heads/'+plan['feature_branch']
+            release = 'refs/heads/'+plan['release_branch']
+            cleanup = 'refs/heads/'+plan['cleanup_branch']
+            operations = 'refs/heads/'+plan['operations_branch']
+            workflow_sha = os.environ['GITHUB_SHA']
+            if os.environ['GITHUB_REF'] != cleanup or re.fullmatch('[0-9a-f]{40}',workflow_sha) is None:
+                raise RuntimeError('Cleanup must run on its unique dedicated push branch')
+            if len({feature,release,cleanup,operations}) != 4:
+                raise RuntimeError('Protected and cleanup refs must be distinct')
+            if git('rev-parse','HEAD') != workflow_sha:
+                raise RuntimeError('Cleanup checkout differs from triggering commit')
+            if git('status','--porcelain','--untracked-files=no'):
+                raise RuntimeError('Cleanup checkout has tracked modifications')
+            tags = {'refs/tags/'+plan['archive_prefix']+'/candidate':plan['candidate'],
+                    'refs/tags/'+plan['archive_prefix']+'/cleanup-workflow':workflow_sha}
+            if plan.get('verified_operations'):
+                tags['refs/tags/'+plan['archive_prefix']+'/verification-operations'] = plan['verified_operations']
+            names = [feature,release,cleanup,operations,*tags]
+            refs = remote_refs(names)
+            if refs.get(release) != plan['release']:
+                raise RuntimeError('Release HEAD moved; refresh and review the cleanup plan')
+            # Refuse to discard any nominal candidate additions after the tested tip.
+            if feature not in refs and cleanup not in refs:
+                if all(refs.get(tag)==sha for tag,sha in tags.items()):
+                    receipt.update(status='already_complete', archives=tags, observed_refs=refs)
+                    return
+                raise RuntimeError('Absent cleanup branches do not have the complete expected archive tags')
+            if refs.get(feature) != plan['candidate'] or refs.get(cleanup) != workflow_sha:
+                raise RuntimeError('Feature or cleanup HEAD changed; preserve both branches')
+            for tag,sha in tags.items():
+                if tag in refs and refs[tag] != sha:
+                    raise RuntimeError('Immutable archive tag collision: '+tag)
+            # Full checkout fetches the branch histories. Fetch exact reviewed commits as
+            # well; this never updates any remote reference or forces a local ref.
+            git('fetch','--no-tags','origin',plan['candidate'],plan['integration'],plan['release'])
+            ancestor(plan['candidate'],plan['integration'])
+            ancestor(plan['integration'],plan['release'])
+            ancestor(plan['release'],workflow_sha)
+            candidate_tree = git('rev-parse',plan['candidate']+'^{tree}')
+            if git('rev-parse',plan['integration']+'^{tree}') != candidate_tree:
+                raise RuntimeError('Release integration tree differs from tested candidate tree')
+            if plan.get('candidate_tree') and candidate_tree != plan['candidate_tree']:
+                raise RuntimeError('Candidate tree differs from the joint verification receipt')
+            changes = git('diff','--name-only',plan['release'],workflow_sha).splitlines()
+            if changes != [plan['workflow_path']]:
+                raise RuntimeError('Dedicated cleanup branch contains changes outside its one workflow')
+            documentation_changes = git('diff','--name-only',plan['integration'],plan['release']).splitlines()
+            if not set(documentation_changes) <= set(plan['publication_only_paths']):
+                raise RuntimeError('Release contains unreviewed changes after same-tree integration')
+            if plan.get('verified_operations'):
+                if operations not in refs:
+                    raise RuntimeError('The operations branch must remain available for subsequent CI')
+                git('fetch','--no-tags','origin',plan['verified_operations'],refs[operations])
+                ancestor(plan['verified_operations'],refs[operations])
+            receipt.update(candidate_tree=candidate_tree, cleanup_sha=workflow_sha,
+                           publication_changes=documentation_changes, archives=tags,
+                           observed_before=refs)
+            # Tags are created with ordinary no-force refspecs, then read back and proved
+            # durable before any deletion. Existing exact tags make reruns idempotent.
+            missing = [sha+':'+tag for tag,sha in tags.items() if tag not in refs]
+            if missing:
+                git('push','--atomic','origin',*missing)
+            archived = remote_refs(names)
+            if any(archived.get(tag)!=sha for tag,sha in tags.items()):
+                raise RuntimeError('Archive read-back verification failed; preserve branches')
+            if (archived.get(feature)!=plan['candidate'] or archived.get(cleanup)!=workflow_sha
+                    or archived.get(release)!=plan['release']):
+                raise RuntimeError('A reviewed branch moved after archiving; preserve branches')
+            receipt['status'] = 'archived_before_deletion'
+            (evidence/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+            # These leases are compare-and-swap guards for deletion ONLY. There is no
+            # --force, no '+' refspec, and no release/operations update in either push.
+            # Atomic deletion means either both exact nominated heads disappear or neither.
+            git('push','--atomic',
+                '--force-with-lease='+feature+':'+plan['candidate'],
+                '--force-with-lease='+cleanup+':'+workflow_sha,
+                'origin',':'+feature,':'+cleanup)
+            after = remote_refs(names)
+            if feature in after or cleanup in after or any(after.get(t)!=s for t,s in tags.items()):
+                raise RuntimeError('Cleanup postcondition failed; inspect durable archive receipt')
+            if plan.get('verified_operations') and operations not in after:
+                raise RuntimeError('Operations branch disappeared externally during cleanup')
+            # Concurrent legitimate release/operations advances are recorded, never undone.
+            receipt.update(status='complete', observed_after=after,
+                           deleted_refs=[feature,cleanup], protected_refs=[release,operations])
+
+        try:
+            execute()
+        except Exception as error:
+            receipt.update(status='failed',error=str(error))
+            raise
+        finally:
+            (evidence/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        BUILTIN_CLEANUP
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: registry-cleanup-20260908-34166526575-openpine-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/builtin-cleanup-evidence/
+        if-no-files-found: error
+        retention-days: 90
