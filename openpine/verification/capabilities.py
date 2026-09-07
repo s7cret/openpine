@@ -69,11 +69,16 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
             seen.add(key)
             covered.add((version, row["symbol_id"], category))
             front = name in catalog.get(category, {})
+            frontend_identity = (
+                front and catalog[category][name].get("symbol_id") == row["symbol_id"]
+            )
             version_ok = version in active_row["version_availability"]
             disposition = active_row["disposition"]
             reasons = []
             if not front:
                 reasons.append("FRONTEND_UNAVAILABLE")
+            elif not frontend_identity:
+                reasons.append("FRONTEND_SYMBOL_MISMATCH")
             if not version_ok:
                 reasons.append("VERSION_UNAVAILABLE")
             if disposition == "UNSUPPORTED_FAIL_CLOSED":
@@ -98,7 +103,7 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
             if category in {"variables", "constants"}:
                 binding = target.value_bindings.get(row["symbol_id"])
                 reasons.extend(binding_reasons(binding, version))
-            elif front and category in {"functions", "methods"}:
+            elif frontend_identity and category in {"functions", "methods"}:
                 entry = catalog[category][name]
                 form = (
                     "METHOD"
