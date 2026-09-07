@@ -1,0 +1,25 @@
+{
+  "schema_id": "openpine.host_checkpoint_control_source_review.v1",
+  "status": "SOURCE_REVIEW_PASS_EXECUTION_PENDING",
+  "files": {
+    "openpine/runtime/generated_checkpoint.py": {
+      "raw_sha256": "52d3e70588abe9590eff3c00eabd73050013621736dd50ff5f3e99944c5e4281",
+      "lf_sha256": "00a629894ca58baf2c577703dd34d11244134bee760f1529bed0198e1e30406f"
+    },
+    "rc6_tests/test_rc6_checkpoint_control.py": {
+      "raw_sha256": "8261c08e7c471f933ff7754bec8ee9b8a4ce8c0b1f002f4a04061b7757887c22",
+      "lf_sha256": "8261c08e7c471f933ff7754bec8ee9b8a4ce8c0b1f002f4a04061b7757887c22"
+    }
+  },
+  "intended_test_cases": 28,
+  "checks": [
+    "Publication classification delegated to runtime owner is_publication; modern callback phase BAR_COMMIT alone is no publication.",
+    "Modern bound mode agrees with direct/event host receipt mode; legacy entries keep previous path.",
+    "Host export explicitly rejects native pending_abort even if cursor.open_bar is None.",
+    "Host restore first validates native candidate then rejects pending_abort before replacing any live host owners.",
+    "Tests preserve full/compact and callback/deferred cases, same continuation, rehashed negative and live identity atomicity."
+  ],
+  "windows_execution": "Collection blocked by fcntl; intended28 not claimed executed.",
+  "prior_registry_candidate_modified": false,
+  "full_stage2_accepted": false
+}
