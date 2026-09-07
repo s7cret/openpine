@@ -11,6 +11,7 @@ from typing import Any
 from ast2python.artifacts.nominal_registry import admitted_nominal_registry
 from openpine.run_identity import generated_artifact_hash, verified_generated_source
 from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
+from pinelib.reference.registry import NominalTypeRegistry
 from pinelib.runtime.delegated import DelegatedCapabilityDispatcher
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
 from pinelib.runtime.session import CallbackResult
@@ -59,7 +60,9 @@ class RC6RuntimeExecutor:
         self.namespace = MappingProxyType(namespace)
         self.session = RuntimeSession(
             language,
-            nominal_registry=admitted_nominal_registry(namespace, envelope),
+            nominal_registry=admitted_nominal_registry(
+                namespace, envelope, admit_registry=NominalTypeRegistry.from_json
+            ),
             instrument=instrument,
             timeframe=timeframe,
             delegated_dispatcher=delegated_dispatcher,

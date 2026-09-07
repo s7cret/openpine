@@ -35,6 +35,7 @@ from openpine_contracts import (
     verify_content_hash,
 )
 from pinelib import CallbackFrame, RuntimeLanguageContext, RuntimeSession
+from pinelib.reference.registry import NominalTypeRegistry
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
 from pinelib.runtime.session import CallbackResult
 
@@ -320,7 +321,9 @@ class RC6GeneratedScriptSession(GeneratedCheckpointMixin):
         ))
         self.session = RuntimeSession(
             language, policies,
-            nominal_registry=admitted_nominal_registry(namespace, envelope),
+            nominal_registry=admitted_nominal_registry(
+                namespace, envelope, admit_registry=NominalTypeRegistry.from_json
+            ),
             inputs=self.inputs,
             instrument=instrument,
             timeframe=timeframe,
