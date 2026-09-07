@@ -92,12 +92,12 @@ previous 122; the final proposed compiler inventory is 832.
 The host matrix required about 14 minutes on this Windows machine. The native job
 timeout is increased from 25 to 40 minutes to accommodate the expanded full suite;
 all test and acceptance commands remain unchanged. The authoritative next gate is
-an explicit inventory proposal
-against the published 5842-test nominal baseline, followed by the full permanent
+the recorded inventory proposal
+against the published 5842-test nominal baseline and the full permanent
 Linux checks at immutable source SHAs, real AppArmor/bubblewrap workers, both
 Python versions, unchanged Stage 1 corpus, frontend tests and distributions.
-Collection alone is not a passing test result. The final publication receipt will
-record the reviewed inventory and completed joint run separately.
+Collection alone is not a passing test result. The completed joint run and integrations are recorded separately in
+`RC6_STAGE2_BUILTIN_PUBLICATION.md`.
 
 The corpus does not establish a full builtin matrix, all na/type/qualifier/history
 edges, TradingView execution parity, modern EMA seeding, complete library methods
@@ -133,5 +133,16 @@ external live-network deselections remain a separate policy.
 | OpenPine | 1399 | 1674 |
 
 `verification/builtin-inventory-review.json` records the exact added nodeids,
-source archives and Python artifact hashes. This accepts the new inventory only;
-full execution and Stage 2 acceptance are still pending.
+source archives and Python artifact hashes. The inventory review itself accepts only the new inventory. The subsequent
+full execution passed in run 34159064376; Stage 2 acceptance remains pending.
+
+## Completed joint execution
+
+The exact candidate `091a88668414a12fe0a2c2e13ff11715075562f8` passed
+6745 mandatory tests on each of Python 3.11 and 3.13, with zero failures, errors
+or skips. All five 47-case evidence paths passed on both versions. Frontend
+passed 152 Vitest and 22 Node tests and the production build. The independent
+review, exact source trees, two-parent integrations and remaining scope are
+recorded in `RC6_STAGE2_BUILTIN_PUBLICATION.md` and
+`verification/builtin-joint-review.json`. This is bounded builtin evidence,
+covering 41 of 2374 installed callable signatures, not full Stage 2 acceptance.

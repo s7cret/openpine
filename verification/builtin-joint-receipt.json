@@ -1,0 +1,104 @@
+{
+  "schema_id": "openpine.builtin_joint_publication.v1",
+  "workflow_run_id": 34159064376,
+  "workflow_url": "https://github.com/s7cret/OpenPine/actions/runs/34159064376",
+  "operations_sha": "1db2d1178b543a60ebc21c19a4a808141f5d5ad5",
+  "verified_host_sha": "091a88668414a12fe0a2c2e13ff11715075562f8",
+  "verified_host_tree": "c67b12cb78431d576e52636a1bd2dd8e1055c34f",
+  "source_pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "028b2f42ac816200aedf7837a7fc7f55b3b668cc",
+    "pinelib": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "d2b4a0f9796e23b33025d10a4918317fde4608ad"
+  },
+  "independent_review": "verification/builtin-joint-review.json",
+  "independent_review_lf_sha256": "sha256:9ad239b7a9dc3f6f43c89d5755818fc3f67eec6bdc6240766f952de7b7969050",
+  "integrations": {
+    "pine2ast": {
+      "prior_release": "c5923aeab0e914be244c5c085bb5be8b9f8ea0fb",
+      "tested_candidate": "d2b4a0f9796e23b33025d10a4918317fde4608ad",
+      "integration_commit": "61c503259744d1faa88959809776f4512d48c516",
+      "tested_and_integrated_tree": "16cd1da8fc89cbbb31963a95ebdda38970241f3c"
+    },
+    "pinelib": {
+      "prior_release": "9a6fe64657fda0b1eb7498382fdc86fa9de52205",
+      "tested_candidate": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+      "integration_commit": "7b53a898c79ca57cdc4b6f01d0df2a2b6704af0f",
+      "tested_and_integrated_tree": "42cffb5475f8dd438844dba36832991366d54347"
+    },
+    "ast2python": {
+      "prior_release": "7737d0e0d903268be37bee3c0cafc6341045ae0d",
+      "tested_candidate": "028b2f42ac816200aedf7837a7fc7f55b3b668cc",
+      "integration_commit": "72a8148e50e6f445da48297ea592e7fe399ec1f2",
+      "tested_and_integrated_tree": "b3132d64b39203fcb88f6bd04d964b51b6673ef3"
+    },
+    "openpine": {
+      "prior_release": "6b3ac81b46575d2bc105cfda334348b1a62387c7",
+      "tested_candidate": "091a88668414a12fe0a2c2e13ff11715075562f8",
+      "integration_commit": "a08c2d9d1fae143159304f3a1868fbbaf8b27e63",
+      "tested_and_integrated_tree": "c67b12cb78431d576e52636a1bd2dd8e1055c34f"
+    }
+  },
+  "release_updates": "fast_forward_without_force",
+  "functional_test_correction_and_documentation_history_preserved": true,
+  "backend": {
+    "311": {
+      "python": "3.11",
+      "artifact_id": 10032278275,
+      "artifact_sha256": "sha256:3ab6a2135628b1d32c3eac82a5563de1cc457817a20f97a1dee518a4e295820e",
+      "total_tests": 6745,
+      "source_archive_sha256": "sha256:ed22fe868630f4a0d993f0d180f1730afa2630146166508df2765c093d92a68e",
+      "stage1_content_hash": "sha256:8829de7b23a3f6034405d78c733f227ba5897e8eb2d8394205d41b031ec2e50b"
+    },
+    "313": {
+      "python": "3.13",
+      "artifact_id": 10032255658,
+      "artifact_sha256": "sha256:b89eb0d74e3f5595ddbff06465f92a65aff1496c38079e348f69dc853ebf0ec3",
+      "total_tests": 6745,
+      "source_archive_sha256": "sha256:ed22fe868630f4a0d993f0d180f1730afa2630146166508df2765c093d92a68e",
+      "stage1_content_hash": "sha256:8829de7b23a3f6034405d78c733f227ba5897e8eb2d8394205d41b031ec2e50b"
+    }
+  },
+  "frontend": {
+    "artifact_id": 10032288068,
+    "artifact_sha256": "sha256:3f7147ce243040616e17bb4036da3a01af78c0920a99349cf361700134d573a0",
+    "vitest_count": 152,
+    "node_test_count": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "production_build_passed": true,
+    "frontend_backend_exact_source_check_passed": true,
+    "junit_sha256": "sha256:1f9e7d066560d618714960dfb9667803643d88841acf33dda41078b9467bd62d",
+    "job_log_path": ".runtime/evidence/builtin-independent-frontend-job.log",
+    "job_log_sha256": "sha256:5f88230e817a1e9aa3f2d83566f40b9e8109577707d7552c5bd90be2ef15997d",
+    "build_file_count": 27
+  },
+  "builtin_evidence": {
+    "corpus_hash": "sha256:0c2ba86607654abd0eb34d7726272005c73f0f0d0b738efd7a630ed0664820a0",
+    "manual_expected_cases": 47,
+    "paths_per_python": 5,
+    "observations_per_python": 235,
+    "signatures_with_passing_examples": 41,
+    "signature_denominator": 2374,
+    "signatures_without_passing_examples": 2333
+  },
+  "hash_identity": {
+    "raw_pinelib_manifest": "sha256:739bcc3e7167e49ecbb1f37c76b4fdb4763fad724364ba9ab1cebc989e17d9aa",
+    "compiler_projected_target_manifest": "sha256:71fdc1f483eb831ef8d21fe05b3d5858f1c55369cbe5b5dac55bfa985185dace",
+    "note": "The two hashes identify different owned representations; observed target hashes match the compiler projection. Current local next-wave registry hash is outside this receipt."
+  },
+  "frozen_stage1_unchanged": true,
+  "inventory_baseline": 5842,
+  "inventory_total": 6745,
+  "inventory_added": 903,
+  "inventory_removed": 0,
+  "full_stage2_accepted": false,
+  "full_builtin_expected_accepted": false,
+  "tradingview_verified": false,
+  "local_nextwave_excluded": true,
+  "cleanup_status": "pending_archive_and_guarded_delete"
+}
