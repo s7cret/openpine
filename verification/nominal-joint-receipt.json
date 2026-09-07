@@ -1,0 +1,278 @@
+{
+  "schema_id": "openpine.nominal_joint_receipt.v1",
+  "run_id": 34153963095,
+  "run_url": "https://github.com/s7cret/openpine/actions/runs/34153963095",
+  "host_sha": "6de3116c011ec6f6a9e437f4d9d6ee92641d5b21",
+  "host_tree": "ef5b22e1088f4f38f52a6e54d9a204ccdc601bcb",
+  "python": {
+    "311": {
+      "suites": {
+        "ast2python": {
+          "tests": 684,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "backtest_engine": {
+          "tests": 1102,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "marketdata-provider": {
+          "tests": 601,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "openpine-contracts": {
+          "tests": 557,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "openpine": {
+          "tests": 1399,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "optimizer": {
+          "tests": 281,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "pine2ast": {
+          "tests": 735,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "pinelib": {
+          "tests": 483,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "stage1": {
+        "architecture_hash": "sha256:62a080d6093e039e916939dc31883da227dbc9f018d933849b356a9d13a7b8ca",
+        "capability_graphs": {
+          "bulk_backtest": {
+            "counts": {
+              "BOUND": 949,
+              "UNAVAILABLE": 5699,
+              "UNVERIFIED": 1486
+            },
+            "hash": "sha256:fe62732077cfb1ba35da4db39b218cbb114128c8b89fcdc4baa46909419a6169"
+          },
+          "interactive": {
+            "counts": {
+              "BOUND": 949,
+              "UNAVAILABLE": 5699,
+              "UNVERIFIED": 1486
+            },
+            "hash": "sha256:bb179854fb119ca3345731528e4b2bd613781add24fe8ad181d5ee3177355bae"
+          }
+        },
+        "conformance_hash": "sha256:5c526a6df1d0779929b49d7861ebbc45daf65a0a854fec185c24e63f5b7cca16",
+        "content_hash": "sha256:b8520d3ffdbc19185781ea320590d750fbfe658a074e3e4a58c9c5c37e078cf8",
+        "ok": true,
+        "schema_id": "openpine.stage1_receipt.v1",
+        "scope": "stage1_foundation_not_full_OP03_12_15_32_35_acceptance",
+        "source_pins": {
+          "ast2python": "30512014a45db1be29def8fa8c83eb35b0d4b4c2",
+          "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+          "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+          "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+          "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+          "pine2ast": "7107e797e32c360d2fce90a6416297ef2076351e",
+          "pinelib": "ad235a8d7befc091808b20927139436eb4bdbf40"
+        },
+        "test_inventory": {
+          "ast2python": {
+            "count": 684,
+            "deselected": 0,
+            "sha256": "sha256:ea8a5add7776d5b02f8e6446fd8cb465989fb4b798d4996594c4768ba3c1491c"
+          },
+          "backtest_engine": {
+            "count": 1102,
+            "deselected": 0,
+            "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+          },
+          "marketdata-provider": {
+            "count": 601,
+            "deselected": 5,
+            "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+          },
+          "openpine": {
+            "count": 1399,
+            "deselected": 0,
+            "sha256": "sha256:297cf42ade3467d55f3b8cf2025c793cbb00fa27d975cf81b7e1bd534b14dc40"
+          },
+          "openpine-contracts": {
+            "count": 557,
+            "deselected": 0,
+            "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+          },
+          "optimizer": {
+            "count": 281,
+            "deselected": 0,
+            "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+          },
+          "pine2ast": {
+            "count": 735,
+            "deselected": 0,
+            "sha256": "sha256:2cba3a230dfe5ef672cc1354e3b57b004990de7907d2bbde13981be010dcab4a"
+          },
+          "pinelib": {
+            "count": 483,
+            "deselected": 0,
+            "sha256": "sha256:dcda3b43ec0b76f15bb1f1b15236948332921de965425af76cb118cfa6cc06ad"
+          }
+        },
+        "tradingview_verified": false
+      },
+      "artifact_sha256": "5918e42e844463e6aa4c98569b2d5f5e5457574a25f74df15d6fc90f0e7d0c65"
+    },
+    "313": {
+      "suites": {
+        "ast2python": {
+          "tests": 684,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "backtest_engine": {
+          "tests": 1102,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "marketdata-provider": {
+          "tests": 601,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "openpine-contracts": {
+          "tests": 557,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "openpine": {
+          "tests": 1399,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "optimizer": {
+          "tests": 281,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "pine2ast": {
+          "tests": 735,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "pinelib": {
+          "tests": 483,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "stage1": {
+        "architecture_hash": "sha256:62a080d6093e039e916939dc31883da227dbc9f018d933849b356a9d13a7b8ca",
+        "capability_graphs": {
+          "bulk_backtest": {
+            "counts": {
+              "BOUND": 949,
+              "UNAVAILABLE": 5699,
+              "UNVERIFIED": 1486
+            },
+            "hash": "sha256:fe62732077cfb1ba35da4db39b218cbb114128c8b89fcdc4baa46909419a6169"
+          },
+          "interactive": {
+            "counts": {
+              "BOUND": 949,
+              "UNAVAILABLE": 5699,
+              "UNVERIFIED": 1486
+            },
+            "hash": "sha256:bb179854fb119ca3345731528e4b2bd613781add24fe8ad181d5ee3177355bae"
+          }
+        },
+        "conformance_hash": "sha256:5c526a6df1d0779929b49d7861ebbc45daf65a0a854fec185c24e63f5b7cca16",
+        "content_hash": "sha256:b8520d3ffdbc19185781ea320590d750fbfe658a074e3e4a58c9c5c37e078cf8",
+        "ok": true,
+        "schema_id": "openpine.stage1_receipt.v1",
+        "scope": "stage1_foundation_not_full_OP03_12_15_32_35_acceptance",
+        "source_pins": {
+          "ast2python": "30512014a45db1be29def8fa8c83eb35b0d4b4c2",
+          "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+          "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+          "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+          "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+          "pine2ast": "7107e797e32c360d2fce90a6416297ef2076351e",
+          "pinelib": "ad235a8d7befc091808b20927139436eb4bdbf40"
+        },
+        "test_inventory": {
+          "ast2python": {
+            "count": 684,
+            "deselected": 0,
+            "sha256": "sha256:ea8a5add7776d5b02f8e6446fd8cb465989fb4b798d4996594c4768ba3c1491c"
+          },
+          "backtest_engine": {
+            "count": 1102,
+            "deselected": 0,
+            "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+          },
+          "marketdata-provider": {
+            "count": 601,
+            "deselected": 5,
+            "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+          },
+          "openpine": {
+            "count": 1399,
+            "deselected": 0,
+            "sha256": "sha256:297cf42ade3467d55f3b8cf2025c793cbb00fa27d975cf81b7e1bd534b14dc40"
+          },
+          "openpine-contracts": {
+            "count": 557,
+            "deselected": 0,
+            "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+          },
+          "optimizer": {
+            "count": 281,
+            "deselected": 0,
+            "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+          },
+          "pine2ast": {
+            "count": 735,
+            "deselected": 0,
+            "sha256": "sha256:2cba3a230dfe5ef672cc1354e3b57b004990de7907d2bbde13981be010dcab4a"
+          },
+          "pinelib": {
+            "count": 483,
+            "deselected": 0,
+            "sha256": "sha256:dcda3b43ec0b76f15bb1f1b15236948332921de965425af76cb118cfa6cc06ad"
+          }
+        },
+        "tradingview_verified": false
+      },
+      "artifact_sha256": "f70501f326a90298ee8e54d1d28fda99dcb52d3d6d412b82932fc2acea89d332"
+    }
+  },
+  "frontend": {
+    "vitest_passed": 152,
+    "node_passed": 22,
+    "build": "passed"
+  },
+  "full_stage2_accepted": false,
+  "tradingview_verified": false
+}

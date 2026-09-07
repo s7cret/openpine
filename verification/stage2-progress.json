@@ -4,7 +4,16 @@
   "status": "in_progress",
   "baseline": "c6ce8e41b49769605ef965825cef6c66317dcac4",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
-  "tasks": ["OP-02", "OP-13", "OP-14", "OP-16", "OP-17", "OP-18", "OP-19", "OP-31"],
+  "tasks": [
+    "OP-02",
+    "OP-13",
+    "OP-14",
+    "OP-16",
+    "OP-17",
+    "OP-18",
+    "OP-19",
+    "OP-31"
+  ],
   "implemented_block": "scalar_control_core_locked_scalar_array_imports_typed_reference_and_loop_values",
   "criteria": {
     "versioned_catalog": "partial_explicit_version_bindings_not_full_catalog",
@@ -24,7 +33,9 @@
     "rc6_tests/test_rc6_reference_loop_values.py",
     "docs/RC6_STAGE2_VALUES_PUBLICATION.md",
     "docs/RC6_STAGE2_NOMINAL_TYPES.md",
-    "rc6_tests/test_rc6_nominal_types.py"
+    "rc6_tests/test_rc6_nominal_types.py",
+    "docs/RC6_STAGE2_NOMINAL_PUBLICATION.md",
+    "verification/nominal-joint-receipt.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -56,7 +67,7 @@
     "automatic_projected_diagnostics": "projection_map_available_not_fully_integrated"
   },
   "nominal_language": {
-    "status": "published_candidate_pending_joint_linux_ci",
+    "status": "integrated_and_joint_linux_verified",
     "baseline": "668d009a5754fac138431a83dfc7eb83f73f408e",
     "baseline_ci_run": 34147625999,
     "implemented": [
@@ -73,8 +84,13 @@
     "inventory_selected_count": 5842,
     "inventory_added_count": 269,
     "inventory_review": "verification/nominal-inventory-review.json",
-    "joint_ci": "pending",
-    "receipt": "docs/RC6_STAGE2_NOMINAL_TYPES.md"
+    "joint_ci": "passed",
+    "receipt": "docs/RC6_STAGE2_NOMINAL_TYPES.md",
+    "joint_ci_run": 34153963095,
+    "verified_source": "6de3116c011ec6f6a9e437f4d9d6ee92641d5b21",
+    "verified_tree": "ef5b22e1088f4f38f52a6e54d9a204ccdc601bcb",
+    "integrated_head": "b827e2e023e5d3bb2be7cc2e31abaddbe897f0e4",
+    "publication_receipt": "docs/RC6_STAGE2_NOMINAL_PUBLICATION.md"
   },
   "reference_loop_values": {
     "status": "published_and_joint_verified",

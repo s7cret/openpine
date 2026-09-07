@@ -1,6 +1,6 @@
 # Stage 2: nominal language and locked type imports
 
-Status: published implementation candidate, pending coordinated Linux CI.
+Status: integrated implementation block, coordinated Linux CI passed.
 **Stage 2 remains `in_progress`; full_stage2_accepted=false.**
 
 ## Source preservation
@@ -127,7 +127,8 @@ external live-network cases remain outside the deterministic gate. Each added
 node ID was reviewed against the nominal, lifecycle, locked-import and packaging
 scope above. `verification/inventory.json` now contains this reviewed proposal.
 Its SHA-256 is `c41729763baba34a43fa17c1d945a83a7a3a867aef5e126f18ebc1d3718ee278`.
-Collection success is not execution acceptance; the full coordinated run follows.
+Collection success is not execution acceptance. The subsequent full run is
+recorded in `docs/RC6_STAGE2_NOMINAL_PUBLICATION.md`.
 
 ## Remaining acceptance
 
@@ -135,9 +136,9 @@ This candidate does not accept any full Stage 2 criterion. Complete overload and
 version matrices, full builtin oracle coverage, library method exports and mixed
 language-version execution, recursive reference-valued `varip` fields, broader
 NA/bool semantics and complete nominal checkpoint member registries remain open.
-The new host tests in `rc6_tests/test_rc6_nominal_types.py` must run through the
+The new host tests in `rc6_tests/test_rc6_nominal_types.py` passed through the
 permanent Linux environment, including real protected workers and both broker
-transports. Coordinated package builds and the frozen Stage 1 corpus are also
-mandatory. No Stage 3 work or final RC6 acceptance is claimed.
+transports. The coordinated package checks and frozen Stage 1 corpus also passed.
+No Stage 3 work or final RC6 acceptance is claimed.
 
 Performance was not measured in this stage.
