@@ -118,19 +118,24 @@
     "verification/variadic-concat-fixture-derivation.json",
     "verification/variadic-compiler-revised-freeze-receipt.json",
     "verification/concat-variadic-inventory-review.json",
-    "verification/concat-variadic-metadata-independent-review.json"
+    "verification/concat-variadic-metadata-independent-review.json",
+    "verification/concat-variadic-execution-review.json",
+    "verification/concat-variadic-final-metadata-independent-review.json",
+    "verification/concat-variadic-joint-receipt.json",
+    "docs/RC6_STAGE2_CONCAT_VARIADIC_PUBLICATION.md",
+    "docs/RC6_STAGE2_ARRAY_CONCAT_EXPECTED.md"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
-  "joint_test_count": 9685,
+  "joint_test_count": 10683,
   "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
   "core_verification_run": 34068163602,
   "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-  "latest_verified_source": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
-  "latest_verified_tree": "de8ba1e027f6a3bd11077b83467b4bb5179cc1f4",
-  "integrated_head": "ac118eecb4a69f45eb6935de7ea91dc46facfcbd",
-  "joint_verification_run": 34176337191,
-  "publication_receipt": "docs/RC6_STAGE2_ROLLING_CONTEXT_PUBLICATION.md",
+  "latest_verified_source": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83",
+  "latest_verified_tree": "7bd4473f07803ed445dc51371dd2fe38f5a85370",
+  "integrated_head": "ba4e65789be0f612c6eb28a39cb1eb4b53e3bac2",
+  "joint_verification_run": 34181992287,
+  "publication_receipt": "docs/RC6_STAGE2_CONCAT_VARIADIC_PUBLICATION.md",
   "gate_results": {
     "python_3_11": "passed",
     "python_3_13": "passed",
@@ -425,7 +430,7 @@
     "cleanup_receipt": "verification/rolling-floor-cleanup-final-execution-review.json"
   },
   "concat_variadic_block": {
-    "status": "inventory_reviewed_pending_joint_linux",
+    "status": "integrated_and_joint_linux_verified",
     "scope": [
       "array_concat_receiver_alias_identity_and_named_receivers",
       "modern_finite_constant_rounding",
@@ -479,7 +484,10 @@
     "tradingview_verified": false,
     "excluded_next_waves": [
       "udf_constant_value_promotion_and_context",
-      "global_constant_qualifier_prepass",
+      "global_constant_lexical_scope",
+      "float_comparison_version_policy",
+      "string_version_policy",
+      "additional_array_operation_corpus",
       "exported_library_methods",
       "array_numeric_statistics"
     ],
@@ -487,6 +495,12 @@
     "inventory_sha256": "8d7db289ca78e8baf6167f6422544a3d2a22fa597f8860d1101e7bdbfdf90af3",
     "inventory_review": "verification/concat-variadic-inventory-review.json",
     "selected_tests": 10683,
-    "removed_tests": 0
+    "removed_tests": 0,
+    "verification_run": 34181992287,
+    "verified_source": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83",
+    "verified_tree": "7bd4473f07803ed445dc51371dd2fe38f5a85370",
+    "integration": "ba4e65789be0f612c6eb28a39cb1eb4b53e3bac2",
+    "receipt": "verification/concat-variadic-joint-receipt.json",
+    "cleanup": "pending"
   }
 }

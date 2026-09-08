@@ -17,3 +17,10 @@ Committed tests read actual dependency identities from `docs/RC6_LIFECYCLE_SOURC
 The pre-change control uses isolated Git archives of producer `5b90a733e548a13bd5dc88c922e7ca397059c456`, runtime `ff3fda01541795c793068bced47a0d195bf27e37` and the same compiler. Original failures, local source identities and final execution observations are preserved separately. Local results and immutable file digests are recorded in `verification/array-concat-host-local-review.json`; coordinated Linux execution with the final published pins remains a separate gate.
 
 This corpus does not extend the mutation algorithm, heap lifecycle, compiler semantics or existing production runner. It does not establish UDT/enum array elements, mixed types, missing array handles, nested request execution or the host's outer checkpoint publication boundary. Those remain separate contracts. `full_stage2_accepted` remains false.
+
+## Completed coordinated execution
+
+The exact source passed run 34181992287 on both Python versions with 10683
+mandatory tests and all preserved native/frontend/build gates. See
+`RC6_STAGE2_CONCAT_VARIADIC_PUBLICATION.md` and the independent execution review.
+This accepts the bounded concat/variadic block; full Stage 2 remains pending.

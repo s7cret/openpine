@@ -1,0 +1,51 @@
+{
+  "schema_id": "openpine.concat_variadic_final_metadata_independent_review.v1",
+  "status": "EXACT_METADATA_AND_WORKFLOW_APPROVED_EXECUTION_PENDING",
+  "reviewed_at_utc": "2026-09-08T02:59:36.369677+00:00",
+  "source": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83",
+  "tree": "7bd4473f07803ed445dc51371dd2fe38f5a85370",
+  "collection_source": "b97005c979f59e306de4f54c0639ebea9a42a402",
+  "inventory_commit": "7c97ad6c7a5fda6cd4ed8ba33f7c8a3298205053",
+  "full_tree_files": 1792,
+  "unchanged_tree_entries": 1788,
+  "exact_changed_paths": [
+    "verification/concat-variadic-inventory-review.json",
+    "verification/concat-variadic-metadata-independent-review.json",
+    "verification/inventory.json",
+    "verification/stage2-progress.json"
+  ],
+  "metadata_bundle_sha256": "b47a2c3c893b91cabed020bf6cf69bb630fb11f5671c2024685b10e6ae3d8ec7",
+  "metadata_hashes": {
+    "verification/concat-variadic-inventory-review.json": "fb734e0fd9979ea1b215a2c15f1f821675f88cd63d15fe80646fe61a9e38ed3e",
+    "verification/concat-variadic-metadata-independent-review.json": "c3f1b431d40439d0eae4a99fc51715d4713451f423fbdf4fa8773b36b6723194",
+    "verification/inventory.json": "8d7db289ca78e8baf6167f6422544a3d2a22fa597f8860d1101e7bdbfdf90af3",
+    "verification/stage2-progress.json": "57c61187e247abf6ffd3ceba588cde87e02b4a4046a32126675db9dac0a2397c"
+  },
+  "pins_unchanged": true,
+  "all_executable_test_corpus_and_architecture_entries_unchanged": true,
+  "permanent_workflow_sha256": "c1eb7e8d5c5c02cf1183a534cfa7593aaaddcd65b1e0df90b6dd57a4010811f5",
+  "proposed_operations_parent": "1fbde9da20df684b13e26da8303d7abb289b2897",
+  "workflow_sha256": "e398a31b8462220df25bda6c92d1744afbf7ba1d43b07691d279e631845cdcf5",
+  "step_preservation": {
+    "verify": {
+      "all_permanent_steps_identical_except_exact_checkout_ref": true,
+      "unchanged_run_steps": 7,
+      "added_identity_guard": "Require exact candidate and committed reviewed inventory",
+      "source_receipt_upload_added": true
+    },
+    "frontend": {
+      "all_permanent_steps_identical_except_exact_checkout_ref": true,
+      "unchanged_run_steps": 4,
+      "added_identity_guard": "Require frontend and backend from the same exact source",
+      "source_receipt_upload_added": false
+    }
+  },
+  "expected_tests_each_python": 10683,
+  "expected_builtin_observations_each_python": 1410,
+  "execution_acceptance": false,
+  "full_stage2_accepted": false,
+  "inventory_changed_by_reviewer": false,
+  "workflow_dispatched_by_reviewer": false,
+  "digest_newlines": "LF",
+  "script_sha256": "50a7d8798de7e234d2ba76d7fca8f30b79e027e4a7e42e142d44acfd1d187b0f"
+}
