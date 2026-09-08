@@ -1,0 +1,4 @@
+//@version=5
+indicator("manual rolling statistics")
+float sample = na
+plot(ta.highest(sample,3))

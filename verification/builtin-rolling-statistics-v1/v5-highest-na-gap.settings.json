@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.ta.highest_v1","abi_result_type":"float","arguments_by_bar":[["close",2],[{"$na":true},2],["close",2],["close",2],["close",2],["close",2]],"declared_binding":["pine:function:ta.highest","pine:function:ta.highest#canonical","NAMESPACE_FUNCTION"],"source_name":"v5-highest-na-gap.pine","spelling":"ta.highest","stateful":true}

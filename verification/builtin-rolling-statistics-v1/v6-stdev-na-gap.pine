@@ -1,0 +1,4 @@
+//@version=6
+indicator("manual rolling statistics")
+float sample = bar_index == 1 ? na : close
+plot(ta.stdev(sample,3))

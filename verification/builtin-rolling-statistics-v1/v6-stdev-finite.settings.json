@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.ta.stdev_v1","abi_result_type":"float","arguments_by_bar":[["close",3],["close",3],["close",3],["close",3],["close",3]],"declared_binding":["pine:function:ta.stdev","pine:function:ta.stdev#canonical","NAMESPACE_FUNCTION"],"source_name":"v6-stdev-finite.pine","spelling":"ta.stdev","stateful":true}

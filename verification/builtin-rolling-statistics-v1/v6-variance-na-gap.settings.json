@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.ta.variance_v1","abi_result_type":"float","arguments_by_bar":[["close",3],[{"$na":true},3],["close",3],["close",3],["close",3],["close",3]],"declared_binding":["pine:function:ta.variance","pine:function:ta.variance#canonical","NAMESPACE_FUNCTION"],"source_name":"v6-variance-na-gap.pine","spelling":"ta.variance","stateful":true}

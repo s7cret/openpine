@@ -2,3 +2,4 @@
 verification/builtins-v1/* text eol=lf
 verification/builtin-scalars-v1/* text eol=lf
 verification/builtin-transcendentals-v1/* text eol=lf
+verification/builtin-rolling-statistics-v1/* text eol=lf
