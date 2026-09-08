@@ -1,0 +1,33 @@
+{
+  "compile": true,
+  "events": [
+    {
+      "bar": 0,
+      "value": {
+        "kind": "value",
+        "value": 0.0
+      }
+    },
+    {
+      "bar": 1,
+      "value": {
+        "kind": "value",
+        "value": -2.5
+      }
+    },
+    {
+      "bar": 2,
+      "value": {
+        "kind": "value",
+        "value": -2.5
+      }
+    },
+    {
+      "bar": 3,
+      "value": {
+        "kind": "value",
+        "value": -2.5
+      }
+    }
+  ]
+}

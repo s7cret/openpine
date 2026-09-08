@@ -1,0 +1,8 @@
+//@version=5
+indicator("map literal")
+var a=map.new<string,int>()
+var int result=na
+if bar_index==0
+    map.put(a,"a",2)
+if bar_index==1
+    result:=a.remove("b")

@@ -1,0 +1,112 @@
+{
+  "schema_id": "openpine.string_context_independent_review.v1",
+  "status": "BOUNDED_SOURCE_AND_LOCAL_EXECUTION_REVIEW_PASS_NOT_JOINT_LINUX_ACCEPTANCE",
+  "runtime_base": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+  "source_bundle_sha256": "4386cbbe15ebea56320ff187cbb1d201c957b173dea8513cd694eaf26fee6b03",
+  "metadata_review_sha256": "8f79c2a8fe02ab2fcac7c9d5052d444a5128bbdeac2742f78f0bd6669b42d68c",
+  "fixture_bundle_sha256": "3560183a376e5960d764de98afc4c8d561d2e374f890dae444e86c5300fd2cea",
+  "original_manual_sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac",
+  "original_expected_bytes_preserved": true,
+  "original_v5_inferences_not_reclassified_as_verified": true,
+  "production_files": 4,
+  "reviewed_existing_fixture_identity_changes": 2,
+  "all_other_original_files_unchanged": true,
+  "old_abi_functions_unchanged": true,
+  "source_pins": {
+    "pine2ast": "7170736f2730316407f0d896447b08e76f5c9c08",
+    "ast2python": "95a14be4be8987faafb3e7629c744e698fd9f134"
+  },
+  "executions": {
+    "311": {
+      "new_owner_tests": 283,
+      "focused_tests": 464,
+      "focused_pass": 464,
+      "full_collected": 2296,
+      "full_pass": 2293,
+      "full_failures": [
+        [
+          "tests.test_release_tools",
+          "test_deterministic_sdist_is_byte_identical_and_normalized"
+        ],
+        [
+          "tests.test_release_tools",
+          "test_deterministic_sdist_rejects_symlinks"
+        ],
+        [
+          "tests.test_release_tools",
+          "test_deterministic_sdist_normalizes_file_modes"
+        ]
+      ],
+      "full_errors": 0,
+      "full_skips": 0,
+      "generated_attempted_sources": 63,
+      "generated_profiles": 8,
+      "generated_records": 504,
+      "generated_before_matches": 416,
+      "generated_after_matches": 480,
+      "generated_rejections": 0,
+      "remaining_v5_inferred_mismatches": 24,
+      "generated_final_observations": 1512,
+      "generated_trial_observations": 756,
+      "xml_sha256": {
+        "focused": "11a04d0197c3696fa55b1472e716d25c10ea844080dfb8d812485ba0fd3d2782",
+        "full": "485265c02b2e8ce291b670d60bc97c27d711e39f41c48da12ec43e317d868af8"
+      }
+    },
+    "313": {
+      "new_owner_tests": 283,
+      "focused_tests": 464,
+      "focused_pass": 464,
+      "full_collected": 2296,
+      "full_pass": 2293,
+      "full_failures": [
+        [
+          "tests.test_release_tools",
+          "test_deterministic_sdist_is_byte_identical_and_normalized"
+        ],
+        [
+          "tests.test_release_tools",
+          "test_deterministic_sdist_rejects_symlinks"
+        ],
+        [
+          "tests.test_release_tools",
+          "test_deterministic_sdist_normalizes_file_modes"
+        ]
+      ],
+      "full_errors": 0,
+      "full_skips": 0,
+      "generated_attempted_sources": 63,
+      "generated_profiles": 8,
+      "generated_records": 504,
+      "generated_before_matches": 416,
+      "generated_after_matches": 480,
+      "generated_rejections": 0,
+      "remaining_v5_inferred_mismatches": 24,
+      "generated_final_observations": 1512,
+      "generated_trial_observations": 756,
+      "xml_sha256": {
+        "focused": "fda445200dafee6f1d3a5ad8855b8a35ac266f9000b69ad6648938b1abf679bc",
+        "full": "14306d73dbaa086686c298e1410eddc3dfc1fa8cd1c1bbf8d3ca748ef25463d9"
+      }
+    }
+  },
+  "generated_reports_identical_across_python": true,
+  "generated_before_sha256": "12fcca7db6e4f2452c1aa4e459290a426fa4f4f4a711b22eed3f452523c7bfb3",
+  "generated_after_sha256": "527615cd4bfca5c31187f2de3595d13ca994d3e59d1f09fa6dc7aca090f8c6d9",
+  "target_sha256": "a5bd13bd8e81c0607f800ab1c2907a22a0a646c202b56f98f3e8f2fc4e7dbd79",
+  "findings": [
+    "All documented v6 manual cases now match at ABI and normal generated execution",
+    "Three original v5 numeric-format assumptions remain explicit UNVERIFIED differences",
+    "Existing Windows release-tool failures require definitive joint Linux validation"
+  ],
+  "limitations": [
+    "NA string behavior beyond the separately evidenced trim exception",
+    "non-BMP length counting",
+    "overflow/underflow parity",
+    "complete string family coverage",
+    "formal host corpus and next joint inventory pending"
+  ],
+  "full_stage2_accepted": false,
+  "tradingview_verified": false,
+  "publication_performed": false
+}

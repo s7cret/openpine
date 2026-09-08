@@ -1,0 +1,1164 @@
+{
+  "classification_method": "Read the exact v5 reference definitions and their referenced English translation modules; apply those semantic contracts to the preauthored literal ASCII/decimal fixtures. No runtime, generated observations, corpus tests, current-v6 semantic description or converter implementation is imported as expected authority. This is source-backed manual derivation, not claimed TradingView execution.",
+  "existing_excerpts": {
+    "path": ".runtime/evidence/string-reference-v5-excerpts.json",
+    "sha256": "8c979383bb2a962240488be6805a243a7eacbfbdc57ed8d8b34ce8dc3690fda0"
+  },
+  "existing_translation_capture": {
+    "path": ".runtime/evidence/string-reference-v5-translations.json",
+    "sha256": "7ce7a616e51e70ddfddc30de0b1bbf1c03c812a8083a263e40d6b9c4888a5c3f"
+  },
+  "full_stage2_accepted": false,
+  "host83_application": {
+    "candidate_assigned_observations": 780,
+    "candidate_authority_assigned_cases": 78,
+    "candidate_unassigned_authority_cases": 5,
+    "candidate_unassigned_observations": 50,
+    "conditional_on_host_source_and_report_review": true,
+    "numerical_comparison_and_authority_assignment_are_separate": true,
+    "planned_observations_preserved": 830
+  },
+  "limitations": [
+    "No authority upgrade for tonumber underscore/exponent/whitespace/NaN/Infinity forms.",
+    "No v5 non-ASCII case/length/trim, overflow, midpoint, or complete string-family claim.",
+    "This receipt leaves the original manual file, expected values, source labels and prior failures intact.",
+    "Host source mapping, report integrity, exact generated execution and joint Linux gates remain separate."
+  ],
+  "manual": {
+    "path": ".runtime/evidence/string-manual-expected.json",
+    "sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac"
+  },
+  "original_manual_and_29_inference_labels_unchanged": true,
+  "primary_pages_rechecked_2026_09_08": [
+    "https://www.tradingview.com/pine-script-reference/v5/",
+    "https://in.tradingview.com/pine-script-reference/v5/",
+    "https://www.tradingview.com/pine-script-docs/v5/language/type-system/"
+  ],
+  "reference_entries": [
+    {
+      "character_end": 598449,
+      "character_start": 598162,
+      "function": "str.length",
+      "object_sha256": "9a8b4b4987a5c54c9707b53464cf1baa92a9db21eb7d89c60ef66ee982d52e4f",
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.length(string) → const int"
+      ]
+    },
+    {
+      "character_end": 598770,
+      "character_start": 598450,
+      "function": "str.length",
+      "object_sha256": "667783b3d19d2ea606222eef18426508d05ddcd58290518643a714f1aec72cd6",
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.length(string) → simple int"
+      ]
+    },
+    {
+      "character_end": 599107,
+      "character_start": 598771,
+      "function": "str.length",
+      "object_sha256": "264ff68189da81b95d07757ee09771f779edff836249993773ff0a660ce9655a",
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.length(string) → series int"
+      ]
+    },
+    {
+      "character_end": 588609,
+      "character_start": 588280,
+      "function": "str.upper",
+      "object_sha256": "2f4f8f2d3d0c48c7f0124ce4d32afc1200cdc5483edba5c58f0c765d312b8739",
+      "semantic_translation_ids": [
+        19868,
+        277879
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.upper(source) → const string"
+      ]
+    },
+    {
+      "character_end": 588973,
+      "character_start": 588610,
+      "function": "str.upper",
+      "object_sha256": "f8c74c41ca0b480c77371ccc08c6551f2ab27adf2335aa22c7678a0c95647625",
+      "semantic_translation_ids": [
+        19868,
+        277879
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.upper(source) → simple string"
+      ]
+    },
+    {
+      "character_end": 589354,
+      "character_start": 588974,
+      "function": "str.upper",
+      "object_sha256": "e8627e39c1a5b39de51f0aec4a1e56396590b49e0787dfadf8595fdd4c2000f6",
+      "semantic_translation_ids": [
+        19868,
+        277879
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.upper(source) → series string"
+      ]
+    },
+    {
+      "character_end": 587535,
+      "character_start": 587206,
+      "function": "str.lower",
+      "object_sha256": "e14fe0d6fac36debf7de70281f81266ff2338db550e30e3b8a20027d1e3a2714",
+      "semantic_translation_ids": [
+        709776,
+        66943
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.lower(source) → const string"
+      ]
+    },
+    {
+      "character_end": 587899,
+      "character_start": 587536,
+      "function": "str.lower",
+      "object_sha256": "e8634cb74a86332ff7891ee6dd5895a3cfe5db20f76055fb3f4d007484aaab21",
+      "semantic_translation_ids": [
+        709776,
+        66943
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.lower(source) → simple string"
+      ]
+    },
+    {
+      "character_end": 588279,
+      "character_start": 587900,
+      "function": "str.lower",
+      "object_sha256": "8eedb9a8e3559157a1cbf4e313b4a89c90736d3aa5d41168e0f79813ff81b36f",
+      "semantic_translation_ids": [
+        709776,
+        66943
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.lower(source) → series string"
+      ]
+    },
+    {
+      "character_end": 567453,
+      "character_start": 566946,
+      "function": "str.trim",
+      "object_sha256": "781e7e96741bf28671dcdd9858dae86f41448399080597eef16b7bf60e5de03c",
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.trim(source) → const string"
+      ]
+    },
+    {
+      "character_end": 567977,
+      "character_start": 567454,
+      "function": "str.trim",
+      "object_sha256": "87e9cc5b54fee28fb0c726f4a1a400e98ccc4dedcee326f0c550f1b445791d4d",
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.trim(source) → input string"
+      ]
+    },
+    {
+      "character_end": 568519,
+      "character_start": 567978,
+      "function": "str.trim",
+      "object_sha256": "20329367840ba77554d4a4f6202475e7741a8f610c44d0f424e9aab5fd97bc83",
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.trim(source) → simple string"
+      ]
+    },
+    {
+      "character_end": 569077,
+      "character_start": 568520,
+      "function": "str.trim",
+      "object_sha256": "45165573714031f898b27f2696a728698d865ce62b41ff1c713e1f7c7e981506",
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.trim(source) → series string"
+      ]
+    },
+    {
+      "character_end": 565756,
+      "character_start": 565327,
+      "function": "str.tonumber",
+      "object_sha256": "91d6353f5fc81a498ed8d8fa5fcae70af3ce2e22362bd17f35d4235c8254cbcd",
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.tonumber(string) → series float"
+      ]
+    },
+    {
+      "character_end": 566136,
+      "character_start": 565757,
+      "function": "str.tonumber",
+      "object_sha256": "9771dd9776d12743d2db09d72d4d53a5a30aa2edf44154cd28c02daedd9b5bde",
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.tonumber(string) → const float"
+      ]
+    },
+    {
+      "character_end": 566531,
+      "character_start": 566137,
+      "function": "str.tonumber",
+      "object_sha256": "acf927ca0f59eab608c3f054cdef29cb80ed53f741471692f96962b590a3e353",
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.tonumber(string) → input float"
+      ]
+    },
+    {
+      "character_end": 566945,
+      "character_start": 566532,
+      "function": "str.tonumber",
+      "object_sha256": "9f24e55b50ebb89149a262dd4f778e2eecc9bac814338724fc42dd5baad8ccda",
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "source": "rolling-reference-v5-91998.js",
+      "syntax": [
+        "str.tonumber(string) → simple float"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "argument": "",
+      "argument_codepoints": [],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry specifies character count. Literal empty and ordinary ASCII sequences, including a single newline or tab code point, give these fixed counts; no Unicode-width inference is used.",
+      "function": "str.length",
+      "manual_id": "length-0",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 0
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "Ab 9!",
+      "argument_codepoints": [
+        "U+0041",
+        "U+0062",
+        "U+0020",
+        "U+0039",
+        "U+0021"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry specifies character count. Literal empty and ordinary ASCII sequences, including a single newline or tab code point, give these fixed counts; no Unicode-width inference is used.",
+      "function": "str.length",
+      "manual_id": "length-1",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 5
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": " a ",
+      "argument_codepoints": [
+        "U+0020",
+        "U+0061",
+        "U+0020"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry specifies character count. Literal empty and ordinary ASCII sequences, including a single newline or tab code point, give these fixed counts; no Unicode-width inference is used.",
+      "function": "str.length",
+      "manual_id": "length-2",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 3
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "A\nB",
+      "argument_codepoints": [
+        "U+0041",
+        "U+000A",
+        "U+0042"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry specifies character count. Literal empty and ordinary ASCII sequences, including a single newline or tab code point, give these fixed counts; no Unicode-width inference is used.",
+      "function": "str.length",
+      "manual_id": "length-3",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 3
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "\t",
+      "argument_codepoints": [
+        "U+0009"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry specifies character count. Literal empty and ordinary ASCII sequences, including a single newline or tab code point, give these fixed counts; no Unicode-width inference is used.",
+      "function": "str.length",
+      "manual_id": "length-4",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 1
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        273235,
+        340400
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "",
+      "argument_codepoints": [],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry converts every letter to uppercase. Each fixture contains only ordinary ASCII letters and unchanged punctuation/space/digits, or the empty sequence.",
+      "function": "str.upper",
+      "manual_id": "upper-0",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        19868,
+        277879
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "Ab z9!",
+      "argument_codepoints": [
+        "U+0041",
+        "U+0062",
+        "U+0020",
+        "U+007A",
+        "U+0039",
+        "U+0021"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry converts every letter to uppercase. Each fixture contains only ordinary ASCII letters and unchanged punctuation/space/digits, or the empty sequence.",
+      "function": "str.upper",
+      "manual_id": "upper-1",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": "AB Z9!"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        19868,
+        277879
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "already UPPER",
+      "argument_codepoints": [
+        "U+0061",
+        "U+006C",
+        "U+0072",
+        "U+0065",
+        "U+0061",
+        "U+0064",
+        "U+0079",
+        "U+0020",
+        "U+0055",
+        "U+0050",
+        "U+0050",
+        "U+0045",
+        "U+0052"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry converts every letter to uppercase. Each fixture contains only ordinary ASCII letters and unchanged punctuation/space/digits, or the empty sequence.",
+      "function": "str.upper",
+      "manual_id": "upper-2",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": "ALREADY UPPER"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        19868,
+        277879
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "",
+      "argument_codepoints": [],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry converts every letter to lowercase. Each fixture contains only ordinary ASCII letters and unchanged punctuation/space/digits, or the empty sequence.",
+      "function": "str.lower",
+      "manual_id": "lower-0",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        709776,
+        66943
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "Ab Z9!",
+      "argument_codepoints": [
+        "U+0041",
+        "U+0062",
+        "U+0020",
+        "U+005A",
+        "U+0039",
+        "U+0021"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry converts every letter to lowercase. Each fixture contains only ordinary ASCII letters and unchanged punctuation/space/digits, or the empty sequence.",
+      "function": "str.lower",
+      "manual_id": "lower-1",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": "ab z9!"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        709776,
+        66943
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "already lower",
+      "argument_codepoints": [
+        "U+0061",
+        "U+006C",
+        "U+0072",
+        "U+0065",
+        "U+0061",
+        "U+0064",
+        "U+0079",
+        "U+0020",
+        "U+006C",
+        "U+006F",
+        "U+0077",
+        "U+0065",
+        "U+0072"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry converts every letter to lowercase. Each fixture contains only ordinary ASCII letters and unchanged punctuation/space/digits, or the empty sequence.",
+      "function": "str.lower",
+      "manual_id": "lower-2",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": "already lower"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        709776,
+        66943
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "",
+      "argument_codepoints": [],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry removes consecutive whitespace and control characters at both boundaries and specifies an empty result for an empty remainder. Interior spaces remain outside that boundary operation.",
+      "function": "str.trim",
+      "manual_id": "trim-0",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "  Ab c  ",
+      "argument_codepoints": [
+        "U+0020",
+        "U+0020",
+        "U+0041",
+        "U+0062",
+        "U+0020",
+        "U+0063",
+        "U+0020",
+        "U+0020"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry removes consecutive whitespace and control characters at both boundaries and specifies an empty result for an empty remainder. Interior spaces remain outside that boundary operation.",
+      "function": "str.trim",
+      "manual_id": "trim-1",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": "Ab c"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "\n\tAb c\t\n ",
+      "argument_codepoints": [
+        "U+000A",
+        "U+0009",
+        "U+0041",
+        "U+0062",
+        "U+0020",
+        "U+0063",
+        "U+0009",
+        "U+000A",
+        "U+0020"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry removes consecutive whitespace and control characters at both boundaries and specifies an empty result for an empty remainder. Interior spaces remain outside that boundary operation.",
+      "function": "str.trim",
+      "manual_id": "trim-2",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": "Ab c"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "A  B",
+      "argument_codepoints": [
+        "U+0041",
+        "U+0020",
+        "U+0020",
+        "U+0042"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry removes consecutive whitespace and control characters at both boundaries and specifies an empty result for an empty remainder. Interior spaces remain outside that boundary operation.",
+      "function": "str.trim",
+      "manual_id": "trim-3",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": "A  B"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": " \t\n",
+      "argument_codepoints": [
+        "U+0020",
+        "U+0009",
+        "U+000A"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 entry removes consecutive whitespace and control characters at both boundaries and specifies an empty result for an empty remainder. Interior spaces remain outside that boundary operation.",
+      "function": "str.trim",
+      "manual_id": "trim-4",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        740743,
+        162284
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "0",
+      "argument_codepoints": [
+        "U+0030"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract covers ordinary signed decimal integer/fractional representations and returns float. These literal decimal values do not involve exponent, separators, surrounding whitespace, nonfinite or rounding boundaries.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-0",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 0.0
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "1234.50",
+      "argument_codepoints": [
+        "U+0031",
+        "U+0032",
+        "U+0033",
+        "U+0034",
+        "U+002E",
+        "U+0035",
+        "U+0030"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract covers ordinary signed decimal integer/fractional representations and returns float. These literal decimal values do not involve exponent, separators, surrounding whitespace, nonfinite or rounding boundaries.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-1",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 1234.5
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "-2.5",
+      "argument_codepoints": [
+        "U+002D",
+        "U+0032",
+        "U+002E",
+        "U+0035"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract covers ordinary signed decimal integer/fractional representations and returns float. These literal decimal values do not involve exponent, separators, surrounding whitespace, nonfinite or rounding boundaries.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-2",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": -2.5
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "+12",
+      "argument_codepoints": [
+        "U+002B",
+        "U+0031",
+        "U+0032"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract covers ordinary signed decimal integer/fractional representations and returns float. These literal decimal values do not involve exponent, separators, surrounding whitespace, nonfinite or rounding boundaries.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-3",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "value",
+        "value": 12.0
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "",
+      "argument_codepoints": [],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract returns na for malformed integer/floating representations. This fixture is empty, nonnumeric alphabetic text, currency/grouping text, or a multiple-decimal-point sequence; no special numeric token policy is inferred.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-4",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "abc",
+      "argument_codepoints": [
+        "U+0061",
+        "U+0062",
+        "U+0063"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract returns na for malformed integer/floating representations. This fixture is empty, nonnumeric alphabetic text, currency/grouping text, or a multiple-decimal-point sequence; no special numeric token policy is inferred.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-5",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "$1,234.50",
+      "argument_codepoints": [
+        "U+0024",
+        "U+0031",
+        "U+002C",
+        "U+0032",
+        "U+0033",
+        "U+0034",
+        "U+002E",
+        "U+0035",
+        "U+0030"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract returns na for malformed integer/floating representations. This fixture is empty, nonnumeric alphabetic text, currency/grouping text, or a multiple-decimal-point sequence; no special numeric token policy is inferred.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-6",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "1_000",
+      "argument_codepoints": [
+        "U+0031",
+        "U+005F",
+        "U+0030",
+        "U+0030",
+        "U+0030"
+      ],
+      "assignment_authority_eligible": false,
+      "authority_status": "UNVERIFIED",
+      "derivation": "The v5 reference does not specify whether digit separators in a conversion string are accepted. Pine literal notation is not proof of converter grammar.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-7",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "1e2",
+      "argument_codepoints": [
+        "U+0031",
+        "U+0065",
+        "U+0032"
+      ],
+      "assignment_authority_eligible": false,
+      "authority_status": "UNVERIFIED",
+      "derivation": "V5 numeric literals support exponent notation, but the conversion entry does not establish this token grammar or rejection policy. The original expected na is preserved without certification.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-8",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": " 1 ",
+      "argument_codepoints": [
+        "U+0020",
+        "U+0031",
+        "U+0020"
+      ],
+      "assignment_authority_eligible": false,
+      "authority_status": "UNVERIFIED",
+      "derivation": "V5 conversion does not state whether surrounding whitespace is consumed. The separate trim contract cannot be substituted for tonumber behavior.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-9",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "NaN",
+      "argument_codepoints": [
+        "U+004E",
+        "U+0061",
+        "U+004E"
+      ],
+      "assignment_authority_eligible": false,
+      "authority_status": "UNVERIFIED",
+      "derivation": "The v5 reference does not define parsing of the special token NaN. A matching na result does not independently prove the token policy.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-10",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "Infinity",
+      "argument_codepoints": [
+        "U+0049",
+        "U+006E",
+        "U+0066",
+        "U+0069",
+        "U+006E",
+        "U+0069",
+        "U+0074",
+        "U+0079"
+      ],
+      "assignment_authority_eligible": false,
+      "authority_status": "UNVERIFIED",
+      "derivation": "The v5 reference does not define parsing of the special token Infinity or nonfinite conversion policy. Matching execution does not prove the expectation.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-11",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    },
+    {
+      "argument": "1.2.3",
+      "argument_codepoints": [
+        "U+0031",
+        "U+002E",
+        "U+0032",
+        "U+002E",
+        "U+0033"
+      ],
+      "assignment_authority_eligible": true,
+      "authority_status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT",
+      "derivation": "The v5 conversion contract returns na for malformed integer/floating representations. This fixture is empty, nonnumeric alphabetic text, currency/grouping text, or a multiple-decimal-point sequence; no special numeric token policy is inferred.",
+      "function": "str.tonumber",
+      "manual_id": "tonumber-12",
+      "original_authority_label": "shared ASCII behavior inference from v5 API and current detailed manual",
+      "original_expected": {
+        "kind": "na"
+      },
+      "pine_version": 5,
+      "semantic_translation_ids": [
+        232144,
+        708724,
+        876982
+      ],
+      "tradingview_execution_verified": false
+    }
+  ],
+  "schema_id": "openpine.independent_versioned_case_authority.v1",
+  "source_payloads": [
+    {
+      "path": "rolling-reference-v5-41280.js",
+      "sha256": "75c5e06bcde169b03759d78b8b927ea4869fd08783e8e7c81cf36f77fcd4d09a",
+      "url": "https://static.tradingview.com/static/bundles/en.41280.fd5976ad23ce47381361.js",
+      "version": 5
+    },
+    {
+      "path": "rolling-reference-v5-81395.js",
+      "sha256": "4501ebff2049b93c913c5c3e1e16a50c28ec61f0f604ff3cebda9ae15c8fbace",
+      "url": "https://static.tradingview.com/static/bundles/en.81395.c3ea6fa280511b1fcf65.js",
+      "version": 5
+    },
+    {
+      "path": "rolling-reference-v5-21857.js",
+      "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832",
+      "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+      "version": 5
+    },
+    {
+      "path": "rolling-reference-v5-19721.js",
+      "sha256": "fceaa60d1b2278e0fbc5c0d6824f84fca888ef9d916855453bab34795bb929f7",
+      "url": "https://static.tradingview.com/static/bundles/en.19721.8a5e6a48c7586ba8c841.js",
+      "version": 5
+    },
+    {
+      "path": "rolling-reference-v5-91998.js",
+      "sha256": "e52daf777c5e777855537812e57cff57123dd6b2568f98b00dc62d20fbc6bfb5",
+      "url": "https://static.tradingview.com/static/bundles/91998.b1f3e2c03b5a108b7bd6.js",
+      "version": 5
+    }
+  ],
+  "status": "V5_CASE_AUTHORITY_REFINED_WITH_FIVE_EXPLICIT_UNRESOLVED_FORMS",
+  "summary": {
+    "all_expected_values_preserved": true,
+    "matching_execution_not_used_for_authority": true,
+    "original_v5_cases": 29,
+    "primary_supported": 24,
+    "unverified": 5,
+    "unverified_ids": [
+      "tonumber-7",
+      "tonumber-8",
+      "tonumber-9",
+      "tonumber-10",
+      "tonumber-11"
+    ]
+  },
+  "supplementary_trim_na_contract": {
+    "original_manual_case": false,
+    "pine_version": 5,
+    "scope": "The v5 trim remarks explicitly cover a typed na source returning the empty string; this confirms the separately authored supplemental case without adding it to the original 29.",
+    "semantic_translation_id": 162284,
+    "status": "SUPPORTED_BY_VERSIONED_PRIMARY_CONTRACT"
+  },
+  "translation_locations": [
+    {
+      "character_end": 106687,
+      "character_start": 106622,
+      "decoded_text_sha256": "812fb8470941f2acb351535b87c95152da40e72442dce59d8454dd91ea8d7351",
+      "exported_array_sha256": "f8c87150259c329e861dabfedb31da29d1c9ad63cf1d5d5c3c96aac93582a12a",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 19868
+    },
+    {
+      "character_end": 18129,
+      "character_start": 18072,
+      "decoded_text_sha256": "2883fcaa282240ba278119d6fa8932dbcd166af33531567c8cb9227bca4b2d48",
+      "exported_array_sha256": "45c27f15d7113e4595f64e382fa0b7a2e21e19d40107ace3fc74200f3a064d9f",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 66943
+    },
+    {
+      "character_end": 109636,
+      "character_start": 109522,
+      "decoded_text_sha256": "01533611ee6f152ebaba6ed779e61c06d0f47426db11452008e0900f235379a5",
+      "exported_array_sha256": "528b4654fe25a7bfd52aae6c71c981395696c81754bda682069f1085fe0a9025",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 162284
+    },
+    {
+      "character_end": 4875,
+      "character_start": 4800,
+      "decoded_text_sha256": "91b306ed893eb4c401ef0c4a68051409ace2e84ae0441464cd4183a22b53b313",
+      "exported_array_sha256": "9e01ee666be90176dbd0a2a4e0e1912fdaa5b380b681a9c38ece154cd4c5f4bf",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 232144
+    },
+    {
+      "character_end": 29982,
+      "character_start": 29907,
+      "decoded_text_sha256": "ab7b96d4655210f635250c2a2859a29a771528afc3b65ad484d7ac0d2159b50d",
+      "exported_array_sha256": "4e0977e3fbd8ee1690ea67162ccf944105bde518d49a2c92bcc1e44a7512f078",
+      "source": "rolling-reference-v5-81395.js",
+      "translation_id": 273235
+    },
+    {
+      "character_end": 18208,
+      "character_start": 18151,
+      "decoded_text_sha256": "9148f1e8dc77993a2c295e2844e16028a0ebe354405369f308d8afe08c2218bf",
+      "exported_array_sha256": "249d007a85a1fa3a2fa97e3dc164b756b09aa17e55b85f9b8f1e31960fd82ec5",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 277879
+    },
+    {
+      "character_end": 122979,
+      "character_start": 122938,
+      "decoded_text_sha256": "224ced1de01c3ef7f410b362114fa36e9d8fc894dd19626a645f24f8f8403b41",
+      "exported_array_sha256": "9e1bbba15ba481288b45b8c16215dd6ed81bcdd4ec2665f5cb7ae5c0e95f3232",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 340400
+    },
+    {
+      "character_end": 88698,
+      "character_start": 88619,
+      "decoded_text_sha256": "8729dc1cf314362b1d592d4412693a6783eea7133d7dc3df264e15b19f9068ed",
+      "exported_array_sha256": "b047c5fe4d8d9dfeb36d03c49662742e9c0251b98079ea47299958961fb83c6c",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 708724
+    },
+    {
+      "character_end": 106601,
+      "character_start": 106536,
+      "decoded_text_sha256": "5d5c9bcca497f95f3c9c905f1a9e6b5767dfb83c2885e917fa6fc9bf04586a66",
+      "exported_array_sha256": "ae88cc0c18716f11fbb19776f16f61c4df2a47f5709722d43340b1c62677aa2c",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 709776
+    },
+    {
+      "character_end": 1630,
+      "character_start": 1461,
+      "decoded_text_sha256": "d9381c48905ad182b48bc45aa597fccdd07aa2ebd1ed41f7c545ff2d09523fba",
+      "exported_array_sha256": "eaca7ac788051e0a7c3689149431b9d48051672c012c30f0e9b26e33e77034f6",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 740743
+    },
+    {
+      "character_end": 11511,
+      "character_start": 11347,
+      "decoded_text_sha256": "5dadd1927fad6ea242e32eaf98af41bd8a5760d5d21c7f9af064e6773eefe31a",
+      "exported_array_sha256": "70b88a63b40b79bfbc66c55ae7c79d6d21924bca0b3ebf77e3083b82c927187b",
+      "source": "rolling-reference-v5-21857.js",
+      "translation_id": 876982
+    }
+  ]
+}

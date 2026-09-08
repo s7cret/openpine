@@ -1,0 +1,6 @@
+//@version=4
+study("array literal")
+var a = array.new_int(0)
+var bool result = false
+if bar_index == 1
+    result := array.includes(a, 2)

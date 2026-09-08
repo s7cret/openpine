@@ -1,0 +1,36 @@
+{
+  "abi_callable": "pinelib.abi.string.trim_v2",
+  "argument": {
+    "kind": "value",
+    "value": "\t  x \n"
+  },
+  "declared_binding": [
+    "pine:function:str.trim",
+    "pine:function:str.trim#canonical",
+    "NAMESPACE_FUNCTION"
+  ],
+  "expected": {
+    "kind": "value",
+    "value": "  x "
+  },
+  "function": "str.trim",
+  "id": "supplement-extra-15-v6",
+  "initial_result": "",
+  "initial_v5_inference": false,
+  "origin": {
+    "index": 15,
+    "path": "string-context-supplement.json",
+    "section": "v6_extra",
+    "sha256": "7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0"
+  },
+  "original_authority": "https://www.tradingview.com/pine-script-docs/concepts/strings/",
+  "primary_source_line": 6,
+  "row_id": 15,
+  "source_name": "supplement-extra-15-v6.pine",
+  "storage": {
+    "argument": "string",
+    "result": "string"
+  },
+  "unverified_numeric_disagreement": false,
+  "version": 6
+}

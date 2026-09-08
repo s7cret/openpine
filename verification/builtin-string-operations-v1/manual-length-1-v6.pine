@@ -1,0 +1,6 @@
+//@version=6
+indicator("string literal")
+var string argument = "Ab 9!"
+var int result = 0
+if bar_index == 1
+    result := str.length(argument)

@@ -1,0 +1,476 @@
+{
+  "schema_id": "openpine.string_manual_expected.v1",
+  "oracle": "manual_fixture",
+  "provenance": "Literal ASCII counts/case edits, whitespace boundary edits, and decimal notation; authored before SUT execution.",
+  "sources": [
+    "https://www.tradingview.com/pine-script-docs/concepts/strings/",
+    "https://www.tradingview.com/pine-script-docs/v5/language/built-ins/",
+    "https://www.tradingview.com/pine-script-docs/v5/release-notes/"
+  ],
+  "scope": "Stateless v5/v6 ASCII cases; explicit v6 non-ASCII exclusions. No warmup.",
+  "unverified": [
+    "NA string argument behavior",
+    "non-BMP length counting",
+    "decimal midpoint/overflow conversion",
+    "v5 non-ASCII behavior",
+    "complete string builtin family"
+  ],
+  "tradingview_verified": false,
+  "rows": [
+    {
+      "id": "length-0",
+      "function": "str.length",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "",
+      "expected": {
+        "kind": "value",
+        "value": 0
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "length-1",
+      "function": "str.length",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "Ab 9!",
+      "expected": {
+        "kind": "value",
+        "value": 5
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "length-2",
+      "function": "str.length",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": " a ",
+      "expected": {
+        "kind": "value",
+        "value": 3
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "length-3",
+      "function": "str.length",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "A\nB",
+      "expected": {
+        "kind": "value",
+        "value": 3
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "length-4",
+      "function": "str.length",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "\t",
+      "expected": {
+        "kind": "value",
+        "value": 1
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "upper-0",
+      "function": "str.upper",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "",
+      "expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "upper-1",
+      "function": "str.upper",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "Ab z9!",
+      "expected": {
+        "kind": "value",
+        "value": "AB Z9!"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "upper-2",
+      "function": "str.upper",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "already UPPER",
+      "expected": {
+        "kind": "value",
+        "value": "ALREADY UPPER"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "lower-0",
+      "function": "str.lower",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "",
+      "expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "lower-1",
+      "function": "str.lower",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "Ab Z9!",
+      "expected": {
+        "kind": "value",
+        "value": "ab z9!"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "lower-2",
+      "function": "str.lower",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "already lower",
+      "expected": {
+        "kind": "value",
+        "value": "already lower"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "trim-0",
+      "function": "str.trim",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "",
+      "expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "trim-1",
+      "function": "str.trim",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "  Ab c  ",
+      "expected": {
+        "kind": "value",
+        "value": "Ab c"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "trim-2",
+      "function": "str.trim",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "\n\tAb c\t\n ",
+      "expected": {
+        "kind": "value",
+        "value": "Ab c"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "trim-3",
+      "function": "str.trim",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "A  B",
+      "expected": {
+        "kind": "value",
+        "value": "A  B"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "trim-4",
+      "function": "str.trim",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": " \t\n",
+      "expected": {
+        "kind": "value",
+        "value": ""
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-0",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "0",
+      "expected": {
+        "kind": "value",
+        "value": 0.0
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-1",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "1234.50",
+      "expected": {
+        "kind": "value",
+        "value": 1234.5
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-2",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "-2.5",
+      "expected": {
+        "kind": "value",
+        "value": -2.5
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-3",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "+12",
+      "expected": {
+        "kind": "value",
+        "value": 12.0
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-4",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-5",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "abc",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-6",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "$1,234.50",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-7",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "1_000",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-8",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "1e2",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-9",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": " 1 ",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-10",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "NaN",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-11",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "Infinity",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "tonumber-12",
+      "function": "str.tonumber",
+      "versions": [
+        5,
+        6
+      ],
+      "argument": "1.2.3",
+      "expected": {
+        "kind": "na"
+      },
+      "version_5_authority": "shared ASCII behavior inference from v5 API and current detailed manual"
+    },
+    {
+      "id": "upper-nonascii",
+      "function": "str.upper",
+      "versions": [
+        6
+      ],
+      "argument": "aéßяZ",
+      "expected": {
+        "kind": "value",
+        "value": "AéßяZ"
+      }
+    },
+    {
+      "id": "lower-nonascii",
+      "function": "str.lower",
+      "versions": [
+        6
+      ],
+      "argument": "AÉẞЯz",
+      "expected": {
+        "kind": "value",
+        "value": "aÉẞЯz"
+      }
+    },
+    {
+      "id": "trim-nonascii",
+      "function": "str.trim",
+      "versions": [
+        6
+      ],
+      "argument": "  A  ",
+      "expected": {
+        "kind": "value",
+        "value": "  A  "
+      }
+    },
+    {
+      "id": "tonumber-nonascii",
+      "function": "str.tonumber",
+      "versions": [
+        6
+      ],
+      "argument": "١٢",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "id": "tonumber-fullwidth",
+      "function": "str.tonumber",
+      "versions": [
+        6
+      ],
+      "argument": "１２",
+      "expected": {
+        "kind": "na"
+      }
+    }
+  ]
+}

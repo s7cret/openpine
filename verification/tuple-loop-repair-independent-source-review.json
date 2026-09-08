@@ -1,0 +1,1378 @@
+{
+  "schema_id": "openpine.tuple_loop_repair_independent_source_review.v1",
+  "decision": "APPROVED_BOUNDED_SOURCE_AND_FOCUSED_BEHAVIOR; full joint execution and collection pending",
+  "base_parser": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f",
+  "immutable_failed_full_run": 34201053710,
+  "immutable_failed_host": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+  "full_stage2_accepted": false,
+  "last_joint_verified_cases": 10683,
+  "locked_failed_candidate_cases": 16745,
+  "proposed_collection_cases": 16787,
+  "proposed_collection_delta": {
+    "pine2ast": 42,
+    "all_other_repositories": 0,
+    "removals_permitted": 0
+  },
+  "source_groups": {
+    "phase1_functional": [
+      "pine2ast/semantic/inference.py"
+    ],
+    "phase2_functional": [
+      "pine2ast/semantic/callable_qualifiers.py"
+    ],
+    "new_tests": [
+      "pine2ast/tests/test_tuple_lexical_child_types.py",
+      "pine2ast/tests/test_callable_for_in_target_types.py"
+    ],
+    "old_test_changes": [],
+    "docs": [
+      "pine2ast/docs/STAGE2_TUPLE_LOOP_TYPE_REPAIR.md"
+    ]
+  },
+  "source_reasoning": [
+    "Phase 1 adds only TupleExpr to the modern v5/v6 trusted-child dispatch already used for BinaryExpr/UnaryExpr. The existing tuple rule constructs each child type through the callback; cached aggregate parent facts are not trusted. v1-v4 dispatch and the legacy default callback are untouched.",
+    "Phase 2 replaces unconditional int bindings for ForInStructure elements in the callable lexical walk with the existing for_in_target_types owner, using the actual iterable type. ForRangeStructure remains int. Scope copies, target symbol roles, and series qualifiers are preserved.",
+    "No catalog IDs/resources, RC5 contracts, AST/facts/consumer schemas, runtime ABI, compiler source, diagnostics or release-axis requirements are changed.",
+    "The two phase payloads are exactly the production rows in the combined five-file freeze. Every one of the 402 old parser paths was compared against cat-file bytes; only the two production paths differ. All 173 compiler and 171 runtime files remain exact baseline blobs."
+  ],
+  "frozen_files": [
+    {
+      "path": "pine2ast/pine2ast/semantic/inference.py",
+      "group": "production",
+      "sha256": "aee64d3cacbcb9afecbab6c56eb2f36ee8b2c7ea6e3c9533c31d7d9bbd0f44c9"
+    },
+    {
+      "path": "pine2ast/pine2ast/semantic/callable_qualifiers.py",
+      "group": "production",
+      "sha256": "1f31f90917060366cb2b363d8623997e5bdc8fb0beb0b559328bb88bd8d1be8d"
+    },
+    {
+      "path": "pine2ast/tests/test_tuple_lexical_child_types.py",
+      "group": "new_tests",
+      "sha256": "4935de1cd4eb95948d75139e82040b762d767a998e1b56454e4f68559ac3a0be"
+    },
+    {
+      "path": "pine2ast/tests/test_callable_for_in_target_types.py",
+      "group": "new_tests",
+      "sha256": "4f94122bb0b617623f066859b9b5befe90e8374ecbec989df1b0182ac85e8c0e"
+    },
+    {
+      "path": "pine2ast/docs/STAGE2_TUPLE_LOOP_TYPE_REPAIR.md",
+      "group": "docs",
+      "sha256": "e130f814a2f08386554af78697e12411c7dd6e49478c20164f1a502a7d5120d3"
+    }
+  ],
+  "independent_focus": [
+    {
+      "python": "311",
+      "passed": 42,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-focus-py311.xml",
+        "sha256": "437a048f14befb30d428768890048dcf55c8ca3e0006aa48fe56bd681bae307c",
+        "bytes": 6513
+      },
+      "nodeids": [
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-6]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[5]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[6]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[5]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[6]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[1]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[2]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[3]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[4]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[5]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-6]",
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[5]",
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[6]"
+      ]
+    },
+    {
+      "python": "313",
+      "passed": 42,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-focus-py313.xml",
+        "sha256": "67a9291a5e5dbc73d4f05323989f664fff4bbf44e1cbb4e0d510f4fe163b4986",
+        "bytes": 6513
+      },
+      "nodeids": [
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-6]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[5]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[6]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[5]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[6]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[1]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[2]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[3]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[4]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[5]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-6]",
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[5]",
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[6]"
+      ]
+    }
+  ],
+  "independent_behavior": [
+    {
+      "python": "311",
+      "modern_original_cases": 22,
+      "modern_expected_user_call_types_match": 20,
+      "direct_range_cases_without_user_call": 2,
+      "modern_generated_values_match": 20,
+      "array_from_existing_target_binding_residual": 2,
+      "v4_identical_preservation_controls": 2,
+      "supplemental_array_new_generated_controls": 4,
+      "supplemental_before_matches": 0,
+      "supplemental_after_typed_matches": 4
+    },
+    {
+      "python": "313",
+      "modern_original_cases": 22,
+      "modern_expected_user_call_types_match": 20,
+      "direct_range_cases_without_user_call": 2,
+      "modern_generated_values_match": 20,
+      "array_from_existing_target_binding_residual": 2,
+      "v4_identical_preservation_controls": 2,
+      "supplemental_array_new_generated_controls": 4,
+      "supplemental_before_matches": 0,
+      "supplemental_after_typed_matches": 4
+    }
+  ],
+  "preserved_old_test_files": [
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_catalog_and_version_context_edges.py",
+      "sha256": "6955c271b15d2e08fb64e9eb7f1ad33a46e54e13324f76a25d267677687b1dc2"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_cli_and_reports.py",
+      "sha256": "ea57dd38e6a80110d1b141218d7d9108fe36e851ab1b068259facedbebf643c2"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_collections_coverage_and_extractors.py",
+      "sha256": "cadc86b1d2a60fcfcecd06fbb661b596a039be2f4ab045c5e86043cb37f49af0"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_contracts_and_reference.py",
+      "sha256": "b21c0bdeb186e8c3f5825a8a2f0e3c71f2bc3aece47a561a9504afd6cf834ff3"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_core_models_and_introspection.py",
+      "sha256": "4e069e6cfcef172e80b70d0bea2cddb6fa4a6363a41b2a9fa658b59078d46a4f"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_frontend_collection_fallbacks.py",
+      "sha256": "6d4c48c3013a31bcdc40385e7328969fb523949db7037fdf9d87570586f43ea2"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_hardening_orchestration.py",
+      "sha256": "ceef39f9f17d5471212b3fd552ff952ed4bf8be753ca199c24423cd69ba5528c"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_language_feature_matrix.py",
+      "sha256": "33e2d06f2ae10ffc7acfe078ca52e519391352194c66c32d32c5f1bc77499dd1"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_parser_semantic_matrix.py",
+      "sha256": "01b7b8a4218a489c771adc6f418247ea54711c6dabd8419b9da15c3a1c37747e"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_release_quality_and_utilities.py",
+      "sha256": "be172d8e975d21e164b8f6e4f5e21059855491e3be4d3fa2d986effee05e377d"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_schema_source_and_compatibility.py",
+      "sha256": "a9f821df36a7e5da2a033b91db6839f5bb3ceb91652dbaa1c512bc8c36a3b28b"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_semantic_fact_contract.py",
+      "sha256": "4fc1a4203aef3d9c9f2bb7f052104386bfac77639efc99c8f44b664d0558e272"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_semantic_facts_edges.py",
+      "sha256": "699ea2d1422118fa6cec64c74f6711867b2d46f4900efd4a2c7100bc30063d76"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_static_validation_edges.py",
+      "sha256": "58f20ef8cc4ff8b12493db334c32c1b95bb996249b9f8023958fc48395861df0"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/coverage/test_type_model_and_version_coverage.py",
+      "sha256": "fa0c0801fd276a18e55cb40f000d6dbb80713c2c1311f1d96a5df834b78e6ac7"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/regression/test_rc6_implementation_review.py",
+      "sha256": "618178bea5846366e6548737d4046fc6d2b5b07ee03848c39bb41ce2cc1af397"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage2/test_catalog.py",
+      "sha256": "cb43da212d41e59e82d29dd3ecfa4a11c84f36da87adc3f11e7c6b5f4248c280"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage2/test_distribution_boundary.py",
+      "sha256": "98194115c3acd862fe7f55ea5111a73efb1401422fbe0442be82b695930e74d4"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage2/test_version_kernel.py",
+      "sha256": "ae0a0fb870ce2cd1822458425b1f754dd5462b7fded7bcbc7cf530ca10ce9e18"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage3/test_artifact_lineage.py",
+      "sha256": "33857c1c7a6f8b3f631202922ed4dcfd32e74e4f9d6d294ba6c449327232bc59"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage3/test_catalog_static_completeness.py",
+      "sha256": "5a31c7229eead1a1a0a580928ab79bbd1bfb72ce8fb5e0091c0b2095bb91a1de"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage3/test_legacy_versions_fail_closed.py",
+      "sha256": "9e7cc213144d8e04b6e9b8255f21abf72b06eeb9aab7355789d588b44355266b"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage3/test_overload_strictness.py",
+      "sha256": "16aa31944fa9d1ba7c96aaf6ac0e6418649dbd80f32a6b035fae4a5a8f3b40ef"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage3/test_policy_and_version_binding.py",
+      "sha256": "ebb4f0504e8172d0b09aca34c9e7aeecfa9c37026ba6ec8c862735c357c98057"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage3/test_user_strategy_acceptance.py",
+      "sha256": "38b8c98f5696aa6a1845d701f547099fc924f305e68bb8241252c0fbeb40a8f3"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage3/test_version_differentials.py",
+      "sha256": "64165a1af49846cef4a4ecc7efeab74f5d7efb2930e2c6746786d99df93dedea"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_exit_argument_binding.py",
+      "sha256": "d8b69fde4093002f2f7a16494186f1f8b50a426c82de11fc7d181df3dd8f7e62"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_loop_value_evidence.py",
+      "sha256": "f60dbcfdbb6b39a6b0ad17f16972ce5bf6e88df556187d5ce531823173e0f970"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_pairwise_version_differentials.py",
+      "sha256": "8ddc1be49dfb0f833ef4f182075f58976035ff7fffe3f135fb9126d63bad1bf0"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_request_na_evidence.py",
+      "sha256": "ad65cb5268c77a143a3d985e03d4993f653865563f2cb27a38b4fe194429f089"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_request_return_evidence.py",
+      "sha256": "aa15f01bc4c8e19d4a148dfac9d5ee148df13bed736acf0750942f89e3c7d07a"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_risk_namespace_evidence.py",
+      "sha256": "ae4c653919e6c304f681210ec0fb729c3fb2b9879f79d2e214ebf9f08a23048e"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_v1_semantics.py",
+      "sha256": "c17d68fa205d7656397872196d40ff19a4701546464d96e3813ca64cc1380e3d"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_v2_semantics.py",
+      "sha256": "6fd89e07309bceec9a50a2b44891507d76b669a4e5dfe87488a623055d2a9220"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_v3_semantics.py",
+      "sha256": "eddf5a0767f9afab90fdaa383d40f87768e3a389afef2048cd4bd1ced07faaa3"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage5/test_v4_semantics.py",
+      "sha256": "521304fb4d160f301c06ba331b123f4b3cae305c252bdf74eb96a1d4d1fd15f0"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage6/test_corrected_pipeline_invariants.py",
+      "sha256": "54b22803bafdc8ccb11c9b6c0c9b7fd6f7417915d9192bb8910e9cc22469f594"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage6/test_requirement_traceability.py",
+      "sha256": "2605ba1260424be79b1d2d4050f22692b054fc4a526c041c540248d326a7c46a"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage6/test_stage6_integrity.py",
+      "sha256": "74f554f715d3c7c07236ba3b0157811befa9e07e1f9e4a38761686685d268193"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage6/test_stage6_performance_gate.py",
+      "sha256": "f9c73c9ff3e5f5e35ae694487b46f0d2dd89d2a185caf7b95b4c6ccc3a439b3e"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/stage6/test_version_semantic_hardening.py",
+      "sha256": "875d20984f775cd5c8cd6ef5f826ebe8ef66a86f95244d4464650d4409af6933"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_array_concat_reference_contract.py",
+      "sha256": "1d63fec95b23d69fe2698c76fd843a9722476230d0469320d4f4b5ece00182f8"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_callable_result_qualifiers.py",
+      "sha256": "da0d8a42fd6031667437aeeed5f1c0470727917b89a06abc84ac827f516b6287"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_collection_library_profiles.py",
+      "sha256": "d0ed838938f7ee8b97cab37e387602ea25c0ff369c936d80e317a9952f4cb2f9"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_collection_named_receivers.py",
+      "sha256": "642b3942cb114a3192767b9e2dacbc0b71265b6f5380a216ff4d7727fe7f8c39"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_constant_float_comparison.py",
+      "sha256": "c73e10a5996ccb4859fcbfa422dfa9bcca641fe765717c130b4bd9d36d876824"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_constant_global_binding_scope.py",
+      "sha256": "73fe0fff35bb26d376e3cabb685b125f1b302ae654a6e5aeb4b065a337cdedf5"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_constant_modern_numeric_promotion.py",
+      "sha256": "24c8c1de8207a6664c281fd9344620a1a8a4a27fe52b52cca8b027f79d7c6060"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_constant_round_binding.py",
+      "sha256": "cee510c03ae1fc5b2f86eda94694922192b88f1602bc03a4fcbdfc939b9858f3"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_constant_user_function_evidence.py",
+      "sha256": "adc662ec31b64b8c68fa38aeab3dccd7675ade2d6418e876c35fa269ba2490f3"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_constant_user_function_numeric_coercion.py",
+      "sha256": "15f3b7d223240bcdbf25d8f6f3a1480d2511500fa515ce02c3726a9d710643d4"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_constant_variadic_binding.py",
+      "sha256": "fb0145baf1fe68c1e07b665e1aa3fac84ae4ed68e4cd12ecfea56ca42156ffb8"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_contextual_child_type_inference.py",
+      "sha256": "35cfbd9812cfd2fe80ca4f4dea61e558acbd87fee1aac57f8a70efc2e139241b"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_contextual_constant_calls.py",
+      "sha256": "30439fcbe53bad2ddde3a8ca07d25626efb04d15d9eaf89435d8139b25a83d49"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_exported_result_floor.py",
+      "sha256": "0e357c477336ae8d9d600cd130275cafdf86722aa6b39eb5a29173458bf7d20b"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_float_version_authority.py",
+      "sha256": "2537d44568849f98a08d0d7bb4ac4d2b1b690e2473a629befeaba957a9744397"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_generic_collection_fact_identity.py",
+      "sha256": "127c8169e91f30066a790163f61869d907d90e2838f044b28c2e97273f60bf97"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_implicit_simple_parameters.py",
+      "sha256": "864a7833f0f1932cc94cb2fcd295ab29151d83cec8df7b8edd2adfcb541355ae"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_layout_block_boundaries.py",
+      "sha256": "cdd0a55714e17c0f772ebb879ae75b158ac076b9c6899696b3569ed586e0a748"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_library_qualifier_context.py",
+      "sha256": "1c83fd4211980fc05c3d69cb73a3668c93308f03f085223fd6d24038c57e54a0"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_locked_library_linking.py",
+      "sha256": "f676045f3d75c995449b900cb24983a23dc4febe5c9f55ad9563b823c7d8146c"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_map_primary_contract.py",
+      "sha256": "2b0f7341987422be867f1b0d57c7f4c4c8cbe6d9a572071c4c9a51ede519935f"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_method_candidate_resolution.py",
+      "sha256": "6c7dfe88f0b34ddb6a405fc7bd15ae9300c7c7c54660507cac9971ed77e6f320"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_method_candidate_selection_guards.py",
+      "sha256": "3b0581f7b80f934702307d54f026b351476f60ba957f55076a8f2e7327453168"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_nested_callable_result_qualifiers.py",
+      "sha256": "27f1341aed1b84d9e1264f06f65f89696419f439246f7f189d47186de90f4cd5"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_nominal_language_contract.py",
+      "sha256": "871ec1cdb0663dc887f0e28bde39b10c766f08cddf5293d78e9fa5d42b0f9f8d"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_numeric_input_defval_qualifiers.py",
+      "sha256": "6f1afa3d93d13ae7412d5b7f2596d3442701a985e13b1ae6f1efa22bc75b8dce"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_nz_return_rule.py",
+      "sha256": "9ae52c608c2cfcd2cc0cf8225e9434d76e488dc710d23ef29c52f1ccce30dc71"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_once_language_contract.py",
+      "sha256": "eaf601d1ad58f92d815b0e2735787a4d8046f83fbc5e675010ce8283b979a684"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_reference_package_data.py",
+      "sha256": "dbef5c7860c376d87367ac3aa8671c6d89aeaca3e88077441023669b6662b973"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_rolling_statistics_biased_parameter.py",
+      "sha256": "fdcf553d7febc83bb4fe87ba7d92c55568318fb718da0a0bae8f435be7e2807e"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_scalar_signature_contract.py",
+      "sha256": "b28435f5a6c9f8e7dcaa44160d69bf889b3e427deedeb73016dfcb857067f88a"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_string_primary_source_contract.py",
+      "sha256": "53383d481318fa507bd41f5f1e3ae02a1094a3942e19ef339446c296328e43db"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_typed_collection_constructors.py",
+      "sha256": "8c57c057a42159df4027db1b87ba46df9689e6cafc59a64d88c7b883e132e97a"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/test_typed_library_linking.py",
+      "sha256": "64bc50ece6a334bf99868d35cd72b923a99adb69ebf60a761f34e869e36ae456"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/unit/test_stage4_hardening.py",
+      "sha256": "15eb9ca99cb58c13e4a198c77742da8846480ec3a49918b0bb32eaaa3d644452"
+    },
+    {
+      "repository": "pine2ast",
+      "path": "tests/unit/test_stage5_hardening.py",
+      "sha256": "a34eea7b1c00923d42312e52c2922e5363a7d7c09387dc47d46b2468fae6ea6f"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/conftest.py",
+      "sha256": "ce6261e5852852560a2e38ff21da3647747c12a7c296590519889e017fa3c07d"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/manifest.json",
+      "sha256": "28c8b185d1d62d9e282219f5a776d43f8a86a10bf378c9c850ca6f5f985dd217"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v1/v1-default-minimal.bundle.json",
+      "sha256": "6037063a66538c130b7a3a0d38f323ad64c19c521c8ca4fd821a3e10953e2735"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v1/v1-self-bool-security.bundle.json",
+      "sha256": "b9729cbfd7645a03b060884c1dde86907e21ee497bbb83b15326392aedb88ebc"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v2/v2-control-flow.bundle.json",
+      "sha256": "a86cf3ac7599546c9feadf4fa178d4fc5f801d9f86535df80bd0366f88ea4f95"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v2/v2-forward-bool.bundle.json",
+      "sha256": "ccaa28625dcb980901cbae933e91b4fd0e1905e11cd43299dfd9991da37bbe8f"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v2/v2-security-default.bundle.json",
+      "sha256": "6f15f565db2835a0f5d668b5f3891794fd2f304c5fa2ff7797d08fffdae5802c"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v3/v3-numeric-condition.bundle.json",
+      "sha256": "f2687f9cee7f4feb65957ac870b1b213725b5c1d48ddc4a4314b1b4befe001de"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v3/v3-security-default.bundle.json",
+      "sha256": "40804785cd039e844257a0b56d6379b4f94a76811afa99726a42d8b46fa474e3"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v3/v3-ternary-eager.bundle.json",
+      "sha256": "b487bd882e37041815c307131ba375b75ff38b1aa54ddfbc13a737817f7a1c23"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v3/v3-tuple.bundle.json",
+      "sha256": "3e1b2a26043d28ad55aa6ee3dde11ebcbfcbfde698a4153356712abcdca7f347"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v4/v4-arrays-var-compound.bundle.json",
+      "sha256": "cbb3f0ab299b5e9a3ca758180f42c4af98142b892edca29f83640f52a2774f78"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v4/v4-pre-namespace.bundle.json",
+      "sha256": "eac82f471c322b94cc0345a3ea8e2f42cd79d8e875616f3495d14cf96948335f"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v4/v4-ternary-lazy.bundle.json",
+      "sha256": "ff5477e927bd3eb461c1cdcc872dfe08af3a585ea6d3ad5ac295dc5ee566e754"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v4/v4-typed-na.bundle.json",
+      "sha256": "2fca1c8ffd5ee950e5ea70932ae9eaf7b9718a2d8726bda5f8dce883ecec57a2"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v4/v4-unified-input.bundle.json",
+      "sha256": "31022685b9c23078f9aa73376de0f0e050e5ea700f6ea877c24c0ef707ee8a7a"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v5/v5-bool-na.bundle.json",
+      "sha256": "d2ceb952996e2888f12730b0acca450ba867b1544319852a690d8e3fc65580c7"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v5/v5-minimal.bundle.json",
+      "sha256": "a4b8f18d06a6d67100e7ee06fc7e1c8bda5cfc68d88c74d21104320a6b75c3ca"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v5/v5-numeric-condition.bundle.json",
+      "sha256": "19d31aa219e49c4000f0818f509aa3a17eaefade24f2b042aaa032b086b29c2c"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v5/v5-strategy-when.bundle.json",
+      "sha256": "0ea62e7b2a9b1804d53c49d5353c648f04e621cd6714b9d0befc42e77c6dd6ae"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v6/v6-minimal.bundle.json",
+      "sha256": "a34837ce8c45a80412f8c0a41e00c0032a639bc7ef0e32a40d5830148b2b4bdc"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v6/v6-multiline-string.bundle.json",
+      "sha256": "b4d99a4927e19910cc78ceb728d4ca2edde7a06468fcada3e4b46138789d2f78"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v6/v6-strategy-orders.bundle.json",
+      "sha256": "132fb529ff60f8defe044295754f63b928a62e47aca5dd20ea11c31e2d471f20"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/corpus/v6/v6-user-function.bundle.json",
+      "sha256": "9d0cf509e82ad19cf93cbdace5fd1cd1e8044fe12973c124d506053aa13305b9"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/consumer/pine-v1-consumer-bundle.json",
+      "sha256": "b9729cbfd7645a03b060884c1dde86907e21ee497bbb83b15326392aedb88ebc"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/consumer/pine-v2-consumer-bundle.json",
+      "sha256": "a86cf3ac7599546c9feadf4fa178d4fc5f801d9f86535df80bd0366f88ea4f95"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/consumer/pine-v3-consumer-bundle.json",
+      "sha256": "40804785cd039e844257a0b56d6379b4f94a76811afa99726a42d8b46fa474e3"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/consumer/pine-v4-consumer-bundle.json",
+      "sha256": "cbb3f0ab299b5e9a3ca758180f42c4af98142b892edca29f83640f52a2774f78"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/consumer/pine-v5-consumer-bundle.json",
+      "sha256": "a4b8f18d06a6d67100e7ee06fc7e1c8bda5cfc68d88c74d21104320a6b75c3ca"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/consumer/pine-v6-consumer-bundle.json",
+      "sha256": "a34837ce8c45a80412f8c0a41e00c0032a639bc7ef0e32a40d5830148b2b4bdc"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/exported_floor_legacy/pine-v5.json",
+      "sha256": "18ad00f036b11b6cbe0aa2cd00c0099b03f0a337f568ae3a3abe7cffaf05de70"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/exported_floor_legacy/pine-v6.json",
+      "sha256": "106ddf9ff3624180da7ce55ed8aa7fc0f9b85b62e14ba7bf727c22e4ac982382"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/nominal_registry_legacy_v5.json",
+      "sha256": "dd4a9a106a0a975d53563bd9dce564a702aeb10c9a77c4345fb71549b6753af6"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/fixtures/nominal_registry_legacy_v6.json",
+      "sha256": "c3e4daeabe5a2418a68193a7704521c45fd5d3b8197b6bdbef6c070bf978fdaa"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/pass3/test_release_candidate.py",
+      "sha256": "7959e38e393ba6927fd30464bedc9c63334db1863aa290d894342e2c42239f85"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_compiler.py",
+      "sha256": "a104244422fba4339f9b8549b737bff2861455c4ab9cecac5c498e190a8f958f"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_core_defensive.py",
+      "sha256": "e4000de9798ea9e2c0ac7c3432a95f0f0dca6cf439cfa5a82dd6ba19e0ade8a0"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_corpus_properties.py",
+      "sha256": "e3546d4f70c74a4b94fab597a3d80ddaa3c35d308d98c4514ecfd18d7b94c343"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_differential_security.py",
+      "sha256": "74cf7129bc49694ef3eabe6bf67475d441b4c278bec85715cdc0143dcbb8f163"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_direct_emitter.py",
+      "sha256": "86b91288bcaedde219bf9cf76dad6cc57e20f2f2c446dd57192c73316629a83a"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_direct_emitter_defensive.py",
+      "sha256": "94ac5a0b4c5c851210307997146d193b29eb4be7dc0d26734bbd737732c831ee"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_exact_pinelib_backend.py",
+      "sha256": "530ffa51f0e6d2ad47373cf152510528fe7c8c5feb59c86d52817d4c6e957616"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_identity_hardening.py",
+      "sha256": "e157e22a9ba6ee1ca8f95e3f19d5c1881b01bf0f95048e5cd78d33235928c435"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_lowering_dispositions.py",
+      "sha256": "8e13abc08a9ebacc1f9baf8ee42bc8fa40a3e1afef6ba0e40c3d39ea02115cb4"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_mutation.py",
+      "sha256": "781ec03f386cce4df918dd72c5ae656b284f7be5c8cdfac2c4ab754a248d5c2d"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_nonvacuous_gates.py",
+      "sha256": "5e77c88eea787d9ef2331244ab9765a699395d6fef17e340899d37a01ce3af94"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/stage4/test_required_primitives.py",
+      "sha256": "9a2955c89d1fdb675b135b5d35a655dd426fad51469970ba10b5c0c3a8f58af9"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_admission.py",
+      "sha256": "bd4a915c6dd3ca500f9fb2dde55db3ce52e1d0c56e5210652940403ba7cf564a"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_admission_hardening.py",
+      "sha256": "bed8f1cf3589be6d6f9ece28611a0bbb18f00a4f03d71ccd1bee2769a8497c3b"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_admission_unit_errors.py",
+      "sha256": "5e2c7a1eb29e896109395a398d693289606c4c2670239798368598b57d30b1fb"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_analysis_mode.py",
+      "sha256": "8ef83d7c6d147d34a4f68287bb8c6500a1961685c88e7cf1acadf8411ba55129"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_binding_structure_audit.py",
+      "sha256": "57f5a6bf166c1e0a0f58dfac4d29fbc958bd7a69906d6d2d6ed157ebe3b4d7d4"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_boundary.py",
+      "sha256": "bf02e8680ab290d1ec639617790c1a52ce5c3e17f44a199c34d9d97ef1c701dd"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_builtin_binding_execution.py",
+      "sha256": "f9ff37948176aa737535bcc7c026c37ddb4a66a4831eb6387be24ae7e400ab6c"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_cli.py",
+      "sha256": "306482118ebf204e684ab308fe153b2773570adb434881d3cc4f6d5aadfa650f"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_compiled_request_emission.py",
+      "sha256": "8429ff58648faabb7b7261fac6c8b07ee4d7c9be83273bd95e27b14156c25af8"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_defensive_branches.py",
+      "sha256": "ebe362878cec93efc583e7b02b5f1e0acd6a543cf60c30164ae0add55c87d74f"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_float_version_boundary.py",
+      "sha256": "2eee549efc032c1dad63f27dd933f5f38779cfd620926efe9df34495990b6370"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_historical_target_bindings.py",
+      "sha256": "269ef90e0ba46ed16124dbebcbe7545e532698f008b2649c6c18f1de975ee94d"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_intrabar_collection_execution.py",
+      "sha256": "9fc4f52ab3b90a7d3aafc939ebba85481fc5efa43745e6b204199c3123e4d808"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_library_qualifier_context_execution.py",
+      "sha256": "9668750a1e175802337d8d00af3dc0aa63227a7bda9b0bd213633712e2a3e87b"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_locked_library_execution.py",
+      "sha256": "e8a0564d036366578bbade18b9879a3f0844feb5b54faa351f2e9d0e853b3c0d"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_mutations.py",
+      "sha256": "daf76dbb0909cad0aa6f481e905ef67fd64276c917241b3cf31d0c5f257519c9"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_nominal_language_execution.py",
+      "sha256": "a18a279ce3b79bbdf1fa13d8c6126eb9c486e33406221cf8d094753f93183429"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_nominal_library_execution.py",
+      "sha256": "896b613bb2d7dc97c54f79d462caa45866df393a2998b82cbdcd6f62dd244fc2"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_nominal_registry_admission.py",
+      "sha256": "058cdb0728e8c532a6bd77747524aebd886472cadfc21a862da2f023f1657c88"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_nominal_registry_dependency_boundary.py",
+      "sha256": "7ef08c07c51ff66c68e8aa1c0a6019dd2d89f828b0e57746759b0aefb885423e"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_nominal_registry_emission.py",
+      "sha256": "9ba6ddad3af7ca6bd4369192b6a982fb970102371bf28ed8c082634698d1fe12"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_rc6_input_metadata.py",
+      "sha256": "af143b19859a08c337dff4cec0c8d6fe47651bdab0b5d0e3a3208a769206af78"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_reference_loop_execution.py",
+      "sha256": "0bc03e95c0fd3fae5cf35aec589ebbc172ea02db9fe37087015f71bfda4454e7"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_release_distribution.py",
+      "sha256": "f5f70e40d9f875f0d61c1e94f5f986339a50366b1cf723646d3b7cc23fb325f0"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_review_scalar_state.py",
+      "sha256": "3a0de415635cf22759a77a3227775b6996e3bd93e840ff9321a7b40f58eb24de"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_stage2_language_execution.py",
+      "sha256": "65ac4d2c79e8ff91934a1d7ad88384d9e45855dc64d1467d26d51080b175834b"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_variadic_numeric_execution.py",
+      "sha256": "aed6cc4b2c92af736ba12e4e70e0beb1121cdfca42b5a3c9f7f3ae536090fee7"
+    },
+    {
+      "repository": "ast2python",
+      "path": "tests/test_varip_nominal_arrays_execution.py",
+      "sha256": "25d85966ad18f27efe52d98382f2822e624fc258ad52f2e501db1e449533076b"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/array_concat_manual_expected.json",
+      "sha256": "20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/array_search_manual_expected.json",
+      "sha256": "1ef56faf74bbd89bb7c7c7011b1ac3c2b9ca4d0a089f7e248572ef7aa532f746"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/float_comparison_manual_expected.json",
+      "sha256": "19ecb5d3fbdc4229b01110b7cbecd0419e6eb9f9d11530b2b19308350d80f8a1"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/map_operations_manual_expected.json",
+      "sha256": "3afd6e3a0a1a0abe972c40190bff3dd2caf566aa5e7a7a355aa9d2acd5bb9ffe"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/map_target_metadata_expected.json",
+      "sha256": "ab299c90c4166b64bbb3cbc599a84cfbb8f0dd30867dc28ede7096cb35235040"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/rolling_state_v1_checkpoints.json",
+      "sha256": "09f01ae98e17506e6bd13fe50bddeb3729e619a5c46ddc85384671b22a17157f"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/string_context_supplement.json",
+      "sha256": "7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/string_manual_expected.json",
+      "sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/fixtures/string_target_primary_expected.json",
+      "sha256": "5fe4804bdcf4aba8fd74e3d7ff691c6bfb5fd25ee4b231e8a1eea056452cb104"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/stage3_helpers.py",
+      "sha256": "c908e78119833e828377d2daf0db3b82561accaf19f28a8a2c3294885320e137"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/stage4_helpers.py",
+      "sha256": "2d8a89c4c23098b3da2cb83ffe76a40dae863917355118fc306dbc282997793b"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_abort_transient_slices.py",
+      "sha256": "f72465707d204083f7ca4c46dfb19dda6c244d784bef6e888f729c9366c33700"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_abort_witness_replay.py",
+      "sha256": "9b0e17b1412d569073eed812f6d43c014f66ec6e857d5c26d7beceaf4aca5500"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_array_concat_identity.py",
+      "sha256": "601db5db635cc05c0ff8b1f8a0ee999193e3f83d17069181e777ae1124056a2c"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_array_search_boundaries.py",
+      "sha256": "6831ecb6c06cbed0de43c6c9de7975f381d828940a179e4ac6d26fb5c7aebc43"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_audited_unary_math_bindings.py",
+      "sha256": "228c5853579f2a2c546eadca47c33ed21be755f1ceb277f5f6c24468ff465e1d"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_builtin_numeric_contracts.py",
+      "sha256": "cd148abc81d5ce267278260c9d228af19705c1a07daa373d86d28525e0b34938"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_builtin_stateful_oracles.py",
+      "sha256": "e0b9cbba76b7fad4279da4c5234e7cf4cd589c96beaeaa5a554d9be27f0320b7"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_checkpoint_na_roundtrip.py",
+      "sha256": "df1deacfb746a993d5a31ee571ffb03e2c857022b98a11f10c5d477219d7a4bb"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_collection_iteration.py",
+      "sha256": "006b277b781e43a8ba18a44646aec45b1d48d4039e323f861b58f938c4645419"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_compiled_nested_requests.py",
+      "sha256": "f4f8d86b1413357d7aef957ec5a7c842e37335adc5f9edcf2949f6899d609bb0"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_compiled_reference_storage.py",
+      "sha256": "b67314de9b2aa8edb33a8bf47f72c8d011a550080d5423df67bb7d0dd327d975"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_compiled_requests.py",
+      "sha256": "e3654fb0e14cc35a6b64998ec930f184b6421cfad5c5484b49f3e065010bb87c"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_float_cast_abi.py",
+      "sha256": "bd727fb2441ba435cf201e643ca7103d95c54d2ffb651de4109f36e34d141382"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_float_comparison_precision.py",
+      "sha256": "bcad43ce73a27d79a10937fdfca48ff7e9911f5a442bbc112c22cce7fc580975"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_float_version_availability.py",
+      "sha256": "d0934454e549a361605d3a6cfc51bd07ace52f30805b52edcae96ba209c2cf73"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_language_scopes_once.py",
+      "sha256": "143d704b0a4b4ebc9dd5a19eeea153c05116ce5477210f9f05d90104e09d3274"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_map_target_contract.py",
+      "sha256": "7507622afbb98c56ec4fb273d2d275befbdf389cac1419332bd85f877dd46672"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_minmax_variadic_manifest.py",
+      "sha256": "a745694026391268ce912a59453cd80197e370ecc6559f0ee15d924441e47ee4"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_registry.py",
+      "sha256": "02ed61a39e8b47a902106b702ea250816989ff23a869a3e4de2d31b62701f1c9"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_registry_request_restore.py",
+      "sha256": "2de604b6a47134dc6d5dceb5e5daf3e9e180bd672aa0bc390d3ae7bbfbb85dcf"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_registry_runtime.py",
+      "sha256": "fab74aeff438e34e00f1a5f6bb12f6442fa26916b391b971fe2538252ac72813"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_nominal_types.py",
+      "sha256": "c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_once_fill_recalculation.py",
+      "sha256": "dd63b3cc9cc0e447c9717754f0a4881d737ab54b3961844f284ccb47413fbcaf"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_rc6_adversarial_regressions.py",
+      "sha256": "b16231fcd10ebc6965b69817b3e39986f36e9be7e36c120d6950b6324e818877"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_rc6_append_restore_edges.py",
+      "sha256": "ec8750f0fab5fd704409f3bc6bd32551c296b4fd69d8c4bed31ca9c1968eeba3"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_rc6_delegated_channel.py",
+      "sha256": "e85b868840bcdb35ab1c344477c9cc33b3ead621a0bc4768fb6fffc2f2314a2a"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_rc6_final_review_regressions.py",
+      "sha256": "c472319b1f2a9028a1cf75438439f21fba52d93ea33e22f5f8c44857a853080d"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_rc6_frozen_review_regressions.py",
+      "sha256": "871e863651d868e00042611383850a7e4b36381609013cd159474781ca1e3958"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_rc6_local_regressions.py",
+      "sha256": "3b062ae7b4de613a75683751eb311e65c4ba208b99c6c3d4e7ed20a6c37ebe90"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_reference_candidate_regressions.py",
+      "sha256": "802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_release_tools.py",
+      "sha256": "9b17d51b62ce27f078761a746c2f915806d35155edc77b03270e10f81892a839"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_review_deferred_bar_commit.py",
+      "sha256": "af2e5b4f6e8fb7cb70afd88ef0198e29b63a10e1f72789f674d7a82025818441"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_review_input_integrity.py",
+      "sha256": "f7836160c7137e07b0a3980d7677038bca6f2dfc571f2a51bf447f2b8060f4fa"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_rolling_statistics_state.py",
+      "sha256": "8a7f34df31e2787fb01d9450483d102458348684c7254d17a158edd0e7e12279"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_semantic_commit_identity.py",
+      "sha256": "6ae3cb6579571d8c01564421eff33f48c17fbf1d68850de7ad67618fc1c8d911"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_snapshot_aliases.py",
+      "sha256": "12adf954d790d5750b49c5f2e1c3cfa247942bbeef5e7e381020ba18281da4b0"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_stage2.py",
+      "sha256": "4c30c0e78e4486d461035ed43635fd889b4740c890a7e7079ebf8cece43b251e"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_stage3_edge_contracts.py",
+      "sha256": "551d52155edb00551db07236e93df02e036da2a392b6675b9120fbbebdf52c74"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_stage3_math_string_time_input.py",
+      "sha256": "7d1dd36dade7f0f7d4332ff1294ce336d4d57090421af29329d61d0d3ff3aa20"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_stage3_references_events.py",
+      "sha256": "2fa5da72810211950bfb5a6a9f7cadcb0e29323b82262b091fb75bb5157f1a4e"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_stage3_ta.py",
+      "sha256": "f2b690fd38cca783195c8db814f02bd8d4b0943b61c7db4720787f4ced048f34"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_stage4_contracts.py",
+      "sha256": "f9fc524cdc8cf81cc2ec3358315ef95f9138440871680dee2ada9157ec114681"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_stage4_request_engine.py",
+      "sha256": "d36675b774a3f8c627a72705a02317c422be646af57ae243d6759473136fa877"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_string_context_semantics.py",
+      "sha256": "7bfd7b522085ba4b049933705b98a1cec77b3ecb115094ac6ff7391c079b2af0"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_string_primary_target_contract.py",
+      "sha256": "0a4aedc4d59e7610c4b1ef78baafc6ce307c1607c59cdf8b23c9ae33ed972f6f"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_transcript_control.py",
+      "sha256": "2fe1631df9b27f361c37ec7d3938ff94c2078454f868bc6f0347091b6dd62422"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_varip_abort_checkpoint.py",
+      "sha256": "5b1dd4f56ed0bff7c904c1f3b2fd76639316d144ececa1d634e3644da96db434"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_varip_collections.py",
+      "sha256": "52d6efd7e49f5b0b18dfd1301bdb210391372070ea20ef453d4b6f73e02e4618"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_varip_nominal_arrays.py",
+      "sha256": "c84f1325cead75444caeae9735b5ae78adf5718208a9a6bb7119e89a3dd2b2a9"
+    },
+    {
+      "repository": "pinelib",
+      "path": "tests/test_versioned_bool_history.py",
+      "sha256": "454b78fd5911fa232670685b733dfd737a9b284a6950c163a37580acfa64ec63"
+    }
+  ],
+  "provenance_correction": "The initial git-archive exports contain CRLF conversion under local attributes. Owner before_sha256_raw matches actual cat-file Git blobs (LF); the initial reviewer statement to the contrary was incorrect. Every exported file was independently compared here; differences are exclusively CRLF-to-LF conversion, so prior execution inputs are text-identical. Original export hashes, failed raw guard and before/after observations remain retained.",
+  "retained_harness_event": "The first after-materialization asserted archive-export bytes against owner raw Git blob hashes and stopped before any overlay. The reviewer initially called the owner label incorrect; cat-file verification corrected that statement. Earlier source receipt fields named before_git_raw actually record archive-export raw bytes; this review and tuple-loop-independent-git-source-review.json provide the authoritative Git raw mapping without overwriting earlier evidence.",
+  "limitations": [
+    "Original array.from float for-in probes retain their A2P_TARGET_CALL_BINDING failure after correct tuple facts are produced. These two controls do not claim generated array.from support; four additional array.new controls execute exact float/scalar and indexed results.",
+    "Full local parser and the corrected unchanged compiler suite are pending when this source receipt is sealed. Parent reported first compiler full runs 1106 pass / 4 fail: one Windows symlink failure and three release-tool harness recursion failures caused by an internal basetemp. Those failures are retained and must not be relabeled as all known Windows failures.",
+    "No new Linux execution, architecture/static/frontend/Stage1/full host corpus acceptance is inferred from the 42 focused cases or the forthcoming collection proposal.",
+    "A2 reference receivers and EMA/MACD next waves are excluded."
+  ],
+  "evidence": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-final-frozen-bundle.json",
+      "sha256": "923b9ad25141820260917529e5aaa0eaef37663eb124a2fc5773ce7c5540285a",
+      "bytes": 40719
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-phase1-frozen-bundle.json",
+      "sha256": "18422a97ce5c398e68c6e53f79a6b3904fad3fc276c35b44bc8f32591c659278",
+      "bytes": 21654
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-phase2-frozen-bundle.json",
+      "sha256": "89b961b4772978ea9b70d3fb20c7e504d5fe2ba458028b533bcc6180d8b28239",
+      "bytes": 7809
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-manual.json",
+      "sha256": "77b179f417f719a3e9dadf7f002f7289fa7ed943b4014a24d325c1667764d4f8",
+      "bytes": 11213
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-before-source.json",
+      "sha256": "c02da32b603c5b9ec2861062a1bd5cd282c393271eb99223e73bedd4cea91983",
+      "bytes": 131332
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-after-source.json",
+      "sha256": "03b164f99469c3da7e4f96e391d16c971770f2662a7c63a84d6e6f03c622506a",
+      "bytes": 90977
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-git-source-review.json",
+      "sha256": "67f409e68261ecc26bc8fe229a9da8327a59c67479b218daa24556cfe65cfbc6",
+      "bytes": 304308
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-tuple-regression-before.json",
+      "sha256": "eb9c87fc6ad60fd655cd888b7164563006cc610aff63d12b1ad049e5bf6c8574",
+      "bytes": 50539
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-execution-independent-review.json",
+      "sha256": "97862d5736de422dac40dbd24365186d8489f0f7f2e931c7abcb57f872ef7078",
+      "bytes": 40784
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-before-py311.json",
+      "sha256": "e5ebbdce647279cf5980f5e699fa37de3b851d344953ac596c500a665a9e8e79",
+      "bytes": 52156
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-before-py313.json",
+      "sha256": "e5ebbdce647279cf5980f5e699fa37de3b851d344953ac596c500a665a9e8e79",
+      "bytes": 52156
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-after-py311.json",
+      "sha256": "1fee9ad8e41333ba7ce6df3dcc7e6559de0b2878cb9b5a5c32a84d933e610034",
+      "bytes": 50482
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-independent-after-py313.json",
+      "sha256": "1fee9ad8e41333ba7ce6df3dcc7e6559de0b2878cb9b5a5c32a84d933e610034",
+      "bytes": 50482
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-for-in-new-before-py311.json",
+      "sha256": "75dfd364e14410eb074e0f1e4ae84cb4ed4351add3b41fec17a8d2ec763cd51a",
+      "bytes": 2575
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-for-in-new-before-py313.json",
+      "sha256": "75dfd364e14410eb074e0f1e4ae84cb4ed4351add3b41fec17a8d2ec763cd51a",
+      "bytes": 2575
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-for-in-new-after-py311.json",
+      "sha256": "135f9af2e7e8fe592134ee1fa8ecd35aca62c51fc75dbb60fa32e1b509a0a468",
+      "bytes": 2420
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-for-in-new-after-py313.json",
+      "sha256": "135f9af2e7e8fe592134ee1fa8ecd35aca62c51fc75dbb60fa32e1b509a0a468",
+      "bytes": 2420
+    }
+  ],
+  "review_script_sha256": "066c3f3ff9db0c9b19a5a0298b9729384ce186e5cbf23997da5547c03fe5d600"
+}

@@ -1,0 +1,382 @@
+{
+  "bundles": {
+    "composition_metadata6": {
+      "path": ".runtime/evidence/runtime-semantic-composition-metadata-frozen-bundle.json",
+      "sha256": "4c6b8212500002245ad6b79d91a4ebf62090228521e398f2b5f5c9819bea01a5"
+    },
+    "producer8": {
+      "path": ".runtime/evidence/string-primary-producer-frozen-bundle.json",
+      "sha256": "52d1568f9bd2bb9fac7ad0173d09399c2b487d5da5e1ab35a8bd57592da79ffc"
+    },
+    "runtime5": {
+      "path": ".runtime/evidence/string-primary-runtime-revised-frozen-bundle.json",
+      "sha256": "82cbf1f1c6724f4e875f102417a060ec94b6762f763cc0bf9160283cc34a7cb6"
+    },
+    "source_fixture5": {
+      "path": ".runtime/evidence/string-source-target-fixtures-frozen-bundle.json",
+      "sha256": "278c2c84a5b4829fc2a5c5ab0d1d6c1c694d0ac9dfe3142a54bb2ad2d9269e52"
+    }
+  },
+  "files": {
+    "composition_metadata6": [
+      {
+        "lf_sha256": "e7c90cd4f819421eaf873ecff4345e813d94ed051727e81cb7b317a8cbb297ba",
+        "path": "pinelib/tests/test_array_concat_identity.py",
+        "raw_sha256": "e7c90cd4f819421eaf873ecff4345e813d94ed051727e81cb7b317a8cbb297ba"
+      },
+      {
+        "lf_sha256": "b9c832516ad5a6ebedfda5bf0b0398f4321720b332298a78c1e7b60352b93e50",
+        "path": "pinelib/tests/test_minmax_variadic_manifest.py",
+        "raw_sha256": "b9c832516ad5a6ebedfda5bf0b0398f4321720b332298a78c1e7b60352b93e50"
+      },
+      {
+        "lf_sha256": "fb88902ba9e6c547041e32149998534fbd1768de70179ade4b347f35b2711068",
+        "path": "pinelib/tests/test_string_context_semantics.py",
+        "raw_sha256": "fb88902ba9e6c547041e32149998534fbd1768de70179ade4b347f35b2711068"
+      },
+      {
+        "lf_sha256": "58751e1cd6f14123cadbbe02fa0432178d914b7843df6a8af8432e93caa2b006",
+        "path": "pinelib/tests/fixtures/map_target_metadata_expected.json",
+        "raw_sha256": "58751e1cd6f14123cadbbe02fa0432178d914b7843df6a8af8432e93caa2b006"
+      },
+      {
+        "lf_sha256": "d1534517a2f4a2031639ac28b26c15a0e44e98f186298d55d338940465197800",
+        "path": "pinelib/tests/test_map_target_contract.py",
+        "raw_sha256": "d1534517a2f4a2031639ac28b26c15a0e44e98f186298d55d338940465197800"
+      },
+      {
+        "lf_sha256": "69b81667ee9fd69c05603903679103e086b369a611206feb7676275525ea0119",
+        "path": "pinelib/pinelib/abi/target_manifest.json",
+        "raw_sha256": "69b81667ee9fd69c05603903679103e086b369a611206feb7676275525ea0119"
+      }
+    ],
+    "producer8": [
+      {
+        "lf_sha256": "01c3a33b6bd76f6ba22975b0c70bee5509160ee84855331f80c0fd89c548ff64",
+        "path": "pine2ast/tools/catalog/build_catalog.py",
+        "raw_sha256": "01c3a33b6bd76f6ba22975b0c70bee5509160ee84855331f80c0fd89c548ff64"
+      },
+      {
+        "lf_sha256": "3a6b6db2263d1df74ba46b5afca0f4618f4b2195c808eed718ad9510655012d3",
+        "path": "pine2ast/catalog_source/semantics.jsonl",
+        "raw_sha256": "3a6b6db2263d1df74ba46b5afca0f4618f4b2195c808eed718ad9510655012d3"
+      },
+      {
+        "lf_sha256": "f2c12936af0caaeb7515e2be2edae6c8438871c48c98515a0b3e5faf60104e1b",
+        "path": "pine2ast/catalog_source/deltas/v5.jsonl",
+        "raw_sha256": "f2c12936af0caaeb7515e2be2edae6c8438871c48c98515a0b3e5faf60104e1b"
+      },
+      {
+        "lf_sha256": "88d33a6cdf4c17075717027af4f196d295acb06ae82a46856ce993d49431f5c6",
+        "path": "pine2ast/catalog_reports/migration_report.json",
+        "raw_sha256": "88d33a6cdf4c17075717027af4f196d295acb06ae82a46856ce993d49431f5c6"
+      },
+      {
+        "lf_sha256": "54f972d1b741663f9a17c5c373d4439887992e597217e7e8e1616950412e8b23",
+        "path": "pine2ast/pine2ast/catalog_data/packs/pine_v5.pack.json",
+        "raw_sha256": "54f972d1b741663f9a17c5c373d4439887992e597217e7e8e1616950412e8b23"
+      },
+      {
+        "lf_sha256": "c16da41230e2838de727fe16ad3cb799a82f54ed3a00b23fe1e2813171a5acdb",
+        "path": "pine2ast/pine2ast/catalog_data/packs/pine_v6.pack.json",
+        "raw_sha256": "c16da41230e2838de727fe16ad3cb799a82f54ed3a00b23fe1e2813171a5acdb"
+      },
+      {
+        "lf_sha256": "53383d481318fa507bd41f5f1e3ae02a1094a3942e19ef339446c296328e43db",
+        "path": "pine2ast/tests/test_string_primary_source_contract.py",
+        "raw_sha256": "53383d481318fa507bd41f5f1e3ae02a1094a3942e19ef339446c296328e43db"
+      },
+      {
+        "lf_sha256": "22b39de1ffa95d04d158ee08614ed8f56c31128139f3bc45308ce7df48e7e79c",
+        "path": "pine2ast/docs/STAGE2_STRING_PRIMARY_CONTRACTS.md",
+        "raw_sha256": "22b39de1ffa95d04d158ee08614ed8f56c31128139f3bc45308ce7df48e7e79c"
+      }
+    ],
+    "runtime5": [
+      {
+        "lf_sha256": "59487b55b404ab5c67166c6deb9711c005f08b9f58c9d9ef6a148af6cf1572c5",
+        "path": "pinelib/pinelib/abi/manifest_v2_builder.py",
+        "raw_sha256": "59487b55b404ab5c67166c6deb9711c005f08b9f58c9d9ef6a148af6cf1572c5"
+      },
+      {
+        "lf_sha256": "3ba4d37a722423332aa11485240c6efef586735c3793022f482a4cb8ed6084d2",
+        "path": "pinelib/pinelib/abi/target_manifest.json",
+        "raw_sha256": "3ba4d37a722423332aa11485240c6efef586735c3793022f482a4cb8ed6084d2"
+      },
+      {
+        "lf_sha256": "0a4aedc4d59e7610c4b1ef78baafc6ce307c1607c59cdf8b23c9ae33ed972f6f",
+        "path": "pinelib/tests/test_string_primary_target_contract.py",
+        "raw_sha256": "0a4aedc4d59e7610c4b1ef78baafc6ce307c1607c59cdf8b23c9ae33ed972f6f"
+      },
+      {
+        "lf_sha256": "5fe4804bdcf4aba8fd74e3d7ff691c6bfb5fd25ee4b231e8a1eea056452cb104",
+        "path": "pinelib/tests/fixtures/string_target_primary_expected.json",
+        "raw_sha256": "5fe4804bdcf4aba8fd74e3d7ff691c6bfb5fd25ee4b231e8a1eea056452cb104"
+      },
+      {
+        "lf_sha256": "22b39de1ffa95d04d158ee08614ed8f56c31128139f3bc45308ce7df48e7e79c",
+        "path": "pinelib/docs/STAGE2_STRING_PRIMARY_CONTRACTS.md",
+        "raw_sha256": "22b39de1ffa95d04d158ee08614ed8f56c31128139f3bc45308ce7df48e7e79c"
+      }
+    ],
+    "source_fixture5": [
+      {
+        "lf_sha256": "601db5db635cc05c0ff8b1f8a0ee999193e3f83d17069181e777ae1124056a2c",
+        "path": "pinelib/tests/test_array_concat_identity.py",
+        "raw_sha256": "601db5db635cc05c0ff8b1f8a0ee999193e3f83d17069181e777ae1124056a2c"
+      },
+      {
+        "lf_sha256": "a745694026391268ce912a59453cd80197e370ecc6559f0ee15d924441e47ee4",
+        "path": "pinelib/tests/test_minmax_variadic_manifest.py",
+        "raw_sha256": "a745694026391268ce912a59453cd80197e370ecc6559f0ee15d924441e47ee4"
+      },
+      {
+        "lf_sha256": "ab299c90c4166b64bbb3cbc599a84cfbb8f0dd30867dc28ede7096cb35235040",
+        "path": "pinelib/tests/fixtures/map_target_metadata_expected.json",
+        "raw_sha256": "ab299c90c4166b64bbb3cbc599a84cfbb8f0dd30867dc28ede7096cb35235040"
+      },
+      {
+        "lf_sha256": "7507622afbb98c56ec4fb273d2d275befbdf389cac1419332bd85f877dd46672",
+        "path": "pinelib/tests/test_map_target_contract.py",
+        "raw_sha256": "7507622afbb98c56ec4fb273d2d275befbdf389cac1419332bd85f877dd46672"
+      },
+      {
+        "lf_sha256": "7bfd7b522085ba4b049933705b98a1cec77b3ecb115094ac6ff7391c079b2af0",
+        "path": "pinelib/tests/test_string_context_semantics.py",
+        "raw_sha256": "7bfd7b522085ba4b049933705b98a1cec77b3ecb115094ac6ff7391c079b2af0"
+      }
+    ]
+  },
+  "full_stage2_accepted": false,
+  "independent_source_reconstruction": {
+    "ast2python": {
+      "all_git_blobs_checked": 173,
+      "base": "95a14be4be8987faafb3e7629c744e698fd9f134",
+      "final_files": 173,
+      "phase_count": 0
+    },
+    "pine2ast": {
+      "all_git_blobs_checked": 380,
+      "base": "7170736f2730316407f0d896447b08e76f5c9c08",
+      "final_files": 384,
+      "phase_count": 3
+    },
+    "pinelib": {
+      "all_git_blobs_checked": 157,
+      "base": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+      "final_files": 171,
+      "phase_count": 6
+    }
+  },
+  "independent_tests": {
+    "311": {
+      "pine2ast": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 180,
+        "path": ".runtime/evidence/string-companion-independent-pine2ast-py311.xml",
+        "sha256": "bb73bbb26bb63e67aeed12caf241034e99ba4dbdaf7a292d4b254008b5e7abef",
+        "skips": 0,
+        "total": 180
+      },
+      "pinelib": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 572,
+        "path": ".runtime/evidence/string-companion-independent-pinelib-py311.xml",
+        "sha256": "d1fa0db4f79f411451a511fe5af1b54dcf18b250cab6d1ba54b6d494f9ee0f56",
+        "skips": 0,
+        "total": 572
+      }
+    },
+    "313": {
+      "pine2ast": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 180,
+        "path": ".runtime/evidence/string-companion-independent-pine2ast-py313.xml",
+        "sha256": "744754e67fc9f1d3544c0a367efd679345a5fb96032d890920ad07fdeb0b1763",
+        "skips": 0,
+        "total": 180
+      },
+      "pinelib": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 572,
+        "path": ".runtime/evidence/string-companion-independent-pinelib-py313.xml",
+        "sha256": "92ffa57d5979f31aceb016576e5e0fbda4635781cf6d0b5680fc257c126195f0",
+        "skips": 0,
+        "total": 572
+      }
+    }
+  },
+  "limits": [
+    "Producer owner raw full Py313 retains three package-build race setup errors in addition to inherited platform failures; serial retries and reviewer focused passes do not constitute a new full-byte run.",
+    "Runtime owner full keeps three Windows release-tools failures visible; whole-runtime mypy was not claimed clean.",
+    "These source corrections do not certify five unresolved v5 tonumber syntax policies or alter original manual expectations.",
+    "Formal host257 corpus, exact pinned Linux execution, published archive identities and full Stage2 acceptance remain separate."
+  ],
+  "literal_composition_review": {
+    "all_numeric_or_string_value_expectations_unchanged": true,
+    "all_other_assertion_structure_unchanged": true,
+    "composed_from_d33_changed_rows": 8,
+    "composition_fixture6_exactly_derived": true,
+    "final_from_d33_changed_rows": 8,
+    "final_literal_manifest": {
+      "path": ".runtime/evidence/string-target-primary-expected-manifest.json",
+      "sha256": "3ba4d37a722423332aa11485240c6efef586735c3793022f482a4cb8ed6084d2"
+    },
+    "final_unchanged_rows_from_d33": 1100,
+    "initial_composed_manifest": {
+      "path": ".runtime/evidence/runtime-semantic-composed-expected-manifest.json",
+      "sha256": "69b81667ee9fd69c05603903679103e086b369a611206feb7676275525ea0119"
+    },
+    "method": "Reconstruct frozen d33 metadata using literal reviewed context-aware string4 and generic map4 edits, then apply exact source-signature string3 corrections. No builder/runtime import generates expected metadata. Compare complete JSONs and all fixture-only byte deltas.",
+    "original_map_c3fd_rows_preserved": true,
+    "source_expected_change_only_tonumber_parameter_binding_name": true,
+    "source_fixture5_exactly_derived": true
+  },
+  "owner_full_xml": {
+    "311": {
+      "producer": {
+        "errors": 1,
+        "failures": 8,
+        "passed": 1908,
+        "path": ".runtime/evidence/string-source-full311.xml",
+        "sha256": "7f1c6840aa7b51e358acf0cafe4ea468f9718f4157c2c7f147e03589e3e0ede5",
+        "skips": 0,
+        "total": 1917
+      },
+      "runtime": {
+        "errors": 0,
+        "failures": 3,
+        "passed": 3520,
+        "path": ".runtime/evidence/string-target-full311.xml",
+        "sha256": "4c96925931f250d430698ad923a1057e87a8ca992f76f698fd478e31defe7395",
+        "skips": 0,
+        "total": 3523
+      }
+    },
+    "313": {
+      "producer": {
+        "errors": 4,
+        "failures": 8,
+        "passed": 1905,
+        "path": ".runtime/evidence/string-source-full313.xml",
+        "sha256": "435c6fba2940be2e7f728dea90fae45be102377f06a584e52df48aa9e876782a",
+        "skips": 0,
+        "total": 1917
+      },
+      "runtime": {
+        "errors": 0,
+        "failures": 3,
+        "passed": 3520,
+        "path": ".runtime/evidence/string-target-full313.xml",
+        "sha256": "b15f6cf69b013c4ea1baca6ed9e47f6ed0ea0c2108347ada38302074e3042cf7",
+        "skips": 0,
+        "total": 3523
+      }
+    }
+  },
+  "owner_named_report_files": {
+    "311": {
+      "difference_manual_ids": [
+        "tonumber-7",
+        "tonumber-8",
+        "tonumber-9"
+      ],
+      "independently_compared_typed_observations_to_original_manual": true,
+      "numerical_matches": 480,
+      "path": ".runtime/evidence/string-generated-source-contract-named-py311.json",
+      "preserved_unverified_differences": 24,
+      "records": 504,
+      "reviewer_reran_named_generated_execution": false,
+      "sha256": "43b689789a11060434e566c3fac03fe0ef31004b7f9defd64bbde66556801522"
+    },
+    "313": {
+      "difference_manual_ids": [
+        "tonumber-7",
+        "tonumber-8",
+        "tonumber-9"
+      ],
+      "independently_compared_typed_observations_to_original_manual": true,
+      "numerical_matches": 480,
+      "path": ".runtime/evidence/string-generated-source-contract-named-py313.json",
+      "preserved_unverified_differences": 24,
+      "records": 504,
+      "reviewer_reran_named_generated_execution": false,
+      "sha256": "43b689789a11060434e566c3fac03fe0ef31004b7f9defd64bbde66556801522"
+    }
+  },
+  "primary_signature_authority": {
+    "path": ".runtime/evidence/map-string-v5-v6-primary-contract-review.json",
+    "sha256": "d299bd8eee900afcf9a991cb911c028960bc47e286f831bd6c252e8e4a6d159a"
+  },
+  "producer_review": {
+    "all_other_semantic_records_v5_deltas_and_migration_report_fields_preserved": true,
+    "derived_inventory_counts": {
+      "semantic_records_after": 1649,
+      "semantic_records_before": 1646,
+      "three_PATCH_rows_follow_the_preserved_RENAME_rows": true,
+      "v5_delta_rows_after": 585,
+      "v5_delta_rows_before": 582
+    },
+    "derived_modern_semantic_records_added_preserving_all_1646_old_rows": {
+      "sha256:0a2ef58b37636c2cd78d25f18c36c4a06b225130f2a6a4f428af2a9e2fcc2425": "sha256:d95252b1f5d8c88111da6c5484a1001be073e58d46ada61526a7e0221be806be",
+      "sha256:32135488f4f1cc836a566084690a597c4167376668f3d41ae86b3b6e763afda1": "sha256:0ba51dd10c9d25fd77c8617e7b2d2b39e08e4474ed765ced446e54b5869e39f5",
+      "sha256:aa65214a229f8c7c8db8895d4b4cf480181fa45bb890dedbed3eaf1ea76bd295": "sha256:12918b1a8e7c644e07d53e73df7f181b209ac3c7d4df1792500260db33c4a116"
+    },
+    "historical_v1_v4_pack_bytes_preserved_with_explicit_prior_projection": true,
+    "modern_three_function_definitions_six_version_tuples": true,
+    "no_semantic_evaluator_or_signature_resolver_changes": true,
+    "packs": {
+      "1": {
+        "bytes_preserved": true
+      },
+      "2": {
+        "bytes_preserved": true
+      },
+      "3": {
+        "bytes_preserved": true
+      },
+      "4": {
+        "bytes_preserved": true
+      },
+      "5": {
+        "catalog_hash": "sha256:26a6a3c447a5feebbcffc5d4b1b833f0e047e221d7945deb87dadcc644855893",
+        "content_hash": "sha256:5722900c5fa9599e35d537b6814c35be3a4d166582c61d034c0c41325fd68574",
+        "exact_three_function_definitions_only": true
+      },
+      "6": {
+        "catalog_hash": "sha256:192b55f00b275c65a9668f5a121d2a16b85ada2c664b2c6ae61d09d41b5ae742",
+        "content_hash": "sha256:906f73c90706351cf796ee03e1ae126bfd09e62e02269debf33ca7a16632fe5a",
+        "exact_three_function_definitions_only": true
+      }
+    }
+  },
+  "runtime_review": {
+    "ABI_and_kernel_bytes_unchanged_by_companion": true,
+    "format_delta_AST_identical": [
+      "pinelib/tests/test_string_primary_target_contract.py"
+    ],
+    "function_scoped_tonumber_string_to_existing_source_ABI_alias": true,
+    "incremental_rows_changed": 3,
+    "incremental_unchanged_rows": 1105,
+    "only_builder_and_target_metadata_change_in_source_companion": true,
+    "runtime_source_formatting_only_predecessor": {
+      "path": ".runtime/evidence/string-primary-runtime-frozen-bundle.json",
+      "sha256": "de471deec3bec0a8dbb93f18369a40eeee3d43072b2db2e547cbe048aa27b44b"
+    },
+    "total_rows": 1108
+  },
+  "schema_id": "openpine.independent_source_review.v1",
+  "separate_v5_semantic_case_authority": {
+    "path": ".runtime/evidence/string-v5-case-authority-independent-review.json",
+    "sha256": "e21bf08a0f41341edcc47c8c5d70ab4c8ac9ef73150d3969c91d7aaea3010f6b"
+  },
+  "source_index": {
+    "path": ".runtime/evidence/string-companion-assembled-source-index.json",
+    "sha256": "381d56258610ab04e6a0622602ee479ded146010d2bf51f8589c74787a043274"
+  },
+  "status": "BOUNDED_STRING_PRIMARY_COMPANION_AND_LITERAL_IDENTITY_CORRECTIONS_PASS_JOINT_PENDING"
+}

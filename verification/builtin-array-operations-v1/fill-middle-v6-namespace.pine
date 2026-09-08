@@ -1,0 +1,10 @@
+//@version=6
+indicator("array literal")
+var a = array.new_int(0)
+if bar_index == 0
+    array.push(a, 2)
+    array.push(a, 4)
+    array.push(a, 6)
+    array.push(a, 8)
+if bar_index == 1
+    array.fill(a, 9, 1, 3)

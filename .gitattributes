@@ -4,3 +4,7 @@ verification/builtin-scalars-v1/* text eol=lf
 verification/builtin-transcendentals-v1/* text eol=lf
 verification/builtin-rolling-statistics-v1/* text eol=lf
 verification/builtin-array-concat-v1/* text eol=lf
+verification/builtin-array-operations-v1/* text eol=lf
+verification/builtin-string-operations-v1/* text eol=lf
+verification/builtin-map-operations-v1/* text eol=lf
+verification/constant-metadata-manual-expected.json text eol=lf

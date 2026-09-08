@@ -1,0 +1,10 @@
+{
+  "scope": "metadata_only_authority_gap_disclosure",
+  "reviewed_host_payload_sha256": "ac3d413bbd2e0e23607dff106cc90a8581611c0ecb3fafff1612222eca88ac2f",
+  "reviewed_metadata_receipt_sha256": "1c08b7ad95735a3ff4202fd4b0da6198c4b30cd7b362075736bd622f1c2a6c2f",
+  "remaining_authority_gap": "v5_UDF_const_admissibility",
+  "meaning": "Manual constant arithmetic is independently checked; historical v5 UDF const-admissibility authority is still unverified. This is not a demonstrated production-admission defect or a whole-language acceptance claim.",
+  "expected_values_changed": false,
+  "production_changed": false,
+  "full_stage2_accepted": false
+}

@@ -1,0 +1,222 @@
+{
+  "schema_id": "openpine.modern_numeric_promotion_independent_review.v1",
+  "status": "BOUNDED_PROMOTION_SOURCE_REVIEWED",
+  "reviewed_at_utc": "2026-09-08T02:49:19.051451+00:00",
+  "source_bundle": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-frozen-bundle.json",
+    "raw_sha256": "88f00ac420de5e5086d01f3c224e5c5e40d741e12c7e884836a403576c6861cd",
+    "lf_sha256": "88f00ac420de5e5086d01f3c224e5c5e40d741e12c7e884836a403576c6861cd"
+  },
+  "files": [
+    {
+      "path": "pine2ast/pine2ast/semantic/binder.py",
+      "raw_sha256": "1bc84a0752c651e0485f7ae9477327450841b0ede5a3b83d24cb2cb029e54c4a",
+      "lf_sha256": "eeb581cf93e85bcb84989bf985334d9a6df86f04a2048124cd28dc81c7dd6972"
+    },
+    {
+      "path": "pine2ast/tests/test_constant_modern_numeric_promotion.py",
+      "raw_sha256": "24c8c1de8207a6664c281fd9344620a1a8a4a27fe52b52cca8b027f79d7c6060",
+      "lf_sha256": "24c8c1de8207a6664c281fd9344620a1a8a4a27fe52b52cca8b027f79d7c6060"
+    },
+    {
+      "path": "pine2ast/docs/STAGE2_MODERN_NUMERIC_PROMOTION.md",
+      "raw_sha256": "904081de8a944f816e4ec56fd21517415ad2f2023a3ef67d4a5d8fdedd4b4210",
+      "lf_sha256": "904081de8a944f816e4ec56fd21517415ad2f2023a3ef67d4a5d8fdedd4b4210"
+    }
+  ],
+  "prerequisites": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-variadic-catalog-frozen-bundle.json",
+      "raw_sha256": "c1961d571fba22e5430dab5db1963565176842b2899650d10e02d36326ba6357",
+      "lf_sha256": "c1961d571fba22e5430dab5db1963565176842b2899650d10e02d36326ba6357"
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-round-revised-frozen-bundle.json",
+      "raw_sha256": "72aff7d55c7d3dcd3fccf8ba61ec843cc015dcdaaa37846c5b3293ca5120ae9e",
+      "lf_sha256": "72aff7d55c7d3dcd3fccf8ba61ec843cc015dcdaaa37846c5b3293ca5120ae9e"
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-coercion-revised-frozen-bundle.json",
+      "raw_sha256": "cdd7d63f0ce0e5d95ecc9d66bc6db27f8ee53a941dd412e50cc277abf00d8007",
+      "lf_sha256": "cdd7d63f0ce0e5d95ecc9d66bc6db27f8ee53a941dd412e50cc277abf00d8007"
+    }
+  ],
+  "source_review": [
+    "Only SemanticFactBuilder._evaluate_const changes and one shared _admitted_numeric_result helper is added. Every other method AST remains identical.",
+    "Both contextual UDF and ordinary expression paths consume the same existing model.node_types; only exact int values with admitted float result in v5/v6 widen. Boolean values are excluded.",
+    "A receiving float variable does not reinterpret integer operands before their arithmetic; actual int expressions retain v5 truncation and v6 fractional division.",
+    "The v1-v4 visitor, declaration/qualifier/type resolvers, catalog, call identity, default evidence, purity, cache, resource budget, compiler and runtime are unchanged.",
+    "Overflow of integer-to-float conversion produces unknown. Existing contextual supported_scalar validation still rejects nonfinite results."
+  ],
+  "original_snapshot_files_preserved": 380,
+  "preexisting_test_files_unchanged": true,
+  "focused_tests": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-independent-py311.xml",
+      "raw_sha256": "ad7d09b8bde00ec52323c296f9d06d96853569789aa177d6cd152a93ed6561c0",
+      "lf_sha256": "ad7d09b8bde00ec52323c296f9d06d96853569789aa177d6cd152a93ed6561c0",
+      "python": "311",
+      "passed": 316,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "all_280_prior_nodeids_retained": true,
+      "new_nodeids": [
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[math.round((true?5:0.5)/2)-3-5]",
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[math.round((true?5:0.5)/2)-3-6]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[1]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[2]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[3]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[4]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[((true?5:0.5)+1)/2-3.0-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[((true?5:0.5)+1)/2-3.0-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(false?0.5:5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(false?0.5:5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[-(true?5:0.5)/2--2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[-(true?5:0.5)/2--2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[false?0.5:5-5.0-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[false?0.5:5-5.0-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.abs(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.abs(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.min(true?5:0.5,6)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.min(true?5:0.5,6)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(number=(true?5:0.5)/2)-3-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(number=(true?5:0.5)/2)-3-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(precision=1,number=(true?5:0.5)/2)-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(precision=1,number=(true?5:0.5)/2)-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[true?5:0.5-5.0-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[true?5:0.5-5.0-6]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[(true?5:1)/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[(true?5:1)/2-6-2.5]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[5/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[5/2-6-2.5]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[int(true?5:0.5)/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[int(true?5:0.5)/2-6-2.5]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[math.min(5,6)/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[math.min(5,6)/2-6-2.5]"
+      ]
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-independent-py313.xml",
+      "raw_sha256": "071702b3c0d5fd6c069a6d129c8e25634bc169da85586af45c0cfe7072932b0a",
+      "lf_sha256": "071702b3c0d5fd6c069a6d129c8e25634bc169da85586af45c0cfe7072932b0a",
+      "python": "313",
+      "passed": 316,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "all_280_prior_nodeids_retained": true,
+      "new_nodeids": [
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[math.round((true?5:0.5)/2)-3-5]",
+        "tests.test_constant_modern_numeric_promotion::test_input_default_binding_retains_the_promoted_value[math.round((true?5:0.5)/2)-3-6]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[1]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[2]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[3]",
+        "tests.test_constant_modern_numeric_promotion::test_legacy_expression_facts_are_not_silently_reinterpreted[4]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[((true?5:0.5)+1)/2-3.0-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[((true?5:0.5)+1)/2-3.0-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(false?0.5:5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(false?0.5:5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[-(true?5:0.5)/2--2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[-(true?5:0.5)/2--2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[false?0.5:5-5.0-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[false?0.5:5-5.0-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.abs(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.abs(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.min(true?5:0.5,6)/2-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.min(true?5:0.5,6)/2-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(number=(true?5:0.5)/2)-3-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(number=(true?5:0.5)/2)-3-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(precision=1,number=(true?5:0.5)/2)-2.5-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[math.round(precision=1,number=(true?5:0.5)/2)-2.5-6]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[true?5:0.5-5.0-5]",
+        "tests.test_constant_modern_numeric_promotion::test_top_level_and_builtin_arguments_use_admitted_numeric_types[true?5:0.5-5.0-6]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[(true?5:1)/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[(true?5:1)/2-6-2.5]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[5/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[5/2-6-2.5]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[int(true?5:0.5)/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[int(true?5:0.5)/2-6-2.5]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[math.min(5,6)/2-5-2]",
+        "tests.test_constant_modern_numeric_promotion::test_true_integer_expressions_preserve_the_version_division_rule[math.min(5,6)/2-6-2.5]"
+      ]
+    }
+  ],
+  "compiled_manual_probes": [
+    {
+      "python": "311",
+      "before": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-independent-before-py311.json",
+        "raw_sha256": "bde3ed8550a5c4218303e0f4530d93087290a5beda0f355d42b5fb0ce7f27fa4",
+        "lf_sha256": "bde3ed8550a5c4218303e0f4530d93087290a5beda0f355d42b5fb0ce7f27fa4"
+      },
+      "after": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-independent-after-py311.json",
+        "raw_sha256": "3d7709bda0b6c283675f94f9d9cd96f9c83f7130f4837de15c4fe298f0a36a75",
+        "lf_sha256": "3d7709bda0b6c283675f94f9d9cd96f9c83f7130f4837de15c4fe298f0a36a75"
+      },
+      "before_scalar_matches": 6,
+      "after_scalar_matches": 10,
+      "after_compiled_defaults_correct": 8,
+      "separate_unchanged_int_cast_abi_rejections": 2
+    },
+    {
+      "python": "313",
+      "before": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-independent-before-py313.json",
+        "raw_sha256": "bde3ed8550a5c4218303e0f4530d93087290a5beda0f355d42b5fb0ce7f27fa4",
+        "lf_sha256": "bde3ed8550a5c4218303e0f4530d93087290a5beda0f355d42b5fb0ce7f27fa4"
+      },
+      "after": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-independent-after-py313.json",
+        "raw_sha256": "3d7709bda0b6c283675f94f9d9cd96f9c83f7130f4837de15c4fe298f0a36a75",
+        "lf_sha256": "3d7709bda0b6c283675f94f9d9cd96f9c83f7130f4837de15c4fe298f0a36a75"
+      },
+      "before_scalar_matches": 6,
+      "after_scalar_matches": 10,
+      "after_compiled_defaults_correct": 8,
+      "separate_unchanged_int_cast_abi_rejections": 2
+    }
+  ],
+  "primary_authority": [
+    "https://www.tradingview.com/pine-script-docs/v5/language/type-system/",
+    "https://www.tradingview.com/pine-script-docs/language/type-system/",
+    "https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-6/"
+  ],
+  "expected_values_authored_independently_before_probe_execution": true,
+  "initial_probe_harness_observation": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-modern-promotion-initial-probe-observation.json",
+    "raw_sha256": "82ce23111cd8c5ec94e7f0d8eb98002c5cca68cdca2b13c4fd0d86ae64b3774b",
+    "lf_sha256": "8f87957128bc9490f6b883ea7b48e6f382d43b2319c80dfd3435367133352005"
+  },
+  "limitations": [
+    "The initial probe stopped on an unchanged target binding error; corrected probe records every source fact and compile outcome without relaxing source expectations.",
+    "Two explicit int() compiler controls remain unsupported against immutable compiler7be/runtime concat8. They fail identically before and after; their producer scalar values are correct. This review does not claim ten compiled successes.",
+    "The separately reported v6 float comparison precision defect remains open and blocks approval of the aggregate UDF candidate until its owner correction is reviewed.",
+    "Full owner local suites are separate evidence; this reviewer executed the 316-case focused suite and ten independent scalar/metadata probes per Python. No Linux or full Stage2 acceptance is claimed."
+  ],
+  "comparison_p1_review": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-coercion-independent-review.json",
+    "raw_sha256": "5887024d9cd538a4ae12170cad5cc4fc7fd502c5d07ade5a4ce78bc84d24f310",
+    "lf_sha256": "5887024d9cd538a4ae12170cad5cc4fc7fd502c5d07ade5a4ce78bc84d24f310"
+  },
+  "aggregate_udf_publication_approved": false,
+  "full_stage2_accepted": false,
+  "included_in_concat_variadic_ci_candidate": false,
+  "production_or_tests_modified_by_reviewer": false,
+  "digest_newlines": "LF",
+  "script": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\run_modern_promotion_independent.py",
+    "raw_sha256": "685b082beb1568b70c48212e5d5d34caa8f18d9bb04d5877e074aba59539836e",
+    "lf_sha256": "685b082beb1568b70c48212e5d5d34caa8f18d9bb04d5877e074aba59539836e"
+  },
+  "receipt_script_sha256": "62955aa30b3227e7c806062241a0848f41801734167a8a19ffaf5b96e095315a"
+}

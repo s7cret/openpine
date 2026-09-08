@@ -1,0 +1,475 @@
+{
+  "schema_id": "openpine.tuple_loop_repair_full_local_independent_review.v1",
+  "decision": "LOCAL_REGRESSION_CLOSURE_CONFIRMED; full Linux verification required",
+  "full_stage2_accepted": false,
+  "last_joint_verified_cases": 10683,
+  "source_bundle_sha256": "923b9ad25141820260917529e5aaa0eaef37663eb124a2fc5773ce7c5540285a",
+  "published_parser_revision": "05d7e61be58a184b211bc093f989527157005b92",
+  "parser_full": [
+    {
+      "python": "311",
+      "xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-full-continued-py311.xml",
+        "sha256": "5a26e95ff535061123969ad07f60ba1a6c8ed6dad1c56969774dcbabe6f397ec",
+        "bytes": 425188
+      },
+      "baseline_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\language-method-string-composed-final-full311.xml",
+        "sha256": "87a6b9b145d72e7dc06a9ac1f2ba5e85a0ac676b4bf99b86735b348b1974f6ff",
+        "bytes": 419101
+      },
+      "total": 2471,
+      "counts": {
+        "error": 1,
+        "passed": 2462,
+        "failure": 8
+      },
+      "retained_old_nodes": 2429,
+      "removed": [],
+      "old_status_changes": [],
+      "added_passed_nodes": [
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[5]",
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-6]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[5]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[6]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[1]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[2]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[3]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[4]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[5]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-6]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[5]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[6]"
+      ],
+      "nonpassing": {
+        "::tests.stage6.test_stage6_performance_gate": {
+          "status": "error",
+          "message": "collection failure"
+        },
+        "tests.stage6.test_stage6_integrity::test_canonical_source_hash_tracks_executable_mode": {
+          "status": "failure",
+          "message": "AssertionError: assert 'sha256:922c974035ce761fad65695a59902c6726d9a83cc8c36eaab1311524b8d13955' != 'sha256:922c974035ce761fad65695a59902c6726d9a83cc8c36eaab1311524b8d13955'\n +  where 'sha256:922c974035ce761fad65695a59902c6726d9a83cc8c36eaab1311524b8d13955' = canonical_source_hash(WindowsPath('C:/Users/user/Documents/OpenPine/.runtime/evidence/tuple-loop-full-continued-temp-py311/test_canonical_source_hash_tra0'))"
+        },
+        "tests.stage6.test_stage6_integrity::test_deterministic_sdist_rejects_symlinks": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\outside-secret.txt' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\test_deterministic_sdist_rejec0\\\\pine2ast\\\\leak.txt'"
+        },
+        "tests.test_locked_library_linking::test_directory_store_reads_once_and_ignores_later_file_change": {
+          "status": "failure",
+          "message": "pine2ast.libraries.store.LibraryError: P2A_LIBRARY_FILESYSTEM: safe no-follow file reads unavailable"
+        },
+        "tests.test_locked_library_linking::test_symlinks_are_never_followed[source]": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\test_symlinks_are_never_follow0\\\\libraries.lock.json' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\test_symlinks_are_never_follow0\\\\user\\\\Lib\\\\1.pine'"
+        },
+        "tests.test_locked_library_linking::test_symlinks_are_never_followed[parent]": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\test_symlinks_are_never_follow1\\\\user\\\\elsewhere' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\test_symlinks_are_never_follow1\\\\user\\\\Lib'"
+        },
+        "tests.test_locked_library_linking::test_symlinks_are_never_followed[lock]": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\test_symlinks_are_never_follow2\\\\libraries.lock.real' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py311\\\\test_symlinks_are_never_follow2\\\\libraries.lock.json'"
+        },
+        "tests.test_locked_library_linking::test_cli_uses_only_pinned_files_and_never_overwrites_prior_output": {
+          "status": "failure",
+          "message": "SystemExit: 1"
+        },
+        "tests.unit.test_stage5_hardening::test_stage5_release_gate_quick": {
+          "status": "failure",
+          "message": "NotADirectoryError: [WinError 267] \u041d\u0435\u0432\u0435\u0440\u043d\u043e \u0437\u0430\u0434\u0430\u043d\u043e \u0438\u043c\u044f \u043f\u0430\u043f\u043a\u0438"
+        }
+      }
+    },
+    {
+      "python": "313",
+      "xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-full-continued-py313.xml",
+        "sha256": "e1348809de2852dff372c8c0afc383609400448102c89a9057a0152330d2dc54",
+        "bytes": 424715
+      },
+      "baseline_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\language-method-string-composed-final-full313.xml",
+        "sha256": "997b01b5967a36fe69e15e8145aeb4e04b80646448d1d69b3733f457f72ba380",
+        "bytes": 418633
+      },
+      "total": 2471,
+      "counts": {
+        "error": 1,
+        "passed": 2462,
+        "failure": 8
+      },
+      "retained_old_nodes": 2429,
+      "removed": [],
+      "old_status_changes": [],
+      "added_passed_nodes": [
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[5]",
+        "tests.test_callable_for_in_target_types::test_for_in_value_shadow_does_not_replace_outer_symbol_type[6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-6]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-5]",
+        "tests.test_callable_for_in_target_types::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-6]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[5]",
+        "tests.test_tuple_lexical_child_types::test_loop_tuple_does_not_launder_series_into_simple_parameter[6]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[1]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[2]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[3]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[4]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[5]",
+        "tests.test_tuple_lexical_child_types::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[conditional-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[context_calls-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[for_in-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[named_default-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[nested_range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_mixed-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[range_shadow-6]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-5]",
+        "tests.test_tuple_lexical_child_types::test_tuple_return_elements_keep_lexical_types[while-6]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[5]",
+        "tests.test_tuple_lexical_child_types::test_unresolved_tuple_element_still_rejects[6]"
+      ],
+      "nonpassing": {
+        "::tests.stage6.test_stage6_performance_gate": {
+          "status": "error",
+          "message": "collection failure"
+        },
+        "tests.stage6.test_stage6_integrity::test_canonical_source_hash_tracks_executable_mode": {
+          "status": "failure",
+          "message": "AssertionError: assert 'sha256:922c974035ce761fad65695a59902c6726d9a83cc8c36eaab1311524b8d13955' != 'sha256:922c974035ce761fad65695a59902c6726d9a83cc8c36eaab1311524b8d13955'\n +  where 'sha256:922c974035ce761fad65695a59902c6726d9a83cc8c36eaab1311524b8d13955' = canonical_source_hash(WindowsPath('C:/Users/user/Documents/OpenPine/.runtime/evidence/tuple-loop-full-continued-temp-py313/test_canonical_source_hash_tra0'))"
+        },
+        "tests.stage6.test_stage6_integrity::test_deterministic_sdist_rejects_symlinks": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\outside-secret.txt' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\test_deterministic_sdist_rejec0\\\\pine2ast\\\\leak.txt'"
+        },
+        "tests.test_locked_library_linking::test_directory_store_reads_once_and_ignores_later_file_change": {
+          "status": "failure",
+          "message": "pine2ast.libraries.store.LibraryError: P2A_LIBRARY_FILESYSTEM: safe no-follow file reads unavailable"
+        },
+        "tests.test_locked_library_linking::test_symlinks_are_never_followed[source]": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\test_symlinks_are_never_follow0\\\\libraries.lock.json' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\test_symlinks_are_never_follow0\\\\user\\\\Lib\\\\1.pine'"
+        },
+        "tests.test_locked_library_linking::test_symlinks_are_never_followed[parent]": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\test_symlinks_are_never_follow1\\\\user\\\\elsewhere' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\test_symlinks_are_never_follow1\\\\user\\\\Lib'"
+        },
+        "tests.test_locked_library_linking::test_symlinks_are_never_followed[lock]": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\test_symlinks_are_never_follow2\\\\libraries.lock.real' -> 'C:\\\\Users\\\\user\\\\Documents\\\\OpenPine\\\\.runtime\\\\evidence\\\\tuple-loop-full-continued-temp-py313\\\\test_symlinks_are_never_follow2\\\\libraries.lock.json'"
+        },
+        "tests.test_locked_library_linking::test_cli_uses_only_pinned_files_and_never_overwrites_prior_output": {
+          "status": "failure",
+          "message": "SystemExit: 1"
+        },
+        "tests.unit.test_stage5_hardening::test_stage5_release_gate_quick": {
+          "status": "failure",
+          "message": "NotADirectoryError: [WinError 267] \u041d\u0435\u0432\u0435\u0440\u043d\u043e \u0437\u0430\u0434\u0430\u043d\u043e \u0438\u043c\u044f \u043f\u0430\u043f\u043a\u0438"
+        }
+      }
+    }
+  ],
+  "parser_full_copy_verification": [
+    {
+      "python": "311",
+      "files": 404,
+      "source_and_test_bytes_exact": true,
+      "missing_final_paths": [
+        "docs/STAGE2_TUPLE_LOOP_TYPE_REPAIR.md"
+      ],
+      "difference_scope": "The final added documentation file was not present in the full-test copies. All production and test files exactly match the final frozen source."
+    },
+    {
+      "python": "313",
+      "files": 404,
+      "source_and_test_bytes_exact": true,
+      "missing_final_paths": [
+        "docs/STAGE2_TUPLE_LOOP_TYPE_REPAIR.md"
+      ],
+      "difference_scope": "The final added documentation file was not present in the full-test copies. All production and test files exactly match the final frozen source."
+    }
+  ],
+  "compiler_full": [
+    {
+      "python": "311",
+      "total": 1110,
+      "final_counts": {
+        "passed": 1109,
+        "failure": 1
+      },
+      "baseline_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\variadic-compiler-revised-full-py311.xml",
+        "sha256": "bb1bf626740743f2636a660c102af859b3e875db9e1706fe9982a904e369ba42",
+        "bytes": 171730
+      },
+      "initial_failed_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-311.xml",
+        "sha256": "0ae92fdbc50942d7f990c3b2615e8e4e2ece6a0ad4dd676ecb0f4b6d27719718",
+        "bytes": 1528084
+      },
+      "corrected_external_temp_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-311-external-temp.xml",
+        "sha256": "fbcce5fd824633f0135c6b92b51a04a4348a1a8f002cfa657ccbaa085d387605",
+        "bytes": 171632
+      },
+      "source_identity": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-source-311-external-temp.json",
+        "sha256": "a205459ba725bf37a826747d8ac2ba7e320bb8a589cd38994ffc070221da6d4a",
+        "bytes": 693
+      },
+      "actual_source_files_verified": {
+        "ast2python": {
+          "path": "C:\\Users\\user\\AppData\\Local\\Temp\\openpine-tuple-compiler-311-s6v21oz3",
+          "file_count": 173,
+          "all_expected_raw_bytes_match": true,
+          "production_test_and_fixture_bytes_match": true,
+          "nonsemantic_differences": []
+        },
+        "pine2ast": {
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-regression-isolated\\pine2ast",
+          "file_count": 405,
+          "all_expected_raw_bytes_match": true,
+          "production_test_and_fixture_bytes_match": true,
+          "nonsemantic_differences": []
+        },
+        "pinelib": {
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\string-target-contract-isolated\\pinelib",
+          "file_count": 171,
+          "all_expected_raw_bytes_match": false,
+          "production_test_and_fixture_bytes_match": true,
+          "nonsemantic_differences": [
+            {
+              "path": ".gitattributes",
+              "expected_git_sha256": "220587eeac1b8f2676e62658428b6748bcb7908f1865501ff912ec604725e755",
+              "actual_sha256": "3e6b072d98d0920974930ea60450135b8bf2bdb80f3e292318c27387115baf69",
+              "difference": "The local runtime input has only the prior array_concat fixture LF rule; six additional published fixture LF rules are absent. All fixture/source/test bytes themselves match Git2148 exactly."
+            }
+          ]
+        }
+      },
+      "unchanged_old_ids_and_statuses_vs_baseline": true,
+      "original_tuple_regression": "passed",
+      "initial_root_harness_failures_closed": [
+        "tests.test_release_distribution::test_release_report_detects_manifest_problems",
+        "tests.test_release_distribution::test_release_report_rejects_rc5_compatibility_module",
+        "tests.test_release_distribution::test_release_report_rejects_rc5_environment_and_export_surfaces"
+      ],
+      "remaining_failure": {
+        "tests.test_admission_hardening::test_path_input_rejects_symlink_before_read": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\openpine-tuple-pytest-311-ws_ppfh7\\\\tests\\\\test_path_input_rejects_symlin0\\\\target.json' -> 'C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\openpine-tuple-pytest-311-ws_ppfh7\\\\tests\\\\test_path_input_rejects_symlin0\\\\bundle.json'"
+        }
+      },
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "python": "313",
+      "total": 1110,
+      "final_counts": {
+        "passed": 1109,
+        "failure": 1
+      },
+      "baseline_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\variadic-compiler-revised-full-py313.xml",
+        "sha256": "905d7365486117c29a360f316669b4b943735e88a9721d9486d0650665460387",
+        "bytes": 171612
+      },
+      "initial_failed_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-313.xml",
+        "sha256": "32fe2262766602a8e462c6677a7b1d0c0c82c3a3ffa2f87146aa13c1ef356c98",
+        "bytes": 1431398
+      },
+      "corrected_external_temp_xml": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-313-external-temp.xml",
+        "sha256": "fb624d89dbf2a722cb2b9a6daa2dafdfab512b411d846bd71d62fea209833845",
+        "bytes": 171514
+      },
+      "source_identity": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-source-313-external-temp.json",
+        "sha256": "e74900aeb214503cbf04f0a5b740bf539e6331cb3d94bf685deb6675a1449313",
+        "bytes": 693
+      },
+      "actual_source_files_verified": {
+        "ast2python": {
+          "path": "C:\\Users\\user\\AppData\\Local\\Temp\\openpine-tuple-compiler-313-4i936psd",
+          "file_count": 173,
+          "all_expected_raw_bytes_match": true,
+          "production_test_and_fixture_bytes_match": true,
+          "nonsemantic_differences": []
+        },
+        "pine2ast": {
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-regression-isolated\\pine2ast",
+          "file_count": 405,
+          "all_expected_raw_bytes_match": true,
+          "production_test_and_fixture_bytes_match": true,
+          "nonsemantic_differences": []
+        },
+        "pinelib": {
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\string-target-contract-isolated\\pinelib",
+          "file_count": 171,
+          "all_expected_raw_bytes_match": false,
+          "production_test_and_fixture_bytes_match": true,
+          "nonsemantic_differences": [
+            {
+              "path": ".gitattributes",
+              "expected_git_sha256": "220587eeac1b8f2676e62658428b6748bcb7908f1865501ff912ec604725e755",
+              "actual_sha256": "3e6b072d98d0920974930ea60450135b8bf2bdb80f3e292318c27387115baf69",
+              "difference": "The local runtime input has only the prior array_concat fixture LF rule; six additional published fixture LF rules are absent. All fixture/source/test bytes themselves match Git2148 exactly."
+            }
+          ]
+        }
+      },
+      "unchanged_old_ids_and_statuses_vs_baseline": true,
+      "original_tuple_regression": "passed",
+      "initial_root_harness_failures_closed": [
+        "tests.test_release_distribution::test_release_report_detects_manifest_problems",
+        "tests.test_release_distribution::test_release_report_rejects_rc5_compatibility_module",
+        "tests.test_release_distribution::test_release_report_rejects_rc5_environment_and_export_surfaces"
+      ],
+      "remaining_failure": {
+        "tests.test_admission_hardening::test_path_input_rejects_symlink_before_read": {
+          "status": "failure",
+          "message": "OSError: [WinError 1314] \u041a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043e\u0431\u043b\u0430\u0434\u0430\u0435\u0442 \u0442\u0440\u0435\u0431\u0443\u0435\u043c\u044b\u043c\u0438 \u043f\u0440\u0430\u0432\u0430\u043c\u0438: 'C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\openpine-tuple-pytest-313-7ktxovaj\\\\tests\\\\test_path_input_rejects_symlin0\\\\target.json' -> 'C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\openpine-tuple-pytest-313-7ktxovaj\\\\tests\\\\test_path_input_rejects_symlin0\\\\bundle.json'"
+        }
+      },
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "static": {
+    "ruff_full": "Actual log All checks passed",
+    "mypy_full": "Six Windows-missing POSIX os constants in unchanged libraries/store.py. Entire baseline and repaired diagnostics bytes identical; not a full clean mypy claim."
+  },
+  "scope_limits": [
+    "The ordinary Windows full producer command stopped on the existing resource import collection error. Its log remains retained. The continued full execution kept that error and executed all other collected cases; it did not skip or relabel the error.",
+    "The 2471 local producer XML rows contain one collection-error row in place of three Linux performance tests. Expected Linux producer collection is2473, and the previous locked2431 plus42 must be retained exactly in the proposal.",
+    "The first full compiler runs contained three root launcher mistakes: basetemp inside the copied compiler source caused recursive copytree failures. They are classified as harness failures, not Windows baseline failures. Only the external-basetemp reruns close those three, with unchanged173 compiler source files and test bodies.",
+    "The full Linux run34201053710 remains immutable and failed. These local XML results do not prove the9124 unexecuted locked tests, protected workers, native sandbox, architecture, Stage1/corpora, lint/import/build or frontend gates.",
+    "No production, test, inventory or release-ref changes were made by this reviewer."
+  ],
+  "evidence": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-final-results-receipt.json",
+      "sha256": "2a6da0da6549b85fc6005d4345af05ce5382eb94a7349008dd4cd9a024ecb250",
+      "bytes": 14502
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-full-copy-receipt.json",
+      "sha256": "06d75bb6836c430de23f9ed3d6bc878ee5c9ce6f2514e68c95683b238d8ff89b",
+      "bytes": 136249
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-repair-independent-source-review.json",
+      "sha256": "cf116f215efa50ab60d0b785c182d04fdf7944b5d72d1b176f8fb3b41c1b3d59",
+      "bytes": 60644
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-full-py311.log",
+      "sha256": "6d3d5c4771ca77361e8e1d7dfeb17353f6c9c7ec785b652ac24bb1ffa82ba14e",
+      "bytes": 900
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-full-continued-py311.log",
+      "sha256": "714dadf1538fa3fbc5640efeeccde2756194b123beeeb7db4c78ea12b2f29f91",
+      "bytes": 27303
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-full-py313.log",
+      "sha256": "db0d94c29a3cc12eb74cb42c47acac245a5a6c5e94fd0584ad468f17c31a6be1",
+      "bytes": 900
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-full-continued-py313.log",
+      "sha256": "b3eeae902e1f92e758f8c847920e798a780feff7cf9e4857a569f2d630433228",
+      "bytes": 26831
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-311.log",
+      "sha256": "8fda92c566c62c8d2ac446662eac3657daf73b377d2613915fac4fa246e61a52",
+      "bytes": 704963
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-311-external-temp.log",
+      "sha256": "27b4dd26821a3e0e534a1e1a38594280e68f5854d641076755f61ae14416dc27",
+      "bytes": 3364
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-313.log",
+      "sha256": "420917ee72a94dafedd8d2f9745a4a0607667354e7d199fadbe29b68f70c42c9",
+      "bytes": 663347
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-compiler-313-external-temp.log",
+      "sha256": "c51139549024372fd20b3a2fdac862bd4a0bde3f6b08d64ad7144e75caba3c46",
+      "bytes": 3246
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-mypy-full.log",
+      "sha256": "acbba4b3172c09f1277f61f68e662fb176b1d9fefae2bcde1d8e88a3215d2eaa",
+      "bytes": 620
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-mypy-baseline.log",
+      "sha256": "acbba4b3172c09f1277f61f68e662fb176b1d9fefae2bcde1d8e88a3215d2eaa",
+      "bytes": 620
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-ruff-full.log",
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+      "bytes": 20
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\run_tuple_repair_compiler_initial.py",
+      "sha256": "9cf7d4def9a201c3ca72a30716d6b2c29ffd164c7d85dd09080a3d3891ade45d",
+      "bytes": 2784
+    }
+  ],
+  "script_sha256": "583417a10c11d054e1f339eedd7e06c0d28aace2e1255c7374ab9cdbeb895adf"
+}

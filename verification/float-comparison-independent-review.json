@@ -1,0 +1,671 @@
+{
+  "schema_id": "openpine.runtime_float_comparison_independent_review.v1",
+  "status": "BOUNDED_SOURCE_NATIVE_AND_GENERATED_REVIEW_PASS_LINUX_JOINT_PENDING",
+  "bundle_sha256": "b7de6e8fec7fc6ac573009aa5af3d16545cd7f0674d8a00a2bf60d22284c137d",
+  "baseline": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+  "baseline_tree": "dc2b5280bb253fc2fc3160045516247ef300f7f9",
+  "files": [
+    {
+      "lf_sha256": "fe0ae6d9c4f2516731c6f4707996579f6b995e486c8e5760757c4e67212dc26a",
+      "path": "pinelib/pinelib/core/values.py",
+      "raw_sha256": "fe0ae6d9c4f2516731c6f4707996579f6b995e486c8e5760757c4e67212dc26a"
+    },
+    {
+      "lf_sha256": "bcad43ce73a27d79a10937fdfca48ff7e9911f5a442bbc112c22cce7fc580975",
+      "path": "pinelib/tests/test_float_comparison_precision.py",
+      "raw_sha256": "bcad43ce73a27d79a10937fdfca48ff7e9911f5a442bbc112c22cce7fc580975"
+    },
+    {
+      "lf_sha256": "19ecb5d3fbdc4229b01110b7cbecd0419e6eb9f9d11530b2b19308350d80f8a1",
+      "path": "pinelib/tests/fixtures/float_comparison_manual_expected.json",
+      "raw_sha256": "19ecb5d3fbdc4229b01110b7cbecd0419e6eb9f9d11530b2b19308350d80f8a1"
+    },
+    {
+      "lf_sha256": "23294ae3cc5e334eda1a2bbab560d23ac17999fbc37776447ae9a28bfb1c4e17",
+      "path": "pinelib/docs/STAGE2_FLOAT_COMPARISON.md",
+      "raw_sha256": "23294ae3cc5e334eda1a2bbab560d23ac17999fbc37776447ae9a28bfb1c4e17"
+    }
+  ],
+  "all157baseline_file_hashes": {
+    ".gitattributes": "3e6b072d98d0920974930ea60450135b8bf2bdb80f3e292318c27387115baf69",
+    ".gitignore": "0c99630f4cb5dbcfdb9f2c7ad1cb12bbb35a8fd7cc12dc82045ee4e4c9c71e96",
+    "MANIFEST.in": "f4a5d09ae66424940da610dce81c45e64f1543445fdbe7f1f0e4447ebc258cb2",
+    "README.md": "8ef06a7ad8aeada178186104bedf91423d6cb8cca0c7fd0d5b64b7037681b068",
+    "docs/RC6_LOCAL_REPRODUCIBILITY.md": "c476132c77db991d93de78a01dab6d28b488b141386fbbae647ecd816ca4194b",
+    "docs/STAGE2_ABORT_CHECKPOINT.md": "0f3e444a976d1b42ed8788193545a8a46c5d0b5bc223596b2aa084d6e8a0fc59",
+    "docs/STAGE2_ARRAY_CONCAT.md": "427a5e61e8b54d220b791008f31be14ecd22f4eee8f65b5133763d8b95d726c4",
+    "docs/STAGE2_ARRAY_SEARCH.md": "d46737878cbe4dc111d750a74ec8a531e7b40a084c0a382866d3dca5a939e75e",
+    "docs/STAGE2_BUILTIN_BINDINGS.md": "c7cde1d81d2507490a51eb3766bf5615c6eeb14ef44aa221a065b63d52d2380e",
+    "docs/STAGE2_MINMAX_VARIADIC_BINDING.md": "8c5a3bc995526f01583ae922ab5148e24f1c4b26f7c3f59780ab2d42e2c78fee",
+    "docs/STAGE2_NOMINAL_REGISTRY.md": "e56e9208c6c44a7a7500fa1691161288fa22c4613c8be925507676563868e2b3",
+    "docs/STAGE2_NOMINAL_RUNTIME.md": "bda1c0d90109e0cf57562e7b8118040504bff34095933acffb68e85b4b116192",
+    "docs/STAGE2_ROLLING_STATISTICS.md": "5090c67a082c1d47f0f7bcf9c5c36b1ed117ca12acd1a299f21a5cfefde53611",
+    "docs/STAGE2_VARIP_NOMINAL_ARRAYS.md": "3f28ad9c0ec6fb3c4cd89cf488c8a5ea9eeb3266c7c5f2100da23a5832a4d535",
+    "docs/STAGE3_ARCHITECTURE.md": "c5b5ef3c92592330f364a5e10fea08fa665a0670ac639c3148290c19e58157f9",
+    "docs/STAGE3_LIMITATIONS.md": "d17de8f5f7082ce49a55968d7afa4aa1b92acbfb1f3bb371e5d62583e54a9bbd",
+    "docs/STAGE3_SUPPORT_MATRIX.md": "f26a3cc1c04b0750ec1d52921b108b23207c993f5200b73995e710f8a6ad504c",
+    "docs/STAGE4_ARCHITECTURE.md": "01f5d2cc454ede616a6eee94e87b41d55fb60d53d50ee49097a94cb2e2fa2f78",
+    "docs/STAGE4_LIMITATIONS.md": "63e2b9bba536582513cd67ec301a557c54a41d94b1925eedadf86420e36ddbae",
+    "docs/STAGE4_SUPPORT_MATRIX.md": "68f1cd4dff35e5821fe4cd3c4626b6074985951f66c32d38a1fee192046acb4c",
+    "fixtures/tradingview/request_stage4_manifest.json": "561502c874dbd50f4e96cefffd617be9311d1c9de9021282cded2cc3a4dcb153",
+    "pinelib/__init__.py": "7719097f8e32600a697583fd988e996d4d8a817e23e58de3a7fbacf64325c514",
+    "pinelib/abi/__init__.py": "817363875d8a4c97e149d6c1fed2aa53fafac75078fd705147ec51767c7959e1",
+    "pinelib/abi/__main__.py": "f422395403088cebcf24779cab0a7bd443abe6bb1acc85b2e9158b65a353faf7",
+    "pinelib/abi/alert.py": "5f3b614233fa38a6eaedb929e0b51e38d12ae7d3a714c02ea4fe7235422851b3",
+    "pinelib/abi/builder.py": "fcffb13421613b2acb844d87f88c3cebd87f51fe7cc9bbb7446f359c8f1fb2ec",
+    "pinelib/abi/catalog.py": "1d818431bd113c11cf59a908abe8938095c771fdeee32f22559632a50e2c0007",
+    "pinelib/abi/compiled_request.py": "a35cc2fb8b2280a4ce478db17def7c845d28ab1d6d5573ec5e2d7242722b61ec",
+    "pinelib/abi/input.py": "56599cd655f992c3253be2e5f18d68ca94f0df424025e818264565eb88f354f2",
+    "pinelib/abi/manifest.py": "e70411f761886e037244447835e29210990acfd6ac06af01d911d5da3f44cccb",
+    "pinelib/abi/manifest_v2_builder.py": "3b89939db8eb50a776ddea0c8dce9b632d9262f6feb38ef647af469368770d60",
+    "pinelib/abi/math.py": "4b8a7d21dd0ababa40ef2ebc22bbed18fe392f2facf851e37a762ed2968f8823",
+    "pinelib/abi/metadata.py": "305047bcff28b6fe27747f6ca3ed2acdf1bf10d13a7af47f1f364eb6f5323a99",
+    "pinelib/abi/models.py": "3e4ead52ebc1b3f864de18d18cf2e0b7099833a30febaae3c6fdb1b17aece46b",
+    "pinelib/abi/official_pine_v6_surface.json": "943f40d16ae197ea86ae36f0a80439041599e8dced724d0b9769d9c6324558e5",
+    "pinelib/abi/primitives.py": "f30f6495723ef28c869381944cfd13f36eab6e710a30bebbb8ebbe3cef1277a6",
+    "pinelib/abi/reference.py": "348e0dd46c18ed6df30b8815c9628c286db7ae60475db8dc7cc1a727ce6131fa",
+    "pinelib/abi/request.py": "a43fafa4627376514fb0075975093e1af1fa31aa4bd4fd9f0b49b6aa46221a24",
+    "pinelib/abi/runtime_values.py": "295d7fa230dbad949a7e204cad0482f19e1ba37a697c137930cbca3f38d6721b",
+    "pinelib/abi/string.py": "d86fd38708106bc229f73abb79150bd3f36d31de619fe4338b02d489ec7ff3fd",
+    "pinelib/abi/ta.py": "5e8f4ad47484ca37837caaa7638df499a44927a2156e1f4cd0937e17379f7839",
+    "pinelib/abi/target_manifest.json": "a2bbe511ec6c7c9b57b3ad57ec3b9afdfe8f8ceed6e466f1d705f4da97566503",
+    "pinelib/abi/time.py": "ffff1757fcd271e331ac725618cbcd0711f6f1aab142b2a20a7b8229781c66f8",
+    "pinelib/abi/visual.py": "fb64da159819e15e7693b228f1b7eeb21121a07370ca90c465eb869db53c1dce",
+    "pinelib/builtins/__init__.py": "ffa53ddeaf7d6bdf6ba3e6e21444b5e96cf909ddddda580c2e1fc6acf6be6273",
+    "pinelib/builtins/math.py": "94de9ae178d4e3c0a8e9b3a8aff36daf94ce24d8c9246967b726d0e859af0081",
+    "pinelib/builtins/string.py": "df142795d2633c531d382f5b6ebb2d2977f5098e0fda8bb069a29bc8f11de132",
+    "pinelib/core/__init__.py": "61d2e9c34d2df7bba4369f3488b8735c098bfabb80300b1e5454e5c0c97b211a",
+    "pinelib/core/values.py": "11af286ea040f02ac71653105aa1a48ba23243056e35142c4a67afeb781c0a74",
+    "pinelib/errors.py": "0e0f79f15b854c8e09ff38dfeab8a7f2b5ff63f1304240afc54ed86caf42ec55",
+    "pinelib/events/__init__.py": "035719957668b274dfae33d8c541af6aea0ce513978ea4c1ea2423d5113eab8b",
+    "pinelib/events/alert.py": "9d3d81dcfb15e0e9fc275185a7745b214ae3b23b5a162d9d606674d3427221d5",
+    "pinelib/events/common.py": "7fda4faa54b8d34a09b58fc5b4e9bd24f6fd00d79578e425d29e5ad5dcba6f3c",
+    "pinelib/events/visual.py": "7d7e5ef5804395c40e2a48a9894c03f0b18eeb8cda952f84c22c7a128f8682bd",
+    "pinelib/input/__init__.py": "1b37d01e7a88a0e567d1fcd1236c8764668d337b5dc88f71dab6be0de307dfd3",
+    "pinelib/input/admission.py": "fcba51a5a3e1659a1b63bcb6122b5d91a2502ce1c93ce3882e658532d2cbf928",
+    "pinelib/input/registry.py": "b6159fe57342b4663be8eada214d2678c0e91f500c3e3a9febcfaaac3813f88b",
+    "pinelib/py.typed": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pinelib/reference/__init__.py": "8ed42de51b2e89f400f8966f2f8bb8bd79b55c577237684da5025c2b3166e420",
+    "pinelib/reference/array.py": "3c0f2f54b35f43208fd262f8882bdf92a94b399f4d12ef58b12d443d9441ce94",
+    "pinelib/reference/heap.py": "ee519b65e0117de1701e99639ef054de6d0cf830c2b096562ba81ec620fb472e",
+    "pinelib/reference/map.py": "f6528fc8980c7687a6a808cbddec36487ac860598acde72cf3668e29820f7e51",
+    "pinelib/reference/matrix.py": "4a8b7c34e4868daca42cfdb31ced31e7c0ce9d545b0b3c72113c019ad5320d86",
+    "pinelib/reference/nominal.py": "17a17502b0fcde7f49ce48f09e43af0c4640729ba2287b790660d94aa67d3746",
+    "pinelib/reference/persistence.py": "755d824323d3a54a1237d09fb42204f27e8a998859f80e5eb03905363634bf02",
+    "pinelib/reference/registry.py": "b0a76fb13fa9a5474f2a949dbd8dc4d97d829ba62086c7e9416f3d8a97ee3cc0",
+    "pinelib/reference/udt.py": "65ad59962a9057117a2ea9eda18a7654e4023541f241b502bde23465cb4e6d81",
+    "pinelib/request/__init__.py": "e78a4b2dfdcece464ca882a0b6b657ae5a48c4948c1df43cce98b74946288865",
+    "pinelib/request/alignment.py": "54258a7105744958c38be3a84ab53bba35ac2cc30b10ed4b4ca830effe3b6d9a",
+    "pinelib/request/engine.py": "0eb9413bb4ecdcc0a060c9746d30db125fcfd3b5e5959827a68f137b5f268139",
+    "pinelib/request/models.py": "2cdec72599f3ed700527be477f08e862df0c019225a674f8a9d5cf7cfd6cea30",
+    "pinelib/request/provider.py": "573e2fd9285ca0647d788cffe0923278b8e3b8f2c720af47d8be89ef1d23e617",
+    "pinelib/request/registry.py": "2a59b65b942b71b7445eb58e365683e144ada2ed55458e59c393f6209e20b310",
+    "pinelib/request/snapshots.py": "39538d75dd58bc69064831a92e294862f2e2d4a5dfadcb5f22b127f28eaa40aa",
+    "pinelib/runtime/__init__.py": "df8280fab3e1f68cd9108141b49c8e8c9231727471e96849734d9761ec571740",
+    "pinelib/runtime/compact_transcript.py": "833c56bec54280227d61226bf50ee2d326ca07a1cf12579cfb39b48631d77511",
+    "pinelib/runtime/context.py": "0c97489e2ad7ca363119ba5d1bc0b582885dc5e1c88ab96282812045e3cbfacc",
+    "pinelib/runtime/delegated.py": "33447b270b273b181e4c7e1e745e3a08879775cf17316a7e1de82720845522ab",
+    "pinelib/runtime/language.py": "600f040a22ba8b013bfa9646c6852a8cb559fda2d99fb9f2917b46eec3dea3a6",
+    "pinelib/runtime/metadata.py": "ba8a0d802ced3d3c9cd43f71c1d6f421d716167f68a9a2d07a5f46e1e521a3c5",
+    "pinelib/runtime/pending_abort.py": "049f1f56b12e2aef9cd22e8260670903c6eb9feef20d238fe5f95f7b39e35ef4",
+    "pinelib/runtime/policies.py": "f46a6d72f32bc6bab49240be29efc1bcdfde58fec20d028e86077987fbcb62bc",
+    "pinelib/runtime/semantic.py": "a09bc744831f1325341f240d533b5b70392e7fbf0b34e3b71c6e072561bac4d3",
+    "pinelib/runtime/session.py": "583e6ea4206fe30c1a9c9f1d542ded4cdf98403934bf0fb2938b0fde956eac99",
+    "pinelib/runtime/state_machine.py": "dd3d047732b889d6f4691f65e4f6f42664f6a5cd7b216665453076972d734e39",
+    "pinelib/runtime/transcript.py": "f48dddde128a3e5bff3f3304acc9d066b000f3264a8807fd040de8d76a5b688d",
+    "pinelib/state/__init__.py": "0dfdb915ced78eac66e7b3e17633a4159f866c7dfb8fc4f2b19175c1a1605042",
+    "pinelib/state/checkpoint.py": "e91ff11995bf058183a0615c910800d030c4d72883fd10553ee43a1ba8b1e640",
+    "pinelib/state/digest.py": "814c9ab2bd72e2c83e25461022438d2ea9fb5b671d640aef03e2005a86493a42",
+    "pinelib/state/series.py": "2fa1cfd2df0c5ec0f795c125e5b672777d8af9de85c034edaeca00f43f2f5b56",
+    "pinelib/state/slots.py": "a9ded02af8ee31a494e203b462e72a2bd32ffd2bb6612913fec11a353837bbbf",
+    "pinelib/ta/__init__.py": "fc26e1dea2580a364a604895dd8be01e74ea1e9958a74e1862ece54ad5f48ef3",
+    "pinelib/ta/kernels.py": "f4dade47b58c006fca30792addd3511636bb66826c2ff7a68aec06d2e3ee74f4",
+    "pinelib/ta/state.py": "35afeb39fec06bf9a298f6112ef7bc1b83b337e809dd3442441b6d0364c105a9",
+    "pinelib/ta/types.py": "5efca40822f86754ae91d7f3124e612fb41fd813df220cb5c772145dce11586b",
+    "pinelib/time/__init__.py": "b17074411e629d3b082f051851f8dc14f956c8657571e1bb2e5eaebf7c76e1ed",
+    "pinelib/time/calendar.py": "c826a12341b2e388b2c594a682ada19884a20495f0bfe6d127689b3dc714288f",
+    "pinelib/time/session.py": "fd40e8149199547adefced2147c42a2c34b4838dc973d6f60e9b720811c5eadb",
+    "pinelib/version.py": "dc1ff0b3a7e824cbceba058c601ba8b8837f714e8b8cc962242b2333abde273c",
+    "pyproject.toml": "df0c261fe4729ef1396ea64909026afabc695e5b1ffac09607ff08a0814f76c3",
+    "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tests/fixtures/array_concat_manual_expected.json": "20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e",
+    "tests/fixtures/array_search_manual_expected.json": "1ef56faf74bbd89bb7c7c7011b1ac3c2b9ca4d0a089f7e248572ef7aa532f746",
+    "tests/fixtures/rolling_state_v1_checkpoints.json": "09f01ae98e17506e6bd13fe50bddeb3729e619a5c46ddc85384671b22a17157f",
+    "tests/stage3_helpers.py": "c908e78119833e828377d2daf0db3b82561accaf19f28a8a2c3294885320e137",
+    "tests/stage4_helpers.py": "2d8a89c4c23098b3da2cb83ffe76a40dae863917355118fc306dbc282997793b",
+    "tests/test_abort_transient_slices.py": "f72465707d204083f7ca4c46dfb19dda6c244d784bef6e888f729c9366c33700",
+    "tests/test_abort_witness_replay.py": "9b0e17b1412d569073eed812f6d43c014f66ec6e857d5c26d7beceaf4aca5500",
+    "tests/test_array_concat_identity.py": "1cfb456fdb0acd9b17406b5edba69c362c326e904987f66b4859df25fe3a146e",
+    "tests/test_array_search_boundaries.py": "6831ecb6c06cbed0de43c6c9de7975f381d828940a179e4ac6d26fb5c7aebc43",
+    "tests/test_audited_unary_math_bindings.py": "228c5853579f2a2c546eadca47c33ed21be755f1ceb277f5f6c24468ff465e1d",
+    "tests/test_builtin_numeric_contracts.py": "cd148abc81d5ce267278260c9d228af19705c1a07daa373d86d28525e0b34938",
+    "tests/test_builtin_stateful_oracles.py": "e0b9cbba76b7fad4279da4c5234e7cf4cd589c96beaeaa5a554d9be27f0320b7",
+    "tests/test_checkpoint_na_roundtrip.py": "df1deacfb746a993d5a31ee571ffb03e2c857022b98a11f10c5d477219d7a4bb",
+    "tests/test_collection_iteration.py": "006b277b781e43a8ba18a44646aec45b1d48d4039e323f861b58f938c4645419",
+    "tests/test_compiled_nested_requests.py": "f4f8d86b1413357d7aef957ec5a7c842e37335adc5f9edcf2949f6899d609bb0",
+    "tests/test_compiled_reference_storage.py": "b67314de9b2aa8edb33a8bf47f72c8d011a550080d5423df67bb7d0dd327d975",
+    "tests/test_compiled_requests.py": "e3654fb0e14cc35a6b64998ec930f184b6421cfad5c5484b49f3e065010bb87c",
+    "tests/test_float_cast_abi.py": "bd727fb2441ba435cf201e643ca7103d95c54d2ffb651de4109f36e34d141382",
+    "tests/test_float_version_availability.py": "d0934454e549a361605d3a6cfc51bd07ace52f30805b52edcae96ba209c2cf73",
+    "tests/test_language_scopes_once.py": "143d704b0a4b4ebc9dd5a19eeea153c05116ce5477210f9f05d90104e09d3274",
+    "tests/test_minmax_variadic_manifest.py": "2c1453574d70491c541afc25f1b60d15addbf00e4769d092c29485c9b8165dc3",
+    "tests/test_nominal_registry.py": "02ed61a39e8b47a902106b702ea250816989ff23a869a3e4de2d31b62701f1c9",
+    "tests/test_nominal_registry_request_restore.py": "2de604b6a47134dc6d5dceb5e5daf3e9e180bd672aa0bc390d3ae7bbfbb85dcf",
+    "tests/test_nominal_registry_runtime.py": "fab74aeff438e34e00f1a5f6bb12f6442fa26916b391b971fe2538252ac72813",
+    "tests/test_nominal_types.py": "c3671f85b0eaf1b879fa6d27464c53bd281bcd7b2f58ee74e7dd1e972fe7e4e7",
+    "tests/test_once_fill_recalculation.py": "dd63b3cc9cc0e447c9717754f0a4881d737ab54b3961844f284ccb47413fbcaf",
+    "tests/test_rc6_adversarial_regressions.py": "b16231fcd10ebc6965b69817b3e39986f36e9be7e36c120d6950b6324e818877",
+    "tests/test_rc6_append_restore_edges.py": "ec8750f0fab5fd704409f3bc6bd32551c296b4fd69d8c4bed31ca9c1968eeba3",
+    "tests/test_rc6_delegated_channel.py": "e85b868840bcdb35ab1c344477c9cc33b3ead621a0bc4768fb6fffc2f2314a2a",
+    "tests/test_rc6_final_review_regressions.py": "c472319b1f2a9028a1cf75438439f21fba52d93ea33e22f5f8c44857a853080d",
+    "tests/test_rc6_frozen_review_regressions.py": "871e863651d868e00042611383850a7e4b36381609013cd159474781ca1e3958",
+    "tests/test_rc6_local_regressions.py": "3b062ae7b4de613a75683751eb311e65c4ba208b99c6c3d4e7ed20a6c37ebe90",
+    "tests/test_reference_candidate_regressions.py": "802cdb1db56609bb76836924011809955b7d08b675318bd9be59e3821fbf6b54",
+    "tests/test_release_tools.py": "9b17d51b62ce27f078761a746c2f915806d35155edc77b03270e10f81892a839",
+    "tests/test_review_deferred_bar_commit.py": "af2e5b4f6e8fb7cb70afd88ef0198e29b63a10e1f72789f674d7a82025818441",
+    "tests/test_review_input_integrity.py": "f7836160c7137e07b0a3980d7677038bca6f2dfc571f2a51bf447f2b8060f4fa",
+    "tests/test_rolling_statistics_state.py": "8a7f34df31e2787fb01d9450483d102458348684c7254d17a158edd0e7e12279",
+    "tests/test_semantic_commit_identity.py": "6ae3cb6579571d8c01564421eff33f48c17fbf1d68850de7ad67618fc1c8d911",
+    "tests/test_snapshot_aliases.py": "12adf954d790d5750b49c5f2e1c3cfa247942bbeef5e7e381020ba18281da4b0",
+    "tests/test_stage2.py": "4c30c0e78e4486d461035ed43635fd889b4740c890a7e7079ebf8cece43b251e",
+    "tests/test_stage3_edge_contracts.py": "551d52155edb00551db07236e93df02e036da2a392b6675b9120fbbebdf52c74",
+    "tests/test_stage3_math_string_time_input.py": "7d1dd36dade7f0f7d4332ff1294ce336d4d57090421af29329d61d0d3ff3aa20",
+    "tests/test_stage3_references_events.py": "2fa5da72810211950bfb5a6a9f7cadcb0e29323b82262b091fb75bb5157f1a4e",
+    "tests/test_stage3_ta.py": "f2b690fd38cca783195c8db814f02bd8d4b0943b61c7db4720787f4ced048f34",
+    "tests/test_stage4_contracts.py": "f9fc524cdc8cf81cc2ec3358315ef95f9138440871680dee2ada9157ec114681",
+    "tests/test_stage4_request_engine.py": "d36675b774a3f8c627a72705a02317c422be646af57ae243d6759473136fa877",
+    "tests/test_transcript_control.py": "2fe1631df9b27f361c37ec7d3938ff94c2078454f868bc6f0347091b6dd62422",
+    "tests/test_varip_abort_checkpoint.py": "5b1dd4f56ed0bff7c904c1f3b2fd76639316d144ececa1d634e3644da96db434",
+    "tests/test_varip_collections.py": "52d6efd7e49f5b0b18dfd1301bdb210391372070ea20ef453d4b6f73e02e4618",
+    "tests/test_varip_nominal_arrays.py": "c84f1325cead75444caeae9735b5ae78adf5718208a9a6bb7119e89a3dd2b2a9",
+    "tests/test_versioned_bool_history.py": "454b78fd5911fa232670685b733dfd737a9b284a6950c163a37580acfa64ec63",
+    "tools/build_deterministic_sdist.py": "72f4c8423c587aa887ae68efe191ae55cc7bcf6794428b8ec0b94db149d4e7ec",
+    "tools/build_official_surface.py": "8d7c43e4358b0a90e64a63dfb2e567addfcbaf08a50aa8f884fc3591ad3c54e7",
+    "tools/forbidden_scan.py": "8bc5a40c9e77d6094ecefbfb35604f180f4bf1f824f805fd4ad3f25a5e475685",
+    "tools/request_property_runner.py": "78438aa495bec6c5f9521e86e1f20476502f61045b724bfa0aa1c88f2fbb04d1",
+    "uv.lock": "c5df8a1998f7adafbc5711f64c7916a33604e6da5b863b001a422df4453bfdc4"
+  },
+  "baseline_original_files": 157,
+  "unchanged_original_files": 156,
+  "changed_original_files": [
+    "pinelib/core/values.py"
+  ],
+  "changed_original_functions": [
+    "pine_binary"
+  ],
+  "all_preexisting_tests_byte_unchanged": true,
+  "abi_catalog_manifest_checkpoint_sources_unchanged": true,
+  "manual_fixture": {
+    "sha256": "19ecb5d3fbdc4229b01110b7cbecd0419e6eb9f9d11530b2b19308350d80f8a1",
+    "pairs": 26,
+    "expected_values_literal_before_semantic_execution": true,
+    "tradingview_export": false,
+    "authority": "https://www.tradingview.com/pine-script-docs/language/type-system/#float",
+    "na_authority": "https://www.tradingview.com/pine-script-docs/language/type-system/#na-value",
+    "authority_reopened_during_independent_review": true
+  },
+  "results": {
+    "311": {
+      "independent_native": {
+        "path": ".runtime/evidence/runtime-comparison-independent-py311.xml",
+        "sha256": "5665da771aab2dfc5fc92df74f0e5d67e61097c1bf9733ca2701fd88f9f834c2",
+        "passed": 1119,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "owner_xml_independently_checked": {
+        "before-final": {
+          "path": ".runtime/evidence/float-comparison-v6/before-final-py311.xml",
+          "sha256": "ee4e3720563f8bc5b84c329ff91d4477881589202b359db8295a9cadeb536ed3",
+          "selected": 1119,
+          "counts": {
+            "passed": 1016,
+            "failure": 103
+          }
+        },
+        "full": {
+          "path": ".runtime/evidence/float-comparison-v6/full-py311.xml",
+          "sha256": "956a2ee11e10dd4c6c4a495331cf76769ef01333b893bd801a11d1525433b00c",
+          "selected": 3132,
+          "counts": {
+            "passed": 3129,
+            "failure": 3
+          }
+        },
+        "baseline-release": {
+          "path": ".runtime/evidence/float-comparison-v6/baseline-release-py311.xml",
+          "sha256": "1996ffd22a9a78908b7bdac6876888ce0ca16cd10ad09879fbe681c6108adaa2",
+          "selected": 5,
+          "counts": {
+            "failure": 3,
+            "passed": 2
+          }
+        }
+      },
+      "all2013old_ci_nodeids_retained_in_owner_full": true,
+      "all1119new_nodeids_retained_from_initial_failing_evidence": true,
+      "generated": {
+        "numeric": {
+          "baseline": {
+            "path": ".runtime/evidence/runtime-comparison-generated-baseline-py311.json",
+            "sha256": "547dbd1e5bd2b92f3a1856f9f6a34f147fde1877a986793a1ae93650779a37fd",
+            "records": 300,
+            "matched": 204,
+            "rejected_sources": [
+              {
+                "version": 5,
+                "case_id": "large_finite_equal",
+                "source": "//@version=5\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              },
+              {
+                "version": 6,
+                "case_id": "large_finite_equal",
+                "source": "//@version=6\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              }
+            ],
+            "by_version": {
+              "5": {
+                "records": 150,
+                "matched": 150
+              },
+              "6": {
+                "records": 150,
+                "matched": 54
+              }
+            }
+          },
+          "after": {
+            "path": ".runtime/evidence/runtime-comparison-generated-after-py311.json",
+            "sha256": "9089a820c2a65664a2c80a1f97f1d5eefb35a58f23b33aafa9e59f01a3a97e07",
+            "records": 300,
+            "matched": 300,
+            "rejected_sources": [
+              {
+                "version": 5,
+                "case_id": "large_finite_equal",
+                "source": "//@version=5\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              },
+              {
+                "version": 6,
+                "case_id": "large_finite_equal",
+                "source": "//@version=6\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              }
+            ],
+            "by_version": {
+              "5": {
+                "records": 150,
+                "matched": 150
+              },
+              "6": {
+                "records": 150,
+                "matched": 150
+              }
+            }
+          }
+        },
+        "typed_na": {
+          "baseline": {
+            "path": ".runtime/evidence/runtime-comparison-generated-na-baseline-py311.json",
+            "sha256": "a10390bf8b53c05d6b58fe3443eed159c8305069059761ee1d88c49af6beef4e",
+            "records": 36,
+            "matched": 18,
+            "rejected_sources": [],
+            "by_version": {
+              "5": {
+                "records": 18,
+                "matched": 18
+              },
+              "6": {
+                "records": 18,
+                "matched": 0
+              }
+            }
+          },
+          "after": {
+            "path": ".runtime/evidence/runtime-comparison-generated-na-after-py311.json",
+            "sha256": "c6301c784a962421d99c7f910d3d82db2214f7e6faca16401c28b154ce133f8c",
+            "records": 36,
+            "matched": 36,
+            "rejected_sources": [],
+            "by_version": {
+              "5": {
+                "records": 18,
+                "matched": 18
+              },
+              "6": {
+                "records": 18,
+                "matched": 18
+              }
+            }
+          }
+        }
+      }
+    },
+    "313": {
+      "independent_native": {
+        "path": ".runtime/evidence/runtime-comparison-independent-py313.xml",
+        "sha256": "e6a0c1763cc41c08ca8204bb7be3bae0b5dc2e93d212cd4ba4441560065a36ea",
+        "passed": 1119,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "owner_xml_independently_checked": {
+        "before-final": {
+          "path": ".runtime/evidence/float-comparison-v6/before-final-py313.xml",
+          "sha256": "53262ac4742e1d424db4a7dcff32ae85d6719dd75a68ab26b153ac3502b44d89",
+          "selected": 1119,
+          "counts": {
+            "passed": 1016,
+            "failure": 103
+          }
+        },
+        "full": {
+          "path": ".runtime/evidence/float-comparison-v6/full-py313.xml",
+          "sha256": "5c4179228a3e64192e9fc729834bf45ca22f99356b4c290cde7102693ef34c15",
+          "selected": 3132,
+          "counts": {
+            "passed": 3129,
+            "failure": 3
+          }
+        },
+        "baseline-release": {
+          "path": ".runtime/evidence/float-comparison-v6/baseline-release-py313.xml",
+          "sha256": "1e1eb69822e2f07d7eabd907f24c9be1e6ebaa8e628375c7c8524d8036059b6a",
+          "selected": 5,
+          "counts": {
+            "failure": 3,
+            "passed": 2
+          }
+        }
+      },
+      "all2013old_ci_nodeids_retained_in_owner_full": true,
+      "all1119new_nodeids_retained_from_initial_failing_evidence": true,
+      "generated": {
+        "numeric": {
+          "baseline": {
+            "path": ".runtime/evidence/runtime-comparison-generated-baseline-py313.json",
+            "sha256": "547dbd1e5bd2b92f3a1856f9f6a34f147fde1877a986793a1ae93650779a37fd",
+            "records": 300,
+            "matched": 204,
+            "rejected_sources": [
+              {
+                "version": 5,
+                "case_id": "large_finite_equal",
+                "source": "//@version=5\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              },
+              {
+                "version": 6,
+                "case_id": "large_finite_equal",
+                "source": "//@version=6\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              }
+            ],
+            "by_version": {
+              "5": {
+                "records": 150,
+                "matched": 150
+              },
+              "6": {
+                "records": 150,
+                "matched": 54
+              }
+            }
+          },
+          "after": {
+            "path": ".runtime/evidence/runtime-comparison-generated-after-py313.json",
+            "sha256": "9089a820c2a65664a2c80a1f97f1d5eefb35a58f23b33aafa9e59f01a3a97e07",
+            "records": 300,
+            "matched": 300,
+            "rejected_sources": [
+              {
+                "version": 5,
+                "case_id": "large_finite_equal",
+                "source": "//@version=5\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              },
+              {
+                "version": 6,
+                "case_id": "large_finite_equal",
+                "source": "//@version=6\nindicator(\"Independent runtime comparisons\")\nleft=(1e+308)+bar_index*0\nright=(1e+308)+bar_index*0\nplot((left==right)?1:0)\nplot((left!=right)?1:0)\nplot((left<right)?1:0)\nplot((left<=right)?1:0)\nplot((left>right)?1:0)\nplot((left>=right)?1:0)\n",
+                "diagnostics": [
+                  {
+                    "severity": "FATAL",
+                    "code": "P2A1110",
+                    "message": "Numeric literal overflows to infinity: '1e+308'",
+                    "span": {
+                      "start_offset": 64,
+                      "end_offset": 70,
+                      "start_line": 1,
+                      "start_col": 1,
+                      "end_line": 1,
+                      "end_col": 1
+                    }
+                  }
+                ],
+                "runtime_executed": false
+              }
+            ],
+            "by_version": {
+              "5": {
+                "records": 150,
+                "matched": 150
+              },
+              "6": {
+                "records": 150,
+                "matched": 150
+              }
+            }
+          }
+        },
+        "typed_na": {
+          "baseline": {
+            "path": ".runtime/evidence/runtime-comparison-generated-na-baseline-py313.json",
+            "sha256": "a10390bf8b53c05d6b58fe3443eed159c8305069059761ee1d88c49af6beef4e",
+            "records": 36,
+            "matched": 18,
+            "rejected_sources": [],
+            "by_version": {
+              "5": {
+                "records": 18,
+                "matched": 18
+              },
+              "6": {
+                "records": 18,
+                "matched": 0
+              }
+            }
+          },
+          "after": {
+            "path": ".runtime/evidence/runtime-comparison-generated-na-after-py313.json",
+            "sha256": "c6301c784a962421d99c7f910d3d82db2214f7e6faca16401c28b154ce133f8c",
+            "records": 36,
+            "matched": 36,
+            "rejected_sources": [],
+            "by_version": {
+              "5": {
+                "records": 18,
+                "matched": 18
+              },
+              "6": {
+                "records": 18,
+                "matched": 18
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "cross_python_generated_json_content_identical": true,
+  "generated_numeric_successful_sources": 50,
+  "generated_typed_na_successful_sources": 6,
+  "generated_lifecycle_profiles_per_source": 6,
+  "generated_after_matching_records_each_python": 336,
+  "generated_after_numeric_boolean_observations_each_python": 4032,
+  "host_checkpoint_revision_boundary": {
+    "reviewed_host": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83",
+    "source_hashes": {
+      "openpine/admission.py": "08fb701c930a025fdda41dc4aae42fe06285cc5a2e968928abc88bf9419bde40",
+      "openpine/run_identity.py": "a1df37284dc61539dc12d6a693a2497195fc168a01975fc9c2e31d7b68c4b59e",
+      "openpine/runtime/rc6_worker_runtime.py": "34ba63978a4a8ee5affb1e923e597104ef9f45a10096cf07c6fd75f70b4daa5e",
+      "openpine/runtime/generated_checkpoint.py": "00a629894ca58baf2c577703dd34d11244134bee760f1529bed0198e1e30406f",
+      "openpine/runtime/isolated_worker.py": "5d64f2ea280f720979d62fcd5a758c3b1a4f7ce5086cc3b2efe519af4b23e182"
+    },
+    "inspection": "Candidate manifest hashes its full unsigned content including component commits and wheel hashes. Deployment validates that hash; the sealed execution context carries it. _session_from_request copies stack_manifest_hash into IntentReplayIdentity.stack_id; the generated checkpoint includes all run fields and compares its entire identity before candidate restore.",
+    "pure_actual_manifest_hash_owner_probe": {
+      "old": "sha256:dd1f957126babaf95060c66646ce1a7575efaa01cc2d377992a378efd414f56b",
+      "changed_only_pinelib_commit": "sha256:ff598692f934c604cab4bcbe2d3afaa5dc856af11c4beff57e6e2470e4923762",
+      "different": true
+    },
+    "native_revision_identity_changed": false,
+    "native_transport_compatibility_under_identical_supplied_context_is_intentional": true,
+    "stored_historical_booleans_are_not_recomputed": true,
+    "host_cross_revision_bypass_reproduced": false,
+    "host_protected_worker_execution_claimed_by_this_review": false
+  },
+  "findings": [
+    {
+      "severity": "P2",
+      "scope": "preexisting_producer_finite_literal_admission",
+      "status": "OPEN_SEPARATE_OWNER",
+      "producer": "7170736f2730316407f0d896447b08e76f5c9c08",
+      "reproduction": "The finite 1e+308 literal is rejected as overflow in versions 5 and 6. Two generated sources were rejected, not executed; all original diagnostics and the aborted initial harness are preserved.",
+      "evidence": ".runtime/evidence/runtime-comparison-generated-initial-diagnostics.json",
+      "sha256": "f6761595d863fe61a720d062c6685253708b2e5a21d2e3e1116c0a11f1e1d114",
+      "blocks_bounded_runtime_source_review": false
+    }
+  ],
+  "limitations": [
+    "Python round(actual_binary_float, 9) defines local midpoint behavior; Pine midpoint parity remains UNVERIFIED. Producer constant comparison deliberately returns unknown for documented decimal midpoint candidates.",
+    "Versions 1\u20135 retain existing native behavior; this review makes no historical TradingView parity claim.",
+    "Generated typed-NA tests use float(na) in an admitted series expression; they do not certify bare-na comparison syntax.",
+    "Mixed bool/number equality is outside this bounded profile.",
+    "All generated observations came from normally compiled source using exact published producer/compiler snapshots; no runtime-derived expected values were generated.",
+    "Three existing Windows release-tool failures are present in both owner full runs and separately captured unchanged-baseline controls. Linux joint execution of this new source remains pending.",
+    "Native checkpoints do not bind a source revision by themselves; the admitted host stack identity provides that outer boundary. Unadmitted native contexts remain the caller responsibility.",
+    "The 10683-test CI candidate reviewed separately contains the old runtime d33, not this overlay. This receipt cannot be used as acceptance of the overlay by that CI."
+  ],
+  "full_stage2_accepted": false,
+  "production_tests_inventory_or_refs_modified_by_reviewer": false,
+  "evidence_scripts": {
+    "prepare_runtime_comparison_independent.py": "2593c9aec15523cd90a364296dd1d1a247b9635b7af84b190404e8b9b85a9609",
+    "run_runtime_comparison_independent_tests.py": "650e41864b389a479c47c1e1142b56e2d899678c64ad27443369a7b81a297b47",
+    "runtime_comparison_generated_probe.py": "68be065e60cfd74a6cf0b7889c864c7dc28920ca7c4d84692a5d54add9f3df30",
+    "runtime_comparison_generated_na_probe.py": "ae49ae4cc846c2a3bb80f8165c25854d05eb8a99d6932848530997c9ee1ef215",
+    "diagnose_runtime_comparison_probe.py": "35e3bd710f18077d95a89e4df32c07862ff5e1d722236de68dea0287ead27709"
+  },
+  "digest_newlines": "LF",
+  "audit_script_sha256": "af0a1e269efbfd20b6b46a1fd883ed168392479f7843472efe039a5622ee0856"
+}

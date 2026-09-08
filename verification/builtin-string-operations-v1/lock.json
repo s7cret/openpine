@@ -1,0 +1,26 @@
+{
+  "authority_eligible_cases": 78,
+  "case_count": 83,
+  "content_hash": "sha256:07519ab54055f5d6d6b792058d3db8ba6c4829e6c919487dfbc6a7d6bd23ac76",
+  "expected_events_per_case": 4,
+  "full_stage2_accepted": false,
+  "independent_v5_authority": {
+    "path": "string-v5-case-authority-independent-review.json",
+    "sha256": "e21bf08a0f41341edcc47c8c5d70ab4c8ac9ef73150d3969c91d7aaea3010f6b"
+  },
+  "known_unverified_numeric_disagreement_cases": 3,
+  "legacy_native_controls_not_promoted": 8,
+  "manual_table": {
+    "path": "string-manual-expected.json",
+    "sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac"
+  },
+  "original_manual_version_cases": 63,
+  "original_v5_inference_cases": 29,
+  "supplement": {
+    "path": "string-context-supplement.json",
+    "sha256": "7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0"
+  },
+  "supplemental_version_cases": 20,
+  "unassigned_authority_cases": 5,
+  "versioned_tuple_count": 10
+}

@@ -1,0 +1,629 @@
+{
+  "schema_id": "openpine.semantic_wave_failed_execution_independent_review.v1",
+  "status": "FAILED_IMMUTABLE_JOINT_CI_REGRESSION_PRESERVED",
+  "reviewed_at_utc": "2026-09-08T08:07:42.634095+00:00",
+  "workflow_run_id": 34201053710,
+  "workflow_url": "https://github.com/s7cret/OpenPine/actions/runs/34201053710",
+  "candidate_source": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+  "candidate_tree": "ff1834b2332170d58e9af8397142709b4d4ad925",
+  "operations_commit": "f1439b9119f4ed7f0a08c20d22e5d7f859afd9c4",
+  "operations_tree": "23c00795c6a1822dc859e5a1082a6fd6fb2df4d0",
+  "source_pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "95a14be4be8987faafb3e7629c744e698fd9f134",
+    "pinelib": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f"
+  },
+  "expected_full_tests_each_python": 16745,
+  "actually_executed_each_python": 7621,
+  "passed_each_python": 7620,
+  "failed_each_python": 1,
+  "test_errors_each_python": 0,
+  "skipped_executed_tests_each_python": 0,
+  "actual_suite_outcomes": {
+    "311": {
+      "openpine-contracts": {
+        "selected": 557,
+        "passed": 557,
+        "failed": 0,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 2.287,
+        "xml_sha256": "edbce7edcbe8be8a7481bec9f0977669672cc40957d866091308a8811beb38ef",
+        "nodeids_sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": []
+      },
+      "pinelib": {
+        "selected": 3523,
+        "passed": 3523,
+        "failed": 0,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 22.522,
+        "xml_sha256": "127b50c3f6294f79ceaf1649e1fcf82bc115797e3e9322b2e24d1b54214282b8",
+        "nodeids_sha256": "sha256:9ad56733ce5e39d13367a514827a751873f03ae6ecce34c3233f853a20ba27ad",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": []
+      },
+      "pine2ast": {
+        "selected": 2431,
+        "passed": 2431,
+        "failed": 0,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 170.018,
+        "xml_sha256": "3517fb119bc1b0ff656403f57d11c3cac5139af4df5d0b10dd18af9370623f51",
+        "nodeids_sha256": "sha256:315005af0640a6f3a1c7fef7c2decc7f58fc4f86a5ecacc7cdaf305318c813e5",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": []
+      },
+      "ast2python": {
+        "selected": 1110,
+        "passed": 1109,
+        "failed": 1,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 141.972,
+        "xml_sha256": "586abb3bf3db0904eb158bfde186f27c45d6944289edf3763464b553a24ef253",
+        "nodeids_sha256": "sha256:7adebda35e7757ae7f048a8c7b311471b89b039a67e3de900e6fd7dfb4e489fb",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": [
+          {
+            "nodeid": "tests/test_reference_loop_execution.py::test_tuple_from_loop_or_udf",
+            "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: release axis bundle_fact_coverage_complete failed",
+            "traceback": "def test_tuple_from_loop_or_udf():\n        assert trace(\"[a,b]=for i=1 to 3\\n    [i,i+1]\\nplot(a+b)\") == [7] * 3\n>       assert trace(\"f() =>\\n    for i=1 to 3\\n        [i,i+1]\\n[a,b]=f()\\nplot(a+b)\") == [7] * 3\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntests/test_reference_loop_execution.py:141: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \ntests/test_reference_loop_execution.py:12: in trace\n    runtime, _, _ = run_source(\ntests/test_rc6_input_metadata.py:29: in run_source\n    result = compile_source(source)\n             ^^^^^^^^^^^^^^^^^^^^^^\ntests/test_rc6_input_metadata.py:20: in compile_source\n    build_consumer_bundle(source, source_name=\"inputs.pine\", producer_commit=\"1\" * 40),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/pine2ast/hardening/consumer_bundle.py:229: in build_consumer_bundle\n    verify_consumer_bundle(body, source=source, expected_producer_commit=producer_commit)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nbundle = {'schema_id': 'pine2ast.consumer_bundle.v1', 'schema_version': '1.0.0', 'producer': {'name': 'pine2ast', 'version': '5...-8', 'byte_length': 97, 'source_hash': 'sha256:cde2807b7c3fd39e15d04e5effbc3dbbf795482fa475f84bc01b1eb4e7b60421'}, ...}\nsource = '//@version=6\\nindicator(\"refs/loops\")\\nf() =>\\n    for i=1 to 3\\n        [i,i+1]\\n[a,b]=f()\\nplot(a+b)\\n'\nexpected_producer_commit = '1111111111111111111111111111111111111111'\n\n    def verify_consumer_bundle(\n        bundle: Mapping[str, Any],\n        *,\n        source: str | None = None,\n        expected_producer_commit: str | None = None,\n    ) -> None:\n        from pine2ast.libraries import LibraryError\n    \n        try:\n            if bundle.get(\"schema_id\") != CONSUMER_BUNDLE_CONTRACT:\n                raise ConsumerBundleError(\"unsupported consumer bundle schema_id\")\n            revision = bundle.get(\"schema_version\")\n            if not isinstance(revision, str) or revision not in {\n                CONSUMER_BUNDLE_SCHEMA_VERSION,\n                LIBRARY_CONSUMER_BUNDLE_SCHEMA_VERSION,\n            }:\n                raise ConsumerBundleError(\"unsupported consumer bundle schema_version\")\n            from pine2ast.libraries.qualifier_context import CONTEXT_CAPABILITY, LibraryQualifierContext\n    \n            contract = bundle.get(\"consumer_contract\")\n            capabilities = (\n                contract.get(\"required_capabilities\", []) if isinstance(contract, Mapping) else []\n            )\n            has_context = \"library_context\" in bundle\n            has_capability = isinstance(capabilities, list) and CONTEXT_CAPABILITY in capabilities\n            needs_context = revision == LIBRARY_CONSUMER_BUNDLE_SCHEMA_VERSION\n            if has_context != needs_context or has_capability != needs_context:\n                raise ConsumerBundleError(\n                    \"consumer version, library context and capability must match exactly\"\n                )\n            library_context = None\n            raw_ast = bundle.get(\"ast\")\n            ast_metadata = raw_ast.get(\"producer_metadata\", {}) if isinstance(raw_ast, Mapping) else {}\n            if not isinstance(ast_metadata, Mapping):\n                raise ConsumerBundleError(\"AST producer metadata must be an object\")\n            marker = \"library_qualifier_context_ref\"\n            if not needs_context and marker in ast_metadata:\n                raise ConsumerBundleError(\n                    \"consumer 1.0 cannot contain a library context provenance marker\"\n                )\n            if needs_context:\n                expected_caps = {*_BASE_CONSUMER_CAPABILITIES, CONTEXT_CAPABILITY}\n                if (\n                    not isinstance(capabilities, list)\n                    or len(capabilities) != len(expected_caps)\n                    or not all(isinstance(cap, str) for cap in capabilities)\n                    or set(capabilities) != expected_caps\n                ):\n                    raise ConsumerBundleError(\n                        \"library context consumer capability set must match exactly\"\n                    )\n                if (\n                    not isinstance(contract, Mapping)\n                    or contract.get(\"minimum_consumer_version\") != \"5.0.0rc6\"\n                ):\n                    raise ConsumerBundleError(\"library context requires consumer 5.0.0rc6\")\n                if (\n                    set(contract) != {\"consumer\", \"minimum_consumer_version\", \"required_capabilities\"}\n                    or contract.get(\"consumer\") != \"ast2python\"\n                ):\n                    raise ConsumerBundleError(\"library context consumer contract must match exactly\")\n                if set(bundle) != {\n                    \"schema_id\",\n                    \"schema_version\",\n                    \"producer\",\n                    \"source\",\n                    \"version_context\",\n                    \"ast\",\n                    \"semantic_facts\",\n                    \"node_index\",\n                    \"diagnostics\",\n                    \"release_axes\",\n                    \"artifacts\",\n                    \"linked_artifacts\",\n                    \"consumer_contract\",\n                    \"content_hash\",\n                    \"library_context\",\n                }:\n                    raise ConsumerBundleError(\"library context bundle fields must match exactly\")\n                library_context = LibraryQualifierContext.admit(bundle[\"library_context\"])\n                if ast_metadata.get(marker) != library_context.to_dict()[\"content_hash\"]:\n                    raise ConsumerBundleError(\"AST library context provenance reference mismatch\")\n                if source is not None and source != library_context.code:\n                    raise ConsumerBundleError(\"source differs from library context\")\n                source = library_context.code\n                bundle_version = bundle.get(\"version_context\")\n                if (\n                    not isinstance(bundle_version, Mapping)\n                    or bundle_version.get(\"pine_version\") != library_context.to_dict()[\"pine_version\"]\n                ):\n                    raise ConsumerBundleError(\"library context Pine version mismatch\")\n            production_blockers = _production_diagnostic_codes(bundle.get(\"diagnostics\"))\n            if production_blockers:\n                raise ConsumerBundleError(\n                    \"consumer bundle contains symbols unavailable in its declared version: \"\n                    + \", \".join(sorted(production_blockers))\n                )\n            stored = bundle.get(\"content_hash\")\n            body = {k: deepcopy(v) for k, v in bundle.items() if k != \"content_hash\"}\n            if stored != content_hash(body):\n                raise ConsumerBundleError(\"consumer bundle content hash mismatch\")\n            context = bundle.get(\"version_context\")\n            ast = bundle.get(\"ast\")\n            facts = bundle.get(\"semantic_facts\")\n            if (\n                not isinstance(context, Mapping)\n                or not isinstance(ast, Mapping)\n                or not isinstance(facts, Mapping)\n            ):\n                raise ConsumerBundleError(\"bundle core sections are missing\")\n            diagnostics = bundle.get(\"diagnostics\")\n            diagnostic_rows = (\n                [dict(item) for item in diagnostics if isinstance(item, Mapping)]\n                if isinstance(diagnostics, list)\n                else []\n            )\n            if bundle.get(\"release_axes\") != _release_axes(facts, diagnostic_rows):\n                raise ConsumerBundleError(\"consumer bundle release axes mismatch\")\n            for axis_name, axis in bundle[\"release_axes\"].items():\n                if isinstance(axis, Mapping) and axis.get(\"status\") == \"FAIL\":\n>                   raise ConsumerBundleError(f\"release axis {axis_name} failed\")\nE                   pine2ast.hardening.consumer_bundle.ConsumerBundleError: release axis bundle_fact_coverage_complete failed\n\n/opt/hostedtoolcache/Python/3.11.16/x64/lib/python3.11/site-packages/pine2ast/hardening/consumer_bundle.py:353: ConsumerBundleError",
+            "traceback_sha256": "2cc07d87afe5782cc990779209650ab6c6f0a61c2dbf117f1bbcb90f30f2eac3"
+          }
+        ]
+      }
+    },
+    "313": {
+      "openpine-contracts": {
+        "selected": 557,
+        "passed": 557,
+        "failed": 0,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 2.082,
+        "xml_sha256": "355d2acf0814012ca95a9eea2fea6a9891f689b6deb91095d16bca85d322264e",
+        "nodeids_sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": []
+      },
+      "pinelib": {
+        "selected": 3523,
+        "passed": 3523,
+        "failed": 0,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 18.505,
+        "xml_sha256": "91ca230b51d2d52a50abceabf525e4b1882af04d9832d152d5b5f95ee4be9c5d",
+        "nodeids_sha256": "sha256:9ad56733ce5e39d13367a514827a751873f03ae6ecce34c3233f853a20ba27ad",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": []
+      },
+      "pine2ast": {
+        "selected": 2431,
+        "passed": 2431,
+        "failed": 0,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 135.749,
+        "xml_sha256": "0abe6ed526567ace078499c7e35c9462724644b35d71add4e5d03bfd90087e71",
+        "nodeids_sha256": "sha256:315005af0640a6f3a1c7fef7c2decc7f58fc4f86a5ecacc7cdaf305318c813e5",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": []
+      },
+      "ast2python": {
+        "selected": 1110,
+        "passed": 1109,
+        "failed": 1,
+        "errors": 0,
+        "skipped_tests": 0,
+        "seconds": 104.304,
+        "xml_sha256": "3392f16f7e9051b72b8be880a4ea5f9fddafe69a851d9ed6e92aa6e822c31c76",
+        "nodeids_sha256": "sha256:7adebda35e7757ae7f048a8c7b311471b89b039a67e3de900e6fd7dfb4e489fb",
+        "all_locked_nodes_retained_and_executed": true,
+        "failures": [
+          {
+            "nodeid": "tests/test_reference_loop_execution.py::test_tuple_from_loop_or_udf",
+            "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: release axis bundle_fact_coverage_complete failed",
+            "traceback": "def test_tuple_from_loop_or_udf():\n        assert trace(\"[a,b]=for i=1 to 3\\n    [i,i+1]\\nplot(a+b)\") == [7] * 3\n>       assert trace(\"f() =>\\n    for i=1 to 3\\n        [i,i+1]\\n[a,b]=f()\\nplot(a+b)\") == [7] * 3\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntests/test_reference_loop_execution.py:141: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \ntests/test_reference_loop_execution.py:12: in trace\n    runtime, _, _ = run_source(\ntests/test_rc6_input_metadata.py:29: in run_source\n    result = compile_source(source)\n             ^^^^^^^^^^^^^^^^^^^^^^\ntests/test_rc6_input_metadata.py:20: in compile_source\n    build_consumer_bundle(source, source_name=\"inputs.pine\", producer_commit=\"1\" * 40),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n/opt/hostedtoolcache/Python/3.13.15/x64/lib/python3.13/site-packages/pine2ast/hardening/consumer_bundle.py:229: in build_consumer_bundle\n    verify_consumer_bundle(body, source=source, expected_producer_commit=producer_commit)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nbundle = {'schema_id': 'pine2ast.consumer_bundle.v1', 'schema_version': '1.0.0', 'producer': {'name': 'pine2ast', 'version': '5...-8', 'byte_length': 97, 'source_hash': 'sha256:cde2807b7c3fd39e15d04e5effbc3dbbf795482fa475f84bc01b1eb4e7b60421'}, ...}\nsource = '//@version=6\\nindicator(\"refs/loops\")\\nf() =>\\n    for i=1 to 3\\n        [i,i+1]\\n[a,b]=f()\\nplot(a+b)\\n'\nexpected_producer_commit = '1111111111111111111111111111111111111111'\n\n    def verify_consumer_bundle(\n        bundle: Mapping[str, Any],\n        *,\n        source: str | None = None,\n        expected_producer_commit: str | None = None,\n    ) -> None:\n        from pine2ast.libraries import LibraryError\n    \n        try:\n            if bundle.get(\"schema_id\") != CONSUMER_BUNDLE_CONTRACT:\n                raise ConsumerBundleError(\"unsupported consumer bundle schema_id\")\n            revision = bundle.get(\"schema_version\")\n            if not isinstance(revision, str) or revision not in {\n                CONSUMER_BUNDLE_SCHEMA_VERSION,\n                LIBRARY_CONSUMER_BUNDLE_SCHEMA_VERSION,\n            }:\n                raise ConsumerBundleError(\"unsupported consumer bundle schema_version\")\n            from pine2ast.libraries.qualifier_context import CONTEXT_CAPABILITY, LibraryQualifierContext\n    \n            contract = bundle.get(\"consumer_contract\")\n            capabilities = (\n                contract.get(\"required_capabilities\", []) if isinstance(contract, Mapping) else []\n            )\n            has_context = \"library_context\" in bundle\n            has_capability = isinstance(capabilities, list) and CONTEXT_CAPABILITY in capabilities\n            needs_context = revision == LIBRARY_CONSUMER_BUNDLE_SCHEMA_VERSION\n            if has_context != needs_context or has_capability != needs_context:\n                raise ConsumerBundleError(\n                    \"consumer version, library context and capability must match exactly\"\n                )\n            library_context = None\n            raw_ast = bundle.get(\"ast\")\n            ast_metadata = raw_ast.get(\"producer_metadata\", {}) if isinstance(raw_ast, Mapping) else {}\n            if not isinstance(ast_metadata, Mapping):\n                raise ConsumerBundleError(\"AST producer metadata must be an object\")\n            marker = \"library_qualifier_context_ref\"\n            if not needs_context and marker in ast_metadata:\n                raise ConsumerBundleError(\n                    \"consumer 1.0 cannot contain a library context provenance marker\"\n                )\n            if needs_context:\n                expected_caps = {*_BASE_CONSUMER_CAPABILITIES, CONTEXT_CAPABILITY}\n                if (\n                    not isinstance(capabilities, list)\n                    or len(capabilities) != len(expected_caps)\n                    or not all(isinstance(cap, str) for cap in capabilities)\n                    or set(capabilities) != expected_caps\n                ):\n                    raise ConsumerBundleError(\n                        \"library context consumer capability set must match exactly\"\n                    )\n                if (\n                    not isinstance(contract, Mapping)\n                    or contract.get(\"minimum_consumer_version\") != \"5.0.0rc6\"\n                ):\n                    raise ConsumerBundleError(\"library context requires consumer 5.0.0rc6\")\n                if (\n                    set(contract) != {\"consumer\", \"minimum_consumer_version\", \"required_capabilities\"}\n                    or contract.get(\"consumer\") != \"ast2python\"\n                ):\n                    raise ConsumerBundleError(\"library context consumer contract must match exactly\")\n                if set(bundle) != {\n                    \"schema_id\",\n                    \"schema_version\",\n                    \"producer\",\n                    \"source\",\n                    \"version_context\",\n                    \"ast\",\n                    \"semantic_facts\",\n                    \"node_index\",\n                    \"diagnostics\",\n                    \"release_axes\",\n                    \"artifacts\",\n                    \"linked_artifacts\",\n                    \"consumer_contract\",\n                    \"content_hash\",\n                    \"library_context\",\n                }:\n                    raise ConsumerBundleError(\"library context bundle fields must match exactly\")\n                library_context = LibraryQualifierContext.admit(bundle[\"library_context\"])\n                if ast_metadata.get(marker) != library_context.to_dict()[\"content_hash\"]:\n                    raise ConsumerBundleError(\"AST library context provenance reference mismatch\")\n                if source is not None and source != library_context.code:\n                    raise ConsumerBundleError(\"source differs from library context\")\n                source = library_context.code\n                bundle_version = bundle.get(\"version_context\")\n                if (\n                    not isinstance(bundle_version, Mapping)\n                    or bundle_version.get(\"pine_version\") != library_context.to_dict()[\"pine_version\"]\n                ):\n                    raise ConsumerBundleError(\"library context Pine version mismatch\")\n            production_blockers = _production_diagnostic_codes(bundle.get(\"diagnostics\"))\n            if production_blockers:\n                raise ConsumerBundleError(\n                    \"consumer bundle contains symbols unavailable in its declared version: \"\n                    + \", \".join(sorted(production_blockers))\n                )\n            stored = bundle.get(\"content_hash\")\n            body = {k: deepcopy(v) for k, v in bundle.items() if k != \"content_hash\"}\n            if stored != content_hash(body):\n                raise ConsumerBundleError(\"consumer bundle content hash mismatch\")\n            context = bundle.get(\"version_context\")\n            ast = bundle.get(\"ast\")\n            facts = bundle.get(\"semantic_facts\")\n            if (\n                not isinstance(context, Mapping)\n                or not isinstance(ast, Mapping)\n                or not isinstance(facts, Mapping)\n            ):\n                raise ConsumerBundleError(\"bundle core sections are missing\")\n            diagnostics = bundle.get(\"diagnostics\")\n            diagnostic_rows = (\n                [dict(item) for item in diagnostics if isinstance(item, Mapping)]\n                if isinstance(diagnostics, list)\n                else []\n            )\n            if bundle.get(\"release_axes\") != _release_axes(facts, diagnostic_rows):\n                raise ConsumerBundleError(\"consumer bundle release axes mismatch\")\n            for axis_name, axis in bundle[\"release_axes\"].items():\n                if isinstance(axis, Mapping) and axis.get(\"status\") == \"FAIL\":\n>                   raise ConsumerBundleError(f\"release axis {axis_name} failed\")\nE                   pine2ast.hardening.consumer_bundle.ConsumerBundleError: release axis bundle_fact_coverage_complete failed\n\n/opt/hostedtoolcache/Python/3.13.15/x64/lib/python3.13/site-packages/pine2ast/hardening/consumer_bundle.py:353: ConsumerBundleError",
+            "traceback_sha256": "1bd7105f49da795b2e42453b4218a74307e6b969fa564db4572186f929bf8e35"
+          }
+        ]
+      }
+    }
+  },
+  "unexecuted_suite_counts": {
+    "backtest_engine": 1102,
+    "optimizer": 281,
+    "marketdata-provider": 601,
+    "openpine": 7140
+  },
+  "unexecuted_locked_tests_each_python": 9124,
+  "failure": {
+    "nodeid": "tests/test_reference_loop_execution.py::test_tuple_from_loop_or_udf",
+    "location": "pine2ast/hardening/consumer_bundle.py:353",
+    "type": "ConsumerBundleError",
+    "release_axis": "bundle_fact_coverage_complete",
+    "both_python_versions_same_failure": true,
+    "old_compiler_test_not_modified": true,
+    "compiler_pin_unchanged": "95a14be4be8987faafb3e7629c744e698fd9f134",
+    "old_test_file_sha256": "0bc03e95c0fd3fae5cf35aec589ebbc172ea02db9fe37087015f71bfda4454e7",
+    "old_test_function": "def test_tuple_from_loop_or_udf():\n    assert trace(\"[a,b]=for i=1 to 3\\n    [i,i+1]\\nplot(a+b)\") == [7] * 3\n    assert trace(\"f() =>\\n    for i=1 to 3\\n        [i,i+1]\\n[a,b]=f()\\nplot(a+b)\") == [7] * 3",
+    "prior_pass_evidence": {
+      "311": {
+        "run_id": 34181992287,
+        "xml_path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\concat-variadic-verify-311\\ast2python.xml",
+        "xml_sha256": "9bc41cc1f57def2121208a1a423dd2c017c73c5d8043624bedfb10b64d58fd00",
+        "same_node_previously_passed": true
+      },
+      "313": {
+        "run_id": 34181992287,
+        "xml_path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\concat-variadic-verify-313\\ast2python.xml",
+        "xml_sha256": "b749b0cdb75bd8de099025ba08952780e2410141551b19ffca7d70931cb52849",
+        "same_node_previously_passed": true
+      }
+    },
+    "root_cause_status": "Cross-package semantic regression confirmed by unchanged old test and prior pass; finer producer cause remains under separate owner diagnosis."
+  },
+  "backend_gates_not_executed": [
+    "Deterministic provider suite (external network checks are separate)",
+    "Enable the real protected worker environment",
+    "Native sandbox plus affected storage CLI gateway and branch regressions",
+    "Architecture capability and frozen conformance gate",
+    "Validate changed runtime lint imports and build clean distributions"
+  ],
+  "other_required_gates_not_executed": [
+    "broker and optimizer suites later in the aborted functional loop",
+    "Stage1 frozen conformance execution",
+    "all independent builtin corpus execution including array/string/map and host constant metadata",
+    "protected worker setup and native sandbox regressions",
+    "runtime lint/import validation and clean distribution builds",
+    "frontend Vitest suite",
+    "frontend Node tests",
+    "frontend production build"
+  ],
+  "frontend_job": {
+    "id": 101981436835,
+    "status": "completed",
+    "conclusion": "skipped",
+    "no_frontend_test_or_build_execution_claim": true
+  },
+  "artifacts": [
+    {
+      "id": 10046013645,
+      "name": "nominal-source-3.11-34201053710",
+      "original_zip": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-10046013645.zip",
+      "zip_sha256": "53e00f4961093376b91eeeb038da3c8a66b00b6227987a2fcb2d7a10e0940c11",
+      "api_digest_verified": true,
+      "extract_directory": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-independent\\source-311",
+      "safe_extraction": true,
+      "files": [
+        {
+          "path": "nominal-source-receipt.json",
+          "bytes": 420,
+          "sha256": "378ede8e4796bf8716b7b4ac2adc2e421b842a3fcbcae3124dba5b4fa620b150"
+        }
+      ]
+    },
+    {
+      "id": 10046013277,
+      "name": "rc6-checks-3.11-34201053710",
+      "original_zip": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-10046013277.zip",
+      "zip_sha256": "f20ca610dcde576eceeed09b59d873415dc0626f29d5d5023ec2099d0b2edd2f",
+      "api_digest_verified": true,
+      "extract_directory": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-independent\\311",
+      "safe_extraction": true,
+      "files": [
+        {
+          "path": "ast2python.inventory.json",
+          "bytes": 132377,
+          "sha256": "4730fd205d704aa1c079e6b41eee640c0e66ddac10490df8d8f3ec9d7e46e5b7"
+        },
+        {
+          "path": "ast2python.xml",
+          "bytes": 177921,
+          "sha256": "586abb3bf3db0904eb158bfde186f27c45d6944289edf3763464b553a24ef253"
+        },
+        {
+          "path": "openpine-contracts.inventory.json",
+          "bytes": 63733,
+          "sha256": "2c144ca9ffe1756cbc4f5bcd51cc0685c2ee80335fcf0f7cc48798585379f88e"
+        },
+        {
+          "path": "openpine-contracts.xml",
+          "bytes": 82232,
+          "sha256": "edbce7edcbe8be8a7481bec9f0977669672cc40957d866091308a8811beb38ef"
+        },
+        {
+          "path": "pine2ast.inventory.json",
+          "bytes": 310725,
+          "sha256": "819a22fe59e4dad8fcae85c48b8642cbef7d18e9dd48cb3eb3a7696c24ff36a6"
+        },
+        {
+          "path": "pine2ast.xml",
+          "bytes": 394267,
+          "sha256": "3517fb119bc1b0ff656403f57d11c3cac5139af4df5d0b10dd18af9370623f51"
+        },
+        {
+          "path": "pinelib.inventory.json",
+          "bytes": 397884,
+          "sha256": "bd0c73681ed992cba083c3882c4b5ef9b73bae29f912ceaab4e67bb4e0581e85"
+        },
+        {
+          "path": "pinelib.xml",
+          "bytes": 516901,
+          "sha256": "127b50c3f6294f79ceaf1649e1fcf82bc115797e3e9322b2e24d1b54214282b8"
+        },
+        {
+          "path": "source-pins.json",
+          "bytes": 439,
+          "sha256": "ca5925b20ad19f3ba9f1322e0f0bed6f9967d7137d9b962dd54738bcd6b3333e"
+        }
+      ]
+    },
+    {
+      "id": 10045978792,
+      "name": "nominal-source-3.13-34201053710",
+      "original_zip": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-10045978792.zip",
+      "zip_sha256": "53e00f4961093376b91eeeb038da3c8a66b00b6227987a2fcb2d7a10e0940c11",
+      "api_digest_verified": true,
+      "extract_directory": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-independent\\source-313",
+      "safe_extraction": true,
+      "files": [
+        {
+          "path": "nominal-source-receipt.json",
+          "bytes": 420,
+          "sha256": "378ede8e4796bf8716b7b4ac2adc2e421b842a3fcbcae3124dba5b4fa620b150"
+        }
+      ]
+    },
+    {
+      "id": 10045978205,
+      "name": "rc6-checks-3.13-34201053710",
+      "original_zip": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-10045978205.zip",
+      "zip_sha256": "6e1e17bd900e82e328f3ab7736c7727d3f3f75774a9be09906021a68994ab886",
+      "api_digest_verified": true,
+      "extract_directory": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-independent\\313",
+      "safe_extraction": true,
+      "files": [
+        {
+          "path": "ast2python.xml",
+          "bytes": 177921,
+          "sha256": "3392f16f7e9051b72b8be880a4ea5f9fddafe69a851d9ed6e92aa6e822c31c76"
+        },
+        {
+          "path": "ast2python.inventory.json",
+          "bytes": 132377,
+          "sha256": "4730fd205d704aa1c079e6b41eee640c0e66ddac10490df8d8f3ec9d7e46e5b7"
+        },
+        {
+          "path": "openpine-contracts.inventory.json",
+          "bytes": 63733,
+          "sha256": "2c144ca9ffe1756cbc4f5bcd51cc0685c2ee80335fcf0f7cc48798585379f88e"
+        },
+        {
+          "path": "openpine-contracts.xml",
+          "bytes": 82232,
+          "sha256": "355d2acf0814012ca95a9eea2fea6a9891f689b6deb91095d16bca85d322264e"
+        },
+        {
+          "path": "pine2ast.inventory.json",
+          "bytes": 310725,
+          "sha256": "819a22fe59e4dad8fcae85c48b8642cbef7d18e9dd48cb3eb3a7696c24ff36a6"
+        },
+        {
+          "path": "pine2ast.xml",
+          "bytes": 394267,
+          "sha256": "0abe6ed526567ace078499c7e35c9462724644b35d71add4e5d03bfd90087e71"
+        },
+        {
+          "path": "pinelib.inventory.json",
+          "bytes": 397884,
+          "sha256": "bd0c73681ed992cba083c3882c4b5ef9b73bae29f912ceaab4e67bb4e0581e85"
+        },
+        {
+          "path": "pinelib.xml",
+          "bytes": 516901,
+          "sha256": "91ca230b51d2d52a50abceabf525e4b1882af04d9832d152d5b5f95ee4be9c5d"
+        },
+        {
+          "path": "source-pins.json",
+          "bytes": 439,
+          "sha256": "ca5925b20ad19f3ba9f1322e0f0bed6f9967d7137d9b962dd54738bcd6b3333e"
+        }
+      ]
+    }
+  ],
+  "original_artifacts_metadata_sha256": "648c408b0c41239e1d48448f480e8ae399df77bfb83c09b517b5ea61fabde0de",
+  "independent_api_sha256": "5fbe88cc5be46a05fd0daa6af6e6892e001a7b80c571acaade551f72b96b3017",
+  "source_receipts": {
+    "311": {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-independent\\source-311\\nominal-source-receipt.json",
+      "sha256": "378ede8e4796bf8716b7b4ac2adc2e421b842a3fcbcae3124dba5b4fa620b150",
+      "record": {
+        "source_sha": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+        "source_tree": "ff1834b2332170d58e9af8397142709b4d4ad925",
+        "inventory_sha256": "bff145bcbfb81a78069150f283f7cc8aef5f2395f5e72d9aa3b30dcd2b0326c3",
+        "permanent_workflow_sha256": "c1eb7e8d5c5c02cf1183a534cfa7593aaaddcd65b1e0df90b6dd57a4010811f5",
+        "digest_newlines": "LF",
+        "inventory_rewritten_in_ci": false,
+        "release_publication_performed": false
+      }
+    },
+    "313": {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-independent\\source-313\\nominal-source-receipt.json",
+      "sha256": "378ede8e4796bf8716b7b4ac2adc2e421b842a3fcbcae3124dba5b4fa620b150",
+      "record": {
+        "source_sha": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+        "source_tree": "ff1834b2332170d58e9af8397142709b4d4ad925",
+        "inventory_sha256": "bff145bcbfb81a78069150f283f7cc8aef5f2395f5e72d9aa3b30dcd2b0326c3",
+        "permanent_workflow_sha256": "c1eb7e8d5c5c02cf1183a534cfa7593aaaddcd65b1e0df90b6dd57a4010811f5",
+        "digest_newlines": "LF",
+        "inventory_rewritten_in_ci": false,
+        "release_publication_performed": false
+      }
+    }
+  },
+  "job_logs": {
+    "311": {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-311.log",
+      "sha256": "0037f5cc845a0d9c40fd607f02a649aa148f05ebc0e0b49669cdce21a4b7c237",
+      "failure_marker_present": true
+    },
+    "313": {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-313.log",
+      "sha256": "90e91eea20d1f5a5d7eef59351924f7d53014da621767d26af51be9cae09fb55",
+      "failure_marker_present": true
+    }
+  },
+  "jobs": [
+    {
+      "id": 101979670718,
+      "name": "verify (3.11)",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_id": 34201053710,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Require exact candidate and committed reviewed inventory",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Install pinned sibling sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Complete contracts runtime compiler broker and optimizer functional suites",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 6
+        },
+        {
+          "name": "Deterministic provider suite (external network checks are separate)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7
+        },
+        {
+          "name": "Enable the real protected worker environment",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8
+        },
+        {
+          "name": "Native sandbox plus affected storage CLI gateway and branch regressions",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9
+        },
+        {
+          "name": "Architecture capability and frozen conformance gate",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 10
+        },
+        {
+          "name": "Validate changed runtime lint imports and build clean distributions",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 25
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        }
+      ]
+    },
+    {
+      "id": 101979671113,
+      "name": "verify (3.13)",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_id": 34201053710,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Require exact candidate and committed reviewed inventory",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Install pinned sibling sources",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Complete contracts runtime compiler broker and optimizer functional suites",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 6
+        },
+        {
+          "name": "Deterministic provider suite (external network checks are separate)",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7
+        },
+        {
+          "name": "Enable the real protected worker environment",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8
+        },
+        {
+          "name": "Native sandbox plus affected storage CLI gateway and branch regressions",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9
+        },
+        {
+          "name": "Architecture capability and frozen conformance gate",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 10
+        },
+        {
+          "name": "Validate changed runtime lint imports and build clean distributions",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 25
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        }
+      ]
+    },
+    {
+      "id": 101981436835,
+      "name": "frontend",
+      "status": "completed",
+      "conclusion": "skipped",
+      "run_id": 34201053710,
+      "logs_url": null,
+      "steps": null
+    }
+  ],
+  "final_metadata_review_sha256": "a3247ee4238e6366cc025e3997a52cb0b2697b8e9a78c412c500a7535950c002",
+  "inventory_sha256": "bff145bcbfb81a78069150f283f7cc8aef5f2395f5e72d9aa3b30dcd2b0326c3",
+  "inventory_unchanged_in_ci": true,
+  "preservation": {
+    "original_logs_and_zips_retained": true,
+    "safe_extraction_only_to_new_directories": true,
+    "all_locked_nodes_for_executed_suites_retained": true,
+    "no_tests_removed_or_expectations_weakened": true,
+    "production_tests_inventory_and_release_refs_untouched_by_reviewer": true
+  },
+  "execution_acceptance": false,
+  "full_stage2_accepted": false,
+  "release_ready": false,
+  "limitations": [
+    "Completed contracts/runtime/parser suites are actual successes, but do not substitute for failed compiler integration or any unexecuted gate.",
+    "Zero skips applies only to the four executed suites. Entire later workflow gates and frontend were skipped after failure.",
+    "No local re-run against mutated next-wave sources was used as acceptance or as a replacement for this immutable failure."
+  ],
+  "digest_newlines": "LF",
+  "review_script_sha256": "de7a4a38d4c97c94a6ac0cac4c21829d9bcef4b5ef35d836390387b765c6538c"
+}

@@ -1,0 +1,8 @@
+//@version=5
+indicator("map literal")
+var a=map.new<int,float>()
+var float result=na
+if bar_index==0
+    map.put(a,1,2.5)
+if bar_index==1
+    result:=map.put(a,1,-1.5)

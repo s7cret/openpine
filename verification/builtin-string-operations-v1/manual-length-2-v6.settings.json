@@ -1,0 +1,36 @@
+{
+  "abi_callable": "pinelib.abi.string.length_v1",
+  "argument": {
+    "kind": "value",
+    "value": " a "
+  },
+  "declared_binding": [
+    "pine:function:str.length",
+    "pine:function:str.length#canonical",
+    "NAMESPACE_FUNCTION"
+  ],
+  "expected": {
+    "kind": "value",
+    "value": 3
+  },
+  "function": "str.length",
+  "id": "manual-length-2-v6",
+  "initial_result": 0,
+  "initial_v5_inference": false,
+  "origin": {
+    "path": "string-manual-expected.json",
+    "row_id": "length-2",
+    "section": "rows",
+    "sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac"
+  },
+  "original_authority": "Primary v6 Strings manual",
+  "primary_source_line": 6,
+  "row_id": "length-2",
+  "source_name": "manual-length-2-v6.pine",
+  "storage": {
+    "argument": "string",
+    "result": "int"
+  },
+  "unverified_numeric_disagreement": false,
+  "version": 6
+}

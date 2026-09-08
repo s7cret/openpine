@@ -1,0 +1,2581 @@
+{
+  "cases": [
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-0-v5.expected.json",
+        "sha256": "49b212d99d4c22e2725efe8efa6252741f9108a69294aa11639e94c0c198d3dc"
+      },
+      "id": "manual-length-0-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-length-0-v5.settings.json",
+        "sha256": "90a137c2ea50a3b3029a3dacee62c886a8eabdcca11321030df0f95787d6601e"
+      },
+      "source": {
+        "path": "manual-length-0-v5.pine",
+        "sha256": "b99924459c6c16d882d1d55cb81d60ee81c8a3cf60d49c0d7cdefed264cbfe10"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-0-v6.expected.json",
+        "sha256": "49b212d99d4c22e2725efe8efa6252741f9108a69294aa11639e94c0c198d3dc"
+      },
+      "id": "manual-length-0-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-length-0-v6.settings.json",
+        "sha256": "2af2d9102973774fb1766671394ec568bef1aea02a76befe27faf3c87e4f6aca"
+      },
+      "source": {
+        "path": "manual-length-0-v6.pine",
+        "sha256": "1964ae70cc73c5976123f895c25e06a0cac7f2d9b9c73c514c36a2a470dc208b"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-1-v5.expected.json",
+        "sha256": "e7038cdcaf629df13290bfbefb5ada91978182d57bbf0af5fb7b78efc98d231b"
+      },
+      "id": "manual-length-1-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-length-1-v5.settings.json",
+        "sha256": "dc74380a38aff102b481f0abd877ca4a63c154a830f9d4d38d0608ca99a01ffa"
+      },
+      "source": {
+        "path": "manual-length-1-v5.pine",
+        "sha256": "a394dd987afe4b89687385cf466abcc1a109f0d2aa0455704e95d7221234b4a5"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-1-v6.expected.json",
+        "sha256": "e7038cdcaf629df13290bfbefb5ada91978182d57bbf0af5fb7b78efc98d231b"
+      },
+      "id": "manual-length-1-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-length-1-v6.settings.json",
+        "sha256": "b261a4e89985a02d30cd79cbc0dd09214d08af053c484ab71ad13d51e5a13ad3"
+      },
+      "source": {
+        "path": "manual-length-1-v6.pine",
+        "sha256": "f4e7389a228fa018752adc8fa136d3cf14de52ce452ad153e316fdba09cac5d6"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-2-v5.expected.json",
+        "sha256": "f8d717b899415d828fef1c4f1e918303b6bbd141850e2824c80fb9dc928f9c90"
+      },
+      "id": "manual-length-2-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-length-2-v5.settings.json",
+        "sha256": "022bf2c7bc86db84ce5919c897159d123823ebed86e4306ddc4a56bb3ce986cb"
+      },
+      "source": {
+        "path": "manual-length-2-v5.pine",
+        "sha256": "f14f04725a03b2e1d3d923e7c6e9c4247697ddbf3a4054736dc56e9417093ef6"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-2-v6.expected.json",
+        "sha256": "f8d717b899415d828fef1c4f1e918303b6bbd141850e2824c80fb9dc928f9c90"
+      },
+      "id": "manual-length-2-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-length-2-v6.settings.json",
+        "sha256": "ec4b9d9be03ef722ca879d65456b751cc35c5ad5f86bede563bf63c1b5612fef"
+      },
+      "source": {
+        "path": "manual-length-2-v6.pine",
+        "sha256": "49684f8852bf07578c04d1545d4500aea8cdf5699aba64f5cb650caee96bc527"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-3-v5.expected.json",
+        "sha256": "f8d717b899415d828fef1c4f1e918303b6bbd141850e2824c80fb9dc928f9c90"
+      },
+      "id": "manual-length-3-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-3. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-length-3-v5.settings.json",
+        "sha256": "2483a143e0e5ffe2971e37d8a706844a8f18c90380b1869e7ab348d1f9e8718a"
+      },
+      "source": {
+        "path": "manual-length-3-v5.pine",
+        "sha256": "983e169285ca32124ff86446bf77425b2827b5d41e03e87521eb51d51ee2d217"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-3-v6.expected.json",
+        "sha256": "f8d717b899415d828fef1c4f1e918303b6bbd141850e2824c80fb9dc928f9c90"
+      },
+      "id": "manual-length-3-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-3. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-length-3-v6.settings.json",
+        "sha256": "42c677010ad3ff4346a3ec51e8bf57a2458705bfb4aa94eeb4d0dd40111da051"
+      },
+      "source": {
+        "path": "manual-length-3-v6.pine",
+        "sha256": "0f0cfde3834fd7db44d14da7f94467b43cf5d7e21138a2c5cf5b9e195a8711c0"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-4-v5.expected.json",
+        "sha256": "97e5d4e7b2e0e677058d85ef31ab242174b98b315f24c6f6c2d932ce12624127"
+      },
+      "id": "manual-length-4-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-4. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-length-4-v5.settings.json",
+        "sha256": "d7c41d738ef8846f4149680c5ea39ea6b7506e5fcb713e2845df70bab20d53c4"
+      },
+      "source": {
+        "path": "manual-length-4-v5.pine",
+        "sha256": "f6752aba91b633b3d5ff0bf1a5e3e096b44da6cd59fff3fea15ff8d5d8585d66"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-length-4-v6.expected.json",
+        "sha256": "97e5d4e7b2e0e677058d85ef31ab242174b98b315f24c6f6c2d932ce12624127"
+      },
+      "id": "manual-length-4-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row length-4. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-length-4-v6.settings.json",
+        "sha256": "a2e6fa82d504ae5266f4e67199291de3b09e342e41f98fbb0d7ed1ea63acf529"
+      },
+      "source": {
+        "path": "manual-length-4-v6.pine",
+        "sha256": "42074dbd2dbcdf443300ed0ef2795a7cd7f5bb57f9e3ad92ac393c3770dba0b3"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-upper-0-v5.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-upper-0-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row upper-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-upper-0-v5.settings.json",
+        "sha256": "7cb7022f330a9655cb12296b0e4cd1c990481a8085dc512f1db6e475d193136a"
+      },
+      "source": {
+        "path": "manual-upper-0-v5.pine",
+        "sha256": "19db042f45cd3e67957d90fa9df3fffd4bf3982de1e49984d90d2a5ee5a01311"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-upper-0-v6.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-upper-0-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row upper-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-upper-0-v6.settings.json",
+        "sha256": "c689ae625c063a3cf7938b1230f65fb6dee89678638d3c1433cbe5ff76d180f0"
+      },
+      "source": {
+        "path": "manual-upper-0-v6.pine",
+        "sha256": "4530efa580e1bab6f4c56694451279c3515c2b4eb52ba0b1187ac50030246461"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-upper-1-v5.expected.json",
+        "sha256": "f96e42883c609158e44a30caf16ece3dfde88f07a3c3b7dd8582d7a8cc14b34b"
+      },
+      "id": "manual-upper-1-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row upper-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-upper-1-v5.settings.json",
+        "sha256": "bdee9da8f6486020bbd5945d5baa5ca754964ea93ddb8169018d4fe64c3ca6fc"
+      },
+      "source": {
+        "path": "manual-upper-1-v5.pine",
+        "sha256": "40d13059eb958707166507325410fa99d4c0c1976bc37683cca639acd29454df"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-upper-1-v6.expected.json",
+        "sha256": "f96e42883c609158e44a30caf16ece3dfde88f07a3c3b7dd8582d7a8cc14b34b"
+      },
+      "id": "manual-upper-1-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row upper-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-upper-1-v6.settings.json",
+        "sha256": "743f8f7d9bbe630ab2ac85dc1eeebbf221e7c00cea68ca0fc1610d8db2b4b000"
+      },
+      "source": {
+        "path": "manual-upper-1-v6.pine",
+        "sha256": "8f623707b54eea78d96e6f1d0263b0aefff594d730f3754d8ffa9c4d27793a62"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-upper-2-v5.expected.json",
+        "sha256": "3035dce8a9d48c2efe141b669b1d86ba87169553050bb07bde21e05f2bfbd7d6"
+      },
+      "id": "manual-upper-2-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row upper-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-upper-2-v5.settings.json",
+        "sha256": "eba0a5301c14f3d2e786c130a026cd43f5644f3fb0aa6d0bc36731b9231cbce9"
+      },
+      "source": {
+        "path": "manual-upper-2-v5.pine",
+        "sha256": "63e56a108b9b899f10888279fddcd153ee68bd20e543c8488971388a4fdc4502"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-upper-2-v6.expected.json",
+        "sha256": "3035dce8a9d48c2efe141b669b1d86ba87169553050bb07bde21e05f2bfbd7d6"
+      },
+      "id": "manual-upper-2-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row upper-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-upper-2-v6.settings.json",
+        "sha256": "21941cb9f76d26c8f8bac78367623a0fd51ff1f5100d28d1ead77af2407920d3"
+      },
+      "source": {
+        "path": "manual-upper-2-v6.pine",
+        "sha256": "96d0d65889a75a816838a3d3edcbc2552ed67d21a64df2b17a3687605c3c4aa3"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-lower-0-v5.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-lower-0-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row lower-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-lower-0-v5.settings.json",
+        "sha256": "7683c79115f56d18ecbf2bf67eb49bff5b320a3c2c44fa2bf7bc6ba828d4bc18"
+      },
+      "source": {
+        "path": "manual-lower-0-v5.pine",
+        "sha256": "b4c0a386b316df611937622dc1498a9bd4b8ed7edff35ba4205f08733817cb09"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-lower-0-v6.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-lower-0-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row lower-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-lower-0-v6.settings.json",
+        "sha256": "9b36b9bf1da492c1f47d6ce2d51923cdee64963142fad5c19961c9c281c3048c"
+      },
+      "source": {
+        "path": "manual-lower-0-v6.pine",
+        "sha256": "a1df03f4911df3d9ea459521bdd97b14259db2465b6846559893e265cd0a9817"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-lower-1-v5.expected.json",
+        "sha256": "7bcede7ac19b3e7084763839bd4478d6fac425e98cbb9073304c5a13cee5729e"
+      },
+      "id": "manual-lower-1-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row lower-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-lower-1-v5.settings.json",
+        "sha256": "e7793f1bd07ee678260f552d6905221e398ea4c1b5e28d83e4c7403ee1094c13"
+      },
+      "source": {
+        "path": "manual-lower-1-v5.pine",
+        "sha256": "0d1b33a24e14b19643d60ae8bf0bf12ad19654a1a1db2bd78414878020ae082a"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-lower-1-v6.expected.json",
+        "sha256": "7bcede7ac19b3e7084763839bd4478d6fac425e98cbb9073304c5a13cee5729e"
+      },
+      "id": "manual-lower-1-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row lower-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-lower-1-v6.settings.json",
+        "sha256": "8722f84022a46b24175aa57f62587db77fc2eee117ebc896283270c849db61fa"
+      },
+      "source": {
+        "path": "manual-lower-1-v6.pine",
+        "sha256": "93e1742c75dc0dc4505dd261fc2d4f2f5b5c9dcff6a65b182f53f8686e35bbca"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-lower-2-v5.expected.json",
+        "sha256": "e7d8836a970f2452b08d7b36e17b8dfb4166a0dbb8f63b8ae4b876a3035b0229"
+      },
+      "id": "manual-lower-2-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row lower-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-lower-2-v5.settings.json",
+        "sha256": "b96d2b66433722e6856d0536e84e1303de698cc0538e5d3ddfe65c8a27d624ed"
+      },
+      "source": {
+        "path": "manual-lower-2-v5.pine",
+        "sha256": "14010372a02f4800941e5f6d0d2630ef307cf995d17ccce9690a039544864af4"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-lower-2-v6.expected.json",
+        "sha256": "e7d8836a970f2452b08d7b36e17b8dfb4166a0dbb8f63b8ae4b876a3035b0229"
+      },
+      "id": "manual-lower-2-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row lower-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-lower-2-v6.settings.json",
+        "sha256": "b61f16a5a8d804eac1494865600ab60153de9ed416ddd5de7e3e9c77d217e1df"
+      },
+      "source": {
+        "path": "manual-lower-2-v6.pine",
+        "sha256": "c80c2afa14ab9f0a1c7417cc9707cc19a64d951b6675fcf189c4f791a388821f"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-0-v5.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-trim-0-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-trim-0-v5.settings.json",
+        "sha256": "18f26a1f5c438bc07c4949a4e81745406cf7fc57f3efdc8252481d7da6cf8f83"
+      },
+      "source": {
+        "path": "manual-trim-0-v5.pine",
+        "sha256": "670516440fe072b9dbe4d9fafc2861bcf08155963dd535123ecd591a9ebcdd16"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-0-v6.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-trim-0-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-trim-0-v6.settings.json",
+        "sha256": "9ed629cc9a21fd51dd985fbdad781cf353684f9da857a29966d0fb7319694b86"
+      },
+      "source": {
+        "path": "manual-trim-0-v6.pine",
+        "sha256": "2ac98acab907297ff7986269989cd65a6a04e9836b8f4c5c01946e36cd9bad1c"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-1-v5.expected.json",
+        "sha256": "9dd49fac018b2e20db845688551724a54bdcbd2345c6d1ffb1b680aca128d733"
+      },
+      "id": "manual-trim-1-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-trim-1-v5.settings.json",
+        "sha256": "5230aa8e2c216533ac22f12510837390516bc4782a78a6cc84ff172cdeb41b16"
+      },
+      "source": {
+        "path": "manual-trim-1-v5.pine",
+        "sha256": "84323b8a171751d9a6c9538be33536dfa75b962310de1acd1faf993f03893fb2"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-1-v6.expected.json",
+        "sha256": "9dd49fac018b2e20db845688551724a54bdcbd2345c6d1ffb1b680aca128d733"
+      },
+      "id": "manual-trim-1-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-trim-1-v6.settings.json",
+        "sha256": "997b87a325148abc63b7aa0b592168418db7e4d34178db4c666174cf8121475e"
+      },
+      "source": {
+        "path": "manual-trim-1-v6.pine",
+        "sha256": "bfd887919b0c793402791ea29597e385b93862c190352c4a0e5f0210ac02f438"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-2-v5.expected.json",
+        "sha256": "9dd49fac018b2e20db845688551724a54bdcbd2345c6d1ffb1b680aca128d733"
+      },
+      "id": "manual-trim-2-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-trim-2-v5.settings.json",
+        "sha256": "97d7b11be447d34c848c35da09adb58fab4159209aeeeeb51db586ccad3dd903"
+      },
+      "source": {
+        "path": "manual-trim-2-v5.pine",
+        "sha256": "9613f9b1b07d1378c65e565df460c50a10e8953ff29391da25d24d83edaebd84"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-2-v6.expected.json",
+        "sha256": "9dd49fac018b2e20db845688551724a54bdcbd2345c6d1ffb1b680aca128d733"
+      },
+      "id": "manual-trim-2-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-trim-2-v6.settings.json",
+        "sha256": "9a86a5dac61387cd23ac2baaeef4845eef0a72e7570ea258410a9517696318d4"
+      },
+      "source": {
+        "path": "manual-trim-2-v6.pine",
+        "sha256": "763a4b7fe2bd534619ce07fad8c56eb93d02790d15aa2bf600ccde3e0ca223dd"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-3-v5.expected.json",
+        "sha256": "bcbec863b6da5540beb3d9603202afb5b9c255720e72b2e074bf9c6d9adece46"
+      },
+      "id": "manual-trim-3-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-3. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-trim-3-v5.settings.json",
+        "sha256": "aab045601e1171a2268895a59158207f86e6a8328368282372ea9b1fe35e679a"
+      },
+      "source": {
+        "path": "manual-trim-3-v5.pine",
+        "sha256": "6fb34e8432f2ab2e0bddbde1f9851fd4b433b2858a087aa0904461c02a7a11bc"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-3-v6.expected.json",
+        "sha256": "bcbec863b6da5540beb3d9603202afb5b9c255720e72b2e074bf9c6d9adece46"
+      },
+      "id": "manual-trim-3-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-3. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-trim-3-v6.settings.json",
+        "sha256": "9b130ecbc95635e9d593e13eae795c7090fec96e31bb3ef55f5dcd9e7250fdac"
+      },
+      "source": {
+        "path": "manual-trim-3-v6.pine",
+        "sha256": "a13cc9ace76683e95b1ec9cc132308e74ad08b05f9c7108eeb255b01eb2c231f"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-4-v5.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-trim-4-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-4. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-trim-4-v5.settings.json",
+        "sha256": "09923b52bdbf40f8c6d4fe7d10c5a3897d4a25c3fb87284772e340f5fbd4925a"
+      },
+      "source": {
+        "path": "manual-trim-4-v5.pine",
+        "sha256": "8475ff73915dbe4a7f07e79fcf3ab18611ff9e4b95fe1390dffebcb7b7669214"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-4-v6.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "manual-trim-4-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-4. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-trim-4-v6.settings.json",
+        "sha256": "399e19c4aeb6110e2f6ec71b4b40ded3972d2435628db4f87d8bd375c7ae7bea"
+      },
+      "source": {
+        "path": "manual-trim-4-v6.pine",
+        "sha256": "ca3b089a57a834ce71b102ccaf8f37f0366e7f9d9f6cee0e65f52ebd0efd4947"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-0-v5.expected.json",
+        "sha256": "65ac3570fcf6d1b34ca8005332971f51d6735fd43aa66ce0dc4ef1b078051302"
+      },
+      "id": "manual-tonumber-0-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-0-v5.settings.json",
+        "sha256": "bf591506913220481f29ae02f7dff532d5fe41fd30828f7647e6c7c295d5bb78"
+      },
+      "source": {
+        "path": "manual-tonumber-0-v5.pine",
+        "sha256": "e5cb521de7f9f68663d11592d3a86e859409f2fb4ff5cadef7be184aaf35aad1"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-0-v6.expected.json",
+        "sha256": "65ac3570fcf6d1b34ca8005332971f51d6735fd43aa66ce0dc4ef1b078051302"
+      },
+      "id": "manual-tonumber-0-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-0-v6.settings.json",
+        "sha256": "076def301b7071a0e088f35f41c84cc0d3d8df484b67eccebdb97d4ac8eeb07a"
+      },
+      "source": {
+        "path": "manual-tonumber-0-v6.pine",
+        "sha256": "843ec8d8e1aefbe3d4a9423cba0485f4d98b3101df1b544b8186718c91d34ced"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-1-v5.expected.json",
+        "sha256": "a3317546b8a40566db2a7cd501211f1403b74fb3a06c9dde56d67e955c4a9fc8"
+      },
+      "id": "manual-tonumber-1-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-1-v5.settings.json",
+        "sha256": "80db96dd4a021ba872ea44d96ac5805ee2b9237da4289bb000284ebc1449d796"
+      },
+      "source": {
+        "path": "manual-tonumber-1-v5.pine",
+        "sha256": "90c4e334b26efceaa71b5f6f064c789217fdb2fe7252958362ccc3559c95e186"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-1-v6.expected.json",
+        "sha256": "a3317546b8a40566db2a7cd501211f1403b74fb3a06c9dde56d67e955c4a9fc8"
+      },
+      "id": "manual-tonumber-1-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-1-v6.settings.json",
+        "sha256": "36e67e4da55d8d5fd3f62b9e423a69288ae6fc6656d884d19beeb3902465c0cb"
+      },
+      "source": {
+        "path": "manual-tonumber-1-v6.pine",
+        "sha256": "495da8b116f9d3fa367cd7f07469c1a1ad638fef7947bf4274a8e09a4cb23247"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-2-v5.expected.json",
+        "sha256": "f8e93d3a383e91063e251b6b0a8fa55afcab0b4596945de644cd89801e7261ab"
+      },
+      "id": "manual-tonumber-2-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-2-v5.settings.json",
+        "sha256": "7ca38a115964bcc5cee2cfc9a0683df5e9943d216f92548707f8ecf17ecb1fc9"
+      },
+      "source": {
+        "path": "manual-tonumber-2-v5.pine",
+        "sha256": "3007e33892e0211ddda50e8b258b464b65dbed9a5706aa263d444d1ff3547021"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-2-v6.expected.json",
+        "sha256": "f8e93d3a383e91063e251b6b0a8fa55afcab0b4596945de644cd89801e7261ab"
+      },
+      "id": "manual-tonumber-2-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-2-v6.settings.json",
+        "sha256": "de648a176c4a05ec720ecc0845cd5e0b933185281426b42e75fe656a603c8b59"
+      },
+      "source": {
+        "path": "manual-tonumber-2-v6.pine",
+        "sha256": "6255ebfde59f82153987a54fe6d08d3354401d6de426c47474e13afdf9401eb7"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-3-v5.expected.json",
+        "sha256": "a4d387bd89786e1364811b1bc19dfdd85b1ceccccfa62d71dc5b61094718e9c5"
+      },
+      "id": "manual-tonumber-3-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-3. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-3-v5.settings.json",
+        "sha256": "abf40819bb3b9ad25c14b1286901156ad8cc2d8d7e50d0c23ccc1646fc8c041f"
+      },
+      "source": {
+        "path": "manual-tonumber-3-v5.pine",
+        "sha256": "a8a9580d18b6a99e4eedc5ab9cca381c7f4895498e0952f6f2d59b8a60c758d2"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-3-v6.expected.json",
+        "sha256": "a4d387bd89786e1364811b1bc19dfdd85b1ceccccfa62d71dc5b61094718e9c5"
+      },
+      "id": "manual-tonumber-3-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-3. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-3-v6.settings.json",
+        "sha256": "d0c4639ed3acf5343b846e4b7dfef0dabc93fb86f86f8c0f5d6b8205976afd21"
+      },
+      "source": {
+        "path": "manual-tonumber-3-v6.pine",
+        "sha256": "cc5d41621d550c11fdc66e669440a30b3110784376a213942569e5465f59da28"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-4-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-4-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-4. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-4-v5.settings.json",
+        "sha256": "e2cb891fbb1d49d14d0716ec72eee6605f10c4065944b547a7a74c3b673d9c44"
+      },
+      "source": {
+        "path": "manual-tonumber-4-v5.pine",
+        "sha256": "4d53aa07d76120ce7bb7c6262d37547e798237b685ea6e8a9ba917c126eaa0e5"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-4-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-4-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-4. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-4-v6.settings.json",
+        "sha256": "488217375cf3e343de049276a8b6968d5f38ce692e10965385624b642d19ece1"
+      },
+      "source": {
+        "path": "manual-tonumber-4-v6.pine",
+        "sha256": "17cec6b3962a99514b989d1ccbe891a67b8d32c210ce2442222f7c3eaad7b17c"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-5-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-5-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-5. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-5-v5.settings.json",
+        "sha256": "ab5a3d43ee20bf24591561e45b6c5ec29f86fd573d04bd11ead0d77ec6265065"
+      },
+      "source": {
+        "path": "manual-tonumber-5-v5.pine",
+        "sha256": "e12e496994f0bf62d5362c42ca92cd3d291096f4b463c5a2662b53b198e72180"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-5-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-5-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-5. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-5-v6.settings.json",
+        "sha256": "ab1a75ff62c64cca856537e0014dfc2803f64b76beb24a45f981e55307fd2a14"
+      },
+      "source": {
+        "path": "manual-tonumber-5-v6.pine",
+        "sha256": "83c911ecbc014864e4d1f143658219a72917278862d62d3c6a3e15f57a213a97"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-6-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-6-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-6. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-6-v5.settings.json",
+        "sha256": "9c4f26ad30be2588ba0434e7ea2497978d9d87411d160926bf28e51e387d90f3"
+      },
+      "source": {
+        "path": "manual-tonumber-6-v5.pine",
+        "sha256": "ecfd55573eaf6e1336e62ef835b21e6d5fa2f983da3661ecd184f9a39ed21d4d"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-6-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-6-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-6. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-6-v6.settings.json",
+        "sha256": "b7022bccbbebe4b30d92cc9b23fa240c65dddb5ccdd16d125768978d5b15d93e"
+      },
+      "source": {
+        "path": "manual-tonumber-6-v6.pine",
+        "sha256": "00ef3a50d0a9b05de22adbb0f0d94e3e7153b3d3dd6dfae6cb1363584e48bb22"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-7-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-7-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-7. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-7-v5.settings.json",
+        "sha256": "fab7e8eb3b50f3b8c6e63084fb1e4bcdf8f1bc47ba240c7e2ee16fb114d904af"
+      },
+      "source": {
+        "path": "manual-tonumber-7-v5.pine",
+        "sha256": "373d1ff91c7f2322f0865359c3049d760f3e61abcaa743a5fb99524c3f66891f"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-7-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-7-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-7. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-7-v6.settings.json",
+        "sha256": "b00dbaea4206832fc0460457c94af6628c1b8374e556e4e7ce7eb94d698fef50"
+      },
+      "source": {
+        "path": "manual-tonumber-7-v6.pine",
+        "sha256": "27c7b1738a790c2db89f7a9ed1e0a19931fd407f09f12c3f3505227c157698c6"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-8-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-8-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-8. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-8-v5.settings.json",
+        "sha256": "798026000bd41e7aff9cc487d4594e302f0a5a1fe8aac35ffe6e90440ad4829d"
+      },
+      "source": {
+        "path": "manual-tonumber-8-v5.pine",
+        "sha256": "d2a13b22c1b618a3562fe948543f49eb98755e20df3ddb3aacdc511aa77568f3"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-8-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-8-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-8. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-8-v6.settings.json",
+        "sha256": "ca1b3607b7617f0c258f34262f3fa52979cff3f22caa187a036b109fd8e7ade6"
+      },
+      "source": {
+        "path": "manual-tonumber-8-v6.pine",
+        "sha256": "7dd0fd89bb3de9dc26f461d5580fbe662f9bf6175e0a56463023a4e477ecb3f8"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-9-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-9-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-9. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-9-v5.settings.json",
+        "sha256": "eb6d63b820775f05f7e766dbcc3093c2754c0a3672af56fa11e6e47cfe6153d9"
+      },
+      "source": {
+        "path": "manual-tonumber-9-v5.pine",
+        "sha256": "40b8a505c1c514f2f5ceeb5143d6ccc13f5b6eee6d2da0b2c26454fd7aaad862"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-9-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-9-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-9. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-9-v6.settings.json",
+        "sha256": "bb0f8b7c30b62906728e9d4ace026a8855f0c13f273b9542758db05d1d20cc77"
+      },
+      "source": {
+        "path": "manual-tonumber-9-v6.pine",
+        "sha256": "ca2e5ef996a92959ea802b8b78c36d8e70470c8eaf241ffe8f3d0b44347a11f8"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-10-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-10-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-10. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-10-v5.settings.json",
+        "sha256": "d314560d9258448f814ea41177cb5cbfc894a0a9b5c4992c1535d4f4409bf52d"
+      },
+      "source": {
+        "path": "manual-tonumber-10-v5.pine",
+        "sha256": "7aec0a67c2d2b0e92392ce381552e341c6feae937f8adb8d13892097d98507d3"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-10-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-10-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-10. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-10-v6.settings.json",
+        "sha256": "2452bd6c6cef2c9489fc81db692a4bde6a1d2e6817026c5e70ddcc1ae830ff24"
+      },
+      "source": {
+        "path": "manual-tonumber-10-v6.pine",
+        "sha256": "77023f5badb3875b66c3bb5c440d476df35ea9aaa6c9204fab2f7ee97d4a415e"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-11-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-11-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-11. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-11-v5.settings.json",
+        "sha256": "d404cd9d303c6ae259bb3408124cacae5b4b71d972f64ee16efc9f698bdab348"
+      },
+      "source": {
+        "path": "manual-tonumber-11-v5.pine",
+        "sha256": "40c0356aeac32a772d8b0e53080634e9a303383980633e6f3fc2c6f1977791e7"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-11-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-11-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-11. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-11-v6.settings.json",
+        "sha256": "6827717e1b9f3233a5a97b57e89db15ed79e204860e88be156be84d57f7b7a59"
+      },
+      "source": {
+        "path": "manual-tonumber-11-v6.pine",
+        "sha256": "48d3a951d69ec47e5c1cbf4264c474a6765d85e3b1874065270bd69cd9d6aa58"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-12-v5.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-12-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-12. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "manual-tonumber-12-v5.settings.json",
+        "sha256": "29a6ab951f618ec8b35a5f396564bb989ccafb5aa7c33ca095ebeab68df99a91"
+      },
+      "source": {
+        "path": "manual-tonumber-12-v5.pine",
+        "sha256": "976f569fe47cdea31ab488ab4a575e30e3dfdf2017b641250df9445d6b14abb2"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-12-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-12-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-12. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-12-v6.settings.json",
+        "sha256": "31e803bbfce909358931a73be55add5eadc3bc30ec8d10d06b7d3d2f7a9bad8f"
+      },
+      "source": {
+        "path": "manual-tonumber-12-v6.pine",
+        "sha256": "7c47b06fcc92121da8a58f7af6c157a3163a024b685b3ac2f4951adbe552121b"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-upper-nonascii-v6.expected.json",
+        "sha256": "709875e6fa97d7eb0712635706faf837552b9155058f4d8103eeb72803b943b2"
+      },
+      "id": "manual-upper-nonascii-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row upper-nonascii. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-upper-nonascii-v6.settings.json",
+        "sha256": "037f2f436d7c25b22e9539cdecda54c0dacec1902b4af04382f61cba96eb3c5d"
+      },
+      "source": {
+        "path": "manual-upper-nonascii-v6.pine",
+        "sha256": "d590a0b3c9fe38b18d8ab041621de50cc06cae07d52c0a59cabd0210819c8dcf"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-lower-nonascii-v6.expected.json",
+        "sha256": "fd241118095b0af89f94db091b07ecf1dea96371e663db00140b8f839264e29c"
+      },
+      "id": "manual-lower-nonascii-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row lower-nonascii. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-lower-nonascii-v6.settings.json",
+        "sha256": "5657861697415e294e0e278445db696cfeb7585dc42fae6085f35776eea9845d"
+      },
+      "source": {
+        "path": "manual-lower-nonascii-v6.pine",
+        "sha256": "5eebac8705f023d3f4191f8be76adbaa7f2bbe05692c92d8ffddc638e011fff5"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-trim-nonascii-v6.expected.json",
+        "sha256": "8a2f939f85aaabedca22e8b7e154063aedfa9f7905c6d8e41d4b491b769d721f"
+      },
+      "id": "manual-trim-nonascii-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row trim-nonascii. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-trim-nonascii-v6.settings.json",
+        "sha256": "d65a4962b6620148fe57f579851b992b4cf4740c04187fc5f5d3a83e20c51c70"
+      },
+      "source": {
+        "path": "manual-trim-nonascii-v6.pine",
+        "sha256": "a0b4e1ef1b15522df81692926b3f8af06979bcaefcbd66885c535f32036427a3"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-nonascii-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-nonascii-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-nonascii. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-nonascii-v6.settings.json",
+        "sha256": "c75a5bf0fc031acfd53cd506777004e74eaabfc6f9f2c5b6658676c121ae9b25"
+      },
+      "source": {
+        "path": "manual-tonumber-nonascii-v6.pine",
+        "sha256": "b0264f9bfa0407732ee2a8bc07d3baab407edfb01cef23e4ac4df0959c9b841f"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "manual-tonumber-fullwidth-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "manual-tonumber-fullwidth-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac, section rows, row tonumber-fullwidth. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "manual-tonumber-fullwidth-v6.settings.json",
+        "sha256": "11f70a49361de1e3a8c39eb1bf271ab7c4c1bc157db837d3d868b1838d5c629f"
+      },
+      "source": {
+        "path": "manual-tonumber-fullwidth-v6.pine",
+        "sha256": "bd90d5384bea8cfb5704521fd03d5319aa6fa23be9fb97270f149ad82c84fd96"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-0-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-0-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-0-v6.settings.json",
+        "sha256": "230a30846942ac7942e63a2e4a667075b6de1944cad5c1e080e531369681903b"
+      },
+      "source": {
+        "path": "supplement-extra-0-v6.pine",
+        "sha256": "74a949979c96c682e832445868879c3f2c22c6d3e7da74e72237349f60e09981"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-1-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-1-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-1-v6.settings.json",
+        "sha256": "03d1b617e3419b28b987e73da6306b7c67d2e7a2d07e1650daddbee795708972"
+      },
+      "source": {
+        "path": "supplement-extra-1-v6.pine",
+        "sha256": "1ac74687c7be20296db6d6fe3c31ebdd18e9879b5634bdf5bd7c31c7076311c9"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-2-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-2-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 2. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-2-v6.settings.json",
+        "sha256": "d883c6690d41e7663f30774b9e52bddca802f829fbe000eabdd33e862d153906"
+      },
+      "source": {
+        "path": "supplement-extra-2-v6.pine",
+        "sha256": "8e7e78f7e3e9198c4d2606cc83424b240945e36b00d0be80ebbd5b5471f3f0ec"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-3-v6.expected.json",
+        "sha256": "b179f36c7cad367a6d395e2a026a3fd07912bd70fdb3d0de5edbe3777ff293cf"
+      },
+      "id": "supplement-extra-3-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 3. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-3-v6.settings.json",
+        "sha256": "a0a2bfeccaadda956b14e90fb8f50144a0736f6dc3ecabfa1b4535a6b34a0257"
+      },
+      "source": {
+        "path": "supplement-extra-3-v6.pine",
+        "sha256": "b79c463811aaea442648eb7a198d3e3e073e8af8a510e7c33c575596a91128c6"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-4-v6.expected.json",
+        "sha256": "8618886751e1577bcd6dc354d356152c9acfc55e083e341742b3f1dcf8fa4a6c"
+      },
+      "id": "supplement-extra-4-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 4. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-4-v6.settings.json",
+        "sha256": "cf6c9ae96f370b21580df53d5daf3be7367b28817e751afa5936c587822f3561"
+      },
+      "source": {
+        "path": "supplement-extra-4-v6.pine",
+        "sha256": "8c6917f7a2406a26b3b10e0013683e696d751c7b926492e165d1edf11a830d34"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-5-v6.expected.json",
+        "sha256": "a4d387bd89786e1364811b1bc19dfdd85b1ceccccfa62d71dc5b61094718e9c5"
+      },
+      "id": "supplement-extra-5-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 5. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-5-v6.settings.json",
+        "sha256": "1ebd92b927f0b6307bbd976f1602052231960bd212fb3b6b43fd49676c85ea1c"
+      },
+      "source": {
+        "path": "supplement-extra-5-v6.pine",
+        "sha256": "b02ed6358697922a3460aad04ea077bad8acd21f0f6c1b9fa3c1eff8a24f3b25"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-6-v6.expected.json",
+        "sha256": "b179f36c7cad367a6d395e2a026a3fd07912bd70fdb3d0de5edbe3777ff293cf"
+      },
+      "id": "supplement-extra-6-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 6. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-6-v6.settings.json",
+        "sha256": "b68a50a06c7c12ceb49db3aa8e175bd479cbe07b0d54edab8f81258b6b8bab91"
+      },
+      "source": {
+        "path": "supplement-extra-6-v6.pine",
+        "sha256": "8f317da3dff1452351b7a9a76f1c78474d98b9577dfa0b5ee702a43ca3e4512f"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-7-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-7-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 7. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-7-v6.settings.json",
+        "sha256": "d8c5c6273f1d044e2e691857de3f0fcc2daee23238c20de63609de3a0119c1d4"
+      },
+      "source": {
+        "path": "supplement-extra-7-v6.pine",
+        "sha256": "9030d954a7579a76fe8adc1d7ecf1692596265034d6d82262790c82077638c82"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-8-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-8-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 8. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-8-v6.settings.json",
+        "sha256": "b1bcfb7777c8dd6a9d39adbec217d1f75fff6e78adf2ba15ffaa89020fefdb48"
+      },
+      "source": {
+        "path": "supplement-extra-8-v6.pine",
+        "sha256": "f3861e15bf301564d491bd71009815573f5a040a64b664f123d76887e4b30495"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-9-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-9-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 9. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-9-v6.settings.json",
+        "sha256": "a292750e8b2ec3188d7d3e85908867b560b326fc01552f26a6466ac4fd288eb2"
+      },
+      "source": {
+        "path": "supplement-extra-9-v6.pine",
+        "sha256": "1369b8dd46b0ba4ba87eb3875e3c5ed25e849ad6a36ae78254b0bde7365f3092"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-10-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-10-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 10. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-10-v6.settings.json",
+        "sha256": "f9bd8841634df89da76d8749deb869066b021806f20226a01865174d73d85a5f"
+      },
+      "source": {
+        "path": "supplement-extra-10-v6.pine",
+        "sha256": "7a2ad334e4535e0b65843aaa816a87e4e252ba43a6d515cf75b01aa09f464b1c"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-11-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-11-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 11. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-11-v6.settings.json",
+        "sha256": "3fa8a051f65e7526ff999cdae6a4a50dde58032e366d37b9fc9e8dadc3ec6923"
+      },
+      "source": {
+        "path": "supplement-extra-11-v6.pine",
+        "sha256": "ea26324481759d19339dcd55b80db81c653b8bc6714143b49b018fe112bf2d3e"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-12-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-12-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 12. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-12-v6.settings.json",
+        "sha256": "b69d41056311517f3110eb7536a64b9166b22e2f28d512b2ee6378c0da10bdb9"
+      },
+      "source": {
+        "path": "supplement-extra-12-v6.pine",
+        "sha256": "14e15073fbe93e767ae568dd578754f1f748053cdae92237962d6cf46b88b2b8"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-13-v6.expected.json",
+        "sha256": "3196f68751bbb4688661b23ca9881ce025e250bd8ec208868a7fe7dda47d54ac"
+      },
+      "id": "supplement-extra-13-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 13. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-13-v6.settings.json",
+        "sha256": "0137fceed34c844171790ccb718890400c06e14e190855aa02d775ecb47ded51"
+      },
+      "source": {
+        "path": "supplement-extra-13-v6.pine",
+        "sha256": "df395f30334223675e1b53bdb8f8c0ae97ae292245b2934ed6a80f776cea3380"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-14-v6.expected.json",
+        "sha256": "48ef5b91aa45d5de82d9a567f636e180bd0042a2a86acb85e20b46b3970c2bc6"
+      },
+      "id": "supplement-extra-14-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 14. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-14-v6.settings.json",
+        "sha256": "208e793b2eccb8505430d5ef45e827b8d416dc07c7778c3a0c88ccea0eb50b37"
+      },
+      "source": {
+        "path": "supplement-extra-14-v6.pine",
+        "sha256": "d45a1c04810e390e5b6c0b1f22fb121fc5087bef377b20b472fb9fc0ea2cfdb0"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-15-v6.expected.json",
+        "sha256": "f592a26d82e5d4d3e85b89f9d5e6d33498c83c438f57d4c71aaf353632472cc2"
+      },
+      "id": "supplement-extra-15-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 15. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-15-v6.settings.json",
+        "sha256": "86c39939ed8e032b353df00c69b73401414a908cbe13d5821cd54ab564db492d"
+      },
+      "source": {
+        "path": "supplement-extra-15-v6.pine",
+        "sha256": "89d604160d2d03ad20b404ba8e9e690b1e207211021012229eefee3ebac74f2d"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-16-v6.expected.json",
+        "sha256": "6b25f8a73867cab9175a58c226449bb4922ddad3e1b861f06d731698a235e7fb"
+      },
+      "id": "supplement-extra-16-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 16. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-16-v6.settings.json",
+        "sha256": "6da3c7fa2a7fb099c8adb054799a0b4efc30b5573975b230190d4cd672f14339"
+      },
+      "source": {
+        "path": "supplement-extra-16-v6.pine",
+        "sha256": "8f9587dcad2c216228b78aa1eb8dc6f1138777e1dcd848762699c80ee0e6a923"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-extra-17-v6.expected.json",
+        "sha256": "b45844a7401f14e26343a83cbb2ed263e8552248f651f492a7e67db453eeadb8"
+      },
+      "id": "supplement-extra-17-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section v6_extra, row 17. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-extra-17-v6.settings.json",
+        "sha256": "3fd81e3e6cc88c6d0f94838bd92357c4c8d1cc83ee837165318fc012c4a143c5"
+      },
+      "source": {
+        "path": "supplement-extra-17-v6.pine",
+        "sha256": "4c9a713ada93b9f82bc86947a071cf35ba30d3d701e2bbe6dd8477906d081925"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-trim-na-v5.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "supplement-trim-na-v5",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section na_trim, row 0. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 5,
+      "settings": {
+        "path": "supplement-trim-na-v5.settings.json",
+        "sha256": "27570aa308f6f299c3357cc3b5ef53fbdf1cfa9b262d2fa9e5c4c001e4da8400"
+      },
+      "source": {
+        "path": "supplement-trim-na-v5.pine",
+        "sha256": "6855525e7a422903657e4020b17dda84a9ad237a577bc603d2b65eb6965d8a4a"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    },
+    {
+      "critical": true,
+      "data": {
+        "path": "string-bars.json",
+        "sha256": "bda4099a0548c5c40e07ccbd35284e55c41ed7003c0ff216f3f0f0532640a846"
+      },
+      "expected": {
+        "path": "supplement-trim-na-v6.expected.json",
+        "sha256": "c620bc0e4e37c5309e66e2ef59687fecd926929571356178b83568a73b4a16a4"
+      },
+      "id": "supplement-trim-na-v6",
+      "layer": "runtime",
+      "oracle": {
+        "kind": "manual_fixture",
+        "provenance": "Original literal table 7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0, section na_trim, row 1. Bar0 is explicit typed declaration initialization; bars1-3 preserve the original operation expectation. Original v5 inference labels are retained separately from numerical agreement. No semantic SUT expected generation or TradingView export."
+      },
+      "pine_version": 6,
+      "settings": {
+        "path": "supplement-trim-na-v6.settings.json",
+        "sha256": "396445bd592eee2b58c30f08ac52ba9c5e28db90c60023c5e049b6ff877b05fd"
+      },
+      "source": {
+        "path": "supplement-trim-na-v6.pine",
+        "sha256": "706e702d335bdbd2fa6025a02db12276bca12e5b695db159f8de5413dfe7b974"
+      },
+      "tolerance": {
+        "absolute": 0,
+        "relative": 0
+      },
+      "weight": 1
+    }
+  ],
+  "content_hash": "sha256:07519ab54055f5d6d6b792058d3db8ba6c4829e6c919487dfbc6a7d6bd23ac76",
+  "profile": "engineering",
+  "revision": 1,
+  "schema_id": "openpine.conformance_corpus.v1"
+}

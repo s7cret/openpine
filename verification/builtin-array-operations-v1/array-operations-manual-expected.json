@@ -1,0 +1,1016 @@
+{
+  "schema_id": "openpine.array_operations_manual_expected.v1",
+  "oracle": "manual_fixture",
+  "sources": [
+    "https://www.tradingview.com/pine-script-docs/v4/essential/arrays/",
+    "https://www.tradingview.com/pine-script-docs/v5/language/arrays/",
+    "https://www.tradingview.com/pine-script-docs/language/arrays/"
+  ],
+  "provenance": "Literal list transitions and positions, authored without executing an implementation. Exact output type matters, including False versus zero.",
+  "scope": "Bounded existing direct operations. Namespace/method version availability must independently match the catalog before assigning cases.",
+  "unverified": [
+    "negative indices",
+    "NA elements and missing array IDs",
+    "invalid/empty removals",
+    "slice resize after parent shrink",
+    "nested/reference element shallow copies",
+    "binary duplicate choice",
+    "complete builtin conformance"
+  ],
+  "existing_search_neighbors_fixture": "array_search_boundaries_manual_expected.json retains its independent 24 cases; do not regenerate it",
+  "tradingview_verified": false,
+  "rows": [
+    {
+      "id": "push-empty",
+      "operation": "push",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [],
+      "arguments": [
+        7
+      ],
+      "after": [
+        7
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "push-existing",
+      "operation": "push",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [
+        9
+      ],
+      "after": [
+        2,
+        4,
+        9
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "pop-existing",
+      "operation": "pop",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [],
+      "after": [
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": 4
+      }
+    },
+    {
+      "id": "pop-singleton",
+      "operation": "pop",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        7
+      ],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "value",
+        "value": 7
+      }
+    },
+    {
+      "id": "shift-existing",
+      "operation": "shift",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [],
+      "after": [
+        4
+      ],
+      "result": {
+        "kind": "value",
+        "value": 2
+      }
+    },
+    {
+      "id": "shift-singleton",
+      "operation": "shift",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        7
+      ],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "value",
+        "value": 7
+      }
+    },
+    {
+      "id": "unshift-empty",
+      "operation": "unshift",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [],
+      "arguments": [
+        7
+      ],
+      "after": [
+        7
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "unshift-existing",
+      "operation": "unshift",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [
+        9
+      ],
+      "after": [
+        9,
+        2,
+        4
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "insert-middle",
+      "operation": "insert",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [
+        1,
+        9
+      ],
+      "after": [
+        2,
+        9,
+        4
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "insert-end",
+      "operation": "insert",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [
+        2,
+        9
+      ],
+      "after": [
+        2,
+        4,
+        9
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "insert-start",
+      "operation": "insert",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [
+        0,
+        9
+      ],
+      "after": [
+        9,
+        2,
+        4
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "remove-middle",
+      "operation": "remove",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        6
+      ],
+      "arguments": [
+        1
+      ],
+      "after": [
+        2,
+        6
+      ],
+      "result": {
+        "kind": "value",
+        "value": 4
+      }
+    },
+    {
+      "id": "remove-singleton",
+      "operation": "remove",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        7
+      ],
+      "arguments": [
+        0
+      ],
+      "after": [],
+      "result": {
+        "kind": "value",
+        "value": 7
+      }
+    },
+    {
+      "id": "clear-existing",
+      "operation": "clear",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "clear-empty",
+      "operation": "clear",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "reverse-duplicates",
+      "operation": "reverse",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        2,
+        9
+      ],
+      "arguments": [],
+      "after": [
+        9,
+        2,
+        4,
+        2
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "reverse-singleton",
+      "operation": "reverse",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        7
+      ],
+      "arguments": [],
+      "after": [
+        7
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "fill-whole",
+      "operation": "fill",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        6
+      ],
+      "arguments": [
+        9
+      ],
+      "after": [
+        9,
+        9,
+        9
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "fill-middle",
+      "operation": "fill",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "arguments": [
+        9,
+        1,
+        3
+      ],
+      "after": [
+        2,
+        9,
+        9,
+        8
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "first",
+      "operation": "first",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [],
+      "after": [
+        2,
+        4
+      ],
+      "result": {
+        "kind": "value",
+        "value": 2
+      }
+    },
+    {
+      "id": "last",
+      "operation": "last",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [],
+      "after": [
+        2,
+        4
+      ],
+      "result": {
+        "kind": "value",
+        "value": 4
+      }
+    },
+    {
+      "id": "size-empty",
+      "operation": "size",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "value",
+        "value": 0
+      }
+    },
+    {
+      "id": "size-existing",
+      "operation": "size",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        6
+      ],
+      "arguments": [],
+      "after": [
+        2,
+        4,
+        6
+      ],
+      "result": {
+        "kind": "value",
+        "value": 3
+      }
+    },
+    {
+      "id": "includes-present",
+      "operation": "includes",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        2
+      ],
+      "arguments": [
+        2
+      ],
+      "after": [
+        2,
+        4,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": true
+      }
+    },
+    {
+      "id": "includes-absent",
+      "operation": "includes",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        2
+      ],
+      "arguments": [
+        9
+      ],
+      "after": [
+        2,
+        4,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": false
+      }
+    },
+    {
+      "id": "includes-empty",
+      "operation": "includes",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [],
+      "arguments": [
+        2
+      ],
+      "after": [],
+      "result": {
+        "kind": "value",
+        "value": false
+      }
+    },
+    {
+      "id": "indexof-duplicates",
+      "operation": "indexof",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        2
+      ],
+      "arguments": [
+        2
+      ],
+      "after": [
+        2,
+        4,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": 0
+      }
+    },
+    {
+      "id": "indexof-absent",
+      "operation": "indexof",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        2
+      ],
+      "arguments": [
+        9
+      ],
+      "after": [
+        2,
+        4,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": -1
+      }
+    },
+    {
+      "id": "lastindexof-duplicates",
+      "operation": "lastindexof",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        2
+      ],
+      "arguments": [
+        2
+      ],
+      "after": [
+        2,
+        4,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": 2
+      }
+    },
+    {
+      "id": "lastindexof-absent",
+      "operation": "lastindexof",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4,
+        2
+      ],
+      "arguments": [
+        9
+      ],
+      "after": [
+        2,
+        4,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": -1
+      }
+    },
+    {
+      "id": "float-pop",
+      "operation": "pop",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "float",
+      "before": [
+        1.5,
+        -2.5
+      ],
+      "arguments": [],
+      "after": [
+        1.5
+      ],
+      "result": {
+        "kind": "value",
+        "value": -2.5
+      }
+    },
+    {
+      "id": "bool-shift",
+      "operation": "shift",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "bool",
+      "before": [
+        false,
+        true
+      ],
+      "arguments": [],
+      "after": [
+        true
+      ],
+      "result": {
+        "kind": "value",
+        "value": false
+      }
+    },
+    {
+      "id": "bool-push",
+      "operation": "push",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "bool",
+      "before": [
+        false
+      ],
+      "arguments": [
+        true
+      ],
+      "after": [
+        false,
+        true
+      ],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "string-pop",
+      "operation": "pop",
+      "versions": [
+        5,
+        6
+      ],
+      "element_type": "string",
+      "before": [
+        "a",
+        "b"
+      ],
+      "arguments": [],
+      "after": [
+        "a"
+      ],
+      "result": {
+        "kind": "value",
+        "value": "b"
+      }
+    },
+    {
+      "id": "string-includes",
+      "operation": "includes",
+      "versions": [
+        5,
+        6
+      ],
+      "element_type": "string",
+      "before": [
+        "a",
+        "b",
+        "a"
+      ],
+      "arguments": [
+        "b"
+      ],
+      "after": [
+        "a",
+        "b",
+        "a"
+      ],
+      "result": {
+        "kind": "value",
+        "value": true
+      }
+    },
+    {
+      "id": "binary-found",
+      "operation": "binary_search",
+      "versions": [
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        1,
+        3,
+        5
+      ],
+      "arguments": [
+        3
+      ],
+      "after": [
+        1,
+        3,
+        5
+      ],
+      "result": {
+        "kind": "value",
+        "value": 1
+      }
+    },
+    {
+      "id": "binary-missing",
+      "operation": "binary_search",
+      "versions": [
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        1,
+        3,
+        5
+      ],
+      "arguments": [
+        4
+      ],
+      "after": [
+        1,
+        3,
+        5
+      ],
+      "result": {
+        "kind": "value",
+        "value": -1
+      }
+    }
+  ],
+  "reference_rows": [
+    {
+      "id": "copy-independent-storage",
+      "operation": "copy",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        2,
+        4
+      ],
+      "arguments": [],
+      "after_create": {
+        "a": [
+          2,
+          4
+        ],
+        "b": [
+          2,
+          4
+        ],
+        "same_id": false
+      },
+      "followups": [
+        {
+          "receiver": "b",
+          "operation": "set",
+          "arguments": [
+            0,
+            9
+          ],
+          "expected": {
+            "a": [
+              2,
+              4
+            ],
+            "b": [
+              9,
+              4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "slice-shared-elements",
+      "operation": "slice",
+      "versions": [
+        4,
+        5,
+        6
+      ],
+      "element_type": "int",
+      "before": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "arguments": [
+        1,
+        3
+      ],
+      "after_create": {
+        "a": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "b": [
+          1,
+          2
+        ],
+        "same_id": false
+      },
+      "followups": [
+        {
+          "receiver": "b",
+          "operation": "set",
+          "arguments": [
+            0,
+            9
+          ],
+          "expected": {
+            "a": [
+              0,
+              9,
+              2,
+              3
+            ],
+            "b": [
+              9,
+              2
+            ]
+          }
+        },
+        {
+          "receiver": "a",
+          "operation": "set",
+          "arguments": [
+            2,
+            8
+          ],
+          "expected": {
+            "a": [
+              0,
+              9,
+              8,
+              3
+            ],
+            "b": [
+              9,
+              8
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

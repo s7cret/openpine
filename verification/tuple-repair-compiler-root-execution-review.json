@@ -1,0 +1,76 @@
+{
+  "status": "UNCHANGED_FULL_COMPILER_EXECUTED_LOCALLY",
+  "rows": [
+    {
+      "python": "311",
+      "total": 1110,
+      "passed": 1109,
+      "failures": [
+        [
+          "tests.test_admission_hardening",
+          "test_path_input_rejects_symlink_before_read"
+        ]
+      ],
+      "errors": 0,
+      "skipped": 0,
+      "old_nodes_retained": 1110,
+      "removed": 0,
+      "original_tuple_regression_passed": true,
+      "initial_harness_failures_preserved": [
+        [
+          "tests.test_release_distribution",
+          "test_release_report_detects_manifest_problems"
+        ],
+        [
+          "tests.test_release_distribution",
+          "test_release_report_rejects_rc5_compatibility_module"
+        ],
+        [
+          "tests.test_release_distribution",
+          "test_release_report_rejects_rc5_environment_and_export_surfaces"
+        ]
+      ],
+      "junit_sha256": "fbcce5fd824633f0135c6b92b51a04a4348a1a8f002cfa657ccbaa085d387605",
+      "initial_junit_sha256": "0ae92fdbc50942d7f990c3b2615e8e4e2ece6a0ad4dd676ecb0f4b6d27719718",
+      "source_receipt_sha256": "a205459ba725bf37a826747d8ac2ba7e320bb8a589cd38994ffc070221da6d4a"
+    },
+    {
+      "python": "313",
+      "total": 1110,
+      "passed": 1109,
+      "failures": [
+        [
+          "tests.test_admission_hardening",
+          "test_path_input_rejects_symlink_before_read"
+        ]
+      ],
+      "errors": 0,
+      "skipped": 0,
+      "old_nodes_retained": 1110,
+      "removed": 0,
+      "original_tuple_regression_passed": true,
+      "initial_harness_failures_preserved": [
+        [
+          "tests.test_release_distribution",
+          "test_release_report_detects_manifest_problems"
+        ],
+        [
+          "tests.test_release_distribution",
+          "test_release_report_rejects_rc5_compatibility_module"
+        ],
+        [
+          "tests.test_release_distribution",
+          "test_release_report_rejects_rc5_environment_and_export_surfaces"
+        ]
+      ],
+      "junit_sha256": "fb624d89dbf2a722cb2b9a6daa2dafdfab512b411d846bd71d62fea209833845",
+      "initial_junit_sha256": "32fe2262766602a8e462c6677a7b1d0c0c82c3a3ffa2f87146aa13c1ef356c98",
+      "source_receipt_sha256": "e74900aeb214503cbf04f0a5b740bf539e6331cb3d94bf685deb6675a1449313"
+    }
+  ],
+  "harness_correction": "Initial basetemp nested inside source caused recursive copytree in three release tests; preserved original runs, repeated full suites with fresh external basetemp.",
+  "initial_harness_sha256": "9cf7d4def9a201c3ca72a30716d6b2c29ffd164c7d85dd09080a3d3891ade45d",
+  "corrected_harness_sha256": "9f9b911116f114840f14d16c3d914153030eb7db0581fb2b79d142a9715079a2",
+  "linux_gate_pending": true,
+  "full_stage2_accepted": false
+}

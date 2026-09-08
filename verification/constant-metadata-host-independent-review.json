@@ -1,0 +1,346 @@
+{
+  "actual_launcher": {
+    "path": ".runtime/ci-tools/run_semantic_wave_constant_host.py",
+    "sha256": "c7e6828d2a94be1b3f381d9ce2ef3b9fbe04adbc50cdf5aa4dea52be6e534205"
+  },
+  "actual_local_host_execution": {
+    "py311": {
+      "clean_runtime_process_success_claim": false,
+      "errors": 0,
+      "failed_case": "v5-round-0",
+      "failure": "No module named fcntl",
+      "failures": 1,
+      "frozen_literal_check_passed": true,
+      "log": {
+        "path": ".runtime/evidence/semantic-wave-constant-host311.log",
+        "sha256": "5e0528e422aa68bb726d395825bbf62d49088775d39043178e4b5bf0ac0f3c13"
+      },
+      "passed": 40,
+      "skips": 0,
+      "successful_native_compile_rows_in_xml": 39,
+      "tests": 41,
+      "xml": {
+        "path": ".runtime/evidence/semantic-wave-constant-host311.xml",
+        "sha256": "bc8869d3d91fe4be3c334eedd8796c6c7c819f6db20fae534c4b0519d8d2c212"
+      }
+    },
+    "py313": {
+      "clean_runtime_process_success_claim": false,
+      "errors": 0,
+      "failed_case": "v5-round-0",
+      "failure": "No module named fcntl",
+      "failures": 1,
+      "frozen_literal_check_passed": true,
+      "log": {
+        "path": ".runtime/evidence/semantic-wave-constant-host313.log",
+        "sha256": "5e0528e422aa68bb726d395825bbf62d49088775d39043178e4b5bf0ac0f3c13"
+      },
+      "passed": 40,
+      "skips": 0,
+      "successful_native_compile_rows_in_xml": 39,
+      "tests": 41,
+      "xml": {
+        "path": ".runtime/evidence/semantic-wave-constant-host313.xml",
+        "sha256": "da0db395e34f613d150ab20b54494250970ea5eeb6373c28c6d50f43a1403e5e"
+      }
+    }
+  },
+  "all_frozen_files": [
+    {
+      "lf_sha256": "3e82022b1f91a322f4c84eaa888d4c61fdebdcac5a8e24f9b1d298a5eaa6bc38",
+      "path": "verification/constant-metadata-manual-expected.json",
+      "raw_sha256": "3e82022b1f91a322f4c84eaa888d4c61fdebdcac5a8e24f9b1d298a5eaa6bc38"
+    },
+    {
+      "lf_sha256": "4ce4c2f58105802b26f073207c4ebc6762223c800dfb3f7bc8bc37abce4cf3d2",
+      "path": "rc6_tests/test_rc6_constant_metadata_expected.py",
+      "raw_sha256": "4ce4c2f58105802b26f073207c4ebc6762223c800dfb3f7bc8bc37abce4cf3d2"
+    },
+    {
+      "lf_sha256": "d2f5cb440b8620d4b0bfe4ee3151f504742da1f67d8ac93315d91c635a3da472",
+      "path": "docs/RC6_CONSTANT_METADATA_EXPECTED.md",
+      "raw_sha256": "d2f5cb440b8620d4b0bfe4ee3151f504742da1f67d8ac93315d91c635a3da472"
+    }
+  ],
+  "bundle": {
+    "path": ".runtime/evidence/constant-metadata-host-frozen-bundle.json",
+    "sha256": "63c51ecd99bd54c318da097d4ea6c2bd6bd41b59b0eec049ce7c648ba4bc9617"
+  },
+  "full_stage2_accepted": false,
+  "input_spec_reference": {
+    "path": ".runtime/evidence/string-target-contract-isolated/pinelib/pinelib/input/registry.py",
+    "sha256": "b6159fe57342b4663be8eada214d2678c0e91f500c3e3a9febcfaaac3813f88b"
+  },
+  "limitations": [
+    "Both current host XMLs report40 pass/1 fcntl failure, not a clean41 pass. Later39 native compilation passes followed a failed import in the same process; partial import-cache effects are not evidence of a clean supported Windows run.",
+    "A clean exact-pin Linux run of all41 tests is required. No workaround, stub or retry was used by this review.",
+    "The unchanged manual explicitly marks historical v5 UDF const-admissibility as an engineering expectation awaiting historical source review; arithmetic correctness alone does not settle that authority.",
+    "No complete constant-folding, builtin-family, TradingView, generated plot execution or fullStage2 acceptance is claimed."
+  ],
+  "linux_joint_execution_pending": true,
+  "literal_derivations": [
+    {
+      "arithmetic": "floor(2.5 + 1/2)",
+      "case_id": "v5-round-0",
+      "exact_result": "3"
+    },
+    {
+      "arithmetic": "floor(-2.5 + 1/2)",
+      "case_id": "v5-round-1",
+      "exact_result": "-2"
+    },
+    {
+      "arithmetic": "floor(1.5 + 1/2)",
+      "case_id": "v5-round-2",
+      "exact_result": "2"
+    },
+    {
+      "arithmetic": "floor(-1.5 + 1/2)",
+      "case_id": "v5-round-3",
+      "exact_result": "-1"
+    },
+    {
+      "arithmetic": "floor(0.5 + 1/2)",
+      "case_id": "v5-round-4",
+      "exact_result": "1"
+    },
+    {
+      "arithmetic": "floor(-0.5 + 1/2)",
+      "case_id": "v5-round-5",
+      "exact_result": "0"
+    },
+    {
+      "arithmetic": "floor(2.25 + 1/2)",
+      "case_id": "v5-round-6",
+      "exact_result": "2"
+    },
+    {
+      "arithmetic": "floor(-2.25 + 1/2)",
+      "case_id": "v5-round-7",
+      "exact_result": "-2"
+    },
+    {
+      "arithmetic": "floor(2.75 + 1/2)",
+      "case_id": "v5-round-8",
+      "exact_result": "3"
+    },
+    {
+      "arithmetic": "floor(-2.75 + 1/2)",
+      "case_id": "v5-round-9",
+      "exact_result": "-3"
+    },
+    {
+      "arithmetic": "floor((1.25) * 10^(1) + 1/2) / 10^(1)",
+      "case_id": "v5-precision-0",
+      "exact_result": "13/10"
+    },
+    {
+      "arithmetic": "floor((-1.25) * 10^(1) + 1/2) / 10^(1)",
+      "case_id": "v5-precision-1",
+      "exact_result": "-6/5"
+    },
+    {
+      "arithmetic": "floor((25) * 10^(-1) + 1/2) / 10^(-1)",
+      "case_id": "v5-precision-2",
+      "exact_result": "30"
+    },
+    {
+      "arithmetic": "floor((-25) * 10^(-1) + 1/2) / 10^(-1)",
+      "case_id": "v5-precision-3",
+      "exact_result": "-20"
+    },
+    {
+      "case_id": "v5-literal",
+      "exact_result": "2",
+      "literal_substitution": "Literal return 2.",
+      "v5_const_admissibility_historical_authority_unverified": true
+    },
+    {
+      "case_id": "v5-untyped-arguments",
+      "exact_result": "5",
+      "literal_substitution": "Substitute literal arguments: 2 + 3 = 5.",
+      "v5_const_admissibility_historical_authority_unverified": true
+    },
+    {
+      "case_id": "v5-nested",
+      "exact_result": "10",
+      "literal_substitution": "Substitute inner result: (2 + 3) * 2 = 10.",
+      "v5_const_admissibility_historical_authority_unverified": true
+    },
+    {
+      "case_id": "v5-global-constant",
+      "exact_result": "2",
+      "literal_substitution": "Read the preceding immutable literal BASE = 2.",
+      "v5_const_admissibility_historical_authority_unverified": true
+    },
+    {
+      "case_id": "v5-conditional",
+      "exact_result": "2",
+      "literal_substitution": "Literal true selects branch value 2.",
+      "v5_const_admissibility_historical_authority_unverified": true
+    },
+    {
+      "case_id": "v5-round-in-udf",
+      "exact_result": "3",
+      "literal_substitution": "Positive half tie 2.5 selects larger neighboring integer 3.",
+      "v5_const_admissibility_historical_authority_unverified": true
+    },
+    {
+      "arithmetic": "floor(2.5 + 1/2)",
+      "case_id": "v6-round-0",
+      "exact_result": "3"
+    },
+    {
+      "arithmetic": "floor(-2.5 + 1/2)",
+      "case_id": "v6-round-1",
+      "exact_result": "-2"
+    },
+    {
+      "arithmetic": "floor(1.5 + 1/2)",
+      "case_id": "v6-round-2",
+      "exact_result": "2"
+    },
+    {
+      "arithmetic": "floor(-1.5 + 1/2)",
+      "case_id": "v6-round-3",
+      "exact_result": "-1"
+    },
+    {
+      "arithmetic": "floor(0.5 + 1/2)",
+      "case_id": "v6-round-4",
+      "exact_result": "1"
+    },
+    {
+      "arithmetic": "floor(-0.5 + 1/2)",
+      "case_id": "v6-round-5",
+      "exact_result": "0"
+    },
+    {
+      "arithmetic": "floor(2.25 + 1/2)",
+      "case_id": "v6-round-6",
+      "exact_result": "2"
+    },
+    {
+      "arithmetic": "floor(-2.25 + 1/2)",
+      "case_id": "v6-round-7",
+      "exact_result": "-2"
+    },
+    {
+      "arithmetic": "floor(2.75 + 1/2)",
+      "case_id": "v6-round-8",
+      "exact_result": "3"
+    },
+    {
+      "arithmetic": "floor(-2.75 + 1/2)",
+      "case_id": "v6-round-9",
+      "exact_result": "-3"
+    },
+    {
+      "arithmetic": "floor((1.25) * 10^(1) + 1/2) / 10^(1)",
+      "case_id": "v6-precision-0",
+      "exact_result": "13/10"
+    },
+    {
+      "arithmetic": "floor((-1.25) * 10^(1) + 1/2) / 10^(1)",
+      "case_id": "v6-precision-1",
+      "exact_result": "-6/5"
+    },
+    {
+      "arithmetic": "floor((25) * 10^(-1) + 1/2) / 10^(-1)",
+      "case_id": "v6-precision-2",
+      "exact_result": "30"
+    },
+    {
+      "arithmetic": "floor((-25) * 10^(-1) + 1/2) / 10^(-1)",
+      "case_id": "v6-precision-3",
+      "exact_result": "-20"
+    },
+    {
+      "case_id": "v6-literal",
+      "exact_result": "2",
+      "literal_substitution": "Literal return 2.",
+      "v5_const_admissibility_historical_authority_unverified": false
+    },
+    {
+      "case_id": "v6-untyped-arguments",
+      "exact_result": "5",
+      "literal_substitution": "Substitute literal arguments: 2 + 3 = 5.",
+      "v5_const_admissibility_historical_authority_unverified": false
+    },
+    {
+      "case_id": "v6-nested",
+      "exact_result": "10",
+      "literal_substitution": "Substitute inner result: (2 + 3) * 2 = 10.",
+      "v5_const_admissibility_historical_authority_unverified": false
+    },
+    {
+      "case_id": "v6-global-constant",
+      "exact_result": "2",
+      "literal_substitution": "Read the preceding immutable literal BASE = 2.",
+      "v5_const_admissibility_historical_authority_unverified": false
+    },
+    {
+      "case_id": "v6-conditional",
+      "exact_result": "2",
+      "literal_substitution": "Literal true selects branch value 2.",
+      "v5_const_admissibility_historical_authority_unverified": false
+    },
+    {
+      "case_id": "v6-round-in-udf",
+      "exact_result": "3",
+      "literal_substitution": "Positive half tie 2.5 selects larger neighboring integer 3.",
+      "v5_const_admissibility_historical_authority_unverified": false
+    }
+  ],
+  "manual_case_count": 40,
+  "manual_expected_sha256": "3e82022b1f91a322f4c84eaa888d4c61fdebdcac5a8e24f9b1d298a5eaa6bc38",
+  "new_files": 3,
+  "new_test_nodeids": 41,
+  "prepared_host_composition": {
+    "all_four_frozen_bundles_materialized_exactly": true,
+    "base": "a9f9d05dc333ea5bed7b67acd3d6d81f6246ff1a",
+    "new_nonoverlapping_files": 1181,
+    "old_git_blobs": 1796,
+    "old_git_blobs_preserved": 1794,
+    "prepared_index": {
+      "path": ".runtime/evidence/semantic-wave-host-publication-prepared.json",
+      "sha256": "2cb25396cf466f8d7d4df5cbd9bdcba2a8f76205cbc861fefe90031807f80afc"
+    },
+    "separate_intentional_old_overlays": [
+      {
+        "base_sha256": "9635511d393bcbfb072a4118325dd4229500ea0b4facf398511f92af69c8a948",
+        "path": ".gitattributes",
+        "prepared_sha256": "641aa543f40ecfd911fb9802a5d84adb270d713ce94c94e3dd529ddeafbf89dd"
+      },
+      {
+        "base_sha256": "a5838f0ef09687d6f3f47613eb39d848b38c480d38da52b24b193551fe12aebe",
+        "path": "docs/RC6_LIFECYCLE_SOURCES.json",
+        "prepared_sha256": "ca5925b20ad19f3ba9f1322e0f0bed6f9967d7137d9b962dd54738bcd6b3333e"
+      }
+    ],
+    "separate_overlay_scope": "Root confirmed four added LF rules plus only two new published producer/runtime pins; these are outside constant3. Current metadata bytes do not independently prove execution-time pin labels."
+  },
+  "prior_direct_static_proof": {
+    "py311": {
+      "path": ".runtime/evidence/constant-child-types-manual40-compiler-py311.json",
+      "sha256": "fea95b40e91e534f7c08e4d463225510abecdf8d71c2fc867711edd068a649d8"
+    },
+    "py313": {
+      "path": ".runtime/evidence/constant-child-types-manual40-compiler-py313.json",
+      "sha256": "fea95b40e91e534f7c08e4d463225510abecdf8d71c2fc867711edd068a649d8"
+    }
+  },
+  "prior_direct_static_proof_is_current_host_execution": false,
+  "published_pin_execution_claim": false,
+  "review_status": "bounded_source_review_passed_linux_execution_required",
+  "reviewer_runtime_test_rerun": false,
+  "schema_id": "openpine.independent_source_and_local_execution_review.v1",
+  "source_checks": [
+    "All40 original literal values and source hashes preserved; exact rational nearest/tie-positive-infinity arithmetic checked independently, UDF cases checked by literal substitution.",
+    "NativeRC6CompilerAdapter receives declared pins; successful compilation, exactly one aliased input descriptor and exact input kind are required.",
+    "Integer default requires exact int and equality. Float requires actual int/float (excluding bool), absolute tolerance1e-14 and relative tolerance0. Existing InputSpec explicitly accepts and normalizes JSON integers for float inputs.",
+    "No plot execution is asserted; original expected_first_plot fields are preserved but this test concerns static metadata only.",
+    "The constant3 bundle changes no old host files or semantic expected values, and no skip, xfail, fcntl shim or retry was introduced."
+  ],
+  "wave": "constant-metadata-host"
+}

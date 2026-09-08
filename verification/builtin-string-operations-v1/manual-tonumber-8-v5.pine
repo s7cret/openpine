@@ -1,0 +1,6 @@
+//@version=5
+indicator("string literal")
+var string argument = "1e2"
+var float result = 0.0
+if bar_index == 1
+    result := str.tonumber(argument)

@@ -1,0 +1,10 @@
+//@version=6
+indicator("array literal")
+var a = array.new_int(0)
+var int result = 0
+if bar_index == 0
+    array.push(a, 1)
+    array.push(a, 3)
+    array.push(a, 5)
+if bar_index == 1
+    result := a.binary_search(4)

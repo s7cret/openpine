@@ -1,0 +1,1077 @@
+{
+  "schema_id": "openpine.tuple_repair_inventory_independent_review.v1",
+  "decision": "COLLECTION_REVIEW_PASS_NOT_EXECUTION_ACCEPTANCE",
+  "run_id": 34204993037,
+  "operations_sha": "090365933749bf1f36ecd1419abc51b96a52c6ea",
+  "candidate_host_sha": "54105a054f9b5f073f0b59d2ee89faacfbff5c6a",
+  "candidate_host_tree": "76d4c3d4634275ce9a15d3676e11d736c0d1c7a4",
+  "baseline_failed_candidate_sha": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+  "baseline_lock_sha256": "bff145bcbfb81a78069150f283f7cc8aef5f2395f5e72d9aa3b30dcd2b0326c3",
+  "proposed_inventory_sha256": "b7c662aa3fea647cd20d2fe73dffd0890f8922fdb28a56349df16f74d69c4a67",
+  "proposed_inventory_byteidentical_python311_313": true,
+  "baseline_locked_cases": 16745,
+  "candidate_cases": 16787,
+  "added_cases": 42,
+  "removed_cases": 0,
+  "deselected_delta": 0,
+  "last_joint_execution_verified_cases": 10683,
+  "full_stage2_accepted": false,
+  "suites": {
+    "311": {
+      "openpine-contracts": {
+        "baseline": 557,
+        "candidate": 557,
+        "nodeids_sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "pinelib": {
+        "baseline": 3523,
+        "candidate": 3523,
+        "nodeids_sha256": "sha256:9ad56733ce5e39d13367a514827a751873f03ae6ecce34c3233f853a20ba27ad",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "pine2ast": {
+        "baseline": 2431,
+        "candidate": 2473,
+        "nodeids_sha256": "sha256:d642020b97060164cd6559d8f1f10ac5d20ff12af808cddd369a2f69557b630d",
+        "added_nodeids": [
+          "tests/test_callable_for_in_target_types.py::test_for_in_value_shadow_does_not_replace_outer_symbol_type[5]",
+          "tests/test_callable_for_in_target_types.py::test_for_in_value_shadow_does_not_replace_outer_symbol_type[6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-6]",
+          "tests/test_tuple_lexical_child_types.py::test_loop_tuple_does_not_launder_series_into_simple_parameter[5]",
+          "tests/test_tuple_lexical_child_types.py::test_loop_tuple_does_not_launder_series_into_simple_parameter[6]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[1]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[2]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[3]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[4]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[5]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[conditional-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[conditional-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[context_calls-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[context_calls-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[for_in-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[for_in-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[named_default-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[named_default-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[nested_range-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[nested_range-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_mixed-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_mixed-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_shadow-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_shadow-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[while-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[while-6]",
+          "tests/test_tuple_lexical_child_types.py::test_unresolved_tuple_element_still_rejects[5]",
+          "tests/test_tuple_lexical_child_types.py::test_unresolved_tuple_element_still_rejects[6]"
+        ],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "ast2python": {
+        "baseline": 1110,
+        "candidate": 1110,
+        "nodeids_sha256": "sha256:7adebda35e7757ae7f048a8c7b311471b89b039a67e3de900e6fd7dfb4e489fb",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "backtest_engine": {
+        "baseline": 1102,
+        "candidate": 1102,
+        "nodeids_sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "optimizer": {
+        "baseline": 281,
+        "candidate": 281,
+        "nodeids_sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "marketdata-provider": {
+        "baseline": 601,
+        "candidate": 601,
+        "nodeids_sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 5,
+        "deselected_delta": 0
+      },
+      "openpine": {
+        "baseline": 7140,
+        "candidate": 7140,
+        "nodeids_sha256": "sha256:09d61adfe590e03fd8aa861bf02fd00dc1d0cd53c0bc597ba14cce97f245ce6c",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      }
+    },
+    "313": {
+      "openpine-contracts": {
+        "baseline": 557,
+        "candidate": 557,
+        "nodeids_sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "pinelib": {
+        "baseline": 3523,
+        "candidate": 3523,
+        "nodeids_sha256": "sha256:9ad56733ce5e39d13367a514827a751873f03ae6ecce34c3233f853a20ba27ad",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "pine2ast": {
+        "baseline": 2431,
+        "candidate": 2473,
+        "nodeids_sha256": "sha256:d642020b97060164cd6559d8f1f10ac5d20ff12af808cddd369a2f69557b630d",
+        "added_nodeids": [
+          "tests/test_callable_for_in_target_types.py::test_for_in_value_shadow_does_not_replace_outer_symbol_type[5]",
+          "tests/test_callable_for_in_target_types.py::test_for_in_value_shadow_does_not_replace_outer_symbol_type[6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-float-2.5-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-int-2-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[False-string-\"text\"-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-float-2.5-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-int-2-6]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-5]",
+          "tests/test_callable_for_in_target_types.py::test_scalar_and_indexed_array_elements_keep_exact_types[True-string-\"text\"-6]",
+          "tests/test_tuple_lexical_child_types.py::test_loop_tuple_does_not_launder_series_into_simple_parameter[5]",
+          "tests/test_tuple_lexical_child_types.py::test_loop_tuple_does_not_launder_series_into_simple_parameter[6]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[1]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[2]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[3]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[4]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[5]",
+          "tests/test_tuple_lexical_child_types.py::test_trusted_child_dispatch_keeps_old_versions_and_ignores_cached_parent[6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[conditional-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[conditional-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[context_calls-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[context_calls-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[for_in-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[for_in-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[named_default-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[named_default-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[nested_range-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[nested_range-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_mixed-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_mixed-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_shadow-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[range_shadow-6]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[while-5]",
+          "tests/test_tuple_lexical_child_types.py::test_tuple_return_elements_keep_lexical_types[while-6]",
+          "tests/test_tuple_lexical_child_types.py::test_unresolved_tuple_element_still_rejects[5]",
+          "tests/test_tuple_lexical_child_types.py::test_unresolved_tuple_element_still_rejects[6]"
+        ],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "ast2python": {
+        "baseline": 1110,
+        "candidate": 1110,
+        "nodeids_sha256": "sha256:7adebda35e7757ae7f048a8c7b311471b89b039a67e3de900e6fd7dfb4e489fb",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "backtest_engine": {
+        "baseline": 1102,
+        "candidate": 1102,
+        "nodeids_sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "optimizer": {
+        "baseline": 281,
+        "candidate": 281,
+        "nodeids_sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      },
+      "marketdata-provider": {
+        "baseline": 601,
+        "candidate": 601,
+        "nodeids_sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 5,
+        "deselected_delta": 0
+      },
+      "openpine": {
+        "baseline": 7140,
+        "candidate": 7140,
+        "nodeids_sha256": "sha256:09d61adfe590e03fd8aa861bf02fd00dc1d0cd53c0bc597ba14cce97f245ce6c",
+        "added_nodeids": [],
+        "removed_nodeids": [],
+        "deselected": 0,
+        "deselected_delta": 0
+      }
+    }
+  },
+  "artifacts": {
+    "313": {
+      "id": 10047454782,
+      "zip": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-proposal-313.zip",
+        "sha256": "95d14348fcb53fa9a7c71aaeb9c527ddc7ee3aee19e56db5da01a6500bca9a77",
+        "bytes": 15235783
+      },
+      "api_digest_matches": true,
+      "extracted_files": 64,
+      "all_extracted_bytes_match_zip": true,
+      "safe_unique_member_paths": true
+    },
+    "311": {
+      "id": 10047448960,
+      "zip": {
+        "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-proposal-311.zip",
+        "sha256": "53c46b040ab344c13749e761f31dc196fe635c7a41f43868885e1b8272cdfbbe",
+        "bytes": 15235752
+      },
+      "api_digest_matches": true,
+      "extracted_files": 64,
+      "all_extracted_bytes_match_zip": true,
+      "safe_unique_member_paths": true
+    }
+  },
+  "source_pins": {
+    "baseline": {
+      "marketdata-provider": {
+        "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+        "tree": "37f6719bd59e98312b0d1f76a6c8bf6c3b8fa538"
+      },
+      "openpine-contracts": {
+        "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+        "tree": "67827655aafd19f7a357025a5c48c0bf05318bbf"
+      },
+      "optimizer": {
+        "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+        "tree": "f6fbbc923bd6c48d5286a2e139b6274d6697aa97"
+      },
+      "ast2python": {
+        "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+        "tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c"
+      },
+      "pinelib": {
+        "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+        "tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f"
+      },
+      "backtest_engine": {
+        "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+        "tree": "35add6f5015d32d2e953d33f3d37f67fbcef4cd2"
+      },
+      "pine2ast": {
+        "commit": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f",
+        "tree": "bec7af40e7cbde857cd7d8dbc56e79a508d2a4c2"
+      },
+      "openpine": {
+        "commit": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+        "tree": "ff1834b2332170d58e9af8397142709b4d4ad925"
+      }
+    },
+    "candidate": {
+      "marketdata-provider": {
+        "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+        "tree": "37f6719bd59e98312b0d1f76a6c8bf6c3b8fa538"
+      },
+      "openpine-contracts": {
+        "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+        "tree": "67827655aafd19f7a357025a5c48c0bf05318bbf"
+      },
+      "optimizer": {
+        "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+        "tree": "f6fbbc923bd6c48d5286a2e139b6274d6697aa97"
+      },
+      "ast2python": {
+        "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+        "tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c"
+      },
+      "pinelib": {
+        "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+        "tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f"
+      },
+      "backtest_engine": {
+        "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+        "tree": "35add6f5015d32d2e953d33f3d37f67fbcef4cd2"
+      },
+      "pine2ast": {
+        "commit": "05d7e61be58a184b211bc093f989527157005b92",
+        "tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e"
+      },
+      "openpine": {
+        "commit": "54105a054f9b5f073f0b59d2ee89faacfbff5c6a",
+        "tree": "76d4c3d4634275ce9a15d3676e11d736c0d1c7a4"
+      }
+    }
+  },
+  "source_archives": {
+    "311": {
+      "baseline": {
+        "marketdata-provider": {
+          "sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+          "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+          "git_tree": "37f6719bd59e98312b0d1f76a6c8bf6c3b8fa538",
+          "file_count": 159,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine-contracts": {
+          "sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+          "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+          "git_tree": "67827655aafd19f7a357025a5c48c0bf05318bbf",
+          "file_count": 63,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "optimizer": {
+          "sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+          "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+          "git_tree": "f6fbbc923bd6c48d5286a2e139b6274d6697aa97",
+          "file_count": 129,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "ast2python": {
+          "sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+          "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+          "git_tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c",
+          "file_count": 173,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pinelib": {
+          "sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+          "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "git_tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f",
+          "file_count": 171,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "backtest_engine": {
+          "sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+          "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+          "git_tree": "35add6f5015d32d2e953d33f3d37f67fbcef4cd2",
+          "file_count": 222,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pine2ast": {
+          "sha256": "e671ecedb0d2bf90296f6ff78faf10ffd0d7bc4a7dadb2bfffbb919b86cfcbb7",
+          "commit": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f",
+          "git_tree": "bec7af40e7cbde857cd7d8dbc56e79a508d2a4c2",
+          "file_count": 402,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine": {
+          "sha256": "37005decaa30eab27b7ecc5540e5dc6decc09b0938b64f44983c931f3131b48f",
+          "commit": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+          "git_tree": "ff1834b2332170d58e9af8397142709b4d4ad925",
+          "file_count": 3001,
+          "entire_git_tree_reconstructed_with_modes": true
+        }
+      },
+      "candidate": {
+        "marketdata-provider": {
+          "sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+          "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+          "git_tree": "37f6719bd59e98312b0d1f76a6c8bf6c3b8fa538",
+          "file_count": 159,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine-contracts": {
+          "sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+          "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+          "git_tree": "67827655aafd19f7a357025a5c48c0bf05318bbf",
+          "file_count": 63,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "optimizer": {
+          "sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+          "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+          "git_tree": "f6fbbc923bd6c48d5286a2e139b6274d6697aa97",
+          "file_count": 129,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "ast2python": {
+          "sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+          "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+          "git_tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c",
+          "file_count": 173,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pinelib": {
+          "sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+          "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "git_tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f",
+          "file_count": 171,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "backtest_engine": {
+          "sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+          "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+          "git_tree": "35add6f5015d32d2e953d33f3d37f67fbcef4cd2",
+          "file_count": 222,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pine2ast": {
+          "sha256": "31d2068c5e9d5f37dd6c1119197d09b8790b9b7ed8a41e6b1ba491ce8156c47c",
+          "commit": "05d7e61be58a184b211bc093f989527157005b92",
+          "git_tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e",
+          "file_count": 405,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine": {
+          "sha256": "f5ab8b9e5422b00d8637a41bef2bf21f8626b758437990b6f4598e93be29e216",
+          "commit": "54105a054f9b5f073f0b59d2ee89faacfbff5c6a",
+          "git_tree": "76d4c3d4634275ce9a15d3676e11d736c0d1c7a4",
+          "file_count": 3003,
+          "entire_git_tree_reconstructed_with_modes": true
+        }
+      }
+    },
+    "313": {
+      "baseline": {
+        "marketdata-provider": {
+          "sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+          "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+          "git_tree": "37f6719bd59e98312b0d1f76a6c8bf6c3b8fa538",
+          "file_count": 159,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine-contracts": {
+          "sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+          "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+          "git_tree": "67827655aafd19f7a357025a5c48c0bf05318bbf",
+          "file_count": 63,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "optimizer": {
+          "sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+          "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+          "git_tree": "f6fbbc923bd6c48d5286a2e139b6274d6697aa97",
+          "file_count": 129,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "ast2python": {
+          "sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+          "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+          "git_tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c",
+          "file_count": 173,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pinelib": {
+          "sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+          "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "git_tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f",
+          "file_count": 171,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "backtest_engine": {
+          "sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+          "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+          "git_tree": "35add6f5015d32d2e953d33f3d37f67fbcef4cd2",
+          "file_count": 222,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pine2ast": {
+          "sha256": "e671ecedb0d2bf90296f6ff78faf10ffd0d7bc4a7dadb2bfffbb919b86cfcbb7",
+          "commit": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f",
+          "git_tree": "bec7af40e7cbde857cd7d8dbc56e79a508d2a4c2",
+          "file_count": 402,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine": {
+          "sha256": "37005decaa30eab27b7ecc5540e5dc6decc09b0938b64f44983c931f3131b48f",
+          "commit": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+          "git_tree": "ff1834b2332170d58e9af8397142709b4d4ad925",
+          "file_count": 3001,
+          "entire_git_tree_reconstructed_with_modes": true
+        }
+      },
+      "candidate": {
+        "marketdata-provider": {
+          "sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+          "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+          "git_tree": "37f6719bd59e98312b0d1f76a6c8bf6c3b8fa538",
+          "file_count": 159,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine-contracts": {
+          "sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+          "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+          "git_tree": "67827655aafd19f7a357025a5c48c0bf05318bbf",
+          "file_count": 63,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "optimizer": {
+          "sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+          "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+          "git_tree": "f6fbbc923bd6c48d5286a2e139b6274d6697aa97",
+          "file_count": 129,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "ast2python": {
+          "sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+          "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+          "git_tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c",
+          "file_count": 173,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pinelib": {
+          "sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+          "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "git_tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f",
+          "file_count": 171,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "backtest_engine": {
+          "sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+          "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+          "git_tree": "35add6f5015d32d2e953d33f3d37f67fbcef4cd2",
+          "file_count": 222,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "pine2ast": {
+          "sha256": "31d2068c5e9d5f37dd6c1119197d09b8790b9b7ed8a41e6b1ba491ce8156c47c",
+          "commit": "05d7e61be58a184b211bc093f989527157005b92",
+          "git_tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e",
+          "file_count": 405,
+          "entire_git_tree_reconstructed_with_modes": true
+        },
+        "openpine": {
+          "sha256": "f5ab8b9e5422b00d8637a41bef2bf21f8626b758437990b6f4598e93be29e216",
+          "commit": "54105a054f9b5f073f0b59d2ee89faacfbff5c6a",
+          "git_tree": "76d4c3d4634275ce9a15d3676e11d736c0d1c7a4",
+          "file_count": 3003,
+          "entire_git_tree_reconstructed_with_modes": true
+        }
+      }
+    }
+  },
+  "source_archive_count": 32,
+  "source_file_instances_with_exact_git_trees_and_modes": 17290,
+  "package_origins": {
+    "311": {
+      "baseline": {
+        "openpine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/openpine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/openpine"
+          }
+        },
+        "openpine-contracts": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/openpine_contracts/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/openpine-contracts"
+          }
+        },
+        "pinelib": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/pinelib/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/pinelib"
+          }
+        },
+        "pine2ast": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/pine2ast/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/pine2ast"
+          }
+        },
+        "ast2python": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/ast2python/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/ast2python"
+          }
+        },
+        "backtest_engine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/backtest_engine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/backtest_engine"
+          }
+        },
+        "optimizer": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/optimizer/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/optimizer"
+          }
+        },
+        "marketdata-provider": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.11/site-packages/marketdata_provider/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/marketdata-provider"
+          }
+        }
+      },
+      "candidate": {
+        "openpine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/openpine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/openpine"
+          }
+        },
+        "openpine-contracts": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/openpine_contracts/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/openpine-contracts"
+          }
+        },
+        "pinelib": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/pinelib/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/pinelib"
+          }
+        },
+        "pine2ast": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/pine2ast/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/pine2ast"
+          }
+        },
+        "ast2python": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/ast2python/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/ast2python"
+          }
+        },
+        "backtest_engine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/backtest_engine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/backtest_engine"
+          }
+        },
+        "optimizer": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/optimizer/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/optimizer"
+          }
+        },
+        "marketdata-provider": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.11/site-packages/marketdata_provider/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/marketdata-provider"
+          }
+        }
+      }
+    },
+    "313": {
+      "baseline": {
+        "openpine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/openpine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/openpine"
+          }
+        },
+        "openpine-contracts": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/openpine_contracts/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/openpine-contracts"
+          }
+        },
+        "pinelib": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/pinelib/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/pinelib"
+          }
+        },
+        "pine2ast": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/pine2ast/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/pine2ast"
+          }
+        },
+        "ast2python": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/ast2python/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/ast2python"
+          }
+        },
+        "backtest_engine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/backtest_engine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/backtest_engine"
+          }
+        },
+        "optimizer": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/optimizer/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/optimizer"
+          }
+        },
+        "marketdata-provider": {
+          "origin": "/home/runner/work/_temp/nominal-collection/baseline/venv/lib/python3.13/site-packages/marketdata_provider/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/baseline/install-sources/marketdata-provider"
+          }
+        }
+      },
+      "candidate": {
+        "openpine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/openpine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/openpine"
+          }
+        },
+        "openpine-contracts": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/openpine_contracts/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/openpine-contracts"
+          }
+        },
+        "pinelib": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/pinelib/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/pinelib"
+          }
+        },
+        "pine2ast": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/pine2ast/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/pine2ast"
+          }
+        },
+        "ast2python": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/ast2python/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/ast2python"
+          }
+        },
+        "backtest_engine": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/backtest_engine/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/backtest_engine"
+          }
+        },
+        "optimizer": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/optimizer/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/optimizer"
+          }
+        },
+        "marketdata-provider": {
+          "origin": "/home/runner/work/_temp/nominal-collection/candidate/venv/lib/python3.13/site-packages/marketdata_provider/__init__.py",
+          "version": "5.0.0rc6",
+          "direct_url": {
+            "dir_info": {},
+            "url": "file:///home/runner/work/_temp/nominal-collection/candidate/install-sources/marketdata-provider"
+          }
+        }
+      }
+    }
+  },
+  "source_delta_checks": {
+    "311": {
+      "openpine-contracts": {
+        "before_files": 63,
+        "after_files": 63,
+        "old_tests_and_fixtures_unchanged": 21,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "pinelib": {
+        "before_files": 171,
+        "after_files": 171,
+        "old_tests_and_fixtures_unchanged": 62,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "pine2ast": {
+        "before_files": 402,
+        "after_files": 405,
+        "old_tests_and_fixtures_unchanged": 77,
+        "changed_paths": [
+          "pine2ast/semantic/callable_qualifiers.py",
+          "pine2ast/semantic/inference.py"
+        ],
+        "added_paths": [
+          "docs/STAGE2_TUPLE_LOOP_TYPE_REPAIR.md",
+          "tests/test_callable_for_in_target_types.py",
+          "tests/test_tuple_lexical_child_types.py"
+        ],
+        "removed_paths": []
+      },
+      "ast2python": {
+        "before_files": 173,
+        "after_files": 173,
+        "old_tests_and_fixtures_unchanged": 76,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "backtest_engine": {
+        "before_files": 222,
+        "after_files": 222,
+        "old_tests_and_fixtures_unchanged": 84,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "optimizer": {
+        "before_files": 129,
+        "after_files": 129,
+        "old_tests_and_fixtures_unchanged": 24,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "marketdata-provider": {
+        "before_files": 159,
+        "after_files": 159,
+        "old_tests_and_fixtures_unchanged": 52,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "openpine": {
+        "before_files": 3001,
+        "after_files": 3003,
+        "old_tests_and_fixtures_unchanged": 258,
+        "changed_paths": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "verification/stage2-progress.json"
+        ],
+        "added_paths": [
+          "verification/semantic-wave-failed-execution-independent-review.json",
+          "verification/tuple-loop-repair-independent-source-review.json"
+        ],
+        "removed_paths": []
+      }
+    },
+    "313": {
+      "openpine-contracts": {
+        "before_files": 63,
+        "after_files": 63,
+        "old_tests_and_fixtures_unchanged": 21,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "pinelib": {
+        "before_files": 171,
+        "after_files": 171,
+        "old_tests_and_fixtures_unchanged": 62,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "pine2ast": {
+        "before_files": 402,
+        "after_files": 405,
+        "old_tests_and_fixtures_unchanged": 77,
+        "changed_paths": [
+          "pine2ast/semantic/callable_qualifiers.py",
+          "pine2ast/semantic/inference.py"
+        ],
+        "added_paths": [
+          "docs/STAGE2_TUPLE_LOOP_TYPE_REPAIR.md",
+          "tests/test_callable_for_in_target_types.py",
+          "tests/test_tuple_lexical_child_types.py"
+        ],
+        "removed_paths": []
+      },
+      "ast2python": {
+        "before_files": 173,
+        "after_files": 173,
+        "old_tests_and_fixtures_unchanged": 76,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "backtest_engine": {
+        "before_files": 222,
+        "after_files": 222,
+        "old_tests_and_fixtures_unchanged": 84,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "optimizer": {
+        "before_files": 129,
+        "after_files": 129,
+        "old_tests_and_fixtures_unchanged": 24,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "marketdata-provider": {
+        "before_files": 159,
+        "after_files": 159,
+        "old_tests_and_fixtures_unchanged": 52,
+        "changed_paths": [],
+        "added_paths": [],
+        "removed_paths": []
+      },
+      "openpine": {
+        "before_files": 3001,
+        "after_files": 3003,
+        "old_tests_and_fixtures_unchanged": 258,
+        "changed_paths": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "verification/stage2-progress.json"
+        ],
+        "added_paths": [
+          "verification/semantic-wave-failed-execution-independent-review.json",
+          "verification/tuple-loop-repair-independent-source-review.json"
+        ],
+        "removed_paths": []
+      }
+    }
+  },
+  "workflow": {
+    "sha256": "2ae5ee1494740c39b592068bceabdd5dabe9c8c7587cd73d2ec39caffbb17643",
+    "collector_source_identical": true,
+    "only_operations_workflow_path_changed": true,
+    "prior_failed_operations_preserved_as_parent": "f1439b9119f4ed7f0a08c20d22e5d7f859afd9c4"
+  },
+  "limits": [
+    "This is collection only. No result here changes the failed conclusion of run34201053710 or proves functional, architecture, Stage1, corpus, native sandbox, protected-worker, static, build or frontend execution.",
+    "All16745 nodes are retained from the failed candidate lock; that lock is not represented as a successful acceptance baseline. Last fully verified joint count remains10683.",
+    "Five preexisting provider deselections retain the same configured source and selected nodeids. The collection format records their count, not a separate list of deselected nodeids.",
+    "No old tests, expectations, catalog rows/IDs, RC5 contracts or permanent host workflows changed in this repair. A2/EMA/MACD/matrix next waves are excluded."
+  ],
+  "evidence": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-proposal-independent-api.json",
+      "sha256": "340d266f4a9f50ce1a95ee33a9337d9df5b56b8071b58bd6832dc74903b0b5f9",
+      "bytes": 5410
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-proposal-artifacts.json",
+      "sha256": "e9c9bf220998a396b021376d1f48ece524c943c34c4e43c16aa75463cba15cb1",
+      "bytes": 1676
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-proposal-extraction-review.json",
+      "sha256": "e70ee49205ce09ba99be348b61a772b272fdaf87c7167dd9821193768626f9a2",
+      "bytes": 1317
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-proposal-source-archive-review.json",
+      "sha256": "5c2bef29b359c3119c3081d0200463123b1ae43bc26b94f40c9d30a9fb0bf220",
+      "bytes": 10225
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-host-metadata-independent-review.json",
+      "sha256": "68200ab04d0ff89bf8ea55e7e13ad8fdd963e4d7e213f6f6940b8ac94c1824d0",
+      "bytes": 5289
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-repair-independent-source-review.json",
+      "sha256": "cf116f215efa50ab60d0b785c182d04fdf7944b5d72d1b176f8fb3b41c1b3d59",
+      "bytes": 60644
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-repair-full-local-independent-review.json",
+      "sha256": "669b73faae0e40aa18cbfa9965980dd52bcafda76da4069b09c3c1fba73de92b",
+      "bytes": 34118
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-final-frozen-bundle.json",
+      "sha256": "923b9ad25141820260917529e5aaa0eaef37663eb124a2fc5773ce7c5540285a",
+      "bytes": 40719
+    }
+  ],
+  "review_script_sha256": "746986c283d705ec790a92c5f09ef67f65f2c172dc80bbd8ff8c084151487603",
+  "reused_pure_helper_script_sha256": "56f93d2701055d6816543310ab15eb228f789587969d3af85a114dc7cf380e41"
+}

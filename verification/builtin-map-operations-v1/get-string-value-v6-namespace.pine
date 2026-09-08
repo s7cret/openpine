@@ -1,0 +1,8 @@
+//@version=6
+indicator("map literal")
+var a=map.new<int,string>()
+var string result=na
+if bar_index==0
+    map.put(a,2,"yes")
+if bar_index==1
+    result:=map.get(a,2)

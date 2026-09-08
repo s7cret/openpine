@@ -1,0 +1,9 @@
+//@version=6
+indicator("array literal")
+var a = array.new_int(0)
+var int result = 0
+if bar_index == 0
+    array.push(a, 2)
+    array.push(a, 4)
+if bar_index == 1
+    result := array.shift(a)

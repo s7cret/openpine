@@ -1,0 +1,8 @@
+//@version=4
+study("array literal")
+var a = array.new_int(0)
+var int result = 0
+if bar_index == 0
+    array.push(a, 7)
+if bar_index == 1
+    result := array.remove(a, 0)

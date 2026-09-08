@@ -1,0 +1,10 @@
+//@version=5
+indicator("array literal")
+var a = array.new_int(0)
+var bool result = false
+if bar_index == 0
+    array.push(a, 2)
+    array.push(a, 4)
+    array.push(a, 2)
+if bar_index == 1
+    result := array.includes(a, 2)

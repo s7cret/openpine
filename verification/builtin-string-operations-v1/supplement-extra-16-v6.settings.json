@@ -1,0 +1,36 @@
+{
+  "abi_callable": "pinelib.abi.string.upper_v2",
+  "argument": {
+    "kind": "value",
+    "value": "aİıéßяz"
+  },
+  "declared_binding": [
+    "pine:function:str.upper",
+    "pine:function:str.upper#canonical",
+    "NAMESPACE_FUNCTION"
+  ],
+  "expected": {
+    "kind": "value",
+    "value": "AİıéßяZ"
+  },
+  "function": "str.upper",
+  "id": "supplement-extra-16-v6",
+  "initial_result": "",
+  "initial_v5_inference": false,
+  "origin": {
+    "index": 16,
+    "path": "string-context-supplement.json",
+    "section": "v6_extra",
+    "sha256": "7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0"
+  },
+  "original_authority": "https://www.tradingview.com/pine-script-docs/concepts/strings/",
+  "primary_source_line": 6,
+  "row_id": 16,
+  "source_name": "supplement-extra-16-v6.pine",
+  "storage": {
+    "argument": "string",
+    "result": "string"
+  },
+  "unverified_numeric_disagreement": false,
+  "version": 6
+}

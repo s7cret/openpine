@@ -1,0 +1,8 @@
+//@version=5
+indicator("map literal")
+var a=map.new<string,int>()
+var b=map.new<string,int>()
+if bar_index==0
+    map.put(b,"b",4)
+if bar_index==1
+    a.put_all(b)

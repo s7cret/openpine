@@ -1,0 +1,21 @@
+{
+  "repositories": [
+    {
+      "name": "pine2ast",
+      "tip": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f",
+      "tree": "bec7af40e7cbde857cd7d8dbc56e79a508d2a4c2",
+      "all_predicted_trees_and_parents_match": true,
+      "release_unchanged": true
+    },
+    {
+      "name": "pinelib",
+      "tip": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+      "tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f",
+      "all_predicted_trees_and_parents_match": true,
+      "release_unchanged": true
+    }
+  ],
+  "reviewed_tree_receipt_sha256": "a3d0dd23f3be32d0198d6a99ab9467856fed15844ed98be10f335089faf9380c",
+  "joint_ci_accepted": false,
+  "full_stage2_accepted": false
+}
