@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.ta.mode_v1","abi_result_type":"float","arguments_by_bar":[["close",1],["close",1],["close",1]],"declared_binding":["pine:function:ta.mode","pine:function:ta.mode#canonical","NAMESPACE_FUNCTION"],"source_name":"v6-mode-length-one.pine","spelling":"ta.mode","stateful":true}

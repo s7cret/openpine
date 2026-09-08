@@ -1,0 +1,117 @@
+{
+  "schema_id": "openpine.callable_result_revised_independent_review.v1",
+  "status": "SOURCE_AND_LOCAL_REPRO_PASS_P1_CLOSED_NOT_LINUX_ACCEPTANCE",
+  "revised_bundle_sha256": "4101abdb0b91ab7e743c793d6709342db7124521ab1707ec06674734649e4880",
+  "delta_bundle_sha256": "23a44ede64d9ec4a44449326af4c7007dcc54ca95858d9f25179372b1267e2da",
+  "original_bundle_sha256": "5c95a172721dc933aeca1f8a58f82992b514375130053f93c3dc0d1eacf389e6",
+  "initial_blocking_review_sha256": "252ed3883389250ba023f875359b783ae6024b600c1624f7454a088da9d99412",
+  "files": {
+    "pine2ast/semantic/callable_qualifiers.py": {
+      "raw_sha256": "sha256:30aec4f9e9206398b3f6b2120a49c2babddcf4554a98a9394c65fdfbb06ef25f",
+      "lf_sha256": "sha256:30aec4f9e9206398b3f6b2120a49c2babddcf4554a98a9394c65fdfbb06ef25f"
+    },
+    "pine2ast/semantic/inference.py": {
+      "raw_sha256": "sha256:c3111264e26c31c21395c57783c0cd5742c1bfca5020253151eb20199e6a20e5",
+      "lf_sha256": "sha256:10722056657e1c5a6abeb0c8dcc62d2fa3865a75fb473002f25c622cb6f4fd42"
+    },
+    "pine2ast/semantic/qualifier_infer.py": {
+      "raw_sha256": "sha256:f8c84021c8bc57cbb95550ebbc2d7d13725fa02e368e3668bdad53799813a864",
+      "lf_sha256": "sha256:9aadbc81a415334d8794ff8b33ffd1349f04ca9ea4d3df7a8e7744eb71f146b8"
+    },
+    "pine2ast/semantic/passes/declaration_index.py": {
+      "raw_sha256": "sha256:cb1333c7f8f0fcc173fd1a074394c737cc299f5bb777b77d0b797bcc90477328",
+      "lf_sha256": "sha256:b0a542c1cca09243bdcfd474dfc200de1b61e5dc80aaea9cf106697a5bf86c26"
+    },
+    "tests/test_callable_result_qualifiers.py": {
+      "raw_sha256": "sha256:da0d8a42fd6031667437aeeed5f1c0470727917b89a06abc84ac827f516b6287",
+      "lf_sha256": "sha256:da0d8a42fd6031667437aeeed5f1c0470727917b89a06abc84ac827f516b6287"
+    },
+    "docs/STAGE2_CALLABLE_RESULT_QUALIFIERS.md": {
+      "raw_sha256": "sha256:c7465bc5a5bb7d1c1a6fbe245e31f65040ea831c5cb5def8d154cf8d82d48839",
+      "lf_sha256": "sha256:c7465bc5a5bb7d1c1a6fbe245e31f65040ea831c5cb5def8d154cf8d82d48839"
+    },
+    "pine2ast/semantic/control_values.py": {
+      "raw_sha256": "sha256:abbcd8e287d8ba8645fdc30426f2bf6d1a046ac5ba0bdcdda338d05eda0c100a",
+      "lf_sha256": "sha256:578b412bc4f84ce73e96eeae044099600a6219e0a1f15c36fffe3c06098e37cf"
+    },
+    "pine2ast/semantic/parameter_qualifiers.py": {
+      "raw_sha256": "sha256:3320bd49e6e1c0d602e8268a51994a08c1bef26605a8c1a58a7dd239813156be",
+      "lf_sha256": "sha256:3320bd49e6e1c0d602e8268a51994a08c1bef26605a8c1a58a7dd239813156be"
+    },
+    "tests/test_nested_callable_result_qualifiers.py": {
+      "raw_sha256": "sha256:27f1341aed1b84d9e1264f06f65f89696419f439246f7f189d47186de90f4cd5",
+      "lf_sha256": "sha256:27f1341aed1b84d9e1264f06f65f89696419f439246f7f189d47186de90f4cd5"
+    },
+    "docs/STAGE2_CALLABLE_NESTED_CONTROL_FIX.md": {
+      "raw_sha256": "sha256:64c44d6335696a1009fc03fc2ec94127c414e43e8da9a45098f495a0f0638a67",
+      "lf_sha256": "sha256:64c44d6335696a1009fc03fc2ec94127c414e43e8da9a45098f495a0f0638a67"
+    }
+  },
+  "source_split": {
+    "original_functional": 4,
+    "p1_functional": 3,
+    "functional_union": 6,
+    "new_test_files": 2,
+    "new_tests": 100,
+    "docs": 2
+  },
+  "independent_snapshot": ".runtime/evidence/callable-result-revised-reviewed-source",
+  "closed_finding": "Nested series if/switch control no longer flattens to simple; direct root plus guards are recursively joined. Loop expressions retain their conservative owner qualifier.",
+  "checks": [
+    "Immediate structural qualifier roots are distinct from type-only flattened leaves; type returned_expressions function AST unchanged.",
+    "Shared structural dependency helper also retains nested guard parameter origins.",
+    "Old tests and original 44 cases unchanged; new 56 regression cases cover raw/imported nested guards, switch selectors, loops, positive simple branches and parameter bounds.",
+    "Global const/input result floors, methods and untyped specialization remain outside this wave.",
+    "Original frozen source and reviewer before evidence hashes unchanged."
+  ],
+  "results": {
+    "311": {
+      "independent_focused_passed": 191,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "original_false_admissions": 4,
+      "original_false_admissions_now_rejected": 4,
+      "negative_controls_still_rejected": 4,
+      "full_owner_original_nodeids_preserved": 1370,
+      "full_owner_new_nodeids": 56,
+      "full_owner_previous_failures_errors_unchanged": true,
+      "independent_xml_sha256": "b9f6cc092f8337731a2154efcd376000ada5b3f4ec884c3550ce585c2eb840f8",
+      "after_repro_sha256": "309aa5e978ed465b1b65e46c7c61275e7cfe5d0426e0c5b5a1504c4b1c50a0fb"
+    },
+    "313": {
+      "independent_focused_passed": 191,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "original_false_admissions": 4,
+      "original_false_admissions_now_rejected": 4,
+      "negative_controls_still_rejected": 4,
+      "full_owner_original_nodeids_preserved": 1370,
+      "full_owner_new_nodeids": 56,
+      "full_owner_previous_failures_errors_unchanged": true,
+      "independent_xml_sha256": "a2f2d8a5bb4c2d1885a1dd3deceae7d1d0bce6466072997e54432da21edfd607",
+      "after_repro_sha256": "309aa5e978ed465b1b65e46c7c61275e7cfe5d0426e0c5b5a1504c4b1c50a0fb"
+    }
+  },
+  "sibling_lineage": {
+    "input_implicit_without_callable6": "Input caller falsely rejected, series caller rejected; no new false admission in active language-state candidate.",
+    "original_callable6": "Both callers accepted, including erroneous series caller.",
+    "revised": "Input accepted, series rejected; inferred choose parameter simple.",
+    "owner_evidence": [
+      "callable-sibling-lineage-input-implicit-py311.json",
+      "callable-sibling-lineage-callable6-py311.json",
+      "callable-sibling-lineage-p1-fixed-py311.json",
+      "callable-sibling-lineage-input-implicit-py313.json",
+      "callable-sibling-lineage-callable6-py313.json",
+      "callable-sibling-lineage-p1-fixed-py313.json"
+    ]
+  },
+  "primary_authority": [
+    "https://www.tradingview.com/pine-script-docs/concepts/libraries/#qualified-type-control",
+    "https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#qualifier-keywords"
+  ],
+  "production_or_tests_edited_by_reviewer": false,
+  "linux_joint_execution_pending": true,
+  "full_stage2_accepted": false
+}

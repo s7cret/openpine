@@ -1,0 +1,366 @@
+{
+  "schema_id": "openpine.independent_rolling_floor_metadata_review.v1",
+  "status": "METADATA_SOURCE_REVIEW_PASSED_COLLECTION_PENDING",
+  "stage2_accepted": false,
+  "tests_executed_or_inventory_accepted_by_this_review": false,
+  "metadata_bundle": {
+    "path": ".runtime/evidence/rolling-floor-metadata-bundle.json",
+    "sha256": "56c11df644b4a57f36d3e11bc56d24f7fe816c55d40065c075e47d1acc979f21",
+    "raw_bytes": 1032719,
+    "files": 14,
+    "base": "0ab9300a328b280126c20271bb53767435fe6c5a",
+    "base_tree": "348a8bae7ca5fd2885f5b4506fb0ae435af597f8",
+    "predicted_metadata_tree": "61f8c24f900d5618a15898ee427eb37614324833",
+    "predicted_full_tree_files": 1616
+  },
+  "metadata_files": [
+    {
+      "path": "docs/RC6_LIFECYCLE_SOURCES.json",
+      "group": "pins",
+      "lf_sha256": "40cd125d3cb9e83aff90ac898884593c7950808c0d5beee790562e7e5782744e",
+      "existed_at_base": true
+    },
+    {
+      "path": "verification/callable-result-revised-independent-review.json",
+      "group": "documentation",
+      "lf_sha256": "120681e0f20b2b66ba3c64470ed81676f0870fbdbade450df1072cdabff9c78a",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/varip-nominal-arrays-independent-review.json",
+      "group": "documentation",
+      "lf_sha256": "aea97c4d728562e38a25e57f08ff394cc58c48fbe36d3b3ac0e2d991c13683d8",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/rolling-statistics-independent-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "02b07c6d35f144edaded8e69e844ff9d939d31961af923ee3159547d7b8eb372",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/array-search-independent-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "766de03dba924a14829ea81b62da6e3e9258aa1152c27f5216a9163a4f22edf1",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/language-state-cleanup-final-execution-review.json",
+      "group": "documentation",
+      "lf_sha256": "04a5551f16d77ac6d77936a9f036151588c64d670f1af80f63d26ddb6e85dc47",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/exported-floor-independent-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "19b171824ea6902c2095d8a350133dfc09e15a92cd94a11218eb8b09c7f32627",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/rolling-remote-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "bfb2eda34fb221ff74277c3c5531b9fc2eeac518aea7e11090a2707477fd3634",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/floor-remote-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "1c190dc8bd91ca2362002b4bc5e1c5170cc6ddebd8427b3f04b6a1e08b1197d8",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/array-search-remote-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "d42f29cef5e36419d6ccb82e0716da9022495c093ab597c4e6878833652541dd",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/callable-result-remote-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "8d649bf61702e96059652e267ca1182dd73d73d36ddcd4eb6fff6e0404d12d6e",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/varip-remote-source-review.json",
+      "group": "documentation",
+      "lf_sha256": "f53fab6595297091e89d3da9d0a20af97bc814eb0c395c3beb115ecb648dbf52",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/exported-floor-denominator-reconciliation.json",
+      "group": "documentation",
+      "lf_sha256": "434f9aa388d2d2a09319d8e2cd1d107fda22ec33828eacc1e838a8af1b8a35c0",
+      "existed_at_base": false
+    },
+    {
+      "path": "verification/stage2-progress.json",
+      "group": "documentation",
+      "lf_sha256": "d216948d6ec30b85cd6ef1211ac2eadbfa7189a3a61db8adf565845bd13bfbfd",
+      "existed_at_base": true
+    }
+  ],
+  "pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+    "pinelib": "ff3fda01541795c793068bced47a0d195bf27e37",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "5b90a733e548a13bd5dc88c922e7ca397059c456"
+  },
+  "changed_pins": [
+    "ast2python",
+    "pine2ast",
+    "pinelib"
+  ],
+  "other_pins_unchanged": true,
+  "exact_published_floor_fulltree_and_commit_split": [
+    {
+      "repository": "pine2ast",
+      "base": "853f8e251a92dacfcb225895e491261a795fb13a",
+      "tip": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+      "tree": "f0d0e6531bb6c446986721671eda516700ead89c",
+      "complete_tree_files": 373,
+      "overlay_files": 12,
+      "commit_groups": [
+        {
+          "group": "functional",
+          "sha": "9cab8c5d2d2aa79bba01c77319ff026589fc1bcc",
+          "tree": "1b951911f946319b8696daaebd55856da13e15f9",
+          "files": 8
+        },
+        {
+          "group": "new-tests",
+          "sha": "6dc8a60f113ab2b72f2b4517a1287ff925fb097f",
+          "tree": "edc956a4b33ad8c3d370fe612acf589be7b1f578",
+          "files": 2
+        },
+        {
+          "group": "fixture-correction",
+          "sha": "135f6937e5abad5232b191e3d10d780675dbe6d1",
+          "tree": "b0a3287d2bd262892dde9e17f748e513aea70865",
+          "files": 1
+        },
+        {
+          "group": "documentation",
+          "sha": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+          "tree": "f0d0e6531bb6c446986721671eda516700ead89c",
+          "files": 1
+        }
+      ],
+      "complete_tree_and_separate_commit_paths_match": true
+    },
+    {
+      "repository": "ast2python",
+      "base": "f1092609a3b5d3f245ec7a30e9552edecd0bf56a",
+      "tip": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+      "tree": "37d85bffcc6c52543d3aec13e5ebf620b1f9e8a0",
+      "complete_tree_files": 170,
+      "overlay_files": 10,
+      "commit_groups": [
+        {
+          "group": "functional",
+          "sha": "6e0fb8182fe24b27ed781f02301289619b556d75",
+          "tree": "7ed1ec50684e741172cb83fa16935e93f35af781",
+          "files": 5
+        },
+        {
+          "group": "new-tests",
+          "sha": "fd97835f0838245d5906ab17d312bb462d74faf5",
+          "tree": "3de102b57cbd430436f2276f1a62ff0d38d475a7",
+          "files": 3
+        },
+        {
+          "group": "fixture-correction",
+          "sha": "66b3d28eb36e6e7a50ea39fd6794b3a41e45726d",
+          "tree": "115ea582ab6b83e3d98d8472752567ff3e85aec6",
+          "files": 1
+        },
+        {
+          "group": "identity-correction",
+          "sha": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+          "tree": "37d85bffcc6c52543d3aec13e5ebf620b1f9e8a0",
+          "files": 1
+        }
+      ],
+      "complete_tree_and_separate_commit_paths_match": true
+    },
+    {
+      "repository": "OpenPine",
+      "base": "2845ae12037294b122dbb6165df7987539613798",
+      "tip": "0ab9300a328b280126c20271bb53767435fe6c5a",
+      "tree": "348a8bae7ca5fd2885f5b4506fb0ae435af597f8",
+      "complete_tree_files": 1604,
+      "overlay_files": 1,
+      "commit_groups": [
+        {
+          "group": "functional",
+          "sha": "0ab9300a328b280126c20271bb53767435fe6c5a",
+          "tree": "348a8bae7ca5fd2885f5b4506fb0ae435af597f8",
+          "files": 1
+        }
+      ],
+      "complete_tree_and_separate_commit_paths_match": true
+    }
+  ],
+  "runtime_search_source": {
+    "source": "ff3fda01541795c793068bced47a0d195bf27e37",
+    "tree": "9fee61583fa010efe0cfb3a5b85e199634e9370b",
+    "base": "441b3d632d18ac964efb343bdb81e66c3a891b0e",
+    "full_tree_files": 151,
+    "overlay_files": 4,
+    "full_tree_matches_immutable_search_bundle": true,
+    "independent_source_review_owner": "root; separate receipt copied byte-exact",
+    "runtime_manifest_unchanged_by_search": true
+  },
+  "copied_receipts": [
+    {
+      "source": ".runtime/evidence/callable-result-revised-independent-review.json",
+      "destination": "verification/callable-result-revised-independent-review.json",
+      "raw_sha256": "120681e0f20b2b66ba3c64470ed81676f0870fbdbade450df1072cdabff9c78a",
+      "published_lf_sha256": "120681e0f20b2b66ba3c64470ed81676f0870fbdbade450df1072cdabff9c78a"
+    },
+    {
+      "source": ".runtime/evidence/varip-nominal-arrays-independent-review.json",
+      "destination": "verification/varip-nominal-arrays-independent-review.json",
+      "raw_sha256": "aea97c4d728562e38a25e57f08ff394cc58c48fbe36d3b3ac0e2d991c13683d8",
+      "published_lf_sha256": "aea97c4d728562e38a25e57f08ff394cc58c48fbe36d3b3ac0e2d991c13683d8"
+    },
+    {
+      "source": ".runtime/evidence/rolling-statistics-independent-source-review.json",
+      "destination": "verification/rolling-statistics-independent-source-review.json",
+      "raw_sha256": "02b07c6d35f144edaded8e69e844ff9d939d31961af923ee3159547d7b8eb372",
+      "published_lf_sha256": "02b07c6d35f144edaded8e69e844ff9d939d31961af923ee3159547d7b8eb372"
+    },
+    {
+      "source": ".runtime/evidence/array-search-independent-source-review.json",
+      "destination": "verification/array-search-independent-source-review.json",
+      "raw_sha256": "766de03dba924a14829ea81b62da6e3e9258aa1152c27f5216a9163a4f22edf1",
+      "published_lf_sha256": "766de03dba924a14829ea81b62da6e3e9258aa1152c27f5216a9163a4f22edf1"
+    },
+    {
+      "source": ".runtime/evidence/language-state-cleanup/final-execution-review.json",
+      "destination": "verification/language-state-cleanup-final-execution-review.json",
+      "raw_sha256": "04a5551f16d77ac6d77936a9f036151588c64d670f1af80f63d26ddb6e85dc47",
+      "published_lf_sha256": "04a5551f16d77ac6d77936a9f036151588c64d670f1af80f63d26ddb6e85dc47"
+    },
+    {
+      "source": ".runtime/evidence/exported-floor-independent-source-review.json",
+      "destination": "verification/exported-floor-independent-source-review.json",
+      "raw_sha256": "19b171824ea6902c2095d8a350133dfc09e15a92cd94a11218eb8b09c7f32627",
+      "published_lf_sha256": "19b171824ea6902c2095d8a350133dfc09e15a92cd94a11218eb8b09c7f32627"
+    },
+    {
+      "source": ".runtime/evidence/rolling-remote-source-review.json",
+      "destination": "verification/rolling-remote-source-review.json",
+      "raw_sha256": "bfb2eda34fb221ff74277c3c5531b9fc2eeac518aea7e11090a2707477fd3634",
+      "published_lf_sha256": "bfb2eda34fb221ff74277c3c5531b9fc2eeac518aea7e11090a2707477fd3634"
+    },
+    {
+      "source": ".runtime/evidence/floor-remote-source-review.json",
+      "destination": "verification/floor-remote-source-review.json",
+      "raw_sha256": "1c190dc8bd91ca2362002b4bc5e1c5170cc6ddebd8427b3f04b6a1e08b1197d8",
+      "published_lf_sha256": "1c190dc8bd91ca2362002b4bc5e1c5170cc6ddebd8427b3f04b6a1e08b1197d8"
+    },
+    {
+      "source": ".runtime/evidence/array-search-remote-source-review.json",
+      "destination": "verification/array-search-remote-source-review.json",
+      "raw_sha256": "d42f29cef5e36419d6ccb82e0716da9022495c093ab597c4e6878833652541dd",
+      "published_lf_sha256": "d42f29cef5e36419d6ccb82e0716da9022495c093ab597c4e6878833652541dd"
+    },
+    {
+      "source": ".runtime/evidence/callable-result-remote-source-review.json",
+      "destination": "verification/callable-result-remote-source-review.json",
+      "raw_sha256": "8d649bf61702e96059652e267ca1182dd73d73d36ddcd4eb6fff6e0404d12d6e",
+      "published_lf_sha256": "8d649bf61702e96059652e267ca1182dd73d73d36ddcd4eb6fff6e0404d12d6e"
+    },
+    {
+      "source": ".runtime/evidence/varip-remote-source-review.json",
+      "destination": "verification/varip-remote-source-review.json",
+      "raw_sha256": "f53fab6595297091e89d3da9d0a20af97bc814eb0c395c3beb115ecb648dbf52",
+      "published_lf_sha256": "f53fab6595297091e89d3da9d0a20af97bc814eb0c395c3beb115ecb648dbf52"
+    },
+    {
+      "source": ".runtime/evidence/exported-floor-denominator-reconciliation.json",
+      "destination": "verification/exported-floor-denominator-reconciliation.json",
+      "raw_sha256": "81751048e31fb8d6da658d17514f4a242fbcd744cffeb3ae9c6d8d3af2b12f04",
+      "published_lf_sha256": "434f9aa388d2d2a09319d8e2cd1d107fda22ec33828eacc1e838a8af1b8a35c0"
+    }
+  ],
+  "baseline_inventory": {
+    "source": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+    "path": "verification/inventory.json",
+    "raw_sha256": "ee96d6285f0b295bbeb681aa749c74053dfca10c8c4b8e4f53399b310888fe1d",
+    "count": 8470,
+    "byte_unchanged_at_source_candidate": true,
+    "not_modified_by_metadata_bundle": true
+  },
+  "expected_next_collection": {
+    "count": 9685,
+    "added": 1215,
+    "per_repository": {
+      "openpine-contracts": 557,
+      "pinelib": 1832,
+      "pine2ast": 1595,
+      "ast2python": 1028,
+      "backtest_engine": 1102,
+      "optimizer": 281,
+      "marketdata-provider": 601,
+      "openpine": 2689
+    },
+    "addition_breakdown": {
+      "pinelib": {
+        "varip": 93,
+        "rolling": 371,
+        "search": 85
+      },
+      "pine2ast": {
+        "callable": 100,
+        "rolling_catalog": 48,
+        "exported_floor": 119
+      },
+      "ast2python": {
+        "varip": 52,
+        "exported_floor": 16
+      },
+      "openpine": {
+        "rolling_manual_runner": 331
+      }
+    },
+    "required_old_nodeids_retained": 8470,
+    "expected_deselection_delta": 0,
+    "provider_existing_deselections": 5,
+    "actual_nodeid_acceptance_pending_artifacts": true
+  },
+  "expected_manual_execution_observations_per_python": {
+    "prior": 830,
+    "rolling": 330,
+    "total": 1160,
+    "calculation": "(47 + 75 + 44 + 66) independent cases x 5 execution paths",
+    "not_execution_evidence": true,
+    "array_search_manual_fixture_is_separate_and_not_counted_as_builtin_surface_oracle": true
+  },
+  "preservation": {
+    "all_prior_builtin_and_stage1_corpus_file_blobs_unchanged": 580,
+    "prior_builtin_expected_files": 166,
+    "stage1_expected_files": 12,
+    "permanent_workflow_and_old_inventory_blob_unchanged": true,
+    "old_progress_fields_and_acceptance_status_preserved_except_explicit_block_cleanup_links": true,
+    "published_evidence_bytes_and_raw_lf_identity_fields_match": true,
+    "all_next_constant_wave_source_tests_excluded_from_metadata": true
+  },
+  "limits": [
+    "This is a read-only source/metadata review and complete-tree comparison, not test execution acceptance.",
+    "Actual collected nodeids, exact old superset, versions, deselections and immutable archive identities must be checked after collection-only CI.",
+    "Full Stage2 acceptance and TradingView parity remain false. No automatic expected values were generated."
+  ],
+  "review_script": {
+    "path": ".runtime/evidence/review_rolling_floor_metadata_independently.py",
+    "sha256": "16350203a2bb43d9dcab995a93f79f0cfd47958f1d7dfe124256de454e6e46a7"
+  },
+  "generator": {
+    "path": ".runtime/ci-tools/prepare_rolling_floor_metadata.py",
+    "raw_sha256": "4640976a92dbfc848f6aa71f8e421f0a9dee508cbd62cdd75abd7468df850b4f",
+    "reviewed_behavior": "Only exact pins, byte-checked frozen evidence copies and explicit pending block/cleanup metadata. No inventory regeneration, production/test mutation, gate changes or execution claim."
+  }
+}

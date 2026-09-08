@@ -1,0 +1,4 @@
+//@version=6
+indicator("manual rolling statistics")
+float sample = na
+plot(ta.lowest(sample,3))

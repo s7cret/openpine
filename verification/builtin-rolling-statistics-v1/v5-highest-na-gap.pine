@@ -1,0 +1,4 @@
+//@version=5
+indicator("manual rolling statistics")
+float sample = bar_index == 1 ? na : close
+plot(ta.highest(sample,2))

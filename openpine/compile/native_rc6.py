@@ -122,6 +122,7 @@ class NativeRC6CompilerAdapter:
                 source_name=source_name,
                 producer_commit=pine2ast_commit,
                 require_clean_frontend=True,
+                linked_source=linked_source,
             )
             target = load_pinelib_target_manifest()
             compiled = compile_consumer_bundle(
