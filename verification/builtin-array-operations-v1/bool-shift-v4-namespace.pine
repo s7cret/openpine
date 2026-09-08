@@ -1,0 +1,9 @@
+//@version=4
+study("array literal")
+var a = array.new_bool(0)
+var bool result = false
+if bar_index == 0
+    array.push(a, false)
+    array.push(a, true)
+if bar_index == 1
+    result := array.shift(a)

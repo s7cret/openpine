@@ -1,0 +1,6 @@
+//@version=6
+indicator("string literal")
+var string argument = "Ab Z9!"
+var string result = ""
+if bar_index == 1
+    result := str.lower(argument)

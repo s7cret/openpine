@@ -1,0 +1,9 @@
+//@version=5
+indicator("array literal")
+var a = array.new_string(0)
+var string result = ""
+if bar_index == 0
+    array.push(a, "a")
+    array.push(a, "b")
+if bar_index == 1
+    result := a.pop()

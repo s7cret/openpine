@@ -1,0 +1,5 @@
+//@version=5
+indicator("map literal")
+var a=map.new<string,int>()
+if bar_index==1
+    a.clear()

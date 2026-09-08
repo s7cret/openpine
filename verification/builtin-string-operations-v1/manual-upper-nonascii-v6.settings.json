@@ -1,0 +1,36 @@
+{
+  "abi_callable": "pinelib.abi.string.upper_v2",
+  "argument": {
+    "kind": "value",
+    "value": "aéßяZ"
+  },
+  "declared_binding": [
+    "pine:function:str.upper",
+    "pine:function:str.upper#canonical",
+    "NAMESPACE_FUNCTION"
+  ],
+  "expected": {
+    "kind": "value",
+    "value": "AéßяZ"
+  },
+  "function": "str.upper",
+  "id": "manual-upper-nonascii-v6",
+  "initial_result": "",
+  "initial_v5_inference": false,
+  "origin": {
+    "path": "string-manual-expected.json",
+    "row_id": "upper-nonascii",
+    "section": "rows",
+    "sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac"
+  },
+  "original_authority": "Primary v6 Strings manual",
+  "primary_source_line": 6,
+  "row_id": "upper-nonascii",
+  "source_name": "manual-upper-nonascii-v6.pine",
+  "storage": {
+    "argument": "string",
+    "result": "string"
+  },
+  "unverified_numeric_disagreement": false,
+  "version": 6
+}

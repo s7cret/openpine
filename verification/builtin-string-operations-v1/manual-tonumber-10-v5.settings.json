@@ -1,0 +1,35 @@
+{
+  "abi_callable": "pinelib.abi.string.tonumber_v2",
+  "argument": {
+    "kind": "value",
+    "value": "NaN"
+  },
+  "declared_binding": [
+    "pine:function:str.tonumber",
+    "pine:function:str.tonumber#canonical",
+    "NAMESPACE_FUNCTION"
+  ],
+  "expected": {
+    "kind": "na"
+  },
+  "function": "str.tonumber",
+  "id": "manual-tonumber-10-v5",
+  "initial_result": 0.0,
+  "initial_v5_inference": true,
+  "origin": {
+    "path": "string-manual-expected.json",
+    "row_id": "tonumber-10",
+    "section": "rows",
+    "sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac"
+  },
+  "original_authority": "shared ASCII behavior inference from v5 API and current detailed manual",
+  "primary_source_line": 6,
+  "row_id": "tonumber-10",
+  "source_name": "manual-tonumber-10-v5.pine",
+  "storage": {
+    "argument": "string",
+    "result": "float"
+  },
+  "unverified_numeric_disagreement": false,
+  "version": 5
+}

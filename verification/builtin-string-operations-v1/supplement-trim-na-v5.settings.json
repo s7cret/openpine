@@ -1,0 +1,43 @@
+{
+  "abi_callable": "pinelib.abi.string.trim_v2",
+  "argument": {
+    "kind": "na"
+  },
+  "declared_binding": [
+    "pine:function:str.trim",
+    "pine:function:str.trim#canonical",
+    "NAMESPACE_FUNCTION"
+  ],
+  "expected": {
+    "kind": "value",
+    "value": ""
+  },
+  "function": "str.trim",
+  "id": "supplement-trim-na-v5",
+  "initial_result": "",
+  "initial_v5_inference": false,
+  "origin": {
+    "index": 0,
+    "path": "string-context-supplement.json",
+    "section": "na_trim",
+    "sha256": "7163768f5dacd31dc66a99971d7c9a60e535a1cafddd96c2213c8228c5a020f0"
+  },
+  "original_authority": {
+    "reference": "https://www.tradingview.com/pine-script-reference/v5/#fun_str.trim",
+    "rule": "The reference remarks define an empty string for a source NA value.",
+    "translation_id": 162284,
+    "translation_sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832",
+    "translation_source": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+    "v5_payload": "https://static.tradingview.com/static/bundles/91998.b1f3e2c03b5a108b7bd6.js",
+    "v5_payload_sha256": "e52daf777c5e777855537812e57cff57123dd6b2568f98b00dc62d20fbc6bfb5"
+  },
+  "primary_source_line": 6,
+  "row_id": 0,
+  "source_name": "supplement-trim-na-v5.pine",
+  "storage": {
+    "argument": "string",
+    "result": "string"
+  },
+  "unverified_numeric_disagreement": false,
+  "version": 5
+}

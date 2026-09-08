@@ -1,0 +1,1 @@
+{"compile":true,"events":[{"bar":0,"value":{"a":[false,true],"result":false}},{"bar":1,"value":{"a":[true],"result":false}},{"bar":2,"value":{"a":[true],"result":false}},{"bar":3,"value":{"a":[true],"result":false}}]}

@@ -1,0 +1,15 @@
+//@version=4
+study("array literal")
+var a = array.new_int(0)
+var b = array.new_int(0)
+if bar_index == 0
+    array.push(a, 0)
+    array.push(a, 1)
+    array.push(a, 2)
+    array.push(a, 3)
+if bar_index == 1
+    b := array.slice(a, 1, 3)
+if bar_index == 2
+    array.set(b, 0, 9)
+if bar_index == 3
+    array.set(a, 2, 8)

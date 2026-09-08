@@ -1,0 +1,422 @@
+{
+  "schema_id": "openpine.constant_metadata_manual_expected.v1",
+  "provenance": "manual_fixture",
+  "tradingview_export": false,
+  "cases": [
+    {
+      "case_id": "v5-round-0",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(2.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 3,
+      "expected_first_plot": 3,
+      "source_sha256": "3ac7cdd0fa05153032d076d55713a2b458060a80d897310ca8b580aebfd9dbc7"
+    },
+    {
+      "case_id": "v5-round-1",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(-2.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -2,
+      "expected_first_plot": -2,
+      "source_sha256": "e6fb1204857a4d2a9de6d60beceb19bd68ba9459536ff7b69ce31c30f1d12d4d"
+    },
+    {
+      "case_id": "v5-round-2",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(1.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "fd7dce13b0212820b1a5f7402d88f3a9fa5cd3b7ae6bd564260a2975115835d4"
+    },
+    {
+      "case_id": "v5-round-3",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(-1.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -1,
+      "expected_first_plot": -1,
+      "source_sha256": "19cb40d7e2015727281cf20c18c77291a86055653feb6e9acd46051a080b63d0"
+    },
+    {
+      "case_id": "v5-round-4",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(0.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 1,
+      "expected_first_plot": 1,
+      "source_sha256": "2005f4f95c69a8ecfa39e6a14ca8f43efe4283c1069900d3cc5de6a606916bb0"
+    },
+    {
+      "case_id": "v5-round-5",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(-0.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 0,
+      "expected_first_plot": 0,
+      "source_sha256": "7dcaedd96ef3edb220324e9fdaa9de172d109a5d0bff3526ea25d8a079489ba4"
+    },
+    {
+      "case_id": "v5-round-6",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(2.25))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "3e4679d9ebaa096f1aee6402ec920b8c2c4b3ff0c839d7e0e64842922d5cb6b1"
+    },
+    {
+      "case_id": "v5-round-7",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(-2.25))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -2,
+      "expected_first_plot": -2,
+      "source_sha256": "acd6c7cf67443e3da6dd61c87f97b8fc138261a6d7741f621d9e660f9f87c3a6"
+    },
+    {
+      "case_id": "v5-round-8",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(2.75))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 3,
+      "expected_first_plot": 3,
+      "source_sha256": "4ee2e7f0eed91078f7890cb2f8b25b2c1f920cb2f28fa452c5dc827cd99de20d"
+    },
+    {
+      "case_id": "v5-round-9",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.int(math.round(-2.75))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -3,
+      "expected_first_plot": -3,
+      "source_sha256": "92fed874ab09d099f53b3181d7982f56c2b736e87873a99ff73df49ee6c7786a"
+    },
+    {
+      "case_id": "v5-precision-0",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.float(math.round(1.25, 1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": 1.3,
+      "expected_first_plot": 1.3,
+      "source_sha256": "67523415f792ae944bf47f8c11e5c861ebe13ebaea3be968aba93b60e0fb64ac"
+    },
+    {
+      "case_id": "v5-precision-1",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.float(math.round(-1.25, 1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": -1.2,
+      "expected_first_plot": -1.2,
+      "source_sha256": "0a1795afa612d7345c3855601b7b3fa76b33656db8acdfa85571950f1757f1c5"
+    },
+    {
+      "case_id": "v5-precision-2",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.float(math.round(25, -1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": 30.0,
+      "expected_first_plot": 30.0,
+      "source_sha256": "813188da0c1e191094a48ea06df26c18d94f2b2925309c87924f6c6646ed7de2"
+    },
+    {
+      "case_id": "v5-precision-3",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nn = input.float(math.round(-25, -1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": -20.0,
+      "expected_first_plot": -20.0,
+      "source_sha256": "8b95769b01868c8cf22a6fce4b5ae347af1f892dd27f904983605ceb188547e4"
+    },
+    {
+      "case_id": "v5-literal",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nvalue() => 2\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "a36c485068427b59ebca30a0407322c8fc5a9de39de7320ec3094c925b9e191b"
+    },
+    {
+      "case_id": "v5-untyped-arguments",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nadd(a, b) => a + b\nn = input.int(add(2, 3))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 5,
+      "expected_first_plot": 5,
+      "source_sha256": "dddceee9b96f91ac74e7956286a9b378330941c8ae1480f14d2e6873a3dd84ba"
+    },
+    {
+      "case_id": "v5-nested",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nadd(a, b) => a + b\nvalue() => add(2, 3) * 2\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 10,
+      "expected_first_plot": 10,
+      "source_sha256": "569f015cc0b6f368b6fdf380069371d75bdd2c6d4d297e54a28d5e7ba8c1cb03"
+    },
+    {
+      "case_id": "v5-global-constant",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nint BASE = 2\nvalue() => BASE\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "a4376f4d57b8fbd73f7e57ace5691b6b65038b46677066eef66af322bbdc026b"
+    },
+    {
+      "case_id": "v5-conditional",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nvalue(x) => x ? 2 : 3\nn = input.int(value(true))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "e7f0500608abf0eb8521de8031d78f200ae3170539647d04e7b1892413540333"
+    },
+    {
+      "case_id": "v5-round-in-udf",
+      "version": 5,
+      "source": "//@version=5\nindicator(\"Constant metadata\")\nvalue() => math.round(2.5)\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 3,
+      "expected_first_plot": 3,
+      "source_sha256": "097ac8d6c4f2a2052d714ea186aa50fdab6cab2bb55b54bca338edb55ab7b17b"
+    },
+    {
+      "case_id": "v6-round-0",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(2.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 3,
+      "expected_first_plot": 3,
+      "source_sha256": "1ce08dfe89c784bc26e21ac95666d7927a6736542d7414128a156d4241d35b00"
+    },
+    {
+      "case_id": "v6-round-1",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(-2.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -2,
+      "expected_first_plot": -2,
+      "source_sha256": "039b479d178576e111d0ba9f722dc57ab260db2cf764b020c5c8f1cb6c5caefb"
+    },
+    {
+      "case_id": "v6-round-2",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(1.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "1e4359e763e9e42f529032dc5f589eb842343c63738d49e292e5fbc7994a1f8b"
+    },
+    {
+      "case_id": "v6-round-3",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(-1.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -1,
+      "expected_first_plot": -1,
+      "source_sha256": "b186c4770af89ed995d6f105f480297aec5aed22a15bb92b4d2a865019e97885"
+    },
+    {
+      "case_id": "v6-round-4",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(0.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 1,
+      "expected_first_plot": 1,
+      "source_sha256": "5b768186798abd8c3e9c3141969010106a0ee0c779d971bb709fd77290eb052e"
+    },
+    {
+      "case_id": "v6-round-5",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(-0.5))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 0,
+      "expected_first_plot": 0,
+      "source_sha256": "8f2ffb11f019f88c22b194e1fd3e2442f5077f2ea8083bb556d018c68a2b99af"
+    },
+    {
+      "case_id": "v6-round-6",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(2.25))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "a2028c6fabb7c62ec8fe3c0e7c8011c179bbb05a9565398ce3785e5792dde6cb"
+    },
+    {
+      "case_id": "v6-round-7",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(-2.25))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -2,
+      "expected_first_plot": -2,
+      "source_sha256": "d149f4b54722989f599d2685a0fc1e88b51f3f5d9797d9133a1f0e39c12d7d89"
+    },
+    {
+      "case_id": "v6-round-8",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(2.75))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 3,
+      "expected_first_plot": 3,
+      "source_sha256": "20e3be50d13d678a44aadc129e6d1339f3969a54dd6b79f3076508bc683db923"
+    },
+    {
+      "case_id": "v6-round-9",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.int(math.round(-2.75))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": -3,
+      "expected_first_plot": -3,
+      "source_sha256": "b455adde05878a12db970fbc442c492b35581bb5915b37f07b43bc4bfb23b817"
+    },
+    {
+      "case_id": "v6-precision-0",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.float(math.round(1.25, 1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": 1.3,
+      "expected_first_plot": 1.3,
+      "source_sha256": "684947fe54fc94b456b30cb5ca0be40a0332aef0bc828fc983c1ba2353f3beb6"
+    },
+    {
+      "case_id": "v6-precision-1",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.float(math.round(-1.25, 1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": -1.2,
+      "expected_first_plot": -1.2,
+      "source_sha256": "3fa963017f044dbe9eb809c6f90fb1faeb1f8df2cd87b6df4f424e684bdefa53"
+    },
+    {
+      "case_id": "v6-precision-2",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.float(math.round(25, -1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": 30.0,
+      "expected_first_plot": 30.0,
+      "source_sha256": "62fd82bcbc3da393d3ba046b6b1b3f3be2445606822f7a7a7165b6105a043055"
+    },
+    {
+      "case_id": "v6-precision-3",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nn = input.float(math.round(-25, -1))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "float",
+      "expected_default": -20.0,
+      "expected_first_plot": -20.0,
+      "source_sha256": "956d326f820ff19c67a06fb92a21f623535ad5a912b470f59466def88209c0a0"
+    },
+    {
+      "case_id": "v6-literal",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nvalue() => 2\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "0de42d14820385afdec41dace4891d7f2a835d3512765549edaa4178a12c4cf6"
+    },
+    {
+      "case_id": "v6-untyped-arguments",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nadd(a, b) => a + b\nn = input.int(add(2, 3))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 5,
+      "expected_first_plot": 5,
+      "source_sha256": "8d456278e5cdfa2a2f4f248c382a9bc2e00b87d421c907f4c6b6666a342f1236"
+    },
+    {
+      "case_id": "v6-nested",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nadd(a, b) => a + b\nvalue() => add(2, 3) * 2\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 10,
+      "expected_first_plot": 10,
+      "source_sha256": "7a7dc305f396a54636aea40c57758e2b68bade849fe2cdf50faa9e107dcba2a0"
+    },
+    {
+      "case_id": "v6-global-constant",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nint BASE = 2\nvalue() => BASE\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "a4486b3c389199bad7f09864e9fa391a8af7aa514140052fe7a9e1230a26a2c8"
+    },
+    {
+      "case_id": "v6-conditional",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nvalue(x) => x ? 2 : 3\nn = input.int(value(true))\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 2,
+      "expected_first_plot": 2,
+      "source_sha256": "7b055108bee83e40def307fca46154c213459b16c7ae6107c687956f09c2db0d"
+    },
+    {
+      "case_id": "v6-round-in-udf",
+      "version": 6,
+      "source": "//@version=6\nindicator(\"Constant metadata\")\nvalue() => math.round(2.5)\nn = input.int(value())\nplot(n)\n",
+      "input_alias": "n",
+      "input_kind": "int",
+      "expected_default": 3,
+      "expected_first_plot": 3,
+      "source_sha256": "e1edca7d784498b2df7c195cfae0abe6e3ca20c6859d480c542e49ae2c40cc62"
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://www.tradingview.com/pine-script-reference/v6/#fun_math.round",
+      "rule": "nearest rounding with half ties toward positive infinity; precision counts decimal places"
+    },
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/language/user-defined-functions/",
+      "rule": "untyped parameters inherit argument qualifiers; result follows calculation qualifier"
+    }
+  ],
+  "derivation": "All expected numbers are authored literals. Round tie values select the larger neighboring integer or decimal multiple. UDF expressions use elementary integer substitution. No parser, compiler, runtime, or generated output is imported.",
+  "limitations": [
+    "The current user-defined-function documentation directly describes v6; v5 const-expression parity is an explicit engineering expectation pending independent historical source review.",
+    "This is a producer static-metadata integration corpus, not full builtin-overload or TradingView conformance."
+  ]
+}

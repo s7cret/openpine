@@ -1,0 +1,36 @@
+{
+  "abi_callable": "pinelib.abi.string.lower_v2",
+  "argument": {
+    "kind": "value",
+    "value": ""
+  },
+  "declared_binding": [
+    "pine:function:str.lower",
+    "pine:function:str.lower#canonical",
+    "NAMESPACE_FUNCTION"
+  ],
+  "expected": {
+    "kind": "value",
+    "value": ""
+  },
+  "function": "str.lower",
+  "id": "manual-lower-0-v5",
+  "initial_result": "",
+  "initial_v5_inference": true,
+  "origin": {
+    "path": "string-manual-expected.json",
+    "row_id": "lower-0",
+    "section": "rows",
+    "sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac"
+  },
+  "original_authority": "shared ASCII behavior inference from v5 API and current detailed manual",
+  "primary_source_line": 6,
+  "row_id": "lower-0",
+  "source_name": "manual-lower-0-v5.pine",
+  "storage": {
+    "argument": "string",
+    "result": "string"
+  },
+  "unverified_numeric_disagreement": false,
+  "version": 5
+}

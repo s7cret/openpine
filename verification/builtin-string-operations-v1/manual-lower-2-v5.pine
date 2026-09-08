@@ -1,0 +1,6 @@
+//@version=5
+indicator("string literal")
+var string argument = "already lower"
+var string result = ""
+if bar_index == 1
+    result := str.lower(argument)

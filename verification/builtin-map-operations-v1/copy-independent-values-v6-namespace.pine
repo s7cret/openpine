@@ -1,0 +1,13 @@
+//@version=6
+indicator("map literal")
+var a=map.new<string,int>()
+var b=map.new<string,int>()
+if bar_index==0
+    map.put(a,"a",2)
+    map.put(a,"b",4)
+if bar_index==1
+    b:=map.copy(a)
+if bar_index==2
+    map.put(b,"a",9)
+if bar_index==3
+    map.remove(a,"b")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("array literal")
+var a = array.new_int(0)
+if bar_index == 1
+    array.clear(a)

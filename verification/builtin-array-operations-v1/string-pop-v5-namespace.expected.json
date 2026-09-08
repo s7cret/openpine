@@ -1,0 +1,1 @@
+{"compile":true,"events":[{"bar":0,"value":{"a":["a","b"],"result":""}},{"bar":1,"value":{"a":["a"],"result":"b"}},{"bar":2,"value":{"a":["a"],"result":"b"}},{"bar":3,"value":{"a":["a"],"result":"b"}}]}

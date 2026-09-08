@@ -1,0 +1,8 @@
+//@version=5
+indicator("array literal")
+var a = array.new_int(0)
+if bar_index == 0
+    array.push(a, 2)
+    array.push(a, 4)
+if bar_index == 1
+    array.insert(a, 0, 9)

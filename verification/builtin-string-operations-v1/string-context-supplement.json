@@ -1,0 +1,248 @@
+{
+  "schema_id": "pinelib.string_context_supplement.v1",
+  "authored_before_new_semantic_sut_execution": true,
+  "tradingview_export": false,
+  "full_stage2_accepted": false,
+  "original_manual_sha256": "67362aaa9d69bdb9297fbf862a870f4218cfef8493602936f2dca4522df728ac",
+  "na_trim": [
+    {
+      "version": 5,
+      "argument": {
+        "kind": "na"
+      },
+      "expected": {
+        "kind": "value",
+        "value": ""
+      }
+    },
+    {
+      "version": 6,
+      "argument": {
+        "kind": "na"
+      },
+      "expected": {
+        "kind": "value",
+        "value": ""
+      }
+    }
+  ],
+  "na_trim_authority": {
+    "reference": "https://www.tradingview.com/pine-script-reference/v5/#fun_str.trim",
+    "v5_payload": "https://static.tradingview.com/static/bundles/91998.b1f3e2c03b5a108b7bd6.js",
+    "v5_payload_sha256": "e52daf777c5e777855537812e57cff57123dd6b2568f98b00dc62d20fbc6bfb5",
+    "translation_id": 162284,
+    "translation_source": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+    "translation_sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832",
+    "rule": "The reference remarks define an empty string for a source NA value."
+  },
+  "v6_extra_authority": "https://www.tradingview.com/pine-script-docs/concepts/strings/",
+  "v6_extra": [
+    {
+      "function": "tonumber",
+      "argument": "1\n",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "\n1",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "1\r\n",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "+.5",
+      "expected": {
+        "kind": "value",
+        "value": 0.5
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "-.5",
+      "expected": {
+        "kind": "value",
+        "value": -0.5
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "12.",
+      "expected": {
+        "kind": "value",
+        "value": 12.0
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": ".5",
+      "expected": {
+        "kind": "value",
+        "value": 0.5
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": ".",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "+",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "-.",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "1 2",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "0x10",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "\uff11\uff12.\uff15",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "\u22121",
+      "expected": {
+        "kind": "na"
+      }
+    },
+    {
+      "function": "trim",
+      "argument": "\r\n\t A B \f\u000b",
+      "expected": {
+        "kind": "value",
+        "value": "A B"
+      }
+    },
+    {
+      "function": "trim",
+      "argument": "\t\u00a0 x\u00a0\n",
+      "expected": {
+        "kind": "value",
+        "value": "\u00a0 x\u00a0"
+      }
+    },
+    {
+      "function": "upper",
+      "argument": "a\u0130\u0131\u00e9\u00df\u044fz",
+      "expected": {
+        "kind": "value",
+        "value": "A\u0130\u0131\u00e9\u00df\u044fZ"
+      }
+    },
+    {
+      "function": "lower",
+      "argument": "A\u0130\u0131\u00c9\u1e9e\u042fZ",
+      "expected": {
+        "kind": "value",
+        "value": "a\u0130\u0131\u00c9\u1e9e\u042fz"
+      }
+    }
+  ],
+  "legacy_controls_authority": "Native baseline compatibility only; not a new v1-v5 Pine oracle or resolution of the original three v5 inference mismatches.",
+  "legacy_controls": [
+    {
+      "function": "upper",
+      "argument": "a\u00e9\u00df\u044fZ",
+      "expected": {
+        "kind": "value",
+        "value": "A\u00c9SS\u042fZ"
+      }
+    },
+    {
+      "function": "lower",
+      "argument": "A\u00c9\u1e9e\u042fz",
+      "expected": {
+        "kind": "value",
+        "value": "a\u00e9\u00df\u044fz"
+      }
+    },
+    {
+      "function": "trim",
+      "argument": "\u00a0 A \u00a0",
+      "expected": {
+        "kind": "value",
+        "value": "A"
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "\u0661\u0662",
+      "expected": {
+        "kind": "value",
+        "value": 12.0
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "\uff11\uff12",
+      "expected": {
+        "kind": "value",
+        "value": 12.0
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "1_000",
+      "expected": {
+        "kind": "value",
+        "value": 1000.0
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": "1e2",
+      "expected": {
+        "kind": "value",
+        "value": 100.0
+      }
+    },
+    {
+      "function": "tonumber",
+      "argument": " 1 ",
+      "expected": {
+        "kind": "value",
+        "value": 1.0
+      }
+    }
+  ],
+  "unverified": [
+    "The original three v5 numeric inference expectations remain unresolved",
+    "Overflow/underflow and decimal midpoint conversion parity",
+    "non-BMP string length",
+    "complete string family"
+  ]
+}

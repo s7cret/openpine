@@ -1,0 +1,975 @@
+{
+  "schema_id": "openpine.map_operations_manual_expected.v1",
+  "oracle": "manual_fixture",
+  "provenance": "Literal ordered key/value transitions and prior-value returns authored from primary reference before SUT import or execution.",
+  "primary_reference_sha256": "61d8c761e38a6412382a74879028d26ce962cabbdc0a428256e5e82a7454852a",
+  "sources": [
+    "https://www.tradingview.com/pine-script-reference/v5/#fun_map.put",
+    "https://www.tradingview.com/pine-script-docs/language/maps/"
+  ],
+  "unverified": [
+    "NA keys",
+    "missing bool-valued get/remove version rules",
+    "UDT/reference-value shallow copy",
+    "map capacity limits",
+    "complete map builtin conformance"
+  ],
+  "tradingview_verified": false,
+  "full_stage2_accepted": false,
+  "rows": [
+    {
+      "id": "put-empty",
+      "operation": "put",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [],
+      "arguments": [
+        "a",
+        2
+      ],
+      "after": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "result": {
+        "kind": "na"
+      }
+    },
+    {
+      "id": "put-new-key",
+      "operation": "put",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "arguments": [
+        "b",
+        4
+      ],
+      "after": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "result": {
+        "kind": "na"
+      }
+    },
+    {
+      "id": "put-replace-first",
+      "operation": "put",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "arguments": [
+        "a",
+        9
+      ],
+      "after": [
+        [
+          "a",
+          9
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": 2
+      }
+    },
+    {
+      "id": "put-replace-last",
+      "operation": "put",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "arguments": [
+        "b",
+        9
+      ],
+      "after": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          9
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": 4
+      }
+    },
+    {
+      "id": "put-integer-key-float-value",
+      "operation": "put",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "int",
+      "value_type": "float",
+      "before": [
+        [
+          1,
+          2.5
+        ]
+      ],
+      "arguments": [
+        1,
+        -1.5
+      ],
+      "after": [
+        [
+          1,
+          -1.5
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": 2.5
+      }
+    },
+    {
+      "id": "get-present",
+      "operation": "get",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          7
+        ]
+      ],
+      "arguments": [
+        "a"
+      ],
+      "after": [
+        [
+          "a",
+          7
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": 7
+      }
+    },
+    {
+      "id": "get-missing",
+      "operation": "get",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          7
+        ]
+      ],
+      "arguments": [
+        "b"
+      ],
+      "after": [
+        [
+          "a",
+          7
+        ]
+      ],
+      "result": {
+        "kind": "na"
+      }
+    },
+    {
+      "id": "get-empty",
+      "operation": "get",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [],
+      "arguments": [
+        "a"
+      ],
+      "after": [],
+      "result": {
+        "kind": "na"
+      }
+    },
+    {
+      "id": "get-false-value",
+      "operation": "get",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "bool",
+      "before": [
+        [
+          "a",
+          false
+        ]
+      ],
+      "arguments": [
+        "a"
+      ],
+      "after": [
+        [
+          "a",
+          false
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": false
+      }
+    },
+    {
+      "id": "get-string-value",
+      "operation": "get",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "int",
+      "value_type": "string",
+      "before": [
+        [
+          2,
+          "yes"
+        ]
+      ],
+      "arguments": [
+        2
+      ],
+      "after": [
+        [
+          2,
+          "yes"
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "contains-present",
+      "operation": "contains",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "arguments": [
+        "a"
+      ],
+      "after": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": true
+      }
+    },
+    {
+      "id": "contains-missing",
+      "operation": "contains",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "arguments": [
+        "b"
+      ],
+      "after": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": false
+      }
+    },
+    {
+      "id": "contains-empty",
+      "operation": "contains",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [],
+      "arguments": [
+        "a"
+      ],
+      "after": [],
+      "result": {
+        "kind": "value",
+        "value": false
+      }
+    },
+    {
+      "id": "contains-false-value",
+      "operation": "contains",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "bool",
+      "before": [
+        [
+          "a",
+          false
+        ]
+      ],
+      "arguments": [
+        "a"
+      ],
+      "after": [
+        [
+          "a",
+          false
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": true
+      }
+    },
+    {
+      "id": "remove-present",
+      "operation": "remove",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "arguments": [
+        "b"
+      ],
+      "after": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": 4
+      }
+    },
+    {
+      "id": "remove-first-order",
+      "operation": "remove",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ],
+        [
+          "c",
+          6
+        ]
+      ],
+      "arguments": [
+        "a"
+      ],
+      "after": [
+        [
+          "b",
+          4
+        ],
+        [
+          "c",
+          6
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": 2
+      }
+    },
+    {
+      "id": "remove-missing",
+      "operation": "remove",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "arguments": [
+        "b"
+      ],
+      "after": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "result": {
+        "kind": "na"
+      }
+    },
+    {
+      "id": "remove-empty",
+      "operation": "remove",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [],
+      "arguments": [
+        "a"
+      ],
+      "after": [],
+      "result": {
+        "kind": "na"
+      }
+    },
+    {
+      "id": "size-empty",
+      "operation": "size",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "value",
+        "value": 0
+      }
+    },
+    {
+      "id": "size-three",
+      "operation": "size",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ],
+        [
+          "c",
+          6
+        ]
+      ],
+      "arguments": [],
+      "after": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ],
+        [
+          "c",
+          6
+        ]
+      ],
+      "result": {
+        "kind": "value",
+        "value": 3
+      }
+    },
+    {
+      "id": "clear-empty",
+      "operation": "clear",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "clear-existing",
+      "operation": "clear",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "arguments": [],
+      "after": [],
+      "result": {
+        "kind": "void"
+      }
+    },
+    {
+      "id": "put-all-disjoint",
+      "operation": "put_all",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "arguments": [],
+      "after": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "second": [
+        [
+          "b",
+          4
+        ]
+      ],
+      "second_after": [
+        [
+          "b",
+          4
+        ]
+      ],
+      "same_id": false
+    },
+    {
+      "id": "put-all-overlap",
+      "operation": "put_all",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "arguments": [],
+      "after": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          9
+        ],
+        [
+          "c",
+          6
+        ]
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "second": [
+        [
+          "b",
+          9
+        ],
+        [
+          "c",
+          6
+        ]
+      ],
+      "second_after": [
+        [
+          "b",
+          9
+        ],
+        [
+          "c",
+          6
+        ]
+      ],
+      "same_id": false
+    },
+    {
+      "id": "put-all-empty-target",
+      "operation": "put_all",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [],
+      "arguments": [],
+      "after": [
+        [
+          "b",
+          4
+        ]
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "second": [
+        [
+          "b",
+          4
+        ]
+      ],
+      "second_after": [
+        [
+          "b",
+          4
+        ]
+      ],
+      "same_id": false
+    },
+    {
+      "id": "put-all-empty-source",
+      "operation": "put_all",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "arguments": [],
+      "after": [
+        [
+          "a",
+          2
+        ]
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "second": [],
+      "second_after": [],
+      "same_id": false
+    },
+    {
+      "id": "put-all-self",
+      "operation": "put_all",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "arguments": [],
+      "after": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "second": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "second_after": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "same_id": true
+    }
+  ],
+  "reference_rows": [
+    {
+      "id": "copy-independent-values",
+      "operation": "copy",
+      "versions": [
+        5,
+        6
+      ],
+      "key_type": "string",
+      "value_type": "int",
+      "before": [
+        [
+          "a",
+          2
+        ],
+        [
+          "b",
+          4
+        ]
+      ],
+      "arguments": [],
+      "after_create": {
+        "a": [
+          [
+            "a",
+            2
+          ],
+          [
+            "b",
+            4
+          ]
+        ],
+        "b": [
+          [
+            "a",
+            2
+          ],
+          [
+            "b",
+            4
+          ]
+        ],
+        "same_id": false
+      },
+      "followups": [
+        {
+          "receiver": "b",
+          "operation": "put",
+          "arguments": [
+            "a",
+            9
+          ],
+          "result": {
+            "kind": "value",
+            "value": 2
+          },
+          "expected": {
+            "a": [
+              [
+                "a",
+                2
+              ],
+              [
+                "b",
+                4
+              ]
+            ],
+            "b": [
+              [
+                "a",
+                9
+              ],
+              [
+                "b",
+                4
+              ]
+            ]
+          }
+        },
+        {
+          "receiver": "a",
+          "operation": "remove",
+          "arguments": [
+            "b"
+          ],
+          "result": {
+            "kind": "value",
+            "value": 4
+          },
+          "expected": {
+            "a": [
+              [
+                "a",
+                2
+              ]
+            ],
+            "b": [
+              [
+                "a",
+                9
+              ],
+              [
+                "b",
+                4
+              ]
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
