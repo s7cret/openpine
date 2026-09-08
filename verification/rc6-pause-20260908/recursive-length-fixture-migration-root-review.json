@@ -1,0 +1,50 @@
+{
+  "decision": "approved_metadata_only_migration",
+  "expected_target_content_hash": "sha256:3bbb194318736ff97aff6a50ef4a3c4238fda3191f3971ab2e5fe9e14e27c2f7",
+  "files": {
+    "pine2ast/tests/fixtures/valuewhen_occurrence_metadata.json": {
+      "after": "ffb6e266a36ee0789acab13d872ea000b96f1c715cbfc2b736f698463319dbef",
+      "before": "0fc8c1252cca3c39abbc8bf255b205c45d37d8066a9586545588f0761f944044"
+    },
+    "pine2ast/tests/test_valuewhen_occurrence_qualifier.py": {
+      "after": "abd0a7e23a2ef030527041a8659b8afef1410c70399db8f4f764091b8d7a1301",
+      "before": "778646bbedba8f37b30d203c2dcb190a6522aace5e48aedfe2b12c8725692666"
+    },
+    "pinelib/tests/fixtures/map_target_metadata_expected.json": {
+      "after": "1f45fd82c580cb578f8051135ba158628e3cc257c0eddefe0a5bfdc6276bb0ed",
+      "before": "8a40fa944cc8f590684ba0c53b3bd6725f9f7cfebe63aef7ae964aa81a5d1cfa"
+    },
+    "pinelib/tests/fixtures/string_target_primary_expected.json": {
+      "after": "74a1e01e8572b0678d02e4c6a4f38db30ff7493a34633a67103201736dadb992",
+      "before": "afb85ed7f6b56ed42d5e88e389f522855c283498832f1db4a140b235b5240875"
+    },
+    "pinelib/tests/fixtures/valuewhen_occurrence_metadata.json": {
+      "after": "ffb6e266a36ee0789acab13d872ea000b96f1c715cbfc2b736f698463319dbef",
+      "before": "0fc8c1252cca3c39abbc8bf255b205c45d37d8066a9586545588f0761f944044"
+    },
+    "pinelib/tests/test_array_concat_identity.py": {
+      "after": "d7d2ae51b0e4962a1c04ec5dc781b2bc484b821f92b58f9673e3d2bb23a6b473",
+      "before": "0eb817b58a5f1e95910f9a1fa4302fa4afa2f4c45bb77d7d52f667e37089d330"
+    },
+    "pinelib/tests/test_map_target_contract.py": {
+      "after": "9647df4a1bf0441b5c78c6b7c890dc8c1d91c41fbf521154a2ac1306553872ec",
+      "before": "af1a18a3204e0166fdbd70ce12663cd8dc664ccf49ed9d165b25832ce313b9c9"
+    },
+    "pinelib/tests/test_minmax_variadic_manifest.py": {
+      "after": "5fcdfda3da6997ea11c1d07d958b1e2816c21618878667bbdac031fc22ad361d",
+      "before": "99ea33053462c8b060bf6bd19aded4532f262a77d21de4c8577ee5bb45610c72"
+    },
+    "pinelib/tests/test_string_context_semantics.py": {
+      "after": "f9772f99e210269f01c4ce37ec922bea421fec3209f3759bf4c7f69c26777636",
+      "before": "6eb3db7aef0ab474e4b1ffa81351e816b73e1cab8f0275b2875f18af69e593b7"
+    },
+    "pinelib/tests/test_valuewhen_occurrence_target.py": {
+      "after": "253e709f4724aa9035debe52bbcac154b6dea00e36e4a4546271af94202ed92c",
+      "before": "8e16634c87666e5d697f8efee3c2a777f550bfa9a7929cf325f4f8a25560fddd"
+    }
+  },
+  "full_stage2_accepted": false,
+  "legacy_pack_bytes_preserved": true,
+  "numeric_assertions_changed": false,
+  "proposal_sha256": "6bb2648283acf51c79646e0aae6ceec93bbc7b8993aec00995a63072afb61005"
+}

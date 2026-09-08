@@ -1,0 +1,1 @@
+{"compile":true,"events":[{"bar":0,"value":{"a":{"columns":3,"rows":2,"values":[1,2,3,4,5,6]}}},{"bar":1,"value":{"a":{"columns":3,"rows":2,"values":[1,2,3,4,5,-7]}}},{"bar":2,"value":{"a":{"columns":3,"rows":2,"values":[1,2,3,4,5,-7]}}},{"bar":3,"value":{"a":{"columns":3,"rows":2,"values":[1,2,3,4,5,-7]}}}]}

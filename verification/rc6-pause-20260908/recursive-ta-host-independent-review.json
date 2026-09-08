@@ -1,0 +1,236 @@
+{
+  "blocking_findings": [],
+  "bundle_sha256": "a177951dd84729216920149341d926e4ea13d407ccd12f030cca21343966996a",
+  "cross_python_31_reports_byte_identical": true,
+  "decision": "PASS_BOUNDED_SOURCE_AND_DIRECT_CONTROL_NATIVE_LINUX_PENDING",
+  "frozen_file_count": 167,
+  "full_stage2_accepted": false,
+  "limitations": [
+    "401 formal Native tests remain Linux-pending; independent direct controls are not Native success.",
+    "Engineering/manual formula authority is not a TradingView execution oracle.",
+    "Only six versioned tuples have assigned examples; no whole-function or Stage2 completion claim."
+  ],
+  "old_test_edits": false,
+  "original_owner_numerical_and_artifact_observations_reproduced": true,
+  "production_edits": false,
+  "repositories": {
+    "ast2python": {
+      "base": "95a14be4be8987faafb3e7629c744e698fd9f134",
+      "final_file_count": 173
+    },
+    "backtest_engine": {
+      "base": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "final_file_count": 222
+    },
+    "host": {
+      "base": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+      "final_file_count": 3175
+    },
+    "marketdata-provider": {
+      "base": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "final_file_count": 159
+    },
+    "openpine-contracts": {
+      "base": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "final_file_count": 63
+    },
+    "optimizer": {
+      "base": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "final_file_count": 129
+    },
+    "pine2ast": {
+      "base": "05d7e61be58a184b211bc093f989527157005b92",
+      "final_file_count": 405
+    },
+    "pinelib": {
+      "base": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+      "final_file_count": 176
+    }
+  },
+  "schema_id": "openpine.recursive_ta_host_independent_review.v1",
+  "source_checks": [
+    "Every exact Git blob and mode plus explicit frozen overlay verified.",
+    "All 40 source/data/settings/expected transformations checked against original manual Fraction/Decimal literals.",
+    "All three MACD components, exact float/NA observer and seven invalid-type controls checked.",
+    "Real Native adapter attempted before direct control; fcntl failure preserved on both Pythons.",
+    "All 40 direct artifacts and canonical source/ABI/version bindings independently admitted.",
+    "Twelve extra consecutive-double-abort histories preserve whole checkpoints, reuse sequence and match manual final events.",
+    "Each MACD component independently corrupted; comparator rejects all three.",
+    "All original 13 UNVERIFIED rows remain unchanged and unassigned."
+  ],
+  "source_review_sha256": "6504017eb9bd391303d7edf3c414b6a52c55579e07afd3558c40500af596387b",
+  "tests": {
+    "py311": {
+      "assigned_versioned_tuples": [
+        [
+          5,
+          "pine:function:ta.ema",
+          "pine:function:ta.ema#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:function:ta.macd",
+          "pine:function:ta.macd#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:function:ta.rsi",
+          "pine:function:ta.rsi#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:function:ta.ema",
+          "pine:function:ta.ema#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:function:ta.macd",
+          "pine:function:ta.macd#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:function:ta.rsi",
+          "pine:function:ta.rsi#canonical",
+          "NAMESPACE_FUNCTION"
+        ]
+      ],
+      "double_abort_probe_sha256": "050b00fd00f2770682114e8f0aea0ce18571d74915abdceaa9e488b45d70f365",
+      "errors": 0,
+      "execution_sha256": "351ee6398b5bbb13f3b1d482fe8ea6493df359e12026a1281a88905631b0b118",
+      "failed": 0,
+      "final_events": 2120,
+      "native_attempt_sha256": "0f96c2c49a8c5d036a36ec89aad8a86f506da28974a517e6336bb956d2aaac64",
+      "observations": 400,
+      "passed": 401,
+      "report_files": {
+        "builtin-recursive-ta-reports/compact/abi/assignments.json": "b5cf2fd37bb4f5ee2c8f87306e4fd0795d5a7b4954de1422c594e4d5e56b961d",
+        "builtin-recursive-ta-reports/compact/abi/observations.json": "f43993b4ebd70392f3e55e15120e53b8f0400b7d08393400d9650ee8962643c3",
+        "builtin-recursive-ta-reports/compact/abi/report.json": "5f3f71b4cfdcae52f6e4a93835cd9eec0e8057cd15a069065f3f9d9028926a9d",
+        "builtin-recursive-ta-reports/compact/compiled_checkpoint/assignments.json": "decca18f014e97b790ded59fc882933410f6302393840c3ecc09aaf57e7b3a72",
+        "builtin-recursive-ta-reports/compact/compiled_checkpoint/observations.json": "51a9aa547fad0418fef4bf5e427d3cbfab5584f1ea32f8f2917808a6785a7836",
+        "builtin-recursive-ta-reports/compact/compiled_checkpoint/report.json": "05763211324f17b78073514136a2e7501f8872d518c65aa27d2e63abd374649a",
+        "builtin-recursive-ta-reports/compact/compiled_historical/assignments.json": "3a92d8218e2563dd808b787f737ec09bc7dc46ed84ced9ac6becb09b675583e6",
+        "builtin-recursive-ta-reports/compact/compiled_historical/observations.json": "19a43d13e2f2f467573bd93813a5ba0ffacd9602db18b6585f7fa90f1100adab",
+        "builtin-recursive-ta-reports/compact/compiled_historical/report.json": "0a344cd7bbfdf2e0c70b13777726072a5bdaaab3a0427b51f9173e70fc95b153",
+        "builtin-recursive-ta-reports/compact/compiled_realtime/assignments.json": "d9efd217b4daa0c06cb22ba948164b365c9f3c715566aa8960313736c7781e73",
+        "builtin-recursive-ta-reports/compact/compiled_realtime/observations.json": "890fda69625848e2d39abb484a4843a4f01b9c4f57c6e5c08b42189284e09d34",
+        "builtin-recursive-ta-reports/compact/compiled_realtime/report.json": "763959489a84cb97f28d49ab1dcac93dbfaff62b62e398f568a7af1472170ea6",
+        "builtin-recursive-ta-reports/compact/compiled_rollback/assignments.json": "3dc6ca94fe6a3310bb2456b67755d64e42a5f3e99e258e0693859f209c040139",
+        "builtin-recursive-ta-reports/compact/compiled_rollback/observations.json": "812ecb87497bd12943eeb9c3733b3b0cd83c2861dc56ce28fd96d966e775df0d",
+        "builtin-recursive-ta-reports/compact/compiled_rollback/report.json": "3835ed40d13fdcbc56e514d0a5173e9588867c06e6d7a675cf0e9551772826ca",
+        "builtin-recursive-ta-reports/full/abi/assignments.json": "b5cf2fd37bb4f5ee2c8f87306e4fd0795d5a7b4954de1422c594e4d5e56b961d",
+        "builtin-recursive-ta-reports/full/abi/observations.json": "d0bed2f9072be459db0b588e32b38dabfde658b0bec930b1732c4f78b5d25e0c",
+        "builtin-recursive-ta-reports/full/abi/report.json": "5f3f71b4cfdcae52f6e4a93835cd9eec0e8057cd15a069065f3f9d9028926a9d",
+        "builtin-recursive-ta-reports/full/compiled_checkpoint/assignments.json": "decca18f014e97b790ded59fc882933410f6302393840c3ecc09aaf57e7b3a72",
+        "builtin-recursive-ta-reports/full/compiled_checkpoint/observations.json": "f20fcbaa4e68da169eb879f2fdbc2bd9fec98fa6e3d942b72d6245de5c4a75b3",
+        "builtin-recursive-ta-reports/full/compiled_checkpoint/report.json": "05763211324f17b78073514136a2e7501f8872d518c65aa27d2e63abd374649a",
+        "builtin-recursive-ta-reports/full/compiled_historical/assignments.json": "3a92d8218e2563dd808b787f737ec09bc7dc46ed84ced9ac6becb09b675583e6",
+        "builtin-recursive-ta-reports/full/compiled_historical/observations.json": "6aaa81bb4e0ac3a2529d6753543abfb2a765af461462229c9cdd1252ec7464d9",
+        "builtin-recursive-ta-reports/full/compiled_historical/report.json": "0a344cd7bbfdf2e0c70b13777726072a5bdaaab3a0427b51f9173e70fc95b153",
+        "builtin-recursive-ta-reports/full/compiled_realtime/assignments.json": "d9efd217b4daa0c06cb22ba948164b365c9f3c715566aa8960313736c7781e73",
+        "builtin-recursive-ta-reports/full/compiled_realtime/observations.json": "ac66c85f04265a52870ae7951a309b03e4869d03e37201a756912d6723859d7a",
+        "builtin-recursive-ta-reports/full/compiled_realtime/report.json": "763959489a84cb97f28d49ab1dcac93dbfaff62b62e398f568a7af1472170ea6",
+        "builtin-recursive-ta-reports/full/compiled_rollback/assignments.json": "3dc6ca94fe6a3310bb2456b67755d64e42a5f3e99e258e0693859f209c040139",
+        "builtin-recursive-ta-reports/full/compiled_rollback/observations.json": "66df02200e242fd78c1e3c415c8c3a581a58041eb34a1361b3cc92f6e50230db",
+        "builtin-recursive-ta-reports/full/compiled_rollback/report.json": "3835ed40d13fdcbc56e514d0a5173e9588867c06e6d7a675cf0e9551772826ca",
+        "builtin-recursive-ta-surface.json": "29801cdd88a2eb147bb7492a9e63e33232fa9d43e090bfaa2daf8bb04b0c65b5"
+      },
+      "skipped": 0,
+      "tests": 401,
+      "trials": 688,
+      "whole_checkpoint_restores": 768,
+      "xml_sha256": "897592f7397238a18b132c86d4403e1789c620372334c9f147946ea2fc3257b0"
+    },
+    "py313": {
+      "assigned_versioned_tuples": [
+        [
+          5,
+          "pine:function:ta.ema",
+          "pine:function:ta.ema#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:function:ta.macd",
+          "pine:function:ta.macd#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:function:ta.rsi",
+          "pine:function:ta.rsi#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:function:ta.ema",
+          "pine:function:ta.ema#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:function:ta.macd",
+          "pine:function:ta.macd#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:function:ta.rsi",
+          "pine:function:ta.rsi#canonical",
+          "NAMESPACE_FUNCTION"
+        ]
+      ],
+      "double_abort_probe_sha256": "050b00fd00f2770682114e8f0aea0ce18571d74915abdceaa9e488b45d70f365",
+      "errors": 0,
+      "execution_sha256": "351ee6398b5bbb13f3b1d482fe8ea6493df359e12026a1281a88905631b0b118",
+      "failed": 0,
+      "final_events": 2120,
+      "native_attempt_sha256": "0f96c2c49a8c5d036a36ec89aad8a86f506da28974a517e6336bb956d2aaac64",
+      "observations": 400,
+      "passed": 401,
+      "report_files": {
+        "builtin-recursive-ta-reports/compact/abi/assignments.json": "b5cf2fd37bb4f5ee2c8f87306e4fd0795d5a7b4954de1422c594e4d5e56b961d",
+        "builtin-recursive-ta-reports/compact/abi/observations.json": "f43993b4ebd70392f3e55e15120e53b8f0400b7d08393400d9650ee8962643c3",
+        "builtin-recursive-ta-reports/compact/abi/report.json": "5f3f71b4cfdcae52f6e4a93835cd9eec0e8057cd15a069065f3f9d9028926a9d",
+        "builtin-recursive-ta-reports/compact/compiled_checkpoint/assignments.json": "decca18f014e97b790ded59fc882933410f6302393840c3ecc09aaf57e7b3a72",
+        "builtin-recursive-ta-reports/compact/compiled_checkpoint/observations.json": "51a9aa547fad0418fef4bf5e427d3cbfab5584f1ea32f8f2917808a6785a7836",
+        "builtin-recursive-ta-reports/compact/compiled_checkpoint/report.json": "05763211324f17b78073514136a2e7501f8872d518c65aa27d2e63abd374649a",
+        "builtin-recursive-ta-reports/compact/compiled_historical/assignments.json": "3a92d8218e2563dd808b787f737ec09bc7dc46ed84ced9ac6becb09b675583e6",
+        "builtin-recursive-ta-reports/compact/compiled_historical/observations.json": "19a43d13e2f2f467573bd93813a5ba0ffacd9602db18b6585f7fa90f1100adab",
+        "builtin-recursive-ta-reports/compact/compiled_historical/report.json": "0a344cd7bbfdf2e0c70b13777726072a5bdaaab3a0427b51f9173e70fc95b153",
+        "builtin-recursive-ta-reports/compact/compiled_realtime/assignments.json": "d9efd217b4daa0c06cb22ba948164b365c9f3c715566aa8960313736c7781e73",
+        "builtin-recursive-ta-reports/compact/compiled_realtime/observations.json": "890fda69625848e2d39abb484a4843a4f01b9c4f57c6e5c08b42189284e09d34",
+        "builtin-recursive-ta-reports/compact/compiled_realtime/report.json": "763959489a84cb97f28d49ab1dcac93dbfaff62b62e398f568a7af1472170ea6",
+        "builtin-recursive-ta-reports/compact/compiled_rollback/assignments.json": "3dc6ca94fe6a3310bb2456b67755d64e42a5f3e99e258e0693859f209c040139",
+        "builtin-recursive-ta-reports/compact/compiled_rollback/observations.json": "812ecb87497bd12943eeb9c3733b3b0cd83c2861dc56ce28fd96d966e775df0d",
+        "builtin-recursive-ta-reports/compact/compiled_rollback/report.json": "3835ed40d13fdcbc56e514d0a5173e9588867c06e6d7a675cf0e9551772826ca",
+        "builtin-recursive-ta-reports/full/abi/assignments.json": "b5cf2fd37bb4f5ee2c8f87306e4fd0795d5a7b4954de1422c594e4d5e56b961d",
+        "builtin-recursive-ta-reports/full/abi/observations.json": "d0bed2f9072be459db0b588e32b38dabfde658b0bec930b1732c4f78b5d25e0c",
+        "builtin-recursive-ta-reports/full/abi/report.json": "5f3f71b4cfdcae52f6e4a93835cd9eec0e8057cd15a069065f3f9d9028926a9d",
+        "builtin-recursive-ta-reports/full/compiled_checkpoint/assignments.json": "decca18f014e97b790ded59fc882933410f6302393840c3ecc09aaf57e7b3a72",
+        "builtin-recursive-ta-reports/full/compiled_checkpoint/observations.json": "f20fcbaa4e68da169eb879f2fdbc2bd9fec98fa6e3d942b72d6245de5c4a75b3",
+        "builtin-recursive-ta-reports/full/compiled_checkpoint/report.json": "05763211324f17b78073514136a2e7501f8872d518c65aa27d2e63abd374649a",
+        "builtin-recursive-ta-reports/full/compiled_historical/assignments.json": "3a92d8218e2563dd808b787f737ec09bc7dc46ed84ced9ac6becb09b675583e6",
+        "builtin-recursive-ta-reports/full/compiled_historical/observations.json": "6aaa81bb4e0ac3a2529d6753543abfb2a765af461462229c9cdd1252ec7464d9",
+        "builtin-recursive-ta-reports/full/compiled_historical/report.json": "0a344cd7bbfdf2e0c70b13777726072a5bdaaab3a0427b51f9173e70fc95b153",
+        "builtin-recursive-ta-reports/full/compiled_realtime/assignments.json": "d9efd217b4daa0c06cb22ba948164b365c9f3c715566aa8960313736c7781e73",
+        "builtin-recursive-ta-reports/full/compiled_realtime/observations.json": "ac66c85f04265a52870ae7951a309b03e4869d03e37201a756912d6723859d7a",
+        "builtin-recursive-ta-reports/full/compiled_realtime/report.json": "763959489a84cb97f28d49ab1dcac93dbfaff62b62e398f568a7af1472170ea6",
+        "builtin-recursive-ta-reports/full/compiled_rollback/assignments.json": "3dc6ca94fe6a3310bb2456b67755d64e42a5f3e99e258e0693859f209c040139",
+        "builtin-recursive-ta-reports/full/compiled_rollback/observations.json": "66df02200e242fd78c1e3c415c8c3a581a58041eb34a1361b3cc92f6e50230db",
+        "builtin-recursive-ta-reports/full/compiled_rollback/report.json": "3835ed40d13fdcbc56e514d0a5173e9588867c06e6d7a675cf0e9551772826ca",
+        "builtin-recursive-ta-surface.json": "29801cdd88a2eb147bb7492a9e63e33232fa9d43e090bfaa2daf8bb04b0c65b5"
+      },
+      "skipped": 0,
+      "tests": 401,
+      "trials": 688,
+      "whole_checkpoint_restores": 768,
+      "xml_sha256": "4a1ada5ce9655a09ebb83c75fd471ad5da2b0168793c7758121d9352ddb362f1"
+    }
+  }
+}

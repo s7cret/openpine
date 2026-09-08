@@ -1,0 +1,1716 @@
+{
+  "A2_Linux_joint_accepted": false,
+  "actual_full_owner_results_independently_parsed": [
+    {
+      "counts": {
+        "ERROR": 1,
+        "FAILURE": 8,
+        "PASS": 2796
+      },
+      "expected_Linux_count_not_executed": 2807,
+      "log": {
+        "lf_sha256": "8c5d5a592ab0d218d1c595306bfd31f1823b9190138f58abc34207e4504bba75",
+        "path": "method-a2-producer-final-full-py311.log",
+        "raw_sha256": "e2a391f2ab46f42b59d99edebff688ead919035c4654363c08ee866d01ab738d"
+      },
+      "new_nodeids": [
+        "tests/test_method_receiver_admission.py::test_actual_catalog_owner_rejects_fully_resealed_catalog_substitution[5]",
+        "tests/test_method_receiver_admission.py::test_actual_catalog_owner_rejects_fully_resealed_catalog_substitution[6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[direct-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[direct-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[global_alias-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[global_alias-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[local_alias-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[local_alias-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[operation-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[operation-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[udf-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[udf-6]",
+        "tests/test_method_receiver_admission.py::test_ast20_omission_preserves_existing_verification_route[5]",
+        "tests/test_method_receiver_admission.py::test_ast20_omission_preserves_existing_verification_route[6]",
+        "tests/test_method_receiver_admission.py::test_ast21_library11_keeps_real_reparse_and_both_exact_capabilities[5]",
+        "tests/test_method_receiver_admission.py::test_ast21_library11_keeps_real_reparse_and_both_exact_capabilities[6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[downgrade-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[downgrade-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[duplicate-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[duplicate-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[extra-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[extra-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing_field-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing_field-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[null-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[null-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[substitute-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[substitute-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_field_value-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_field_value-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_revision-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_revision-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_consumer-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_consumer-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_field-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_field-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_minimum-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_minimum-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[context-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[context-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[extra_cap-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[extra_cap-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[library_cap-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[library_cap-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[marker-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[marker-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[receiver_cap-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[receiver_cap-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[version-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[version-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[direct-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[direct-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[global_alias-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[global_alias-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[local_alias-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[local_alias-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[operation-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[operation-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[udf-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[udf-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[1]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[2]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[3]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[4]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[5.0]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[True]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_argument-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_argument-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_default-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_default-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_return-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_return-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[const_value-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[const_value-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[resolved_type-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[resolved_type-6]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[bool_for_int]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[cycle]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[nonfinite]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[null_items]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[null_qualifier]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[object]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[surrogate]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[unknown_field]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[unknown_kind]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[unknown_qualifier]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[wrong_field_type]",
+        "tests/test_method_receiver_ast_decode.py::test_every_canonical_ast_node_kind_roundtrips_without_parser_replay",
+        "tests/test_method_receiver_ast_decode.py::test_failed_union_alternatives_charge_the_same_budget",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[-1]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[0]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[1.0]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[129]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[True]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_ast_nodes-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_bytes-100]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_container_items-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_depth-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_string_length-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_values-10]",
+        "tests/test_method_receiver_ast_decode.py::test_raw_bundle_is_bounded_before_copy_or_canonicalization[cycle]",
+        "tests/test_method_receiver_ast_decode.py::test_raw_bundle_is_bounded_before_copy_or_canonicalization[deep]",
+        "tests/test_method_receiver_ast_decode.py::test_raw_bundle_is_bounded_before_copy_or_canonicalization[oversize]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_CACHE-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_CACHE-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_WORK-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_WORK-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[missing-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[missing-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[too_strong-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[too_strong-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[valid-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[valid-6]",
+        "tests/test_method_receiver_byte_budget.py::test_every_control_character_retains_short_or_hex_escape_size",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\"-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[-2]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\U00010000-6]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\U0010ffff-6]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\\\-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\n-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\u07ff-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\u0800-5]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\uffff-5]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x00-8]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x1f-8]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x7f-3]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x80-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[a\"\\n\\u20ac-10]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[a-3]",
+        "tests/test_method_receiver_byte_budget.py::test_string_length_is_checked_before_bounded_utf8_encoding",
+        "tests/test_method_receiver_byte_budget.py::test_surrogates_remain_controlled_errors[\\ud800]",
+        "tests/test_method_receiver_byte_budget.py::test_surrogates_remain_controlled_errors[\\udfff]",
+        "tests/test_method_receiver_byte_budget.py::test_surrogates_remain_controlled_errors[x\\ud800y]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[False-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[False-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[True-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[True-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[concealed-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[concealed-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[metadata-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[metadata-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[method-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[method-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[parameter-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[parameter-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[\"text\"-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[\"text\"-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#AABBCCDD-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#AABBCCDD-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#aabbcc-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#aabbcc-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2.0-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2.0-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[.5-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[.5-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[0-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[0-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[1e-2-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[1e-2-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2.0-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2.0-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[false-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[false-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[na-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[na-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[true-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[true-6]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-string]",
+        "tests/test_method_receiver_literal_schema.py::test_ast20_existing_model_validation_is_unchanged",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[bool_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[float_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[object_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[text_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_implicit_once_condition_uses_the_same_bool_literal_invariant",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#aabbccddeeff]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#aabbccx]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#fff]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#gggggg]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[inf]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[nan]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[red]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[cycle_value]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[list_root]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[mapping_root]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[shared_ast]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[unknown_tag]",
+        "tests/test_method_receiver_literal_schema.py::test_positive_cases_cover_every_canonical_literal_tag",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[False-5]",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[False-6]",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[True-5]",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[True-6]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[False-5]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[False-6]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[True-5]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[True-6]",
+        "tests/test_method_receiver_qualifiers.py::test_explicit_simple_string_parameter_preserves_simple_result[5]",
+        "tests/test_method_receiver_qualifiers.py::test_explicit_simple_string_parameter_preserves_simple_result[6]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v1-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v2-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v3-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v4-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-absent_receiver_control]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-argument_overload_with_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-const_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-default_parameter_index_zero]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-duplicate_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-exported_fixed_floor]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-exported_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-exported_simple]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-history_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-input_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-missing_regular_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-named_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-positional_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_expression_once]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_inside_simple_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_not_named_source_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_tie_remains_unverified]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_viability_precedes_tie]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_constant_expression_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_explicit]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_guard_prevents_simple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_parameter_strengthens_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_reference]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_udf_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_bool]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_input]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_literal]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_local]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_reference_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_regular_argument_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_result_not_const]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_result_outer_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_string]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_udf_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-tuple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-unused_simple_receiver_still_checks]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-absent_receiver_control]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-argument_overload_with_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-const_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-default_parameter_index_zero]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-duplicate_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-exported_fixed_floor]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-exported_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-exported_simple]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-history_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-input_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-missing_regular_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-named_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-positional_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_expression_once]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_inside_simple_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_not_named_source_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_tie_remains_unverified]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_viability_precedes_tie]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_constant_expression_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_explicit]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_guard_prevents_simple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_parameter_strengthens_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_reference]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_udf_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_bool]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_input]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_literal]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_local]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_reference_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_regular_argument_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_result_not_const]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_result_outer_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_string]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_udf_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-tuple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-unused_simple_receiver_still_checks]",
+        "tests/test_method_receiver_qualifiers.py::test_real_v6_builtin_bool_prohibition_remains[fixnan]",
+        "tests/test_method_receiver_qualifiers.py::test_real_v6_builtin_bool_prohibition_remains[na]",
+        "tests/test_method_receiver_qualifiers.py::test_real_v6_builtin_bool_prohibition_remains[nz]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_annotations_do_not_manufacture_distinct_overloads",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[P-type P\\n    int n=1\\n-P.new()-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[P-type P\\n    int n=1\\n-P.new()-simple]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[array<int>--array.new<int>(1,2)-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[array<int>--array.new<int>(1,2)-simple]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[map<string,float>--map.new<string,float>()-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[map<string,float>--map.new<string,float>()-simple]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[matrix<float>--matrix.new<float>(1,1,2.5)-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[matrix<float>--matrix.new<float>(1,1,2.5)-simple]"
+      ],
+      "new_passes": 334,
+      "nonpass": {
+        "COLLECTION_ERROR::tests.stage6.test_stage6_performance_gate": "ERROR",
+        "tests/stage6/test_stage6_integrity.py::test_canonical_source_hash_tracks_executable_mode": "FAILURE",
+        "tests/stage6/test_stage6_integrity.py::test_deterministic_sdist_rejects_symlinks": "FAILURE",
+        "tests/test_locked_library_linking.py::test_cli_uses_only_pinned_files_and_never_overwrites_prior_output": "FAILURE",
+        "tests/test_locked_library_linking.py::test_directory_store_reads_once_and_ignores_later_file_change": "FAILURE",
+        "tests/test_locked_library_linking.py::test_symlinks_are_never_followed[lock]": "FAILURE",
+        "tests/test_locked_library_linking.py::test_symlinks_are_never_followed[parent]": "FAILURE",
+        "tests/test_locked_library_linking.py::test_symlinks_are_never_followed[source]": "FAILURE",
+        "tests/unit/test_stage5_hardening.py::test_stage5_release_gate_quick": "FAILURE"
+      },
+      "old_nodeids_with_identical_status": 2471,
+      "owner": "pine2ast",
+      "previous_Linux_inventory": {
+        "lf_sha256": "04ae5d745bae53300b993c2ada0ebc9f9705b433383fb11beb5c51fe0db3fba7",
+        "path": "tuple-repair-verify-311\\pine2ast.inventory.json",
+        "raw_sha256": "04ae5d745bae53300b993c2ada0ebc9f9705b433383fb11beb5c51fe0db3fba7"
+      },
+      "previous_Linux_xml": {
+        "lf_sha256": "4cd5e5a83673815512fa54ec9d899262a6aba8f03666a06c74b868ec4af01579",
+        "path": "tuple-repair-verify-311\\pine2ast.xml",
+        "raw_sha256": "4cd5e5a83673815512fa54ec9d899262a6aba8f03666a06c74b868ec4af01579"
+      },
+      "previous_Windows_xml": {
+        "lf_sha256": "3c6216e8363a863785d053f03ea050776ba7c5f325d12971d7442e269361c228",
+        "path": "tuple-loop-full-continued-py311.xml",
+        "raw_sha256": "5a26e95ff535061123969ad07f60ba1a6c8ed6dad1c56969774dcbabe6f397ec"
+      },
+      "python": "311",
+      "unchanged_Linux_nodeids_not_executed_on_Windows": [
+        "tests/stage6/test_stage6_performance_gate.py::test_isolated_sample_validates_worker_contract",
+        "tests/stage6/test_stage6_performance_gate.py::test_performance_source_has_exact_requested_body_size",
+        "tests/stage6/test_stage6_performance_gate.py::test_report_aggregates_process_isolated_samples"
+      ],
+      "xml": {
+        "lf_sha256": "d611fdcf4f46a9ec1066817e8e9aec2a84d7419dade8e8046289b7154bfe231f",
+        "path": "method-a2-producer-final-full-py311.xml",
+        "raw_sha256": "922baa8de08d313ce6ed88670b93daf575636fbb45275244ef07d2b939209e3d"
+      }
+    },
+    {
+      "counts": {
+        "FAILURE": 1,
+        "PASS": 1144
+      },
+      "log": {
+        "lf_sha256": "f5e200d27bde3bd31084d938e8cf6e973bc46262d494dd23171aa8aaafa536f1",
+        "path": "method-a2-compiler-final-full-py311.log",
+        "raw_sha256": "ecfe14e6f328a9b7c1543b20a662b5e2412ba778760be8b21dbd5931bf0388f1"
+      },
+      "new_nodeids": [
+        "tests/test_method_receiver_admission.py::test_ast20_keeps_the_genuine_old_verifier_keyword_signature",
+        "tests/test_method_receiver_admission.py::test_ast21_passes_exact_bounded_limits_to_the_producer_owner",
+        "tests/test_method_receiver_admission.py::test_ast21_verifier_typeerror_never_triggers_an_old_signature_retry",
+        "tests/test_method_receiver_admission.py::test_consumer_larger_local_limits_do_not_expand_producer_absolute_replay_profile[max_ast_nodes-2000000]",
+        "tests/test_method_receiver_admission.py::test_consumer_larger_local_limits_do_not_expand_producer_absolute_replay_profile[max_bundle_bytes-67108864]",
+        "tests/test_method_receiver_admission.py::test_consumer_larger_local_limits_do_not_expand_producer_absolute_replay_profile[max_json_depth-256]",
+        "tests/test_method_receiver_execution.py::test_admission_only_capability_preserves_nominal_registry_and_varip_runtime_contracts[5]",
+        "tests/test_method_receiver_execution.py::test_admission_only_capability_preserves_nominal_registry_and_varip_runtime_contracts[6]",
+        "tests/test_method_receiver_execution.py::test_method_local_var_rolls_back_after_open_bar_json_restore[5]",
+        "tests/test_method_receiver_execution.py::test_method_local_var_rolls_back_after_open_bar_json_restore[6]",
+        "tests/test_method_receiver_execution.py::test_once_evaluated_receiver_survives_abort_retry_without_duplicate_state[5]",
+        "tests/test_method_receiver_execution.py::test_once_evaluated_receiver_survives_abort_retry_without_duplicate_state[6]",
+        "tests/test_method_receiver_execution.py::test_receiver_proof_composes_with_verified_library_context_and_checkpoint[5]",
+        "tests/test_method_receiver_execution.py::test_receiver_proof_composes_with_verified_library_context_and_checkpoint[6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_argument-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_argument-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_receiver-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_receiver-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[default-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[default-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[input-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[input-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[named-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[named-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[receiver_once-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[receiver_once-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series_reference-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series_reference-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[simple-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[simple-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[tuple-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[tuple-6]",
+        "tests/test_method_receiver_execution.py::test_v6_reference_annotation_is_preserved_without_simple_reference_runtime_value"
+      ],
+      "new_passes": 35,
+      "nonpass": {
+        "tests/test_admission_hardening.py::test_path_input_rejects_symlink_before_read": "FAILURE"
+      },
+      "old_nodeids_with_identical_status": 1110,
+      "owner": "ast2python",
+      "previous_Windows_xml": {
+        "lf_sha256": "64a3415aea27eea81a2a8791d2941ffe9ff1725b727821d4a24f51b9beb9deab",
+        "path": "tuple-repair-compiler-311-external-temp.xml",
+        "raw_sha256": "fbcce5fd824633f0135c6b92b51a04a4348a1a8f002cfa657ccbaa085d387605"
+      },
+      "python": "311",
+      "xml": {
+        "lf_sha256": "f467c26c2a1bcac8445937d67bd523d79b1844e3c2c46c5a13ce9bc2ebd4adde",
+        "path": "method-a2-compiler-final-full-py311.xml",
+        "raw_sha256": "8fc790fcc068733b139f3bfdbd7b1021597eed3695c61bee89ca3b376c8147c6"
+      }
+    },
+    {
+      "counts": {
+        "ERROR": 1,
+        "FAILURE": 8,
+        "PASS": 2796
+      },
+      "expected_Linux_count_not_executed": 2807,
+      "log": {
+        "lf_sha256": "679c715c85a907a99edfbf20e736ec7ac28c1c8cb6a3d08309ca65b60584f780",
+        "path": "method-a2-producer-final-full-py313.log",
+        "raw_sha256": "716186f140f461ec319482cde9b571aa22ff1ab31ef62f8cc0d1757c1a310e89"
+      },
+      "new_nodeids": [
+        "tests/test_method_receiver_admission.py::test_actual_catalog_owner_rejects_fully_resealed_catalog_substitution[5]",
+        "tests/test_method_receiver_admission.py::test_actual_catalog_owner_rejects_fully_resealed_catalog_substitution[6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[direct-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[direct-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[global_alias-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[global_alias-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[local_alias-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[local_alias-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[operation-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[operation-6]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[udf-5]",
+        "tests/test_method_receiver_admission.py::test_all_colluding_receiver_chains_fail_after_complete_fact_reseal[udf-6]",
+        "tests/test_method_receiver_admission.py::test_ast20_omission_preserves_existing_verification_route[5]",
+        "tests/test_method_receiver_admission.py::test_ast20_omission_preserves_existing_verification_route[6]",
+        "tests/test_method_receiver_admission.py::test_ast21_library11_keeps_real_reparse_and_both_exact_capabilities[5]",
+        "tests/test_method_receiver_admission.py::test_ast21_library11_keeps_real_reparse_and_both_exact_capabilities[6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[downgrade-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[downgrade-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[duplicate-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[duplicate-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[extra-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[extra-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing_field-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[missing_field-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[null-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[null-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[substitute-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[substitute-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_field_value-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_field_value-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_revision-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[unknown_revision-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_consumer-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_consumer-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_field-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_field-6]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_minimum-5]",
+        "tests/test_method_receiver_admission.py::test_exact_ast_revision_feature_and_consumer_capability[wrong_minimum-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[context-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[context-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[extra_cap-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[extra_cap-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[library_cap-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[library_cap-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[marker-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[marker-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[receiver_cap-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[receiver_cap-6]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[version-5]",
+        "tests/test_method_receiver_admission.py::test_library_and_receiver_proofs_cannot_be_independently_stripped[version-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[direct-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[direct-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[global_alias-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[global_alias-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[local_alias-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[local_alias-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[operation-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[operation-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[udf-5]",
+        "tests/test_method_receiver_admission.py::test_receiver_annotation_and_entire_qualifier_proof_cannot_collude[udf-6]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[1]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[2]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[3]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[4]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[5.0]",
+        "tests/test_method_receiver_admission.py::test_receiver_capability_never_backports_version[True]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_argument-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_argument-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_default-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_default-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_return-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[call_return-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[const_value-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[const_value-6]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[resolved_type-5]",
+        "tests/test_method_receiver_admission.py::test_replay_compares_all_facts_and_call_evidence[resolved_type-6]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[bool_for_int]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[cycle]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[nonfinite]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[null_items]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[null_qualifier]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[object]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[surrogate]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[unknown_field]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[unknown_kind]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[unknown_qualifier]",
+        "tests/test_method_receiver_ast_decode.py::test_closed_model_rejects_malformed_payload[wrong_field_type]",
+        "tests/test_method_receiver_ast_decode.py::test_every_canonical_ast_node_kind_roundtrips_without_parser_replay",
+        "tests/test_method_receiver_ast_decode.py::test_failed_union_alternatives_charge_the_same_budget",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[-1]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[0]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[1.0]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[129]",
+        "tests/test_method_receiver_ast_decode.py::test_limits_cannot_disable_or_expand_the_declared_default[True]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_ast_nodes-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_bytes-100]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_container_items-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_depth-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_string_length-2]",
+        "tests/test_method_receiver_ast_decode.py::test_one_admission_budget_bounds_preflight_and_reconstruction[max_values-10]",
+        "tests/test_method_receiver_ast_decode.py::test_raw_bundle_is_bounded_before_copy_or_canonicalization[cycle]",
+        "tests/test_method_receiver_ast_decode.py::test_raw_bundle_is_bounded_before_copy_or_canonicalization[deep]",
+        "tests/test_method_receiver_ast_decode.py::test_raw_bundle_is_bounded_before_copy_or_canonicalization[oversize]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_CACHE-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_CACHE-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_WORK-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_candidates_including_failures_consume_shared_limits[MAX_METHOD_WORK-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[missing-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[missing-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[too_strong-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[too_strong-6]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[valid-5]",
+        "tests/test_method_receiver_binding.py::test_receiver_constraint_uses_existing_binding_indices_and_source_identity[valid-6]",
+        "tests/test_method_receiver_byte_budget.py::test_every_control_character_retains_short_or_hex_escape_size",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\"-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[-2]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\U00010000-6]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\U0010ffff-6]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\\\-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\n-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\u07ff-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\u0800-5]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\uffff-5]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x00-8]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x1f-8]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x7f-3]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[\\x80-4]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[a\"\\n\\u20ac-10]",
+        "tests/test_method_receiver_byte_budget.py::test_exact_literal_json_byte_limit_and_one_byte_short[a-3]",
+        "tests/test_method_receiver_byte_budget.py::test_string_length_is_checked_before_bounded_utf8_encoding",
+        "tests/test_method_receiver_byte_budget.py::test_surrogates_remain_controlled_errors[\\ud800]",
+        "tests/test_method_receiver_byte_budget.py::test_surrogates_remain_controlled_errors[\\udfff]",
+        "tests/test_method_receiver_byte_budget.py::test_surrogates_remain_controlled_errors[x\\ud800y]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[False-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[False-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[True-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_full_bundle_byte_profile_applies_only_to_requested_replay[True-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[concealed-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[concealed-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[metadata-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[metadata-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[method-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[method-6]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[parameter-5]",
+        "tests/test_method_receiver_legacy_dispatch.py::test_legacy_revision_cannot_hide_or_misplace_receiver_fields[parameter-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[\"text\"-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[\"text\"-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#AABBCCDD-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#AABBCCDD-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#aabbcc-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[#aabbcc-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2.0-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[-2.0-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[.5-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[.5-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[0-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[0-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[1e-2-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[1e-2-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2.0-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[2.0-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[false-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[false-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[na-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[na-6]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[true-5]",
+        "tests/test_method_receiver_literal_schema.py::test_actual_lexer_parser_literal_types_survive_canonical_json[true-6]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[bool-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[float-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[int-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[list-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[mapping-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[null-string]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-bool]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-color]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-float]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-int]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-na]",
+        "tests/test_method_receiver_literal_schema.py::test_all_tag_value_type_combinations_follow_canonical_model[string-string]",
+        "tests/test_method_receiver_literal_schema.py::test_ast20_existing_model_validation_is_unchanged",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[bool_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[float_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[object_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_fully_resealed_source_free_forged_literals_reject_before_semantic_replay[text_in_int]",
+        "tests/test_method_receiver_literal_schema.py::test_implicit_once_condition_uses_the_same_bool_literal_invariant",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#aabbccddeeff]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#aabbccx]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#fff]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[#gggggg]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[inf]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[nan]",
+        "tests/test_method_receiver_literal_schema.py::test_invalid_color_shape_and_nonfinite_values_reject[red]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[cycle_value]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[list_root]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[mapping_root]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[shared_ast]",
+        "tests/test_method_receiver_literal_schema.py::test_malformed_shape_and_identity_are_controlled[unknown_tag]",
+        "tests/test_method_receiver_literal_schema.py::test_positive_cases_cover_every_canonical_literal_tag",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[False-5]",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[False-6]",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[True-5]",
+        "tests/test_method_receiver_qualifiers.py::test_custom_nz_method_uses_selected_user_identity[True-6]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[False-5]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[False-6]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[True-5]",
+        "tests/test_method_receiver_qualifiers.py::test_enum_value_receiver_keeps_simple_constraint[True-6]",
+        "tests/test_method_receiver_qualifiers.py::test_explicit_simple_string_parameter_preserves_simple_result[5]",
+        "tests/test_method_receiver_qualifiers.py::test_explicit_simple_string_parameter_preserves_simple_result[6]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v1-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v2-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v3-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v4-historical_not_backported]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-absent_receiver_control]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-argument_overload_with_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-const_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-default_parameter_index_zero]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-duplicate_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-exported_fixed_floor]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-exported_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-exported_simple]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-history_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-input_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-missing_regular_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-named_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-positional_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_expression_once]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_inside_simple_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_not_named_source_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_tie_remains_unverified]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-receiver_viability_precedes_tie]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_constant_expression_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_explicit]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_guard_prevents_simple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_parameter_strengthens_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_reference]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-series_udf_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_bool]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_input]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_literal]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_local]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_reference_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_regular_argument_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_result_not_const]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_result_outer_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_string]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-simple_udf_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-tuple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v5-unused_simple_receiver_still_checks]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-absent_receiver_control]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-argument_overload_with_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-const_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-default_parameter_index_zero]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-duplicate_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-exported_fixed_floor]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-exported_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-exported_simple]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-history_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-input_receiver_outside_profile]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-missing_regular_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-named_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-positional_order_keeps_indices]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_expression_once]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_inside_simple_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_not_named_source_argument]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_tie_remains_unverified]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-receiver_viability_precedes_tie]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_constant_expression_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_explicit]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_guard_prevents_simple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_parameter_strengthens_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_reference]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-series_udf_receiver_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_bool]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_input]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_literal]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_local]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_reference_rejected]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_regular_argument_series]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_result_not_const]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_result_outer_builtin]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_string]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-simple_udf_receiver]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-tuple_result]",
+        "tests/test_method_receiver_qualifiers.py::test_independent_receiver_source_contract[v6-unused_simple_receiver_still_checks]",
+        "tests/test_method_receiver_qualifiers.py::test_real_v6_builtin_bool_prohibition_remains[fixnan]",
+        "tests/test_method_receiver_qualifiers.py::test_real_v6_builtin_bool_prohibition_remains[na]",
+        "tests/test_method_receiver_qualifiers.py::test_real_v6_builtin_bool_prohibition_remains[nz]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_annotations_do_not_manufacture_distinct_overloads",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[P-type P\\n    int n=1\\n-P.new()-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[P-type P\\n    int n=1\\n-P.new()-simple]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[array<int>--array.new<int>(1,2)-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[array<int>--array.new<int>(1,2)-simple]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[map<string,float>--map.new<string,float>()-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[map<string,float>--map.new<string,float>()-simple]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[matrix<float>--matrix.new<float>(1,1,2.5)-series]",
+        "tests/test_method_receiver_qualifiers.py::test_v6_reference_receiver_annotation_is_provenance_not_a_simple_reference[matrix<float>--matrix.new<float>(1,1,2.5)-simple]"
+      ],
+      "new_passes": 334,
+      "nonpass": {
+        "COLLECTION_ERROR::tests.stage6.test_stage6_performance_gate": "ERROR",
+        "tests/stage6/test_stage6_integrity.py::test_canonical_source_hash_tracks_executable_mode": "FAILURE",
+        "tests/stage6/test_stage6_integrity.py::test_deterministic_sdist_rejects_symlinks": "FAILURE",
+        "tests/test_locked_library_linking.py::test_cli_uses_only_pinned_files_and_never_overwrites_prior_output": "FAILURE",
+        "tests/test_locked_library_linking.py::test_directory_store_reads_once_and_ignores_later_file_change": "FAILURE",
+        "tests/test_locked_library_linking.py::test_symlinks_are_never_followed[lock]": "FAILURE",
+        "tests/test_locked_library_linking.py::test_symlinks_are_never_followed[parent]": "FAILURE",
+        "tests/test_locked_library_linking.py::test_symlinks_are_never_followed[source]": "FAILURE",
+        "tests/unit/test_stage5_hardening.py::test_stage5_release_gate_quick": "FAILURE"
+      },
+      "old_nodeids_with_identical_status": 2471,
+      "owner": "pine2ast",
+      "previous_Linux_inventory": {
+        "lf_sha256": "04ae5d745bae53300b993c2ada0ebc9f9705b433383fb11beb5c51fe0db3fba7",
+        "path": "tuple-repair-verify-313\\pine2ast.inventory.json",
+        "raw_sha256": "04ae5d745bae53300b993c2ada0ebc9f9705b433383fb11beb5c51fe0db3fba7"
+      },
+      "previous_Linux_xml": {
+        "lf_sha256": "0ad480fe805e41101c488afa86f19c85c11897be81340d8d2973363309300973",
+        "path": "tuple-repair-verify-313\\pine2ast.xml",
+        "raw_sha256": "0ad480fe805e41101c488afa86f19c85c11897be81340d8d2973363309300973"
+      },
+      "previous_Windows_xml": {
+        "lf_sha256": "af2eb574347dd91b49221fff02447ba4144b70aa46ff79c34789ac01bb0245f3",
+        "path": "tuple-loop-full-continued-py313.xml",
+        "raw_sha256": "e1348809de2852dff372c8c0afc383609400448102c89a9057a0152330d2dc54"
+      },
+      "python": "313",
+      "unchanged_Linux_nodeids_not_executed_on_Windows": [
+        "tests/stage6/test_stage6_performance_gate.py::test_isolated_sample_validates_worker_contract",
+        "tests/stage6/test_stage6_performance_gate.py::test_performance_source_has_exact_requested_body_size",
+        "tests/stage6/test_stage6_performance_gate.py::test_report_aggregates_process_isolated_samples"
+      ],
+      "xml": {
+        "lf_sha256": "b80b0f7f8c291f1257f654aa6236a4cebe0ca5ba5378fd4c5e6be9b23f0d22ea",
+        "path": "method-a2-producer-final-full-py313.xml",
+        "raw_sha256": "e441bebd510ed06982788a21f41ea9b2ff2003c2b53e869f08b188d6b9dd028d"
+      }
+    },
+    {
+      "counts": {
+        "FAILURE": 1,
+        "PASS": 1144
+      },
+      "log": {
+        "lf_sha256": "1f895acea0725c3fd68d9ea9fcf1391c194286a13a3ec88650469fafdb36333e",
+        "path": "method-a2-compiler-final-full-py313.log",
+        "raw_sha256": "ed71cbd8e8d6c0404e03c12ae2aa2fbcc97b7d35820e3fc9b97d26c199b08e21"
+      },
+      "new_nodeids": [
+        "tests/test_method_receiver_admission.py::test_ast20_keeps_the_genuine_old_verifier_keyword_signature",
+        "tests/test_method_receiver_admission.py::test_ast21_passes_exact_bounded_limits_to_the_producer_owner",
+        "tests/test_method_receiver_admission.py::test_ast21_verifier_typeerror_never_triggers_an_old_signature_retry",
+        "tests/test_method_receiver_admission.py::test_consumer_larger_local_limits_do_not_expand_producer_absolute_replay_profile[max_ast_nodes-2000000]",
+        "tests/test_method_receiver_admission.py::test_consumer_larger_local_limits_do_not_expand_producer_absolute_replay_profile[max_bundle_bytes-67108864]",
+        "tests/test_method_receiver_admission.py::test_consumer_larger_local_limits_do_not_expand_producer_absolute_replay_profile[max_json_depth-256]",
+        "tests/test_method_receiver_execution.py::test_admission_only_capability_preserves_nominal_registry_and_varip_runtime_contracts[5]",
+        "tests/test_method_receiver_execution.py::test_admission_only_capability_preserves_nominal_registry_and_varip_runtime_contracts[6]",
+        "tests/test_method_receiver_execution.py::test_method_local_var_rolls_back_after_open_bar_json_restore[5]",
+        "tests/test_method_receiver_execution.py::test_method_local_var_rolls_back_after_open_bar_json_restore[6]",
+        "tests/test_method_receiver_execution.py::test_once_evaluated_receiver_survives_abort_retry_without_duplicate_state[5]",
+        "tests/test_method_receiver_execution.py::test_once_evaluated_receiver_survives_abort_retry_without_duplicate_state[6]",
+        "tests/test_method_receiver_execution.py::test_receiver_proof_composes_with_verified_library_context_and_checkpoint[5]",
+        "tests/test_method_receiver_execution.py::test_receiver_proof_composes_with_verified_library_context_and_checkpoint[6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_argument-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_argument-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_receiver-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[custom_nz_receiver-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[default-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[default-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[input-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[input-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[named-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[named-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[receiver_once-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[receiver_once-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series_reference-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[series_reference-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[simple-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[simple-6]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[tuple-5]",
+        "tests/test_method_receiver_execution.py::test_source_free_admission_generated_values_and_json_continuation[tuple-6]",
+        "tests/test_method_receiver_execution.py::test_v6_reference_annotation_is_preserved_without_simple_reference_runtime_value"
+      ],
+      "new_passes": 35,
+      "nonpass": {
+        "tests/test_admission_hardening.py::test_path_input_rejects_symlink_before_read": "FAILURE"
+      },
+      "old_nodeids_with_identical_status": 1110,
+      "owner": "ast2python",
+      "previous_Windows_xml": {
+        "lf_sha256": "92527bcc3784bf9cbf4525f7015aac3b49799f5d7b4790d75413fa074730c179",
+        "path": "tuple-repair-compiler-313-external-temp.xml",
+        "raw_sha256": "fb624d89dbf2a722cb2b9a6daa2dafdfab512b411d846bd71d62fea209833845"
+      },
+      "python": "313",
+      "xml": {
+        "lf_sha256": "e8be4892c1dcb588ddad1ffeb595d327b88874aa323f2b4abedc25f0a5597fc6",
+        "path": "method-a2-compiler-final-full-py313.xml",
+        "raw_sha256": "3c8f4e7010a607f49290d15a3d8e01c76d5fbeec0eec55914d9c75b0982e20ba"
+      }
+    }
+  ],
+  "all_original_ids_sources_and_bodies_unchanged": true,
+  "architecture_review": {
+    "lf_sha256": "797c3ee199fc6a3dca71091c20a283d6c77802dd16b7a155eac4440e5e97b084",
+    "path": "method-a2-root-architecture-review.json",
+    "raw_sha256": "797c3ee199fc6a3dca71091c20a283d6c77802dd16b7a155eac4440e5e97b084"
+  },
+  "baseline": {
+    "ast2python": "95a14be4be8987faafb3e7629c744e698fd9f134",
+    "pine2ast": "05d7e61be58a184b211bc093f989527157005b92",
+    "pinelib": "2148bca8370858ef8f7716ee0ba27d42960563b4"
+  },
+  "blocking_findings": [],
+  "expected_Linux_counts_not_executed_for_A2": {
+    "ast2python": 1145,
+    "pine2ast": 2807
+  },
+  "files": [
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "production",
+      "lf_sha256": "5873108ddf95ed477665cd9af983b44db43d8a64e2897e38abc7e8b53eabaa33",
+      "path": "pine2ast/pine2ast/ast/decode.py",
+      "raw_sha256": "5873108ddf95ed477665cd9af983b44db43d8a64e2897e38abc7e8b53eabaa33"
+    },
+    {
+      "before_lf_sha256": "aba5ae33f59d6fc4e39210face4d1fd05e763adf0a66deda3a4bebfcfc7826ec",
+      "before_raw_sha256": "aba5ae33f59d6fc4e39210face4d1fd05e763adf0a66deda3a4bebfcfc7826ec",
+      "group": "production",
+      "lf_sha256": "cef1af4be03b6493dc0deadce2352c70d71d722a039883006c83e44cf850946d",
+      "path": "pine2ast/pine2ast/ast/nodes.py",
+      "raw_sha256": "cef1af4be03b6493dc0deadce2352c70d71d722a039883006c83e44cf850946d"
+    },
+    {
+      "before_lf_sha256": "6b8133715ede5c0e64a44023b62d966cc61a12ef8afed855c5209f6859858ecf",
+      "before_raw_sha256": "6b8133715ede5c0e64a44023b62d966cc61a12ef8afed855c5209f6859858ecf",
+      "group": "production",
+      "lf_sha256": "b9d756f940d34d22c52bb3a6c6e006d8697a81a04e1589c20802898bfa33962a",
+      "path": "pine2ast/pine2ast/ast/schema.py",
+      "raw_sha256": "b9d756f940d34d22c52bb3a6c6e006d8697a81a04e1589c20802898bfa33962a"
+    },
+    {
+      "before_lf_sha256": "6ceb01041de277c3530dd7356aa3c8b88f805290d9dbf408acc525c363ff2de7",
+      "before_raw_sha256": "6ceb01041de277c3530dd7356aa3c8b88f805290d9dbf408acc525c363ff2de7",
+      "group": "production",
+      "lf_sha256": "f0f18ff154f63e4b3aff795374e1f5cdb27d1b742b8052946f3d7c4ee0bd1c98",
+      "path": "pine2ast/pine2ast/parser/base.py",
+      "raw_sha256": "f0f18ff154f63e4b3aff795374e1f5cdb27d1b742b8052946f3d7c4ee0bd1c98"
+    },
+    {
+      "before_lf_sha256": "7ca0f8fd0de35bdb0e83062d7309b871816c41b90cccd6dd32ec96af45eb014e",
+      "before_raw_sha256": "7ca0f8fd0de35bdb0e83062d7309b871816c41b90cccd6dd32ec96af45eb014e",
+      "group": "production",
+      "lf_sha256": "5c3354527257254918ad9840412749abfdfa35cc7f71a80d5aeb7c71d610f1c7",
+      "path": "pine2ast/pine2ast/parser/declarations.py",
+      "raw_sha256": "5c3354527257254918ad9840412749abfdfa35cc7f71a80d5aeb7c71d610f1c7"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "production",
+      "lf_sha256": "84c8c59d778830ea093fab8cb7206ff43c61e0dedd7e35227c374d9fe59fb213",
+      "path": "pine2ast/pine2ast/hardening/method_receivers.py",
+      "raw_sha256": "84c8c59d778830ea093fab8cb7206ff43c61e0dedd7e35227c374d9fe59fb213"
+    },
+    {
+      "before_lf_sha256": "821072a7ef26b91cda29ec7a8a075b4cfbaa7d8d43a37ebb300719555e6f5fce",
+      "before_raw_sha256": "821072a7ef26b91cda29ec7a8a075b4cfbaa7d8d43a37ebb300719555e6f5fce",
+      "group": "production",
+      "lf_sha256": "bcb2c1ad875febf53b302def1e469e8a20e32b8c144f90d0604dfb024650e286",
+      "path": "pine2ast/pine2ast/hardening/consumer_bundle.py",
+      "raw_sha256": "bcb2c1ad875febf53b302def1e469e8a20e32b8c144f90d0604dfb024650e286"
+    },
+    {
+      "before_lf_sha256": "3379b151dc61def49280aa7da8846d5190713025b2d038ed0e41de5487017c52",
+      "before_raw_sha256": "3379b151dc61def49280aa7da8846d5190713025b2d038ed0e41de5487017c52",
+      "group": "production",
+      "lf_sha256": "0753edf742ffe5dbbd8a0082dc068e61b71249c4a77da1e45ceded325f9feca1",
+      "path": "pine2ast/pine2ast/semantic/signatures.py",
+      "raw_sha256": "0753edf742ffe5dbbd8a0082dc068e61b71249c4a77da1e45ceded325f9feca1"
+    },
+    {
+      "before_lf_sha256": "5ad89e582fbc594969db099eede5f5258e997565673c4e9a44b4e92fc9971975",
+      "before_raw_sha256": "5ad89e582fbc594969db099eede5f5258e997565673c4e9a44b4e92fc9971975",
+      "group": "production",
+      "lf_sha256": "b3bd71d7efa5a710e03544575f9382bd9956442c4c5a872ec6d8a1328785a2e7",
+      "path": "pine2ast/pine2ast/semantic/method_candidates.py",
+      "raw_sha256": "b3bd71d7efa5a710e03544575f9382bd9956442c4c5a872ec6d8a1328785a2e7"
+    },
+    {
+      "before_lf_sha256": "5a91f81bf3eb81eec19d515c65c84136196f6de07b7b53e612e2395b9dde9d5f",
+      "before_raw_sha256": "5a91f81bf3eb81eec19d515c65c84136196f6de07b7b53e612e2395b9dde9d5f",
+      "group": "production",
+      "lf_sha256": "518958d820fc12cc9d3e79974d90a888d19bc1579f32c35a687d4ed79621b37b",
+      "path": "pine2ast/pine2ast/semantic/analyzer_statements.py",
+      "raw_sha256": "518958d820fc12cc9d3e79974d90a888d19bc1579f32c35a687d4ed79621b37b"
+    },
+    {
+      "before_lf_sha256": "1f31f90917060366cb2b363d8623997e5bdc8fb0beb0b559328bb88bd8d1be8d",
+      "before_raw_sha256": "1f31f90917060366cb2b363d8623997e5bdc8fb0beb0b559328bb88bd8d1be8d",
+      "group": "production",
+      "lf_sha256": "02eca24c4bc4d8037924aed6cc42c2d5c167016b9520f0fb5bce3ce976d4a001",
+      "path": "pine2ast/pine2ast/semantic/callable_qualifiers.py",
+      "raw_sha256": "02eca24c4bc4d8037924aed6cc42c2d5c167016b9520f0fb5bce3ce976d4a001"
+    },
+    {
+      "before_lf_sha256": "aee64d3cacbcb9afecbab6c56eb2f36ee8b2c7ea6e3c9533c31d7d9bbd0f44c9",
+      "before_raw_sha256": "aee64d3cacbcb9afecbab6c56eb2f36ee8b2c7ea6e3c9533c31d7d9bbd0f44c9",
+      "group": "production",
+      "lf_sha256": "69367a0da64fa0f38254c3e327c4d4ea253022aab4108b3b1bd8fe60e6f928ca",
+      "path": "pine2ast/pine2ast/semantic/inference.py",
+      "raw_sha256": "69367a0da64fa0f38254c3e327c4d4ea253022aab4108b3b1bd8fe60e6f928ca"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "2c387dab3a53525d2c5887ec08720c3db1b571e7375d3ebd7b1a1c3a575b5cab",
+      "path": "pine2ast/tests/test_method_receiver_ast_decode.py",
+      "raw_sha256": "2c387dab3a53525d2c5887ec08720c3db1b571e7375d3ebd7b1a1c3a575b5cab"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "772a9ca83106522f55a3d22127c45856a93e03723c94a626c50fdb642545d0de",
+      "path": "pine2ast/tests/test_method_receiver_qualifiers.py",
+      "raw_sha256": "772a9ca83106522f55a3d22127c45856a93e03723c94a626c50fdb642545d0de"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "606e02035a69baf38f28ad35b4024938bfb957e912ba704fc2930d652d98adcf",
+      "path": "pine2ast/tests/test_method_receiver_admission.py",
+      "raw_sha256": "606e02035a69baf38f28ad35b4024938bfb957e912ba704fc2930d652d98adcf"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "b332896f835ccd221dcc88eb5aad7430aa5a55c67b75cdcecf05e879130c2f91",
+      "path": "pine2ast/tests/test_method_receiver_literal_schema.py",
+      "raw_sha256": "b332896f835ccd221dcc88eb5aad7430aa5a55c67b75cdcecf05e879130c2f91"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "f9e0f452e901f53de72d8a5692d9afd01c72e7e210cdcf90dc59829a2d1ac31e",
+      "path": "pine2ast/tests/test_method_receiver_binding.py",
+      "raw_sha256": "f9e0f452e901f53de72d8a5692d9afd01c72e7e210cdcf90dc59829a2d1ac31e"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_fixtures",
+      "lf_sha256": "d9268946e4d751fe8832c705ca21af61e407c4bc1517ec6029bf32826484cc5b",
+      "path": "pine2ast/tests/data/method_receiver_qualifiers.json",
+      "raw_sha256": "d9268946e4d751fe8832c705ca21af61e407c4bc1517ec6029bf32826484cc5b"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_fixtures",
+      "lf_sha256": "920336b81ed12fd514313c7b5055b21f9213b0b42b1916d7b12a75dd8bd76b69",
+      "path": "pine2ast/tests/data/method_receiver_forged_literals.json",
+      "raw_sha256": "920336b81ed12fd514313c7b5055b21f9213b0b42b1916d7b12a75dd8bd76b69"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "docs",
+      "lf_sha256": "b18950dc075a249e6a50ee08baa8924861b218f4abe12126ca0b2e5773aef640",
+      "path": "pine2ast/docs/STAGE2_METHOD_RECEIVER_QUALIFIERS.md",
+      "raw_sha256": "b18950dc075a249e6a50ee08baa8924861b218f4abe12126ca0b2e5773aef640"
+    },
+    {
+      "before_lf_sha256": "37740191e819333c61696a912a7a8198ef0a1f6009c87f0dad9f5e3d489f74ca",
+      "before_raw_sha256": "37740191e819333c61696a912a7a8198ef0a1f6009c87f0dad9f5e3d489f74ca",
+      "group": "production",
+      "lf_sha256": "7106f2f21aaab03f17a0b0f91f8da73816e9187f52e6971df5b6e8db89029fb9",
+      "path": "ast2python/ast2python/admission/invariants.py",
+      "raw_sha256": "7106f2f21aaab03f17a0b0f91f8da73816e9187f52e6971df5b6e8db89029fb9"
+    },
+    {
+      "before_lf_sha256": "775dee294337f06f152c3622369167adaa07638f9af25db65e3f306210ebb18f",
+      "before_raw_sha256": "775dee294337f06f152c3622369167adaa07638f9af25db65e3f306210ebb18f",
+      "group": "production",
+      "lf_sha256": "a6ff47001df1bf40ff5f78451b18fdd4c060f992a4c91b25a371ff01e39eb8c1",
+      "path": "ast2python/ast2python/admission/bundle.py",
+      "raw_sha256": "a6ff47001df1bf40ff5f78451b18fdd4c060f992a4c91b25a371ff01e39eb8c1"
+    },
+    {
+      "before_lf_sha256": "57853457e4859f8d82f06d69faeb7047c60bc31a14cbad432a86f8d28f7e733d",
+      "before_raw_sha256": "57853457e4859f8d82f06d69faeb7047c60bc31a14cbad432a86f8d28f7e733d",
+      "group": "production",
+      "lf_sha256": "04a56746d76cb70b10540fbc21c8124ffadcd28b176525957369c099ef107d0c",
+      "path": "ast2python/ast2python/admission/ast_view.py",
+      "raw_sha256": "04a56746d76cb70b10540fbc21c8124ffadcd28b176525957369c099ef107d0c"
+    },
+    {
+      "before_lf_sha256": "813cf64e2e2fd75ac142b987f5f77569e0aad04da030134742af44369a4a3492",
+      "before_raw_sha256": "813cf64e2e2fd75ac142b987f5f77569e0aad04da030134742af44369a4a3492",
+      "group": "production",
+      "lf_sha256": "847e84bff40910cbe750fcbf4536b9944cad3ff6c4a4e679410e2dc2f7dfa012",
+      "path": "ast2python/ast2python/lowering/builder.py",
+      "raw_sha256": "847e84bff40910cbe750fcbf4536b9944cad3ff6c4a4e679410e2dc2f7dfa012"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "9e655f64cc9d817959d163e3be1256be423c8fbd97f55e5c8c7cc77d21633044",
+      "path": "ast2python/tests/test_method_receiver_execution.py",
+      "raw_sha256": "9e655f64cc9d817959d163e3be1256be423c8fbd97f55e5c8c7cc77d21633044"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "6e02b533bbcd1a5ae85ee4f4bd4f698b8765305eeab231688ea2b68a0cc532dd",
+      "path": "ast2python/tests/test_method_receiver_admission.py",
+      "raw_sha256": "6e02b533bbcd1a5ae85ee4f4bd4f698b8765305eeab231688ea2b68a0cc532dd"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "docs",
+      "lf_sha256": "18b687ca934d2abffbb56899770b0891fbeffab1584258fccaf58674d5ac963f",
+      "path": "ast2python/docs/STAGE2_METHOD_RECEIVER_ADMISSION.md",
+      "raw_sha256": "18b687ca934d2abffbb56899770b0891fbeffab1584258fccaf58674d5ac963f"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "cc2e12795640ca883ca3d9f78f27ae6e4512a0b82d17ac50cd06793e502a6784",
+      "path": "pine2ast/tests/test_method_receiver_byte_budget.py",
+      "raw_sha256": "cc2e12795640ca883ca3d9f78f27ae6e4512a0b82d17ac50cd06793e502a6784"
+    },
+    {
+      "before_lf_sha256": null,
+      "before_raw_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "408ac2ab3542d61146fefa74f14f9a7ae362623c17fb3c2a05c227347d62d263",
+      "path": "pine2ast/tests/test_method_receiver_legacy_dispatch.py",
+      "raw_sha256": "408ac2ab3542d61146fefa74f14f9a7ae362623c17fb3c2a05c227347d62d263"
+    }
+  ],
+  "full_stage2_accepted": false,
+  "groups": {
+    "docs": 2,
+    "new_fixtures": 2,
+    "new_tests": 9,
+    "production": 16
+  },
+  "independent_exact_source": {
+    "lf_sha256": "25ffc38d8ac20c25d5b21fd8770a311a4418b4c53d301e5cdf99b9c8a7a35aa6",
+    "path": "method-a2-independent-b3ad-source.json",
+    "raw_sha256": "25ffc38d8ac20c25d5b21fd8770a311a4418b4c53d301e5cdf99b9c8a7a35aa6"
+  },
+  "independent_extra_probes": {
+    "byte_cases_use_standard_canonical_JSON_size_only": true,
+    "canonical_byte_boundaries": 289,
+    "colluding_receiver_chains": 8,
+    "reports": [
+      {
+        "lf_sha256": "b9005b4c657599d2618b9a47e4520ec3dcdb3af1da909844183158163070a3e3",
+        "path": "method-a2-independent-b3ad-probe-py311.json",
+        "raw_sha256": "b9005b4c657599d2618b9a47e4520ec3dcdb3af1da909844183158163070a3e3"
+      },
+      {
+        "lf_sha256": "b9005b4c657599d2618b9a47e4520ec3dcdb3af1da909844183158163070a3e3",
+        "path": "method-a2-independent-b3ad-probe-py313.json",
+        "raw_sha256": "b9005b4c657599d2618b9a47e4520ec3dcdb3af1da909844183158163070a3e3"
+      }
+    ],
+    "source_parse_sentinel": true
+  },
+  "independent_harness_initial_failure_preserved": {
+    "record": {
+      "lf_sha256": "1bd69bdf19b1d330b2977dc090ffd89916348d04652433fd8bd15aa5ab6696f0",
+      "path": "method-a2-independent-review-harness-first-attempt.json",
+      "raw_sha256": "f529c7b6097e453e22855db6506af7d9cbb78fb19d8f63ba2877f24587a34d1e"
+    },
+    "resolution": "Four historical manual rows omit optional body; compare exact source and optional body presence/value. No source, fixture or expected-result edits.",
+    "script": {
+      "lf_sha256": "2ac4f0ba134098eb0ac1e3160e2aa2b277de4ab8da5412589703a9f8731d4bee",
+      "path": "finalize_method_a2_independent_review_initial.py",
+      "raw_sha256": "2ac4f0ba134098eb0ac1e3160e2aa2b277de4ab8da5412589703a9f8731d4bee"
+    }
+  },
+  "independent_new_test_reruns": [
+    {
+      "component": "pine2ast",
+      "log": {
+        "lf_sha256": "15028d0ac32d3abe252f6daeca0e344cba86bd3eb4bb0421e0b699b68b312254",
+        "path": "method-a2-independent-focused-pine2ast-py311.log",
+        "raw_sha256": "b1e441be0b54a6632d6ca0686feba86b201ad43819f9a7c1e31fd3dc4c61cdbc"
+      },
+      "passes": 334,
+      "python": "311",
+      "same_new_nodeids_as_owner_full": true,
+      "xml": {
+        "lf_sha256": "e4f14389ae7653b60df05ca4cdece3268d04de564288873ce1360fd9198ea455",
+        "path": "method-a2-independent-focused-pine2ast-py311.xml",
+        "raw_sha256": "e4f14389ae7653b60df05ca4cdece3268d04de564288873ce1360fd9198ea455"
+      }
+    },
+    {
+      "component": "pine2ast",
+      "log": {
+        "lf_sha256": "b7e3b9d00e159987a6263a9979d981958da9801b6fd11ef01ad9c5c95f00dd06",
+        "path": "method-a2-independent-focused-pine2ast-py313.log",
+        "raw_sha256": "f4d6d24a6aaa488ea1ecc5968760064a58f97992bb0362a435dcb92bca9925b8"
+      },
+      "passes": 334,
+      "python": "313",
+      "same_new_nodeids_as_owner_full": true,
+      "xml": {
+        "lf_sha256": "43f3824b085b20b8d8d235eefbad3b669807e59f51c420526fb3cb0991d54a94",
+        "path": "method-a2-independent-focused-pine2ast-py313.xml",
+        "raw_sha256": "43f3824b085b20b8d8d235eefbad3b669807e59f51c420526fb3cb0991d54a94"
+      }
+    },
+    {
+      "component": "ast2python",
+      "log": {
+        "lf_sha256": "40df980eb5ea8479bf6d7bce6ff3106ca7472dbffee6b7182bbc986c519215bc",
+        "path": "method-a2-independent-focused-ast2python-py311.log",
+        "raw_sha256": "eb171f08a081e624ef2163ddd63d7fa972041e89272f96bd9377d1af34f09c50"
+      },
+      "passes": 35,
+      "python": "311",
+      "same_new_nodeids_as_owner_full": true,
+      "xml": {
+        "lf_sha256": "065a36d8c57c26d952eaa0786e2e8ec2c4ff3aae2f1d26c6d055004fd3075e6e",
+        "path": "method-a2-independent-focused-ast2python-py311.xml",
+        "raw_sha256": "065a36d8c57c26d952eaa0786e2e8ec2c4ff3aae2f1d26c6d055004fd3075e6e"
+      }
+    },
+    {
+      "component": "ast2python",
+      "log": {
+        "lf_sha256": "23e79e965eb958f235224f74f436250ef37c42c422dc41f2a984edf1aaac2ebc",
+        "path": "method-a2-independent-focused-ast2python-py313.log",
+        "raw_sha256": "c78613d35c8a1acbe7e992ed663ab31b9f9ed246855da38df9f4470aa009aa34"
+      },
+      "passes": 35,
+      "python": "313",
+      "same_new_nodeids_as_owner_full": true,
+      "xml": {
+        "lf_sha256": "4220ec16d43d13d9968788ffcb0ea5ebf934c5b47b4a959d776ff55daca5f10f",
+        "path": "method-a2-independent-focused-ast2python-py313.xml",
+        "raw_sha256": "4220ec16d43d13d9968788ffcb0ea5ebf934c5b47b4a959d776ff55daca5f10f"
+      }
+    }
+  ],
+  "independent_review_scripts": [
+    {
+      "lf_sha256": "bd387ccd45744460ac0ab9b3df1ce1439c2dcb1e557788ec66a9b60b27755251",
+      "path": "finalize_method_a2_independent_review.py",
+      "raw_sha256": "bd387ccd45744460ac0ab9b3df1ce1439c2dcb1e557788ec66a9b60b27755251"
+    },
+    {
+      "lf_sha256": "6a03fcc491c148ee46b26d38dafb0d477c07f4f1cc5c497789368a87b8a17369",
+      "path": "run_method_a2_independent_focused.py",
+      "raw_sha256": "6a03fcc491c148ee46b26d38dafb0d477c07f4f1cc5c497789368a87b8a17369"
+    },
+    {
+      "lf_sha256": "3975cc1707d045079a6bef29bbd76262a4a494bcf7f4b6e171edc0084847e414",
+      "path": "probe_method_a2_independent_b3ad.py",
+      "raw_sha256": "3975cc1707d045079a6bef29bbd76262a4a494bcf7f4b6e171edc0084847e414"
+    }
+  ],
+  "limitations": [
+    "No full Stage2 acceptance and no A2 Linux joint execution claim.",
+    "Windows retains eight producer failures, one resource collection error and one compiler symlink failure; no skips or assertion weakening.",
+    "Three unchanged old producer performance nodeids are present in the Linux baseline but not executable on this Windows host.",
+    "Old/new producer/consumer API evidence retains its historical producer89f07/compiler95a labels; it is not relabelled as 05d7.",
+    "The 3456 matrix rows are internal observations, not 3456 extra pytest nodes. Eighteen negatives include producer-only rejection and the explicitly trusted-source control; source-free authentication of a fully replaced legacy program is not claimed.",
+    "Version 5 simple reference annotation admission remains an UNVERIFIED implementation profile; the v6 correction has separate primary-authority review.",
+    "Exported-library method linkage is outside this A2 implementation.",
+    "Full mypy remains non-green: six unchanged Windows producer POSIX attribute errors and 447 unchanged compiler baseline errors.",
+    "The v5 simple-reference rejection is an explicitly unverified implementation admission profile. Only v6 has primary evidence that reference parameter qualifier annotations are ignored; both versions retain actual series reference semantics and the explicit AST annotation.",
+    "Historical old/new API pair evidence uses producer89f07/compiler95a labels. Current source equality and final full/focused evidence bind exact05d7 baseline plus b3ad; the historical artifact is not relabelled.",
+    "Native execution has no trust anchor for authentication of a completely replaced and self-resealed legacy source-free program. Semantic replay establishes internal producer consistency, not original authorship.",
+    "No source, production test, publication ref, inventory lock, policy, performance threshold or existing expected value was changed by this independent review."
+  ],
+  "manual_count": 78,
+  "manual_original": {
+    "lf_sha256": "221ca224a125f37881f757ee349157c217bd73383918e6253770a267520326f4",
+    "path": "method-a2-manual-before-matrix.json",
+    "raw_sha256": "221ca224a125f37881f757ee349157c217bd73383918e6253770a267520326f4"
+  },
+  "matrix": {
+    "accepts": 16,
+    "actual_both_python": [
+      {
+        "lf_sha256": "52e12961f20a5a0939947b683d13f7d6815b902b40e98d7c3671dc353171767f",
+        "path": "method-a2-actual-matrix-revised-py311.json",
+        "raw_sha256": "52e12961f20a5a0939947b683d13f7d6815b902b40e98d7c3671dc353171767f"
+      },
+      {
+        "lf_sha256": "52e12961f20a5a0939947b683d13f7d6815b902b40e98d7c3671dc353171767f",
+        "path": "method-a2-actual-matrix-revised-py313.json",
+        "raw_sha256": "52e12961f20a5a0939947b683d13f7d6815b902b40e98d7c3671dc353171767f"
+      }
+    ],
+    "counted_as_extra_pytest_tests": false,
+    "design": {
+      "lf_sha256": "744de103be9a65fb405ed4a81cd8b3253893a87e2290dc3bbfc5f72b3c0c0a99",
+      "path": "method-a2-proposed-admission-matrix.json",
+      "raw_sha256": "744de103be9a65fb405ed4a81cd8b3253893a87e2290dc3bbfc5f72b3c0c0a99"
+    },
+    "final_verified_source_binding": {
+      "path": "method-a2-revised-frozen-bundle.json",
+      "sha256": "b3ad0eeacb82f16cb1791522e0ecc5699be7331a0620ac58f875acd73a09aa74"
+    },
+    "full_cartesian_rows": 3456,
+    "negative_controls": 18,
+    "ordinary_dual_rejections": 16,
+    "original_source_baseline_label_preserved": "05d7e61be58a184b211bc093f989527157005b92 plus pending A2; not a frozen source claim",
+    "producer_build_rejection_consumer_not_reached": 1,
+    "rejects": 3440,
+    "trusted_source_rejection_source_free_replaced_legacy_consumer_accepts_outside_scope": 1
+  },
+  "owner_execution_source_copies_rechecked": [
+    {
+      "component": "pine2ast",
+      "root": "method-receiver-a2-final-composed",
+      "verified_files": 417
+    },
+    {
+      "component": "ast2python",
+      "root": "method-receiver-a2-final-composed",
+      "verified_files": 176
+    },
+    {
+      "component": "pinelib",
+      "root": "method-receiver-a2-final-composed",
+      "verified_files": 171
+    },
+    {
+      "component": "pine2ast",
+      "root": "method-receiver-a2-revised-full-py311",
+      "verified_files": 417
+    },
+    {
+      "component": "ast2python",
+      "root": "method-receiver-a2-revised-full-py311",
+      "verified_files": 176
+    },
+    {
+      "component": "pinelib",
+      "root": "method-receiver-a2-revised-full-py311",
+      "verified_files": 171
+    },
+    {
+      "component": "pine2ast",
+      "root": "method-receiver-a2-revised-full-py313",
+      "verified_files": 417
+    },
+    {
+      "component": "ast2python",
+      "root": "method-receiver-a2-revised-full-py313",
+      "verified_files": 176
+    },
+    {
+      "component": "pinelib",
+      "root": "method-receiver-a2-revised-full-py313",
+      "verified_files": 171
+    }
+  ],
+  "owner_receipt": {
+    "lf_sha256": "a72377a866bfc6a7688ee05d8906a5cc749708d9cb349aa3e928323ddc2634ff",
+    "path": "method-a2-final-owner-execution-receipt.json",
+    "raw_sha256": "a72377a866bfc6a7688ee05d8906a5cc749708d9cb349aa3e928323ddc2634ff"
+  },
+  "performance_final_serial": [
+    {
+      "lf_sha256": "01f2fcb9b67aa0e30ac1f6982195b7469f96c277049cc86de8eb7c2e22fcc389",
+      "path": "method-a2-performance-dispatch-baseline-py311.json",
+      "raw_sha256": "01f2fcb9b67aa0e30ac1f6982195b7469f96c277049cc86de8eb7c2e22fcc389",
+      "report": {
+        "hard_ceilings_ms_per_node": {
+          "admission": 10.0,
+          "artifact": 4.0,
+          "emission": 6.0,
+          "ir_build": 4.0,
+          "ir_validate": 4.0
+        },
+        "median_ms": {
+          "admission": 183.342,
+          "artifact": 0.6889,
+          "emission": 25.4759,
+          "ir_build": 27.4145,
+          "ir_validate": 19.9467
+        },
+        "node_count": 36,
+        "ok": true,
+        "peak_bytes": 1684978,
+        "samples": 3,
+        "schema_id": "ast2python.stage4.performance.v1",
+        "violations": []
+      }
+    },
+    {
+      "lf_sha256": "57b8cb5d01dc4faccd5cb9c250c5960636df8e248078eb8c33ac875485676d4d",
+      "path": "method-a2-performance-dispatch-after-py311.json",
+      "raw_sha256": "57b8cb5d01dc4faccd5cb9c250c5960636df8e248078eb8c33ac875485676d4d",
+      "report": {
+        "hard_ceilings_ms_per_node": {
+          "admission": 10.0,
+          "artifact": 4.0,
+          "emission": 6.0,
+          "ir_build": 4.0,
+          "ir_validate": 4.0
+        },
+        "median_ms": {
+          "admission": 168.6482,
+          "artifact": 0.7383,
+          "emission": 25.5897,
+          "ir_build": 29.3256,
+          "ir_validate": 21.355
+        },
+        "node_count": 36,
+        "ok": true,
+        "peak_bytes": 1765037,
+        "samples": 3,
+        "schema_id": "ast2python.stage4.performance.v1",
+        "violations": []
+      }
+    },
+    {
+      "lf_sha256": "31ee2b31b4ae1f33f5c2a9d170e9d334b49a8297e3dfb020bb0b10b472af8d2e",
+      "path": "method-a2-performance-dispatch-baseline-py313.json",
+      "raw_sha256": "31ee2b31b4ae1f33f5c2a9d170e9d334b49a8297e3dfb020bb0b10b472af8d2e",
+      "report": {
+        "hard_ceilings_ms_per_node": {
+          "admission": 10.0,
+          "artifact": 4.0,
+          "emission": 6.0,
+          "ir_build": 4.0,
+          "ir_validate": 4.0
+        },
+        "median_ms": {
+          "admission": 141.6278,
+          "artifact": 0.7664,
+          "emission": 28.4567,
+          "ir_build": 30.8282,
+          "ir_validate": 21.065
+        },
+        "node_count": 36,
+        "ok": true,
+        "peak_bytes": 3086731,
+        "samples": 3,
+        "schema_id": "ast2python.stage4.performance.v1",
+        "violations": []
+      }
+    },
+    {
+      "lf_sha256": "d97057f8fd0743c5fdb6f9723d21288e597ae8043163653b598e20993eeb8e93",
+      "path": "method-a2-performance-dispatch-after-py313.json",
+      "raw_sha256": "d97057f8fd0743c5fdb6f9723d21288e597ae8043163653b598e20993eeb8e93",
+      "report": {
+        "hard_ceilings_ms_per_node": {
+          "admission": 10.0,
+          "artifact": 4.0,
+          "emission": 6.0,
+          "ir_build": 4.0,
+          "ir_validate": 4.0
+        },
+        "median_ms": {
+          "admission": 155.606,
+          "artifact": 0.7595,
+          "emission": 26.1219,
+          "ir_build": 26.8935,
+          "ir_validate": 19.0875
+        },
+        "node_count": 36,
+        "ok": true,
+        "peak_bytes": 1890422,
+        "samples": 3,
+        "schema_id": "ast2python.stage4.performance.v1",
+        "violations": []
+      }
+    }
+  ],
+  "preserved_before_and_historical_evidence": {
+    "historical_actual_api_files": [
+      {
+        "lf_sha256": "ee6ee61bd973bdd9e363e22f1103ba3bddad94ba8aa7820a94b2869b6c9c4449",
+        "path": "method-a2-actual-api-compatibility-py311.json",
+        "raw_sha256": "ee6ee61bd973bdd9e363e22f1103ba3bddad94ba8aa7820a94b2869b6c9c4449"
+      },
+      {
+        "lf_sha256": "ee6ee61bd973bdd9e363e22f1103ba3bddad94ba8aa7820a94b2869b6c9c4449",
+        "path": "method-a2-actual-api-compatibility-py313.json",
+        "raw_sha256": "ee6ee61bd973bdd9e363e22f1103ba3bddad94ba8aa7820a94b2869b6c9c4449"
+      }
+    ],
+    "initial_full_attempts": [
+      {
+        "lf_sha256": "66fde973b67de46c52c9d470480c73da03781b913185962490637b607c7d3110",
+        "path": "method-a2-producer-full-external-py311.xml",
+        "raw_sha256": "8e1e85652f7e7e1f448e9528fb7857b068fc56c3b12eab2115f21ccb1bbef276"
+      },
+      {
+        "lf_sha256": "d5fe52481bbcc266d110bdc6111743dae8ef20d3d755b9d733ca975e63661ced",
+        "path": "method-a2-producer-full-external-py311.log",
+        "raw_sha256": "defbc07b83711035d972c3f94e8436bd85c5c5813104ada1bbfbc316f5fccb67"
+      },
+      {
+        "lf_sha256": "3223122d9c0c011a7a11ed80847427567059a9f5811bd8b025e45a7f8f74042c",
+        "path": "method-a2-producer-full-external-py313.xml",
+        "raw_sha256": "491b8abc1c20f79bc36cd66a72453c1bfe744eda98819b40ab1103215f1781da"
+      },
+      {
+        "lf_sha256": "b00baf4ce53d976c7ad9a51a3b8e7ee9788889815d8d08b37b4ed9a9dcc3667f",
+        "path": "method-a2-producer-full-external-py313.log",
+        "raw_sha256": "781eb9d2168ce5aa63d04c329d24a01d27aeb1489e41e3b4bf1f0c826bcfc54c"
+      },
+      {
+        "lf_sha256": "4f18278d63e875b1e00ecf9ad507da912f5a1f52c1e423ae36ea49db89bd1afb",
+        "path": "method-a2-compiler-full-external-py311.xml",
+        "raw_sha256": "abcec9a5dc2b15ab13b848f07f3cbb8713395068c1da54ef477c629bbedd53a8"
+      },
+      {
+        "lf_sha256": "b21f7d80ecbf90bf1f92cb31b374198385893d3e35c8abdadfae2fd0677bb485",
+        "path": "method-a2-compiler-full-external-py311.log",
+        "raw_sha256": "19d89ab4e2a2afb3ea88e46cae46d33f4148fde56f870d3cf0095b41adbef752"
+      },
+      {
+        "lf_sha256": "a2fcaf7e8b4ee0d65fb1cf6672de4d1ca57ccbc4167866bb7d59da08092eb004",
+        "path": "method-a2-compiler-full-external-py313.xml",
+        "raw_sha256": "aad674340903c07163ab101446fc85375cf3ff030c65071e6d9f15d85e936cdb"
+      },
+      {
+        "lf_sha256": "ccd0adb08e17ac12cfc36fa792c630475840261fc2c025c1820183fded8970ed",
+        "path": "method-a2-compiler-full-external-py313.log",
+        "raw_sha256": "48933132d7764b08da8c5cd58c8c55530c960eddc9023bc243df3185bc4cf127"
+      }
+    ],
+    "performance_regression_preserved": [
+      {
+        "lf_sha256": "fbf863a8b061b03decffb93763774f8e88127969e9a00715f2f1eab8cb1fa3d8",
+        "path": "method-a2-performance-serial-baseline-py311.json",
+        "raw_sha256": "fbf863a8b061b03decffb93763774f8e88127969e9a00715f2f1eab8cb1fa3d8"
+      },
+      {
+        "lf_sha256": "74c2493814aa049d3766e1ee0f32efe516507df39915529dc989e51901cc16da",
+        "path": "method-a2-performance-serial-before-py311.json",
+        "raw_sha256": "74c2493814aa049d3766e1ee0f32efe516507df39915529dc989e51901cc16da"
+      },
+      {
+        "lf_sha256": "ad3f9312353d15d4853012929f93a55fa10b1f0b894d94838b792ee14b18ec31",
+        "path": "method-a2-performance-serial-after-py311.json",
+        "raw_sha256": "ad3f9312353d15d4853012929f93a55fa10b1f0b894d94838b792ee14b18ec31"
+      }
+    ]
+  },
+  "primary_authority_receipts": [
+    {
+      "lf_sha256": "65e057210fe6a99c42c5875de935c287fa79c84499025254f788252d28aec34f",
+      "path": "method-a2-primary-authority.json",
+      "raw_sha256": "65e057210fe6a99c42c5875de935c287fa79c84499025254f788252d28aec34f"
+    },
+    {
+      "lf_sha256": "cd19cf261cb4dc216e848a2a4bf3bd59961391c39cb6e2a61a254c4a6ad7f60e",
+      "path": "method-a2-draft-qualifier-correction.json",
+      "raw_sha256": "cd19cf261cb4dc216e848a2a4bf3bd59961391c39cb6e2a61a254c4a6ad7f60e"
+    },
+    {
+      "lf_sha256": "8dd84237590423a0dc9f419c18fcdd558eaf42471ea44f7fcb9beeb23ed50eb1",
+      "path": "method-a2-reference-draft-correction.json",
+      "raw_sha256": "8dd84237590423a0dc9f419c18fcdd558eaf42471ea44f7fcb9beeb23ed50eb1"
+    },
+    {
+      "lf_sha256": "22a1d2297ba974e58207a0c68ddc28f8269694253f8e66f4610e25eb0d9945bb",
+      "path": "method-a2-reference-qualifier-authority-independent-review.json",
+      "raw_sha256": "22a1d2297ba974e58207a0c68ddc28f8269694253f8e66f4610e25eb0d9945bb"
+    }
+  ],
+  "reviewed_architecture": [
+    "AST2.1 is emitted exactly when an explicit simple/series method receiver annotation exists; omitted annotations preserve AST2.0 serialization.",
+    "The optional AST field preserves source annotation. The exact receiver capability is independent of existing library-context capability and is removed from runtime requirements only after full admission.",
+    "Only trusted dataclass types define canonical decoding; closed JSON preflight precedes recursive reconstruction. Work, bytes, depth, string, container and node limits are bounded; failed union alternatives share a budget.",
+    "Canonical AST2.1 is reconstructed without parse_source, then the existing semantic_only owner rederives all facts. Fully resealed receiver, call, literal and catalog substitutions are compared against fresh producer output.",
+    "Library-context1.1 retains its existing genuine linked reparse route. Compiler applies the lower of its admission limits and producer default limits.",
+    "Receiver evidence uses the existing SignatureResolver validator, explicit user-method context and actual receiver node identity. Receiver evaluation and regular argument positions remain separate; no synthetic parsed argument is added.",
+    "Runtime source, manifest and all existing catalog/RC5 files are unchanged. User method result qualifiers reuse the existing qualifier inference owner.",
+    "Legacy2.0 retains bounded AST forbidden-field scanning and existing admission checks. Whole-bundle canonical replay preflight is limited to new AST2.1/capability requests; final serial evidence closes the measured legacy performance regression."
+  ],
+  "reviewed_fixture": {
+    "lf_sha256": "d9268946e4d751fe8832c705ca21af61e407c4bc1517ec6029bf32826484cc5b",
+    "path": "method-receiver-a2-final-composed\\pine2ast\\tests\\data\\method_receiver_qualifiers.json",
+    "raw_sha256": "d9268946e4d751fe8832c705ca21af61e407c4bc1517ec6029bf32826484cc5b"
+  },
+  "schema_id": "openpine.method_a2_independent_source_review.v1",
+  "separate_reviewed_manual_corrections": [
+    {
+      "changes": {
+        "expected_result_qualifier": {
+          "after": "series",
+          "before": "simple"
+        }
+      },
+      "id": "argument_overload_with_receiver",
+      "version": 5
+    },
+    {
+      "changes": {
+        "expected_result_qualifier": {
+          "after": "series",
+          "before": "simple"
+        }
+      },
+      "id": "argument_overload_with_receiver",
+      "version": 6
+    },
+    {
+      "changes": {
+        "authority_scope": {
+          "after": "v5 syntax and series reference IDs documented; ignored qualifier exception not established; rejection is NOT Pine parity",
+          "before": null
+        },
+        "dimension": {
+          "after": "implementation-admission-profile-only",
+          "before": "value-and-admission"
+        },
+        "expected_status": {
+          "after": "UNVERIFIED-profile-reject",
+          "before": "reject-reference-series-only"
+        }
+      },
+      "id": "simple_reference_rejected",
+      "version": 5
+    },
+    {
+      "changes": {
+        "authority_scope": {
+          "after": "v6 reference qualifier keyword ignored; original ID retained as immutable scenario identity",
+          "before": null
+        },
+        "expected_result_qualifier": {
+          "after": "series",
+          "before": null
+        },
+        "expected_status": {
+          "after": "accept",
+          "before": "reject-reference-series-only"
+        },
+        "expected_value": {
+          "after": 1,
+          "before": null
+        }
+      },
+      "id": "simple_reference_rejected",
+      "version": 6
+    }
+  ],
+  "source_bundle": {
+    "lf_sha256": "b3ad0eeacb82f16cb1791522e0ecc5699be7331a0620ac58f875acd73a09aa74",
+    "path": "method-a2-revised-frozen-bundle.json",
+    "raw_sha256": "b3ad0eeacb82f16cb1791522e0ecc5699be7331a0620ac58f875acd73a09aa74"
+  },
+  "source_counts_and_old_file_preservation": {
+    "ast2python": {
+      "baseline": 173,
+      "candidate": 176,
+      "old_test_files_unchanged": 76
+    },
+    "pine2ast": {
+      "baseline": 405,
+      "candidate": 417,
+      "old_test_files_unchanged": 79
+    },
+    "pinelib": {
+      "baseline": 171,
+      "candidate": 171,
+      "old_test_files_unchanged": 62
+    }
+  },
+  "source_lineage_exact_overlay_equal_final": [
+    {
+      "lf_sha256": "97741a3b8e3c1ddffc130d807308ad1dcef115f2195212c7fbe6ea6848c36561",
+      "path": "method-a2-candidate-frozen-bundle.json",
+      "raw_sha256": "97741a3b8e3c1ddffc130d807308ad1dcef115f2195212c7fbe6ea6848c36561"
+    },
+    {
+      "lf_sha256": "8320be14f9edde0db75a0053dd2bd6dec2e60040eeb7f2b60239ea5b4541f1c4",
+      "path": "method-a2-byte-budget-repair-frozen-bundle.json",
+      "raw_sha256": "8320be14f9edde0db75a0053dd2bd6dec2e60040eeb7f2b60239ea5b4541f1c4"
+    },
+    {
+      "lf_sha256": "e6b41ffe2edc3a909c04c9227a1f89eb339d60728accfdfe78fe6aa2342de33b",
+      "path": "method-a2-legacy-dispatch-repair-frozen-bundle.json",
+      "raw_sha256": "e6b41ffe2edc3a909c04c9227a1f89eb339d60728accfdfe78fe6aa2342de33b"
+    }
+  ],
+  "status": "BOUNDED_SOURCE_AND_LOCAL_EVIDENCE_REVIEW_PASS_LINUX_JOINT_PENDING"
+}

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Independent event history")
+bool condition = open > 0.0
+float sample = close
+float result = ta.valuewhen(condition, sample, 0)
+plot(result)

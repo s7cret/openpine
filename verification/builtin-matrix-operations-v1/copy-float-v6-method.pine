@@ -1,0 +1,13 @@
+//@version=6
+indicator("matrix literal")
+var a=matrix.new<float>(1,2,0.0)
+var b=matrix.new<float>(0,0,0.0)
+if bar_index==0
+    matrix.set(a,0,0,1.5)
+    matrix.set(a,0,1,2.5)
+if bar_index==1
+    b:=a.copy()
+if bar_index==2
+    matrix.set(b,0,1,7.25)
+if bar_index==3
+    matrix.set(a,0,0,-1.5)

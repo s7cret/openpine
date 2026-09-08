@@ -1,0 +1,37 @@
+{
+  "schema_id": "openpine.recursive_length_independent_interim_stop.v1",
+  "status": "STOPPED_AT_USER_REQUEST_FINAL_FROZEN_SOURCE_REVIEW_PENDING",
+  "completed_read_only_review": [
+    "Read working production diff: producer generator adds five modern MACD/TSI qualifier ceilings and explicitly retains historical series projections; runtime audited override changes only the two modern TSI length qualifiers.",
+    "Read the new producer66 and runtime19 tests and the stdlib fixture migration derivation helper.",
+    "Inspected working baseline-index differences: eight production/generated paths, ten separately approved old metadata fixture paths; compiler working files unchanged.",
+    "Earlier completed primary authority and exact before-admission review remains recorded in recursive-length-admission-authority-independent-review.json (14fe6eca4096afcf8f0923ce4f26ba71af1b6f04e1f0be46295df1ba7adfad3e)."
+  ],
+  "baseline_source_index_seen_sha256": "0d44e74ae3472765ea0c836be11baa0c9c0985c09ce051a155343586091771a3",
+  "owner_reported_final_freeze_not_independently_bound": {
+    "producer10_sha256": "1a7e659f8e182d208a94cd5b75c49c3f502c69b892dc9d03af5c3b6ad92f76db",
+    "runtime6_sha256": "c4f6c87842f87c1bd744dbed352576f9a7e2766f2012c4c4dff7679ac64eaf4a",
+    "fixture10_sha256": "9159bcf016355f020657de91f9e023245ecf40eb6d19d6249bb6e223abe3fc05",
+    "receipt_path": "recursive-length-companion-freeze-receipt.json",
+    "receipt_sha256": "0bd3f6e194707d9935f471ade0fae460dd54f8ce0a10609aaec902acc119f976"
+  },
+  "supplementary_probe": {
+    "path": "probe_recursive_length_supplementary.py",
+    "prepared_cases": 50,
+    "executed_cases": 0,
+    "status": "NOT_RUN_USER_STOP"
+  },
+  "pending": [
+    "Bind the final frozen producer/runtime/fixture files to the independently inspected working diff.",
+    "Independently derive and verify all ten old metadata fixture substitutions against literal baseline transformations.",
+    "Audit final owner execution receipts and run supplementary controls only after explicit resumption.",
+    "Coordinated Linux execution remains pending."
+  ],
+  "compiler_target_qualifier_discard_residual": "OPEN: normalized TargetCallBinding retains parameter names rather than qualifier ceilings. Specific normal-source enforcement is producer-owned; broader compiler target/source qualifier compatibility is not certified.",
+  "blocking_findings_from_partial_review": [],
+  "review_complete": false,
+  "native_linux_accepted": false,
+  "full_stage2_accepted": false,
+  "production_or_frozen_sources_modified_by_reviewer": false,
+  "running_reviewer_processes": 0
+}

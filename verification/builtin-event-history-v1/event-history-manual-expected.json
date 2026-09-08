@@ -1,0 +1,1141 @@
+{
+  "schema_id": "openpine.event_history_manual_expected.v1",
+  "oracle": "manual_fixture",
+  "provenance": "Literal tables authored without importing or executing any project package; counts and selected source values follow versioned primary definitions. Unverified candidates are not test expectations.",
+  "author_script_sha256": "d3c8d484a53281feeef8b7fd19ca7073c7d5b00d839e1955a7eeb7692fdc9dbd",
+  "reference_sha256": "cfe4d28441e46d1d2b7b182dfd6cd0a464717625aa8aa983213885b036e7d35b",
+  "references": [
+    "https://www.tradingview.com/pine-script-docs/v5/faq/functions/#how-can-i-calculate-values-depending-on-variable-lengths-that-reset-on-a-condition",
+    "https://www.tradingview.com/pine-script-docs/faq/functions/#how-can-i-calculate-values-depending-on-variable-lengths-that-reset-on-a-condition",
+    "https://www.tradingview.com/pine-script-reference/v5/#fun_ta.valuewhen",
+    "https://www.tradingview.com/pine-script-reference/v6/#fun_ta.valuewhen"
+  ],
+  "counts": {
+    "rows": 14,
+    "version_cases": 28,
+    "events": 224,
+    "eligible_rows": 10,
+    "eligible_version_cases": 20,
+    "eligible_events": 160,
+    "unverified_rows": 4,
+    "unverified_events": 64
+  },
+  "source_contract_residual": "valuewhen occurrence is series-qualified in the provisional source contract, but both primary references require simple int; all cases here use literal occurrence.",
+  "excludes": [
+    "conditional execution or loops",
+    "missing boolean conditions",
+    "unsupported source overloads",
+    "negative or dynamic occurrence"
+  ],
+  "sut_executed_before_freeze": false,
+  "tradingview_verified": false,
+  "full_stage2_accepted": false,
+  "rows": [
+    {
+      "id": "barssince-never",
+      "operation": "barssince",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "source": null,
+      "parameters": {},
+      "input_type": "series<bool>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.barssince",
+        "v6:ta.barssince"
+      ]
+    },
+    {
+      "id": "barssince-always",
+      "operation": "barssince",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "source": null,
+      "parameters": {},
+      "input_type": "series<bool>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.barssince",
+        "v6:ta.barssince"
+      ]
+    },
+    {
+      "id": "barssince-first",
+      "operation": "barssince",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "source": null,
+      "parameters": {},
+      "input_type": "series<bool>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "1",
+          "decimal": "1"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "2",
+          "decimal": "2"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "3",
+          "decimal": "3"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "4",
+          "decimal": "4"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "5",
+          "decimal": "5"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "6",
+          "decimal": "6"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "7",
+          "decimal": "7"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.barssince",
+        "v6:ta.barssince"
+      ]
+    },
+    {
+      "id": "barssince-last",
+      "operation": "barssince",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "source": null,
+      "parameters": {},
+      "input_type": "series<bool>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.barssince",
+        "v6:ta.barssince"
+      ]
+    },
+    {
+      "id": "barssince-separated",
+      "operation": "barssince",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false
+      ],
+      "source": null,
+      "parameters": {},
+      "input_type": "series<bool>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "1",
+          "decimal": "1"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "1",
+          "decimal": "1"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "2",
+          "decimal": "2"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "1",
+          "decimal": "1"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.barssince",
+        "v6:ta.barssince"
+      ]
+    },
+    {
+      "id": "barssince-consecutive",
+      "operation": "barssince",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true
+      ],
+      "source": null,
+      "parameters": {},
+      "input_type": "series<bool>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "1",
+          "decimal": "1"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "2",
+          "decimal": "2"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "1",
+          "decimal": "1"
+        },
+        {
+          "kind": "value",
+          "type": "int",
+          "rational": "0",
+          "decimal": "0"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.barssince",
+        "v6:ta.barssince"
+      ]
+    },
+    {
+      "id": "valuewhen-latest-always",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "source": [
+        10,
+        -2,
+        3.5,
+        0,
+        8,
+        -4,
+        2.25,
+        9
+      ],
+      "parameters": {
+        "occurrence": 0
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "10",
+          "decimal": "10"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-2",
+          "decimal": "-2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "7/2",
+          "decimal": "3.5"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "8",
+          "decimal": "8"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-4",
+          "decimal": "-4"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "9/4",
+          "decimal": "2.25"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "9",
+          "decimal": "9"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    },
+    {
+      "id": "valuewhen-latest-separated",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false
+      ],
+      "source": [
+        10,
+        -2,
+        3.5,
+        0,
+        8,
+        -4,
+        2.25,
+        9
+      ],
+      "parameters": {
+        "occurrence": 0
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "10",
+          "decimal": "10"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "10",
+          "decimal": "10"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "10",
+          "decimal": "10"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-4",
+          "decimal": "-4"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-4",
+          "decimal": "-4"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-4",
+          "decimal": "-4"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    },
+    {
+      "id": "valuewhen-latest-consecutive",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true
+      ],
+      "source": [
+        10,
+        -2,
+        3.5,
+        0,
+        8,
+        -4,
+        2.25,
+        9
+      ],
+      "parameters": {
+        "occurrence": 0
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "10",
+          "decimal": "10"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-2",
+          "decimal": "-2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-2",
+          "decimal": "-2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-2",
+          "decimal": "-2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "8",
+          "decimal": "8"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-4",
+          "decimal": "-4"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-4",
+          "decimal": "-4"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "9",
+          "decimal": "9"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    },
+    {
+      "id": "valuewhen-zero-is-value",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        false,
+        true,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      "source": [
+        0,
+        99,
+        0,
+        99,
+        0,
+        99,
+        0,
+        99
+      ],
+      "parameters": {
+        "occurrence": 0
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal": "0"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    },
+    {
+      "id": "valuewhen-never",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "source": [
+        10,
+        -2,
+        3.5,
+        0,
+        8,
+        -4,
+        2.25,
+        9
+      ],
+      "parameters": {
+        "occurrence": 0
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Precise insufficient-occurrence output authority is pending; candidate NA is not an accepted oracle.",
+      "expected": null,
+      "candidates": {
+        "manual_inference": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    },
+    {
+      "id": "valuewhen-second",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "source": [
+        10,
+        -2,
+        3.5,
+        0,
+        8,
+        -4,
+        2.25,
+        9
+      ],
+      "parameters": {
+        "occurrence": 1
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Precise insufficient-occurrence output authority is pending; candidate NA is not an accepted oracle.",
+      "expected": null,
+      "candidates": {
+        "manual_inference": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "10",
+            "decimal": "10"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2",
+            "decimal": "-2"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "7/2",
+            "decimal": "3.5"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "8",
+            "decimal": "8"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-4",
+            "decimal": "-4"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "9/4",
+            "decimal": "2.25"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    },
+    {
+      "id": "valuewhen-third",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "source": [
+        10,
+        -2,
+        3.5,
+        0,
+        8,
+        -4,
+        2.25,
+        9
+      ],
+      "parameters": {
+        "occurrence": 2
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Precise insufficient-occurrence output authority is pending; candidate NA is not an accepted oracle.",
+      "expected": null,
+      "candidates": {
+        "manual_inference": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "10",
+            "decimal": "10"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2",
+            "decimal": "-2"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "7/2",
+            "decimal": "3.5"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "8",
+            "decimal": "8"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-4",
+            "decimal": "-4"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    },
+    {
+      "id": "valuewhen-source-na",
+      "operation": "valuewhen",
+      "versions": [
+        5,
+        6
+      ],
+      "condition": [
+        true,
+        true,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false
+      ],
+      "source": [
+        1,
+        null,
+        3,
+        4,
+        5,
+        null,
+        7,
+        8
+      ],
+      "parameters": {
+        "occurrence": 0
+      },
+      "input_type": "series<float>",
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Whether a true occurrence holding source NA is retained needs independent primary review; no candidate is accepted automatically.",
+      "expected": null,
+      "candidates": {
+        "manual_inference": [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1",
+            "decimal": "1"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4",
+            "decimal": "4"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4",
+            "decimal": "4"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.valuewhen",
+        "v6:ta.valuewhen"
+      ]
+    }
+  ]
+}

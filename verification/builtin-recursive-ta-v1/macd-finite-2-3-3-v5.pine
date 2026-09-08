@@ -1,0 +1,7 @@
+//@version=5
+indicator("Independent recursive TA")
+float sample = close
+[line, signal, histogram] = ta.macd(sample,2,3,3)
+plot(line)
+plot(signal)
+plot(histogram)

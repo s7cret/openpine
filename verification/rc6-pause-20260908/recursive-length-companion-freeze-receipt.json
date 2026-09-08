@@ -1,0 +1,241 @@
+{
+  "additional_semantic_fixture_edits": false,
+  "baseline_source_index_sha256": "0d44e74ae3472765ea0c836be11baa0c9c0985c09ce051a155343586091771a3",
+  "bundles": {
+    "fixture_migration": {
+      "files": 10,
+      "path": "recursive-length-fixture-migration-frozen-bundle.json",
+      "sha256": "9159bcf016355f020657de91f9e023245ecf40eb6d19d6249bb6e223abe3fc05"
+    },
+    "pine2ast": {
+      "files": 10,
+      "groups": {
+        "documentation": [
+          "pine2ast/docs/STAGE2_RECURSIVE_LENGTH_QUALIFIERS.md"
+        ],
+        "new_tests_and_fixtures": [
+          "pine2ast/tests/test_recursive_length_qualifiers.py",
+          "pine2ast/tests/fixtures/recursive_length_admission_manual.json",
+          "pine2ast/tests/fixtures/recursive_length_scope.json"
+        ],
+        "production_and_generated": [
+          "pine2ast/tools/catalog/build_catalog.py",
+          "pine2ast/catalog_source/semantics.jsonl",
+          "pine2ast/catalog_source/deltas/v5.jsonl",
+          "pine2ast/catalog_reports/migration_report.json",
+          "pine2ast/pine2ast/catalog_data/packs/pine_v5.pack.json",
+          "pine2ast/pine2ast/catalog_data/packs/pine_v6.pack.json"
+        ]
+      },
+      "path": "recursive-length-pine2ast-frozen-bundle.json",
+      "sha256": "1a7e659f8e182d208a94cd5b75c49c3f502c69b892dc9d03af5c3b6ad92f76db"
+    },
+    "pinelib": {
+      "files": 6,
+      "groups": {
+        "documentation": [
+          "pinelib/docs/STAGE2_RECURSIVE_LENGTH_QUALIFIERS.md"
+        ],
+        "new_tests_and_fixtures": [
+          "pinelib/tests/test_tsi_length_target.py",
+          "pinelib/tests/fixtures/recursive_length_literal_metadata.json",
+          "pinelib/tests/fixtures/recursive_length_scope.json"
+        ],
+        "production_and_generated": [
+          "pinelib/pinelib/abi/manifest_v2_builder.py",
+          "pinelib/pinelib/abi/target_manifest.json"
+        ]
+      },
+      "path": "recursive-length-pinelib-frozen-bundle.json",
+      "sha256": "c4f6c87842f87c1bd744dbed352576f9a7e2766f2012c4c4dff7679ac64eaf4a"
+    }
+  },
+  "coordinated_linux_pending": true,
+  "final_source_index_sha256": "0f2156c00088d19d341f66c89dc56f14651242bdc99620deb4f409bd0c2548fc",
+  "full_owner_suites_not_repeated": true,
+  "full_stage2_accepted": false,
+  "independent_authority_sha256": "14fe6eca4096afcf8f0923ce4f26ba71af1b6f04e1f0be46295df1ba7adfad3e",
+  "independent_source_review_pending": true,
+  "literal_metadata_sha256": "d23e25b0f3bad9e4702ca47ca116dafaacdd4cb205ecbcd1ce92e36a1b269559",
+  "manual_sha256": "bb7c32877244350a0fc1f92d7172eba55626352610cd6b965826d0a62297c1aa",
+  "new_producer_tests": 66,
+  "new_runtime_tests": 19,
+  "normal_source_after_sha256": "37a5d218a633026bb82b3fb465e16d3224252bb947d473223eb8459f79cd4596",
+  "normal_source_counts": {
+    "both_python_byte_identical": true,
+    "cases": 60,
+    "compiled_const_input_positives": 40,
+    "mismatches": 0,
+    "rejected_series_negatives": 20
+  },
+  "normal_source_matrix_before_compilation_sha256": "24e939453d3aa0124367d5565153e41b29db6a1b54d39f32a98dea105b65196e",
+  "numerical_runtime_execution_performed": false,
+  "open_residual": "Compiler normalized target binding preserves parameter names/ABI mapping, not qualifier ceilings. Normal-source enforcement is producer-owned; cross-contract compiler semantic compatibility remains open.",
+  "original_before_source_results": {
+    "py311": "29590c1cb097b634eca9146b8d9817046905300dad311a53e24303aecac60e59",
+    "py313": "29590c1cb097b634eca9146b8d9817046905300dad311a53e24303aecac60e59"
+  },
+  "production_changes_after_root_review": false,
+  "schema_id": "openpine.recursive_length_companion_freeze_receipt.v1",
+  "source_scope": {
+    "approved_existing_fixture_changes": 10,
+    "compiler_files_unchanged": 173,
+    "existing_production_and_generated_changes": 8,
+    "final_files": {
+      "ast2python": 173,
+      "pine2ast": 412,
+      "pinelib": 178
+    },
+    "legacy_v1_v4_pack_bytes_unchanged": true,
+    "new_docs": 2,
+    "new_test_fixtures": 4,
+    "new_tests": 2,
+    "numeric_kernel_and_abi_bytes_unchanged": true
+  },
+  "static_review": {
+    "all_changed_new_python_files": 10,
+    "catalog_check_both_passed": true,
+    "inherited_ruff_files": [
+      "pinelib/tests/test_array_concat_identity.py",
+      "pinelib/tests/test_minmax_variadic_manifest.py"
+    ],
+    "logs": {
+      "recursive-length-catalog-check-py311.log": "9a8035c6b5077e1c995f1b8911c3e0ad89d50e95f21922aebbdff6e8107fa1f0",
+      "recursive-length-catalog-check-py313.log": "9a8035c6b5077e1c995f1b8911c3e0ad89d50e95f21922aebbdff6e8107fa1f0",
+      "recursive-length-manifest-check-py311.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "recursive-length-manifest-check-py313.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "recursive-length-normal-source-after-py311.log": "8581b03cc24f850e70a7134135f4407ce2e55a3f977accc4a1364610fa3545b2",
+      "recursive-length-normal-source-after-py313.log": "8581b03cc24f850e70a7134135f4407ce2e55a3f977accc4a1364610fa3545b2",
+      "recursive-length-producer-after-py311.log": "94a57aa01448273055f7e59a028548403909d2e5b773249abc211ec213a5d66b",
+      "recursive-length-producer-after-py313.log": "94a57aa01448273055f7e59a028548403909d2e5b773249abc211ec213a5d66b",
+      "recursive-length-ruff-py311.log": "9dd0cee1866227fc7443430cb20f2ae45580c44a4372f3c54f34eee286752200",
+      "recursive-length-ruff-scoped-py311.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "recursive-length-ruff-scoped-py313.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "recursive-length-runtime-after-py311.log": "747768c88248f5eef9b021c5bcdbdaa942fed6bdf0d6cc17540eb02577548269",
+      "recursive-length-runtime-after-py313.log": "25839cca5418224d07688d42f83c6afdef526b1d291ec3250ac64ea35d962f33"
+    },
+    "manifest_check_both_passed": true,
+    "new_ruff_errors": 0,
+    "other_eight_changed_new_python_files_clean_both": true,
+    "ruff_after_errors": 17,
+    "ruff_before_errors": 17,
+    "ruff_review_sha256": "f5fd441049880b5b663882c6510497e4a2339e81c0c43733142ac18041fd26e6"
+  },
+  "target_manifest_content_hash": "sha256:3bbb194318736ff97aff6a50ef4a3c4238fda3191f3971ab2e5fe9e14e27c2f7",
+  "test_evidence": [
+    {
+      "errors": 0,
+      "failed": 2,
+      "failure_nodeids": [
+        "tests/test_valuewhen_occurrence_qualifier.py::test_only_modern_occurrence_changes_in_complete_pack[5]",
+        "tests/test_valuewhen_occurrence_qualifier.py::test_only_modern_occurrence_changes_in_complete_pack[6]"
+      ],
+      "passed": 101,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pine2ast-after-py311.xml",
+      "sha256": "894f7cecfd6f6c4da06cc744488d7f538384f5616da029b5e33b10aa2e819a73",
+      "skipped": 0,
+      "tests": 103
+    },
+    {
+      "errors": 0,
+      "failed": 6,
+      "failure_nodeids": [
+        "tests/test_array_concat_identity.py::test_every_non_concat_manifest_field_is_unchanged_and_disk_is_exact",
+        "tests/test_map_target_contract.py::test_only_four_rows_change_and_frozen_manifest_is_exact",
+        "tests/test_minmax_variadic_manifest.py::test_only_two_rows_change_without_other_denominator_or_contract_changes",
+        "tests/test_string_context_semantics.py::test_manifest_outside_four_rows_and_exact_disk_remain_unchanged",
+        "tests/test_string_primary_target_contract.py::test_only_three_rows_and_expected_content_hash",
+        "tests/test_valuewhen_occurrence_target.py::test_exact_one_row_two_tuples_and_entire_remainder"
+      ],
+      "passed": 37,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pinelib-after-py311.xml",
+      "sha256": "9814498c49d256486be3bba300688d250fc13d3728f364b1b07a1b1faf6859ae",
+      "skipped": 0,
+      "tests": 43
+    },
+    {
+      "errors": 0,
+      "failed": 0,
+      "failure_nodeids": [],
+      "passed": 103,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pine2ast-migrated-py311.xml",
+      "sha256": "de4f6309cf322cc98730b0d31989b3db4b9daa0539da04f05b8565448f54cc64",
+      "skipped": 0,
+      "tests": 103
+    },
+    {
+      "errors": 0,
+      "failed": 0,
+      "failure_nodeids": [],
+      "passed": 43,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pinelib-migrated-py311.xml",
+      "sha256": "3ff991cc712bbcdac41a9585cc6e9a3df2f3bf77cbf7cf91871346f1f881f2b5",
+      "skipped": 0,
+      "tests": 43
+    },
+    {
+      "failed": 0,
+      "passed": 1,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/map-fixture-checksum-py311.xml",
+      "sha256": "a16f5a9ed26e0c1dec27977f965616e0108abf0ef75887de04006b184e7482ce",
+      "tests": 1
+    },
+    {
+      "errors": 0,
+      "failed": 2,
+      "failure_nodeids": [
+        "tests/test_valuewhen_occurrence_qualifier.py::test_only_modern_occurrence_changes_in_complete_pack[5]",
+        "tests/test_valuewhen_occurrence_qualifier.py::test_only_modern_occurrence_changes_in_complete_pack[6]"
+      ],
+      "passed": 101,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pine2ast-after-py313.xml",
+      "sha256": "edeb6b03e252edfcf7cabf26aec4d1c5b453c952e7c4cc8693d924ec0c608ee9",
+      "skipped": 0,
+      "tests": 103
+    },
+    {
+      "errors": 0,
+      "failed": 6,
+      "failure_nodeids": [
+        "tests/test_array_concat_identity.py::test_every_non_concat_manifest_field_is_unchanged_and_disk_is_exact",
+        "tests/test_map_target_contract.py::test_only_four_rows_change_and_frozen_manifest_is_exact",
+        "tests/test_minmax_variadic_manifest.py::test_only_two_rows_change_without_other_denominator_or_contract_changes",
+        "tests/test_string_context_semantics.py::test_manifest_outside_four_rows_and_exact_disk_remain_unchanged",
+        "tests/test_string_primary_target_contract.py::test_only_three_rows_and_expected_content_hash",
+        "tests/test_valuewhen_occurrence_target.py::test_exact_one_row_two_tuples_and_entire_remainder"
+      ],
+      "passed": 37,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pinelib-after-py313.xml",
+      "sha256": "576d26205b3d4815229d513a8c5b80348255cab5da709aab5ff819010ec8864d",
+      "skipped": 0,
+      "tests": 43
+    },
+    {
+      "errors": 0,
+      "failed": 0,
+      "failure_nodeids": [],
+      "passed": 103,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pine2ast-migrated-py313.xml",
+      "sha256": "b31ec8434d539a9e13ad925088f4661bd3fd8b25b237e03dad42d9aef9f984c3",
+      "skipped": 0,
+      "tests": 103
+    },
+    {
+      "errors": 0,
+      "failed": 0,
+      "failure_nodeids": [],
+      "passed": 43,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/pinelib-migrated-py313.xml",
+      "sha256": "abc5fcec4fe9d060f15e0213f3a8c153c1654b8b4957fe97a746a615119e1698",
+      "skipped": 0,
+      "tests": 43
+    },
+    {
+      "failed": 0,
+      "passed": 1,
+      "path": ".runtime/evidence/recursive-length-contract-isolated/map-fixture-checksum-py313.xml",
+      "sha256": "6ee5d945cb52e1cc139c5c819d443bc73c5774ce8dfadf986b0b9db7b54e07f2",
+      "tests": 1
+    }
+  ]
+}

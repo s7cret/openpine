@@ -1,0 +1,5 @@
+//@version=6
+indicator("Independent recursive TA")
+float sample = close
+float result = ta.rsi(sample,1)
+plot(result)

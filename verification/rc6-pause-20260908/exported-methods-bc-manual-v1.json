@@ -1,0 +1,1047 @@
+{
+  "schema_id": "openpine.exported_methods_bc_manual.v1",
+  "status": "LITERALS_AUTHORED_BEFORE_CURRENT_SUT_PROBES",
+  "source_bundle": "method-a2-revised-frozen-bundle.json",
+  "source_sha256": "b3ad0eeacb82f16cb1791522e0ecc5699be7331a0620ac58f875acd73a09aa74",
+  "note": "Values and traces are manual mathematics. UNVERIFIED rows are questions, not positive parity oracles. Earlier gates do not prove deeper rejection dimensions.",
+  "rows": [
+    {
+      "id": "primitive_simple",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "ordinary_default",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount=3) => self+amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "ordinary_named_reordered",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method mix(simple int self, simple int left, simple int right=4) => self+left*10+right\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.mix(right=4,left=3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 36,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "receiver_overloads",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(int self) => self+1\nexport method plus(float self) => self+0.5\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\na=2\nb=2.0\nplot(a.plus()+b.plus())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5.5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "parameter_overloads",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(int self,int amount) => self+amount\nexport method plus(int self,float amount) => self+amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3)+x.plus(3.5))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 10.5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "private_helper_internal",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nmethod hidden(simple int self) => self+10\nexport method plus(simple int self) => self.hidden()+1\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 13,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "private_helper_external",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nmethod hidden(simple int self) => self+10\nexport value() => 3\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.hidden())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "private-visibility"
+      }
+    },
+    {
+      "id": "function_uses_private_method",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nmethod hidden(simple int self) => self+10\nexport value(simple int x) => x.hidden()+1\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 13,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "array_receiver",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(array<int> self, int amount) => self.get(0)+amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\na=array.new<int>(1,2)\nplot(a.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "builtin_user_coexistence",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method get(array<int> self,int index,int offset) => array.get(self,index)+offset\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\na=array.new<int>(1,2)\nplot(a.get(0)+a.get(0,3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 7,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "udt_receiver",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport type Box\n    float value\nexport method plus(Box self,float amount) => self.value+amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nb=lib.Box.new(2)\nplot(b.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5.0,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "enum_receiver",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport enum Side\n    up\n    down\nexport method score(simple Side self) => self==Side.up ? 1 : -1\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\ns=lib.Side.up\nplot(s.score())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 1,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "same_publication_aliases",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as first\nimport qa/M/1 as second\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "publication-identity-deduplication"
+      }
+    },
+    {
+      "id": "same_named_nominal_two_libraries",
+      "version": 5,
+      "libraries": {
+        "qa/Left/1": "//@version=5\nlibrary(\"Left\")\nexport type Box\n    float value\nexport method adjust(Box self) => self.value+3\n",
+        "qa/Right/1": "//@version=5\nlibrary(\"Right\")\nexport type Box\n    float value\nexport method adjust(Box self) => self.value-1\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/Left/1 as left\nimport qa/Right/1 as right\na=left.Box.new(2)\nb=right.Box.new(9)\nplot(a.adjust()+b.adjust())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 13.0,
+        "scope": "primary-backed-language",
+        "dimension": "nominal-publication-identity"
+      }
+    },
+    {
+      "id": "transitive_internal_use",
+      "version": 5,
+      "libraries": {
+        "qa/Inner/1": "//@version=5\nlibrary(\"Inner\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/Outer/1": "//@version=5\nlibrary(\"Outer\")\nimport qa/Inner/1 as inner\nexport value(simple int x) => x.plus(3)\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/Outer/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "direct-import-visibility-in-library"
+      }
+    },
+    {
+      "id": "transitive_root_implicit_visibility",
+      "version": 5,
+      "libraries": {
+        "qa/Inner/1": "//@version=5\nlibrary(\"Inner\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/Outer/1": "//@version=5\nlibrary(\"Outer\")\nimport qa/Inner/1 as inner\nexport value(simple int x) => x.plus(3)\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/Outer/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "UNVERIFIED",
+        "value": 5,
+        "scope": "transitive-dot-visibility-authority-pending",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "cross_library_ambiguous_signature",
+      "version": 5,
+      "libraries": {
+        "qa/Left/1": "//@version=5\nlibrary(\"Left\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/Right/1": "//@version=5\nlibrary(\"Right\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/Left/1 as left\nimport qa/Right/1 as right\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "UNVERIFIED",
+        "value": null,
+        "scope": "fail-closed-profile-until-primary-tie-rule",
+        "dimension": "collision-priority"
+      }
+    },
+    {
+      "id": "namespace_method_form",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(lib.plus(2,3))\n",
+      "expected": {
+        "outcome": "UNVERIFIED",
+        "value": 5,
+        "scope": "user-method-function-form-authority-pending",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "explicit_series_receiver_negative",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=bar_index\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "receiver-qualifier"
+      }
+    },
+    {
+      "id": "explicit_series_argument_negative",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(bar_index))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "ordinary-argument-qualifier"
+      }
+    },
+    {
+      "id": "duplicate_named_argument",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(amount=3,amount=4))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "exact-argument-binding"
+      }
+    },
+    {
+      "id": "wrong_argument_type",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(\"3\"))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "exact-argument-binding"
+      }
+    },
+    {
+      "id": "export_floor",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method fixed(simple int self) => 7\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\na=input.int(x.fixed())\nplot(a)\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "simple-result-floor"
+      }
+    },
+    {
+      "id": "private_receiver_interface",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\ntype Hidden\n    int value\nexport method get(Hidden self) => self.value\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(1)\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "unused-export-private-receiver"
+      }
+    },
+    {
+      "id": "private_return_interface",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\ntype Hidden\n    int value\nexport method get(simple int self) => Hidden.new(self)\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(1)\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "unused-export-private-return"
+      }
+    },
+    {
+      "id": "nonconst_capture",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\ng=bar_index\nexport method get(simple int self) => g+self\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.get())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "export-global-capture"
+      }
+    },
+    {
+      "id": "persistent_callsites",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method tick(int self) =>\n    var int count=0\n    count+=1\n    count+self\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=0\na=x.tick()\nb=x.tick()\nplot(a*10+b)\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": [
+          11,
+          22,
+          33
+        ],
+        "scope": "primary-backed-language",
+        "dimension": "three-committed-bars-callsite-state"
+      }
+    },
+    {
+      "id": "receiver_evaluated_once",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method identity(array<int> self) => self.get(0)\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nbump(array<int> a) =>\n    a.set(0,a.get(0)+1)\n    a\nvar a=array.new<int>(1,0)\nplot(bump(a).identity())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": [
+          1,
+          2,
+          3
+        ],
+        "scope": "primary-backed-language",
+        "dimension": "three-committed-bars-receiver-side-effect"
+      }
+    },
+    {
+      "id": "method_mutation_identity",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method bump(array<int> self) =>\n    self.set(0,self.get(0)+1)\n    self\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nvar a=array.new<int>(1,0)\nb=a.bump()\nplot(a.get(0)*10+b.get(0))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": [
+          11,
+          22,
+          33
+        ],
+        "scope": "primary-backed-language",
+        "dimension": "same-array-identity-committed-bars"
+      }
+    },
+    {
+      "id": "exact_revision",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/M/2": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self,simple int amount) => self+amount+100\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "explicit-revision-no-latest-fallback"
+      }
+    },
+    {
+      "id": "missing_exact_revision",
+      "version": 5,
+      "libraries": {
+        "qa/M/2": "//@version=5\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "missing-pinned-library"
+      }
+    },
+    {
+      "id": "import_cycle",
+      "version": 5,
+      "libraries": {
+        "qa/A/1": "//@version=5\nlibrary(\"A\")\nimport qa/B/1 as b\nexport value(simple int x) => b.value(x)\n",
+        "qa/B/1": "//@version=5\nlibrary(\"B\")\nimport qa/A/1 as a\nexport value(simple int x) => a.value(x)\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/A/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "existing-locked-import-cycle-profile"
+      }
+    },
+    {
+      "id": "function_only_legacy_context_control",
+      "version": 5,
+      "libraries": {
+        "qa/M/1": "//@version=5\nlibrary(\"M\")\nexport value(simple int x) => x+3\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "existing-library-context-1.1-control"
+      }
+    },
+    {
+      "id": "private_names_in_two_libraries",
+      "version": 5,
+      "libraries": {
+        "qa/Left/1": "//@version=5\nlibrary(\"Left\")\nmethod hidden(simple int self) => self+10\nexport value(simple int x) => x.hidden()+1\n",
+        "qa/Right/1": "//@version=5\nlibrary(\"Right\")\nmethod hidden(simple int self) => self+20\nexport value(simple int x) => x.hidden()+1\n"
+      },
+      "source": "//@version=5\nindicator(\"BC\")\nimport qa/Left/1 as left\nimport qa/Right/1 as right\nplot(left.value(2)+right.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 36,
+        "scope": "primary-backed-language",
+        "dimension": "private-source-scope-isolation"
+      }
+    },
+    {
+      "id": "primitive_simple",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "ordinary_default",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount=3) => self+amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "ordinary_named_reordered",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method mix(simple int self, simple int left, simple int right=4) => self+left*10+right\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.mix(right=4,left=3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 36,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "receiver_overloads",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(int self) => self+1\nexport method plus(float self) => self+0.5\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\na=2\nb=2.0\nplot(a.plus()+b.plus())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5.5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "parameter_overloads",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(int self,int amount) => self+amount\nexport method plus(int self,float amount) => self+amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3)+x.plus(3.5))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 10.5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "private_helper_internal",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nmethod hidden(simple int self) => self+10\nexport method plus(simple int self) => self.hidden()+1\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 13,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "private_helper_external",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nmethod hidden(simple int self) => self+10\nexport value() => 3\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.hidden())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "private-visibility"
+      }
+    },
+    {
+      "id": "function_uses_private_method",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nmethod hidden(simple int self) => self+10\nexport value(simple int x) => x.hidden()+1\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 13,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "array_receiver",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(array<int> self, int amount) => self.get(0)+amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\na=array.new<int>(1,2)\nplot(a.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "builtin_user_coexistence",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method get(array<int> self,int index,int offset) => array.get(self,index)+offset\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\na=array.new<int>(1,2)\nplot(a.get(0)+a.get(0,3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 7,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "udt_receiver",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport type Box\n    float value\nexport method plus(Box self,float amount) => self.value+amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nb=lib.Box.new(2)\nplot(b.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5.0,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "enum_receiver",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport enum Side\n    up\n    down\nexport method score(simple Side self) => self==Side.up ? 1 : -1\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\ns=lib.Side.up\nplot(s.score())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 1,
+        "scope": "primary-backed-language",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "same_publication_aliases",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as first\nimport qa/M/1 as second\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "publication-identity-deduplication"
+      }
+    },
+    {
+      "id": "same_named_nominal_two_libraries",
+      "version": 6,
+      "libraries": {
+        "qa/Left/1": "//@version=6\nlibrary(\"Left\")\nexport type Box\n    float value\nexport method adjust(Box self) => self.value+3\n",
+        "qa/Right/1": "//@version=6\nlibrary(\"Right\")\nexport type Box\n    float value\nexport method adjust(Box self) => self.value-1\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/Left/1 as left\nimport qa/Right/1 as right\na=left.Box.new(2)\nb=right.Box.new(9)\nplot(a.adjust()+b.adjust())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 13.0,
+        "scope": "primary-backed-language",
+        "dimension": "nominal-publication-identity"
+      }
+    },
+    {
+      "id": "transitive_internal_use",
+      "version": 6,
+      "libraries": {
+        "qa/Inner/1": "//@version=6\nlibrary(\"Inner\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/Outer/1": "//@version=6\nlibrary(\"Outer\")\nimport qa/Inner/1 as inner\nexport value(simple int x) => x.plus(3)\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/Outer/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "direct-import-visibility-in-library"
+      }
+    },
+    {
+      "id": "transitive_root_implicit_visibility",
+      "version": 6,
+      "libraries": {
+        "qa/Inner/1": "//@version=6\nlibrary(\"Inner\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/Outer/1": "//@version=6\nlibrary(\"Outer\")\nimport qa/Inner/1 as inner\nexport value(simple int x) => x.plus(3)\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/Outer/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "UNVERIFIED",
+        "value": 5,
+        "scope": "transitive-dot-visibility-authority-pending",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "cross_library_ambiguous_signature",
+      "version": 6,
+      "libraries": {
+        "qa/Left/1": "//@version=6\nlibrary(\"Left\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/Right/1": "//@version=6\nlibrary(\"Right\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/Left/1 as left\nimport qa/Right/1 as right\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "UNVERIFIED",
+        "value": null,
+        "scope": "fail-closed-profile-until-primary-tie-rule",
+        "dimension": "collision-priority"
+      }
+    },
+    {
+      "id": "namespace_method_form",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(lib.plus(2,3))\n",
+      "expected": {
+        "outcome": "UNVERIFIED",
+        "value": 5,
+        "scope": "user-method-function-form-authority-pending",
+        "dimension": "value"
+      }
+    },
+    {
+      "id": "explicit_series_receiver_negative",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=bar_index\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "receiver-qualifier"
+      }
+    },
+    {
+      "id": "explicit_series_argument_negative",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(bar_index))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "ordinary-argument-qualifier"
+      }
+    },
+    {
+      "id": "duplicate_named_argument",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(amount=3,amount=4))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "exact-argument-binding"
+      }
+    },
+    {
+      "id": "wrong_argument_type",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(\"3\"))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "exact-argument-binding"
+      }
+    },
+    {
+      "id": "export_floor",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method fixed(simple int self) => 7\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\na=input.int(x.fixed())\nplot(a)\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "simple-result-floor"
+      }
+    },
+    {
+      "id": "private_receiver_interface",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\ntype Hidden\n    int value\nexport method get(Hidden self) => self.value\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(1)\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "unused-export-private-receiver"
+      }
+    },
+    {
+      "id": "private_return_interface",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\ntype Hidden\n    int value\nexport method get(simple int self) => Hidden.new(self)\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(1)\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "unused-export-private-return"
+      }
+    },
+    {
+      "id": "nonconst_capture",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\ng=bar_index\nexport method get(simple int self) => g+self\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.get())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "export-global-capture"
+      }
+    },
+    {
+      "id": "persistent_callsites",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method tick(int self) =>\n    var int count=0\n    count+=1\n    count+self\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=0\na=x.tick()\nb=x.tick()\nplot(a*10+b)\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": [
+          11,
+          22,
+          33
+        ],
+        "scope": "primary-backed-language",
+        "dimension": "three-committed-bars-callsite-state"
+      }
+    },
+    {
+      "id": "receiver_evaluated_once",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method identity(array<int> self) => self.get(0)\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nbump(array<int> a) =>\n    a.set(0,a.get(0)+1)\n    a\nvar a=array.new<int>(1,0)\nplot(bump(a).identity())\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": [
+          1,
+          2,
+          3
+        ],
+        "scope": "primary-backed-language",
+        "dimension": "three-committed-bars-receiver-side-effect"
+      }
+    },
+    {
+      "id": "method_mutation_identity",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method bump(array<int> self) =>\n    self.set(0,self.get(0)+1)\n    self\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nvar a=array.new<int>(1,0)\nb=a.bump()\nplot(a.get(0)*10+b.get(0))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": [
+          11,
+          22,
+          33
+        ],
+        "scope": "primary-backed-language",
+        "dimension": "same-array-identity-committed-bars"
+      }
+    },
+    {
+      "id": "exact_revision",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n",
+        "qa/M/2": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self,simple int amount) => self+amount+100\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "explicit-revision-no-latest-fallback"
+      }
+    },
+    {
+      "id": "missing_exact_revision",
+      "version": 6,
+      "libraries": {
+        "qa/M/2": "//@version=6\nlibrary(\"M\")\nexport method plus(simple int self, simple int amount) => self + amount\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nx=2\nplot(x.plus(3))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "missing-pinned-library"
+      }
+    },
+    {
+      "id": "import_cycle",
+      "version": 6,
+      "libraries": {
+        "qa/A/1": "//@version=6\nlibrary(\"A\")\nimport qa/B/1 as b\nexport value(simple int x) => b.value(x)\n",
+        "qa/B/1": "//@version=6\nlibrary(\"B\")\nimport qa/A/1 as a\nexport value(simple int x) => a.value(x)\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/A/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "primary-backed-language",
+        "dimension": "existing-locked-import-cycle-profile"
+      }
+    },
+    {
+      "id": "function_only_legacy_context_control",
+      "version": 6,
+      "libraries": {
+        "qa/M/1": "//@version=6\nlibrary(\"M\")\nexport value(simple int x) => x+3\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/M/1 as lib\nplot(lib.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 5,
+        "scope": "primary-backed-language",
+        "dimension": "existing-library-context-1.1-control"
+      }
+    },
+    {
+      "id": "private_names_in_two_libraries",
+      "version": 6,
+      "libraries": {
+        "qa/Left/1": "//@version=6\nlibrary(\"Left\")\nmethod hidden(simple int self) => self+10\nexport value(simple int x) => x.hidden()+1\n",
+        "qa/Right/1": "//@version=6\nlibrary(\"Right\")\nmethod hidden(simple int self) => self+20\nexport value(simple int x) => x.hidden()+1\n"
+      },
+      "source": "//@version=6\nindicator(\"BC\")\nimport qa/Left/1 as left\nimport qa/Right/1 as right\nplot(left.value(2)+right.value(2))\n",
+      "expected": {
+        "outcome": "ACCEPT",
+        "value": 36,
+        "scope": "primary-backed-language",
+        "dimension": "private-source-scope-isolation"
+      }
+    },
+    {
+      "id": "historical_method_syntax",
+      "version": 1,
+      "libraries": {},
+      "source": "//@version=1\nstudy(\"BC\")\nmethod value(int self) => self\nx=2\nplot(x.value())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "methods-introduced-v5-primary",
+        "dimension": "syntax-version"
+      }
+    },
+    {
+      "id": "historical_method_syntax",
+      "version": 2,
+      "libraries": {},
+      "source": "//@version=2\nstudy(\"BC\")\nmethod value(int self) => self\nx=2\nplot(x.value())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "methods-introduced-v5-primary",
+        "dimension": "syntax-version"
+      }
+    },
+    {
+      "id": "historical_method_syntax",
+      "version": 3,
+      "libraries": {},
+      "source": "//@version=3\nstudy(\"BC\")\nmethod value(int self) => self\nx=2\nplot(x.value())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "methods-introduced-v5-primary",
+        "dimension": "syntax-version"
+      }
+    },
+    {
+      "id": "historical_method_syntax",
+      "version": 4,
+      "libraries": {},
+      "source": "//@version=4\nstudy(\"BC\")\nmethod value(int self) => self\nx=2\nplot(x.value())\n",
+      "expected": {
+        "outcome": "REJECT",
+        "value": null,
+        "scope": "methods-introduced-v5-primary",
+        "dimension": "syntax-version"
+      }
+    }
+  ]
+}

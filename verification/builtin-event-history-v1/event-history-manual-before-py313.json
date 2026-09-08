@@ -1,0 +1,2362 @@
+{
+  "schema_id": "openpine.event_history_abi_before.v1",
+  "runtime_commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+  "source_identity_mode": "exact_git_blobs",
+  "source_index_sha256": "b034104133fbf91a95e3dc253477395b9d28f580bcd66c278ccbfba78417a2c3",
+  "manual_sha256": "53ea9e00e9bdfbc21404937b343ba850a6df2d0dc5de288dc2c71238f41167f8",
+  "numerical_agreement_promotes_authority": false,
+  "native_adapter_verified": false,
+  "generated_execution_verified": false,
+  "full_stage2_accepted": false,
+  "counts": {
+    "version_cases": 28,
+    "events": 224,
+    "eligible_cases": 20,
+    "eligible_matching_cases": 20,
+    "eligible_mismatching_cases": 0,
+    "unverified_cases": 8,
+    "exception_events": 0
+  },
+  "records": [
+    {
+      "case_id": "barssince-never",
+      "pine_version": 5,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-never",
+      "pine_version": 6,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-always",
+      "pine_version": 5,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-always",
+      "pine_version": 6,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-first",
+      "pine_version": 5,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 2
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 3
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 4
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 5
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 6
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 7
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-first",
+      "pine_version": 6,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 2
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 3
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 4
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 5
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 6
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 7
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-last",
+      "pine_version": 5,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-last",
+      "pine_version": 6,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-separated",
+      "pine_version": 5,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 2
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-separated",
+      "pine_version": 6,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 2
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-consecutive",
+      "pine_version": 5,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 2
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "barssince-consecutive",
+      "pine_version": 6,
+      "operation": "barssince",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 2
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 1
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "observed": {
+            "kind": "value",
+            "type": "int",
+            "value": 0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-latest-always",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 3.5
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 2.25
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 9.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-latest-always",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 3.5
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 2.25
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 9.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-latest-separated",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-latest-separated",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-latest-consecutive",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 9.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-latest-consecutive",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 9.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-zero-is-value",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-zero-is-value",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "PRIMARY_DEFINITION_DERIVATION",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 99,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        }
+      ],
+      "eligible_match": true,
+      "first_divergence": null
+    },
+    {
+      "case_id": "valuewhen-never",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "source": 10,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "source": -2,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3.5,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "source": 0,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "source": 8,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "source": -4,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 2.25,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 9,
+          "observed": {
+            "kind": "na"
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    },
+    {
+      "case_id": "valuewhen-never",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": false,
+          "source": 10,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": false,
+          "source": -2,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3.5,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": false,
+          "source": 0,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "source": 8,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": false,
+          "source": -4,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 2.25,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 9,
+          "observed": {
+            "kind": "na"
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    },
+    {
+      "case_id": "valuewhen-second",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 3.5
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 2.25
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    },
+    {
+      "case_id": "valuewhen-second",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 3.5
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 2.25
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    },
+    {
+      "case_id": "valuewhen-third",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 3.5
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    },
+    {
+      "case_id": "valuewhen-third",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 10,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": -2,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": true,
+          "source": 3.5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 10.0
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 0,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -2.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": true,
+          "source": 8,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 3.5
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": -4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": true,
+          "source": 2.25,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 8.0
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": true,
+          "source": 9,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": -4.0
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    },
+    {
+      "case_id": "valuewhen-source-na",
+      "pine_version": 5,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 1,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 1.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": null,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 4.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "source": 5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 4.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": null,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 7,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 8,
+          "observed": {
+            "kind": "na"
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    },
+    {
+      "case_id": "valuewhen-source-na",
+      "pine_version": 6,
+      "operation": "valuewhen",
+      "authority": "UNVERIFIED",
+      "assigned": false,
+      "events": [
+        {
+          "bar_index": 0,
+          "condition": true,
+          "source": 1,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 1.0
+          }
+        },
+        {
+          "bar_index": 1,
+          "condition": true,
+          "source": null,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 2,
+          "condition": false,
+          "source": 3,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 3,
+          "condition": true,
+          "source": 4,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 4.0
+          }
+        },
+        {
+          "bar_index": 4,
+          "condition": false,
+          "source": 5,
+          "observed": {
+            "kind": "value",
+            "type": "float",
+            "value": 4.0
+          }
+        },
+        {
+          "bar_index": 5,
+          "condition": true,
+          "source": null,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 6,
+          "condition": false,
+          "source": 7,
+          "observed": {
+            "kind": "na"
+          }
+        },
+        {
+          "bar_index": 7,
+          "condition": false,
+          "source": 8,
+          "observed": {
+            "kind": "na"
+          }
+        }
+      ],
+      "eligible_match": null,
+      "unverified_candidate_matches": {
+        "manual_inference": true
+      }
+    }
+  ]
+}

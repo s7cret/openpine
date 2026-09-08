@@ -1,0 +1,65 @@
+{
+  "full_stage2_accepted": false,
+  "mandatory_skips_authorized": 0,
+  "predicted_total": 20259,
+  "previous_verified_total": 16787,
+  "removed_tests_authorized": 0,
+  "status": "planning_only_not_collected_not_executed",
+  "suites": {
+    "ast2python": {
+      "expected_after": 1145,
+      "planned_additions": {
+        "method_a2": 35
+      },
+      "previous_verified": 1110
+    },
+    "backtest_engine": {
+      "expected_after": 1102,
+      "planned_additions": {},
+      "previous_verified": 1102
+    },
+    "marketdata-provider": {
+      "expected_after": 601,
+      "planned_additions": {},
+      "previous_verified": 601
+    },
+    "openpine": {
+      "expected_after": 8761,
+      "planned_additions": {
+        "event_history": 210,
+        "matrix_operations": 1010,
+        "recursive_ta": 401
+      },
+      "previous_verified": 7140
+    },
+    "openpine-contracts": {
+      "expected_after": 557,
+      "planned_additions": {},
+      "previous_verified": 557
+    },
+    "optimizer": {
+      "expected_after": 281,
+      "planned_additions": {},
+      "previous_verified": 281
+    },
+    "pine2ast": {
+      "expected_after": 2910,
+      "planned_additions": {
+        "event_history": 37,
+        "method_a2": 334,
+        "recursive_length": 66
+      },
+      "previous_verified": 2473
+    },
+    "pinelib": {
+      "expected_after": 4902,
+      "planned_additions": {
+        "ema_first_source": 756,
+        "event_history": 19,
+        "recursive_length": 19,
+        "tsi_scale": 585
+      },
+      "previous_verified": 3523
+    }
+  }
+}

@@ -1,0 +1,1045 @@
+{
+  "schema_id": "openpine.matrix_manual_expected.v1",
+  "oracle": "manual_fixture",
+  "provenance": "Literal cell coordinates, replacements, dimensions and independent copy edits; no SUT imports or expected generation.",
+  "sources": [
+    "https://www.tradingview.com/pine-script-docs/v5/language/matrices/",
+    "https://www.tradingview.com/pine-script-docs/language/matrices/"
+  ],
+  "tradingview_verified": false,
+  "unverified": [
+    "negative/out-of-range indices",
+    "missing matrix IDs",
+    "non-square zero-dimension shapes",
+    "bool NA policy",
+    "UDT/reference element shallow-copy propagation",
+    "capacity limits",
+    "complete matrix builtin family"
+  ],
+  "rows": [
+    {
+      "id": "get-first",
+      "operation": "get",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [
+        0,
+        0
+      ],
+      "result": {
+        "kind": "value",
+        "value": 1
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "get-top-right",
+      "operation": "get",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [
+        0,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": 3
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "get-bottom-left",
+      "operation": "get",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [
+        1,
+        0
+      ],
+      "result": {
+        "kind": "value",
+        "value": 4
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "get-last",
+      "operation": "get",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [
+        1,
+        2
+      ],
+      "result": {
+        "kind": "value",
+        "value": 6
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "get-float-first",
+      "operation": "get",
+      "element_type": "float",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 2,
+        "values": [
+          1.5,
+          -2.5,
+          3.25,
+          4.0
+        ]
+      },
+      "arguments": [
+        0,
+        0
+      ],
+      "result": {
+        "kind": "value",
+        "value": 1.5
+      },
+      "after": {
+        "rows": 2,
+        "columns": 2,
+        "values": [
+          1.5,
+          -2.5,
+          3.25,
+          4.0
+        ]
+      }
+    },
+    {
+      "id": "get-float-last",
+      "operation": "get",
+      "element_type": "float",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 2,
+        "values": [
+          1.5,
+          -2.5,
+          3.25,
+          4.0
+        ]
+      },
+      "arguments": [
+        1,
+        1
+      ],
+      "result": {
+        "kind": "value",
+        "value": 4.0
+      },
+      "after": {
+        "rows": 2,
+        "columns": 2,
+        "values": [
+          1.5,
+          -2.5,
+          3.25,
+          4.0
+        ]
+      }
+    },
+    {
+      "id": "get-bool-false",
+      "operation": "get",
+      "element_type": "bool",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          true,
+          false
+        ]
+      },
+      "arguments": [
+        0,
+        1
+      ],
+      "result": {
+        "kind": "value",
+        "value": false
+      },
+      "after": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          true,
+          false
+        ]
+      }
+    },
+    {
+      "id": "get-string-empty",
+      "operation": "get",
+      "element_type": "string",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          "x",
+          ""
+        ]
+      },
+      "arguments": [
+        0,
+        1
+      ],
+      "result": {
+        "kind": "value",
+        "value": ""
+      },
+      "after": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          "x",
+          ""
+        ]
+      }
+    },
+    {
+      "id": "set-first",
+      "operation": "set",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [
+        0,
+        0,
+        9
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          9,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "set-last",
+      "operation": "set",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [
+        1,
+        2,
+        -7
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          -7
+        ]
+      }
+    },
+    {
+      "id": "set-float",
+      "operation": "set",
+      "element_type": "float",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          1.5,
+          -2.5
+        ]
+      },
+      "arguments": [
+        0,
+        1,
+        3.25
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "after": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          1.5,
+          3.25
+        ]
+      }
+    },
+    {
+      "id": "set-bool",
+      "operation": "set",
+      "element_type": "bool",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          true,
+          false
+        ]
+      },
+      "arguments": [
+        0,
+        0,
+        false
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "after": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          false,
+          false
+        ]
+      }
+    },
+    {
+      "id": "set-string",
+      "operation": "set",
+      "element_type": "string",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          "a",
+          "b"
+        ]
+      },
+      "arguments": [
+        0,
+        1,
+        "new"
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "after": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          "a",
+          "new"
+        ]
+      }
+    },
+    {
+      "id": "rows-empty",
+      "operation": "rows",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 0,
+        "columns": 0,
+        "values": []
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 0
+      },
+      "after": {
+        "rows": 0,
+        "columns": 0,
+        "values": []
+      }
+    },
+    {
+      "id": "columns-empty",
+      "operation": "columns",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 0,
+        "columns": 0,
+        "values": []
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 0
+      },
+      "after": {
+        "rows": 0,
+        "columns": 0,
+        "values": []
+      }
+    },
+    {
+      "id": "rows-one-row",
+      "operation": "rows",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 1
+      },
+      "after": {
+        "rows": 1,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "id": "columns-one-row",
+      "operation": "columns",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 3
+      },
+      "after": {
+        "rows": 1,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "id": "rows-one-column",
+      "operation": "rows",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 3,
+        "columns": 1,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 3
+      },
+      "after": {
+        "rows": 3,
+        "columns": 1,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "id": "columns-one-column",
+      "operation": "columns",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 3,
+        "columns": 1,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 1
+      },
+      "after": {
+        "rows": 3,
+        "columns": 1,
+        "values": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "id": "rows-rectangular",
+      "operation": "rows",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 2
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "columns-rectangular",
+      "operation": "columns",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "arguments": [],
+      "result": {
+        "kind": "value",
+        "value": 3
+      },
+      "after": {
+        "rows": 2,
+        "columns": 3,
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "get-float-na",
+      "operation": "get",
+      "element_type": "float",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          1.5,
+          {
+            "kind": "na"
+          }
+        ]
+      },
+      "arguments": [
+        0,
+        1
+      ],
+      "result": {
+        "kind": "na"
+      },
+      "after": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          1.5,
+          {
+            "kind": "na"
+          }
+        ]
+      }
+    },
+    {
+      "id": "set-float-na",
+      "operation": "set",
+      "element_type": "float",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          1.5,
+          2.5
+        ]
+      },
+      "arguments": [
+        0,
+        0,
+        {
+          "kind": "na"
+        }
+      ],
+      "result": {
+        "kind": "void"
+      },
+      "after": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          {
+            "kind": "na"
+          },
+          2.5
+        ]
+      }
+    }
+  ],
+  "reference_rows": [
+    {
+      "id": "copy-int",
+      "operation": "copy",
+      "element_type": "int",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 2,
+        "columns": 2,
+        "values": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "arguments": [],
+      "after_create": {
+        "a": {
+          "rows": 2,
+          "columns": 2,
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "b": {
+          "rows": 2,
+          "columns": 2,
+          "values": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "same_id": false
+      },
+      "followups": [
+        {
+          "receiver": "b",
+          "operation": "set",
+          "arguments": [
+            0,
+            0,
+            9
+          ],
+          "result": {
+            "kind": "void"
+          },
+          "expected": {
+            "a": {
+              "rows": 2,
+              "columns": 2,
+              "values": [
+                1,
+                2,
+                3,
+                4
+              ]
+            },
+            "b": {
+              "rows": 2,
+              "columns": 2,
+              "values": [
+                9,
+                2,
+                3,
+                4
+              ]
+            }
+          }
+        },
+        {
+          "receiver": "a",
+          "operation": "set",
+          "arguments": [
+            1,
+            1,
+            8
+          ],
+          "result": {
+            "kind": "void"
+          },
+          "expected": {
+            "a": {
+              "rows": 2,
+              "columns": 2,
+              "values": [
+                1,
+                2,
+                3,
+                8
+              ]
+            },
+            "b": {
+              "rows": 2,
+              "columns": 2,
+              "values": [
+                9,
+                2,
+                3,
+                4
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "copy-float",
+      "operation": "copy",
+      "element_type": "float",
+      "versions": [
+        5,
+        6
+      ],
+      "before": {
+        "rows": 1,
+        "columns": 2,
+        "values": [
+          1.5,
+          2.5
+        ]
+      },
+      "arguments": [],
+      "after_create": {
+        "a": {
+          "rows": 1,
+          "columns": 2,
+          "values": [
+            1.5,
+            2.5
+          ]
+        },
+        "b": {
+          "rows": 1,
+          "columns": 2,
+          "values": [
+            1.5,
+            2.5
+          ]
+        },
+        "same_id": false
+      },
+      "followups": [
+        {
+          "receiver": "b",
+          "operation": "set",
+          "arguments": [
+            0,
+            1,
+            7.25
+          ],
+          "result": {
+            "kind": "void"
+          },
+          "expected": {
+            "a": {
+              "rows": 1,
+              "columns": 2,
+              "values": [
+                1.5,
+                2.5
+              ]
+            },
+            "b": {
+              "rows": 1,
+              "columns": 2,
+              "values": [
+                1.5,
+                7.25
+              ]
+            }
+          }
+        },
+        {
+          "receiver": "a",
+          "operation": "set",
+          "arguments": [
+            0,
+            0,
+            -1.5
+          ],
+          "result": {
+            "kind": "void"
+          },
+          "expected": {
+            "a": {
+              "rows": 1,
+              "columns": 2,
+              "values": [
+                -1.5,
+                2.5
+              ]
+            },
+            "b": {
+              "rows": 1,
+              "columns": 2,
+              "values": [
+                1.5,
+                7.25
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

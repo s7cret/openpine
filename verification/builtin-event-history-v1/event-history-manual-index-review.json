@@ -1,0 +1,504 @@
+{
+  "schema_id": "openpine.event_history_manual_index_review.v1",
+  "manual_sha256": "53ea9e00e9bdfbc21404937b343ba850a6df2d0dc5de288dc2c71238f41167f8",
+  "project_imports": false,
+  "sut_executed": false,
+  "author_script_executed_or_imported": false,
+  "algorithm": "Independent prefix index selection, then subtraction or direct source selection; no event-state recurrence.",
+  "eligible_rows": 10,
+  "eligible_version_cases": 20,
+  "eligible_version_events": 160,
+  "unverified_rows": 4,
+  "unverified_version_events": 64,
+  "full_stage2_accepted": false,
+  "records": [
+    {
+      "case_id": "barssince-never",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        }
+      ]
+    },
+    {
+      "case_id": "barssince-always",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": 0,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 1,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 2,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 3,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 4,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 5,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 6,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 7,
+          "reviewed_rational": "0"
+        }
+      ]
+    },
+    {
+      "case_id": "barssince-first",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": 0,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 0,
+          "reviewed_rational": "1"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 0,
+          "reviewed_rational": "2"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 0,
+          "reviewed_rational": "3"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 0,
+          "reviewed_rational": "4"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 0,
+          "reviewed_rational": "5"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 0,
+          "reviewed_rational": "6"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 0,
+          "reviewed_rational": "7"
+        }
+      ]
+    },
+    {
+      "case_id": "barssince-last",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 7,
+          "reviewed_rational": "0"
+        }
+      ]
+    },
+    {
+      "case_id": "barssince-separated",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": null,
+          "reviewed_rational": null
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 1,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 1,
+          "reviewed_rational": "1"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 3,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 3,
+          "reviewed_rational": "1"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 3,
+          "reviewed_rational": "2"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 6,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 6,
+          "reviewed_rational": "1"
+        }
+      ]
+    },
+    {
+      "case_id": "barssince-consecutive",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": 0,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 1,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 1,
+          "reviewed_rational": "1"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 1,
+          "reviewed_rational": "2"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 4,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 5,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 5,
+          "reviewed_rational": "1"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 7,
+          "reviewed_rational": "0"
+        }
+      ]
+    },
+    {
+      "case_id": "valuewhen-latest-always",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": 0,
+          "reviewed_rational": "10"
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 1,
+          "reviewed_rational": "-2"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 2,
+          "reviewed_rational": "7/2"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 3,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 4,
+          "reviewed_rational": "8"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 5,
+          "reviewed_rational": "-4"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 6,
+          "reviewed_rational": "9/4"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 7,
+          "reviewed_rational": "9"
+        }
+      ]
+    },
+    {
+      "case_id": "valuewhen-latest-separated",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": 0,
+          "reviewed_rational": "10"
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 0,
+          "reviewed_rational": "10"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 0,
+          "reviewed_rational": "10"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 3,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 3,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 5,
+          "reviewed_rational": "-4"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 5,
+          "reviewed_rational": "-4"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 5,
+          "reviewed_rational": "-4"
+        }
+      ]
+    },
+    {
+      "case_id": "valuewhen-latest-consecutive",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": 0,
+          "reviewed_rational": "10"
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 1,
+          "reviewed_rational": "-2"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 1,
+          "reviewed_rational": "-2"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 1,
+          "reviewed_rational": "-2"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 4,
+          "reviewed_rational": "8"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 5,
+          "reviewed_rational": "-4"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 5,
+          "reviewed_rational": "-4"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 7,
+          "reviewed_rational": "9"
+        }
+      ]
+    },
+    {
+      "case_id": "valuewhen-zero-is-value",
+      "eligible_review_passed": true,
+      "events": [
+        {
+          "bar": 0,
+          "selected_condition_index": 0,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 1,
+          "selected_condition_index": 0,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 2,
+          "selected_condition_index": 2,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 3,
+          "selected_condition_index": 2,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 4,
+          "selected_condition_index": 4,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 5,
+          "selected_condition_index": 4,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 6,
+          "selected_condition_index": 6,
+          "reviewed_rational": "0"
+        },
+        {
+          "bar": 7,
+          "selected_condition_index": 6,
+          "reviewed_rational": "0"
+        }
+      ]
+    },
+    {
+      "case_id": "valuewhen-never",
+      "authority_preserved": "UNVERIFIED",
+      "expected_is_null": true,
+      "candidate_not_promoted": true,
+      "events": 8
+    },
+    {
+      "case_id": "valuewhen-second",
+      "authority_preserved": "UNVERIFIED",
+      "expected_is_null": true,
+      "candidate_not_promoted": true,
+      "events": 8
+    },
+    {
+      "case_id": "valuewhen-third",
+      "authority_preserved": "UNVERIFIED",
+      "expected_is_null": true,
+      "candidate_not_promoted": true,
+      "events": 8
+    },
+    {
+      "case_id": "valuewhen-source-na",
+      "authority_preserved": "UNVERIFIED",
+      "expected_is_null": true,
+      "candidate_not_promoted": true,
+      "events": 8
+    }
+  ]
+}

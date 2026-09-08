@@ -1,0 +1,24 @@
+{
+  "decision": "approved_bounded_B1_B2_C_implementation",
+  "evidence_hashes": {
+    "exported-library-methods-bc-design.md": "1e4b855aad53ebd6f134b250b216d120f04a4a36653c4bd60cfcd131b1620e94",
+    "exported-methods-bc-design-frozen-bundle.json": "b689cfc063eaa44140bbe4931db35e4a450d4588a6b027511c7449145919dc93",
+    "exported-methods-bc-design-receipt.json": "b436e484c94a5533d2a8ef391f94813bc5eec4d0fa9d3e2ed32b8ed4e0e4f05c",
+    "method-a2-revised-frozen-bundle.json": "b3ad0eeacb82f16cb1791522e0ecc5699be7331a0620ac58f875acd73a09aa74"
+  },
+  "full_stage2_accepted": false,
+  "independently_reconstructed_source_files": 764,
+  "required_boundaries": [
+    "Single existing MethodCandidates/SignatureResolver and callable qualifier owner; origin filter is visibility only",
+    "Exact locked publication and source/span identity; no untrusted origin override",
+    "At most two semantic passes with existing per-pass work budgets; no legacy 2.0 replay slowdown",
+    "Old 1.0/1.1 shapes and A2 snapshots unchanged; v2 context 1.2 requires Q and M, plus R iff explicit receiver",
+    "Compiler removes M only at admitted consumer-proof projection; no runtime or artifact schema extension",
+    "Six UNVERIFIED manual rows remain questions; direct-only visibility and ambiguity fail-closed are explicit profiles",
+    "Early before shape stops do not prove deeper negative checks",
+    "Author protocol/lifecycle expectations before production; preserve old tests and separate fixture changes",
+    "Final source-free reconstruction compares independently rebuilt locked graph, origins, projections and semantics"
+  ],
+  "schema_id": "openpine.exported_methods_bc_root_design_review.v1",
+  "semantics_accepted": false
+}

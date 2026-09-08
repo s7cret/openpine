@@ -1,0 +1,10 @@
+//@version=6
+indicator("matrix literal")
+var a=matrix.new<int>(3,1,0)
+var int result=na
+if bar_index==0
+    matrix.set(a,0,0,1)
+    matrix.set(a,1,0,2)
+    matrix.set(a,2,0,3)
+if bar_index==1
+    result:=a.columns()

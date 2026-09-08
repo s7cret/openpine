@@ -1,0 +1,131 @@
+{
+  "manual_sha256": "19b562cd1d7b37af215bbb300014b4e728b1efbce01cddf384fcc775ae2ced29",
+  "reviewed_rows": [
+    {
+      "id": "ema-finite-length-1",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "ema-finite-length-2",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "ema-finite-length-3",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "ema-fractional-length-2",
+      "events": 4,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "ema-constant-length-3",
+      "events": 4,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "ema-leading-na-length-3",
+      "events": 5,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "ema-all-na-length-2",
+      "events": 4,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "rsi-mixed-length-2",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "rsi-mixed-length-3",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "rsi-negative-length-2",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "rsi-down-only-length-1",
+      "events": 4,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "rsi-leading-na-length-2",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "rsi-all-na-length-3",
+      "events": 4,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "macd-finite-1-1-1",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "macd-finite-2-3-1",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "macd-finite-2-3-2",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "macd-finite-2-3-3",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "macd-finite-1-3-2",
+      "events": 6,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "macd-leading-na-2-3-2",
+      "events": 5,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    },
+    {
+      "id": "macd-all-na-2-3-2",
+      "events": 4,
+      "rational_values_exact": true,
+      "decimal_60_exact": true
+    }
+  ],
+  "method": "Independent finite geometric weighted sums, not author recurrence or project code",
+  "unverified_rows_preserved": 13,
+  "source_authority_review_separate": true,
+  "sut_executed": false,
+  "full_builtin_expected_accepted": false,
+  "full_stage2_accepted": false
+}

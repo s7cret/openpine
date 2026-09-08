@@ -1,0 +1,5 @@
+//@version=5
+indicator("Independent event history")
+bool condition = open > 0.0
+int result = ta.barssince(condition)
+plot(result)

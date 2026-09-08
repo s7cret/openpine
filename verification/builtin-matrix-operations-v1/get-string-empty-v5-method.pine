@@ -1,0 +1,9 @@
+//@version=5
+indicator("matrix literal")
+var a=matrix.new<string>(1,2,"")
+var string result=na
+if bar_index==0
+    matrix.set(a,0,0,"x")
+    matrix.set(a,0,1,"")
+if bar_index==1
+    result:=a.get(0,1)

@@ -1,0 +1,302 @@
+[
+  {
+    "version": 5,
+    "name": "ta.barssince",
+    "source": {
+      "version": 5,
+      "url": "https://static.tradingview.com/static/bundles/91998.b1f3e2c03b5a108b7bd6.js",
+      "path": "rolling-reference-v5-91998.js",
+      "sha256": "e52daf777c5e777855537812e57cff57123dd6b2568f98b00dc62d20fbc6bfb5"
+    },
+    "offset": 420855,
+    "excerpt_sha256": "1ef1c6b97bb5d935665a34adddef0320b26705f411d63704ae377f8991755464",
+    "excerpt": "name:\"ta.barssince\",desc:[l.t(null,void 0,a(815055))],args:[{name:\"condition\",desc:l.t(null,void 0,a(177307)),required:!0,allowedTypeIDs:[\"series bool\",\"simple bool\",\"input bool\",\"const bool\"],displayType:\"series bool\"}],examples:[\"//@version=5\",'indicator(\"ta.barssince\")',\"// get number of bars since last color.green bar\",\"plot(ta.barssince(close >= open))\"],returns:[l.t(null,void 0,a(984895))],remarks:[l.t(null,void 0,a(605012)),l.t(null,{replace:{open_brace_1:\"[\",close_brace_1:\"]\",href_1:\"(https://www.tradingview.com/pine-script-docs/concepts/repainting/)\"}},a(144156))],seeAlso:[\"[ta.lowestbars](#fun_ta.lowestbars)\",\"[ta.highestbars](#fun_ta.highestbars)\",\"[ta.valuewhen](#fun_ta.valuewhen)\",\"[ta.highest](#fun_ta.highest)\",\"[ta.lowest](#fun_ta.lowest)\"],syntax:[\"ta.barssince(condition) → series int\"],returnedTypes:[\"series int\"]}",
+    "translations": [
+      {
+        "id": 144156,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.41280.fd5976ad23ce47381361.js",
+          "path": "rolling-reference-v5-41280.js",
+          "sha256": "75c5e06bcde169b03759d78b8b927ea4869fd08783e8e7c81cf36f77fcd4d09a"
+        },
+        "text": [
+          "Please note that using this variable/function can cause {open_brace_1}indicator repainting{close_brace_1}{href_1}."
+        ]
+      },
+      {
+        "id": 177307,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v5-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The condition to check for."
+        ]
+      },
+      {
+        "id": 605012,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.41280.fd5976ad23ce47381361.js",
+          "path": "rolling-reference-v5-41280.js",
+          "sha256": "75c5e06bcde169b03759d78b8b927ea4869fd08783e8e7c81cf36f77fcd4d09a"
+        },
+        "text": [
+          "If the condition has never been met prior to the current bar, the function returns na."
+        ]
+      },
+      {
+        "id": 815055,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.81395.c3ea6fa280511b1fcf65.js",
+          "path": "rolling-reference-v5-81395.js",
+          "sha256": "4501ebff2049b93c913c5c3e1e16a50c28ec61f0f604ff3cebda9ae15c8fbace"
+        },
+        "text": [
+          "Counts the number of bars since the last time the condition was true."
+        ]
+      },
+      {
+        "id": 984895,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v5-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "Number of bars since condition was true."
+        ]
+      }
+    ]
+  },
+  {
+    "version": 5,
+    "name": "ta.valuewhen",
+    "source": {
+      "version": 5,
+      "url": "https://static.tradingview.com/static/bundles/91998.b1f3e2c03b5a108b7bd6.js",
+      "path": "rolling-reference-v5-91998.js",
+      "sha256": "e52daf777c5e777855537812e57cff57123dd6b2568f98b00dc62d20fbc6bfb5"
+    },
+    "offset": 421700,
+    "excerpt_sha256": "522ea31874745f5f744c30b85eae292b40cb8ecb2d0ca7715f9c897e6d0c54a5",
+    "excerpt": "name:\"ta.valuewhen\",desc:[l.t(null,{replace:{backTick_1:\"`source`\",backTick_2:\"`condition`\"}},a(978181))],args:[{name:\"condition\",desc:l.t(null,void 0,a(612589)),required:!0,allowedTypeIDs:[\"series bool\",\"simple bool\",\"input bool\",\"const bool\"],displayType:\"series bool\"},{name:\"source\",desc:l.t(null,void 0,a(704406)),required:!0,allowedTypeIDs:[\"series int\",\"simple int\",\"input int\",\"const int\",\"series float\",\"simple float\",\"input float\",\"const float\"],displayType:\"series int/float\"},{name:\"occurrence\",desc:l.t(null,{replace:{backTick_1:\"`condition`\"}},a(749434)),required:!0,\nallowedTypeIDs:[\"simple int\",\"input int\",\"const int\"],displayType:\"simple int\"}],examples:[\"//@version=5\",'indicator(\"ta.valuewhen\")',\"slow = ta.sma(close, 7)\",\"fast = ta.sma(close, 14)\",\"// Get value of `close` on second most recent cross\",\"plot(ta.valuewhen(ta.cross(slow, fast), close, 1))\"],remarks:[l.t(null,{replace:{open_brace_1:\"[\",close_brace_1:\"]\",href_1:\"(https://www.tradingview.com/pine-script-docs/concepts/repainting/)\",mdInternalRef2:\"[for](#kw_for)\",mdInternalRef3:\"[while](#kw_while)\"}},a(966467))],seeAlso:[\"[ta.lowestbars](#fun_ta.lowestbars)\",\"[ta.highestbars](#fun_ta.highestbars)\",\"[ta.barssince](#fun_ta.barssince)\",\"[ta.highest](#fun_ta.highest)\",\"[ta.lowest](#fun_ta.lowest)\"],syntax:[\"ta.valuewhen(condition, source, occurrence) → series float\"],returnedTypes:[\"series float\"]}",
+    "translations": [
+      {
+        "id": 612589,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v5-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The condition to search for."
+        ]
+      },
+      {
+        "id": 704406,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v5-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The value to be returned from the bar where the condition is met."
+        ]
+      },
+      {
+        "id": 749434,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v5-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The occurrence of the condition. The numbering starts from 0 and goes back in time, so '0' is the most recent occurrence of {backTick_1}, '1' is the second most recent and so forth. Must be an integer >= 0."
+        ]
+      },
+      {
+        "id": 966467,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v5-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "This function requires execution on every bar. It is not recommended to use it inside a {mdInternalRef2} or {mdInternalRef3} loop structure, where its behavior can be unexpected. Please note that using this function can cause {open_brace_1}indicator repainting{close_brace_1}{href_1}."
+        ]
+      },
+      {
+        "id": 978181,
+        "source": {
+          "version": 5,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v5-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "Returns the value of the {backTick_1} series on the bar where the {backTick_2} was true on the nth most recent occurrence."
+        ]
+      }
+    ]
+  },
+  {
+    "version": 6,
+    "name": "ta.barssince",
+    "source": {
+      "version": 6,
+      "url": "https://static.tradingview.com/static/bundles/42609.02dff4dd64cef27aa3f4.js",
+      "path": "rolling-reference-v6-42609.js",
+      "sha256": "64e0b95b73fd95b198a12feda5129a94840ff0ea5f857f26bfc068cc484bbebe"
+    },
+    "offset": 446750,
+    "excerpt_sha256": "4d406f1cbd98cef8446b7192ca48d3e9e6dad79e0a502f320fb3966e05da6fed",
+    "excerpt": "name:\"ta.barssince\",desc:[a.t(null,void 0,n(815055))],args:[{name:\"condition\",desc:a.t(null,void 0,n(177307)),required:!0,allowedTypeIDs:[\"series bool\",\"simple bool\",\"input bool\",\"const bool\"],displayType:\"series bool\"}],examples:['//@version=6\\nindicator(\"ta.barssince\")\\n// get number of bars since last color.green bar\\nplot(ta.barssince(close >= open))'],returns:[a.t(null,void 0,n(984895))],remarks:[a.t(null,void 0,n(605012)),a.t(null,{replace:{open_brace_1:\"[\",close_brace_1:\"]\",href_1:\"(https://www.tradingview.com/pine-script-docs/concepts/repainting/)\"}},n(144156))],seeAlso:[\"[ta.lowestbars()](#fun_ta.lowestbars)\",\"[ta.highestbars()](#fun_ta.highestbars)\",\"[ta.valuewhen()](#fun_ta.valuewhen)\",\"[ta.highest()](#fun_ta.highest)\",\"[ta.lowest()](#fun_ta.lowest)\"],syntax:[\"ta.barssince(condition) → series int\"],returnedTypes:[\"series int\"]}",
+    "translations": [
+      {
+        "id": 144156,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.41280.fd5976ad23ce47381361.js",
+          "path": "rolling-reference-v6-41280.js",
+          "sha256": "75c5e06bcde169b03759d78b8b927ea4869fd08783e8e7c81cf36f77fcd4d09a"
+        },
+        "text": [
+          "Please note that using this variable/function can cause {open_brace_1}indicator repainting{close_brace_1}{href_1}."
+        ]
+      },
+      {
+        "id": 177307,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v6-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The condition to check for."
+        ]
+      },
+      {
+        "id": 605012,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.41280.fd5976ad23ce47381361.js",
+          "path": "rolling-reference-v6-41280.js",
+          "sha256": "75c5e06bcde169b03759d78b8b927ea4869fd08783e8e7c81cf36f77fcd4d09a"
+        },
+        "text": [
+          "If the condition has never been met prior to the current bar, the function returns na."
+        ]
+      },
+      {
+        "id": 815055,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.81395.c3ea6fa280511b1fcf65.js",
+          "path": "rolling-reference-v6-81395.js",
+          "sha256": "4501ebff2049b93c913c5c3e1e16a50c28ec61f0f604ff3cebda9ae15c8fbace"
+        },
+        "text": [
+          "Counts the number of bars since the last time the condition was true."
+        ]
+      },
+      {
+        "id": 984895,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v6-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "Number of bars since condition was true."
+        ]
+      }
+    ]
+  },
+  {
+    "version": 6,
+    "name": "ta.valuewhen",
+    "source": {
+      "version": 6,
+      "url": "https://static.tradingview.com/static/bundles/42609.02dff4dd64cef27aa3f4.js",
+      "path": "rolling-reference-v6-42609.js",
+      "sha256": "64e0b95b73fd95b198a12feda5129a94840ff0ea5f857f26bfc068cc484bbebe"
+    },
+    "offset": 447602,
+    "excerpt_sha256": "9559b0b880483eb95401ac3b7cb70ca83fc21e9c7e2d3df95e1cafe5be0a1013",
+    "excerpt": "name:\"ta.valuewhen\",desc:[a.t(null,{replace:{backTick_1:\"`source`\",backTick_2:\"`condition`\"}},n(978181))],args:[{name:\"condition\",desc:a.t(null,void 0,n(612589)),required:!0,allowedTypeIDs:[\"series bool\",\"simple bool\",\"input bool\",\"const bool\"],displayType:\"series bool\"},{name:\"source\",desc:a.t(null,void 0,n(704406)),required:!0,allowedTypeIDs:[\"series int\",\"simple int\",\"input int\",\"const int\",\"series float\",\"simple float\",\"input float\",\"const float\"],displayType:\"series int/float\"},{name:\"occurrence\",desc:a.t(null,{replace:{backTick_1:\"`condition`\"}},n(749434)),required:!0,allowedTypeIDs:[\"simple int\",\"input int\",\"const int\"],displayType:\"simple int\"}],examples:['//@version=6\\nindicator(\"ta.valuewhen\")\\nslow = ta.sma(close, 7)\\nfast = ta.sma(close, 14)\\n// Get value of `close` on second most recent cross\\nplot(ta.valuewhen(ta.cross(slow, fast), close, 1))'],remarks:[a.t(null,{replace:{open_brace_1:\"[\",close_brace_1:\"]\",\nhref_1:\"(https://www.tradingview.com/pine-script-docs/concepts/repainting/)\",mdInternalRef2:\"[for](#kw_for)\",mdInternalRef3:\"[while](#kw_while)\"}},n(966467))],seeAlso:[\"[ta.lowestbars()](#fun_ta.lowestbars)\",\"[ta.highestbars()](#fun_ta.highestbars)\",\"[ta.barssince()](#fun_ta.barssince)\",\"[ta.highest()](#fun_ta.highest)\",\"[ta.lowest()](#fun_ta.lowest)\"],syntax:[\"ta.valuewhen(condition, source, occurrence) → series float\"],returnedTypes:[\"series float\"]}",
+    "translations": [
+      {
+        "id": 612589,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v6-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The condition to search for."
+        ]
+      },
+      {
+        "id": 704406,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v6-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The value to be returned from the bar where the condition is met."
+        ]
+      },
+      {
+        "id": 749434,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v6-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "The occurrence of the condition. The numbering starts from 0 and goes back in time, so '0' is the most recent occurrence of {backTick_1}, '1' is the second most recent and so forth. Must be an integer >= 0."
+        ]
+      },
+      {
+        "id": 966467,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v6-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "This function requires execution on every bar. It is not recommended to use it inside a {mdInternalRef2} or {mdInternalRef3} loop structure, where its behavior can be unexpected. Please note that using this function can cause {open_brace_1}indicator repainting{close_brace_1}{href_1}."
+        ]
+      },
+      {
+        "id": 978181,
+        "source": {
+          "version": 6,
+          "url": "https://static.tradingview.com/static/bundles/en.21857.4889c7a70444e16ac9c7.js",
+          "path": "rolling-reference-v6-21857.js",
+          "sha256": "c59729041e324343a59f613ff92a14aee47521be5951571d7a66941ca89e4832"
+        },
+        "text": [
+          "Returns the value of the {backTick_1} series on the bar where the {backTick_2} was true on the nth most recent occurrence."
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+//@version=5
+indicator("matrix literal")
+var a=matrix.new<int>(0,0,0)
+var int result=na
+if bar_index==1
+    result:=a.columns()

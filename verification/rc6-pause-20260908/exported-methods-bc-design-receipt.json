@@ -1,0 +1,186 @@
+{
+  "schema_id": "openpine.exported_methods_bc_design_review_receipt.v1",
+  "status": "DESIGN_FROZEN_PENDING_ROOT_ARCHITECTURE_REVIEW",
+  "frozen_bundle": {
+    "path": "exported-methods-bc-design-frozen-bundle.json",
+    "raw_sha256": "b689cfc063eaa44140bbe4931db35e4a450d4588a6b027511c7449145919dc93",
+    "lf_sha256": "b689cfc063eaa44140bbe4931db35e4a450d4588a6b027511c7449145919dc93"
+  },
+  "design": {
+    "path": "exported-library-methods-bc-design.md",
+    "raw_sha256": "1e4b855aad53ebd6f134b250b216d120f04a4a36653c4bd60cfcd131b1620e94",
+    "lf_sha256": "1e4b855aad53ebd6f134b250b216d120f04a4a36653c4bd60cfcd131b1620e94"
+  },
+  "original_design": {
+    "path": "exported-library-methods-design.md",
+    "raw_sha256": "ff33f79f2296ac971aa4e905b3c9bc96141c9342c793f061c3c06dc98c4d2f1a",
+    "lf_sha256": "ff33f79f2296ac971aa4e905b3c9bc96141c9342c793f061c3c06dc98c4d2f1a"
+  },
+  "source_inventory": {
+    "path": "exported-methods-bc-source-before.json",
+    "raw_sha256": "994c75f1e1f7bffa6156df38ba2b97fe8c320047efa5bcd6947c07c2981a834f",
+    "lf_sha256": "994c75f1e1f7bffa6156df38ba2b97fe8c320047efa5bcd6947c07c2981a834f"
+  },
+  "verified_files": 764,
+  "production_test_corpus_changes": 0,
+  "full_owner_test_runs": 0,
+  "manual": {
+    "path": "exported-methods-bc-manual-v1.json",
+    "raw_sha256": "d0988c5ddba3464fb0df4e3b7692540d03bc1012f2685037060dd0c016ac23d8",
+    "lf_sha256": "d0988c5ddba3464fb0df4e3b7692540d03bc1012f2685037060dd0c016ac23d8",
+    "rows": 72,
+    "expected_outcomes": {
+      "ACCEPT": 40,
+      "REJECT": 26,
+      "UNVERIFIED": 6
+    },
+    "before_current_SUT_probe": true,
+    "old_manual_or_corrections_changed": false
+  },
+  "observations": [
+    {
+      "path": "exported-methods-bc-before-corrected-py311.json",
+      "raw_sha256": "9e0d305ec70c7b2626362f77b88ce64e237874dbde95ce9e2b5761b2924f110b",
+      "lf_sha256": "9e0d305ec70c7b2626362f77b88ce64e237874dbde95ce9e2b5761b2924f110b",
+      "summary": {
+        "link": 60,
+        "bundle": 6,
+        "EXECUTED": 2,
+        "historical_parse": 4
+      },
+      "successful_legacy_controls": [
+        {
+          "id": "function_only_legacy_context_control",
+          "version": 5,
+          "trace": [
+            5,
+            5,
+            5
+          ],
+          "checkpoint_equal": true
+        },
+        {
+          "id": "function_only_legacy_context_control",
+          "version": 6,
+          "trace": [
+            5,
+            5,
+            5
+          ],
+          "checkpoint_equal": true
+        }
+      ]
+    },
+    {
+      "path": "exported-methods-bc-before-corrected-py313.json",
+      "raw_sha256": "9e0d305ec70c7b2626362f77b88ce64e237874dbde95ce9e2b5761b2924f110b",
+      "lf_sha256": "9e0d305ec70c7b2626362f77b88ce64e237874dbde95ce9e2b5761b2924f110b",
+      "summary": {
+        "link": 60,
+        "bundle": 6,
+        "EXECUTED": 2,
+        "historical_parse": 4
+      },
+      "successful_legacy_controls": [
+        {
+          "id": "function_only_legacy_context_control",
+          "version": 5,
+          "trace": [
+            5,
+            5,
+            5
+          ],
+          "checkpoint_equal": true
+        },
+        {
+          "id": "function_only_legacy_context_control",
+          "version": 6,
+          "trace": [
+            5,
+            5,
+            5
+          ],
+          "checkpoint_equal": true
+        }
+      ]
+    }
+  ],
+  "primary_authority": {
+    "path": "exported-methods-bc-primary-authority-checked.json",
+    "raw_sha256": "8ebcb4b9b01d069c338a43f09eea0179496b17e8d12ba010a78494e3ef8da165",
+    "lf_sha256": "8ebcb4b9b01d069c338a43f09eea0179496b17e8d12ba010a78494e3ef8da165"
+  },
+  "archived_official_responses": [
+    {
+      "path": "exported-methods-bc-primary\\libraries-v5.html",
+      "raw_sha256": "171dc9bb4c4bd01ac604fdf5feb094c84db95e5ef6ee405386c9c1ea51a63957"
+    },
+    {
+      "path": "exported-methods-bc-primary\\libraries-v5.decoded.html",
+      "raw_sha256": "fb4da4218d0818a462ac926cda428e0ed7c6ad0d82d9b2231ee836a228d748d9"
+    },
+    {
+      "path": "exported-methods-bc-primary\\libraries-v6.html",
+      "raw_sha256": "6161d4b275eb496515a167e0d16681b9b209079a6a7f7c74db9bc579bdc05160"
+    },
+    {
+      "path": "exported-methods-bc-primary\\libraries-v6.decoded.html",
+      "raw_sha256": "2dc7975446b96f3784eb8d5163ce4ca4f5b627e1a5de7bedefb06c79718d6dad"
+    },
+    {
+      "path": "exported-methods-bc-primary\\methods-v5.html",
+      "raw_sha256": "ca1a9f5b590cb409c8be433d696a3b652a1efe54ed35efd6ec19fa2441473bc1"
+    },
+    {
+      "path": "exported-methods-bc-primary\\methods-v5.decoded.html",
+      "raw_sha256": "abb6cd0c9a7f7f57668787255a0a314038379549ff8047c42e585e730c464786"
+    },
+    {
+      "path": "exported-methods-bc-primary\\methods-v6.html",
+      "raw_sha256": "a5f3e6a55ae11b7f0ec0b7139bf1c08efd1a48560e37b6d5d52fb30cde6ac249"
+    },
+    {
+      "path": "exported-methods-bc-primary\\methods-v6.decoded.html",
+      "raw_sha256": "eecb9865e7c26ed7cc85d9f827e7b48e80aac191df50f85e2ae006dd32160f13"
+    },
+    {
+      "path": "exported-methods-bc-primary\\release-v5.html",
+      "raw_sha256": "c2f80cd0640d0e2eee63f4e9a5c9b1982b824f7459c525539045ff24d8132774"
+    },
+    {
+      "path": "exported-methods-bc-primary\\release-v5.decoded.html",
+      "raw_sha256": "629de489c918a5c13dc54bfb36bb2a6fcb7fcb06b0b5844fb820f540900c7a23"
+    }
+  ],
+  "initial_harness_correction": {
+    "initial_output": {
+      "path": "exported-methods-bc-before-py311.json",
+      "raw_sha256": "d2b0a4f6be39e57d888bf4b24861db24a9f85c1d9880c4698c9d8913aa8c032b",
+      "lf_sha256": "d2b0a4f6be39e57d888bf4b24861db24a9f85c1d9880c4698c9d8913aa8c032b"
+    },
+    "initial_script": {
+      "path": "probe-exported-methods-bc-initial-harness.py",
+      "raw_sha256": "9196823c2a308fd68bf8681999ba067f19d9e1c0be8ca8d12b67e8d0b3a2fd2a",
+      "lf_sha256": "9196823c2a308fd68bf8681999ba067f19d9e1c0be8ca8d12b67e8d0b3a2fd2a"
+    },
+    "reason": "Two legacy controls read bundle.required_capabilities instead of canonical consumer_contract.required_capabilities after successful bundle creation; corrected observation reader only. This is not a SUT failure and no expectation changed."
+  },
+  "architecture_decisions_for_root": [
+    "Reuse MethodCandidates/NodeIndex/SignatureResolver; internal source-origin visibility filter and declaration-ID closure, no new overload/type/qualifier scorer.",
+    "Alias deduplication uses exact locked publication identity, never a projected/display method name.",
+    "An exported ordinary function using a private method requires method closure even with no direct root method call; public interfaces include unused exported methods.",
+    "Existing return-qualifier consumption must also activate for admitted exported/projected method declaration IDs, including absent receiver annotation; ordinary A2 absent-field behavior remains unchanged.",
+    "Proposed same_version_methods_v5 closed profile, library_callable_context.v2, consumer1.2.0, additive library_callable_context_v2 consumer proof plus existing library_qualifier_context_v1 prerequisite; AST2.0/2.1 and artifactv3 unchanged.",
+    "Builder strips only new admitted method-library proof; existing floor/runtime/nominal/varip capabilities unchanged and no PineLib manifest capability addition.",
+    "At most provisional and final normal semantic pass; existing failed-candidate budgets each preserved, no unbounded relink fixed point."
+  ],
+  "limits_and_nonclaims": [
+    "Before early shape/name rejection does not certify privacy, qualifier, default, floor or lifecycle negative dimensions.",
+    "Cross-library ambiguity rejection and direct-import-only visibility are bounded implementation profiles, not proven Pine semantic rejection rules.",
+    "User method namespace-function form, transitive root visibility, indistinguishable tie priority and optional receiver defaults remain separately UNVERIFIED.",
+    "V5 simple-reference annotation exception remains the unchanged A2 UNVERIFIED profile; no v6 backport claim.",
+    "Mixed-language library execution and Stage3 request features are not added.",
+    "No imported-method generated lifecycle acceptance yet; two successful generated cases are existing function-only legacy controls.",
+    "Fully replaced self-sealed source/context cannot authenticate an original author input without an externally trusted identity."
+  ]
+}

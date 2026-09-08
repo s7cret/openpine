@@ -1,0 +1,86 @@
+{
+  "schema_id": "openpine.exported_methods_bc_primary.v1",
+  "sources": [
+    {
+      "id": "libraries-v5",
+      "url": "https://www.tradingview.com/pine-script-docs/v5/concepts/libraries/",
+      "version": 5,
+      "retrieved_utc": "2026-09-08T10:27:34.900612+00:00",
+      "archive": "exported-methods-bc-primary\\libraries-v5.html",
+      "raw_sha256": "171dc9bb4c4bd01ac604fdf5feb094c84db95e5ef6ee405386c9c1ea51a63957",
+      "short_quote": "only visible part of the library",
+      "paraphrase": "Exports form the imported interface. Public method signatures cannot expose private nominal types. Revision references are explicit; latest fallback is not part of import syntax. Exported callable results have a simple/series floor.",
+      "transport_encoding_detected": "gzip",
+      "decoded_archive": "exported-methods-bc-primary\\libraries-v5.decoded.html",
+      "decoded_sha256": "fb4da4218d0818a462ac926cda428e0ed7c6ad0d82d9b2231ee836a228d748d9",
+      "quote_verified": true
+    },
+    {
+      "id": "libraries-v6",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/libraries/",
+      "version": 6,
+      "retrieved_utc": "2026-09-08T10:27:35.049249+00:00",
+      "archive": "exported-methods-bc-primary\\libraries-v6.html",
+      "raw_sha256": "6161d4b275eb496515a167e0d16681b9b209079a6a7f7c74db9bc579bdc05160",
+      "short_quote": "Exported functions and methods",
+      "paraphrase": "Current library documentation includes methods among exported components and applies typed-parameter/exported-callable restrictions. This does not itself prove namespace-function syntax for user methods or transitive method visibility.",
+      "transport_encoding_detected": "gzip",
+      "decoded_archive": "exported-methods-bc-primary\\libraries-v6.decoded.html",
+      "decoded_sha256": "2dc7975446b96f3784eb8d5163ce4ca4f5b627e1a5de7bedefb06c79718d6dad",
+      "quote_verified": true
+    },
+    {
+      "id": "methods-v5",
+      "url": "https://www.tradingview.com/pine-script-docs/v5/language/methods/",
+      "version": 5,
+      "retrieved_utc": "2026-09-08T10:27:35.070865+00:00",
+      "archive": "exported-methods-bc-primary\\methods-v5.html",
+      "raw_sha256": "ca1a9f5b590cb409c8be433d696a3b652a1efe54ed35efd6ec19fa2441473bc1",
+      "short_quote": "User-defined methods",
+      "paraphrase": "Documents typed receivers, optional export and receiver dot calls. Distinct signatures may share a method name. Builtin/user overload coexistence uses applicable signatures.",
+      "transport_encoding_detected": "gzip",
+      "decoded_archive": "exported-methods-bc-primary\\methods-v5.decoded.html",
+      "decoded_sha256": "abb6cd0c9a7f7f57668787255a0a314038379549ff8047c42e585e730c464786",
+      "quote_verified": true
+    },
+    {
+      "id": "methods-v6",
+      "url": "https://www.tradingview.com/pine-script-docs/language/methods/",
+      "version": 6,
+      "retrieved_utc": "2026-09-08T10:27:35.584270+00:00",
+      "archive": "exported-methods-bc-primary\\methods-v6.html",
+      "raw_sha256": "a5f3e6a55ae11b7f0ec0b7139bf1c08efd1a48560e37b6d5d52fb30cde6ac249",
+      "short_quote": "different parameter signatures under the same method name",
+      "paraphrase": "Current method examples include overloads and default ordinary parameters. A2 retains the independently reviewed reference-qualifier distinction; this B/C design does not generalize v6 reference rules to v5.",
+      "transport_encoding_detected": "gzip",
+      "decoded_archive": "exported-methods-bc-primary\\methods-v6.decoded.html",
+      "decoded_sha256": "eecb9865e7c26ed7cc85d9f827e7b48e80aac191df50f85e2ae006dd32160f13",
+      "quote_verified": true
+    },
+    {
+      "id": "release-v5",
+      "url": "https://www.tradingview.com/pine-script-docs/v5/release-notes/",
+      "version": 5,
+      "retrieved_utc": "2026-09-08T10:27:35.844043+00:00",
+      "archive": "exported-methods-bc-primary\\release-v5.html",
+      "raw_sha256": "c2f80cd0640d0e2eee63f4e9a5c9b1982b824f7459c525539045ff24d8132774",
+      "short_quote": "Pine Script Methods",
+      "paraphrase": "The February 2023 section introduces methods in v5. No v1-v4 syntax backport is inferred.",
+      "transport_encoding_detected": "gzip",
+      "decoded_archive": "exported-methods-bc-primary\\release-v5.decoded.html",
+      "decoded_sha256": "629de489c918a5c13dc54bfb36bb2a6fcb7fcb06b0b5844fb820f540900c7a23",
+      "quote_verified": true
+    }
+  ],
+  "inherited_A2_authority_receipts": [
+    "method-a2-primary-authority.json",
+    "method-a2-reference-qualifier-authority-independent-review.json"
+  ],
+  "unresolved": [
+    "User method namespace-function form",
+    "Implicit transitive imported-method visibility",
+    "Cross-library indistinguishable candidate precedence",
+    "Optional receiver defaults"
+  ],
+  "initial_raw_response_receipt_sha256": "e98675b919634c2a7f8110c99da9446cce8d29066db9c20c309192f8d1456c88"
+}

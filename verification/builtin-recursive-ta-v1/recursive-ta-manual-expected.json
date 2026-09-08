@@ -1,0 +1,3020 @@
+{
+  "schema_id": "openpine.recursive_ta_manual_expected.v1",
+  "oracle": "manual_fixture",
+  "provenance": "Authored before SUT probing from primary formulae using only stdlib Fraction and Decimal(precision=60). No project package import, execution, or observed-output-derived expectation.",
+  "author_script_sha256": "1c2b349a830e3c6da04e898c84bb9861b30421d5bbd17cce26cd73d52130e701",
+  "references": {
+    "recursive-ta-reference-v5-v6-revised-excerpts.json": "b85701201b9ca4b45b937aad1b8ce45914946341417948aac68738e3a39c78c5",
+    "recursive-ta-primary-pages.json": "e79401ecd329cbb5422041f19b178a41050687ecaff70f982a7c9c2cf78f2334"
+  },
+  "assignment_gap_snapshot": {
+    "semantic-wave-provisional-assignment-gaps.json": "de421c387fb0ba56bc4b6eac98dcc681a28c377caf7bb29971b69dfdeacdeee0"
+  },
+  "counts": {
+    "rows": 33,
+    "version_cases": 66,
+    "primary_formula_rows": 20,
+    "unverified_rows": 13,
+    "primary_formula_version_cases": 40,
+    "unverified_version_cases": 26,
+    "v5_v6_target_tuples": 8,
+    "v5_v6_missing_tuples_in_gap57": 6,
+    "candidate_supported_missing_tuples": 4
+  },
+  "tolerance": {
+    "absolute": "1e-12",
+    "relative": "1e-12",
+    "na": "exact canonical missing value",
+    "output_numeric_type": "float"
+  },
+  "unverified": [
+    "All TSI seed and complete numerical trajectories pending exact builtin proof.",
+    "Internal NA gap scheduling for all four kernels.",
+    "RSI zero-loss and flat zero/zero special cases.",
+    "v1-v4 historical tuples (8 of the 14 remaining family tuples).",
+    "Dynamic/invalid lengths, bool/string/None inputs, overflow, infinity, precision extremes, full Pine parity."
+  ],
+  "source_contract_residual": {
+    "description": "Archived primary requires simple int lengths for all four. The provisional ledger exposes series-qualified MACD/TSI length parameters; no producer/target correction included.",
+    "tested_lengths": "positive literal constants only"
+  },
+  "tradingview_verified": false,
+  "sut_executed_before_freeze": false,
+  "full_stage2_accepted": false,
+  "rows": [
+    {
+      "id": "ema-finite-length-1",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "length": 1
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "3",
+          "decimal_60": "3"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-1",
+          "decimal_60": "-1"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "5",
+          "decimal_60": "5"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "2",
+          "decimal_60": "2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-2",
+          "decimal_60": "-2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "4",
+          "decimal_60": "4"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "ema-finite-length-2",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "3",
+          "decimal_60": "3"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1/3",
+          "decimal_60": "0.333333333333333333333333333333333333333333333333333333333333"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "31/9",
+          "decimal_60": "3.44444444444444444444444444444444444444444444444444444444444"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "67/27",
+          "decimal_60": "2.48148148148148148148148148148148148148148148148148148148148"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-41/81",
+          "decimal_60": "-0.506172839506172839506172839506172839506172839506172839506173"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "607/243",
+          "decimal_60": "2.49794238683127572016460905349794238683127572016460905349794"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "ema-finite-length-3",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "length": 3
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "3",
+          "decimal_60": "3"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1",
+          "decimal_60": "1"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "3",
+          "decimal_60": "3"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "5/2",
+          "decimal_60": "2.5"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1/4",
+          "decimal_60": "0.25"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "17/8",
+          "decimal_60": "2.125"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "ema-fractional-length-2",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        -2.5,
+        1.25,
+        -0.75,
+        3.5
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-5/2",
+          "decimal_60": "-2.5"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal_60": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "-1/2",
+          "decimal_60": "-0.5"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "13/6",
+          "decimal_60": "2.16666666666666666666666666666666666666666666666666666666667"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "ema-constant-length-3",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "parameters": {
+        "length": 3
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "2",
+          "decimal_60": "2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "2",
+          "decimal_60": "2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "2",
+          "decimal_60": "2"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "2",
+          "decimal_60": "2"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "ema-leading-na-length-3",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        3,
+        -1,
+        5
+      ],
+      "parameters": {
+        "length": 3
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "3",
+          "decimal_60": "3"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1",
+          "decimal_60": "1"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "3",
+          "decimal_60": "3"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "ema-all-na-length-2",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        "na",
+        "na"
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "ema-internal-na-length-3",
+      "operation": "ema",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        "na",
+        7,
+        2,
+        -1
+      ],
+      "parameters": {
+        "length": 3
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "NA ignored remark does not explicitly determine the gap-bar output; literal example instead resets after NA.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "3",
+            "decimal_60": "3"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "2",
+            "decimal_60": "2"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "2",
+            "decimal_60": "2"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "9/2",
+            "decimal_60": "4.5"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "13/4",
+            "decimal_60": "3.25"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "9/8",
+            "decimal_60": "1.125"
+          }
+        ],
+        "literal_reference_code": [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "3",
+            "decimal_60": "3"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "2",
+            "decimal_60": "2"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "7",
+            "decimal_60": "7"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "9/2",
+            "decimal_60": "4.5"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "7/4",
+            "decimal_60": "1.75"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "rsi-mixed-length-2",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "60",
+          "decimal_60": "60"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "100/3",
+          "decimal_60": "33.3333333333333333333333333333333333333333333333333333333333"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "500/7",
+          "decimal_60": "71.4285714285714285714285714285714285714285714285714285714286"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1500/53",
+          "decimal_60": "28.3018867924528301886792452830188679245283018867924528301887"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-mixed-length-3",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "length": 3
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "300/7",
+          "decimal_60": "42.8571428571428571428571428571428571428571428571428571428571"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1500/23",
+          "decimal_60": "65.2173913043478260869565217391304347826086956521739130434783"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1500/41",
+          "decimal_60": "36.5853658536585365853658536585365853658536585365853658536585"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-negative-length-2",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        -3,
+        -5,
+        -2,
+        -4,
+        -1,
+        -5
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "60",
+          "decimal_60": "60"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "100/3",
+          "decimal_60": "33.3333333333333333333333333333333333333333333333333333333333"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "500/7",
+          "decimal_60": "71.4285714285714285714285714285714285714285714285714285714286"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "1500/53",
+          "decimal_60": "28.3018867924528301886792452830188679245283018867924528301887"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-down-only-length-1",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        4,
+        3,
+        1,
+        -2
+      ],
+      "parameters": {
+        "length": 1
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal_60": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal_60": "0"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "0",
+          "decimal_60": "0"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-leading-na-length-2",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        3,
+        1,
+        4,
+        2
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "60",
+          "decimal_60": "60"
+        },
+        {
+          "kind": "value",
+          "type": "float",
+          "rational": "100/3",
+          "decimal_60": "33.3333333333333333333333333333333333333333333333333333333333"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-all-na-length-3",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        "na",
+        "na"
+      ],
+      "parameters": {
+        "length": 3
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        },
+        {
+          "kind": "na"
+        }
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-alternating-length-1",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "length": 1
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Positive gain divided by zero loss is not resolved explicitly in the versioned reference; candidate uses limiting value 100.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "100",
+            "decimal_60": "100"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "100",
+            "decimal_60": "100"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-flat-length-2",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Both RMA gains and losses are zero. Candidate uses NA; any special flat-series result requires separate proof.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "rsi-internal-na-length-2",
+      "operation": "rsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        "na",
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "length": 2
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Adjacent-bar changes skip both gap-adjacent deltas; source-compaction bridges them. Source-NA remark and Pine example do not prove equivalence.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "60",
+            "decimal_60": "60"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "60",
+            "decimal_60": "60"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "60",
+            "decimal_60": "60"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "900/11",
+            "decimal_60": "81.8181818181818181818181818181818181818181818181818181818182"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "100/3",
+            "decimal_60": "33.3333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "bridge_previous_non_na": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "60",
+            "decimal_60": "60"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "60",
+            "decimal_60": "60"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "100/3",
+            "decimal_60": "33.3333333333333333333333333333333333333333333333333333333333"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "500/7",
+            "decimal_60": "71.4285714285714285714285714285714285714285714285714285714286"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1500/53",
+            "decimal_60": "28.3018867924528301886792452830188679245283018867924528301887"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.rsi",
+        "v6:ta.rsi",
+        "v5:ta.rma",
+        "v6:ta.rma"
+      ]
+    },
+    {
+      "id": "macd-finite-1-1-1",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "fast": 1,
+        "slow": 1,
+        "signal": 1
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ]
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "macd-finite-2-3-1",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "fast": 2,
+        "slow": 3,
+        "signal": 1
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/3",
+            "decimal_60": "-0.666666666666666666666666666666666666666666666666666666666667"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/3",
+            "decimal_60": "-0.666666666666666666666666666666666666666666666666666666666667"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4/9",
+            "decimal_60": "0.444444444444444444444444444444444444444444444444444444444444"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4/9",
+            "decimal_60": "0.444444444444444444444444444444444444444444444444444444444444"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/54",
+            "decimal_60": "-0.0185185185185185185185185185185185185185185185185185185185185"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/54",
+            "decimal_60": "-0.0185185185185185185185185185185185185185185185185185185185185"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-245/324",
+            "decimal_60": "-0.756172839506172839506172839506172839506172839506172839506173"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-245/324",
+            "decimal_60": "-0.756172839506172839506172839506172839506172839506172839506173"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "725/1944",
+            "decimal_60": "0.372942386831275720164609053497942386831275720164609053497942"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "725/1944",
+            "decimal_60": "0.372942386831275720164609053497942386831275720164609053497942"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ]
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "macd-finite-2-3-2",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "fast": 2,
+        "slow": 3,
+        "signal": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/3",
+            "decimal_60": "-0.666666666666666666666666666666666666666666666666666666666667"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-4/9",
+            "decimal_60": "-0.444444444444444444444444444444444444444444444444444444444444"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/9",
+            "decimal_60": "-0.222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4/9",
+            "decimal_60": "0.444444444444444444444444444444444444444444444444444444444444"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4/27",
+            "decimal_60": "0.148148148148148148148148148148148148148148148148148148148148"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "8/27",
+            "decimal_60": "0.296296296296296296296296296296296296296296296296296296296296"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/54",
+            "decimal_60": "-0.0185185185185185185185185185185185185185185185185185185185185"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1/27",
+            "decimal_60": "0.0370370370370370370370370370370370370370370370370370370370370"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/18",
+            "decimal_60": "-0.0555555555555555555555555555555555555555555555555555555555556"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-245/324",
+            "decimal_60": "-0.756172839506172839506172839506172839506172839506172839506173"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-239/486",
+            "decimal_60": "-0.491769547325102880658436213991769547325102880658436213991770"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-257/972",
+            "decimal_60": "-0.264403292181069958847736625514403292181069958847736625514403"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "725/1944",
+            "decimal_60": "0.372942386831275720164609053497942386831275720164609053497942"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "247/2916",
+            "decimal_60": "0.0847050754458161865569272976680384087791495198902606310013717"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1681/5832",
+            "decimal_60": "0.288237311385459533607681755829903978052126200274348422496571"
+          }
+        ]
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "macd-finite-2-3-3",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "fast": 2,
+        "slow": 3,
+        "signal": 3
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/3",
+            "decimal_60": "-0.666666666666666666666666666666666666666666666666666666666667"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/3",
+            "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/3",
+            "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4/9",
+            "decimal_60": "0.444444444444444444444444444444444444444444444444444444444444"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1/18",
+            "decimal_60": "0.0555555555555555555555555555555555555555555555555555555555556"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "7/18",
+            "decimal_60": "0.388888888888888888888888888888888888888888888888888888888889"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/54",
+            "decimal_60": "-0.0185185185185185185185185185185185185185185185185185185185185"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1/54",
+            "decimal_60": "0.0185185185185185185185185185185185185185185185185185185185185"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/27",
+            "decimal_60": "-0.0370370370370370370370370370370370370370370370370370370370370"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-245/324",
+            "decimal_60": "-0.756172839506172839506172839506172839506172839506172839506173"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-239/648",
+            "decimal_60": "-0.368827160493827160493827160493827160493827160493827160493827"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-251/648",
+            "decimal_60": "-0.387345679012345679012345679012345679012345679012345679012346"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "725/1944",
+            "decimal_60": "0.372942386831275720164609053497942386831275720164609053497942"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1/486",
+            "decimal_60": "0.00205761316872427983539094650205761316872427983539094650205761"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "721/1944",
+            "decimal_60": "0.370884773662551440329218106995884773662551440329218106995885"
+          }
+        ]
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "macd-finite-1-3-2",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        -1,
+        5,
+        2,
+        -2,
+        4
+      ],
+      "parameters": {
+        "fast": 1,
+        "slow": 3,
+        "signal": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2",
+            "decimal_60": "-2"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-4/3",
+            "decimal_60": "-1.33333333333333333333333333333333333333333333333333333333333"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/3",
+            "decimal_60": "-0.666666666666666666666666666666666666666666666666666666666667"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "2",
+            "decimal_60": "2"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "8/9",
+            "decimal_60": "0.888888888888888888888888888888888888888888888888888888888889"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "10/9",
+            "decimal_60": "1.11111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/2",
+            "decimal_60": "-0.5"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/27",
+            "decimal_60": "-0.0370370370370370370370370370370370370370370370370370370370370"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-25/54",
+            "decimal_60": "-0.462962962962962962962962962962962962962962962962962962962963"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-9/4",
+            "decimal_60": "-2.25"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-245/162",
+            "decimal_60": "-1.51234567901234567901234567901234567901234567901234567901235"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-239/324",
+            "decimal_60": "-0.737654320987654320987654320987654320987654320987654320987654"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "15/8",
+            "decimal_60": "1.875"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "725/972",
+            "decimal_60": "0.745884773662551440329218106995884773662551440329218106995885"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "2195/1944",
+            "decimal_60": "1.12911522633744855967078189300411522633744855967078189300412"
+          }
+        ]
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "macd-leading-na-2-3-2",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        3,
+        -1,
+        5
+      ],
+      "parameters": {
+        "fast": 2,
+        "slow": 3,
+        "signal": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ],
+        [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "0",
+            "decimal_60": "0"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/3",
+            "decimal_60": "-0.666666666666666666666666666666666666666666666666666666666667"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-4/9",
+            "decimal_60": "-0.444444444444444444444444444444444444444444444444444444444444"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/9",
+            "decimal_60": "-0.222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        [
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4/9",
+            "decimal_60": "0.444444444444444444444444444444444444444444444444444444444444"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "4/27",
+            "decimal_60": "0.148148148148148148148148148148148148148148148148148148148148"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "8/27",
+            "decimal_60": "0.296296296296296296296296296296296296296296296296296296296296"
+          }
+        ]
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "macd-all-na-2-3-2",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        "na",
+        "na"
+      ],
+      "parameters": {
+        "fast": 2,
+        "slow": 3,
+        "signal": 2
+      },
+      "stateful": true,
+      "authority": "PRIMARY_FORMULA_DERIVATION",
+      "reason": null,
+      "expected": [
+        [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ],
+        [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ],
+        [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ],
+        [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ]
+      ],
+      "candidates": {},
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "macd-internal-na-2-3-2",
+      "operation": "macd",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        "na",
+        7,
+        2,
+        -1
+      ],
+      "parameters": {
+        "fast": 2,
+        "slow": 3,
+        "signal": 2
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "Skipping complete MACD callback differs from advancing the signal EMA over carried component EMAs; not settled by finite primer equivalence.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/3",
+              "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-2/9",
+              "decimal_60": "-0.222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/9",
+              "decimal_60": "-0.111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/3",
+              "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-8/27",
+              "decimal_60": "-0.296296296296296296296296296296296296296296296296296296296296"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/27",
+              "decimal_60": "-0.0370370370370370370370370370370370370370370370370370370370370"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "13/18",
+              "decimal_60": "0.722222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "31/81",
+              "decimal_60": "0.382716049382716049382716049382716049382716049382716049382716"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "55/162",
+              "decimal_60": "0.339506172839506172839506172839506172839506172839506172839506"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-19/108",
+              "decimal_60": "-0.175925925925925925925925925925925925925925925925925925925926"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "5/486",
+              "decimal_60": "0.0102880658436213991769547325102880658436213991769547325102881"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-181/972",
+              "decimal_60": "-0.186213991769547325102880658436213991769547325102880658436214"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-497/648",
+              "decimal_60": "-0.766975308641975308641975308641975308641975308641975308641975"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1481/2916",
+              "decimal_60": "-0.507887517146776406035665294924554183813443072702331961591221"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1511/5832",
+              "decimal_60": "-0.259087791495198902606310013717421124828532235939643347050754"
+            }
+          ]
+        ],
+        "whole_call_skip": [
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/3",
+              "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-2/9",
+              "decimal_60": "-0.222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/9",
+              "decimal_60": "-0.111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/3",
+              "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-2/9",
+              "decimal_60": "-0.222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/9",
+              "decimal_60": "-0.111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "13/18",
+              "decimal_60": "0.722222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "11/27",
+              "decimal_60": "0.407407407407407407407407407407407407407407407407407407407407"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "17/54",
+              "decimal_60": "0.314814814814814814814814814814814814814814814814814814814815"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-19/108",
+              "decimal_60": "-0.175925925925925925925925925925925925925925925925925925925926"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "1/54",
+              "decimal_60": "0.0185185185185185185185185185185185185185185185185185185185185"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-7/36",
+              "decimal_60": "-0.194444444444444444444444444444444444444444444444444444444444"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-497/648",
+              "decimal_60": "-0.766975308641975308641975308641975308641975308641975308641975"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-491/972",
+              "decimal_60": "-0.505144032921810699588477366255144032921810699588477366255144"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-509/1944",
+              "decimal_60": "-0.261831275720164609053497942386831275720164609053497942386831"
+            }
+          ]
+        ],
+        "literal_reference_code": [
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/3",
+              "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-2/9",
+              "decimal_60": "-0.222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-1/9",
+              "decimal_60": "-0.111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          [
+            {
+              "kind": "na"
+            },
+            {
+              "kind": "na"
+            },
+            {
+              "kind": "na"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "0",
+              "decimal_60": "0"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-5/6",
+              "decimal_60": "-0.833333333333333333333333333333333333333333333333333333333333"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-5/9",
+              "decimal_60": "-0.555555555555555555555555555555555555555555555555555555555556"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-5/18",
+              "decimal_60": "-0.277777777777777777777777777777777777777777777777777777777778"
+            }
+          ],
+          [
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-43/36",
+              "decimal_60": "-1.19444444444444444444444444444444444444444444444444444444444"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-53/54",
+              "decimal_60": "-0.981481481481481481481481481481481481481481481481481481481481"
+            },
+            {
+              "kind": "value",
+              "type": "float",
+              "rational": "-23/108",
+              "decimal_60": "-0.212962962962962962962962962962962962962962962962962962962963"
+            }
+          ]
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.macd",
+        "v6:ta.macd",
+        "macd-primer-v5",
+        "macd-primer-v6",
+        "macd-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-finite-1-1",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "short": 1,
+        "long": 1
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1",
+            "decimal_60": "1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1",
+            "decimal_60": "1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-finite-1-2",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "short": 1,
+        "long": 2
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1/2",
+            "decimal_60": "0.5"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-2/5",
+            "decimal_60": "-0.4"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "23/37",
+            "decimal_60": "0.621621621621621621621621621621621621621621621621621621621622"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-17/29",
+            "decimal_60": "-0.586206896551724137931034482758620689655172413793103448275862"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-finite-2-3",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "short": 2,
+        "long": 3
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/7",
+            "decimal_60": "-0.142857142857142857142857142857142857142857142857142857142857"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-11/41",
+            "decimal_60": "-0.268292682926829268292682926829268292682926829268292682926829"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "59/271",
+            "decimal_60": "0.217712177121771217712177121771217712177121771217712177121771"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-503/1973",
+            "decimal_60": "-0.254941713127217435377597567156614292954891028890015205271161"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-finite-3-3",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "short": 3,
+        "long": 3
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/3",
+            "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/3",
+            "decimal_60": "-0.333333333333333333333333333333333333333333333333333333333333"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1/13",
+            "decimal_60": "0.0769230769230769230769230769230769230769230769230769230769231"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-5/23",
+            "decimal_60": "-0.217391304347826086956521739130434782608695652173913043478261"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-leading-na-2-3",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        3,
+        1,
+        4,
+        2
+      ],
+      "parameters": {
+        "short": 2,
+        "long": 3
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/7",
+            "decimal_60": "-0.142857142857142857142857142857142857142857142857142857142857"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-11/41",
+            "decimal_60": "-0.268292682926829268292682926829268292682926829268292682926829"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-all-na-2-3",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        "na",
+        "na",
+        "na",
+        "na"
+      ],
+      "parameters": {
+        "short": 2,
+        "long": 3
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-flat-2-3",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "parameters": {
+        "short": 2,
+        "long": 3
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100. Zero numerator/denominator convention is additionally unresolved.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "na"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    },
+    {
+      "id": "tsi-internal-na-2-3",
+      "operation": "tsi",
+      "versions": [
+        5,
+        6
+      ],
+      "input_type": "series<float>",
+      "source": [
+        3,
+        1,
+        4,
+        "na",
+        2,
+        5,
+        1
+      ],
+      "parameters": {
+        "short": 2,
+        "long": 3
+      },
+      "stateful": true,
+      "authority": "UNVERIFIED",
+      "reason": "The versioned reference proves normalized range but has no executable equivalent; help confirms double smoothing but does not bind the exact builtin early-history seed. Candidate is double EMA(long then short) of adjacent change / absolute change, without factor 100. Gap-stage scheduling is also unresolved.",
+      "expected": null,
+      "candidates": {
+        "formula_candidate": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/7",
+            "decimal_60": "-0.142857142857142857142857142857142857142857142857142857142857"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "1/11",
+            "decimal_60": "0.0909090909090909090909090909090909090909090909090909090909091"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "11/67",
+            "decimal_60": "0.164179104477611940298507462686567164179104477611940298507463"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "211/431",
+            "decimal_60": "0.489559164733178654292343387470997679814385150812064965197216"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-307/3049",
+            "decimal_60": "-0.100688750409970482125286979337487700885536241390619875368973"
+          }
+        ],
+        "whole_call_skip": [
+          {
+            "kind": "na"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1",
+            "decimal_60": "-1"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/7",
+            "decimal_60": "-0.142857142857142857142857142857142857142857142857142857142857"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-1/7",
+            "decimal_60": "-0.142857142857142857142857142857142857142857142857142857142857"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-11/41",
+            "decimal_60": "-0.268292682926829268292682926829268292682926829268292682926829"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "59/271",
+            "decimal_60": "0.217712177121771217712177121771217712177121771217712177121771"
+          },
+          {
+            "kind": "value",
+            "type": "float",
+            "rational": "-503/1973",
+            "decimal_60": "-0.254941713127217435377597567156614292954891028890015205271161"
+          }
+        ]
+      },
+      "reference_ids": [
+        "v5:ta.tsi",
+        "v6:ta.tsi",
+        "tsi-help",
+        "v5:ta.ema",
+        "v6:ta.ema"
+      ]
+    }
+  ]
+}

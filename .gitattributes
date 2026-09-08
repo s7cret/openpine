@@ -8,3 +8,6 @@ verification/builtin-array-operations-v1/* text eol=lf
 verification/builtin-string-operations-v1/* text eol=lf
 verification/builtin-map-operations-v1/* text eol=lf
 verification/constant-metadata-manual-expected.json text eol=lf
+verification/builtin-event-history-v1/* text eol=lf
+verification/builtin-matrix-operations-v1/* text eol=lf
+verification/builtin-recursive-ta-v1/* text eol=lf

@@ -1,0 +1,9 @@
+//@version=6
+indicator("matrix literal")
+var a=matrix.new<float>(1,2,0.0)
+var float result=na
+if bar_index==0
+    matrix.set(a,0,0,1.5)
+    matrix.set(a,0,1,na)
+if bar_index==1
+    result:=a.get(0,1)

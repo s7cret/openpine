@@ -1,0 +1,5 @@
+//@version=6
+indicator("Independent recursive TA")
+float sample = close
+float result = ta.ema(sample,1)
+plot(result)
