@@ -147,7 +147,9 @@
     "verification/semantic-wave-host-metadata-independent-review.json",
     "verification/semantic-wave-proposal-source-archive-review.json",
     "verification/semantic-wave-host-publication-source-review.json",
-    "verification/semantic-wave-metadata-addendum.json"
+    "verification/semantic-wave-metadata-addendum.json",
+    "verification/semantic-wave-failed-execution-independent-review.json",
+    "verification/tuple-loop-repair-independent-source-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -530,7 +532,7 @@
     "cleanup_receipt": "verification/concat-variadic-cleanup-final-execution-review.json"
   },
   "method_context_contracts_block": {
-    "status": "inventory_reviewed_pending_joint_linux",
+    "status": "tuple_loop_repair_pending_inventory_and_joint_linux",
     "scope": [
       "contextual_constant_values_and_child_types",
       "ordinary_method_candidate_selection",
@@ -681,6 +683,13 @@
     "inventory_sha256": "bff145bcbfb81a78069150f283f7cc8aef5f2395f5e72d9aa3b30dcd2b0326c3",
     "inventory_review": "verification/semantic-wave-inventory-independent-review.json",
     "selected_tests": 16745,
-    "removed_tests": 0
+    "removed_tests": 0,
+    "failed_joint_run": 34201053710,
+    "failure_review": "verification/semantic-wave-failed-execution-independent-review.json",
+    "repair_review": "verification/tuple-loop-repair-independent-source-review.json",
+    "failed_joint_passed_each_python": 7620,
+    "failed_joint_failures_each_python": 1,
+    "failed_joint_unexecuted_each_python": 9124,
+    "repaired_parser_sha": "05d7e61be58a184b211bc093f989527157005b92"
   }
 }
