@@ -1,0 +1,803 @@
+{
+  "schema_id": "openpine.array_concat_manual_expected.v1",
+  "provenance": "manual_fixture",
+  "tradingview_export": false,
+  "cases": [
+    {
+      "case_id": "v4-reference-example",
+      "version": 4,
+      "element_type": "float",
+      "id1_initial": [
+        0.0,
+        1.0
+      ],
+      "id2_initial": [
+        2.0,
+        3.0
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        0.0,
+        1.0,
+        2.0,
+        3.0
+      ],
+      "push_through_return": 4.0,
+      "expected_id1_final": [
+        0.0,
+        1.0,
+        2.0,
+        3.0,
+        4.0
+      ],
+      "expected_id2_final": [
+        2.0,
+        3.0
+      ]
+    },
+    {
+      "case_id": "v4-empty-target",
+      "version": 4,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [
+        2
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        2
+      ],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        2,
+        3
+      ],
+      "expected_id2_final": [
+        2
+      ]
+    },
+    {
+      "case_id": "v4-empty-source",
+      "version": 4,
+      "element_type": "int",
+      "id1_initial": [
+        1
+      ],
+      "id2_initial": [],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1
+      ],
+      "push_through_return": 2,
+      "expected_id1_final": [
+        1,
+        2
+      ],
+      "expected_id2_final": []
+    },
+    {
+      "case_id": "v4-both-empty",
+      "version": 4,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [],
+      "push_through_return": 7,
+      "expected_id1_final": [
+        7
+      ],
+      "expected_id2_final": []
+    },
+    {
+      "case_id": "v4-self",
+      "version": 4,
+      "element_type": "int",
+      "id1_initial": [
+        1,
+        2
+      ],
+      "id2_initial": [
+        1,
+        2
+      ],
+      "same_reference": true,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1,
+        2,
+        1,
+        2
+      ],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        1,
+        2,
+        1,
+        2,
+        3
+      ],
+      "expected_id2_final": [
+        1,
+        2,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "case_id": "v4-self-empty",
+      "version": 4,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [],
+      "same_reference": true,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        3
+      ],
+      "expected_id2_final": [
+        3
+      ]
+    },
+    {
+      "case_id": "v4-duplicates",
+      "version": 4,
+      "element_type": "int",
+      "id1_initial": [
+        -1,
+        -1
+      ],
+      "id2_initial": [
+        2,
+        2
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        -1,
+        -1,
+        2,
+        2
+      ],
+      "push_through_return": 0,
+      "expected_id1_final": [
+        -1,
+        -1,
+        2,
+        2,
+        0
+      ],
+      "expected_id2_final": [
+        2,
+        2
+      ]
+    },
+    {
+      "case_id": "v4-fractional",
+      "version": 4,
+      "element_type": "float",
+      "id1_initial": [
+        1.5
+      ],
+      "id2_initial": [
+        -2.5,
+        0.5
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1.5,
+        -2.5,
+        0.5
+      ],
+      "push_through_return": 3.5,
+      "expected_id1_final": [
+        1.5,
+        -2.5,
+        0.5,
+        3.5
+      ],
+      "expected_id2_final": [
+        -2.5,
+        0.5
+      ]
+    },
+    {
+      "case_id": "v4-boolean",
+      "version": 4,
+      "element_type": "bool",
+      "id1_initial": [
+        true
+      ],
+      "id2_initial": [
+        false
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        true,
+        false
+      ],
+      "push_through_return": true,
+      "expected_id1_final": [
+        true,
+        false,
+        true
+      ],
+      "expected_id2_final": [
+        false
+      ]
+    },
+    {
+      "case_id": "v4-string",
+      "version": 4,
+      "element_type": "string",
+      "id1_initial": [
+        "a"
+      ],
+      "id2_initial": [
+        "b",
+        ""
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        "a",
+        "b",
+        ""
+      ],
+      "push_through_return": "c",
+      "expected_id1_final": [
+        "a",
+        "b",
+        "",
+        "c"
+      ],
+      "expected_id2_final": [
+        "b",
+        ""
+      ]
+    },
+    {
+      "case_id": "v5-reference-example",
+      "version": 5,
+      "element_type": "float",
+      "id1_initial": [
+        0.0,
+        1.0
+      ],
+      "id2_initial": [
+        2.0,
+        3.0
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        0.0,
+        1.0,
+        2.0,
+        3.0
+      ],
+      "push_through_return": 4.0,
+      "expected_id1_final": [
+        0.0,
+        1.0,
+        2.0,
+        3.0,
+        4.0
+      ],
+      "expected_id2_final": [
+        2.0,
+        3.0
+      ]
+    },
+    {
+      "case_id": "v5-empty-target",
+      "version": 5,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [
+        2
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        2
+      ],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        2,
+        3
+      ],
+      "expected_id2_final": [
+        2
+      ]
+    },
+    {
+      "case_id": "v5-empty-source",
+      "version": 5,
+      "element_type": "int",
+      "id1_initial": [
+        1
+      ],
+      "id2_initial": [],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1
+      ],
+      "push_through_return": 2,
+      "expected_id1_final": [
+        1,
+        2
+      ],
+      "expected_id2_final": []
+    },
+    {
+      "case_id": "v5-both-empty",
+      "version": 5,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [],
+      "push_through_return": 7,
+      "expected_id1_final": [
+        7
+      ],
+      "expected_id2_final": []
+    },
+    {
+      "case_id": "v5-self",
+      "version": 5,
+      "element_type": "int",
+      "id1_initial": [
+        1,
+        2
+      ],
+      "id2_initial": [
+        1,
+        2
+      ],
+      "same_reference": true,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1,
+        2,
+        1,
+        2
+      ],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        1,
+        2,
+        1,
+        2,
+        3
+      ],
+      "expected_id2_final": [
+        1,
+        2,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "case_id": "v5-self-empty",
+      "version": 5,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [],
+      "same_reference": true,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        3
+      ],
+      "expected_id2_final": [
+        3
+      ]
+    },
+    {
+      "case_id": "v5-duplicates",
+      "version": 5,
+      "element_type": "int",
+      "id1_initial": [
+        -1,
+        -1
+      ],
+      "id2_initial": [
+        2,
+        2
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        -1,
+        -1,
+        2,
+        2
+      ],
+      "push_through_return": 0,
+      "expected_id1_final": [
+        -1,
+        -1,
+        2,
+        2,
+        0
+      ],
+      "expected_id2_final": [
+        2,
+        2
+      ]
+    },
+    {
+      "case_id": "v5-fractional",
+      "version": 5,
+      "element_type": "float",
+      "id1_initial": [
+        1.5
+      ],
+      "id2_initial": [
+        -2.5,
+        0.5
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1.5,
+        -2.5,
+        0.5
+      ],
+      "push_through_return": 3.5,
+      "expected_id1_final": [
+        1.5,
+        -2.5,
+        0.5,
+        3.5
+      ],
+      "expected_id2_final": [
+        -2.5,
+        0.5
+      ]
+    },
+    {
+      "case_id": "v5-boolean",
+      "version": 5,
+      "element_type": "bool",
+      "id1_initial": [
+        true
+      ],
+      "id2_initial": [
+        false
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        true,
+        false
+      ],
+      "push_through_return": true,
+      "expected_id1_final": [
+        true,
+        false,
+        true
+      ],
+      "expected_id2_final": [
+        false
+      ]
+    },
+    {
+      "case_id": "v5-string",
+      "version": 5,
+      "element_type": "string",
+      "id1_initial": [
+        "a"
+      ],
+      "id2_initial": [
+        "b",
+        ""
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        "a",
+        "b",
+        ""
+      ],
+      "push_through_return": "c",
+      "expected_id1_final": [
+        "a",
+        "b",
+        "",
+        "c"
+      ],
+      "expected_id2_final": [
+        "b",
+        ""
+      ]
+    },
+    {
+      "case_id": "v6-reference-example",
+      "version": 6,
+      "element_type": "float",
+      "id1_initial": [
+        0.0,
+        1.0
+      ],
+      "id2_initial": [
+        2.0,
+        3.0
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        0.0,
+        1.0,
+        2.0,
+        3.0
+      ],
+      "push_through_return": 4.0,
+      "expected_id1_final": [
+        0.0,
+        1.0,
+        2.0,
+        3.0,
+        4.0
+      ],
+      "expected_id2_final": [
+        2.0,
+        3.0
+      ]
+    },
+    {
+      "case_id": "v6-empty-target",
+      "version": 6,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [
+        2
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        2
+      ],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        2,
+        3
+      ],
+      "expected_id2_final": [
+        2
+      ]
+    },
+    {
+      "case_id": "v6-empty-source",
+      "version": 6,
+      "element_type": "int",
+      "id1_initial": [
+        1
+      ],
+      "id2_initial": [],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1
+      ],
+      "push_through_return": 2,
+      "expected_id1_final": [
+        1,
+        2
+      ],
+      "expected_id2_final": []
+    },
+    {
+      "case_id": "v6-both-empty",
+      "version": 6,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [],
+      "push_through_return": 7,
+      "expected_id1_final": [
+        7
+      ],
+      "expected_id2_final": []
+    },
+    {
+      "case_id": "v6-self",
+      "version": 6,
+      "element_type": "int",
+      "id1_initial": [
+        1,
+        2
+      ],
+      "id2_initial": [
+        1,
+        2
+      ],
+      "same_reference": true,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1,
+        2,
+        1,
+        2
+      ],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        1,
+        2,
+        1,
+        2,
+        3
+      ],
+      "expected_id2_final": [
+        1,
+        2,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "case_id": "v6-self-empty",
+      "version": 6,
+      "element_type": "int",
+      "id1_initial": [],
+      "id2_initial": [],
+      "same_reference": true,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [],
+      "push_through_return": 3,
+      "expected_id1_final": [
+        3
+      ],
+      "expected_id2_final": [
+        3
+      ]
+    },
+    {
+      "case_id": "v6-duplicates",
+      "version": 6,
+      "element_type": "int",
+      "id1_initial": [
+        -1,
+        -1
+      ],
+      "id2_initial": [
+        2,
+        2
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        -1,
+        -1,
+        2,
+        2
+      ],
+      "push_through_return": 0,
+      "expected_id1_final": [
+        -1,
+        -1,
+        2,
+        2,
+        0
+      ],
+      "expected_id2_final": [
+        2,
+        2
+      ]
+    },
+    {
+      "case_id": "v6-fractional",
+      "version": 6,
+      "element_type": "float",
+      "id1_initial": [
+        1.5
+      ],
+      "id2_initial": [
+        -2.5,
+        0.5
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        1.5,
+        -2.5,
+        0.5
+      ],
+      "push_through_return": 3.5,
+      "expected_id1_final": [
+        1.5,
+        -2.5,
+        0.5,
+        3.5
+      ],
+      "expected_id2_final": [
+        -2.5,
+        0.5
+      ]
+    },
+    {
+      "case_id": "v6-boolean",
+      "version": 6,
+      "element_type": "bool",
+      "id1_initial": [
+        true
+      ],
+      "id2_initial": [
+        false
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        true,
+        false
+      ],
+      "push_through_return": true,
+      "expected_id1_final": [
+        true,
+        false,
+        true
+      ],
+      "expected_id2_final": [
+        false
+      ]
+    },
+    {
+      "case_id": "v6-string",
+      "version": 6,
+      "element_type": "string",
+      "id1_initial": [
+        "a"
+      ],
+      "id2_initial": [
+        "b",
+        ""
+      ],
+      "same_reference": false,
+      "expected_return_identity": "id1",
+      "expected_after_concat": [
+        "a",
+        "b",
+        ""
+      ],
+      "push_through_return": "c",
+      "expected_id1_final": [
+        "a",
+        "b",
+        "",
+        "c"
+      ],
+      "expected_id2_final": [
+        "b",
+        ""
+      ]
+    }
+  ],
+  "primary_sources": [
+    "https://www.tradingview.com/pine-script-docs/v4/essential/arrays/#concatenation",
+    "https://www.tradingview.com/pine-script-docs/language/arrays/#concatenation"
+  ],
+  "derivation": "All arrays and values are authored literal ordered lists. Concatenation appends the second array to the first and returns the first identity, so pushing through that result mutates the first array. Distinct second arrays keep their elements. Self-concat duplicates the original sequence once; self behavior is an explicit alias-model inference, not an external TradingView observation.",
+  "limitations": [
+    "UDT/reference elements, mixed element types and NA elements require separate cases.",
+    "Self-concat and empty-edge examples are independent consequences of the stated append/identity rule; they are not individually documented TradingView execution exports.",
+    "Versioned namespace/method admission and rollback/checkpoint controls are tested separately."
+  ]
+}
