@@ -1,0 +1,329 @@
+{
+  "schema_id": "openpine.stage2_independent_source_review.v1",
+  "wave": "contextual-child-type-p1",
+  "status": "BOUNDED_CONTEXT_P1_CLOSED_SOURCE_AND_LOCAL_CHECKS_PASS_LINUX_JOINT_PENDING",
+  "full_stage2_accepted": false,
+  "original_finding": {
+    "path": ".runtime/evidence/constant-context-independent-review.json",
+    "sha256": "d72bfbd95a994cfb26200123f1e782725c5d5920284a88337c46f864cef9bbcc",
+    "id": "CONTEXT_P1_NESTED_RESULT_TYPE",
+    "historical_blocked_receipt_unchanged": true,
+    "state_after_this_exact_delta": "CLOSED"
+  },
+  "source": {
+    "base_context_bundle": {
+      "path": ".runtime/evidence/constant-context-revised-frozen-bundle.json",
+      "sha256": "76a5b3464c078d7820dc46ffebc9a062a808735655c51b41d6d729126ab6928b"
+    },
+    "separate_fixture_bundle": {
+      "path": ".runtime/evidence/constant-context-fixture-frozen-bundle.json",
+      "sha256": "0308f836c568432aa324eb2f92575cef2184da854dfecda2d02699916cc48a0a"
+    },
+    "delta_bundle": {
+      "path": ".runtime/evidence/constant-child-types-frozen-bundle.json",
+      "sha256": "348909e8f2318f1bb8c53ed92aab73ce20bf7d383f2119f65b055248b979015e"
+    },
+    "prerequisite_order": {
+      "constant-variadic-catalog-frozen-bundle.json": "c1961d571fba22e5430dab5db1963565176842b2899650d10e02d36326ba6357",
+      "constant-round-revised-frozen-bundle.json": "72aff7d55c7d3dcd3fccf8ba61ec843cc015dcdaaa37846c5b3293ca5120ae9e",
+      "constant-udf-coercion-revised-frozen-bundle.json": "cdd7d63f0ce0e5d95ecc9d66bc6db27f8ee53a941dd412e50cc277abf00d8007",
+      "constant-modern-promotion-frozen-bundle.json": "88f00ac420de5e5086d01f3c224e5c5e40d741e12c7e884836a403576c6861cd",
+      "constant-comparison-frozen-bundle.json": "a8a05c0ea804e285ca07f11e21087a358e3163585a5fb81b8c93785abe1fa947"
+    },
+    "before_files": 389,
+    "after_files": 391,
+    "only2_existing_production_files_changed": {
+      "pine2ast/pine2ast/semantic/type_infer.py": {
+        "before_sha256": "eb7505a50e82944431cab8bf024e1c6e465ec1b22d30a211bf428ef823579cfe",
+        "after_sha256": "0f0410fabf62dd1b16179bcf727aa3140a9401bfe16c87044d1e3ac46cfd82e3"
+      },
+      "pine2ast/pine2ast/semantic/inference.py": {
+        "before_sha256": "7cae9dfea38cf540a18e6dba4ef2300ea071405647ff9cb24d8d9df4193f7bf1",
+        "after_sha256": "07a352514b82538030c3f9ecd7af7a6497ee677375bbe17a8a074b352de5049e"
+      }
+    },
+    "all_existing_test_bytes_unchanged": true,
+    "new_test_file_cases": 42,
+    "split": {
+      "functional": [
+        {
+          "path": "pine2ast/pine2ast/semantic/inference.py",
+          "raw_sha256": "44afa7888314c5ecbccdd0ced77a9303106a881d0c8c47fcfd02fad68dfd4b31",
+          "lf_sha256": "07a352514b82538030c3f9ecd7af7a6497ee677375bbe17a8a074b352de5049e",
+          "before_raw_sha256": "8003733969a43ec4d51ca311fc9b809cc74334c7e4d0989e8c0e8000a2da7962"
+        },
+        {
+          "path": "pine2ast/pine2ast/semantic/type_infer.py",
+          "raw_sha256": "4c498b6d00e33e7a75505e961cfa05161c8efcbdaa7338b8bc286f37b030717d",
+          "lf_sha256": "0f0410fabf62dd1b16179bcf727aa3140a9401bfe16c87044d1e3ac46cfd82e3",
+          "before_raw_sha256": "4954ed3dec2b148f06618ddf0c13d3a9ff01feaafbd366dca4d408acc159b2f3"
+        }
+      ],
+      "new_tests": [
+        {
+          "path": "pine2ast/tests/test_contextual_child_type_inference.py",
+          "raw_sha256": "35cfbd9812cfd2fe80ca4f4dea61e558acbd87fee1aac57f8a70efc2e139241b",
+          "lf_sha256": "35cfbd9812cfd2fe80ca4f4dea61e558acbd87fee1aac57f8a70efc2e139241b",
+          "before_raw_sha256": null
+        }
+      ],
+      "docs": [
+        {
+          "path": "pine2ast/docs/STAGE2_CONTEXTUAL_CHILD_TYPES.md",
+          "raw_sha256": "3d1dfe3bfe459c063f1527daedec49744fb2fd1746472533d27e1e6287fee6de",
+          "lf_sha256": "3d1dfe3bfe459c063f1527daedec49744fb2fd1746472533d27e1e6287fee6de",
+          "before_raw_sha256": null
+        }
+      ],
+      "old_test_changes": []
+    },
+    "all_raw_and_lf_hashes_checked": true,
+    "diff": {
+      "path": ".runtime/evidence/constant-child-types-independent-source.diff",
+      "sha256": "439f450c135c5e227d69028c451e32672452680e62cf26c5e53d10d651a31f2b"
+    }
+  },
+  "independent_design_checks": [
+    "Existing operator rule AST is unchanged after adding the optional internal child callback and documentation; None follows the same prior recursion exactly.",
+    "The modern inference facade forwards contextual child inference only for BinaryExpr/UnaryExpr after its versioned division specialization; removal of that one branch restores the entire old inference.py AST.",
+    "The callback is producer-owned, not serialized evidence, and does not introduce a second value evaluator, change call cache semantics, or bypass existing type/qualifier/body purity owners.",
+    "Existing root/aggregate/depth/cache guards remain exercised by the unchanged context tests; old530 focused nodeids and statuses are retained.",
+    "Original nested-default, literal-default and explicit-global cases all have float facts; every prior illegal integer input is now rejected by normal source/compile admission."
+  ],
+  "results": {
+    "311": {
+      "independent_focused": {
+        "path": ".runtime/evidence/constant-child-types-independent-py311.xml",
+        "sha256": "c5bd7e6837bfdfed051126bb0a1d93be3c66b2ec133b83cf4743728bf3d064da",
+        "selected": 572,
+        "passed": 572,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "old530_preserved": true,
+        "added42_nodeids": [
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1-int-#overload:0-5-5]",
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1-int-#overload:0-5-6]",
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1.0-float-#canonical-5.0-5]",
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1.0-float-#canonical-5.0-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[f(x=5.0)=>x/2\\ng(n)=>f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[f(x=5.0)=>x/2\\ng(n)=>f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(float x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(float x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x)=>x/2\\ng(n)=>f(BASE)+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x)=>x/2\\ng(n)=>f(BASE)+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>-f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>-f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()*n-g(2)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()*n-g(2)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[conditional_child-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[conditional_child-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[explicit_global-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[explicit_global-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[global_default-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[global_default-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[integer_control-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[integer_control-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[literal_default-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[literal_default-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[local_promoted_return-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[local_promoted_return-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[multiplication-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[multiplication-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[named_global-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[named_global-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[nested_chain-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[nested_chain-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[remainder-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[remainder-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[subtraction-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[subtraction-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[unary-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[unary-6]",
+          "tests.test_contextual_child_type_inference::test_true_integer_division_retains_version_policy[5-int-2]",
+          "tests.test_contextual_child_type_inference::test_true_integer_division_retains_version_policy[6-float-2.5]"
+        ]
+      },
+      "independent_original_repro": {
+        "path": ".runtime/evidence/constant-child-types-independent-after-py311.json",
+        "sha256": "5d0c0ddc903d2430dddc02a073d00b5397485707021e503a80aa303205fadf8c",
+        "source_and_manual_expected_unchanged": true,
+        "records": 16,
+        "matches": 16,
+        "all16_expression_base_types": "float",
+        "prior_false_int_admissions_closed": 6,
+        "prior_incorrect_int_types_closed": 9,
+        "scope": "Normal compiler static input metadata and frontend type evidence; no generated runtime execution."
+      },
+      "initial_new_test_matrix": {
+        "path": ".runtime/evidence/child-type-before-py311.xml",
+        "sha256": "02460361235544ec7f9b02fde12b5b05efc354397975a044e814b0304ca5998b",
+        "failed": 34,
+        "passed": 8,
+        "selected": 42
+      },
+      "owner_full": {
+        "path": ".runtime/evidence/child-type-full-py311.xml",
+        "sha256": "9557d1e66f3e7257f09c0aabedb336ab6feb2d3dce3a90cb086e042818d57e70",
+        "selected": 2165,
+        "passed": 2154,
+        "failures": 10,
+        "errors": 1,
+        "skipped": 0,
+        "old2123_resolved_statuses_preserved": true,
+        "linux_expected_not_executed_here": 2167
+      }
+    },
+    "313": {
+      "independent_focused": {
+        "path": ".runtime/evidence/constant-child-types-independent-py313.xml",
+        "sha256": "a3dae99b1c74bfb3ec5d6ca7f7af45c6e2a07c398c3ece03af9026faed92bd4d",
+        "selected": 572,
+        "passed": 572,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "old530_preserved": true,
+        "added42_nodeids": [
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1-int-#overload:0-5-5]",
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1-int-#overload:0-5-6]",
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1.0-float-#canonical-5.0-5]",
+          "tests.test_contextual_child_type_inference::test_abs_overload_uses_the_exact_contextual_operand[1.0-float-#canonical-5.0-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[f(x=5.0)=>x/2\\ng(n)=>f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[f(x=5.0)=>x/2\\ng(n)=>f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(float x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(float x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x)=>x/2\\ng(n)=>f(BASE)+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x)=>x/2\\ng(n)=>f(BASE)+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>-f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>-f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()*n-g(2)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()*n-g(2)-6]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-5]",
+          "tests.test_contextual_child_type_inference::test_contextual_float_cannot_be_admitted_as_integer_input[float BASE=5\\nf(x=BASE)=>x/2\\ng(n)=>f()+n-g(1)-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[conditional_child-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[conditional_child-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[explicit_global-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[explicit_global-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[global_default-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[global_default-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[integer_control-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[integer_control-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[literal_default-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[literal_default-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[local_promoted_return-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[local_promoted_return-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[multiplication-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[multiplication-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[named_global-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[named_global-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[nested_chain-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[nested_chain-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[remainder-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[remainder-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[subtraction-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[subtraction-6]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[unary-5]",
+          "tests.test_contextual_child_type_inference::test_nested_operator_preserves_contextual_child_type_and_value[unary-6]",
+          "tests.test_contextual_child_type_inference::test_true_integer_division_retains_version_policy[5-int-2]",
+          "tests.test_contextual_child_type_inference::test_true_integer_division_retains_version_policy[6-float-2.5]"
+        ]
+      },
+      "independent_original_repro": {
+        "path": ".runtime/evidence/constant-child-types-independent-after-py313.json",
+        "sha256": "5d0c0ddc903d2430dddc02a073d00b5397485707021e503a80aa303205fadf8c",
+        "source_and_manual_expected_unchanged": true,
+        "records": 16,
+        "matches": 16,
+        "all16_expression_base_types": "float",
+        "prior_false_int_admissions_closed": 6,
+        "prior_incorrect_int_types_closed": 9,
+        "scope": "Normal compiler static input metadata and frontend type evidence; no generated runtime execution."
+      },
+      "initial_new_test_matrix": {
+        "path": ".runtime/evidence/child-type-before-py313.xml",
+        "sha256": "737c0b66f57cbb288c846bc8b0cdd3ec335718014436b38b00ce4145491a32bb",
+        "failed": 34,
+        "passed": 8,
+        "selected": 42
+      },
+      "owner_full": {
+        "path": ".runtime/evidence/child-type-full-py313.xml",
+        "sha256": "37eff5028d87787aa500f466eb877e2dddf0dcf8ef8b14548ddc49785b8a60ad",
+        "selected": 2165,
+        "passed": 2154,
+        "failures": 10,
+        "errors": 1,
+        "skipped": 0,
+        "old2123_resolved_statuses_preserved": true,
+        "linux_expected_not_executed_here": 2167
+      }
+    }
+  },
+  "new_unpublished_test_draft_adjustment": {
+    "draft": {
+      "path": ".runtime/evidence/child-type-test-draft-frozen.json",
+      "sha256": "1b08bad48e469e69a3ab0ea859fa32affee2f418f57f87943e1387f771b0bd69"
+    },
+    "first_after": {
+      "path": ".runtime/evidence/child-type-first-after-py311.xml",
+      "sha256": "d17ca2a3b5115ad3bbdc7b71ad01c1fdd8bab49b38fdf4c151f2420983b5989a"
+    },
+    "original_selected": 42,
+    "original_after40_pass2_fail": true,
+    "exact_ast_reverse_of_one_remainder_guard_equals_draft": true,
+    "new_test_nodeids_preserved": true,
+    "approval_origin": "Root explicitly approved type-only scope for the two newly drafted remainder cases; no preexisting tests or manual mathematical expected value were changed.",
+    "unverified_value_dimension": [
+      {
+        "version": 5,
+        "expected_mathematical_value": 0.5,
+        "observed_const_value": null,
+        "status": "UNSUPPORTED_CONSTANT_FOLDING_NOT_PASSED",
+        "tested_dimension": "float type evidence only"
+      },
+      {
+        "version": 6,
+        "expected_mathematical_value": 0.5,
+        "observed_const_value": null,
+        "status": "UNSUPPORTED_CONSTANT_FOLDING_NOT_PASSED",
+        "tested_dimension": "float type evidence only"
+      }
+    ],
+    "not_claimed_as_two_passed_value_observations": true
+  },
+  "owner_receipt": {
+    "path": ".runtime/evidence/constant-child-types-final-receipt.json",
+    "sha256": "2c3b07728908e10307501fd6b353410f83ec6c8bf9917fa5eaa19c723e15c1e0"
+  },
+  "before_evidence_hashes_verified": {
+    "constant-context-independent-review.json": "d72bfbd95a994cfb26200123f1e782725c5d5920284a88337c46f864cef9bbcc",
+    "constant-context-nested-default-type-before-py311.json": "1344935581f9b4228cb2bf45afdc5e71a960f525af033a08ad127b236347ffb3",
+    "constant-context-nested-default-type-before-py313.json": "1344935581f9b4228cb2bf45afdc5e71a960f525af033a08ad127b236347ffb3",
+    "constant-default-chain-initial-py311.json": "2fd90f9fef1ea98df09578cbea8920be919080bf6528614a04459dce1f3a2125",
+    "constant-default-chain-initial-py313.json": "2fd90f9fef1ea98df09578cbea8920be919080bf6528614a04459dce1f3a2125",
+    "child-type-test-draft-frozen.json": "1b08bad48e469e69a3ab0ea859fa32affee2f418f57f87943e1387f771b0bd69",
+    "child-type-before-py311.xml": "02460361235544ec7f9b02fde12b5b05efc354397975a044e814b0304ca5998b",
+    "child-type-before-py313.xml": "737c0b66f57cbb288c846bc8b0cdd3ec335718014436b38b00ce4145491a32bb",
+    "child-type-first-after-py311.xml": "d17ca2a3b5115ad3bbdc7b71ad01c1fdd8bab49b38fdf4c151f2420983b5989a",
+    "child-type-focus-py313.xml": "dcfa5bedbc3e04dbf7b223fbcc57e0a54619550973511b88bf4d8485ce27033a",
+    "ordinary-method-a1-preimplementation-frozen.json": "d25cfcc960127d0f48f5a628534bf42bec6dc195f99666335f2a7633a6764f11"
+  },
+  "remaining_scope_limits": [
+    "No full Linux joint execution or full Stage2 acceptance is asserted. The Windows owner full runs still have ten inherited failures and one resource collection error.",
+    "General global Identifier constant-value admission remains a separately evidenced preexisting gap; this delta does not claim to implement it.",
+    "Remainder type evidence is corrected; modulo constant folding remains unsupported with the unchanged mathematical expected value0.5 recorded explicitly.",
+    "No tuple/history, methods, input/catalog/string/map, compiler/runtime, schema or target-manifest changes are included.",
+    "Root717 composed2251 is an expected inventory including84 existing concat cases, not the isolated2167 Linux-equivalent count verified by this source review."
+  ],
+  "reproducer": {
+    "path": ".runtime/evidence/child_types_independent_after_probe.py",
+    "sha256": "cc4f2ba737454ee5f2718e4e22945fa500d167b17ac9ef122108c90a471e64c5"
+  },
+  "reviewer_script": {
+    "path": ".runtime/evidence/write_child_types_independent_review.py",
+    "sha256": "78197a257af4fd3a92829a4cd2608b360dcf92c8406837ef9f19e222b96686e7"
+  }
+}

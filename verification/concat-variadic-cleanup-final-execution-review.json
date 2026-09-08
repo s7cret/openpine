@@ -1,0 +1,249 @@
+{
+  "schema_id": "openpine.concat_variadic_cleanup_execution_independent_review.v1",
+  "status": "ALL_11_ARCHIVES_AND_11_DELETIONS_VERIFIED",
+  "reviewed_at_utc": "2026-09-08T03:46:51.385253+00:00",
+  "repos": {
+    "pine2ast": {
+      "repository": "s7cret/pine2ast",
+      "run_id": 34184431340,
+      "run_url": "https://github.com/s7cret/pine2ast/actions/runs/34184431340",
+      "job_id": 101929814834,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "7323476262bfb454a07b9a310b3123c6f4e3a4ff",
+      "cleanup_tree": "629dd9e95c3077818b8f09eb94889e4cefdf7a01",
+      "workflow_sha256": "bb440e961b09a3851a8f7bc2ae8613814d9b78b14372af29bc7f194a5f059fe4",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10040009781,
+      "artifact_name": "concat-variadic-cleanup-20260908-34181992287-pine2ast-34184431340-1",
+      "zip_sha256": "eced884772598204c988b5ecb694ac2bb69be69fc8d4c4eb329c84c556703d2d",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "66f86f5d4183fa07ba75ebe64ea47665b63df62cb8787e799ecc55185a282798",
+      "artifact_receipt_sha256": "5491be8082b6e3bee3b4c0d95de5bc87765ed64b7346601d45e9ffd5caaf1b78",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "7170736f2730316407f0d896447b08e76f5c9c08",
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "7323476262bfb454a07b9a310b3123c6f4e3a4ff",
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/ancestor-0": "31b8a0ff958324c70c3c41779d238e3eb24218f5"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/constant-variadic-20260908": "7170736f2730316407f0d896447b08e76f5c9c08",
+        "refs/heads/codex/concat-variadic-cleanup-20260908-34181992287": "7323476262bfb454a07b9a310b3123c6f4e3a4ff",
+        "refs/heads/codex/array-concat-identity-20260908": "31b8a0ff958324c70c3c41779d238e3eb24218f5"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "0b67e9ed80faa762100c6a1f282c1a11608f023a",
+        "tree": "d97eee3607d55ac9d1d3863868b7cb2f53f8bc23",
+        "unchanged": true
+      },
+      "operations": null,
+      "candidate_tree": "d97eee3607d55ac9d1d3863868b7cb2f53f8bc23",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 45,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/ancestor-0": "31b8a0ff958324c70c3c41779d238e3eb24218f5",
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "7170736f2730316407f0d896447b08e76f5c9c08",
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "7323476262bfb454a07b9a310b3123c6f4e3a4ff"
+        },
+        "removed": {
+          "refs/heads/codex/array-concat-identity-20260908": "31b8a0ff958324c70c3c41779d238e3eb24218f5",
+          "refs/heads/codex/constant-variadic-20260908": "7170736f2730316407f0d896447b08e76f5c9c08"
+        },
+        "changed": {}
+      },
+      "unrelated_new_refs": {},
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    },
+    "ast2python": {
+      "repository": "s7cret/ast2python",
+      "run_id": 34184432250,
+      "run_url": "https://github.com/s7cret/ast2python/actions/runs/34184432250",
+      "job_id": 101929817436,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "18a0c4f9d1dfd9f2443d4839f27b54810fbdfe4d",
+      "cleanup_tree": "58b47e649553ec37cf3ee3ebcaa34df05838c2e7",
+      "workflow_sha256": "a60f546551409cc75faf25e849d8c9c3e0eefbbfd65b13c395cc966e224238b8",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10040009162,
+      "artifact_name": "concat-variadic-cleanup-20260908-34181992287-ast2python-34184432250-1",
+      "zip_sha256": "19600e996f5c2de5322eda2366e91d8b3c21a94acf6df92667e7aed47a85fffd",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "c5a4c07928f6a8945506b898bf3366554620bcf345ad1182c1e35e76b84814fa",
+      "artifact_receipt_sha256": "d03f29336601907c1e8ed39cc678ba7c5fafd1349b355974487c318f65e953c7",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "95a14be4be8987faafb3e7629c744e698fd9f134",
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "18a0c4f9d1dfd9f2443d4839f27b54810fbdfe4d"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/constant-variadic-20260908": "95a14be4be8987faafb3e7629c744e698fd9f134",
+        "refs/heads/codex/concat-variadic-cleanup-20260908-34181992287": "18a0c4f9d1dfd9f2443d4839f27b54810fbdfe4d"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "5c199789a0cdc640de7be1b13e5ad170dfd96c93",
+        "tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c",
+        "unchanged": true
+      },
+      "operations": null,
+      "candidate_tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 38,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "95a14be4be8987faafb3e7629c744e698fd9f134",
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "18a0c4f9d1dfd9f2443d4839f27b54810fbdfe4d"
+        },
+        "removed": {
+          "refs/heads/codex/constant-variadic-20260908": "95a14be4be8987faafb3e7629c744e698fd9f134"
+        },
+        "changed": {}
+      },
+      "unrelated_new_refs": {},
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    },
+    "pinelib": {
+      "repository": "s7cret/pinelib",
+      "run_id": 34184432728,
+      "run_url": "https://github.com/s7cret/pinelib/actions/runs/34184432728",
+      "job_id": 101929818978,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "5c65b71b97c4b06bcbd8d8de6ffe67c5b6b10127",
+      "cleanup_tree": "8d3366149384e47dca63050da9cedcbaffbda17a",
+      "workflow_sha256": "240902803ecc7d83b750eada2e01555bc6179c594a6c6430ea71ad503e958d82",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10040020576,
+      "artifact_name": "concat-variadic-cleanup-20260908-34181992287-pinelib-34184432728-1",
+      "zip_sha256": "ff33c1a31a2b6f84e152d4d0a01d7e32cf369ce45e1403184a2fccec15d16c2f",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "7f948f8a92a7a27a3c402e3a5453f0438db4201295500bc28bbba321d96adb8d",
+      "artifact_receipt_sha256": "e70db694fe6bb5531baba648a2cd79e96a30dcfe26ea8883475ef21735437eb9",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "5c65b71b97c4b06bcbd8d8de6ffe67c5b6b10127",
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/ancestor-0": "5366a5889f7b66a216f80629ca6c8f1a94fc1f62"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/constant-variadic-20260908": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+        "refs/heads/codex/concat-variadic-cleanup-20260908-34181992287": "5c65b71b97c4b06bcbd8d8de6ffe67c5b6b10127",
+        "refs/heads/codex/array-concat-identity-20260908": "5366a5889f7b66a216f80629ca6c8f1a94fc1f62"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "4360ae790324458f14c57317adfae0f4b028ca4e",
+        "tree": "dc2b5280bb253fc2fc3160045516247ef300f7f9",
+        "unchanged": true
+      },
+      "operations": null,
+      "candidate_tree": "dc2b5280bb253fc2fc3160045516247ef300f7f9",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 44,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/ancestor-0": "5366a5889f7b66a216f80629ca6c8f1a94fc1f62",
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "5c65b71b97c4b06bcbd8d8de6ffe67c5b6b10127"
+        },
+        "removed": {
+          "refs/heads/codex/array-concat-identity-20260908": "5366a5889f7b66a216f80629ca6c8f1a94fc1f62",
+          "refs/heads/codex/constant-variadic-20260908": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1"
+        },
+        "changed": {}
+      },
+      "unrelated_new_refs": {},
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    },
+    "openpine": {
+      "repository": "s7cret/openpine",
+      "run_id": 34184433721,
+      "run_url": "https://github.com/s7cret/openpine/actions/runs/34184433721",
+      "job_id": 101929821570,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "8104155f1b3cdce8edc7bca618aa4128eda8da68",
+      "cleanup_tree": "b4bc01b12986246227ddfdc7a6edca2988f616c9",
+      "workflow_sha256": "15993be3375980493eeac3cf69602832d7bad7135656a1d71c1c8121f0452562",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10040010695,
+      "artifact_name": "concat-variadic-cleanup-20260908-34181992287-openpine-34184433721-1",
+      "zip_sha256": "578d887b022e3ae2b3382d14184cd1e53a2762e82be930d59df4d43a4ea7edad",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "444f5ea2b8748e4829b0c44f8219eaa6b96190308f4eaa0384d4290ad0b5f8d6",
+      "artifact_receipt_sha256": "ba0467478f382bc090fec94058bd459e01be2b1aee73d4218a4d0e9666196a3a",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83",
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "8104155f1b3cdce8edc7bca618aa4128eda8da68",
+        "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/ancestor-0": "0aeb5b2b95e68fc5e6de4d61516a07b864191f93"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/constant-variadic-20260908": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83",
+        "refs/heads/codex/concat-variadic-cleanup-20260908-34181992287": "8104155f1b3cdce8edc7bca618aa4128eda8da68",
+        "refs/heads/codex/array-concat-identity-20260908": "0aeb5b2b95e68fc5e6de4d61516a07b864191f93"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "a9f9d05dc333ea5bed7b67acd3d6d81f6246ff1a",
+        "tree": "ce977f67c19df80e66287044e7641253369286ec",
+        "unchanged": true
+      },
+      "operations": {
+        "ref": "refs/heads/stage2/nominal-ci-20260907",
+        "sha": "86454b5fc7523e2dd310e5b2248e75903f2b99f9",
+        "verified_operations_reachable": true,
+        "unchanged": true
+      },
+      "candidate_tree": "7bd4473f07803ed445dc51371dd2fe38f5a85370",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 70,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/ancestor-0": "0aeb5b2b95e68fc5e6de4d61516a07b864191f93",
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/candidate": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83",
+          "refs/tags/archive/stage2/concat-variadic-cleanup-20260908-34181992287/cleanup-workflow": "8104155f1b3cdce8edc7bca618aa4128eda8da68"
+        },
+        "removed": {
+          "refs/heads/codex/array-concat-identity-20260908": "0aeb5b2b95e68fc5e6de4d61516a07b864191f93",
+          "refs/heads/codex/constant-variadic-20260908": "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83"
+        },
+        "changed": {}
+      },
+      "unrelated_new_refs": {},
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    }
+  },
+  "counts": {
+    "successful_runs": 4,
+    "successful_steps": 24,
+    "archives": 11,
+    "deleted_branches": 11,
+    "primary_features": 4,
+    "ancestor_features": 3,
+    "cleanup_branches": 4,
+    "unchanged_releases": 4
+  },
+  "runner_sha256": "f0fe1e7967770a95b85f4b821633034d2fe002f627a14523ebf51c30f3c6a15f",
+  "prior_plan_review_sha256": "c2045c25eff329f36fef1e86a9db2b65717908ef7b476073d9ca47a4da77fa4c",
+  "independent_api_snapshot": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\concat-variadic-cleanup\\independent-final-api.json",
+    "sha256": "97061592f8624e9c4dcc40b23a84f1e151c3ebcf09edbd1f06cd54238df17e8c"
+  },
+  "fresh_ref_snapshot": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\concat-variadic-cleanup\\independent-final-ref-snapshot.json",
+    "sha256": "473724a329ca1b6ee87a0b1677fcd4344956063f88b5d92bc870036cea5e794c"
+  },
+  "publication_objects_sha256": "3f4c2f22e3d2868c1705189d74d9b116c0acc706e110d13380705ed8ce07b036",
+  "all_old_tags_and_unrelated_heads_preserved": true,
+  "verified_operations_86454_reachable_and_unchanged": true,
+  "all_deleted_histories_archived": true,
+  "full_stage2_accepted": false,
+  "remote_mutations_performed_by_reviewer": false,
+  "scope": "Actual cleanup execution and preservation only; prior 10683-test bounded CI acceptance remains separate. No new semantic acceptance is inferred from successful cleanup.",
+  "digest_newlines": "LF",
+  "script_sha256": "6fd04ddccdf2b58669824a3a194dcd9b81d0acbec4c7b9dad4d24f373799ecf8"
+}

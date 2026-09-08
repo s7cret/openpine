@@ -1,0 +1,70 @@
+{
+  "after_lf_sha256": "cadc86b1d2a60fcfcecd06fbb661b596a039be2f4ab045c5e86043cb37f49af0",
+  "all_old_AST_after_reverse_replacement_identical": true,
+  "all_old_nodeids_and_assertion_structure_preserved": true,
+  "baseline": "7170736f2730316407f0d896447b08e76f5c9c08",
+  "before_sha256": "348364372a92168cb5dede5364b61f1e5cf0b98c217462f65e43e97a385140c9",
+  "bundle": {
+    "path": ".runtime/evidence/map-return-fixture-frozen-bundle.json",
+    "sha256": "38b34ef2b1c11c905fb228110cab6852debff5fac6a4e547106c3e505eb9272f"
+  },
+  "exact_replacement": {
+    "after": "(\"map<string,float>\", \"put\"): \"float\"",
+    "before": "(\"map<string,float>\", \"put\"): \"void\""
+  },
+  "full_stage2_accepted": false,
+  "path": "tests/coverage/test_collections_coverage_and_extractors.py",
+  "primary_authority": {
+    "path": ".runtime/evidence/map-string-v5-v6-primary-contract-review.json",
+    "sha256": "d299bd8eee900afcf9a991cb911c028960bc47e286f831bd6c252e8e4a6d159a"
+  },
+  "reason": "The primary v5/v6 map.put contract returns previous V or na; map<string,float> therefore has float return type. void is a stale oracle literal.",
+  "schema_id": "openpine.independent_fixture_review.v1",
+  "scope_excludes_production_and_other_expected_changes": true,
+  "status": "EXACT_SINGLE_AUTHORITY_BACKED_LITERAL_CORRECTION_APPROVED",
+  "tests": {
+    "311": {
+      "owner_nine_case_retry": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 9,
+        "path": ".runtime/evidence/map-return-fixture-retry311.xml",
+        "sha256": "74d46e1d0da69623f876406dacb4c37e8012431865f522497d03d00241825261",
+        "skips": 0,
+        "total": 9
+      },
+      "owner_old_full_failure": {
+        "errors": 1,
+        "failures": 9,
+        "passed": 1869,
+        "path": ".runtime/evidence/map-producer-full311.xml",
+        "sha256": "c2e0968cc32cca63a55ebeea9eb2d1a80709bc568fde8a7a5c28c8239b5d73c8",
+        "skips": 0,
+        "total": 1879
+      },
+      "reviewer_coverage_file_resolved_pass": 9
+    },
+    "313": {
+      "owner_nine_case_retry": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 9,
+        "path": ".runtime/evidence/map-return-fixture-retry313.xml",
+        "sha256": "dd5e5ec5358488637392524bc480e258c269e2910f9308f73ce74e68aaa675f4",
+        "skips": 0,
+        "total": 9
+      },
+      "owner_old_full_failure": {
+        "errors": 1,
+        "failures": 9,
+        "passed": 1869,
+        "path": ".runtime/evidence/map-producer-full313.xml",
+        "sha256": "e1572d13a63b995a475b6153cd2df737cfeaf8a0fbdf0eb47586630518242ddf",
+        "skips": 0,
+        "total": 1879
+      },
+      "reviewer_coverage_file_resolved_pass": 9
+    }
+  },
+  "whole_file_reverse_replacement_byte_equal": true
+}

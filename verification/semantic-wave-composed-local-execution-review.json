@@ -1,0 +1,101 @@
+{
+  "results": {
+    "311": {
+      "producer": {
+        "path": "language-method-string-composed-final-full311.xml",
+        "sha256": "87a6b9b145d72e7dc06a9ac1f2ba5e85a0ac676b4bf99b86735b348b1974f6ff",
+        "counts": {
+          "error": 1,
+          "passed": 2420,
+          "failure": 8
+        }
+      },
+      "runtime": {
+        "path": "string-target-full311.xml",
+        "sha256": "4c96925931f250d430698ad923a1057e87a8ca992f76f698fd478e31defe7395",
+        "counts": {
+          "passed": 3520,
+          "failure": 3
+        }
+      },
+      "host_constant": {
+        "path": "semantic-wave-constant-host311.xml",
+        "sha256": "bc8869d3d91fe4be3c334eedd8796c6c7c819f6db20fae534c4b0519d8d2c212",
+        "counts": {
+          "passed": 40,
+          "failure": 1
+        }
+      },
+      "producer_missing_on_windows": [
+        [
+          "tests.stage6.test_stage6_performance_gate",
+          "test_isolated_sample_validates_worker_contract"
+        ],
+        [
+          "tests.stage6.test_stage6_performance_gate",
+          "test_performance_source_has_exact_requested_body_size"
+        ],
+        [
+          "tests.stage6.test_stage6_performance_gate",
+          "test_report_aggregates_process_isolated_samples"
+        ]
+      ],
+      "producer_added_real_tests": 608,
+      "runtime_added_tests": 1510,
+      "old_parser_failure_ids_unchanged": true,
+      "all_published_runtime_nodeids_retained": true,
+      "constant_first_call_fcntl_failure": true,
+      "constant_partial_import_cache_may_allow_later_calls": true
+    },
+    "313": {
+      "producer": {
+        "path": "language-method-string-composed-final-full313.xml",
+        "sha256": "997b01b5967a36fe69e15e8145aeb4e04b80646448d1d69b3733f457f72ba380",
+        "counts": {
+          "error": 1,
+          "passed": 2420,
+          "failure": 8
+        }
+      },
+      "runtime": {
+        "path": "string-target-full313.xml",
+        "sha256": "b15f6cf69b013c4ea1baca6ed9e47f6ed0ea0c2108347ada38302074e3042cf7",
+        "counts": {
+          "passed": 3520,
+          "failure": 3
+        }
+      },
+      "host_constant": {
+        "path": "semantic-wave-constant-host313.xml",
+        "sha256": "da0db395e34f613d150ab20b54494250970ea5eeb6373c28c6d50f43a1403e5e",
+        "counts": {
+          "passed": 40,
+          "failure": 1
+        }
+      },
+      "producer_missing_on_windows": [
+        [
+          "tests.stage6.test_stage6_performance_gate",
+          "test_isolated_sample_validates_worker_contract"
+        ],
+        [
+          "tests.stage6.test_stage6_performance_gate",
+          "test_performance_source_has_exact_requested_body_size"
+        ],
+        [
+          "tests.stage6.test_stage6_performance_gate",
+          "test_report_aggregates_process_isolated_samples"
+        ]
+      ],
+      "producer_added_real_tests": 608,
+      "runtime_added_tests": 1510,
+      "old_parser_failure_ids_unchanged": true,
+      "all_published_runtime_nodeids_retained": true,
+      "constant_first_call_fcntl_failure": true,
+      "constant_partial_import_cache_may_allow_later_calls": true
+    }
+  },
+  "scope": "Windows local composed source evidence only; no fcntl/resource shims, skips or removed test fixtures",
+  "linux_joint_pending": true,
+  "full_stage2_accepted": false
+}

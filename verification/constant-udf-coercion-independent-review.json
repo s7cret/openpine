@@ -1,0 +1,2342 @@
+{
+  "schema_id": "openpine.constant_udf_coercion_independent_review.v1",
+  "status": "ORIGINAL_PROMOTION_P1_CLOSED_SEPARATE_COMPARISON_P1_OPEN",
+  "reviewed_at_utc": "2026-09-08T02:41:13.464024+00:00",
+  "candidate_publication_approved": false,
+  "full_stage2_accepted": false,
+  "baseline": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+  "prerequisite_bundles": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-variadic-catalog-frozen-bundle.json",
+      "raw_sha256": "c1961d571fba22e5430dab5db1963565176842b2899650d10e02d36326ba6357",
+      "lf_sha256": "c1961d571fba22e5430dab5db1963565176842b2899650d10e02d36326ba6357"
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-round-revised-frozen-bundle.json",
+      "raw_sha256": "72aff7d55c7d3dcd3fccf8ba61ec843cc015dcdaaa37846c5b3293ca5120ae9e",
+      "lf_sha256": "72aff7d55c7d3dcd3fccf8ba61ec843cc015dcdaaa37846c5b3293ca5120ae9e"
+    }
+  ],
+  "original_bundle": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-values-frozen-bundle.json",
+    "raw_sha256": "3a0539879bcfe1468d608f5bf1089c87f653be88195f4f056fbd22cb600e5d78",
+    "lf_sha256": "3a0539879bcfe1468d608f5bf1089c87f653be88195f4f056fbd22cb600e5d78"
+  },
+  "revised_bundle": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-coercion-revised-frozen-bundle.json",
+    "raw_sha256": "cdd7d63f0ce0e5d95ecc9d66bc6db27f8ee53a941dd412e50cc277abf00d8007",
+    "lf_sha256": "cdd7d63f0ce0e5d95ecc9d66bc6db27f8ee53a941dd412e50cc277abf00d8007"
+  },
+  "coercion_delta_bundle": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-coercion-delta-frozen-bundle.json",
+    "raw_sha256": "b0105e84f819efe4b0c158c006eaaf7964cec54d1ab89c1b0009cc426e624f5f",
+    "lf_sha256": "b0105e84f819efe4b0c158c006eaaf7964cec54d1ab89c1b0009cc426e624f5f"
+  },
+  "files": [
+    {
+      "path": "pine2ast/pine2ast/semantic/binder.py",
+      "raw_sha256": "346d0e909edf6981248caa36180b6bad07b8c1c7e3747e70d37bcd30aa3c1aac",
+      "lf_sha256": "89788063978571e79b7fa9deaa5f8e5d5028d9460713653435f6613f398f3c82"
+    },
+    {
+      "path": "pine2ast/pine2ast/semantic/constant_functions.py",
+      "raw_sha256": "5de3f9cb938785b09f5ba994d4a7e3c00838abdc7e491758b143488f4b7d5abd",
+      "lf_sha256": "5de3f9cb938785b09f5ba994d4a7e3c00838abdc7e491758b143488f4b7d5abd"
+    },
+    {
+      "path": "pine2ast/tests/test_constant_user_function_evidence.py",
+      "raw_sha256": "4617a84012de34394b055986a5a48466732552c967914ce867706514e8e6f716",
+      "lf_sha256": "4617a84012de34394b055986a5a48466732552c967914ce867706514e8e6f716"
+    },
+    {
+      "path": "pine2ast/docs/STAGE2_CONSTANT_FUNCTION_VALUES.md",
+      "raw_sha256": "627221fa55c3b0acc886b2425c15f464bd30dc4e6fbe76d50232e6f7e709ea7a",
+      "lf_sha256": "627221fa55c3b0acc886b2425c15f464bd30dc4e6fbe76d50232e6f7e709ea7a"
+    },
+    {
+      "path": "pine2ast/tests/test_constant_user_function_numeric_coercion.py",
+      "raw_sha256": "15f3b7d223240bcdbf25d8f6f3a1480d2511500fa515ce02c3726a9d710643d4",
+      "lf_sha256": "15f3b7d223240bcdbf25d8f6f3a1480d2511500fa515ce02c3726a9d710643d4"
+    }
+  ],
+  "source_review": [
+    "The nine-line functional delta consumes the existing admitted model.node_types of each contextual expression and widens only exact Python int values to float.",
+    "Promotion happens before the enclosing operation consumes its operand; float overflow and non-finite values produce unknown without partial evidence.",
+    "The lexical frame owner, transitive whole-body purity checks, source-bound call identity, argument/default checks and shared work/depth/cache limits are unchanged.",
+    "Original 94-test file and constant_functions helper remain raw-byte identical. No preexisting test expectations or catalog/RC5 definitions are edited.",
+    "Explicit int casts, v5 integer division for actual integer operands, nonconst floor exclusion, tagged cache identity and old-version controls pass the combined original/revised tests."
+  ],
+  "focused_tests": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-coercion-independent-py311.xml",
+      "raw_sha256": "01ce589e6a04f621c5e389b2fc20f46a157e8544db7fba487ba3413a9b168146",
+      "lf_sha256": "01ce589e6a04f621c5e389b2fc20f46a157e8544db7fba487ba3413a9b168146",
+      "python": "311",
+      "passed": 280,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "nodeids": [
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-True-6]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[close-5]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[close-6]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[input.float(2.5)-5]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[input.float(2.5)-6]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[na-5]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[na-6]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[2.5,na-5]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[2.5,na-6]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[number=2.5,precision=na-5]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[number=2.5,precision=na-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,1000000000-1.25-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,1000000000-1.25-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,-1000000000-0.0-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,-1000000000-0.0-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[2,0-2.0-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[2,0-2.0-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[-0.5,0-0.0-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[-0.5,0-0.0-6]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[ghost_name-5]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[ghost_name-6]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[missing_argument-5]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[missing_argument-6]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[duplicate_index-5]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[duplicate_index-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation0-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation0-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation1-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation1-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation2-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation2-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation3-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation3-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation4-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation4-6]",
+        "tests.test_constant_round_binding::test_binding_identity_controls_folding_not_display_callee[5]",
+        "tests.test_constant_round_binding::test_binding_identity_controls_folding_not_display_callee[6]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[1]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[2]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[3]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[4]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[1-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[2-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[3-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[4-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[5-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[6-2.5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>3-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>3-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(2.5)-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(2.5)-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(precision=-1,number=-25.0)-value()--20.0-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(precision=-1,number=-25.0)-value()--20.0-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>2*3+1-value()-7-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>2*3+1-value()-7-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>\\n    a=2\\n    b=a+3\\n    b-value()-5-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>\\n    a=2\\n    b=a+3\\n    b-value()-5-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[one()=>2\\nvalue()=>one()+3-value()-5-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[one()=>2\\nvalue()=>one()+3-value()-5-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int n=2)=>3-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int n=2)=>3-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int a,int b)=>3-value(b=1,a=2)-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int a,int b)=>3-value(b=1,a=2)-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>true?3:4-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>true?3:4-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(math.min(1.25,2.5),1)-value()-1.3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(math.min(1.25,2.5),1)-value()-1.3-6]",
+        "tests.test_constant_user_function_evidence::test_const_function_keeps_exact_integer_division_policy[5-2]",
+        "tests.test_constant_user_function_evidence::test_const_function_keeps_exact_integer_division_policy[6-2.5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    var int a=0\\n    3-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    var int a=0\\n    3-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=2\\n    a:=3\\n    4-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=2\\n    a:=3\\n    4-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    array.new_int(1)\\n    3-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    array.new_int(1)\\n    3-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=array.new_int(1)\\n    true?3:array.size(a)-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=array.new_int(1)\\n    true?3:array.size(a)-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[globalValue=2\\nvalue()=>globalValue-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[globalValue=2\\nvalue()=>globalValue-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(simple int n)=>n-value(2)-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(simple int n)=>n-value(2)-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(series int n)=>n-value(2)-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(series int n)=>n-value(2)-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(n)=>n+1-value(2)-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(n)=>n+1-value(2)-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    if true\\n        3\\n    else\\n        4-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    if true\\n        3\\n    else\\n        4-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>-5%2-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>-5%2-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>int(bool(1))-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>int(bool(1))-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(int n=na)=>3-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(int n=na)=>3-value()-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[symbol-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[symbol-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[overload-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[overload-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[stateful-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[stateful-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[form-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[form-6]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[exported-5]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[exported-6]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[linked-5]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[linked-6]",
+        "tests.test_constant_user_function_evidence::test_lexical_locals_do_not_borrow_global_or_caller_values[5]",
+        "tests.test_constant_user_function_evidence::test_lexical_locals_do_not_borrow_global_or_caller_values[6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_ROOT_WORK-8-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_ROOT_WORK-8-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_BUILDER_WORK-8-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_BUILDER_WORK-8-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_CACHE_ENTRIES-0-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_CACHE_ENTRIES-0-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_FUNCTION_DEPTH-1-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_FUNCTION_DEPTH-1-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_EXPRESSION_DEPTH-1-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_EXPRESSION_DEPTH-1-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[missing-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[missing-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[name-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[name-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[index-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[index-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[type-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[type-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[known_value-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[known_value-6]",
+        "tests.test_constant_user_function_evidence::test_transitive_identity_cycle_cannot_reuse_an_unrelated_literal[5]",
+        "tests.test_constant_user_function_evidence::test_transitive_identity_cycle_cannot_reuse_an_unrelated_literal[6]",
+        "tests.test_constant_user_function_evidence::test_old_unqualified_function_value_folding_is_unchanged[2]",
+        "tests.test_constant_user_function_evidence::test_old_unqualified_function_value_folding_is_unchanged[3]",
+        "tests.test_constant_user_function_evidence::test_old_unqualified_function_value_folding_is_unchanged[4]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:(-5%2)-5]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:(-5%2)-6]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:int(bool(1))-5]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:int(bool(1))-6]",
+        "tests.test_constant_user_function_evidence::test_bool_result_uses_exact_boolean_operations[5]",
+        "tests.test_constant_user_function_evidence::test_bool_result_uses_exact_boolean_operations[6]",
+        "tests.test_constant_user_function_evidence::test_cached_identity_keeps_distinct_tagged_argument_values[5]",
+        "tests.test_constant_user_function_evidence::test_cached_identity_keeps_distinct_tagged_argument_values[6]",
+        "tests.test_constant_user_function_evidence::test_many_nested_operations_share_the_default_root_work_budget",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=-5\\n    n/2--2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=-5\\n    n/2--2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n-5.0-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n-5.0-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>true?5:0.5-5.0-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>true?5:0.5-5.0-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    float m=n\\n    m/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    float m=n\\n    m/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[inner()=>\\n    float n=5\\n    n\\nvalue()=>inner()/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[inner()=>\\n    float n=5\\n    n\\nvalue()=>inner()/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.abs(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.abs(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>-(true?5:0.5)/2--2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>-(true?5:0.5)/2--2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:(true?5:2.5))/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:(true?5:2.5))/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>((true?5:0.5)+1)/2-3.0-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>((true?5:0.5)+1)/2-3.0-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>float(5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>float(5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.round(2.5,0)/2-1.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.round(2.5,0)/2-1.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>5/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>5/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>\\n    float n=5\\n    int(n)/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>\\n    float n=5\\n    int(n)/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>(true?5:1)/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>(true?5:1)/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value(float unused=0.5)=>5/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value(float unused=0.5)=>5/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(float n=5)=>n/2-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(float n=5)=>n/2-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(simple float n=5)=>n/2-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(simple float n=5)=>n/2-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value()=>(true?5.0:na)/2-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value()=>(true?5.0:na)/2-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1)-1-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1)-1-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1,3)-1-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1,3)-1-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(2,1,3)-3-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(2,1,3)-3-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(-2.5,-1.25,-3.0)--1.25-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(-2.5,-1.25,-3.0)--1.25-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.min(1.25,2.5),1)-1.3-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.min(1.25,2.5),1)-1.3-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.max(-1.25,-2.5),1)--1.2-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.max(-1.25,-2.5),1)--1.2-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-min-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-min-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-max-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-max-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-min-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-min-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-max-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-max-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[null_parameter-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[null_parameter-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[scalar_binding-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[scalar_binding-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[first_scalar_binding-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[first_scalar_binding-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[missing_expected_type-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[missing_expected_type-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[forged_named-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[forged_named-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[duplicate_source-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[duplicate_source-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[source_order-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[source_order-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[ghost_parameter-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[ghost_parameter-6]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[1]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[2]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[3]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[4]",
+        "tests.test_constant_variadic_binding::test_numbered_named_argument_support_is_not_invented[5]",
+        "tests.test_constant_variadic_binding::test_numbered_named_argument_support_is_not_invented[6]"
+      ]
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-coercion-independent-py313.xml",
+      "raw_sha256": "8e4698eb7601dfd9e1186705837ac8b14475dde366c695a1c5d1109f568b0773",
+      "lf_sha256": "8e4698eb7601dfd9e1186705837ac8b14475dde366c695a1c5d1109f568b0773",
+      "python": "313",
+      "passed": 280,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "nodeids": [
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-True-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-False-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-False-6]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-True-5]",
+        "tests.test_constant_round_binding::test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-True-6]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[close-5]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[close-6]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[input.float(2.5)-5]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[input.float(2.5)-6]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[na-5]",
+        "tests.test_constant_round_binding::test_unknown_or_nonconst_round_value_is_never_invented[na-6]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[2.5,na-5]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[2.5,na-6]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[number=2.5,precision=na-5]",
+        "tests.test_constant_round_binding::test_explicit_na_precision_is_not_the_omitted_precision[number=2.5,precision=na-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,1000000000-1.25-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,1000000000-1.25-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,-1000000000-0.0-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[1.25,-1000000000-0.0-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[2,0-2.0-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[2,0-2.0-6]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[-0.5,0-0.0-5]",
+        "tests.test_constant_round_binding::test_precision_extremes_and_explicit_zero_keep_float_result[-0.5,0-0.0-6]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[ghost_name-5]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[ghost_name-6]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[missing_argument-5]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[missing_argument-6]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[duplicate_index-5]",
+        "tests.test_constant_round_binding::test_round_requires_complete_exact_parameter_mapping[duplicate_index-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation0-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation0-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation1-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation1-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation2-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation2-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation3-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation3-6]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation4-5]",
+        "tests.test_constant_round_binding::test_folding_requires_resolved_builtin_contract[mutation4-6]",
+        "tests.test_constant_round_binding::test_binding_identity_controls_folding_not_display_callee[5]",
+        "tests.test_constant_round_binding::test_binding_identity_controls_folding_not_display_callee[6]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[1]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[2]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[3]",
+        "tests.test_constant_round_binding::test_old_round_callable_does_not_gain_unreviewed_constant_folding[4]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[1-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[2-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[3-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[4-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[5-2]",
+        "tests.test_constant_round_binding::test_version_specific_constant_integer_division_control[6-2.5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>3-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>3-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(2.5)-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(2.5)-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(precision=-1,number=-25.0)-value()--20.0-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(precision=-1,number=-25.0)-value()--20.0-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>2*3+1-value()-7-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>2*3+1-value()-7-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>\\n    a=2\\n    b=a+3\\n    b-value()-5-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>\\n    a=2\\n    b=a+3\\n    b-value()-5-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[one()=>2\\nvalue()=>one()+3-value()-5-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[one()=>2\\nvalue()=>one()+3-value()-5-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int n=2)=>3-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int n=2)=>3-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int a,int b)=>3-value(b=1,a=2)-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value(int a,int b)=>3-value(b=1,a=2)-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>true?3:4-value()-3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>true?3:4-value()-3-6]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(math.min(1.25,2.5),1)-value()-1.3-5]",
+        "tests.test_constant_user_function_evidence::test_pure_const_result_has_independent_value[value()=>math.round(math.min(1.25,2.5),1)-value()-1.3-6]",
+        "tests.test_constant_user_function_evidence::test_const_function_keeps_exact_integer_division_policy[5-2]",
+        "tests.test_constant_user_function_evidence::test_const_function_keeps_exact_integer_division_policy[6-2.5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    var int a=0\\n    3-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    var int a=0\\n    3-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=2\\n    a:=3\\n    4-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=2\\n    a:=3\\n    4-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    array.new_int(1)\\n    3-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    array.new_int(1)\\n    3-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=array.new_int(1)\\n    true?3:array.size(a)-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    a=array.new_int(1)\\n    true?3:array.size(a)-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[globalValue=2\\nvalue()=>globalValue-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[globalValue=2\\nvalue()=>globalValue-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(simple int n)=>n-value(2)-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(simple int n)=>n-value(2)-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(series int n)=>n-value(2)-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(series int n)=>n-value(2)-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(n)=>n+1-value(2)-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(n)=>n+1-value(2)-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    if true\\n        3\\n    else\\n        4-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>\\n    if true\\n        3\\n    else\\n        4-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>-5%2-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>-5%2-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>int(bool(1))-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value()=>int(bool(1))-value()-6]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(int n=na)=>3-value()-5]",
+        "tests.test_constant_user_function_evidence::test_unreviewed_or_impure_body_never_gets_const_value[value(int n=na)=>3-value()-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[symbol-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[symbol-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[overload-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[overload-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[stateful-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[stateful-6]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[form-5]",
+        "tests.test_constant_user_function_evidence::test_const_user_call_requires_exact_completed_identity[form-6]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[exported-5]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[exported-6]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[linked-5]",
+        "tests.test_constant_user_function_evidence::test_exported_simple_floor_never_receives_constant_value[linked-6]",
+        "tests.test_constant_user_function_evidence::test_lexical_locals_do_not_borrow_global_or_caller_values[5]",
+        "tests.test_constant_user_function_evidence::test_lexical_locals_do_not_borrow_global_or_caller_values[6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_ROOT_WORK-8-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_ROOT_WORK-8-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_BUILDER_WORK-8-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_BUILDER_WORK-8-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_CACHE_ENTRIES-0-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_CACHE_ENTRIES-0-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_FUNCTION_DEPTH-1-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_FUNCTION_DEPTH-1-6]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_EXPRESSION_DEPTH-1-5]",
+        "tests.test_constant_user_function_evidence::test_shared_resource_limits_produce_unknown_without_partial_value[MAX_EXPRESSION_DEPTH-1-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[missing-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[missing-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[name-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[name-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[index-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[index-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[type-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[type-6]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[known_value-5]",
+        "tests.test_constant_user_function_evidence::test_default_evidence_must_match_the_actual_parameter[known_value-6]",
+        "tests.test_constant_user_function_evidence::test_transitive_identity_cycle_cannot_reuse_an_unrelated_literal[5]",
+        "tests.test_constant_user_function_evidence::test_transitive_identity_cycle_cannot_reuse_an_unrelated_literal[6]",
+        "tests.test_constant_user_function_evidence::test_old_unqualified_function_value_folding_is_unchanged[2]",
+        "tests.test_constant_user_function_evidence::test_old_unqualified_function_value_folding_is_unchanged[3]",
+        "tests.test_constant_user_function_evidence::test_old_unqualified_function_value_folding_is_unchanged[4]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:(-5%2)-5]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:(-5%2)-6]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:int(bool(1))-5]",
+        "tests.test_constant_user_function_evidence::test_unselected_unsupported_expression_is_not_laundered[true?3:int(bool(1))-6]",
+        "tests.test_constant_user_function_evidence::test_bool_result_uses_exact_boolean_operations[5]",
+        "tests.test_constant_user_function_evidence::test_bool_result_uses_exact_boolean_operations[6]",
+        "tests.test_constant_user_function_evidence::test_cached_identity_keeps_distinct_tagged_argument_values[5]",
+        "tests.test_constant_user_function_evidence::test_cached_identity_keeps_distinct_tagged_argument_values[6]",
+        "tests.test_constant_user_function_evidence::test_many_nested_operations_share_the_default_root_work_budget",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=-5\\n    n/2--2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=-5\\n    n/2--2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n-5.0-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    n-5.0-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>true?5:0.5-5.0-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>true?5:0.5-5.0-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    float m=n\\n    m/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>\\n    float n=5\\n    float m=n\\n    m/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[inner()=>\\n    float n=5\\n    n\\nvalue()=>inner()/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[inner()=>\\n    float n=5\\n    n\\nvalue()=>inner()/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.abs(true?5:0.5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.abs(true?5:0.5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>-(true?5:0.5)/2--2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>-(true?5:0.5)/2--2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:(true?5:2.5))/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>(false?0.5:(true?5:2.5))/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>((true?5:0.5)+1)/2-3.0-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>((true?5:0.5)+1)/2-3.0-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>float(5)/2-2.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>float(5)/2-2.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.round(2.5,0)/2-1.5-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_admitted_float_boundaries_promote_before_parent_operations[value()=>math.round(2.5,0)/2-1.5-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>5/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>5/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>\\n    float n=5\\n    int(n)/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>\\n    float n=5\\n    int(n)/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>(true?5:1)/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value()=>(true?5:1)/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value(float unused=0.5)=>5/2-5-2]",
+        "tests.test_constant_user_function_numeric_coercion::test_float_coercion_does_not_erase_explicit_int_or_version_rules[value(float unused=0.5)=>5/2-6-2.5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(float n=5)=>n/2-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(float n=5)=>n/2-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(simple float n=5)=>n/2-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value(simple float n=5)=>n/2-6]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value()=>(true?5.0:na)/2-5]",
+        "tests.test_constant_user_function_numeric_coercion::test_promotion_does_not_authorize_nonconst_or_missing_values[value()=>(true?5.0:na)/2-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1)-1-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1)-1-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1,3)-1-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1,3)-1-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(2,1,3)-3-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(2,1,3)-3-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(-2.5,-1.25,-3.0)--1.25-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.max(-2.5,-1.25,-3.0)--1.25-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.min(1.25,2.5),1)-1.3-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.min(1.25,2.5),1)-1.3-6]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.max(-1.25,-2.5),1)--1.2-5]",
+        "tests.test_constant_variadic_binding::test_positional_variadic_values_and_complete_bundle_facts[math.round(math.max(-1.25,-2.5),1)--1.2-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-min-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-min-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-max-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[\"bad\"-max-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-min-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-min-6]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-max-5]",
+        "tests.test_constant_variadic_binding::test_every_extra_argument_receives_numeric_type_validation[true-max-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[null_parameter-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[null_parameter-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[scalar_binding-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[scalar_binding-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[first_scalar_binding-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[first_scalar_binding-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[missing_expected_type-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[missing_expected_type-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[forged_named-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[forged_named-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[duplicate_source-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[duplicate_source-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[source_order-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[source_order-6]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[ghost_parameter-5]",
+        "tests.test_constant_variadic_binding::test_variadic_folding_still_rejects_incomplete_or_forged_mappings[ghost_parameter-6]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[1]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[2]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[3]",
+        "tests.test_constant_variadic_binding::test_old_catalog_variadic_metadata_is_not_backported[4]",
+        "tests.test_constant_variadic_binding::test_numbered_named_argument_support_is_not_invented[5]",
+        "tests.test_constant_variadic_binding::test_numbered_named_argument_support_is_not_invented[6]"
+      ]
+    }
+  ],
+  "promotion_reproductions": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-promotion-compiled-independent-revised-py311.json",
+      "raw_sha256": "b6be18383e35fc4c93e316362c8ba02d88935b4ae9fa9d9d6b44a4b8ec3fc431",
+      "lf_sha256": "b6be18383e35fc4c93e316362c8ba02d88935b4ae9fa9d9d6b44a4b8ec3fc431",
+      "python": "311",
+      "all_eight_scalar_values_and_types_correct": true,
+      "six_nonvariadic_compiled_defaults_correct": true,
+      "two_separate_compiler_variadic_rejections_unchanged": true
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-promotion-compiled-independent-revised-py313.json",
+      "raw_sha256": "b6be18383e35fc4c93e316362c8ba02d88935b4ae9fa9d9d6b44a4b8ec3fc431",
+      "lf_sha256": "b6be18383e35fc4c93e316362c8ba02d88935b4ae9fa9d9d6b44a4b8ec3fc431",
+      "python": "313",
+      "all_eight_scalar_values_and_types_correct": true,
+      "six_nonvariadic_compiled_defaults_correct": true,
+      "two_separate_compiler_variadic_rejections_unchanged": true
+    }
+  ],
+  "closed_finding": {
+    "id": "UDF_CONSTANT_FLOAT_PROMOTION",
+    "priority": 1,
+    "status": "CLOSED_IN_CDD7",
+    "original_receipt": {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-promotion-independent-finding.json",
+      "raw_sha256": "afd912b73602630108c3865e31d5df0e4adc85e8f07d8d0399852902fcaf3eed",
+      "lf_sha256": "afd912b73602630108c3865e31d5df0e4adc85e8f07d8d0399852902fcaf3eed"
+    }
+  },
+  "open_finding": {
+    "id": "UDF_V6_FLOAT_COMPARISON_PRECISION",
+    "priority": 1,
+    "title": "New UDF constant admission applies Python comparisons instead of Pine v6 nine-decimal float comparison rules",
+    "source": "//@version=6\nindicator(\"Comparison\")\nvalue()=>1.0000000001==1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+    "expected_default": true,
+    "actual_default": false,
+    "authority": "https://www.tradingview.com/pine-script-docs/language/type-system/#float",
+    "authority_rule": "The v6 documentation requires comparison operators to round floating operands to nine fractional digits. Literal examples avoid halfway ties, so their manual expectations do not depend on an unresolved tie rule.",
+    "scope": "Confirmed v6 only. No v5 backport is asserted from modern documentation.",
+    "lineage": "Baseline without UDF4 rejects static metadata. Both original UDF4 and corrected UDF5 newly compile six incorrect boolean defaults. This is separate from the corrected int-to-float promotion defect.",
+    "suggested_owner_action": "Use a reviewed version-exact comparison rule through the existing producer numeric owner, or withhold constant evidence for the unreviewed floating comparison surface. Preserve integer and ordinary controls and original failure evidence.",
+    "reproductions": [
+      {
+        "python": "311",
+        "lineage": {
+          "baseline": {
+            "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-comparison-independent-baseline-py311.json",
+            "raw_sha256": "99f288b29c156145df6c6cfa2300df5056d47da0ccb56442d12b803a97a82e1b",
+            "lf_sha256": "99f288b29c156145df6c6cfa2300df5056d47da0ccb56442d12b803a97a82e1b",
+            "wrong_compiled_defaults": 0,
+            "compiled_controls_correct": 0,
+            "cases": [
+              {
+                "case": "equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001==1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "not_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001!=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "greater",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "less_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001<=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "less",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999<1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "greater_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999>=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "ordinary_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000011>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "integer_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1000000001>1000000000\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              }
+            ]
+          },
+          "original": {
+            "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-comparison-independent-original-py311.json",
+            "raw_sha256": "ded81f522349cc91e3f55d32964770e725bb339d83021db2153ef43580279a75",
+            "lf_sha256": "ded81f522349cc91e3f55d32964770e725bb339d83021db2153ef43580279a75",
+            "wrong_compiled_defaults": 6,
+            "compiled_controls_correct": 2,
+            "cases": [
+              {
+                "case": "equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001==1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ba2a616a9a5720147ce827b5fa7e25ddf5b81008a75f79158426ccf5af825810",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "not_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001!=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:17ba96d84f84970dfcef358f73f0e2af6777d2bac0c756182b5e4c14f15f5106",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:89ab42d4eb33c4ce7d3203d7b6ee0297d4b36efb7a77e6aa495018ed65077732",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001<=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:794f16e52d0daacdcd18fc3e4283c408e9cb4bc6a05a797f7270b2a0a54cb6e9",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999<1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2b2140bff838fc7f6821b77006978638c884b6d32d83df335dfd8a576a027f8a",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999>=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ca2ef9ebec5bc9ca94df0d4a4e2a708d4166748707456e86939f8533474bef52",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "ordinary_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000011>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2e1132bd11a9aaa7a6a3ea0c2e358f22cdae09cb56a49fbc1bf4328bf387e620",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "integer_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1000000001>1000000000\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ae778ea35cad7ff7cab7713124c05b8f2f4d446bf0100a293fca6e40e98073ed",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 82,
+                        "end_offset": 101,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "coercion": {
+            "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-comparison-independent-coercion-py311.json",
+            "raw_sha256": "e3784487550227d2f84d9800a69daf2bf4ca1d047518fb55844f9114e4e3a199",
+            "lf_sha256": "e3784487550227d2f84d9800a69daf2bf4ca1d047518fb55844f9114e4e3a199",
+            "wrong_compiled_defaults": 6,
+            "compiled_controls_correct": 2,
+            "cases": [
+              {
+                "case": "equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001==1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ba2a616a9a5720147ce827b5fa7e25ddf5b81008a75f79158426ccf5af825810",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "not_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001!=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:17ba96d84f84970dfcef358f73f0e2af6777d2bac0c756182b5e4c14f15f5106",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:89ab42d4eb33c4ce7d3203d7b6ee0297d4b36efb7a77e6aa495018ed65077732",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001<=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:794f16e52d0daacdcd18fc3e4283c408e9cb4bc6a05a797f7270b2a0a54cb6e9",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999<1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2b2140bff838fc7f6821b77006978638c884b6d32d83df335dfd8a576a027f8a",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999>=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ca2ef9ebec5bc9ca94df0d4a4e2a708d4166748707456e86939f8533474bef52",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "ordinary_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000011>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2e1132bd11a9aaa7a6a3ea0c2e358f22cdae09cb56a49fbc1bf4328bf387e620",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "integer_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1000000001>1000000000\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ae778ea35cad7ff7cab7713124c05b8f2f4d446bf0100a293fca6e40e98073ed",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 82,
+                        "end_offset": 101,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "python": "313",
+        "lineage": {
+          "baseline": {
+            "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-comparison-independent-baseline-py313.json",
+            "raw_sha256": "99f288b29c156145df6c6cfa2300df5056d47da0ccb56442d12b803a97a82e1b",
+            "lf_sha256": "99f288b29c156145df6c6cfa2300df5056d47da0ccb56442d12b803a97a82e1b",
+            "wrong_compiled_defaults": 0,
+            "compiled_controls_correct": 0,
+            "cases": [
+              {
+                "case": "equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001==1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "not_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001!=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "greater",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "less_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001<=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "less",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999<1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "greater_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999>=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "ordinary_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000011>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              },
+              {
+                "case": "integer_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1000000001>1000000000\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": null,
+                "actual_type": "NoneType",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": false,
+                "error": "A2P_STATIC_METADATA: metadata expression has no admitted constant value"
+              }
+            ]
+          },
+          "original": {
+            "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-comparison-independent-original-py313.json",
+            "raw_sha256": "ded81f522349cc91e3f55d32964770e725bb339d83021db2153ef43580279a75",
+            "lf_sha256": "ded81f522349cc91e3f55d32964770e725bb339d83021db2153ef43580279a75",
+            "wrong_compiled_defaults": 6,
+            "compiled_controls_correct": 2,
+            "cases": [
+              {
+                "case": "equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001==1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ba2a616a9a5720147ce827b5fa7e25ddf5b81008a75f79158426ccf5af825810",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "not_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001!=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:17ba96d84f84970dfcef358f73f0e2af6777d2bac0c756182b5e4c14f15f5106",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:89ab42d4eb33c4ce7d3203d7b6ee0297d4b36efb7a77e6aa495018ed65077732",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001<=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:794f16e52d0daacdcd18fc3e4283c408e9cb4bc6a05a797f7270b2a0a54cb6e9",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999<1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2b2140bff838fc7f6821b77006978638c884b6d32d83df335dfd8a576a027f8a",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999>=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ca2ef9ebec5bc9ca94df0d4a4e2a708d4166748707456e86939f8533474bef52",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "ordinary_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000011>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2e1132bd11a9aaa7a6a3ea0c2e358f22cdae09cb56a49fbc1bf4328bf387e620",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "integer_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1000000001>1000000000\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ae778ea35cad7ff7cab7713124c05b8f2f4d446bf0100a293fca6e40e98073ed",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 82,
+                        "end_offset": 101,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "coercion": {
+            "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-comparison-independent-coercion-py313.json",
+            "raw_sha256": "e3784487550227d2f84d9800a69daf2bf4ca1d047518fb55844f9114e4e3a199",
+            "lf_sha256": "e3784487550227d2f84d9800a69daf2bf4ca1d047518fb55844f9114e4e3a199",
+            "wrong_compiled_defaults": 6,
+            "compiled_controls_correct": 2,
+            "cases": [
+              {
+                "case": "equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001==1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ba2a616a9a5720147ce827b5fa7e25ddf5b81008a75f79158426ccf5af825810",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "not_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001!=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:17ba96d84f84970dfcef358f73f0e2af6777d2bac0c756182b5e4c14f15f5106",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:89ab42d4eb33c4ce7d3203d7b6ee0297d4b36efb7a77e6aa495018ed65077732",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000001<=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:794f16e52d0daacdcd18fc3e4283c408e9cb4bc6a05a797f7270b2a0a54cb6e9",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "less",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999<1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": false,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2b2140bff838fc7f6821b77006978638c884b6d32d83df335dfd8a576a027f8a",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "greater_equal",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>0.9999999999>=1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": false,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ca2ef9ebec5bc9ca94df0d4a4e2a708d4166748707456e86939f8533474bef52",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": false,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 78,
+                        "end_offset": 97,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "ordinary_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1.0000000011>1.0\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:2e1132bd11a9aaa7a6a3ea0c2e358f22cdae09cb56a49fbc1bf4328bf387e620",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 77,
+                        "end_offset": 96,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "case": "integer_control",
+                "source": "//@version=6\nindicator(\"Independent comparison\")\nvalue()=>1000000001>1000000000\nx=input.bool(value())\nplot(x?1:0)\n",
+                "manual_expected": true,
+                "accepted": true,
+                "actual": true,
+                "actual_type": "bool",
+                "resolved_type": {
+                  "base": "bool",
+                  "qualifier": "const",
+                  "nullable": false
+                },
+                "compiled": true,
+                "metadata": {
+                  "schema_id": "ast2python.script_metadata.v1",
+                  "pine_version": 6,
+                  "source_hash": "sha256:ae778ea35cad7ff7cab7713124c05b8f2f4d446bf0100a293fca6e40e98073ed",
+                  "declaration": {
+                    "script_type": "indicator",
+                    "arguments": {
+                      "title": "Independent comparison"
+                    }
+                  },
+                  "inputs": {
+                    "input:n00000011": {
+                      "input_id": "input:n00000011",
+                      "kind": "bool",
+                      "default": true,
+                      "alias": "x",
+                      "source_span": {
+                        "start_offset": 82,
+                        "end_offset": 101,
+                        "start_line": 4,
+                        "start_col": 3,
+                        "end_line": 4,
+                        "end_col": 22
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "scope_exclusions": [
+    "Generic non-UDF promotion next wave",
+    "Remaining eight parameter/global UDF cases",
+    "Compiler/runtime variadic repair",
+    "Full Linux or Stage2 acceptance"
+  ],
+  "production_or_tests_modified_by_reviewer": false,
+  "scripts": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\prepare_constant_udf_coercion_independent.py",
+      "raw_sha256": "4a1d122bb88fff709c03b31371a813c4c825c29ca1ba3f213aaadb8024c72ad2",
+      "lf_sha256": "4a1d122bb88fff709c03b31371a813c4c825c29ca1ba3f213aaadb8024c72ad2"
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\run_constant_udf_coercion_independent.py",
+      "raw_sha256": "4865e2a19a3cead696ba8c4975621649699034e6bd7347a84db921a9e02cf43e",
+      "lf_sha256": "4865e2a19a3cead696ba8c4975621649699034e6bd7347a84db921a9e02cf43e"
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\constant-udf-comparison-independent-probe.py",
+      "raw_sha256": "13c79a390f0a4a013dc9a394eba32c6c447478fec9104fdf88874d619205045a",
+      "lf_sha256": "13c79a390f0a4a013dc9a394eba32c6c447478fec9104fdf88874d619205045a"
+    }
+  ],
+  "digest_newlines": "LF",
+  "script_sha256": "574f83abdd4f626d1241862344f6094af5584ecf929ac26cf075950a19a07442"
+}

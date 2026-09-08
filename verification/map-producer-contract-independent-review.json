@@ -1,0 +1,248 @@
+{
+  "baseline": "7170736f2730316407f0d896447b08e76f5c9c08",
+  "bundle": {
+    "path": ".runtime/evidence/map-producer-contract-frozen-bundle.json",
+    "sha256": "fc29a6ff7c59ebdb12b74f96429075e1a56d49b3bf327d4d43f4c43b1583033a"
+  },
+  "catalog": {
+    "all_other_semantic_definitions_and_deltas_unchanged": true,
+    "migration_report_only_two_derived_pack_hashes_changed": true,
+    "packs": {
+      "1": {
+        "raw_bytes_unchanged": true
+      },
+      "2": {
+        "raw_bytes_unchanged": true
+      },
+      "3": {
+        "raw_bytes_unchanged": true
+      },
+      "4": {
+        "raw_bytes_unchanged": true
+      },
+      "5": {
+        "all_symbol_ids_and_rules_preserved": true,
+        "catalog_hash": "sha256:b806aa5f8ee424e4fab159b2424b90e69c09fff4a67c487ad7506db518f2d430",
+        "content_hash": "sha256:b13bedc65510d4889c491103f35074a40349a5988bd0517ec5c8458517a3b78b",
+        "exact_literal_four_definition_delta": true
+      },
+      "6": {
+        "all_symbol_ids_and_rules_preserved": true,
+        "catalog_hash": "sha256:5656170636b074db2f7f3fca930b588a18fd3bf07b6e80cabb5f6a816f34e377",
+        "content_hash": "sha256:1086a2d9a4f752372bfe872666e7834ae732f968ec0706b1914e3b8fbc6abfd7",
+        "exact_literal_four_definition_delta": true
+      }
+    },
+    "semantic_content_hashes_distinct_from_stable_catalog_symbol_ids": true,
+    "semantic_records_rekeyed_by_content": {
+      "sha256:4fa1001270f8f4d0894e37c3a0b1a7c11c1870643fe26b6a8b3a3dea209630f3": "sha256:688d08cf183fc3a2e9d476f07aa1360ac1e0a58da9190d1877b062fa525e0043",
+      "sha256:8dff490ba4ba85647773e3e511fefb78a8d194d5d32fe78b1272c7dc2083cc71": "sha256:31f8f5bd0b47cd8093f80eb9081165dbe2a828a3e841b9ea199c28ffb9156f45",
+      "sha256:a3988f52a3d47e44ca1f3835d2b32d4dc7f7687cc0602b21dddb6ec1f545f7f4": "sha256:65818ce796b364cd775ae3944f9d07fa123c8ba9fabab134c1b1bfeb32d5a14e",
+      "sha256:de1c68a658913dbe8bc11d409a1e558f6c25c98c17e85457fd3d708e90a20d4a": "sha256:6c1b57d451d2337d6d2b5b102f74eb6aff7a95db0e80e5b1cf123097de78202c"
+    }
+  },
+  "files": [
+    {
+      "lf_sha256": "14a1b55908dc28e332fcd9814513376cdc5f91d9f7037d9f9f5460b9cda30133",
+      "path": "catalog_reports/migration_report.json",
+      "raw_sha256": "14a1b55908dc28e332fcd9814513376cdc5f91d9f7037d9f9f5460b9cda30133"
+    },
+    {
+      "lf_sha256": "8e76d7ca337048a9e6541d1437b26e22089739c6bb3c7c4ee5de5a85c4f84ae3",
+      "path": "catalog_source/deltas/v5.jsonl",
+      "raw_sha256": "8e76d7ca337048a9e6541d1437b26e22089739c6bb3c7c4ee5de5a85c4f84ae3"
+    },
+    {
+      "lf_sha256": "780694d7cebc4e34377a5bd78b8fa5d20832354303aee89202be0f31ebb1df1f",
+      "path": "catalog_source/semantics.jsonl",
+      "raw_sha256": "780694d7cebc4e34377a5bd78b8fa5d20832354303aee89202be0f31ebb1df1f"
+    },
+    {
+      "lf_sha256": "ffb8278a1bc5c28b16066601a747a28c11a01e589d881412a368de990626b5e1",
+      "path": "pine2ast/catalog_data/packs/pine_v5.pack.json",
+      "raw_sha256": "ffb8278a1bc5c28b16066601a747a28c11a01e589d881412a368de990626b5e1"
+    },
+    {
+      "lf_sha256": "409bfb3e2694dee6f4bf4e69fa99c487db79141ff1d7de1769255d3364c74916",
+      "path": "pine2ast/catalog_data/packs/pine_v6.pack.json",
+      "raw_sha256": "409bfb3e2694dee6f4bf4e69fa99c487db79141ff1d7de1769255d3364c74916"
+    },
+    {
+      "lf_sha256": "31053344f9254cc17ddf442153b44017205a8a215a618b5a95d14dbe7a4c334f",
+      "path": "pine2ast/semantic/collection_signatures.py",
+      "raw_sha256": "31053344f9254cc17ddf442153b44017205a8a215a618b5a95d14dbe7a4c334f"
+    },
+    {
+      "lf_sha256": "22460eb786dd4c0ceb76ab895e860c2eeb0c443777a55d20750c83e8332f3f13",
+      "path": "pine2ast/semantic/signatures.py",
+      "raw_sha256": "22460eb786dd4c0ceb76ab895e860c2eeb0c443777a55d20750c83e8332f3f13"
+    },
+    {
+      "lf_sha256": "f0887af8537252a0e3edf937025ae612b5ee86c333a39efb44b38192f62653fe",
+      "path": "tools/catalog/build_catalog.py",
+      "raw_sha256": "f0887af8537252a0e3edf937025ae612b5ee86c333a39efb44b38192f62653fe"
+    },
+    {
+      "lf_sha256": "2b0f7341987422be867f1b0d57c7f4c4c8cbe6d9a572071c4c9a51ede519935f",
+      "path": "tests/test_map_primary_contract.py",
+      "raw_sha256": "2b0f7341987422be867f1b0d57c7f4c4c8cbe6d9a572071c4c9a51ede519935f"
+    },
+    {
+      "lf_sha256": "979afc478bc9e65676a08dd59bd99d1aef1cacb147568218ffca69c482b27b5d",
+      "path": "docs/STAGE2_MAP_PRIMARY_CONTRACTS.md",
+      "raw_sha256": "979afc478bc9e65676a08dd59bd99d1aef1cacb147568218ffca69c482b27b5d"
+    }
+  ],
+  "full_stage2_accepted": false,
+  "paired_generated_owner_evidence": {
+    "manual": {
+      "path": ".runtime/evidence/map-operations-manual-expected.json",
+      "sha256": "3afd6e3a0a1a0abe972c40190bff3dd2caf566aa5e7a7a355aa9d2acd5bb9ffe"
+    },
+    "parsed_typed_and_canonical_reports_equal": true,
+    "raw_reports_are_not_byte_identical": true,
+    "reports": {
+      "311": {
+        "all_literal_expected_events_trials_and_restore_coordinates_rechecked": true,
+        "canonical_json_sha256": "f8cd62b148faf0eec60667958cd432a28ecf4c4a651e3b9e10bfc72dfe91aaa8",
+        "identity_file_count": {
+          "ast2python": 111,
+          "pine2ast": 265,
+          "pinelib": 129
+        },
+        "path": ".runtime/evidence/map-generated-revised-identityfix-py311.json",
+        "records": 896,
+        "sha256": "6724af648fb6b233881ca61c437f42c38dad33f201bdeb528b8eeeb9de7fe4f6",
+        "unique_sources": 112
+      },
+      "313": {
+        "all_literal_expected_events_trials_and_restore_coordinates_rechecked": true,
+        "canonical_json_sha256": "f8cd62b148faf0eec60667958cd432a28ecf4c4a651e3b9e10bfc72dfe91aaa8",
+        "identity_file_count": {
+          "ast2python": 111,
+          "pine2ast": 265,
+          "pinelib": 129
+        },
+        "path": ".runtime/evidence/map-generated-revised-identityfix-py313.json",
+        "records": 896,
+        "sha256": "a7085e15db67a50cfe8e961242e1be7690be87eb24b9795589948135693a0819",
+        "unique_sources": 112
+      }
+    },
+    "reviewer_execution_claim": "Reviewer independently ran 151 focused producer/coverage cases with one unchanged-source temp-path retry per Python. The 896 generated lifecycle records per Python were independently inspected against original literal expected tables and recorded source-file identities; they were not rerun by this reviewer."
+  },
+  "residuals": [
+    "Raw owner full results retain 9 failures/1 POSIX collection error, including the separately corrected stale map.put expectation; focused retry is not a new full-green claim.",
+    "Reviewer original focused runs retain Windows default-temp ACL errors; explicit fresh workspace temp retries close only that setup error with identical source.",
+    "Source digest identities in local generated reports are not published Git pins.",
+    "Neighbor map key metadata, host assignment/report publication and coordinated Linux gates remain separate."
+  ],
+  "schema_id": "openpine.independent_source_review.v1",
+  "source_integrity": {
+    "all_baseline_git_blobs_checked": 380,
+    "functional_source_files": 3,
+    "generated_catalog_files": 5,
+    "new_doc_files": 1,
+    "new_test_files": 1,
+    "old_tests_unchanged_in_producer_bundle": true,
+    "rules_symbol_ids_RC5_source_inputs_and_old_version_packs_preserved": true,
+    "separate_single_fixture_review": {
+      "path": ".runtime/evidence/map-return-fixture-independent-review.json",
+      "sha256": "d1a4901a27f6a3e4944c142a5905fb0b6f31142d26f3bdd4db5b6ed1ca5b0667"
+    }
+  },
+  "source_review": [
+    "Collection owner returns V for map.put and names put_all source id2; no new generic type owner.",
+    "Existing SignatureResolver specializes using the receiver found through exact first parameter name or first positional argument; source argument order no longer selects a nonreceiver named value. Existing argument validation remains in force.",
+    "Catalog enrichment changes only four existing modern function/method definitions; generic K/V and id2 match the versioned primary authority."
+  ],
+  "status": "BOUNDED_MAP_PRODUCER_CONTRACT_SOURCE_AND_LOCAL_CHECKS_PASS_JOINT_PENDING",
+  "tests": {
+    "311": {
+      "existing_concat_named_cases": 84,
+      "independent_identical_source_tmp_retry": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 1,
+        "path": ".runtime/evidence/map-producer-independent-tmp-retry-py311.xml",
+        "sha256": "14115beb05c0d3f29a2efeefdcfe54cc14e78e730dc9695012dfb01333914b37",
+        "skips": 0,
+        "total": 1
+      },
+      "independent_initial": {
+        "errors": 1,
+        "failures": 0,
+        "passed": 150,
+        "path": ".runtime/evidence/map-producer-independent-py311.xml",
+        "sha256": "83f0b7680d9dddbc762c8d296af74116177822c548b6f6a3dfa66c07522d9ed1",
+        "skips": 0,
+        "total": 151
+      },
+      "independent_resolved_cases": 151,
+      "new_map_cases": 58,
+      "old_coverage_cases": 9,
+      "owner_fixture_retry": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 9,
+        "path": ".runtime/evidence/map-return-fixture-retry311.xml",
+        "sha256": "74d46e1d0da69623f876406dacb4c37e8012431865f522497d03d00241825261",
+        "skips": 0,
+        "total": 9
+      },
+      "owner_old_nodeids_retained": 1821,
+      "owner_raw_full_before_single_fixture_correction": {
+        "errors": 1,
+        "failures": 9,
+        "passed": 1869,
+        "path": ".runtime/evidence/map-producer-full311.xml",
+        "sha256": "c2e0968cc32cca63a55ebeea9eb2d1a80709bc568fde8a7a5c28c8239b5d73c8",
+        "skips": 0,
+        "total": 1879
+      }
+    },
+    "313": {
+      "existing_concat_named_cases": 84,
+      "independent_identical_source_tmp_retry": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 1,
+        "path": ".runtime/evidence/map-producer-independent-tmp-retry-py313.xml",
+        "sha256": "6c0579679059a0b71071ff2c48809d9bc266ddb4dce67136502333b9c8c467b9",
+        "skips": 0,
+        "total": 1
+      },
+      "independent_initial": {
+        "errors": 1,
+        "failures": 0,
+        "passed": 150,
+        "path": ".runtime/evidence/map-producer-independent-py313.xml",
+        "sha256": "23e6c74939e9f7774a6f6bafb3ba67bd5c0ca43ee246972cdc9f146c4ab32b55",
+        "skips": 0,
+        "total": 151
+      },
+      "independent_resolved_cases": 151,
+      "new_map_cases": 58,
+      "old_coverage_cases": 9,
+      "owner_fixture_retry": {
+        "errors": 0,
+        "failures": 0,
+        "passed": 9,
+        "path": ".runtime/evidence/map-return-fixture-retry313.xml",
+        "sha256": "dd5e5ec5358488637392524bc480e258c269e2910f9308f73ce74e68aaa675f4",
+        "skips": 0,
+        "total": 9
+      },
+      "owner_old_nodeids_retained": 1821,
+      "owner_raw_full_before_single_fixture_correction": {
+        "errors": 1,
+        "failures": 9,
+        "passed": 1869,
+        "path": ".runtime/evidence/map-producer-full313.xml",
+        "sha256": "e1572d13a63b995a475b6153cd2df737cfeaf8a0fbdf0eb47586630518242ddf",
+        "skips": 0,
+        "total": 1879
+      }
+    }
+  }
+}

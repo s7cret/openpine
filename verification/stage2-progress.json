@@ -123,7 +123,26 @@
     "verification/concat-variadic-final-metadata-independent-review.json",
     "verification/concat-variadic-joint-receipt.json",
     "docs/RC6_STAGE2_CONCAT_VARIADIC_PUBLICATION.md",
-    "docs/RC6_STAGE2_ARRAY_CONCAT_EXPECTED.md"
+    "docs/RC6_STAGE2_ARRAY_CONCAT_EXPECTED.md",
+    "verification/constant-udf-coercion-independent-review.json",
+    "verification/constant-modern-promotion-independent-review.json",
+    "verification/constant-comparison-independent-review.json",
+    "verification/constant-child-types-independent-review.json",
+    "verification/ordinary-method-a1-independent-review.json",
+    "verification/map-producer-contract-independent-review.json",
+    "verification/map-return-fixture-independent-review.json",
+    "verification/float-comparison-independent-review.json",
+    "verification/map-contract-runtime-independent-review.json",
+    "verification/string-context-root-independent-review.json",
+    "verification/string-primary-companion-independent-review.json",
+    "verification/string-v5-case-authority-independent-review.json",
+    "verification/array-operations-host-independent-review.json",
+    "verification/string-operations-host-independent-review.json",
+    "verification/semantic-wave-source-publication-review.json",
+    "verification/semantic-wave-composed-local-execution-review.json",
+    "verification/concat-variadic-cleanup-final-execution-review.json",
+    "verification/map-operations-host-independent-review.json",
+    "verification/constant-metadata-host-independent-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -501,6 +520,156 @@
     "verified_tree": "7bd4473f07803ed445dc51371dd2fe38f5a85370",
     "integration": "ba4e65789be0f612c6eb28a39cb1eb4b53e3bac2",
     "receipt": "verification/concat-variadic-joint-receipt.json",
-    "cleanup": "pending"
+    "cleanup": "archived_and_deleted_verified",
+    "cleanup_status": "complete",
+    "cleanup_receipt": "verification/concat-variadic-cleanup-final-execution-review.json"
+  },
+  "method_context_contracts_block": {
+    "status": "independently_reviewed_source_pending_inventory_and_joint_linux",
+    "scope": [
+      "contextual_constant_values_and_child_types",
+      "ordinary_method_candidate_selection",
+      "versioned_float_comparison",
+      "modern_string_values_and_primary_signatures",
+      "map_put_and_put_all_primary_contracts",
+      "array_string_map_independent_host_corpora"
+    ],
+    "expected_baseline_tests": 10683,
+    "expected_new_tests": 6062,
+    "expected_candidate_tests": 16745,
+    "new_tests": {
+      "pine2ast": 608,
+      "pinelib": 1510,
+      "openpine": 3944
+    },
+    "host_tests": {
+      "arrays": 1925,
+      "strings": 848,
+      "maps": 1130,
+      "constant_metadata": 41
+    },
+    "receipt_identities": {
+      "constant-udf-coercion-independent-review.json": {
+        "raw_artifact_sha256": "5887024d9cd538a4ae12170cad5cc4fc7fd502c5d07ade5a4ce78bc84d24f310",
+        "published_lf_sha256": "5887024d9cd538a4ae12170cad5cc4fc7fd502c5d07ade5a4ce78bc84d24f310"
+      },
+      "constant-modern-promotion-independent-review.json": {
+        "raw_artifact_sha256": "fe4e851819b64f7720f2eb1dec684cd9f79b60155c320fc8c8207d961335204a",
+        "published_lf_sha256": "fe4e851819b64f7720f2eb1dec684cd9f79b60155c320fc8c8207d961335204a"
+      },
+      "constant-comparison-independent-review.json": {
+        "raw_artifact_sha256": "38cb254e727b9d6e2e9b5dffed66101f2ce0ed5411499bbe4dca51dcf0ba7a91",
+        "published_lf_sha256": "38cb254e727b9d6e2e9b5dffed66101f2ce0ed5411499bbe4dca51dcf0ba7a91"
+      },
+      "constant-child-types-independent-review.json": {
+        "raw_artifact_sha256": "2104383db63b43661d995ccf5a4848815abd22d7f1054e78fe21f96b05c40afb",
+        "published_lf_sha256": "2104383db63b43661d995ccf5a4848815abd22d7f1054e78fe21f96b05c40afb"
+      },
+      "ordinary-method-a1-independent-review.json": {
+        "raw_artifact_sha256": "62dd26a3391989dff3263a1410bc12332fb51c2a78d3265edd209b01be9ebf5d",
+        "published_lf_sha256": "62dd26a3391989dff3263a1410bc12332fb51c2a78d3265edd209b01be9ebf5d"
+      },
+      "map-producer-contract-independent-review.json": {
+        "raw_artifact_sha256": "8ee5ea7f3101d8425bab1bfa55b24c1ade248394a3bb71e41aeda62b6118bb74",
+        "published_lf_sha256": "8ee5ea7f3101d8425bab1bfa55b24c1ade248394a3bb71e41aeda62b6118bb74"
+      },
+      "map-return-fixture-independent-review.json": {
+        "raw_artifact_sha256": "d1a4901a27f6a3e4944c142a5905fb0b6f31142d26f3bdd4db5b6ed1ca5b0667",
+        "published_lf_sha256": "d1a4901a27f6a3e4944c142a5905fb0b6f31142d26f3bdd4db5b6ed1ca5b0667"
+      },
+      "float-comparison-independent-review.json": {
+        "raw_artifact_sha256": "69189c57e09c339faca6cf7cf9493f9fc418e6c3c4367cf3720d5022cd8a7303",
+        "published_lf_sha256": "69189c57e09c339faca6cf7cf9493f9fc418e6c3c4367cf3720d5022cd8a7303"
+      },
+      "map-contract-runtime-independent-review.json": {
+        "raw_artifact_sha256": "f9291d6f658acbea51c9a785e4acd837d1b7557ce605a86f652074c7823b56c9",
+        "published_lf_sha256": "f9291d6f658acbea51c9a785e4acd837d1b7557ce605a86f652074c7823b56c9"
+      },
+      "string-context-root-independent-review.json": {
+        "raw_artifact_sha256": "b183cfb8ed0423ef8a1e680879e5f013d8a8cdfb35facaf39029256a9472ce77",
+        "published_lf_sha256": "b183cfb8ed0423ef8a1e680879e5f013d8a8cdfb35facaf39029256a9472ce77"
+      },
+      "string-primary-companion-independent-review.json": {
+        "raw_artifact_sha256": "dedd001d343110b390c444bb0bacfe122f0c22e3051b9fe4cd46b7d359664feb",
+        "published_lf_sha256": "dedd001d343110b390c444bb0bacfe122f0c22e3051b9fe4cd46b7d359664feb"
+      },
+      "string-v5-case-authority-independent-review.json": {
+        "raw_artifact_sha256": "e21bf08a0f41341edcc47c8c5d70ab4c8ac9ef73150d3969c91d7aaea3010f6b",
+        "published_lf_sha256": "e21bf08a0f41341edcc47c8c5d70ab4c8ac9ef73150d3969c91d7aaea3010f6b"
+      },
+      "array-operations-host-independent-review.json": {
+        "raw_artifact_sha256": "2cd48e7837ad00bb9aefc8bf9f9629a5cabd5146fae3cb3e05ef1ee567a2c7f8",
+        "published_lf_sha256": "2cd48e7837ad00bb9aefc8bf9f9629a5cabd5146fae3cb3e05ef1ee567a2c7f8"
+      },
+      "string-operations-host-independent-review.json": {
+        "raw_artifact_sha256": "e8d905081716402bdde90d09df27544115f843f39a48a838416d27e21aade638",
+        "published_lf_sha256": "e8d905081716402bdde90d09df27544115f843f39a48a838416d27e21aade638"
+      },
+      "semantic-wave-source-publication-review.json": {
+        "raw_artifact_sha256": "d3110937691cb478a921a16d7b9ba6cc3c586b41b9b35f23ffc36a0dbc970289",
+        "published_lf_sha256": "d3110937691cb478a921a16d7b9ba6cc3c586b41b9b35f23ffc36a0dbc970289"
+      },
+      "semantic-wave-composed-local-execution-review.json": {
+        "raw_artifact_sha256": "72f398c6e62febaf8b8f27ee16c6553834c40435fc4e75c3e3ca9751dc5a35f4",
+        "published_lf_sha256": "72f398c6e62febaf8b8f27ee16c6553834c40435fc4e75c3e3ca9751dc5a35f4"
+      },
+      "concat-variadic-cleanup-final-execution-review.json": {
+        "raw_artifact_sha256": "b41635f3446a9b519b6eebbf5a020ed8721431e8632af84e206540e587c122bb",
+        "published_lf_sha256": "b41635f3446a9b519b6eebbf5a020ed8721431e8632af84e206540e587c122bb"
+      },
+      "map-operations-host-independent-review.json": {
+        "raw_artifact_sha256": "f5e7e74c8b0ea5a7660ccb45d8fefa2e158c25b83dab2c5a8c1528d9426b5865",
+        "published_lf_sha256": "f5e7e74c8b0ea5a7660ccb45d8fefa2e158c25b83dab2c5a8c1528d9426b5865"
+      },
+      "constant-metadata-host-independent-review.json": {
+        "raw_artifact_sha256": "562d127bfc6e7452662c08ac79fbeb77d22d97fd4de09a15c82a3ebeaa75f796",
+        "published_lf_sha256": "562d127bfc6e7452662c08ac79fbeb77d22d97fd4de09a15c82a3ebeaa75f796"
+      }
+    },
+    "execution_paths": 5,
+    "full_and_compact_controls": true,
+    "array": {
+      "cases": 191,
+      "observations_per_python": 1910,
+      "assigned_observations": 1870,
+      "unassigned_observations": 40,
+      "direct_tuples": 87
+    },
+    "string": {
+      "cases": 83,
+      "observations_per_python": 830,
+      "assigned_observations": 780,
+      "unassigned_observations": 50,
+      "numerical_matches": 800,
+      "numerical_differences": 30,
+      "direct_tuples": 10
+    },
+    "map": {
+      "cases": 112,
+      "observations_per_python": 1120,
+      "assigned_observations": 1120,
+      "direct_tuples": 32
+    },
+    "local_platform_limitations": [
+      "Native Windows resource/fcntl/os flags unavailable; exact joint Linux gate required",
+      "Prior concurrent package-build setup errors preserved with isolated serial retry"
+    ],
+    "remaining": [
+      "explicit_method_receiver_qualifiers",
+      "exported_library_methods",
+      "complete_versioned_catalog",
+      "complete_builtin_expected_matrix",
+      "v5_five_tonumber_authority_gaps",
+      "generic_map_get_contains_remove_key_contract",
+      "float_midpoint_constant_folding",
+      "finite_large_literal_lexer",
+      "constant_modulo_value_evidence"
+    ],
+    "excluded_next_waves": [
+      "matrix_operation_corpus",
+      "receiver_qualifier_A2"
+    ],
+    "full_stage2_accepted": false,
+    "tradingview_verified": false
   }
 }

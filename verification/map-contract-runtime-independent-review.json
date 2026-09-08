@@ -1,0 +1,194 @@
+{
+  "baseline": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+  "behavior_review": [
+    "map.put keeps prior V/na result and insertion order; metadata now types key K/value V and return V.",
+    "map.put_all(id,id2) aliases only exact callable source id2 to existing ABI from_handle, with category guard and existing receiver injection.",
+    "No ABI implementation, map mutation semantics, namespace availability, generic neighboring map rows or checkpoint revision change."
+  ],
+  "bundle": {
+    "path": ".runtime/evidence/map-contract-runtime-frozen-bundle.json",
+    "sha256": "3358c996e1018b0b1a05608658dcfaeaf6d77a52989b7b11e85c4f289b777be3"
+  },
+  "files": [
+    {
+      "classification": "functional",
+      "lf_sha256": "56f70a185ca85a7ada31c3768ee69da493825f6d4866792e132150848c5ea831",
+      "path": "pinelib/abi/manifest_v2_builder.py",
+      "raw_sha256": "56f70a185ca85a7ada31c3768ee69da493825f6d4866792e132150848c5ea831"
+    },
+    {
+      "classification": "functional",
+      "lf_sha256": "0fd26a2514c89c73e8fb8a980972849bf1f0d1a5b05e33837f9799fd4be769d8",
+      "path": "pinelib/abi/target_manifest.json",
+      "raw_sha256": "0fd26a2514c89c73e8fb8a980972849bf1f0d1a5b05e33837f9799fd4be769d8"
+    },
+    {
+      "classification": "new_test",
+      "lf_sha256": "ebdaa226d8382ee70ad069c884fda3883e0989a6e0aa07a74f6e0c39333a7091",
+      "path": "tests/test_map_target_contract.py",
+      "raw_sha256": "ebdaa226d8382ee70ad069c884fda3883e0989a6e0aa07a74f6e0c39333a7091"
+    },
+    {
+      "classification": "new_test",
+      "lf_sha256": "c3fdcfcff7c58e4e7b789d1e81e0309e1ef661df8fd2fc17859b4606cdf0b9d9",
+      "path": "tests/fixtures/map_target_metadata_expected.json",
+      "raw_sha256": "c3fdcfcff7c58e4e7b789d1e81e0309e1ef661df8fd2fc17859b4606cdf0b9d9"
+    },
+    {
+      "classification": "new_test",
+      "lf_sha256": "3afd6e3a0a1a0abe972c40190bff3dd2caf566aa5e7a7a355aa9d2acd5bb9ffe",
+      "path": "tests/fixtures/map_operations_manual_expected.json",
+      "raw_sha256": "3afd6e3a0a1a0abe972c40190bff3dd2caf566aa5e7a7a355aa9d2acd5bb9ffe"
+    },
+    {
+      "classification": "documentation",
+      "lf_sha256": "d230d7d13af15b6b8294dea114fd81c56efb2ee041d75b082020f0f1f230cf07",
+      "path": "docs/STAGE2_MAP_TARGET_CONTRACT.md",
+      "raw_sha256": "d230d7d13af15b6b8294dea114fd81c56efb2ee041d75b082020f0f1f230cf07"
+    }
+  ],
+  "full_stage2_accepted": false,
+  "independent_literal_derivation": {
+    "content_hash": "sha256:0fa328ead6139c7f9813869fefe7b3ec3d0f0a2923faa64e0367fbfe26a59d77",
+    "manual_fixture": {
+      "path": ".runtime/evidence/map-contract-runtime-independent-source/pinelib/tests/fixtures/map_operations_manual_expected.json",
+      "sha256": "3afd6e3a0a1a0abe972c40190bff3dd2caf566aa5e7a7a355aa9d2acd5bb9ffe"
+    },
+    "metadata_fixture": {
+      "path": ".runtime/evidence/map-contract-runtime-independent-source/pinelib/tests/fixtures/map_target_metadata_expected.json",
+      "sha256": "c3fdcfcff7c58e4e7b789d1e81e0309e1ef661df8fd2fc17859b4606cdf0b9d9"
+    },
+    "method": "Deep-copy exact baseline JSON; apply literal source-backed K/V/return V and from->id2 edits; hash without importing builder/runtime; compare complete candidate and pre-builder fixture.",
+    "primary_authority": {
+      "path": ".runtime/evidence/map-string-v5-v6-primary-contract-review.json",
+      "sha256": "d299bd8eee900afcf9a991cb911c028960bc47e286f831bd6c252e8e4a6d159a"
+    },
+    "rows_changed": 4,
+    "source_inventory_schema_capabilities_availability_unchanged": true,
+    "total_rows": 1108,
+    "unchanged_rows": 1104,
+    "versioned_tuples_changed": 8
+  },
+  "owner_receipt": {
+    "path": ".runtime/evidence/map-contract-runtime-freeze-receipt-v2.json",
+    "sha256": "950a9ecdfdc796166b969ad882f693ef8058e64bd0530d1659d21393b88111ed"
+  },
+  "preserved_initial_evidence": {
+    "first_cli_invocation": {
+      "path": ".runtime/evidence/map-contract-runtime-isolated/focused-py311.xml",
+      "reason": "First CLI invocation omitted required build subcommand; 67 tests passed and unchanged on-disk manifest check failed before normal build regenerated it",
+      "sha256": "b3e66730f2da24273cfbad2ae1ec1ebfaa6e0ed0f21e16753da72c629739aff7"
+    },
+    "old_metadata_guards_pending": [
+      "tests/test_array_concat_identity.py::test_every_non_concat_manifest_field_is_unchanged_and_disk_is_exact",
+      "tests/test_minmax_variadic_manifest.py::test_only_two_rows_change_without_other_denominator_or_contract_changes"
+    ],
+    "owner_before": {
+      "py311": {
+        "counts": {
+          "error": 0,
+          "failure": 27,
+          "passed": 41,
+          "skipped": 0
+        },
+        "path": ".runtime/evidence/map-contract-runtime-isolated/before-py311.xml",
+        "sha256": "e7d424689bed966cfd710a5cd6ad162b7eefa6a279e2621264c42f9215c5386f"
+      },
+      "py313": {
+        "counts": {
+          "error": 0,
+          "failure": 27,
+          "passed": 41,
+          "skipped": 0
+        },
+        "path": ".runtime/evidence/map-contract-runtime-isolated/before-py313.xml",
+        "sha256": "e5f996084f64a1040c459347b7c882a740169f0ae7ba19eda85b03302d4be44a"
+      }
+    }
+  },
+  "residuals": [
+    "Two unchanged old full-manifest hash guards require separate reviewed derived identity updates; full owner run is not green.",
+    "Three unchanged Windows release-tools failures remain visible.",
+    "Producer companion and its old put-return fixture correction are separate frozen reviews.",
+    "Neighbor get/remove/contains key:string target metadata and NA/reference-value parity remain outside this bounded correction.",
+    "No Linux execution or full Stage2 acceptance is claimed."
+  ],
+  "schema_id": "openpine.independent_source_review.v1",
+  "source_integrity": {
+    "ABI_and_kernels_unchanged": true,
+    "all_baseline_git_blobs_checked": 157,
+    "all_preexisting_test_bytes_unchanged": true,
+    "modified": [
+      "pinelib/abi/manifest_v2_builder.py",
+      "pinelib/abi/target_manifest.json"
+    ],
+    "new_files": [
+      "docs/STAGE2_MAP_TARGET_CONTRACT.md",
+      "tests/fixtures/map_operations_manual_expected.json",
+      "tests/fixtures/map_target_metadata_expected.json",
+      "tests/test_map_target_contract.py"
+    ],
+    "unchanged": 155
+  },
+  "status": "BOUNDED_MAP_RUNTIME_CONTRACT_SOURCE_AND_LOCAL_CHECKS_PASS_JOINT_PENDING",
+  "tests": {
+    "py311": {
+      "independent_focused": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 68,
+        "path": ".runtime/evidence/map-contract-runtime-independent-py311.xml",
+        "sha256": "0a00008e52c03b9d29b3abcdf2fea47ac81c693b68a2f9e8fa4f7bb138e40fed",
+        "skips": 0,
+        "total": 68
+      },
+      "old_nodeids_retained": 2013,
+      "old_nodeids_sha256": "eb58785352d073665e13972f12422f8dd5718c350ed7251e5acd4c563f9c4df9",
+      "owner_full": {
+        "errors": 0,
+        "failed": 5,
+        "passed": 2076,
+        "path": ".runtime/evidence/map-contract-runtime-isolated/full-py311.xml",
+        "sha256": "6bad3fa844385b86bcc8d6d343cbb3854aee4738d6c14b6d76819c85a389ac37",
+        "skips": 0,
+        "total": 2081
+      },
+      "owner_full_failure_keys": [
+        "tests.test_array_concat_identity::test_every_non_concat_manifest_field_is_unchanged_and_disk_is_exact",
+        "tests.test_minmax_variadic_manifest::test_only_two_rows_change_without_other_denominator_or_contract_changes",
+        "tests.test_release_tools::test_deterministic_sdist_is_byte_identical_and_normalized",
+        "tests.test_release_tools::test_deterministic_sdist_rejects_symlinks",
+        "tests.test_release_tools::test_deterministic_sdist_normalizes_file_modes"
+      ]
+    },
+    "py313": {
+      "independent_focused": {
+        "errors": 0,
+        "failed": 0,
+        "passed": 68,
+        "path": ".runtime/evidence/map-contract-runtime-independent-py313.xml",
+        "sha256": "4e1846164df572e7d80d08fe07995943b59ab5e9c343ec59ad86c22773d99205",
+        "skips": 0,
+        "total": 68
+      },
+      "old_nodeids_retained": 2013,
+      "old_nodeids_sha256": "eb58785352d073665e13972f12422f8dd5718c350ed7251e5acd4c563f9c4df9",
+      "owner_full": {
+        "errors": 0,
+        "failed": 5,
+        "passed": 2076,
+        "path": ".runtime/evidence/map-contract-runtime-isolated/full-py313.xml",
+        "sha256": "5f51c61b32e4ab878c3883fbfb645941a652afd4c0f9887992ad544489033b95",
+        "skips": 0,
+        "total": 2081
+      },
+      "owner_full_failure_keys": [
+        "tests.test_array_concat_identity::test_every_non_concat_manifest_field_is_unchanged_and_disk_is_exact",
+        "tests.test_minmax_variadic_manifest::test_only_two_rows_change_without_other_denominator_or_contract_changes",
+        "tests.test_release_tools::test_deterministic_sdist_is_byte_identical_and_normalized",
+        "tests.test_release_tools::test_deterministic_sdist_rejects_symlinks",
+        "tests.test_release_tools::test_deterministic_sdist_normalizes_file_modes"
+      ]
+    }
+  }
+}

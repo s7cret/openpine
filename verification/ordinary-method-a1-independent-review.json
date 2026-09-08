@@ -1,0 +1,296 @@
+{
+  "authority_reviewed_2026_09_08": [
+    "https://www.tradingview.com/pine-script-docs/v5/language/methods/",
+    "https://www.tradingview.com/pine-script-docs/language/methods/"
+  ],
+  "base_git_revision": "7170736f2730316407f0d896447b08e76f5c9c08",
+  "baseline": "constant-context-child-composed exact717 + six frozen constant phases + map10 fc29a6ff + separate map fixture38b34ef2",
+  "files": [
+    {
+      "baseline_lf_sha256": "2d1821cb0f22e2ca71213367b58fe96d9560998772c635a5c58c62b6378dfede",
+      "group": "functional",
+      "lf_sha256": "2cd64e1eaf835fe7c168565acfdc1bb7b861be6eeade12718f4ee0e6e0052445",
+      "path": "pine2ast/semantic/analyzer.py",
+      "raw_sha256": "2cd64e1eaf835fe7c168565acfdc1bb7b861be6eeade12718f4ee0e6e0052445"
+    },
+    {
+      "baseline_lf_sha256": "fd237a3daf5ac54d3bb270ab076d63bf417874a54978c2712053ef32227fbf26",
+      "group": "functional",
+      "lf_sha256": "5a91f81bf3eb81eec19d515c65c84136196f6de07b7b53e612e2395b9dde9d5f",
+      "path": "pine2ast/semantic/analyzer_statements.py",
+      "raw_sha256": "5a91f81bf3eb81eec19d515c65c84136196f6de07b7b53e612e2395b9dde9d5f"
+    },
+    {
+      "baseline_lf_sha256": "e5868442e73cf8fdbc76658e237bf913281a648558c81ba931159b8a5c819958",
+      "group": "functional",
+      "lf_sha256": "3456edbd99bb68f582e5cd617f024096645dec7ca2782b3f99b46b18deaa1e42",
+      "path": "pine2ast/semantic/analyzer_validation_calls.py",
+      "raw_sha256": "790791ccbde1a802a91199de191331726337f903eb5149a1d643dd458431e875"
+    },
+    {
+      "baseline_lf_sha256": "926c716bfdf5306873bab4f07245d8c779764721770ac086426965eed73ca1da",
+      "group": "functional",
+      "lf_sha256": "7d8538f3bbea2838ea73e100df4cf2c9bd6ba95cdd5da15f4af04ffe954b2157",
+      "path": "pine2ast/semantic/analyzer_validation_collections.py",
+      "raw_sha256": "7d8538f3bbea2838ea73e100df4cf2c9bd6ba95cdd5da15f4af04ffe954b2157"
+    },
+    {
+      "baseline_lf_sha256": "33107ee777f2a28fb0ffa1c32f25074a3bbd8826417ca78fb2e2f7f07c42ee2c",
+      "group": "functional",
+      "lf_sha256": "55055d24d3ac8ae52043148e2c3ac204029a4716af08780c3431d7d74bb510c4",
+      "path": "pine2ast/semantic/binder.py",
+      "raw_sha256": "55055d24d3ac8ae52043148e2c3ac204029a4716af08780c3431d7d74bb510c4"
+    },
+    {
+      "baseline_lf_sha256": "6860ae48402d9a790996b4c1f40b0070bcb69d0b1cdb90eaaccf84999f4f047f",
+      "group": "functional",
+      "lf_sha256": "be7ddf09d68c2f409cc521310bdc09e2b8e7dfa53c33ccd30fc4e3b20a64055c",
+      "path": "pine2ast/semantic/callable_context.py",
+      "raw_sha256": "be7ddf09d68c2f409cc521310bdc09e2b8e7dfa53c33ccd30fc4e3b20a64055c"
+    },
+    {
+      "baseline_lf_sha256": "b9fe0a3f22cf782e41316adfd7d8e59d31244882a4de7252f120e18ab95e1302",
+      "group": "functional",
+      "lf_sha256": "6543101d81d36b188663d994a330edeed411a9904952b5a5b07b3b8efdf195c8",
+      "path": "pine2ast/semantic/callable_inference.py",
+      "raw_sha256": "e4bc392c4634e4cf36fe1154310398283df2a7c88a06775e363eb5e36d0b89e0"
+    },
+    {
+      "baseline_lf_sha256": "fa42abfa5e6b74d111f2c5e77d8625e5679508e72b6457e8ea34273f9038951f",
+      "group": "functional",
+      "lf_sha256": "59023ff121d8dbe8cba6aeab5d22558e56148a736d84597e9e50ceced23d09e1",
+      "path": "pine2ast/semantic/callable_qualifiers.py",
+      "raw_sha256": "59023ff121d8dbe8cba6aeab5d22558e56148a736d84597e9e50ceced23d09e1"
+    },
+    {
+      "baseline_lf_sha256": "07a352514b82538030c3f9ecd7af7a6497ee677375bbe17a8a074b352de5049e",
+      "group": "functional",
+      "lf_sha256": "48b723eac9f156517d87dd5b7c97888fff1d2e277344c5e55ae9ec5b084242de",
+      "path": "pine2ast/semantic/inference.py",
+      "raw_sha256": "9ac0aea3c53e44bf9f538d00c631be8ed5adc9f90c86d32a7ec20382c5089388"
+    },
+    {
+      "baseline_lf_sha256": null,
+      "group": "functional",
+      "lf_sha256": "5ad89e582fbc594969db099eede5f5258e997565673c4e9a44b4e92fc9971975",
+      "path": "pine2ast/semantic/method_candidates.py",
+      "raw_sha256": "5ad89e582fbc594969db099eede5f5258e997565673c4e9a44b4e92fc9971975"
+    },
+    {
+      "baseline_lf_sha256": "22460eb786dd4c0ceb76ab895e860c2eeb0c443777a55d20750c83e8332f3f13",
+      "group": "functional",
+      "lf_sha256": "3379b151dc61def49280aa7da8846d5190713025b2d038ed0e41de5487017c52",
+      "path": "pine2ast/semantic/signatures.py",
+      "raw_sha256": "3379b151dc61def49280aa7da8846d5190713025b2d038ed0e41de5487017c52"
+    },
+    {
+      "baseline_lf_sha256": "899a368c29087bb6da17ce1288b74b9665d1f123a24c0902d05363493f2720f7",
+      "group": "functional",
+      "lf_sha256": "9b02c5de5766e1262863edce8036bf9433663762735e4d48084807e0b4d075c4",
+      "path": "pine2ast/semantic/static_validation.py",
+      "raw_sha256": "9b02c5de5766e1262863edce8036bf9433663762735e4d48084807e0b4d075c4"
+    },
+    {
+      "baseline_lf_sha256": "1bd5509f1129315d5f02d113c5519bb180f9a17b910b9d3ce89061956a62a753",
+      "group": "functional",
+      "lf_sha256": "619be00cf36d496eb8f7ba1871bef4cc8857a38b9d10c39fcbfa9302ad3529ef",
+      "path": "pine2ast/semantic/model/semantic_document.py",
+      "raw_sha256": "1e2ff573e06a0bfd594c525edb5c821784cdd6a4fb2167e89ef6889ef4d7ecf8"
+    },
+    {
+      "baseline_lf_sha256": "b0a542c1cca09243bdcfd474dfc200de1b61e5dc80aaea9cf106697a5bf86c26",
+      "group": "functional",
+      "lf_sha256": "42c5ca23bd05f069bbc88e36c943ce152834ecb44e009e0a3cddaa3bc05fc98c",
+      "path": "pine2ast/semantic/passes/declaration_index.py",
+      "raw_sha256": "42c5ca23bd05f069bbc88e36c943ce152834ecb44e009e0a3cddaa3bc05fc98c"
+    },
+    {
+      "baseline_lf_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "6c7dfe88f0b34ddb6a405fc7bd15ae9300c7c7c54660507cac9971ed77e6f320",
+      "path": "tests/test_method_candidate_resolution.py",
+      "raw_sha256": "6c7dfe88f0b34ddb6a405fc7bd15ae9300c7c7c54660507cac9971ed77e6f320"
+    },
+    {
+      "baseline_lf_sha256": null,
+      "group": "new_tests",
+      "lf_sha256": "3b0581f7b80f934702307d54f026b351476f60ba957f55076a8f2e7327453168",
+      "path": "tests/test_method_candidate_selection_guards.py",
+      "raw_sha256": "3b0581f7b80f934702307d54f026b351476f60ba957f55076a8f2e7327453168"
+    },
+    {
+      "baseline_lf_sha256": null,
+      "group": "documentation",
+      "lf_sha256": "fef577e8bc81f383878887f565c1331639cd26e3f7a44bb7c16bfe257666bccb",
+      "path": "docs/STAGE2_ORDINARY_METHOD_CANDIDATES.md",
+      "raw_sha256": "fef577e8bc81f383878887f565c1331639cd26e3f7a44bb7c16bfe257666bccb"
+    }
+  ],
+  "final_bundle": {
+    "path": ".runtime/evidence/ordinary-method-a1-final-frozen-bundle.json",
+    "sha256": "439555d27048b43afe18444dc313bad3183ddf8743c17bf8c4d9034b1337e63f"
+  },
+  "full_stage2_accepted": false,
+  "independent_AST_proofs": {
+    "builtin_candidate_expansion_unchanged": true,
+    "initial_to_final_only_one_module_line_wrap": [
+      "pine2ast/semantic/static_validation.py"
+    ],
+    "original_52_test_module_unchanged": true,
+    "reviewed_map_specialization_unchanged": true,
+    "shared_signature_resolver_scoring_binding_body_exact_move": true,
+    "whole_changed_module_AST_identical": true
+  },
+  "independent_generated": {
+    "311": {
+      "JSON_restore_and_aborted_first_callback_replay": true,
+      "package_identities": {
+        "ast2python": {
+          "file_count": 59,
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-operations-isolated\\ast2python\\ast2python",
+          "source_files_hash": "c90f0122f78c988ceee4da724ca261c671a034d9261f74b74b959dc4f2335b89"
+        },
+        "pine2ast": {
+          "file_count": 213,
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\method-a1-independent-source\\after\\pine2ast\\pine2ast",
+          "source_files_hash": "078287f30c57e52ac749f06f678bc8ed078b4a56e981aa8dc7e6106122e7b540"
+        },
+        "pinelib": {
+          "file_count": 77,
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-operations-isolated\\pinelib\\pinelib",
+          "source_files_hash": "6a67f710af8bd2d14d8668efcb6c78d0967cddca14d0fb97519a10f29712415a"
+        }
+      },
+      "passed": 24,
+      "path": ".runtime/evidence/method-a1-independent-generated-py311.json",
+      "sha256": "180aef62de94a4769b77d2465b21615ae7339b5f8d4818449bf87bc7bc748d81",
+      "test_only_metadata_revision_tokens": "1*40 producer and 2*40 compiler are explicit synthetic probe tokens; actual imported source packages are recorded by digest and checked independently.",
+      "typed_values": true
+    },
+    "313": {
+      "JSON_restore_and_aborted_first_callback_replay": true,
+      "package_identities": {
+        "ast2python": {
+          "file_count": 59,
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-operations-isolated\\ast2python\\ast2python",
+          "source_files_hash": "c90f0122f78c988ceee4da724ca261c671a034d9261f74b74b959dc4f2335b89"
+        },
+        "pine2ast": {
+          "file_count": 213,
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\method-a1-independent-source\\after\\pine2ast\\pine2ast",
+          "source_files_hash": "078287f30c57e52ac749f06f678bc8ed078b4a56e981aa8dc7e6106122e7b540"
+        },
+        "pinelib": {
+          "file_count": 77,
+          "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-operations-isolated\\pinelib\\pinelib",
+          "source_files_hash": "6a67f710af8bd2d14d8668efcb6c78d0967cddca14d0fb97519a10f29712415a"
+        }
+      },
+      "passed": 24,
+      "path": ".runtime/evidence/method-a1-independent-generated-py313.json",
+      "sha256": "e59d433348652c3cf389556f469288a2b04fdc61caa3a391a5a3232b2f65433e",
+      "test_only_metadata_revision_tokens": "1*40 producer and 2*40 compiler are explicit synthetic probe tokens; actual imported source packages are recorded by digest and checked independently.",
+      "typed_values": true
+    }
+  },
+  "initial_bundle_preserved": {
+    "path": ".runtime/evidence/ordinary-method-a1-frozen-bundle.json",
+    "sha256": "561a19cc831cf63f87c848a88c84433c43b85587929dcdab6a85f3517a3a7822"
+  },
+  "limits": [
+    "Eight inherited Windows tool/platform failures and one resource collection error remain visible; 2393 is the proposed Linux inventory, not verified Linux execution.",
+    "Generated probes use exact published compiler95a and runtime d33 sources, with the new producer isolated by source digest; they are local evidence and not a published-pin joint run.",
+    "Receiver qualifier syntax, exported library methods, namespace invocation of user methods, precise tie precedence and complete method semantics remain outside A1.",
+    "No production/test source, remote refs, manifest or acceptance inventory was edited by this review."
+  ],
+  "owner_receipt": {
+    "path": ".runtime/evidence/ordinary-method-a1-final-receipt.json",
+    "sha256": "b86ebf46e61e966c488c67da3b8988a4e814b99895e62a266be428add264c250"
+  },
+  "preserved_harness_setup_failures": [
+    "Independent snapshot preparation initially used raw_sha256/lf_sha256 names; owner A1 bundle uses sha256_raw/sha256_lf. Both failed before writing source or running SUT; corrected reader verified all raw and LF hashes."
+  ],
+  "review_findings": [],
+  "reviewed_boundaries": [
+    "One source-node-indexed candidate inventory preserves overload declarations and exact nominal/generic receiver identities.",
+    "Selection uses original source arguments and shared SignatureResolver binding, type, qualifier, availability and ambiguity scoring; no source arguments are rewritten.",
+    "Return inference, semantic facts, diagnostics, collection checks and static sort-field checks consume the same selection.",
+    "Entry cache keys include source call identity, receiver, argument types/qualifiers and candidate parameter/return shape; active recursion and bounded work/cache limits fail closed.",
+    "Lexical facts are bound before monotonic return inference, preventing later overload locals from widening earlier declarations.",
+    "Methods remain unavailable in v1-v4; same-signature builtin/user and simple/series tie precedence remain explicitly unresolved/ambiguous rather than a complete language parity claim."
+  ],
+  "schema_id": "openpine.independent_source_review.v1",
+  "source_composition": {
+    "all_old_test_assertions_preserved": true,
+    "all_old_test_files_preserved": 74,
+    "all_unmodified_baseline_files_preserved": true,
+    "baseline_files": 396,
+    "candidate_source_files": 400,
+    "method": "Reconstruct all 380 exact Git blobs with cat-file; apply the six hash-checked constant/context phases, separately reviewed map10 and fixture1, then final A1 overlay in a new evidence-only tree.",
+    "separate_map_fixture_review": {
+      "path": ".runtime/evidence/map-return-fixture-independent-review.json",
+      "sha256": "d1a4901a27f6a3e4944c142a5905fb0b6f31142d26f3bdd4db5b6ed1ca5b0667"
+    }
+  },
+  "status": "BOUNDED_ORDINARY_METHOD_A1_SOURCE_AND_LOCAL_CHECKS_PASS_JOINT_PENDING",
+  "tests": {
+    "baseline": {
+      "errors": 1,
+      "failures": 8,
+      "passed": 2298,
+      "path": ".runtime/evidence/method-a1-baseline-full-py311.xml",
+      "sha256": "485d41e32e74071b76c5945d210ccfaa7ea739cd97a53f201decf96821fcd934",
+      "skips": 0,
+      "total": 2307
+    },
+    "final_expected_Linux": 2393,
+    "full_byte_run_after_formatting": false,
+    "meaning": "Owner full tests ran initial561a; final439 differs only by independently proven AST-identical wrapping and was executed by reviewer84+generated24 on bothPython.",
+    "per_python": {
+      "311": {
+        "all_2307_local_old_rows_and_statuses_retained": true,
+        "independent_final_84": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 84,
+          "path": ".runtime/evidence/method-a1-independent-py311.xml",
+          "sha256": "e36a527feb000692a4937855910abf08910740eb752ccf59233ce7eeadef6b60",
+          "skips": 0,
+          "total": 84
+        },
+        "new_passes": 84,
+        "owner_pre_format_full": {
+          "errors": 1,
+          "failures": 8,
+          "passed": 2382,
+          "path": ".runtime/evidence/method-a1-full-final-py311.xml",
+          "sha256": "3881e1d2971c679d9190ae52fc07ed7924c9a5fd2ad4d9e4eb2466d161e65fea",
+          "skips": 0,
+          "total": 2391
+        }
+      },
+      "313": {
+        "all_2307_local_old_rows_and_statuses_retained": true,
+        "independent_final_84": {
+          "errors": 0,
+          "failures": 0,
+          "passed": 84,
+          "path": ".runtime/evidence/method-a1-independent-py313.xml",
+          "sha256": "f165875b40f9908bdf2c6dd77688505c792ff3cc55ac27ae307c897e0b898fc4",
+          "skips": 0,
+          "total": 84
+        },
+        "new_passes": 84,
+        "owner_pre_format_full": {
+          "errors": 1,
+          "failures": 8,
+          "passed": 2382,
+          "path": ".runtime/evidence/method-a1-full-final-py313.xml",
+          "sha256": "ac032966cbc770f88dbba0ec8cf2b5fc7d996fbb27d49c6384ffb31f75672345",
+          "skips": 0,
+          "total": 2391
+        }
+      }
+    }
+  }
+}
