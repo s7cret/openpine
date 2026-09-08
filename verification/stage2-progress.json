@@ -98,7 +98,9 @@
     "verification/array-search-remote-source-review.json",
     "verification/callable-result-remote-source-review.json",
     "verification/varip-remote-source-review.json",
-    "verification/exported-floor-denominator-reconciliation.json"
+    "verification/exported-floor-denominator-reconciliation.json",
+    "verification/rolling-floor-inventory-review.json",
+    "verification/rolling-floor-metadata-independent-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -331,7 +333,7 @@
     "cleanup_receipt": "verification/language-state-cleanup-final-execution-review.json"
   },
   "rolling_library_context_block": {
-    "status": "published_reviewed_source_pending_inventory_and_joint_linux",
+    "status": "inventory_reviewed_pending_joint_linux",
     "scope": [
       "callable_result_qualifiers_including_nested_control",
       "varip_arrays_of_admitted_udt",
@@ -383,6 +385,11 @@
     "excluded_next_waves": [
       "constant_metadata_round_and_udf",
       "global_constant_qualifier_prepass"
-    ]
+    ],
+    "inventory_run": 34175811673,
+    "inventory_sha256": "bea439c072ca283435f2920756d2d5f3c49fef2976befaa4a22abefd218492a8",
+    "inventory_review": "verification/rolling-floor-inventory-review.json",
+    "selected_tests": 9685,
+    "removed_tests": 0
   }
 }
