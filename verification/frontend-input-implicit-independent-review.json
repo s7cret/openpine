@@ -1,0 +1,193 @@
+{
+  "schema_id": "openpine.frontend_input_implicit_independent_review.v1",
+  "status": "FROZEN_SOURCE_AND_INDEPENDENT_LOCAL_TEST_PASS_LINUX_PENDING",
+  "baseline_parser_commit": "cae5ad7b688bad9a542d1ea100ce38d20600c99c",
+  "snapshot_baseline_files": 357,
+  "snapshot_composite_files": 362,
+  "bundles": {
+    "input-defval-frozen-bundle.json": {
+      "raw_sha256": "119ef68a2a51afb177bf4f866730c338934a9bf811ef1505d50318e590b94f89",
+      "encoding": "cp1252",
+      "files": {
+        "catalog_reports/migration_report.json": {
+          "frozen_raw_sha256": "05a61e3726c4591c40c08bae1b52367021033bfdf4165a4f23dd756bb9d44a98",
+          "published_lf_sha256": "05a61e3726c4591c40c08bae1b52367021033bfdf4165a4f23dd756bb9d44a98",
+          "existing": true
+        },
+        "catalog_source/deltas/v5.jsonl": {
+          "frozen_raw_sha256": "6cd0579d5ec0f7b5642a946e4e43888c09dfa35caa67b4b93d055232dba999c0",
+          "published_lf_sha256": "6cd0579d5ec0f7b5642a946e4e43888c09dfa35caa67b4b93d055232dba999c0",
+          "existing": true
+        },
+        "catalog_source/semantics.jsonl": {
+          "frozen_raw_sha256": "de646fd5ea289ace8ea8169d8cf3d5872f9ce2dfd1d28f11531ea229bada71d7",
+          "published_lf_sha256": "de646fd5ea289ace8ea8169d8cf3d5872f9ce2dfd1d28f11531ea229bada71d7",
+          "existing": true
+        },
+        "docs/STAGE2_INPUT_DEFVAL_QUALIFIERS.md": {
+          "frozen_raw_sha256": "2419aed985a7526519d8d049496112ff88a11ae3262d0585eb5a16eb8b1a17a0",
+          "published_lf_sha256": "2419aed985a7526519d8d049496112ff88a11ae3262d0585eb5a16eb8b1a17a0",
+          "existing": false
+        },
+        "pine2ast/catalog_data/packs/pine_v5.pack.json": {
+          "frozen_raw_sha256": "b6903e19409673ac14e19d7823bc7fc8d3fbd314ec3da40e3eaf9a3e376927aa",
+          "published_lf_sha256": "b6903e19409673ac14e19d7823bc7fc8d3fbd314ec3da40e3eaf9a3e376927aa",
+          "existing": true
+        },
+        "pine2ast/catalog_data/packs/pine_v6.pack.json": {
+          "frozen_raw_sha256": "2a1ad63633712c2c1473e2ff257df40cc74e299fd7c1eabacd7e25ca4a5bdc43",
+          "published_lf_sha256": "2a1ad63633712c2c1473e2ff257df40cc74e299fd7c1eabacd7e25ca4a5bdc43",
+          "existing": true
+        },
+        "tests/test_numeric_input_defval_qualifiers.py": {
+          "frozen_raw_sha256": "7ec669b20d09c30b78b7adfbf1eaa822420d36bb0dc5279719bc8de2389b2a9d",
+          "published_lf_sha256": "7ec669b20d09c30b78b7adfbf1eaa822420d36bb0dc5279719bc8de2389b2a9d",
+          "existing": false
+        },
+        "tools/catalog/build_catalog.py": {
+          "frozen_raw_sha256": "76bae32c5a762857fad7dacfcc6e4df65ba0298a42f355b3f1848c0717f02225",
+          "published_lf_sha256": "870d87f0bbdb38202b857557536a1bc73af829f4b38d1c6b734c788ed67391fd",
+          "existing": true
+        }
+      }
+    },
+    "implicit-simple-frozen-bundle.json": {
+      "raw_sha256": "ab9ec36279b8faabf8fe8da6ec1941f77bb93f748b883e9f23bbc526e75b3611",
+      "encoding": "utf-8",
+      "files": {
+        "pine2ast/semantic/passes/declaration_index.py": {
+          "frozen_raw_sha256": "600ebd0ff92b524b1e2653ce0e01192ebeade75251caae667c0c4b895859982e",
+          "published_lf_sha256": "13d697dda5938e883d7daac069261da0bfc0855eb63675dc309407c61533bd06",
+          "existing": true
+        },
+        "pine2ast/semantic/analyzer_statements.py": {
+          "frozen_raw_sha256": "0d67a4d00dbe70470a87db62fa7009f07417ce6eed284270eebce63231837eaf",
+          "published_lf_sha256": "fd237a3daf5ac54d3bb270ab076d63bf417874a54978c2712053ef32227fbf26",
+          "existing": true
+        },
+        "pine2ast/semantic/callable_inference.py": {
+          "frozen_raw_sha256": "190240db14072d42e860a965ba0e552bae753cf46742aca81470b80869325f6a",
+          "published_lf_sha256": "cd24a8293cb6dd1ee278143eb45990b9abbe13c82e67a3f421e3ea6fd93c8e67",
+          "existing": true
+        },
+        "pine2ast/semantic/binder.py": {
+          "frozen_raw_sha256": "c6da5729d21bad599ffe7dd3a9966996744af2dd283481d974c433e98c8b4899",
+          "published_lf_sha256": "9ec7ee50a860b5e6204cd6c2a49d4598582223fa1a76416312c70e1d7e956999",
+          "existing": true
+        },
+        "pine2ast/semantic/model/semantic_document.py": {
+          "frozen_raw_sha256": "02912f2a156547bb31014a4acc15ba098441a683e373df198b91973f2f899a9c",
+          "published_lf_sha256": "34fbe03de9da05bf83df815af69e42d034352cc9480afdc1bd4211c0c49bab78",
+          "existing": true
+        },
+        "pine2ast/semantic/parameter_qualifiers.py": {
+          "frozen_raw_sha256": "d2932a7ffe4955c71a3ce129fcb09a1db2f384e5f38aef83f4aa3ce8bf90e213",
+          "published_lf_sha256": "d2932a7ffe4955c71a3ce129fcb09a1db2f384e5f38aef83f4aa3ce8bf90e213",
+          "existing": false
+        },
+        "tests/test_implicit_simple_parameters.py": {
+          "frozen_raw_sha256": "864a7833f0f1932cc94cb2fcd295ab29151d83cec8df7b8edd2adfcb541355ae",
+          "published_lf_sha256": "864a7833f0f1932cc94cb2fcd295ab29151d83cec8df7b8edd2adfcb541355ae",
+          "existing": false
+        },
+        "docs/STAGE2_IMPLICIT_SIMPLE_PARAMETERS.md": {
+          "frozen_raw_sha256": "ac0dc676888e4aa0f90e8b83e5e38fdb6a6348b894eba705e57fad7af80e8fac",
+          "published_lf_sha256": "ac0dc676888e4aa0f90e8b83e5e38fdb6a6348b894eba705e57fad7af80e8fac",
+          "existing": false
+        }
+      }
+    }
+  },
+  "input_catalog_exact_delta": [
+    {
+      "pine_version": 5,
+      "path": "/functions/input.float/parameters/0/qualifier_max",
+      "before": "series",
+      "after": "const"
+    },
+    {
+      "pine_version": 5,
+      "path": "/functions/input.int/parameters/0/qualifier_max",
+      "before": "series",
+      "after": "const"
+    },
+    {
+      "pine_version": 6,
+      "path": "/functions/input.float/parameters/0/qualifier_max",
+      "before": "series",
+      "after": "const"
+    },
+    {
+      "pine_version": 6,
+      "path": "/functions/input.int/parameters/0/qualifier_max",
+      "before": "series",
+      "after": "const"
+    }
+  ],
+  "all_six_catalog_memberships_ids_rules_unchanged": true,
+  "all_preexisting_test_and_RC5_reference_bytes_preserved": true,
+  "independent_tests": {
+    "311": {
+      "passed": 150,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "counts": {
+        "tests.test_numeric_input_defval_qualifiers": 94,
+        "tests.test_implicit_simple_parameters": 56
+      },
+      "junit_raw_sha256": "fd4b73e6fb0fa651486560adb860fb6811dd6c168af3334ec0a13e3a500ed3ab",
+      "source_snapshot": ".runtime/evidence/frontend-input-implicit-reviewed-source"
+    },
+    "313": {
+      "passed": 150,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "counts": {
+        "tests.test_numeric_input_defval_qualifiers": 94,
+        "tests.test_implicit_simple_parameters": 56
+      },
+      "junit_raw_sha256": "8ec9e3aca38f0bf42af2121a3631aaf6c8e114951babd41028b1f0fd2be37251",
+      "source_snapshot": ".runtime/evidence/frontend-input-implicit-reviewed-source"
+    }
+  },
+  "reviewed_contracts": [
+    "numeric input defval becomes const only for input.int/input.float v5/v6; input.source and other versions untouched",
+    "one effective parameter bound shared by body/default checks, callable inference and consumer binder; AST explicit qualifier unchanged",
+    "eligible typed value parameters default series and only narrow to simple through resolved body constraints",
+    "reference and UDT parameters excluded from narrowing; explicit qualifiers remain authoritative",
+    "finite worklist propagates declaration requirements beyond16 helpers; ordinary signature resolver owns arguments/type matches",
+    "lexical initializer aliases and shadows handled; normal validation retains rejection of remaining series and const/input requirements"
+  ],
+  "primary_authority": [
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/inputs/",
+      "supports": "numeric defval requires const; source and active exceptions explicit"
+    },
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/v5/concepts/inputs/",
+      "supports": "v5 const numeric input parameters and source/enum exceptions"
+    },
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#qualifier-keywords",
+      "supports": "typed ordinary parameters try series then simple; reference parameters always series"
+    },
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/v5/concepts/libraries/#qualified-type-control",
+      "supports": "v5 exported EMA simple length fallback"
+    }
+  ],
+  "limitations": [
+    "The frozen implicit block explicitly excludes simple UDF return inference and reassigned alias inference; their previously captured gaps remain next-wave work.",
+    "Methods, untyped per-call polymorphism and full StatefulLanguage acceptance are outside this block.",
+    "These tests ran against an isolated scalar+input+implicit frozen snapshot, not the mutable parser checkout; later return-wave edits were excluded.",
+    "Local full parser Windows failures/resource collection limitation remain visible in owner receipts; full combined Linux execution is still required."
+  ],
+  "owner_receipts": {
+    "input-defval-implementation-receipt.json": "767d90f97987f28832af97eb807e6e94278c57e117271f76ae7ae6de2f34cb55",
+    "implicit-simple-implementation-receipt.json": "8079c7dcd10dba70b4258079bdaf2ed2386abfe00bae3fae620de632b1f8cc0e"
+  },
+  "full_stage2_accepted": false,
+  "production_or_tests_modified_by_review": false
+}

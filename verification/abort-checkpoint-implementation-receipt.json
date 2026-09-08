@@ -1,0 +1,355 @@
+{
+  "schema_id": "openpine.stage2.abort_checkpoint.implementation_receipt.v1",
+  "status": "local_source_frozen_pending_independent_final_review_and_linux_ci",
+  "scope": "Bound callback control and replayable retained abort checkpoints only; Stage 2 remains in_progress; recursive array<UDT> persistence deferred.",
+  "source_audit": {
+    "base_commit": "66890b5aeec8db206fc756681a414e33d7fe5b68",
+    "base_tree": "e8dfe2d5621cd70f982ec3d3c0392ff0413bddf9",
+    "base_files_compared": 136,
+    "missing_files": [],
+    "modified_paths": [
+      "pinelib/reference/heap.py",
+      "pinelib/runtime/compact_transcript.py",
+      "pinelib/runtime/session.py",
+      "pinelib/runtime/transcript.py",
+      "pinelib/state/checkpoint.py"
+    ],
+    "added_paths": [
+      "docs/STAGE2_ABORT_CHECKPOINT.md",
+      "pinelib/runtime/pending_abort.py",
+      "tests/test_abort_transient_slices.py",
+      "tests/test_abort_witness_replay.py",
+      "tests/test_transcript_control.py",
+      "tests/test_varip_abort_checkpoint.py"
+    ],
+    "unexpected_changes": [],
+    "existing_tests_unchanged": true,
+    "target_manifest_unchanged": true,
+    "note": "Compared actual disk bytes after CRLF-to-LF normalization against every exact baseline tree blob; local c90 index is not the publication baseline."
+  },
+  "files": [
+    {
+      "repository_path": "pinelib/runtime/session.py",
+      "path": ".runtime/stack/pinelib/pinelib/runtime/session.py",
+      "bytes": 62254,
+      "sha256": "sha256:1c0e6a1a4f19a8669f73117dfe6649d8f365dc05f79c6bbe9ffe17d450da64fe",
+      "lf_sha256": "sha256:1c0e6a1a4f19a8669f73117dfe6649d8f365dc05f79c6bbe9ffe17d450da64fe",
+      "base_git_blob": "c15f4b2fccea3fbcd0e89582ddfe6498d7f04baf",
+      "base_lf_sha256": "sha256:68e6f9802e8bda50f461e2ac834e86bb0428595c0455d8e0988c2e0ea1c3da75",
+      "change": "modified",
+      "category": "production"
+    },
+    {
+      "repository_path": "pinelib/runtime/pending_abort.py",
+      "path": ".runtime/stack/pinelib/pinelib/runtime/pending_abort.py",
+      "bytes": 7013,
+      "sha256": "sha256:049f1f56b12e2aef9cd22e8260670903c6eb9feef20d238fe5f95f7b39e35ef4",
+      "lf_sha256": "sha256:049f1f56b12e2aef9cd22e8260670903c6eb9feef20d238fe5f95f7b39e35ef4",
+      "change": "added",
+      "category": "production"
+    },
+    {
+      "repository_path": "pinelib/state/checkpoint.py",
+      "path": ".runtime/stack/pinelib/pinelib/state/checkpoint.py",
+      "bytes": 7249,
+      "sha256": "sha256:2313d1606b3ab9da5517f4a5f73c27ab11c0db1aa05970969ef08031ccbf4934",
+      "lf_sha256": "sha256:e91ff11995bf058183a0615c910800d030c4d72883fd10553ee43a1ba8b1e640",
+      "base_git_blob": "cd626b8adc884f78aef42295e4faa9407871ef9d",
+      "base_lf_sha256": "sha256:036ea31c1cdd1262252a9347c4ae72f6ddb78001d03939c9c842c53e9a538196",
+      "change": "modified",
+      "category": "production"
+    },
+    {
+      "repository_path": "pinelib/runtime/transcript.py",
+      "path": ".runtime/stack/pinelib/pinelib/runtime/transcript.py",
+      "bytes": 7705,
+      "sha256": "sha256:83e586dc9e54a668615e8c150bd7f91760ac42fd9fce1fea89dd7eacd48aec30",
+      "lf_sha256": "sha256:f48dddde128a3e5bff3f3304acc9d066b000f3264a8807fd040de8d76a5b688d",
+      "base_git_blob": "466987068536c78b7f07298a1fd4f40e7533fb62",
+      "base_lf_sha256": "sha256:c15fcc5649e4b9ee9da3b09b9ec1e9bae657cc75f520aef755598d96ff3f98b4",
+      "change": "modified",
+      "category": "production"
+    },
+    {
+      "repository_path": "pinelib/runtime/compact_transcript.py",
+      "path": ".runtime/stack/pinelib/pinelib/runtime/compact_transcript.py",
+      "bytes": 3093,
+      "sha256": "sha256:f30103ba5e2b3e82a214f9e5b6caa38a4e2ae684586d29b922155376e0cafd1f",
+      "lf_sha256": "sha256:833c56bec54280227d61226bf50ee2d326ca07a1cf12579cfb39b48631d77511",
+      "base_git_blob": "ca523106525bb923d828b35f829dd78c1690ef52",
+      "base_lf_sha256": "sha256:1d941e9136519073225c93394e533bd45e10a3f771470019fe0f83eadbe91eaa",
+      "change": "modified",
+      "category": "production"
+    },
+    {
+      "repository_path": "pinelib/reference/heap.py",
+      "path": ".runtime/stack/pinelib/pinelib/reference/heap.py",
+      "bytes": 39192,
+      "sha256": "sha256:f395614bedb6646b45a0cbf37b4021712fa98e12b289879ca48c9c733d07b41b",
+      "lf_sha256": "sha256:208cb86281a946001c406e32c491f84fae08a78c27d784344edd1455aaacfbca",
+      "base_git_blob": "d7ec51da2799c11b20891462f97b6b7a029d10be",
+      "base_lf_sha256": "sha256:60a946fd1e4c884a6fc4fbf87aac7ee5ed77afaf19894a051c6d452605597751",
+      "change": "modified",
+      "category": "production"
+    },
+    {
+      "repository_path": "tests/test_varip_abort_checkpoint.py",
+      "path": ".runtime/stack/pinelib/tests/test_varip_abort_checkpoint.py",
+      "bytes": 20424,
+      "sha256": "sha256:5b1dd4f56ed0bff7c904c1f3b2fd76639316d144ececa1d634e3644da96db434",
+      "lf_sha256": "sha256:5b1dd4f56ed0bff7c904c1f3b2fd76639316d144ececa1d634e3644da96db434",
+      "change": "added",
+      "category": "new_test"
+    },
+    {
+      "repository_path": "tests/test_transcript_control.py",
+      "path": ".runtime/stack/pinelib/tests/test_transcript_control.py",
+      "bytes": 8563,
+      "sha256": "sha256:2fe1631df9b27f361c37ec7d3938ff94c2078454f868bc6f0347091b6dd62422",
+      "lf_sha256": "sha256:2fe1631df9b27f361c37ec7d3938ff94c2078454f868bc6f0347091b6dd62422",
+      "change": "added",
+      "category": "new_test"
+    },
+    {
+      "repository_path": "tests/test_abort_witness_replay.py",
+      "path": ".runtime/stack/pinelib/tests/test_abort_witness_replay.py",
+      "bytes": 12828,
+      "sha256": "sha256:9b0e17b1412d569073eed812f6d43c014f66ec6e857d5c26d7beceaf4aca5500",
+      "lf_sha256": "sha256:9b0e17b1412d569073eed812f6d43c014f66ec6e857d5c26d7beceaf4aca5500",
+      "change": "added",
+      "category": "new_test"
+    },
+    {
+      "repository_path": "tests/test_abort_transient_slices.py",
+      "path": ".runtime/stack/pinelib/tests/test_abort_transient_slices.py",
+      "bytes": 6379,
+      "sha256": "sha256:f72465707d204083f7ca4c46dfb19dda6c244d784bef6e888f729c9366c33700",
+      "lf_sha256": "sha256:f72465707d204083f7ca4c46dfb19dda6c244d784bef6e888f729c9366c33700",
+      "change": "added",
+      "category": "new_test"
+    },
+    {
+      "repository_path": "docs/STAGE2_ABORT_CHECKPOINT.md",
+      "path": ".runtime/stack/pinelib/docs/STAGE2_ABORT_CHECKPOINT.md",
+      "bytes": 8608,
+      "sha256": "sha256:0f3e444a976d1b42ed8788193545a8a46c5d0b5bc223596b2aa084d6e8a0fc59",
+      "lf_sha256": "sha256:0f3e444a976d1b42ed8788193545a8a46c5d0b5bc223596b2aa084d6e8a0fc59",
+      "change": "added",
+      "category": "documentation"
+    }
+  ],
+  "tests": [
+    {
+      "python": "py311",
+      "collected": 1283,
+      "passed": 1280,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "failure_nodeids": [
+        "tests/test_release_tools.py::test_deterministic_sdist_is_byte_identical_and_normalized",
+        "tests/test_release_tools.py::test_deterministic_sdist_rejects_symlinks",
+        "tests/test_release_tools.py::test_deterministic_sdist_normalizes_file_modes"
+      ],
+      "new_test_count": 317,
+      "new_test_counts_by_file": {
+        "tests/test_varip_abort_checkpoint.py": 136,
+        "tests/test_transcript_control.py": 36,
+        "tests/test_abort_witness_replay.py": 85,
+        "tests/test_abort_transient_slices.py": 60
+      },
+      "xml": {
+        "path": ".runtime/stack/pinelib/.validation/abort-final-py311.xml",
+        "bytes": 195295,
+        "sha256": "sha256:a9265c1dfd5716dfb7a5c94e8197d95c0d8a34677abb56cc229d878b8d4ea1a9",
+        "lf_sha256": "sha256:efbacb6f0f0dfd4e74add0d30ec6de67cc2ed641783aa977648f66278262277c"
+      },
+      "log": {
+        "path": ".runtime/stack/pinelib/.validation/abort-final-py311.log",
+        "bytes": 3396,
+        "sha256": "sha256:5bbb1fa9685156e0f63ece9639f84e90a63eb678b679950453ba3d654f27df60",
+        "lf_sha256": "sha256:08b801d038071e9aa11ae3d8fc571c681352f2685ae13f7d4c1708ce012a61ff"
+      }
+    },
+    {
+      "python": "py313",
+      "collected": 1283,
+      "passed": 1280,
+      "failed": 3,
+      "errors": 0,
+      "skipped": 0,
+      "failure_nodeids": [
+        "tests/test_release_tools.py::test_deterministic_sdist_is_byte_identical_and_normalized",
+        "tests/test_release_tools.py::test_deterministic_sdist_rejects_symlinks",
+        "tests/test_release_tools.py::test_deterministic_sdist_normalizes_file_modes"
+      ],
+      "new_test_count": 317,
+      "new_test_counts_by_file": {
+        "tests/test_varip_abort_checkpoint.py": 136,
+        "tests/test_transcript_control.py": 36,
+        "tests/test_abort_witness_replay.py": 85,
+        "tests/test_abort_transient_slices.py": 60
+      },
+      "xml": {
+        "path": ".runtime/stack/pinelib/.validation/abort-final-py313.xml",
+        "bytes": 195307,
+        "sha256": "sha256:b6f38f9302bdd473e0e3b2ab113ccb9cd2d316c693f2aada1e08dab365b404ae",
+        "lf_sha256": "sha256:241bd0462b65845de20041613dcf098b67ec56524f99d88c98e3e0cfed34c3bb"
+      },
+      "log": {
+        "path": ".runtime/stack/pinelib/.validation/abort-final-py313.log",
+        "bytes": 3405,
+        "sha256": "sha256:9b03ca738d588ac5ca9274287f21d09421099ff064854fa4fd3a960cfa69488f",
+        "lf_sha256": "sha256:260785231b186525558b29b3c5eb31e2acd40e1e45c0b4b3658680dca6416314"
+      }
+    }
+  ],
+  "initial_owner_failures": [
+    {
+      "path": ".runtime/stack/pinelib/.validation/abort-checkpoint-before-py311.xml",
+      "bytes": 83792,
+      "sha256": "sha256:6fb70f2c9899eaa2d81c5be7d465a6582800e6f6b7b6b23beb8470e8190281e6",
+      "lf_sha256": "sha256:f3efc46563660fb66a5bbcde6a44c5270974d955eafd58f2c0f0c2988a7c4b66"
+    },
+    {
+      "path": ".runtime/stack/pinelib/.validation/abort-checkpoint-before-py313.xml",
+      "bytes": 84344,
+      "sha256": "sha256:3296dfcf5e8b3b48348764220e2e50a5a55f14a4ad11aa844b0f51cd51acbbb2",
+      "lf_sha256": "sha256:7de22d97f407b6f2f6b2af7262aa914be1bd2466c85902e0678d76da1e4a0999"
+    }
+  ],
+  "independent_evidence": [
+    {
+      "path": ".runtime/evidence/abort-frame-mode-before-py311.json",
+      "bytes": 1075,
+      "sha256": "sha256:49882aa02bc338295f05077943ec50cb9a3a35bcb444d32b2f4b74cc77bcd5a8",
+      "lf_sha256": "sha256:672e2fcf0e53f2e699caf10850c81d41f1bd9195602930c6cbeb4cdeed795ec6"
+    },
+    {
+      "path": ".runtime/evidence/abort-repeated-orphan-provisional-before-py311.json",
+      "bytes": 2330,
+      "sha256": "sha256:86ad02fadd0700c0746feec839d2f0cc004322a475d9f7b20287276e451eed01",
+      "lf_sha256": "sha256:e1448f7731d59a19bdc4d80eda28d009d27d2485ddb3967d26e5f333cc9279e3"
+    },
+    {
+      "path": ".runtime/evidence/abort-provisional-bar-before-py311.json",
+      "bytes": 1112,
+      "sha256": "sha256:db6526b403f11451a7ea3b00aa0505159d558a5acfbf1cc6e9b2aa495afe72af",
+      "lf_sha256": "sha256:7ed4b23d78db4a1a5ecee7e72e368ffae17e4ea945ace9aa332f785d3756bda5"
+    },
+    {
+      "path": ".runtime/evidence/legacy-control-mode-before-py311.json",
+      "bytes": 1321,
+      "sha256": "sha256:b7844e6933f6fd72cdd08f4cbec612a114ccdb6119838a49fe7ef13f721ae14f",
+      "lf_sha256": "sha256:d067de2b09bdf208f49fc1ff31a06cce4fffb981205bc210216f902fcddfd122"
+    },
+    {
+      "path": ".runtime/evidence/abort-transient-slice-before-py311.json",
+      "bytes": 1448,
+      "sha256": "sha256:430f6dceee84b829e43215921e21eb2b28cda7eedfc27e4c254099e4b8dc5634",
+      "lf_sha256": "sha256:88d52be8acc1d3a63fb0ec5211fb3e23e5a86830ac857978d22623ac4e12f9d5"
+    },
+    {
+      "path": ".runtime/evidence/abort-genuine-legacy-fixtures.json",
+      "bytes": 24444,
+      "sha256": "sha256:2fa764a6319f49777f37be850af19c6b5ce465c79177909b9513ced4f4d92007",
+      "lf_sha256": "sha256:17a08d5f305d7d208e8c6ce51acbc8f601a25e69801ea66b00651b2612e279c1"
+    },
+    {
+      "path": ".runtime/evidence/abort-frame-mode-replay-after-py311.json",
+      "bytes": 994,
+      "sha256": "sha256:a2df043d2d7961bb96893d75ca5769a9be426a07e8c57e20f43a865c5823d8a4",
+      "lf_sha256": "sha256:d5a5c31129bf7daaa094b34e396ac40843be5e9b46cb370b80f8f006095fea84"
+    },
+    {
+      "path": ".runtime/evidence/abort-frame-mode-replay-after-py313.json",
+      "bytes": 994,
+      "sha256": "sha256:a2df043d2d7961bb96893d75ca5769a9be426a07e8c57e20f43a865c5823d8a4",
+      "lf_sha256": "sha256:d5a5c31129bf7daaa094b34e396ac40843be5e9b46cb370b80f8f006095fea84"
+    },
+    {
+      "path": ".runtime/evidence/abort-repeated-orphan-replay-after-py311.json",
+      "bytes": 2133,
+      "sha256": "sha256:fc66a1dd0ebd7177fcdca1527adc861cc7e883c08b42671d84bfcf5101ec7be8",
+      "lf_sha256": "sha256:d4c924b0284488275b9cb4d8a4790e3c5c557382827fb450806fef1a9d739ee4"
+    },
+    {
+      "path": ".runtime/evidence/abort-repeated-orphan-replay-after-py313.json",
+      "bytes": 2133,
+      "sha256": "sha256:fc66a1dd0ebd7177fcdca1527adc861cc7e883c08b42671d84bfcf5101ec7be8",
+      "lf_sha256": "sha256:d4c924b0284488275b9cb4d8a4790e3c5c557382827fb450806fef1a9d739ee4"
+    },
+    {
+      "path": ".runtime/evidence/abort-provisional-bar-after-py311.json",
+      "bytes": 1336,
+      "sha256": "sha256:f723dd47163dbaf566c4f222d7c611e759dc4f5126e19be4945a6ef210a00b61",
+      "lf_sha256": "sha256:508e9da28f17b16d69b8447c8e3f541d7ef1d5c904bb484f63bd1985ae246466"
+    },
+    {
+      "path": ".runtime/evidence/abort-provisional-bar-after-py313.json",
+      "bytes": 1336,
+      "sha256": "sha256:f723dd47163dbaf566c4f222d7c611e759dc4f5126e19be4945a6ef210a00b61",
+      "lf_sha256": "sha256:508e9da28f17b16d69b8447c8e3f541d7ef1d5c904bb484f63bd1985ae246466"
+    },
+    {
+      "path": ".runtime/evidence/legacy-control-mode-after-py311.json",
+      "bytes": 1465,
+      "sha256": "sha256:49937fe526961d41ade4ddb8eba1a9095d22ba86223a9568b30b46e13827e7e6",
+      "lf_sha256": "sha256:6472ca8ff62c45f6f4fe60a20845fdfe9f0605891823a0fda9af8f1232816e2b"
+    },
+    {
+      "path": ".runtime/evidence/legacy-control-mode-after-py313.json",
+      "bytes": 1465,
+      "sha256": "sha256:49937fe526961d41ade4ddb8eba1a9095d22ba86223a9568b30b46e13827e7e6",
+      "lf_sha256": "sha256:6472ca8ff62c45f6f4fe60a20845fdfe9f0605891823a0fda9af8f1232816e2b"
+    },
+    {
+      "path": ".runtime/evidence/abort-transient-slice-after-py311.json",
+      "bytes": 1240,
+      "sha256": "sha256:61efb51b0ae48e4c934ed2b7457c42940ecd542876970841542995a1581f5666",
+      "lf_sha256": "sha256:0fdc06338265e08fb1fccd9a4c0f8c2bff128f36709a05d0934ab919a5c04d80"
+    },
+    {
+      "path": ".runtime/evidence/abort-transient-slice-after-py313.json",
+      "bytes": 1240,
+      "sha256": "sha256:61efb51b0ae48e4c934ed2b7457c42940ecd542876970841542995a1581f5666",
+      "lf_sha256": "sha256:0fdc06338265e08fb1fccd9a4c0f8c2bff128f36709a05d0934ab919a5c04d80"
+    },
+    {
+      "path": ".runtime/evidence/abort-genuine-legacy-replay-py311.json",
+      "bytes": 2651,
+      "sha256": "sha256:fffb703244117215483519d3f2dcb046a6e753d8f5b14c1ecc5d4e0f3d7f5bb1",
+      "lf_sha256": "sha256:82e55b7ec06e9464e5d27d6ebb71075ff181b3c61b58378166340299ca25d1dd"
+    },
+    {
+      "path": ".runtime/evidence/abort-genuine-legacy-replay-py313.json",
+      "bytes": 2651,
+      "sha256": "sha256:fffb703244117215483519d3f2dcb046a6e753d8f5b14c1ecc5d4e0f3d7f5bb1",
+      "lf_sha256": "sha256:82e55b7ec06e9464e5d27d6ebb71075ff181b3c61b58378166340299ca25d1dd"
+    }
+  ],
+  "design": {
+    "path": ".runtime/evidence/abort-checkpoint-design.md",
+    "bytes": 16642,
+    "sha256": "sha256:a9be2a0df1828d34a33efddc19a76ea6009201a20c59c2606712d5b36f437c91",
+    "lf_sha256": "sha256:a9be2a0df1828d34a33efddc19a76ea6009201a20c59c2606712d5b36f437c91"
+  },
+  "boundaries": {
+    "no_commits_or_remote_mutation_by_runtime_owner": true,
+    "published_registry_and_scalar_candidates_unchanged": true,
+    "no_existing_test_assertion_changes": true,
+    "new_capability_or_manifest_changes": false,
+    "native_format_minor_revisions": {
+      "checkpoint": "1.1.0",
+      "full_transcript": "1.1.0",
+      "compact_transcript": "2.1.0"
+    },
+    "host_boundary_owner": "root: generated_checkpoint explicit publication receipts and pending-abort transport rejection",
+    "only_transient_decoder_relaxation": "Private attempted-heap decode defers upper bound against backing length for working slice descriptors and initial uncommitted new slice descriptors; public, successful-anchor, and final poststate admission remain strict.",
+    "live_resource_semantics": "Canonical checkpoint byte budget bounds witness growth; exhaustion rejects the transaction atomically with PL_RESOURCE_LIMIT and restores exact preattempt state and prior valid proof."
+  },
+  "limitations": [
+    "Three preexisting Windows sdist packaging tests fail (byte normalization, symlink privilege, executable modes). Linux full CI remains required.",
+    "The transition evidence establishes allowed owner state transitions; it does not authenticate arbitrarily rewritten whole transcripts or prove source execution."
+  ]
+}

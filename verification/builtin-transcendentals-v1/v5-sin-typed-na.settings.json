@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.sin_v1","abi_injections":[],"abi_result_type":"float","arguments":[{"$na":true}],"declared_binding":["pine:function:math.sin","pine:function:math.sin#canonical","NAMESPACE_FUNCTION"],"source_name":"v5-sin-typed-na.pine","spelling":"math.sin","stateful":false}

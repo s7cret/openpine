@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.acos_v1","abi_injections":[],"abi_result_type":"float","arguments":[{"$na":true}],"declared_binding":["pine:function:math.acos","pine:function:math.acos#canonical","NAMESPACE_FUNCTION"],"source_name":"v5-acos-typed-na.pine","spelling":"math.acos","stateful":false}

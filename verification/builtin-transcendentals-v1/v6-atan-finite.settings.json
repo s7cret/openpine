@@ -1,0 +1,1 @@
+{"abi_callable":"pinelib.abi.math.atan_v1","abi_injections":[],"abi_result_type":"float","arguments":["close"],"declared_binding":["pine:function:math.atan","pine:function:math.atan#canonical","NAMESPACE_FUNCTION"],"source_name":"v6-atan-finite.pine","spelling":"math.atan","stateful":false}

@@ -71,7 +71,18 @@
     "verification/scalar-execution-review.json",
     "verification/registry-cleanup-final-execution-review.json",
     "verification/scalar-joint-receipt.json",
-    "docs/RC6_STAGE2_SCALAR_PUBLICATION.md"
+    "docs/RC6_STAGE2_SCALAR_PUBLICATION.md",
+    "verification/pending-abort-independent-source-review.json",
+    "verification/abort-checkpoint-implementation-receipt.json",
+    "verification/host-checkpoint-control-source-review.json",
+    "verification/frontend-input-implicit-independent-review.json",
+    "verification/transcendental-independent-review.json",
+    "verification/transcendental-local-receipt.json",
+    "verification/language-state-remote-source-review.json",
+    "docs/RC6_STAGE2_ABORT_CHECKPOINT.md",
+    "docs/RC6_STAGE2_TRANSCENDENTAL_EVIDENCE.md",
+    "verification/language-state-inventory-review.json",
+    "verification/language-state-metadata-independent-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -242,5 +253,56 @@
     "integration": "603fb836a2cca5273938b5c9b7eeb5380f1c8864",
     "receipt": "verification/scalar-joint-receipt.json",
     "cleanup": "pending"
+  },
+  "language_state_block": {
+    "status": "inventory_reviewed_pending_joint_linux",
+    "scope": [
+      "numeric_input_defval_const_v5_v6",
+      "body_inferred_simple_parameters",
+      "retained_abort_control_and_host_boundary",
+      "44_manual_mathematical_cases"
+    ],
+    "expected_baseline_tests": 7754,
+    "expected_new_tests": 716,
+    "expected_candidate_tests": 8470,
+    "new_tests": {
+      "pinelib": 317,
+      "pine2ast": 150,
+      "openpine": 249
+    },
+    "receipt_identities": {
+      "pending-abort-independent-source-review.json": {
+        "raw_artifact_sha256": "f2a83a42bab12ea48f1d37752498395fe091ea5e14739da7c3e63967f302ccd7",
+        "published_lf_sha256": "f2a83a42bab12ea48f1d37752498395fe091ea5e14739da7c3e63967f302ccd7"
+      },
+      "abort-checkpoint-implementation-receipt.json": {
+        "raw_artifact_sha256": "591c4a12034b1f38a41eda717accccc33ed2a66ee4abe2fe6309da2b84d407fa",
+        "published_lf_sha256": "591c4a12034b1f38a41eda717accccc33ed2a66ee4abe2fe6309da2b84d407fa"
+      },
+      "host-checkpoint-control-source-review.json": {
+        "raw_artifact_sha256": "1532a8399bed6fcabc81806617a6d977e207fc5ea5acabb21c04b5621785c9ba",
+        "published_lf_sha256": "cf205cd992e1e9809ea2a45aabee6b78a70dcb72a1e95dbbc72480c99b73b466"
+      },
+      "frontend-input-implicit-independent-review.json": {
+        "raw_artifact_sha256": "c0e59a967375c84f67f2ac8666f03a9445a366735da9bc2d3858e0cb979dc998",
+        "published_lf_sha256": "c0e59a967375c84f67f2ac8666f03a9445a366735da9bc2d3858e0cb979dc998"
+      },
+      "transcendental-independent-review.json": {
+        "raw_artifact_sha256": "4dd6b81404f405665627c53f5cebe9ac6af6bcfb5bb8e9832f029115f1d7fd37",
+        "published_lf_sha256": "4dd6b81404f405665627c53f5cebe9ac6af6bcfb5bb8e9832f029115f1d7fd37"
+      }
+    },
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "excluded_next_waves": [
+      "callable_result_qualifiers_44",
+      "varip_nominal_arrays",
+      "library_return_qualifier_floor"
+    ],
+    "inventory_run": 34170596498,
+    "inventory_sha256": "ee96d6285f0b295bbeb681aa749c74053dfca10c8c4b8e4f53399b310888fe1d",
+    "inventory_review": "verification/language-state-inventory-review.json",
+    "selected_tests": 8470,
+    "removed_tests": 0
   }
 }

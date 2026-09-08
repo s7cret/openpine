@@ -1,0 +1,326 @@
+{
+  "schema_id": "openpine.pending_abort_independent_source_review.v1",
+  "status": "BOUNDED_SOURCE_AND_LOCAL_TEST_REVIEW_PASS_LINUX_PENDING",
+  "baseline": "66890b5aeec8db206fc756681a414e33d7fe5b68",
+  "source_files": {
+    "pinelib/runtime/session.py": {
+      "path": ".runtime/stack/pinelib/pinelib/runtime/session.py",
+      "bytes": 62254,
+      "raw_sha256": "1c0e6a1a4f19a8669f73117dfe6649d8f365dc05f79c6bbe9ffe17d450da64fe",
+      "lf_sha256": "1c0e6a1a4f19a8669f73117dfe6649d8f365dc05f79c6bbe9ffe17d450da64fe"
+    },
+    "pinelib/runtime/pending_abort.py": {
+      "path": ".runtime/stack/pinelib/pinelib/runtime/pending_abort.py",
+      "bytes": 7013,
+      "raw_sha256": "049f1f56b12e2aef9cd22e8260670903c6eb9feef20d238fe5f95f7b39e35ef4",
+      "lf_sha256": "049f1f56b12e2aef9cd22e8260670903c6eb9feef20d238fe5f95f7b39e35ef4"
+    },
+    "pinelib/state/checkpoint.py": {
+      "path": ".runtime/stack/pinelib/pinelib/state/checkpoint.py",
+      "bytes": 7249,
+      "raw_sha256": "2313d1606b3ab9da5517f4a5f73c27ab11c0db1aa05970969ef08031ccbf4934",
+      "lf_sha256": "e91ff11995bf058183a0615c910800d030c4d72883fd10553ee43a1ba8b1e640"
+    },
+    "pinelib/runtime/transcript.py": {
+      "path": ".runtime/stack/pinelib/pinelib/runtime/transcript.py",
+      "bytes": 7705,
+      "raw_sha256": "83e586dc9e54a668615e8c150bd7f91760ac42fd9fce1fea89dd7eacd48aec30",
+      "lf_sha256": "f48dddde128a3e5bff3f3304acc9d066b000f3264a8807fd040de8d76a5b688d"
+    },
+    "pinelib/runtime/compact_transcript.py": {
+      "path": ".runtime/stack/pinelib/pinelib/runtime/compact_transcript.py",
+      "bytes": 3093,
+      "raw_sha256": "f30103ba5e2b3e82a214f9e5b6caa38a4e2ae684586d29b922155376e0cafd1f",
+      "lf_sha256": "833c56bec54280227d61226bf50ee2d326ca07a1cf12579cfb39b48631d77511"
+    },
+    "pinelib/reference/heap.py": {
+      "path": ".runtime/stack/pinelib/pinelib/reference/heap.py",
+      "bytes": 39192,
+      "raw_sha256": "f395614bedb6646b45a0cbf37b4021712fa98e12b289879ca48c9c733d07b41b",
+      "lf_sha256": "208cb86281a946001c406e32c491f84fae08a78c27d784344edd1455aaacfbca"
+    },
+    "tests/test_varip_abort_checkpoint.py": {
+      "path": ".runtime/stack/pinelib/tests/test_varip_abort_checkpoint.py",
+      "bytes": 20424,
+      "raw_sha256": "5b1dd4f56ed0bff7c904c1f3b2fd76639316d144ececa1d634e3644da96db434",
+      "lf_sha256": "5b1dd4f56ed0bff7c904c1f3b2fd76639316d144ececa1d634e3644da96db434"
+    },
+    "tests/test_transcript_control.py": {
+      "path": ".runtime/stack/pinelib/tests/test_transcript_control.py",
+      "bytes": 8563,
+      "raw_sha256": "2fe1631df9b27f361c37ec7d3938ff94c2078454f868bc6f0347091b6dd62422",
+      "lf_sha256": "2fe1631df9b27f361c37ec7d3938ff94c2078454f868bc6f0347091b6dd62422"
+    },
+    "tests/test_abort_witness_replay.py": {
+      "path": ".runtime/stack/pinelib/tests/test_abort_witness_replay.py",
+      "bytes": 12828,
+      "raw_sha256": "9b0e17b1412d569073eed812f6d43c014f66ec6e857d5c26d7beceaf4aca5500",
+      "lf_sha256": "9b0e17b1412d569073eed812f6d43c014f66ec6e857d5c26d7beceaf4aca5500"
+    },
+    "tests/test_abort_transient_slices.py": {
+      "path": ".runtime/stack/pinelib/tests/test_abort_transient_slices.py",
+      "bytes": 6379,
+      "raw_sha256": "f72465707d204083f7ca4c46dfb19dda6c244d784bef6e888f729c9366c33700",
+      "lf_sha256": "f72465707d204083f7ca4c46dfb19dda6c244d784bef6e888f729c9366c33700"
+    },
+    "docs/STAGE2_ABORT_CHECKPOINT.md": {
+      "path": ".runtime/stack/pinelib/docs/STAGE2_ABORT_CHECKPOINT.md",
+      "bytes": 8608,
+      "raw_sha256": "0f3e444a976d1b42ed8788193545a8a46c5d0b5bc223596b2aa084d6e8a0fc59",
+      "lf_sha256": "0f3e444a976d1b42ed8788193545a8a46c5d0b5bc223596b2aa084d6e8a0fc59"
+    }
+  },
+  "all_136_baseline_files_compared": true,
+  "modified_existing_paths": [
+    "pinelib/reference/heap.py",
+    "pinelib/runtime/compact_transcript.py",
+    "pinelib/runtime/session.py",
+    "pinelib/runtime/transcript.py",
+    "pinelib/state/checkpoint.py"
+  ],
+  "all_existing_tests_and_target_manifest_unchanged": true,
+  "source_split": {
+    "production": 6,
+    "new_test_files": 4,
+    "documentation": 1,
+    "old_tests_or_expected_corrections": 0
+  },
+  "immutable_publication_bundle": ".runtime/evidence/abort-wave-content/6aff0420d3ede3d0ac2a1e7ee52160fd6805e3b663b48026cf983713b829758b",
+  "owner_receipt": {
+    "path": ".runtime/evidence/abort-checkpoint-implementation-receipt.json",
+    "bytes": 16921,
+    "raw_sha256": "591c4a12034b1f38a41eda717accccc33ed2a66ee4abe2fe6309da2b84d407fa",
+    "lf_sha256": "591c4a12034b1f38a41eda717accccc33ed2a66ee4abe2fe6309da2b84d407fa"
+  },
+  "tests": {
+    "311": {
+      "independent_focused_passed": 317,
+      "focused_failures": 0,
+      "focused_errors": 0,
+      "focused_skips": 0,
+      "per_file_counts": {
+        "tests.test_varip_abort_checkpoint": 136,
+        "tests.test_abort_witness_replay": 85,
+        "tests.test_transcript_control": 36,
+        "tests.test_abort_transient_slices": 60
+      },
+      "xml": {
+        "path": ".runtime/evidence/pending-abort-independent-final-py311.xml",
+        "bytes": 51705,
+        "raw_sha256": "0b70abd4bb2f29def11ffe07627932a53c0fafe2d653064d695f471f23de2611",
+        "lf_sha256": "0b70abd4bb2f29def11ffe07627932a53c0fafe2d653064d695f471f23de2611"
+      },
+      "owner_full_suite": {
+        "selected": 1283,
+        "passed": 1280,
+        "failures": 3,
+        "errors": 0,
+        "skips": 0,
+        "known_windows_release_tools_failures_only": true,
+        "all_966_baseline_nodes_preserved": true,
+        "xml": {
+          "path": ".runtime/stack/pinelib/.validation/abort-final-py311.xml",
+          "bytes": 195295,
+          "raw_sha256": "a9265c1dfd5716dfb7a5c94e8197d95c0d8a34677abb56cc229d878b8d4ea1a9",
+          "lf_sha256": "efbacb6f0f0dfd4e74add0d30ec6de67cc2ed641783aa977648f66278262277c"
+        }
+      },
+      "nonfailure_warning": "pytest cache path write denied; no case skipped or failed"
+    },
+    "313": {
+      "independent_focused_passed": 317,
+      "focused_failures": 0,
+      "focused_errors": 0,
+      "focused_skips": 0,
+      "per_file_counts": {
+        "tests.test_varip_abort_checkpoint": 136,
+        "tests.test_abort_witness_replay": 85,
+        "tests.test_transcript_control": 36,
+        "tests.test_abort_transient_slices": 60
+      },
+      "xml": {
+        "path": ".runtime/evidence/pending-abort-independent-final-py313.xml",
+        "bytes": 51705,
+        "raw_sha256": "142ee4f37386752db08f3585fdd87bb8d3a24086910fa051a30277c6ebb699bd",
+        "lf_sha256": "142ee4f37386752db08f3585fdd87bb8d3a24086910fa051a30277c6ebb699bd"
+      },
+      "owner_full_suite": {
+        "selected": 1283,
+        "passed": 1280,
+        "failures": 3,
+        "errors": 0,
+        "skips": 0,
+        "known_windows_release_tools_failures_only": true,
+        "all_966_baseline_nodes_preserved": true,
+        "xml": {
+          "path": ".runtime/stack/pinelib/.validation/abort-final-py313.xml",
+          "bytes": 195307,
+          "raw_sha256": "b6f38f9302bdd473e0e3b2ab113ccb9cd2d316c693f2aada1e08dab365b404ae",
+          "lf_sha256": "241bd0462b65845de20041613dcf098b67ec56524f99d88c98e3e0cfed34c3bb"
+        }
+      },
+      "nonfailure_warning": "pytest cache path write denied; no case skipped or failed"
+    }
+  },
+  "independent_reproductions": {
+    "311": {
+      "varip-abort-final": {
+        "path": ".runtime/evidence/varip-abort-final-py311.json",
+        "bytes": 11061,
+        "raw_sha256": "8d91f512894b16c0267ccbe594be2b9d98b3117441482a249e9564ba5787a5d9",
+        "lf_sha256": "f0b2d0a42063a48a7cce29710622c3ba047c4884c6c3a28aca9eb4adfeddf174"
+      },
+      "abort-first-nominal-binding-final": {
+        "path": ".runtime/evidence/abort-first-nominal-binding-final-py311.json",
+        "bytes": 9450,
+        "raw_sha256": "68a865f46841250334f9275abab99a51a4d69de2885706d9403104491196dcd0",
+        "lf_sha256": "ee989fbf58fdc4624315f079c98940891d77abdcc3672bbac1f5a592c86cdbbf"
+      },
+      "abort-genuine-legacy-final": {
+        "path": ".runtime/evidence/abort-genuine-legacy-final-py311.json",
+        "bytes": 2651,
+        "raw_sha256": "eb3d2c4184d9f2549964fe862efc147ac7a79fbbbd535be4316124ea940693d5",
+        "lf_sha256": "e34713a77e65eaa089a63b693ec78562710673bc18aa180ece9f6ef68d6cc241"
+      },
+      "abort-frame-mode-final": {
+        "path": ".runtime/evidence/abort-frame-mode-final-py311.json",
+        "bytes": 994,
+        "raw_sha256": "7770182e308caa6694724874a1d92846efe52b42f809673b156bcdad5e400918",
+        "lf_sha256": "5eaf8320eb6a74880d33a426e2276c526465ff1652540d59fbe2dbfe3c514b0f"
+      },
+      "abort-repeated-orphan-final": {
+        "path": ".runtime/evidence/abort-repeated-orphan-final-py311.json",
+        "bytes": 2133,
+        "raw_sha256": "7083f3195f6c4f6ec90f231583a4ca973d9104c7a590e01382d11d6dc24dc025",
+        "lf_sha256": "13dfbcf7c15c351a673c32340965b2a79f0362cb5cded438ecce1e223637bbbf"
+      },
+      "abort-provisional-bar-after": {
+        "path": ".runtime/evidence/abort-provisional-bar-after-py311.json",
+        "bytes": 1336,
+        "raw_sha256": "f723dd47163dbaf566c4f222d7c611e759dc4f5126e19be4945a6ef210a00b61",
+        "lf_sha256": "508e9da28f17b16d69b8447c8e3f541d7ef1d5c904bb484f63bd1985ae246466"
+      },
+      "legacy-control-mode-after": {
+        "path": ".runtime/evidence/legacy-control-mode-after-py311.json",
+        "bytes": 1465,
+        "raw_sha256": "49937fe526961d41ade4ddb8eba1a9095d22ba86223a9568b30b46e13827e7e6",
+        "lf_sha256": "6472ca8ff62c45f6f4fe60a20845fdfe9f0605891823a0fda9af8f1232816e2b"
+      },
+      "abort-transient-slice-after": {
+        "path": ".runtime/evidence/abort-transient-slice-after-py311.json",
+        "bytes": 1240,
+        "raw_sha256": "61efb51b0ae48e4c934ed2b7457c42940ecd542876970841542995a1581f5666",
+        "lf_sha256": "0fdc06338265e08fb1fccd9a4c0f8c2bff128f36709a05d0934ab919a5c04d80"
+      }
+    },
+    "313": {
+      "varip-abort-final": {
+        "path": ".runtime/evidence/varip-abort-final-py313.json",
+        "bytes": 11061,
+        "raw_sha256": "8d91f512894b16c0267ccbe594be2b9d98b3117441482a249e9564ba5787a5d9",
+        "lf_sha256": "f0b2d0a42063a48a7cce29710622c3ba047c4884c6c3a28aca9eb4adfeddf174"
+      },
+      "abort-first-nominal-binding-final": {
+        "path": ".runtime/evidence/abort-first-nominal-binding-final-py313.json",
+        "bytes": 9450,
+        "raw_sha256": "68a865f46841250334f9275abab99a51a4d69de2885706d9403104491196dcd0",
+        "lf_sha256": "ee989fbf58fdc4624315f079c98940891d77abdcc3672bbac1f5a592c86cdbbf"
+      },
+      "abort-genuine-legacy-final": {
+        "path": ".runtime/evidence/abort-genuine-legacy-final-py313.json",
+        "bytes": 2651,
+        "raw_sha256": "eb3d2c4184d9f2549964fe862efc147ac7a79fbbbd535be4316124ea940693d5",
+        "lf_sha256": "e34713a77e65eaa089a63b693ec78562710673bc18aa180ece9f6ef68d6cc241"
+      },
+      "abort-frame-mode-final": {
+        "path": ".runtime/evidence/abort-frame-mode-final-py313.json",
+        "bytes": 994,
+        "raw_sha256": "7770182e308caa6694724874a1d92846efe52b42f809673b156bcdad5e400918",
+        "lf_sha256": "5eaf8320eb6a74880d33a426e2276c526465ff1652540d59fbe2dbfe3c514b0f"
+      },
+      "abort-repeated-orphan-final": {
+        "path": ".runtime/evidence/abort-repeated-orphan-final-py313.json",
+        "bytes": 2133,
+        "raw_sha256": "7083f3195f6c4f6ec90f231583a4ca973d9104c7a590e01382d11d6dc24dc025",
+        "lf_sha256": "13dfbcf7c15c351a673c32340965b2a79f0362cb5cded438ecce1e223637bbbf"
+      },
+      "abort-provisional-bar-after": {
+        "path": ".runtime/evidence/abort-provisional-bar-after-py313.json",
+        "bytes": 1336,
+        "raw_sha256": "f723dd47163dbaf566c4f222d7c611e759dc4f5126e19be4945a6ef210a00b61",
+        "lf_sha256": "508e9da28f17b16d69b8447c8e3f541d7ef1d5c904bb484f63bd1985ae246466"
+      },
+      "legacy-control-mode-after": {
+        "path": ".runtime/evidence/legacy-control-mode-after-py313.json",
+        "bytes": 1465,
+        "raw_sha256": "49937fe526961d41ade4ddb8eba1a9095d22ba86223a9568b30b46e13827e7e6",
+        "lf_sha256": "6472ca8ff62c45f6f4fe60a20845fdfe9f0605891823a0fda9af8f1232816e2b"
+      },
+      "abort-transient-slice-after": {
+        "path": ".runtime/evidence/abort-transient-slice-after-py313.json",
+        "bytes": 1240,
+        "raw_sha256": "61efb51b0ae48e4c934ed2b7457c42940ecd542876970841542995a1581f5666",
+        "lf_sha256": "0fdc06338265e08fb1fccd9a4c0f8c2bff128f36709a05d0934ab919a5c04d80"
+      }
+    }
+  },
+  "closed_findings": [
+    {
+      "finding": "retained varip state cannot roundtrip against successful transcript",
+      "resolution": "unchanged terminal transcript plus closed successful-state anchor and ordered rollback witnesses"
+    },
+    {
+      "finding": "first enum/UDT varip slot survives without its new declaration metadata",
+      "resolution": "retain explicit typed varip binding declarations while removing other uncommitted new series"
+    },
+    {
+      "finding": "rehashed attempted mode bypasses established callback mode",
+      "resolution": "successful control and legacy admitted mode bound to first and all later witnesses"
+    },
+    {
+      "finding": "repeated one-pass orphan collection cannot replay from one baseline",
+      "resolution": "ordered attempts with actual begin/rollback projections preserve one-pass heap retention"
+    },
+    {
+      "finding": "cross-bar first witness accepted after unpublished deferred callback",
+      "resolution": "first witness must match provisional bar; published-bar floor enforced"
+    },
+    {
+      "finding": "legacy prefix accepts contradictory first modern mode",
+      "resolution": "first modern suffix follows unchanged legacy checkpoint owner admission"
+    },
+    {
+      "finding": "valid abort rejected because attempted slice bounds temporarily invalid",
+      "resolution": "private transient decoder defers only upper bound against backing length; strict final candidate still required"
+    }
+  ],
+  "reviewed_invariants": [
+    "closed native 1.1/full 1.1/compact 2.1 profiles with old dictionaries preserved",
+    "no terminal transcript/state hash bypass without ordinary successful anchor",
+    "committed series/slots/heap/events and request state preserved across each witness",
+    "new series IDs equal actual declaration set difference; no invented committed allocations",
+    "same successful sequence retained; native gaps and same-sequence retries supported",
+    "real rollback replay rather than guessed normal-form fields or repeated fixed-point rollback",
+    "strict nominal schema and graph membership during attempted decode; only temporary slice upper bounds deferred",
+    "strict final state and nested child graph validation before atomic parent replacement",
+    "canonical complete-envelope live byte budget; previous witnesses not re-encoded on append",
+    "resource exhaustion restores preattempt owner identities, state, mode, pending frame and prior proof",
+    "host pending export remains denied and publication is explicit control boundary"
+  ],
+  "host_source_review": {
+    "path": ".runtime/evidence/host-checkpoint-control-source-review.json",
+    "bytes": 1421,
+    "raw_sha256": "1532a8399bed6fcabc81806617a6d977e207fc5ea5acabb21c04b5621785c9ba",
+    "lf_sha256": "cf205cd992e1e9809ea2a45aabee6b78a70dcb72a1e95dbbc72480c99b73b466"
+  },
+  "remaining_required_gate": "Exact frozen runtime and host boundary candidate collection and full Linux execution on Python3.11/3.13, including host28 cases and permanent architecture/Stage1/UI gates.",
+  "limitations": [
+    "Focused owner tests and independent repros passed locally; three known Windows packaging failures remain visible in full owner suites.",
+    "Windows host fcntl prevents executing the host28 boundary cases locally; only their source review is complete.",
+    "Transition consistency does not authenticate a rewritten whole transcript or prove generated source execution.",
+    "Recursive array<UDT> persistence, scalar/input/inference/math waves and full Stage2 acceptance are outside this receipt."
+  ],
+  "full_stage2_accepted": false,
+  "production_or_tests_modified_by_review": false,
+  "audit_body_sha256": "239210999f1a892682797cbf2d26aa4603434b38e59f041a73132ecaa32537b9"
+}

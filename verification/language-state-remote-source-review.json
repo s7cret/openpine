@@ -1,0 +1,30 @@
+{
+  "repositories": {
+    "OpenPine": {
+      "base": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
+      "source": "c1e9618bea6acf3c78053440141462ef63309894",
+      "tree": "baf8a9a15bc2ba7683f7b07c11e67cf2e49d8271",
+      "files": 1319,
+      "overlays": 185,
+      "complete_tree_matches": true
+    },
+    "pine2ast": {
+      "base": "cae5ad7b688bad9a542d1ea100ce38d20600c99c",
+      "source": "5fe76f6ce6a4e49b04d9bf66b6263f201ecffe0e",
+      "tree": "976c13afa03ba33a82f37d5a16c7dca980d1f4c4",
+      "files": 362,
+      "overlays": 16,
+      "complete_tree_matches": true
+    },
+    "pinelib": {
+      "base": "66890b5aeec8db206fc756681a414e33d7fe5b68",
+      "source": "fa7d7ab7f7ffdb1afd29f6167e61a6bb3f719ca7",
+      "tree": "c621b5c00d026eaf4bde455222ee77925ca66d9c",
+      "files": 142,
+      "overlays": 11,
+      "complete_tree_matches": true
+    }
+  },
+  "source_scope": "frozen abort317+host28+math221+input94+implicit56; excludes later result44/varip array/linkage-floor",
+  "full_stage2_accepted": false
+}

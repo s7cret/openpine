@@ -1,0 +1,4 @@
+//@version=5
+indicator("manual angles")
+float sample=na
+plot(math.cos(sample))

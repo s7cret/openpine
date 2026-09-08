@@ -12,6 +12,7 @@ from typing import Any
 
 from openpine_contracts import ExecutionEvent
 from pinelib import RuntimeSession
+from pinelib.runtime.transcript import RuntimeTranscript
 from pinelib.state.checkpoint import canonical_json, is_canonical_sha256, sha
 from pinelib.state.digest import AppendOnlyHistory
 
@@ -66,7 +67,7 @@ def validate_receipts(data, identity, runtime):
     from pinelib.runtime.metadata import BarValues
 
     for frame in runtime.transcript.entries:
-        if frame["phase"] == "BAR_COMMIT":
+        if RuntimeTranscript.is_publication(frame):
             if mode != "event":
                 raise ValueError("generated checkpoint commit lacks its callback receipt")
             cursor.finish(frame["bar_index"])
@@ -80,6 +81,11 @@ def validate_receipts(data, identity, runtime):
             raise ValueError("generated checkpoint receipt sequence differs from runtime")
         count += item["intent_count"]
         new_mode = "direct" if item["event"] is None else "event"
+        control = frame.get("control")
+        if control is not None and control["bar_commit_mode"] != (
+            "callback" if new_mode == "direct" else "deferred"
+        ):
+            raise ValueError("generated checkpoint control mode differs from callback receipts")
         if mode is not None and mode != new_mode:
             raise ValueError("generated checkpoint mixes direct and event callbacks")
         mode = new_mode
@@ -137,10 +143,13 @@ class GeneratedCheckpointMixin:
     def export_state(self) -> dict[str, Any]:
         if self.execution_cursor.open_bar is not None:
             raise ValueError("cannot export a generated session with an uncommitted bar")
+        checkpoint = self.session.checkpoint().to_dict()
+        if "pending_abort" in checkpoint["state"]:
+            raise ValueError("cannot export a generated session with a pending abort")
         body = {
             "schema_id": SCHEMA,
             "identity": self._checkpoint_identity(),
-            "runtime": self.session.checkpoint().to_dict(),
+            "runtime": checkpoint,
             "last_event": None
             if self.execution_cursor.last is None
             else self.execution_cursor.last.to_dict(),
@@ -184,6 +193,8 @@ class GeneratedCheckpointMixin:
         )
         candidate.commit_full_identity = previous.commit_full_identity
         candidate.restore(state["runtime"])
+        if "pending_abort" in state["runtime"]["state"]:
+            raise ValueError("cannot restore a generated session with a pending abort")
         journal, cursor, derived_sequence = validate_receipts(
             state["callback_receipts"], state["callback_receipts_identity"], candidate
         )
