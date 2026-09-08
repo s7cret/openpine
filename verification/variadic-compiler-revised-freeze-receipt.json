@@ -1,0 +1,89 @@
+{
+  "bundle_sha256": "98dfe215bdd7206d86e65afcba3c23bdb8a354842b1f67da49df6655e5e0a8a4",
+  "source_files": 6,
+  "baseline": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+  "unchanged_baseline_files": 167,
+  "modified_baseline_files": [
+    "ast2python/admission/facts.py",
+    "ast2python/emission/python.py",
+    "ast2python/lowering/binding_audit.py"
+  ],
+  "test_comparisons": [
+    {
+      "python": "311",
+      "before_sha256": "b61bda84d323daf88ad9524033e51ac1e07392165ac04a1632a55becabdef51d",
+      "after_sha256": "bb1bf626740743f2636a660c102af859b3e875db9e1706fe9982a904e369ba42",
+      "before_count": 1028,
+      "after_count": 1110,
+      "removed": [],
+      "changed": {
+        "tests.pass3.test_release_candidate::test_git_state_is_fail_closed_and_clean": [
+          "failure",
+          "pass"
+        ],
+        "tests.test_release_distribution::test_release_report_detects_manifest_problems": [
+          "failure",
+          "pass"
+        ],
+        "tests.test_release_distribution::test_release_report_rejects_rc5_compatibility_module": [
+          "failure",
+          "pass"
+        ],
+        "tests.test_release_distribution::test_release_report_rejects_rc5_environment_and_export_surfaces": [
+          "failure",
+          "pass"
+        ]
+      },
+      "added_pass": 82,
+      "outcomes": {
+        "pass": 1109,
+        "failure": 1
+      },
+      "unchanged_windows_failure": {
+        "tests.test_admission_hardening::test_path_input_rejects_symlink_before_read": "failure"
+      }
+    },
+    {
+      "python": "313",
+      "before_sha256": "dae6f416faef0583461357955eddc3046581d33b8e2171907bd6ba3d2154e3e8",
+      "after_sha256": "905d7365486117c29a360f316669b4b943735e88a9721d9486d0650665460387",
+      "before_count": 1028,
+      "after_count": 1110,
+      "removed": [],
+      "changed": {
+        "tests.pass3.test_release_candidate::test_git_state_is_fail_closed_and_clean": [
+          "failure",
+          "pass"
+        ],
+        "tests.test_release_distribution::test_release_report_detects_manifest_problems": [
+          "failure",
+          "pass"
+        ],
+        "tests.test_release_distribution::test_release_report_rejects_rc5_compatibility_module": [
+          "failure",
+          "pass"
+        ],
+        "tests.test_release_distribution::test_release_report_rejects_rc5_environment_and_export_surfaces": [
+          "failure",
+          "pass"
+        ]
+      },
+      "added_pass": 82,
+      "outcomes": {
+        "pass": 1109,
+        "failure": 1
+      },
+      "unchanged_windows_failure": {
+        "tests.test_admission_hardening::test_path_input_rejects_symlink_before_read": "failure"
+      }
+    }
+  ],
+  "expected_linux_tests": 1110,
+  "static_review": {
+    "unchanged_baseline_diagnostics": 447,
+    "new_diagnostics": 0,
+    "full_strict_mypy_green": false,
+    "new_variadic_helper_diagnostics": 0
+  },
+  "joint_ci_accepted": false
+}

@@ -1,0 +1,17 @@
+{
+  "before_manifest_sha256": "db3c9a5069f789f80d9f4003db5eee5cc2242f5b4c00823333b1bbc6059a2255",
+  "target_manifest_sha256": "a2bbe511ec6c7c9b57b3ad57ec3b9afdfe8f8ceed6e466f1d705f4da97566503",
+  "expected_derivation": "Frozen concat manifest plus two explicit contract metadata edits; no SUT import or builder execution",
+  "old_remainder_sha256": "0ca467f225e7286fd12f8aec4311633e780a3147092f33358575b56ac3192d56",
+  "new_remainder_sha256": "cdaa5007b9b9f5948e10f217f54db116e607b40a499d230b4b527a3a62fe82d3",
+  "modified_rows": [
+    "math.max",
+    "math.min"
+  ],
+  "old_test_sha256": "9491c8a680ad06585db02dd7237795c1929f1cb0c596f3f76cb05e8b0ae4bad4",
+  "new_test_sha256": "1cfb456fdb0acd9b17406b5edba69c362c326e904987f66b4859df25fe3a146e",
+  "bundle_sha256": "9a81dfea7441b4a939bfce1785c03efcf2ee539bf6a8f9be0523c0c64cc5f345",
+  "assertion_bodies_unchanged": true,
+  "old_failure_reports_preserved": true,
+  "joint_ci_accepted": false
+}

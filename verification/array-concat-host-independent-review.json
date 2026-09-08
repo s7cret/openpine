@@ -1,0 +1,1614 @@
+{
+  "schema_id": "openpine.array_concat_host_independent_review.v1",
+  "status": "FROZEN_HOST_CORPUS_REVIEW_AND_LOCAL_EXECUTION_PASSED_JOINT_LINUX_PENDING",
+  "bundle_sha256": "c3678ebee56deb0b9f6c9c1365185a1e275a670d16ae937b4aa4bb5e8a45004c",
+  "files": [
+    {
+      "category": "documentation",
+      "change": "added",
+      "lf_sha256": "sha256:2ccbeb52177e9abd662fe16c3e1740aa12343c8c0741307013362dd6f6b17147",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2ccbeb52177e9abd662fe16c3e1740aa12343c8c0741307013362dd6f6b17147",
+      "repository": "OpenPine",
+      "repository_path": "docs/RC6_STAGE2_ARRAY_CONCAT_EXPECTED.md"
+    },
+    {
+      "category": "new_test",
+      "change": "added",
+      "lf_sha256": "sha256:f90e1496e46d5d0a49f02a7b84e5e5f3498a617efa9ba2fc1eb0c2f1d4744a38",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:f90e1496e46d5d0a49f02a7b84e5e5f3498a617efa9ba2fc1eb0c2f1d4744a38",
+      "repository": "OpenPine",
+      "repository_path": "rc6_tests/test_rc6_array_concat_expected.py"
+    },
+    {
+      "category": "local_evidence",
+      "change": "added",
+      "lf_sha256": "sha256:e113d1a847b92c6f24dce83c47667d9910702523ebe6013e4045000baed0c7eb",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e113d1a847b92c6f24dce83c47667d9910702523ebe6013e4045000baed0c7eb",
+      "repository": "OpenPine",
+      "repository_path": "verification/array-concat-host-local-review.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4deebf97125560eeb61a52ca1179a80fd6a6c2d466f2cdabeb18b7b982c55400",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4deebf97125560eeb61a52ca1179a80fd6a6c2d466f2cdabeb18b7b982c55400",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/array-concat-bars.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e",
+      "preserve_exact_raw_bytes": true,
+      "raw_sha256": "sha256:20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/array-concat-manual-expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:3db80a1910787006255fbbba031d44bf3d4f86bc3ab208c242a919fc9a4c7c2e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:3db80a1910787006255fbbba031d44bf3d4f86bc3ab208c242a919fc9a4c7c2e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/lock.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:bd8f303304a2d0d18fe537b9e654c2f8077a9731c8b08bfc0c4568b4e9f2d0d1",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:bd8f303304a2d0d18fe537b9e654c2f8077a9731c8b08bfc0c4568b4e9f2d0d1",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/manifest.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-boolean-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:313310e69a65df79cae0a1e5ab65a082c58b8f9b4abe73b0f1a1fc7c723c7ecc",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:313310e69a65df79cae0a1e5ab65a082c58b8f9b4abe73b0f1a1fc7c723c7ecc",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-boolean-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:bba0fb5ea08c07b315999d30857590f2f74ea59c7708718fdfeaf3421eb2765d",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:bba0fb5ea08c07b315999d30857590f2f74ea59c7708718fdfeaf3421eb2765d",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-boolean-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-both-empty-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:34c2d4a9962037cc6f496e01d6b8c3d454f6f7c41d2191f9944ee718d2cefef5",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:34c2d4a9962037cc6f496e01d6b8c3d454f6f7c41d2191f9944ee718d2cefef5",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-both-empty-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c9b16f6887eaa4770614906a1734c7aaea476744f41334b2e549481cb219d482",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c9b16f6887eaa4770614906a1734c7aaea476744f41334b2e549481cb219d482",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-both-empty-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-duplicates-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:dd14f83b331169da98258c6ccf2df2945472f11dbf1c094908cb34b242e6a8d9",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:dd14f83b331169da98258c6ccf2df2945472f11dbf1c094908cb34b242e6a8d9",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-duplicates-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:5d5abef62bfd323f678c18c19aff16f6caf617dcb08d4a0ffb40e983a2c214cb",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:5d5abef62bfd323f678c18c19aff16f6caf617dcb08d4a0ffb40e983a2c214cb",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-duplicates-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-empty-source-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:018f53a4200b2e1bb50c31fbe11c12f5a8b95db328e8c40c9e13aba15b1095db",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:018f53a4200b2e1bb50c31fbe11c12f5a8b95db328e8c40c9e13aba15b1095db",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-empty-source-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:dd7f38b5e435ef6903528cc6ffe5f3134b5ea4c9db303911e089754bc9c85766",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:dd7f38b5e435ef6903528cc6ffe5f3134b5ea4c9db303911e089754bc9c85766",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-empty-source-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-empty-target-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:bd5562f1eb9dfeb66be7b9ae6ad1cafae4d6b9667c36519b7e62f9dc92254beb",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:bd5562f1eb9dfeb66be7b9ae6ad1cafae4d6b9667c36519b7e62f9dc92254beb",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-empty-target-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7e464b8c3e1646132e4c15be8ec329c1da9293a4defd0a202194d4d9a2a88d62",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7e464b8c3e1646132e4c15be8ec329c1da9293a4defd0a202194d4d9a2a88d62",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-empty-target-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-fractional-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:67bda4b961bd26672197424a71613cdbdb1266e0d37260f23c38e8eae8583b9d",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:67bda4b961bd26672197424a71613cdbdb1266e0d37260f23c38e8eae8583b9d",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-fractional-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:f7885bb1af4fafa4b166af900f967f8d6a6a6d5dbdef9e6328bc09724fbac143",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:f7885bb1af4fafa4b166af900f967f8d6a6a6d5dbdef9e6328bc09724fbac143",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-fractional-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-reference-example-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c4588e47a99fca3d8625cfd69d78837fb84c4eb285639c63dd0aaa67064602c5",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c4588e47a99fca3d8625cfd69d78837fb84c4eb285639c63dd0aaa67064602c5",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-reference-example-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:622fa424fb9f311beec37c56f7037ef8f4fe793ad27bcd38362bf852c097bc4e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:622fa424fb9f311beec37c56f7037ef8f4fe793ad27bcd38362bf852c097bc4e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-reference-example-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-self-empty-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:d41b0c9e53151607683be9f27a46bf6de0146e5f988d03203423c091f3df1d34",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:d41b0c9e53151607683be9f27a46bf6de0146e5f988d03203423c091f3df1d34",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-self-empty-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:f2b4cb090fed1d7c3e9d637534c91191fc5d86cf40ac63c290bd493f9c904fb0",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:f2b4cb090fed1d7c3e9d637534c91191fc5d86cf40ac63c290bd493f9c904fb0",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-self-empty-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-self-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:b3bf512f6a3bb3cba0b2fb99fe823b468fe099c368c6b640359daf845fc082a5",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:b3bf512f6a3bb3cba0b2fb99fe823b468fe099c368c6b640359daf845fc082a5",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-self-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:90def0212df94079d4cb460b24a89b1f3492043a7bdf44094f568137513cdaa4",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:90def0212df94079d4cb460b24a89b1f3492043a7bdf44094f568137513cdaa4",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-self-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-string-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c4a804cc776bf102f1069b8321ae693345a78fd1aa21a4db939e5fba94335dfa",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c4a804cc776bf102f1069b8321ae693345a78fd1aa21a4db939e5fba94335dfa",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-string-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:ef45efd7bcc0c50807c0f6a5a351c1c031316f479f3fcaa744302066c0d16428",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:ef45efd7bcc0c50807c0f6a5a351c1c031316f479f3fcaa744302066c0d16428",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v4-string-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-boolean-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:606cd9bc36ac32801dd88e7ae5c3e8ef43f909565d33d995069fae9dab0ea917",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:606cd9bc36ac32801dd88e7ae5c3e8ef43f909565d33d995069fae9dab0ea917",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-boolean-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:381287eded6a4738112cf597a5dacd4ff9b50ce0e244ca2b71788ce74d69e472",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:381287eded6a4738112cf597a5dacd4ff9b50ce0e244ca2b71788ce74d69e472",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-boolean-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-boolean-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:81c143667f3dd8e7695c9fa429db129c179abe5d314541a50e06833d7f47d70c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:81c143667f3dd8e7695c9fa429db129c179abe5d314541a50e06833d7f47d70c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-boolean-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:787cf8790307305120689f07d7ee1bcb111340657c542b69cc555379734071a5",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:787cf8790307305120689f07d7ee1bcb111340657c542b69cc555379734071a5",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-boolean-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-both-empty-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:cbdf721371e5860b1c188fe015b38c4783dac4d1a55b580c4ec07f9a39c2e409",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:cbdf721371e5860b1c188fe015b38c4783dac4d1a55b580c4ec07f9a39c2e409",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-both-empty-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:9c624b4576f5c9ab3b78c970d4f7a1872efb929bfe8b4b7d508bce2e9f8726d3",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:9c624b4576f5c9ab3b78c970d4f7a1872efb929bfe8b4b7d508bce2e9f8726d3",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-both-empty-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-both-empty-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7b5506989ca6d17f634535bbea6ad55bf186f01b3843bfd1d6c0e1db8a8e518a",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7b5506989ca6d17f634535bbea6ad55bf186f01b3843bfd1d6c0e1db8a8e518a",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-both-empty-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:b0e1263b6df83431b5781b5ea434a93f830c96f472dcbb44d7880fe08de831d7",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:b0e1263b6df83431b5781b5ea434a93f830c96f472dcbb44d7880fe08de831d7",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-both-empty-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-duplicates-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:ed2f0b23d3b4b226ba51356806e0f92dbff8cb17a858b7146ad549f18528353a",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:ed2f0b23d3b4b226ba51356806e0f92dbff8cb17a858b7146ad549f18528353a",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-duplicates-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:6d14f6713c6240d64194bee27bc3fd0378f71faf0e002742a371ee6936c61df4",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:6d14f6713c6240d64194bee27bc3fd0378f71faf0e002742a371ee6936c61df4",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-duplicates-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-duplicates-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:f607fad527ece208788bcc5a3f8df8b522671848f69df14fac137a133ed21989",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:f607fad527ece208788bcc5a3f8df8b522671848f69df14fac137a133ed21989",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-duplicates-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:da33451b8088ba738336bbf993fcefb62e9986476b1031087965d3ddf3fac7a1",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:da33451b8088ba738336bbf993fcefb62e9986476b1031087965d3ddf3fac7a1",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-duplicates-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-source-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4236650e2ac3205d983c4d90f17465580345aedb19b987231b14b4f83c4ddeee",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4236650e2ac3205d983c4d90f17465580345aedb19b987231b14b4f83c4ddeee",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-source-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:b1b1a06797a1374823f0ec1141cebf84f4eb1fbd0bed86583ad5188281dfb752",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:b1b1a06797a1374823f0ec1141cebf84f4eb1fbd0bed86583ad5188281dfb752",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-source-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-source-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e52fa76a25e3a615bf3a0ea72f758bf9deb53ca9bdebb300c3263ca67da9f5b2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e52fa76a25e3a615bf3a0ea72f758bf9deb53ca9bdebb300c3263ca67da9f5b2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-source-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2bc5a707a9c41ee9492375a29c0f90e3054d0a70de87397895e79ee7c1a302cf",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2bc5a707a9c41ee9492375a29c0f90e3054d0a70de87397895e79ee7c1a302cf",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-source-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-target-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:3ce28079f2eb49f68f06671cc71097326747c6f31f1c419b077d3f10290041b4",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:3ce28079f2eb49f68f06671cc71097326747c6f31f1c419b077d3f10290041b4",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-target-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:40f5202225c06341f2f1c48a4e11aed619d6ada664b2a33f4203ffb86975abc0",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:40f5202225c06341f2f1c48a4e11aed619d6ada664b2a33f4203ffb86975abc0",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-target-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-target-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:5e71453f174fcbdba1d5c3a3926a93de556d9a28356b82a08cbddccd5708bea2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:5e71453f174fcbdba1d5c3a3926a93de556d9a28356b82a08cbddccd5708bea2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-target-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:67faf9326e7e97e5485bd22631c6898a13f8b18b463a35fa26af07b422beb67e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:67faf9326e7e97e5485bd22631c6898a13f8b18b463a35fa26af07b422beb67e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-empty-target-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-fractional-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:675cf52c166869a2c68a147a978fd8a6996b59997dc5e2ab103d29fe7ff1344d",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:675cf52c166869a2c68a147a978fd8a6996b59997dc5e2ab103d29fe7ff1344d",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-fractional-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:736648b57a85d84e499f31098e4b99cca1e584c21b2450c151550d64b494e4cf",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:736648b57a85d84e499f31098e4b99cca1e584c21b2450c151550d64b494e4cf",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-fractional-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-fractional-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:be75278d98da0790493e8c4af5944e9fe577b7eb63d5894d233bd36916e950a7",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:be75278d98da0790493e8c4af5944e9fe577b7eb63d5894d233bd36916e950a7",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-fractional-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:b91457cd648274ddd31df162f22af64ab220e781198246c98b310ee64bbb56d8",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:b91457cd648274ddd31df162f22af64ab220e781198246c98b310ee64bbb56d8",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-fractional-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-reference-example-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a357ba8aa95d87b5a96a5678502882897b803240ca9d1ef9507701b1224bd754",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a357ba8aa95d87b5a96a5678502882897b803240ca9d1ef9507701b1224bd754",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-reference-example-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:09acd6338f446ef2be7ad3f6e3fabe39a7534fdb28a7c761e4c0e96a2673b598",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:09acd6338f446ef2be7ad3f6e3fabe39a7534fdb28a7c761e4c0e96a2673b598",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-reference-example-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-reference-example-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:971b26b3bb45dc87d2f4d1c06e9c92540a2f1c71812772187224bfda4a5c5f85",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:971b26b3bb45dc87d2f4d1c06e9c92540a2f1c71812772187224bfda4a5c5f85",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-reference-example-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:bbeb987efa7c0075f0ee9558aeb411e493d4c6ff59fde7185c5b7147ce761147",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:bbeb987efa7c0075f0ee9558aeb411e493d4c6ff59fde7185c5b7147ce761147",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-reference-example-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-empty-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2a1cd20c82f60c6bac6f7c3b72c7ffb13b552301e3f1cacc0937477f6f432313",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2a1cd20c82f60c6bac6f7c3b72c7ffb13b552301e3f1cacc0937477f6f432313",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-empty-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:db3008d566aec9094f5d1e89c346fee42ff935df45d7bebb1d669f3184f56971",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:db3008d566aec9094f5d1e89c346fee42ff935df45d7bebb1d669f3184f56971",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-empty-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-empty-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:30f23731eca3123b92f4e93565122c356575a61551d91d17da637fc761306d81",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:30f23731eca3123b92f4e93565122c356575a61551d91d17da637fc761306d81",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-empty-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2cb99a7de112f77ebeca0548e0a630da5292f7302cc602895228ec04851e654b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2cb99a7de112f77ebeca0548e0a630da5292f7302cc602895228ec04851e654b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-empty-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:3f0ea05c4334e5d91ef128a0e31c447cc6e8f176514ecb2f249bb5b1293841e0",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:3f0ea05c4334e5d91ef128a0e31c447cc6e8f176514ecb2f249bb5b1293841e0",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a022e755a392e350177da2c0b084486ef784b2317bc685259448eb131167e440",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a022e755a392e350177da2c0b084486ef784b2317bc685259448eb131167e440",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:6059eeac736b7053826d7e06c9b6dab9b5c1fab4e114c97ffb96e471bf5a5c7a",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:6059eeac736b7053826d7e06c9b6dab9b5c1fab4e114c97ffb96e471bf5a5c7a",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2d8af89bd0e14a98cfa361bc9d0b47cc037a6282010018d16e09d93e4594f3be",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2d8af89bd0e14a98cfa361bc9d0b47cc037a6282010018d16e09d93e4594f3be",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-self-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-string-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e335e519d29ef39aa378e3643fe9b433aedab34a0ad9bb9082ebc2bcbcbd3097",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e335e519d29ef39aa378e3643fe9b433aedab34a0ad9bb9082ebc2bcbcbd3097",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-string-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4aad9adb5efe9e47c14fc853e1c497dfb837a6ccc2a769b3aa04f94c72327423",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4aad9adb5efe9e47c14fc853e1c497dfb837a6ccc2a769b3aa04f94c72327423",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-string-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-string-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:77329ae299dbbf8a44b98aa7e8785630d77c7cf16125fde60a2feafdd6c39ee7",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:77329ae299dbbf8a44b98aa7e8785630d77c7cf16125fde60a2feafdd6c39ee7",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-string-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:ee2ef53e06f80547a493df6798b59356802ad2e545d9c6814527cc38c5b541cb",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:ee2ef53e06f80547a493df6798b59356802ad2e545d9c6814527cc38c5b541cb",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v5-string-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-boolean-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:6b856409a8ea9b77214ceb9d51fbe60b8b0628bfca6787548377bbb77ac1c5de",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:6b856409a8ea9b77214ceb9d51fbe60b8b0628bfca6787548377bbb77ac1c5de",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-boolean-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e54a84ee96fd71f910ee5f55c8de6ef59d1fd3fa85464dba484df4426cf3bef7",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e54a84ee96fd71f910ee5f55c8de6ef59d1fd3fa85464dba484df4426cf3bef7",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-boolean-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e9dd0f2ed834b1c7e0f3ff8261abd20b7fbd5d2d223a35859f0769fba4b47466",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-boolean-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:8bbd88eff8ea812ec0918df7c35b143db7ebbf0f3cae7a1e70d8fd1f40b68ad2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:8bbd88eff8ea812ec0918df7c35b143db7ebbf0f3cae7a1e70d8fd1f40b68ad2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-boolean-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:29f097522881e94961b7158422461d08125c534263c489d810887de7e4f349fc",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:29f097522881e94961b7158422461d08125c534263c489d810887de7e4f349fc",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-boolean-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-both-empty-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:cc1bb3704eca0b6f381027a31ba843b461929e55924692e41b3e95072d1b939e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:cc1bb3704eca0b6f381027a31ba843b461929e55924692e41b3e95072d1b939e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-both-empty-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:78349d94bdd99b446bde5f7cfa1c25e4cd3a2650cec0c615f5aca6234f03ff8f",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:78349d94bdd99b446bde5f7cfa1c25e4cd3a2650cec0c615f5aca6234f03ff8f",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-both-empty-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:c9522faae8d78539441885c536a3af1e681d43202abc4df1f68f90333153786e",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-both-empty-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:1b4634a0224225a77117cc0bfa3164576ecd19fc184a81d070449e394cb1f1bf",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:1b4634a0224225a77117cc0bfa3164576ecd19fc184a81d070449e394cb1f1bf",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-both-empty-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:86828b5c862ea69f458834d77d6f33b459bcfedead982c7d20863d197352b5d8",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:86828b5c862ea69f458834d77d6f33b459bcfedead982c7d20863d197352b5d8",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-both-empty-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-duplicates-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:1da7242025561b12ab1310e2a0ba022ed58ef51e42b47c022cdd01f369daec32",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:1da7242025561b12ab1310e2a0ba022ed58ef51e42b47c022cdd01f369daec32",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-duplicates-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:3bc69705224239ec0a6e1053ac0a4a5288e72b56f1205d513b7c97a2bc0e379c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:3bc69705224239ec0a6e1053ac0a4a5288e72b56f1205d513b7c97a2bc0e379c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-duplicates-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:23f16d566b3f7dcb9735257ba52a6e356936282452101393d219006bf9f70e14",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-duplicates-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:55c02f2b0c0b3c4cbfac83f60811906f5431997dbe9eacadc0fbe6dc523f4f47",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:55c02f2b0c0b3c4cbfac83f60811906f5431997dbe9eacadc0fbe6dc523f4f47",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-duplicates-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:af9453d8153d7b7eddf98e67be3292d45d198cd2a58431fcdfeffe4699cd619b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:af9453d8153d7b7eddf98e67be3292d45d198cd2a58431fcdfeffe4699cd619b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-duplicates-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-source-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:3f272d502432e0cb26e7a74f08161272f14ad0a138ac960b6acbdf4bff9085ed",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:3f272d502432e0cb26e7a74f08161272f14ad0a138ac960b6acbdf4bff9085ed",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-source-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:16b7007189c0e981b8575127ddeec3669e0746a271cc6b4bd53f0e142d03fb83",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:16b7007189c0e981b8575127ddeec3669e0746a271cc6b4bd53f0e142d03fb83",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-source-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7d2c8cff43c21a12d29d5a15bf59af843d5ab6b0fe4dfef51e7d316b4fe6d76b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-source-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e99ca884e6b54371f0c896eab46f115d6ff08dbe2dfe34e6b7e233ad3c6d713b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e99ca884e6b54371f0c896eab46f115d6ff08dbe2dfe34e6b7e233ad3c6d713b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-source-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:0415eb27dd2ea48a2c06e27188e4c46cded4ef57669ff438f3244fcad9cc5f70",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:0415eb27dd2ea48a2c06e27188e4c46cded4ef57669ff438f3244fcad9cc5f70",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-source-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-target-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:9868a38bd0c06ebd8683a06c822048a291a0809bc17d7b8cd0fc2bc72345ac38",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:9868a38bd0c06ebd8683a06c822048a291a0809bc17d7b8cd0fc2bc72345ac38",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-target-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:ea61c7c7094194fc81cbdce5d31b5a0e98a18161e2fbc1f1e66016f83c1cbf57",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:ea61c7c7094194fc81cbdce5d31b5a0e98a18161e2fbc1f1e66016f83c1cbf57",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-target-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:0d496ed61a8c0c1736074da457be23fbed6a51edc65b5e8fc57ce34c3dff3c69",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-target-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a8a0ca84ea3b83d278dc8ec6ed775b666a5e8f213afa442f9df0dd20683d02ab",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a8a0ca84ea3b83d278dc8ec6ed775b666a5e8f213afa442f9df0dd20683d02ab",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-target-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:401ba3670354fb0590e268dee306efddede8b3780661296a62830e3dcc299281",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:401ba3670354fb0590e268dee306efddede8b3780661296a62830e3dcc299281",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-empty-target-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-fractional-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:eafd3a61cf21a1418f6bd67f6d55741110e9e96e48fe405b3b931a6f2d33ed14",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:eafd3a61cf21a1418f6bd67f6d55741110e9e96e48fe405b3b931a6f2d33ed14",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-fractional-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2d338f7fe653e92766e442797c60a367aa2b256a37d7b4e8ec4e995ae7a52fa5",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2d338f7fe653e92766e442797c60a367aa2b256a37d7b4e8ec4e995ae7a52fa5",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-fractional-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:4fe3f30490bff08a647c24b2a91ae5ae2400c275344e420fdfb327a49ea8dfc2",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-fractional-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:d0666986c5da7a588516dd77116ab56507ad1966072d3b99ca119446d243fc77",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:d0666986c5da7a588516dd77116ab56507ad1966072d3b99ca119446d243fc77",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-fractional-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e66fb7f8997a9889285df06b863833759c6cf3764e946d32c7259382b1584a93",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e66fb7f8997a9889285df06b863833759c6cf3764e946d32c7259382b1584a93",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-fractional-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-reference-example-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:bcd197b418b354a5c62717bbe3a2849173fb66de825e218993e7d55d8bb4986d",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:bcd197b418b354a5c62717bbe3a2849173fb66de825e218993e7d55d8bb4986d",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-reference-example-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:b9226c471d7019733af91a47e0e69358bbc8aa6f7fc25197ccca56a3f2908c01",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:b9226c471d7019733af91a47e0e69358bbc8aa6f7fc25197ccca56a3f2908c01",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-reference-example-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:45965f3288efa74c16fbae151f6043378e668741fff3d888da1da2212b85cc35",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-reference-example-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:d2876876e240ac763d7a82a93aba700478ad20044514ce6730dad93d798bd095",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:d2876876e240ac763d7a82a93aba700478ad20044514ce6730dad93d798bd095",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-reference-example-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e73c6462954b29ba8b7956939204454f2c7224f6d1cae33b8c7d9b103b428a4b",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e73c6462954b29ba8b7956939204454f2c7224f6d1cae33b8c7d9b103b428a4b",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-reference-example-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-empty-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:9e85b8f34798a0dbfd3be0e0cf893db26032655d275bbaa1d6b5346e29b86e48",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:9e85b8f34798a0dbfd3be0e0cf893db26032655d275bbaa1d6b5346e29b86e48",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-empty-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:6c3000d17e58d2d82117682971c836c29100d6e1acfb2b4f5ae78410b8a78825",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:6c3000d17e58d2d82117682971c836c29100d6e1acfb2b4f5ae78410b8a78825",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-empty-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:a44378e6b011c4c88f12ab8df17ee57efdc26c80888952013dd74e8c1d5b78dd",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-empty-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:6f55f9865fbb27443e77c7ce1aa95c5bffae3aee8cddbb2e2a9c6c8d5fc6d818",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:6f55f9865fbb27443e77c7ce1aa95c5bffae3aee8cddbb2e2a9c6c8d5fc6d818",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-empty-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:1d707ecedf1fd5db5b88ec11f91066a35f643a1cb6605b77684b81c7c4bdf3ad",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:1d707ecedf1fd5db5b88ec11f91066a35f643a1cb6605b77684b81c7c4bdf3ad",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-empty-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:40791906dd03e1c639c558e4d7ee33978eb77a2cd19602220ed60b82d2c0a2f1",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:40791906dd03e1c639c558e4d7ee33978eb77a2cd19602220ed60b82d2c0a2f1",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:e6df57eaddc8bd8ca10bb7155c877d5d6b50d521dfed4e68d000b9b2eb006442",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:e6df57eaddc8bd8ca10bb7155c877d5d6b50d521dfed4e68d000b9b2eb006442",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2de88aedb26a05c471e09e98901272ad009709d9838effdfa9267ed75f64a14c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:1d37602a12fc3fad2a74d003d2bf13ea6554c350b355b3e243fe2239f3c0c75c",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:1d37602a12fc3fad2a74d003d2bf13ea6554c350b355b3e243fe2239f3c0c75c",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:0aed657f42627bf67a37fa8a00a5533e6f054df9af75ec749ff5e8d0cfc72338",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:0aed657f42627bf67a37fa8a00a5533e6f054df9af75ec749ff5e8d0cfc72338",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-self-method.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-string-function.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:65c80d47be90e56dfcfe59e27d1c5e3b3c0d9cedc200be845ae94995e0bcea46",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:65c80d47be90e56dfcfe59e27d1c5e3b3c0d9cedc200be845ae94995e0bcea46",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-string-function.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:7b6ac0163ae665f11579f8d26ad73dd5f16f824453c335e4d37cb8bf19b94ebd",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:7b6ac0163ae665f11579f8d26ad73dd5f16f824453c335e4d37cb8bf19b94ebd",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-string-function.settings.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2df73f0b957c6838513086a4821a75942b7fb1803901c85bdd26e67317874609",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-string-method.expected.json"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:2f951c1bc5fff9f21dffa565a0214bd3892d7834a7b62c50c4edc4bd4e4fd0b6",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:2f951c1bc5fff9f21dffa565a0214bd3892d7834a7b62c50c4edc4bd4e4fd0b6",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-string-method.pine"
+    },
+    {
+      "category": "corpus_authoring",
+      "change": "added",
+      "lf_sha256": "sha256:9568842694dabe88cc0830dcd8859d02ed3aea698128ba4e9a67efcec49d39ac",
+      "preserve_exact_raw_bytes": false,
+      "raw_sha256": "sha256:9568842694dabe88cc0830dcd8859d02ed3aea698128ba4e9a67efcec49d39ac",
+      "repository": "OpenPine",
+      "repository_path": "verification/builtin-array-concat-v1/v6-string-method.settings.json"
+    }
+  ],
+  "baseline_host": {
+    "source": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+    "all1618files_byte_unchanged": true,
+    "added": 157,
+    "existing_tests_changed": 0
+  },
+  "manual_oracle": {
+    "raw_sha256": "20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e",
+    "manual_rows": 30,
+    "expanded_cases": 50,
+    "expected_values_all_copied_from_original_literals": true,
+    "original_raw_crlf_preserved": true,
+    "namespace_method_expansion_versioned_tuples": [
+      [
+        4,
+        "pine:function:array.concat",
+        "pine:function:array.concat#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        5,
+        "pine:function:array.concat",
+        "pine:function:array.concat#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        5,
+        "pine:method:array.concat",
+        "pine:method:array.concat#canonical",
+        "METHOD"
+      ],
+      [
+        6,
+        "pine:function:array.concat",
+        "pine:function:array.concat#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        6,
+        "pine:method:array.concat",
+        "pine:method:array.concat#canonical",
+        "METHOD"
+      ]
+    ],
+    "authoring_imports_only_stdlib": [
+      "copy",
+      "hashlib",
+      "json",
+      "pathlib"
+    ],
+    "corpus_hash": "sha256:9b08b8cbd14d94b4df58b978dd274d821797f01301d70006d5b7bc6b0c686d54",
+    "zero_runtime_or_compiler_expected_generation": true
+  },
+  "source_review": [
+    "Global storage handles are identified by admitted declaration source IDs through emitted source-map locations and exact declare_reference_v1 literals; no generated name-prefix assumptions.",
+    "Observations use detached public series and heap reads, full arrays and exact scalar types plus identity equality. Alias mutation on bar2 follows concat on bar1; no runtime concatenation implementation is duplicated in the harness.",
+    "Realtime trial/final, aborted same-sequence retry and JSON checkpoint restore are real runtime operations. Full and compact modes preserve the same manual snapshots.",
+    "All 50 compiled modules were independently inspected: exact ABI import and concat call, id1/id2 keyword mapping to admitted a/b declarations, c assignment, and source-map linkage. Observations match these exact module/artifact hashes.",
+    "Formal runs take declared pins; local overlays are explicitly labeled frozen content snapshots. Published exact-source joint Linux checks remain required."
+  ],
+  "independent_emitted_mapping": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-concat-independent-emitted-mapping.json",
+    "sha256": "ee7eb9df521bae944456b7e40c15a0984fae54d7b13ce860ced5ac06416032a7",
+    "cases": 50
+  },
+  "results": {
+    "311": {
+      "passed": 507,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "ccb4710974cfbb9fc0dbfb27cd41e788749cfc56b7a30167cdc97d9cfd284174",
+      "observations": 500,
+      "final_snapshots": 2000,
+      "trial_snapshots": 600,
+      "restore_controls": 400,
+      "report_hashes": {
+        "builtin-array-concat-reports/full/abi/observations.json": "191dee2633c0b88530b53d0924ea2f5ac5116b01dddac904bc8129150bcb5e2b",
+        "builtin-array-concat-reports/full/abi/assignments.json": "1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a",
+        "builtin-array-concat-reports/full/abi/report.json": "67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597",
+        "builtin-array-concat-reports/full/compiled_historical/observations.json": "05a72b2755d857cbf833af7eab6d3b3d23021fd92265fa9b02599cfc809599bb",
+        "builtin-array-concat-reports/full/compiled_historical/assignments.json": "498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d",
+        "builtin-array-concat-reports/full/compiled_historical/report.json": "f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4",
+        "builtin-array-concat-reports/full/compiled_realtime/observations.json": "c98c20a30a13246547541fd8ab29c828d9908b1b95cf6f781e15eb9b279e873c",
+        "builtin-array-concat-reports/full/compiled_realtime/assignments.json": "64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222",
+        "builtin-array-concat-reports/full/compiled_realtime/report.json": "5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e",
+        "builtin-array-concat-reports/full/compiled_rollback/observations.json": "263d77f259b07b0f171d33af6c8ef54b87dd73927c6703901ddf5ea5df57d270",
+        "builtin-array-concat-reports/full/compiled_rollback/assignments.json": "de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69",
+        "builtin-array-concat-reports/full/compiled_rollback/report.json": "b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a",
+        "builtin-array-concat-reports/full/compiled_checkpoint/observations.json": "33f08c6d130f278672a84ae5cca1f1ebb62b1ad8600bcd70984098c61cbcab27",
+        "builtin-array-concat-reports/full/compiled_checkpoint/assignments.json": "6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd",
+        "builtin-array-concat-reports/full/compiled_checkpoint/report.json": "cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299",
+        "builtin-array-concat-reports/compact/abi/observations.json": "422cad68d0931a2539b790cbd4465caf844487046e7670cd4319aad4a13e38ac",
+        "builtin-array-concat-reports/compact/abi/assignments.json": "1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a",
+        "builtin-array-concat-reports/compact/abi/report.json": "67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597",
+        "builtin-array-concat-reports/compact/compiled_historical/observations.json": "06bf9d3001f5761a74725a504fe4003ee797616ef444949660377539e3724847",
+        "builtin-array-concat-reports/compact/compiled_historical/assignments.json": "498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d",
+        "builtin-array-concat-reports/compact/compiled_historical/report.json": "f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4",
+        "builtin-array-concat-reports/compact/compiled_realtime/observations.json": "5d9fbe373abb5ff3a8677eb7d9fc149d23b34755f7d03035fb1bd4fdf84e52ba",
+        "builtin-array-concat-reports/compact/compiled_realtime/assignments.json": "64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222",
+        "builtin-array-concat-reports/compact/compiled_realtime/report.json": "5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e",
+        "builtin-array-concat-reports/compact/compiled_rollback/observations.json": "482c24f59a2df2adad465f0f4ea3edaada1fb6f42d08c06b63e2cdac444817dc",
+        "builtin-array-concat-reports/compact/compiled_rollback/assignments.json": "de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69",
+        "builtin-array-concat-reports/compact/compiled_rollback/report.json": "b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a",
+        "builtin-array-concat-reports/compact/compiled_checkpoint/observations.json": "93f3bfd5970252741bad1c9ff93b060da2eae625ce24dc717ca01ee2fd60336f",
+        "builtin-array-concat-reports/compact/compiled_checkpoint/assignments.json": "6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd",
+        "builtin-array-concat-reports/compact/compiled_checkpoint/report.json": "cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299"
+      }
+    },
+    "313": {
+      "passed": 507,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "26ae5f225c6902f1bba79e25181a464c73190e77b4ec12bd5d012c1e849d0463",
+      "observations": 500,
+      "final_snapshots": 2000,
+      "trial_snapshots": 600,
+      "restore_controls": 400,
+      "report_hashes": {
+        "builtin-array-concat-reports/full/abi/observations.json": "191dee2633c0b88530b53d0924ea2f5ac5116b01dddac904bc8129150bcb5e2b",
+        "builtin-array-concat-reports/full/abi/assignments.json": "1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a",
+        "builtin-array-concat-reports/full/abi/report.json": "67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597",
+        "builtin-array-concat-reports/full/compiled_historical/observations.json": "05a72b2755d857cbf833af7eab6d3b3d23021fd92265fa9b02599cfc809599bb",
+        "builtin-array-concat-reports/full/compiled_historical/assignments.json": "498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d",
+        "builtin-array-concat-reports/full/compiled_historical/report.json": "f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4",
+        "builtin-array-concat-reports/full/compiled_realtime/observations.json": "c98c20a30a13246547541fd8ab29c828d9908b1b95cf6f781e15eb9b279e873c",
+        "builtin-array-concat-reports/full/compiled_realtime/assignments.json": "64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222",
+        "builtin-array-concat-reports/full/compiled_realtime/report.json": "5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e",
+        "builtin-array-concat-reports/full/compiled_rollback/observations.json": "263d77f259b07b0f171d33af6c8ef54b87dd73927c6703901ddf5ea5df57d270",
+        "builtin-array-concat-reports/full/compiled_rollback/assignments.json": "de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69",
+        "builtin-array-concat-reports/full/compiled_rollback/report.json": "b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a",
+        "builtin-array-concat-reports/full/compiled_checkpoint/observations.json": "33f08c6d130f278672a84ae5cca1f1ebb62b1ad8600bcd70984098c61cbcab27",
+        "builtin-array-concat-reports/full/compiled_checkpoint/assignments.json": "6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd",
+        "builtin-array-concat-reports/full/compiled_checkpoint/report.json": "cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299",
+        "builtin-array-concat-reports/compact/abi/observations.json": "422cad68d0931a2539b790cbd4465caf844487046e7670cd4319aad4a13e38ac",
+        "builtin-array-concat-reports/compact/abi/assignments.json": "1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a",
+        "builtin-array-concat-reports/compact/abi/report.json": "67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597",
+        "builtin-array-concat-reports/compact/compiled_historical/observations.json": "06bf9d3001f5761a74725a504fe4003ee797616ef444949660377539e3724847",
+        "builtin-array-concat-reports/compact/compiled_historical/assignments.json": "498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d",
+        "builtin-array-concat-reports/compact/compiled_historical/report.json": "f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4",
+        "builtin-array-concat-reports/compact/compiled_realtime/observations.json": "5d9fbe373abb5ff3a8677eb7d9fc149d23b34755f7d03035fb1bd4fdf84e52ba",
+        "builtin-array-concat-reports/compact/compiled_realtime/assignments.json": "64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222",
+        "builtin-array-concat-reports/compact/compiled_realtime/report.json": "5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e",
+        "builtin-array-concat-reports/compact/compiled_rollback/observations.json": "482c24f59a2df2adad465f0f4ea3edaada1fb6f42d08c06b63e2cdac444817dc",
+        "builtin-array-concat-reports/compact/compiled_rollback/assignments.json": "de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69",
+        "builtin-array-concat-reports/compact/compiled_rollback/report.json": "b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a",
+        "builtin-array-concat-reports/compact/compiled_checkpoint/observations.json": "93f3bfd5970252741bad1c9ff93b060da2eae625ce24dc717ca01ee2fd60336f",
+        "builtin-array-concat-reports/compact/compiled_checkpoint/assignments.json": "6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd",
+        "builtin-array-concat-reports/compact/compiled_checkpoint/report.json": "cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299"
+      }
+    }
+  },
+  "all507nodeids_preserved_from_owner_runs": true,
+  "cross_python_all30report_files_byte_identical": true,
+  "before": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-concat-host-before-py311.xml",
+    "sha256": "b89a6ddb5d6c3021e31bb8bf7b09f4dc25eaf44d96c6dbd4bdaea6ee75eb298c",
+    "selected": 57,
+    "failures": 50,
+    "passes": 7,
+    "errors": 0,
+    "skips": 0,
+    "unselected_other_paths": 450
+  },
+  "paired_reviews": {
+    "array-concat-runtime-independent-review.json": "396bbd2dfd453a6d800ae07bf8d0e4ab7d7b0ebe459b166bbea8d01f964e55d7",
+    "array-concat-producer-independent-review.json": "721735f3fc3ed8339499730e61c27245ec2e0188a12996243f9fd7478eab70c6"
+  },
+  "limitations": [
+    "Engineering manual fixture with explicit derived self/empty cases; no TradingView execution export.",
+    "UDT/enum elements, mixed or NA elements, missing handles, nested requests and outer host checkpoint publication eligibility are outside this corpus.",
+    "No claim that local overlays are published Git commits, and no joint Linux or full Stage2 acceptance."
+  ],
+  "full_stage2_accepted": false,
+  "production_tests_or_inventory_modified_by_reviewer": false,
+  "digest_newlines": "LF",
+  "script_sha256": "6e3404c8fb883d76c9e62c6c62cdfc1e2e2e8ed1f91e3e3630fa1af2d041f6bb",
+  "preserved_initial_reviewer_harness_runs": {
+    "311": {
+      "xml_sha256": "49d26420b031c25557c254a1f8d781788659331319cfbe113da651e2a4d36b60",
+      "observation_sha256": "fd9752ffef5165799b973a8f9d228167a8a99dee083e4be3f29db1f60b8cfcc4",
+      "observed_status": "507 tests passed but snapshot identity label was wrong",
+      "accepted_as_final_snapshot_evidence": false
+    },
+    "313": {
+      "xml_sha256": "9dc22d6f1051a88437f0a8e721dcf2c8b5b264cafa379b54c18610b8ee726165",
+      "observation_sha256": "fd9752ffef5165799b973a8f9d228167a8a99dee083e4be3f29db1f60b8cfcc4",
+      "observed_status": "507 tests passed but snapshot identity label was wrong",
+      "accepted_as_final_snapshot_evidence": false
+    }
+  },
+  "reviewer_harness_correction": "Pytest imported a second namespace test-module object. The revised launcher applies the snapshot identity to the actual collected module, asserting exact file path/hash and an empty compile cache before tests. Initial files are preserved; final verified-prefix runs are used above. No committed source or test was changed.",
+  "verified_local_launcher_sha256": "b33afd0f82c163854603a7cb704fb2460c1f442b145c541205f2585fe6f180eb"
+}

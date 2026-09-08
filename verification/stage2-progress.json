@@ -105,7 +105,18 @@
     "verification/rolling-floor-final-metadata-independent-review.json",
     "verification/rolling-floor-joint-receipt.json",
     "docs/RC6_STAGE2_ROLLING_CONTEXT_PUBLICATION.md",
-    "docs/RC6_STAGE2_ROLLING_STATISTICS.md"
+    "docs/RC6_STAGE2_ROLLING_STATISTICS.md",
+    "verification/array-concat-producer-independent-review.json",
+    "verification/array-concat-runtime-independent-review.json",
+    "verification/array-concat-host-independent-review.json",
+    "verification/constant-round-revised-independent-review.json",
+    "verification/variadic-compiler-independent-review.json",
+    "verification/variadic-runtime-root-independent-review.json",
+    "verification/rolling-floor-cleanup-final-execution-review.json",
+    "verification/array-concat-publication-source-review.json",
+    "verification/variadic-publication-source-review.json",
+    "verification/variadic-concat-fixture-derivation.json",
+    "verification/variadic-compiler-revised-freeze-receipt.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -407,6 +418,68 @@
     "verified_tree": "de8ba1e027f6a3bd11077b83467b4bb5179cc1f4",
     "integration": "ac118eecb4a69f45eb6935de7ea91dc46facfcbd",
     "receipt": "verification/rolling-floor-joint-receipt.json",
-    "cleanup": "pending"
+    "cleanup": "pending",
+    "cleanup_status": "complete",
+    "cleanup_receipt": "verification/rolling-floor-cleanup-final-execution-review.json"
+  },
+  "concat_variadic_block": {
+    "status": "published_reviewed_source_pending_inventory_and_joint_linux",
+    "scope": [
+      "array_concat_receiver_alias_identity_and_named_receivers",
+      "modern_finite_constant_rounding",
+      "canonical_repeated_parameter_facts",
+      "exact_variadic_positional_abi_spread"
+    ],
+    "expected_baseline_tests": 9685,
+    "expected_new_tests": 998,
+    "expected_candidate_tests": 10683,
+    "new_tests": {
+      "pine2ast": 228,
+      "pinelib": 181,
+      "ast2python": 82,
+      "openpine": 507
+    },
+    "concat_manual_cases": 30,
+    "concat_assigned_cases": 50,
+    "concat_execution_paths": 5,
+    "concat_full_and_compact_controls": true,
+    "receipt_identities": {
+      "array-concat-producer-independent-review.json": {
+        "raw_artifact_sha256": "721735f3fc3ed8339499730e61c27245ec2e0188a12996243f9fd7478eab70c6",
+        "published_lf_sha256": "721735f3fc3ed8339499730e61c27245ec2e0188a12996243f9fd7478eab70c6"
+      },
+      "array-concat-runtime-independent-review.json": {
+        "raw_artifact_sha256": "396bbd2dfd453a6d800ae07bf8d0e4ab7d7b0ebe459b166bbea8d01f964e55d7",
+        "published_lf_sha256": "396bbd2dfd453a6d800ae07bf8d0e4ab7d7b0ebe459b166bbea8d01f964e55d7"
+      },
+      "array-concat-host-independent-review.json": {
+        "raw_artifact_sha256": "ed980b469300d1566a6fcaf95f13aa3f67bbe5640257cc59c490f593dcd68b0a",
+        "published_lf_sha256": "ed980b469300d1566a6fcaf95f13aa3f67bbe5640257cc59c490f593dcd68b0a"
+      },
+      "constant-round-revised-independent-review.json": {
+        "raw_artifact_sha256": "360758d015282197db9be5f974dbae07d1935c33d067deeac78a3a8bc984a81b",
+        "published_lf_sha256": "360758d015282197db9be5f974dbae07d1935c33d067deeac78a3a8bc984a81b"
+      },
+      "variadic-compiler-independent-review.json": {
+        "raw_artifact_sha256": "1cfb694d95328935ba6e138c6ba60656872d0557f7998bde9b5bd94acbfd52dd",
+        "published_lf_sha256": "1cfb694d95328935ba6e138c6ba60656872d0557f7998bde9b5bd94acbfd52dd"
+      },
+      "variadic-runtime-root-independent-review.json": {
+        "raw_artifact_sha256": "d36c0b915f794f1fe617d9e8a53f50f5d2667bc8f47c146c1fd9e25707e86485",
+        "published_lf_sha256": "d36c0b915f794f1fe617d9e8a53f50f5d2667bc8f47c146c1fd9e25707e86485"
+      },
+      "rolling-floor-cleanup-final-execution-review.json": {
+        "raw_artifact_sha256": "4c021ce4589204b0d4d5150e0e2e76a3972c60bbb97c90ab37283c310164b012",
+        "published_lf_sha256": "4c021ce4589204b0d4d5150e0e2e76a3972c60bbb97c90ab37283c310164b012"
+      }
+    },
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "excluded_next_waves": [
+      "udf_constant_value_promotion_and_context",
+      "global_constant_qualifier_prepass",
+      "exported_library_methods",
+      "array_numeric_statistics"
+    ]
   }
 }

@@ -1,0 +1,166 @@
+{
+  "baseline_unchanged_files": 167,
+  "checks": [
+    {
+      "errors": 0,
+      "failures": 0,
+      "group": "compiler",
+      "lf_sha256": "edf44991b533b39efd6b2af615d5e3f4cf22fc4dde5959c3593c2986754ed36a",
+      "passed": 82,
+      "path": ".runtime/evidence/variadic-compiler-independent-final/compiler-py311.xml",
+      "python": "py311",
+      "raw_sha256": "edf44991b533b39efd6b2af615d5e3f4cf22fc4dde5959c3593c2986754ed36a",
+      "skips": 0,
+      "tests": 82
+    },
+    {
+      "errors": 0,
+      "failures": 0,
+      "group": "fixture",
+      "lf_sha256": "b113fd10c6035000925c3ec9cc3011b838ff00e4fa00ec8ea95725e6094f8870",
+      "passed": 1,
+      "path": ".runtime/evidence/variadic-compiler-independent-final/fixture-py311.xml",
+      "python": "py311",
+      "raw_sha256": "b113fd10c6035000925c3ec9cc3011b838ff00e4fa00ec8ea95725e6094f8870",
+      "skips": 0,
+      "tests": 1
+    },
+    {
+      "errors": 0,
+      "failures": 0,
+      "group": "compiler",
+      "lf_sha256": "832279594fc3c83de3e997d5461d63b09991eb5888c54b1ba3632d7cf1028257",
+      "passed": 82,
+      "path": ".runtime/evidence/variadic-compiler-independent-final/compiler-py313.xml",
+      "python": "py313",
+      "raw_sha256": "832279594fc3c83de3e997d5461d63b09991eb5888c54b1ba3632d7cf1028257",
+      "skips": 0,
+      "tests": 82
+    },
+    {
+      "errors": 0,
+      "failures": 0,
+      "group": "fixture",
+      "lf_sha256": "54a2be85e45cfa9aa3624d5955e047603ae85e507f96a577ba6c465b4a42864e",
+      "passed": 1,
+      "path": ".runtime/evidence/variadic-compiler-independent-final/fixture-py313.xml",
+      "python": "py313",
+      "raw_sha256": "54a2be85e45cfa9aa3624d5955e047603ae85e507f96a577ba6c465b4a42864e",
+      "skips": 0,
+      "tests": 1
+    }
+  ],
+  "compiler_baseline": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+  "findings": [
+    {
+      "after_source_sha256": "9f78a1065463613db03deed9e771046d0d40535541996bc64e4fb63c3e3f9592",
+      "before": "Scalar ABI audit falsely certified numeric variadic flags because equality admitted 1 while identity did not classify it as variadic",
+      "id": "SOURCE_VARIADIC_FLAG_EXACT_BOOL",
+      "resolution": "Exact bool or None validation; numeric 0/1 and float equivalents rejected on v5/v6",
+      "severity": "P2",
+      "status": "CLOSED"
+    }
+  ],
+  "fixture_migration_bundle": {
+    "lf_sha256": "9a81dfea7441b4a939bfce1785c03efcf2ee539bf6a8f9be0523c0c64cc5f345",
+    "path": ".runtime/evidence/variadic-concat-fixture-frozen-bundle.json",
+    "raw_sha256": "9a81dfea7441b4a939bfce1785c03efcf2ee539bf6a8f9be0523c0c64cc5f345"
+  },
+  "fixture_review": {
+    "assertion_bodies_unchanged": true,
+    "derivation": "Only math.min/math.max function rows at v5/v6: values.variadic=True; SOURCE_PARAMETER to SOURCE_VARIADIC; no other metadata edits",
+    "exact_expected_digest": "cdaa5007b9b9f5948e10f217f54db116e607b40a499d230b4b527a3a62fe82d3",
+    "final_target_equals_independently_derived_manifest": true,
+    "independently_derived_before_sut_read": true,
+    "no_numeric_or_pine_expected_values_changed": true,
+    "only_one_sha_literal_replaced": true,
+    "original_full_failure_xml_unchanged": [
+      {
+        "lf_sha256": "b13068c5a5126423c4bf7e77a363f701928c1ed065d753f84d7f701710b29bfb",
+        "path": ".runtime/evidence/variadic-runtime-full-py311.xml",
+        "raw_sha256": "210249d192eb61bf7f2113d242bf02ef164ab42654f6ff28b75011bc08f9fad0"
+      },
+      {
+        "lf_sha256": "e401a689651e87eda419445496d640c287c3a0dfe97db2fbd1a28bb238c848b2",
+        "path": ".runtime/evidence/variadic-runtime-full-py313.xml",
+        "raw_sha256": "d567c147c4e894350d01c5d6e730595435d25ee4cab95ca4cc485202d0a112a3"
+      }
+    ],
+    "source_manifest_sha256": "db3c9a5069f789f80d9f4003db5eee5cc2242f5b4c00823333b1bbc6059a2255"
+  },
+  "full_stage2_accepted": false,
+  "harness_limit": {
+    "final_snapshot_fix": "Copied exact baseline test helper and original manual fixture; source/test bodies unchanged; isolated pytest root/cache/temp",
+    "helpers": [
+      {
+        "lf_sha256": "0870084961cebd849a2c37a7bc8ff13bfd1edf3bd29c6546b1e964251c5f26b6",
+        "path": ".runtime/ci-tools/review_variadic_compiler.py",
+        "raw_sha256": "0870084961cebd849a2c37a7bc8ff13bfd1edf3bd29c6546b1e964251c5f26b6"
+      },
+      {
+        "lf_sha256": "420bb3faa60047889a2f3633f6dbc752109f3137c81a6b426c1e2b2ee738f702",
+        "path": ".runtime/evidence/variadic-compiler-independent-probes.py",
+        "raw_sha256": "420bb3faa60047889a2f3633f6dbc752109f3137c81a6b426c1e2b2ee738f702"
+      }
+    ],
+    "original_setup_log": {
+      "lf_sha256": "ecc192503cc63213f304278912214b3cbd4149a0ca3214d8bd02879b99ea49dc",
+      "path": ".runtime/evidence/variadic-compiler-independent-before/fixture-py311.log",
+      "raw_sha256": "ecc192503cc63213f304278912214b3cbd4149a0ca3214d8bd02879b99ea49dc"
+    },
+    "original_snapshot_setup_error": "Before-snapshot fixture run lacked copied tests.stage3_helpers; original log preserved, no product failure claimed"
+  },
+  "independent_probe_cases_per_python": 58,
+  "independent_probe_mismatches_after": 0,
+  "independent_probes": [
+    {
+      "lf_sha256": "b40499d037973ee31690ed1a89aa906a35e7f009de34194504d1f83362dc2a6f",
+      "path": ".runtime/evidence/variadic-compiler-boundary-before-py311.json",
+      "raw_sha256": "b40499d037973ee31690ed1a89aa906a35e7f009de34194504d1f83362dc2a6f"
+    },
+    {
+      "lf_sha256": "b40499d037973ee31690ed1a89aa906a35e7f009de34194504d1f83362dc2a6f",
+      "path": ".runtime/evidence/variadic-compiler-boundary-before-py313.json",
+      "raw_sha256": "b40499d037973ee31690ed1a89aa906a35e7f009de34194504d1f83362dc2a6f"
+    },
+    {
+      "lf_sha256": "051658f292418553d2ce9faf23204e8fa1d8a1576d77e5ead1b78be2918951d3",
+      "path": ".runtime/evidence/variadic-compiler-boundary-after-py311.json",
+      "raw_sha256": "051658f292418553d2ce9faf23204e8fa1d8a1576d77e5ead1b78be2918951d3"
+    },
+    {
+      "lf_sha256": "051658f292418553d2ce9faf23204e8fa1d8a1576d77e5ead1b78be2918951d3",
+      "path": ".runtime/evidence/variadic-compiler-boundary-after-py313.json",
+      "raw_sha256": "051658f292418553d2ce9faf23204e8fa1d8a1576d77e5ead1b78be2918951d3"
+    }
+  ],
+  "initial_bundle": {
+    "lf_sha256": "1ec375ff51da842ca7af6a2121c494b8e7c99d2ed666b480a5349aad521cb811",
+    "path": ".runtime/evidence/variadic-compiler-frozen-bundle.json",
+    "raw_sha256": "1ec375ff51da842ca7af6a2121c494b8e7c99d2ed666b480a5349aad521cb811"
+  },
+  "joint_linux_acceptance": false,
+  "production_or_test_sources_edited_by_reviewer": false,
+  "remote_operations": false,
+  "reviewed_bundle": {
+    "lf_sha256": "98dfe215bdd7206d86e65afcba3c23bdb8a354842b1f67da49df6655e5e0a8a4",
+    "path": ".runtime/evidence/variadic-compiler-revised-frozen-bundle.json",
+    "raw_sha256": "98dfe215bdd7206d86e65afcba3c23bdb8a354842b1f67da49df6655e5e0a8a4"
+  },
+  "schema_id": "openpine.variadic_compiler_independent_review.v1",
+  "source_delta": "Three modified production files, one new production helper, one new test file, one new document; all original files/tests preserved outside explicit production delta",
+  "source_identity_mode": "frozen_content_snapshot",
+  "source_review": [
+    "Variadic admission requires exact installed producer catalog hash, canonical symbol/overload/form, one declared final group, exact parameter type/qualifier ceiling, source Argument order and independently admitted value-child type/qualifier",
+    "Changed group index/name/binding, missing/duplicate operands, catalog/canonical/form drift and incompatible or absent value type evidence remain fail-closed",
+    "SOURCE_VARIADIC must map to actual VAR_POSITIONAL with no positional prefix or VAR_KEYWORD; scalar bindings cannot consume the group",
+    "Emitter preserves repeated-group source order through stable indexing and a single list spread; existing side-effect tests demonstrate once-only evaluation",
+    "Pure variadic and optional-keyword-only ABI controls pass; fixed-prefix, positional-only, keyword-spread and scalar ABI controls reject"
+  ],
+  "source_snapshot": {
+    "lf_sha256": "1d2badc7e8cdae76878b9766a5d6b110f2b47530f6346dad4129bce7272f6204",
+    "path": ".runtime/evidence/variadic-compiler-independent-final/snapshot.json",
+    "raw_sha256": "1d2badc7e8cdae76878b9766a5d6b110f2b47530f6346dad4129bce7272f6204"
+  },
+  "status": "BOUNDED_SOURCE_REVIEW_PASSED_AFTER_EXACT_BOOLEAN_FIX"
+}

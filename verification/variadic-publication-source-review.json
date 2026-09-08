@@ -1,0 +1,40 @@
+{
+  "repositories": [
+    {
+      "name": "pine2ast",
+      "base": "31b8a0ff958324c70c3c41779d238e3eb24218f5",
+      "tip": "7170736f2730316407f0d896447b08e76f5c9c08",
+      "tip_tree": "d97eee3607d55ac9d1d3863868b7cb2f53f8bc23",
+      "baseline_files": 376,
+      "final_files": 380,
+      "changed_or_added_files": 11,
+      "exact_all_entries": true,
+      "commits": 3
+    },
+    {
+      "name": "ast2python",
+      "base": "89e644128640e552b5c22ceb21fc37b1d653a9ab",
+      "tip": "95a14be4be8987faafb3e7629c744e698fd9f134",
+      "tip_tree": "230d981cd8a363f0c6b19ca7398cf96d4784a68c",
+      "baseline_files": 170,
+      "final_files": 173,
+      "changed_or_added_files": 6,
+      "exact_all_entries": true,
+      "commits": 3
+    },
+    {
+      "name": "pinelib",
+      "base": "5366a5889f7b66a216f80629ca6c8f1a94fc1f62",
+      "tip": "d33fdea2ff3d2fa3c567c2c83da08664c8937fc1",
+      "tip_tree": "dc2b5280bb253fc2fc3160045516247ef300f7f9",
+      "baseline_files": 155,
+      "final_files": 157,
+      "changed_or_added_files": 5,
+      "exact_all_entries": true,
+      "commits": 4
+    }
+  ],
+  "joint_linux_accepted": false,
+  "release_refs_unchanged": true,
+  "bundle_sha256": "5f55655a894b6c12487106a1119e8bb07956c2239229c9db3d15a419ef1d707e"
+}

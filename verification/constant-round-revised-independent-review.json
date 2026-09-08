@@ -1,0 +1,1691 @@
+{
+  "schema_id": "openpine.constant_round_revised_independent_review.v1",
+  "status": "PRODUCER_REGRESSION_CLOSED_COMPILED_VARIADIC_SUPPORT_PENDING",
+  "base": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+  "bundle_sha256": {
+    "constant-round-revised-frozen-bundle.json": "72aff7d55c7d3dcd3fccf8ba61ec843cc015dcdaaa37846c5b3293ca5120ae9e",
+    "constant-variadic-catalog-frozen-bundle.json": "c1961d571fba22e5430dab5db1963565176842b2899650d10e02d36326ba6357"
+  },
+  "files": [
+    {
+      "path": "pine2ast/pine2ast/semantic/binder.py",
+      "raw_sha256": "57a37b0d6268568ad080784a6138e3a272fe3917340015e3e8096d36a5ea6fa8",
+      "lf_sha256": "42a7a9695d82644991b083afdfd76b493da5535a204fea6fceff1d5d95e18381"
+    },
+    {
+      "path": "pine2ast/pine2ast/semantic/constant_numbers.py",
+      "raw_sha256": "5c3a252764f408f3ffcb4d887344a70ead765b5bd1c9e08d6d4d13bc88b20de6",
+      "lf_sha256": "5c3a252764f408f3ffcb4d887344a70ead765b5bd1c9e08d6d4d13bc88b20de6"
+    },
+    {
+      "path": "pine2ast/tests/test_constant_round_binding.py",
+      "raw_sha256": "cee510c03ae1fc5b2f86eda94694922192b88f1602bc03a4fcbdfc939b9858f3",
+      "lf_sha256": "cee510c03ae1fc5b2f86eda94694922192b88f1602bc03a4fcbdfc939b9858f3"
+    },
+    {
+      "path": "pine2ast/tests/test_constant_variadic_binding.py",
+      "raw_sha256": "fb0145baf1fe68c1e07b665e1aa3fac84ae4ed68e4cd12ecfea56ca42156ffb8",
+      "lf_sha256": "fb0145baf1fe68c1e07b665e1aa3fac84ae4ed68e4cd12ecfea56ca42156ffb8"
+    },
+    {
+      "path": "pine2ast/docs/STAGE2_CONSTANT_ROUNDING.md",
+      "raw_sha256": "1c992b1f7d09412e0e504dec60dff8ff3a7ef587fd8c84acd02e00aa626b3592",
+      "lf_sha256": "1c992b1f7d09412e0e504dec60dff8ff3a7ef587fd8c84acd02e00aa626b3592"
+    },
+    {
+      "path": "pine2ast/tools/catalog/build_catalog.py",
+      "raw_sha256": "b49f62252afef6c5ab5cb8eeb138591b2f49eeaf0efe0b259d5d895234c55f20",
+      "lf_sha256": "cf47d2c6fc909351b7a1624bb9def874a142d93eebef7cc490ab7d0cdb8c2741"
+    },
+    {
+      "path": "pine2ast/catalog_source/semantics.jsonl",
+      "raw_sha256": "12f883764b04d4ad4f6fbf6fa27504019ff3ab9a1ed7e2c3174cd5f5706137c4",
+      "lf_sha256": "12f883764b04d4ad4f6fbf6fa27504019ff3ab9a1ed7e2c3174cd5f5706137c4"
+    },
+    {
+      "path": "pine2ast/catalog_reports/migration_report.json",
+      "raw_sha256": "46e30c5aedce30d80b264f39f5549d1519ff7ba5f521a0c5b1476a9ca46d0d90",
+      "lf_sha256": "46e30c5aedce30d80b264f39f5549d1519ff7ba5f521a0c5b1476a9ca46d0d90"
+    },
+    {
+      "path": "pine2ast/catalog_source/deltas/v5.jsonl",
+      "raw_sha256": "be74795d93c8fd37b26411c5a6fad936135dbab13c49241514ce7528e24de6da",
+      "lf_sha256": "be74795d93c8fd37b26411c5a6fad936135dbab13c49241514ce7528e24de6da"
+    },
+    {
+      "path": "pine2ast/pine2ast/catalog_data/packs/pine_v5.pack.json",
+      "raw_sha256": "e96c0143e4a664c156259b941057c869dba33c8ce9db1eb456d169ecfb76eb0b",
+      "lf_sha256": "e96c0143e4a664c156259b941057c869dba33c8ce9db1eb456d169ecfb76eb0b"
+    },
+    {
+      "path": "pine2ast/pine2ast/catalog_data/packs/pine_v6.pack.json",
+      "raw_sha256": "65382e0e00c780256b7f49bfab6e12d73eb8bc2122189de2b1f70f07a965ab10",
+      "lf_sha256": "65382e0e00c780256b7f49bfab6e12d73eb8bc2122189de2b1f70f07a965ab10"
+    }
+  ],
+  "source_checks": [
+    "Constant folding requires resolved stateless exact symbol/overload/call form; source Argument identities and their original order are checked before evaluation.",
+    "A repeated parameter index is allowed only by the independently resolved active variadic parameter declaration and positional vararg rows with distinct Argument node IDs; null or forged maps do not enable folding.",
+    "Named scalar arguments follow their parameter index; round canonical and precision overload parameter names and arity are checked exactly.",
+    "Decimal conversion and ties-toward-positive-infinity arithmetic are bounded before powers; explicit precision yields float, omitted precision yields int; NA/nonfinite/oversized integer inputs do not invent constants.",
+    "Only modern min/max values metadata gains variadic=true. Legacy version bytes, symbol IDs, rules and prior semantic entries are retained; modern catalog and content hashes are recomputed."
+  ],
+  "catalog": {
+    "packs": [
+      {
+        "version": 1,
+        "raw_lf_unchanged": true,
+        "catalog_hash": "sha256:07bdfa58416067ed2c66f5a2273bdc4f797c0f62ebb5bdcde8131ea97a9000e9",
+        "section_counts": {
+          "annotations": 10,
+          "constants": 181,
+          "declarations": 2,
+          "enum_values": 0,
+          "functions": 211,
+          "keywords": 3,
+          "methods": 0,
+          "namespaces": 38,
+          "operators": 13,
+          "types": 5,
+          "variables": 317
+        },
+        "only_definition_delta": []
+      },
+      {
+        "version": 2,
+        "raw_lf_unchanged": true,
+        "catalog_hash": "sha256:6db1b1d96d51a5b9ebd50fb215cb9acd00f84ad923b702afdabd48cdd9eff175",
+        "section_counts": {
+          "annotations": 10,
+          "constants": 181,
+          "declarations": 2,
+          "enum_values": 0,
+          "functions": 211,
+          "keywords": 10,
+          "methods": 0,
+          "namespaces": 38,
+          "operators": 15,
+          "types": 5,
+          "variables": 317
+        },
+        "only_definition_delta": []
+      },
+      {
+        "version": 3,
+        "raw_lf_unchanged": true,
+        "catalog_hash": "sha256:d13db13950094bc3d3b17d381b418bd60b06af242a501582064a00a89b5acfa7",
+        "section_counts": {
+          "annotations": 10,
+          "constants": 181,
+          "declarations": 2,
+          "enum_values": 0,
+          "functions": 211,
+          "keywords": 10,
+          "methods": 0,
+          "namespaces": 38,
+          "operators": 15,
+          "types": 5,
+          "variables": 317
+        },
+        "only_definition_delta": []
+      },
+      {
+        "version": 4,
+        "raw_lf_unchanged": true,
+        "catalog_hash": "sha256:3190464bd63192286f3f144fb62846d2a42563ae344bf238a10ffb4141080a23",
+        "section_counts": {
+          "annotations": 10,
+          "constants": 208,
+          "declarations": 2,
+          "enum_values": 0,
+          "functions": 356,
+          "keywords": 12,
+          "methods": 0,
+          "namespaces": 43,
+          "operators": 20,
+          "types": 16,
+          "variables": 348
+        },
+        "only_definition_delta": []
+      },
+      {
+        "version": 5,
+        "raw_lf_unchanged": false,
+        "catalog_hash": "sha256:ebe0a885ddaf007deb4b66538e3c666ba6815b35fc3c0bc0cd912a017e8b3018",
+        "section_counts": {
+          "annotations": 10,
+          "constants": 198,
+          "declarations": 0,
+          "enum_values": 0,
+          "functions": 452,
+          "keywords": 22,
+          "methods": 192,
+          "namespaces": 55,
+          "operators": 20,
+          "types": 25,
+          "variables": 351
+        },
+        "only_definition_delta": [
+          "math.min.values.variadic=true",
+          "math.max.values.variadic=true"
+        ]
+      },
+      {
+        "version": 6,
+        "raw_lf_unchanged": false,
+        "catalog_hash": "sha256:c9a62a7cd9e055788ba00b8ada6c190f28edd98927267dde2b355323ee3929c3",
+        "section_counts": {
+          "annotations": 10,
+          "constants": 239,
+          "declarations": 0,
+          "enum_values": 0,
+          "functions": 500,
+          "keywords": 23,
+          "methods": 213,
+          "namespaces": 55,
+          "operators": 21,
+          "types": 48,
+          "variables": 403
+        },
+        "only_definition_delta": [
+          "math.min.values.variadic=true",
+          "math.max.values.variadic=true"
+        ]
+      }
+    ],
+    "old_semantic_entries_preserved": 1644,
+    "new_semantic_entries": [
+      "sha256:ce0a002ebc472c64fd11abf09bc829437cea0b3e7441b1102a25a8ef907c2c4c",
+      "sha256:f13d43b2d1da53ff4ea11ea8533405411212993dcb4ff7c961bf508ba0c0a61e"
+    ],
+    "symbols_removed": 0,
+    "rules_changed": 0,
+    "generator_check_passed": true
+  },
+  "baseline_preservation": {
+    "base_files": 373,
+    "changed_existing_files": [
+      "catalog_reports/migration_report.json",
+      "catalog_source/deltas/v5.jsonl",
+      "catalog_source/semantics.jsonl",
+      "pine2ast/catalog_data/packs/pine_v5.pack.json",
+      "pine2ast/catalog_data/packs/pine_v6.pack.json",
+      "pine2ast/semantic/binder.py",
+      "tools/catalog/build_catalog.py"
+    ],
+    "all_old_test_and_fixture_files_unchanged": 62,
+    "removed_files": 0,
+    "original102tests_and_numeric_kernel_raw_unchanged": true
+  },
+  "independent_results": {
+    "311": {
+      "focused_passed": 357,
+      "new_cases": 144,
+      "unchanged_input_and_floor_regression_cases": 213,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "junit_sha256": "4729047e1dd0a977a08be32e763bf1948d9f4ce46fb6f6cba71e0bcd512a089f",
+      "manual_probe_matches": 32,
+      "manual_probe_sha256": "744dfdb03b4d1aec29e9b8b664d74ee61c0b78336dbbad594479245c5d7a99c3",
+      "remaining_compiler_rejections": 6,
+      "compiler_probe_sha256": "823250cc681d8cf3148891c943e513bf783761242f0368c2d189da7abb1363a7"
+    },
+    "313": {
+      "focused_passed": 357,
+      "new_cases": 144,
+      "unchanged_input_and_floor_regression_cases": 213,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "junit_sha256": "931180424699e0a839ea71872a52b2da82ce1e4e3a91cedd108508fb60f3faca",
+      "manual_probe_matches": 32,
+      "manual_probe_sha256": "9b3b5d5dec75756f31e46cd644c53a658fcd387b025178792c4e2192f0d1f6c9",
+      "remaining_compiler_rejections": 6,
+      "compiler_probe_sha256": "08c2c6228c26d3296a43a245e60fa9344f3095c7dfa8f0c97c564c4e68b70f85"
+    }
+  },
+  "exact_focused_nodeids": [
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.5-None-3-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.5-None--2-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.5-None-2-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.5-None--1-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[0.5-None-1-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-0.5-None-0-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.25-None-2-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.25-None--2-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[2.75-None-3-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-2.75-None--3-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[1.25-1-1.3-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-1.25-1--1.2-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[125--1-130.0-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-False-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-False-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-True-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_const_fact_has_pine_ties_and_exact_overload_type[-125--1--120.0-True-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_unknown_or_nonconst_round_value_is_never_invented[close-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_unknown_or_nonconst_round_value_is_never_invented[close-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_unknown_or_nonconst_round_value_is_never_invented[input.float(2.5)-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_unknown_or_nonconst_round_value_is_never_invented[input.float(2.5)-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_unknown_or_nonconst_round_value_is_never_invented[na-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_unknown_or_nonconst_round_value_is_never_invented[na-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_explicit_na_precision_is_not_the_omitted_precision[2.5,na-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_explicit_na_precision_is_not_the_omitted_precision[2.5,na-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_explicit_na_precision_is_not_the_omitted_precision[number=2.5,precision=na-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_explicit_na_precision_is_not_the_omitted_precision[number=2.5,precision=na-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[1.25,1000000000-1.25-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[1.25,1000000000-1.25-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[1.25,-1000000000-0.0-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[1.25,-1000000000-0.0-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[2,0-2.0-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[2,0-2.0-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[-0.5,0-0.0-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_precision_extremes_and_explicit_zero_keep_float_result[-0.5,0-0.0-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_requires_complete_exact_parameter_mapping[ghost_name-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_requires_complete_exact_parameter_mapping[ghost_name-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_requires_complete_exact_parameter_mapping[missing_argument-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_requires_complete_exact_parameter_mapping[missing_argument-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_requires_complete_exact_parameter_mapping[duplicate_index-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_round_requires_complete_exact_parameter_mapping[duplicate_index-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation0-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation0-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation1-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation1-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation2-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation2-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation3-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation3-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation4-5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_folding_requires_resolved_builtin_contract[mutation4-6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_binding_identity_controls_folding_not_display_callee[5]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_binding_identity_controls_folding_not_display_callee[6]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_old_round_callable_does_not_gain_unreviewed_constant_folding[1]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_old_round_callable_does_not_gain_unreviewed_constant_folding[2]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_old_round_callable_does_not_gain_unreviewed_constant_folding[3]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_old_round_callable_does_not_gain_unreviewed_constant_folding[4]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_version_specific_constant_integer_division_control[1-2]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_version_specific_constant_integer_division_control[2-2]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_version_specific_constant_integer_division_control[3-2]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_version_specific_constant_integer_division_control[4-2]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_version_specific_constant_integer_division_control[5-2]"
+    ],
+    [
+      "tests.test_constant_round_binding",
+      "test_version_specific_constant_integer_division_control[6-2.5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1)-1-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1)-1-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1,3)-1-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.min(2,1,3)-1-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.max(2,1,3)-3-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.max(2,1,3)-3-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.max(-2.5,-1.25,-3.0)--1.25-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.max(-2.5,-1.25,-3.0)--1.25-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.round(math.min(1.25,2.5),1)-1.3-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.round(math.min(1.25,2.5),1)-1.3-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.round(math.max(-1.25,-2.5),1)--1.2-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_positional_variadic_values_and_complete_bundle_facts[math.round(math.max(-1.25,-2.5),1)--1.2-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[\"bad\"-min-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[\"bad\"-min-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[\"bad\"-max-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[\"bad\"-max-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[true-min-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[true-min-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[true-max-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_every_extra_argument_receives_numeric_type_validation[true-max-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[null_parameter-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[null_parameter-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[scalar_binding-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[scalar_binding-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[first_scalar_binding-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[first_scalar_binding-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[missing_expected_type-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[missing_expected_type-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[forged_named-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[forged_named-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[duplicate_source-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[duplicate_source-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[source_order-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[source_order-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[ghost_parameter-5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_variadic_folding_still_rejects_incomplete_or_forged_mappings[ghost_parameter-6]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_old_catalog_variadic_metadata_is_not_backported[1]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_old_catalog_variadic_metadata_is_not_backported[2]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_old_catalog_variadic_metadata_is_not_backported[3]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_old_catalog_variadic_metadata_is_not_backported[4]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_numbered_named_argument_support_is_not_invented[5]"
+    ],
+    [
+      "tests.test_constant_variadic_binding",
+      "test_numbered_named_argument_support_is_not_invented[6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-positional-int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-positional-int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-positional-float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-positional-float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-named-int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-named-int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-named-float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[2-named-float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-positional-int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-positional-int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-positional-float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-positional-float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-named-int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-named-int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-named-float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[-2-named-float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-positional-int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-positional-int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-positional-float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-positional-float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-named-int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-named-int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-named-float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_literal_and_constant_expression_defaults_have_exact_binding[1+2-named-float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_declared_const_default_remains_valid[int-2-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_declared_const_default_remains_valid[int-2-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_declared_const_default_remains_valid[float-1.25-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_declared_const_default_remains_valid[float-1.25-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-positional-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-positional-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-positional-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-positional-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-named-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-named-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-named-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[series-named-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-positional-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-positional-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-positional-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-positional-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-named-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-named-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-named-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[input-named-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-positional-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-positional-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-positional-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-positional-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-named-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-named-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-named-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[simple-named-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-positional-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-positional-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-positional-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-positional-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-named-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-named-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-named-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_result-named-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-positional-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-positional-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-positional-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-positional-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-named-int-bar_index-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-named-int-bar_index-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-named-float-close-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_stronger_default_qualifier_is_rejected[udf_parameter-named-float-close-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_imported_result_cannot_supply_numeric_input_default[int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_imported_result_cannot_supply_numeric_input_default[int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_imported_result_cannot_supply_numeric_input_default[float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_imported_result_cannot_supply_numeric_input_default[float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_const_requirement_of_title_is_an_independent_negative_control[int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_const_requirement_of_title_is_an_independent_negative_control[int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_const_requirement_of_title_is_an_independent_negative_control[float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_const_requirement_of_title_is_an_independent_negative_control[float-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_source_input_still_accepts_series_default[5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_source_input_still_accepts_series_default[6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_v6_active_still_accepts_input_bool[int]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_v6_active_still_accepts_input_bool[float]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[int-1]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[int-2]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[int-3]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[int-4]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[float-1]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[float-2]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[float-3]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_specialized_input_callable_is_not_backported[float-4]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_v4_input_type_constant_keeps_its_original_role[int-input.integer-2]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_v4_input_type_constant_keeps_its_original_role[float-input.float-1.5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_every_existing_numeric_input_candidate_requires_const_defval[int-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_every_existing_numeric_input_candidate_requires_const_defval[int-6]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_every_existing_numeric_input_candidate_requires_const_defval[float-5]"
+    ],
+    [
+      "tests.test_numeric_input_defval_qualifiers",
+      "test_every_existing_numeric_input_candidate_requires_const_defval[float-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>2--const-ordinary-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>2--const-ordinary-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>2--const-exported-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>2--const-exported-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>2--const-linked-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>2--const-linked-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value(simple int unused)=>2-2-const-ordinary-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value(simple int unused)=>2-2-const-ordinary-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value(simple int unused)=>2-2-const-exported-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value(simple int unused)=>2-2-const-exported-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value(simple int unused)=>2-2-const-linked-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value(simple int unused)=>2-2-const-linked-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    if true\\n        2\\n    else\\n        3--const-ordinary-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    if true\\n        2\\n    else\\n        3--const-ordinary-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    if true\\n        2\\n    else\\n        3--const-exported-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    if true\\n        2\\n    else\\n        3--const-exported-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    if true\\n        2\\n    else\\n        3--const-linked-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    if true\\n        2\\n    else\\n        3--const-linked-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    switch 1\\n        1=>2\\n        =>3--const-ordinary-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    switch 1\\n        1=>2\\n        =>3--const-ordinary-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    switch 1\\n        1=>2\\n        =>3--const-exported-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    switch 1\\n        1=>2\\n        =>3--const-exported-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    switch 1\\n        1=>2\\n        =>3--const-linked-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>\\n    switch 1\\n        1=>2\\n        =>3--const-linked-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>bar_index+2--series-ordinary-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>bar_index+2--series-ordinary-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>bar_index+2--series-exported-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>bar_index+2--series-exported-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>bar_index+2--series-linked-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_return_minimum_uses_verified_origin[value()=>bar_index+2--series-linked-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_ordinary_constant_function_remains_usable_as_const_defval[5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_ordinary_constant_function_remains_usable_as_const_defval[6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_imported_constant_is_not_a_const_defval[5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_imported_constant_is_not_a_const_defval[6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,3]-const-ordinary-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,3]-const-ordinary-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,3]-const-exported-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,3]-const-exported-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,3]-const-linked-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,3]-const-linked-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,bar_index]-series-ordinary-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,bar_index]-series-ordinary-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,bar_index]-series-exported-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,bar_index]-series-exported-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,bar_index]-series-linked-5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_tuple_result_floor_preserves_the_strongest_element[[2,bar_index]-series-linked-6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_generated_spelling_alone_never_assigns_exported_origin[5]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_generated_spelling_alone_never_assigns_exported_origin[6]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_earlier_function_qualifier_contract_is_unchanged[2]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_earlier_function_qualifier_contract_is_unchanged[3]"
+    ],
+    [
+      "tests.test_exported_result_floor",
+      "test_earlier_function_qualifier_contract_is_unchanged[4]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_transitive_all_and_only_exported_declarations_with_immutable_copy[5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_transitive_all_and_only_exported_declarations_with_immutable_copy[6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[missing-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[missing-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[extra-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[extra-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[duplicate-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[duplicate-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[ref-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[ref-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[hash-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[hash-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[name-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[name-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[span-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[span-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[generated_name-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[generated_name-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[generated_span-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[generated_span-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[floor-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[floor-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[version-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[version-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[schema-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[schema-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[receipt_projection-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[receipt_projection-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[original_export-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_provenance_cannot_grant_or_change_exported_floor[original_export-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_reconstructs_without_source_and_checks_exact_external_source[5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_reconstructs_without_source_and_checks_exact_external_source[6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[context-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[context-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[capability-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[capability-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[downgrade-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[downgrade-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[schema-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[schema-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[marker-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[marker-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[missing_marker-5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_consumer_revision_context_capability_and_marker_cannot_be_stripped[missing_marker-6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_untrusted_receipt_is_bounded_before_reconstruction[depth]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_untrusted_receipt_is_bounded_before_reconstruction[cycle]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_untrusted_receipt_is_bounded_before_reconstruction[source_count]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_untrusted_receipt_is_bounded_before_reconstruction[root_size]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_semantic_only_does_not_accept_changed_body_with_same_declared_span[5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_semantic_only_does_not_accept_changed_body_with_same_declared_span[6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_never_backports_nominal_library_qualifier_rules[1]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_never_backports_nominal_library_qualifier_rules[2]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_never_backports_nominal_library_qualifier_rules[3]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_never_backports_nominal_library_qualifier_rules[4]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_never_backports_nominal_library_qualifier_rules[True]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_context_never_backports_nominal_library_qualifier_rules[5.0]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_semantic_result_laundering_is_reparsed_without_source[5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_resealed_semantic_result_laundering_is_reparsed_without_source[6]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[context-{]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[context-\\xff]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[context-[[[]]]]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[context-{\"x\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[linked-{]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[linked-\\xff]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[linked-[[[]]]]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_manually_constructed_json_is_controlled_before_admission[linked-{\"x\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_zero_dependency_projection_keeps_existing_verified_linkage_boundary[5]"
+    ],
+    [
+      "tests.test_library_qualifier_context",
+      "test_zero_dependency_projection_keeps_existing_verified_linkage_boundary[6]"
+    ]
+  ],
+  "original_finding": {
+    "receipt": ".runtime/evidence/constant-round-independent-initial-review.json",
+    "sha256": "03205c25626fee572bef3d1956aff4bed4210cbc5762d82a51df86191fac938e",
+    "status": "producer_const_fact_regression_closed",
+    "correction": "Original repeated-index hypothesis was corrected: baseline extra positional rows lacked parameter identities/type evidence. The original and revised compiler probes are all unsupported, so no previously compiling input program regression is claimed."
+  },
+  "remaining_boundary": "Exact unchanged compiler7be8 rejects all six variadic input probes with duplicate parameter_index; root owns a separate compiler/runtime target change. This producer review does not assert that generated min/max execution is supported.",
+  "manual_expected_sha256": "3e82022b1f91a322f4c84eaa888d4c61fdebdcac5a8e24f9b1d298a5eaa6bc38",
+  "included_in_9685_ci": false,
+  "full_stage2_accepted": false,
+  "production_tests_or_inventory_modified_by_reviewer": false,
+  "digest_newlines": "LF",
+  "script_sha256": "3a862c79e0ae41b90f12883e3523ef71a14e19bf1738ae2f38f9a163cdfcec17"
+}

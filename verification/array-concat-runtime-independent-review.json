@@ -1,0 +1,299 @@
+{
+  "schema_id": "openpine.independent_array_concat_runtime_review.v1",
+  "status": "RUNTIME_SOURCE_REVIEW_PASSED_PRODUCER_AND_JOINT_LINUX_PENDING",
+  "full_stage2_accepted": false,
+  "included_in_current_9685_candidate": false,
+  "source_or_tests_modified_by_reviewer": false,
+  "bundle": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-concat-content\\6b53f0ff67c05081e7eda1efc1c46b05806508d9461a807c5ddf3b3ef6d8dcc1",
+    "manifest_sha256": "6b53f0ff67c05081e7eda1efc1c46b05806508d9461a807c5ddf3b3ef6d8dcc1",
+    "base": "ff3fda01541795c793068bced47a0d195bf27e37",
+    "files": 8
+  },
+  "files": [
+    {
+      "path": "docs/STAGE2_ARRAY_CONCAT.md",
+      "category": "documentation",
+      "raw_sha256": "427a5e61e8b54d220b791008f31be14ecd22f4eee8f65b5133763d8b95d726c4",
+      "lf_sha256": "427a5e61e8b54d220b791008f31be14ecd22f4eee8f65b5133763d8b95d726c4"
+    },
+    {
+      "path": "pinelib/abi/catalog.py",
+      "category": "production",
+      "raw_sha256": "22fe880f9b52637c6915ebf02c87e4fed14a625480ed4df6e41146e06d2efed9",
+      "lf_sha256": "1d818431bd113c11cf59a908abe8938095c771fdeee32f22559632a50e2c0007"
+    },
+    {
+      "path": "pinelib/abi/manifest_v2_builder.py",
+      "category": "production",
+      "raw_sha256": "585dc6212fd3b835bb13e0cee7dff2d22801e4af53b97536c58e0bee94898a47",
+      "lf_sha256": "876c657a525226c07cc70afc8aba345ccc252ceb19201dbc577f6160f384bac1"
+    },
+    {
+      "path": "pinelib/abi/reference.py",
+      "category": "production",
+      "raw_sha256": "59829862fbbcb475ccdff4d2ba97548e6bccd32b69b47bf02d3d3f5f46a0bf0c",
+      "lf_sha256": "348e0dd46c18ed6df30b8815c9628c286db7ae60475db8dc7cc1a727ce6131fa"
+    },
+    {
+      "path": "pinelib/abi/target_manifest.json",
+      "category": "production",
+      "raw_sha256": "db3c9a5069f789f80d9f4003db5eee5cc2242f5b4c00823333b1bbc6059a2255",
+      "lf_sha256": "db3c9a5069f789f80d9f4003db5eee5cc2242f5b4c00823333b1bbc6059a2255"
+    },
+    {
+      "path": "pinelib/reference/array.py",
+      "category": "production",
+      "raw_sha256": "3f5ae174855f60ba4e7ba4d3101b0e131200542108568a95e61dd26f56eb3a4d",
+      "lf_sha256": "3c0f2f54b35f43208fd262f8882bdf92a94b399f4d12ef58b12d443d9441ce94"
+    },
+    {
+      "path": "tests/fixtures/array_concat_manual_expected.json",
+      "category": "new_fixture",
+      "raw_sha256": "20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e",
+      "lf_sha256": "20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e"
+    },
+    {
+      "path": "tests/test_array_concat_identity.py",
+      "category": "new_test",
+      "raw_sha256": "9491c8a680ad06585db02dd7237795c1929f1cb0c596f3f76cb05e8b0ae4bad4",
+      "lf_sha256": "9491c8a680ad06585db02dd7237795c1929f1cb0c596f3f76cb05e8b0ae4bad4"
+    }
+  ],
+  "source_checks": [
+    "array_concat retains its detached source/target reads and existing mutate_payload call; it returns the exact original target handle only after mutation succeeds.",
+    "ABI wrapper forwards the exact returned handle. No extra allocation, replacement reference identity, heap graph or lifecycle owner is introduced.",
+    "The only new receiver injection is id1 of official array.concat method; source parameter matching retains priority and unrelated id1 parameters remain fail-closed.",
+    "The target manifest changes only the two concat rows and content hash; namespace v4/v5/v6 and method v5/v6 availability remain exact. No capability/schema expansion.",
+    "Old heap validation, resource limits, slice insertion and rollback/checkpoint owners are byte-unchanged."
+  ],
+  "manifest_delta": [
+    {
+      "symbol_id": "pine:function:array.concat",
+      "changed_fields": [
+        "return"
+      ],
+      "version_availability": [
+        4,
+        5,
+        6
+      ],
+      "producer_overload_ids": [
+        "pine:function:array.concat#canonical"
+      ]
+    },
+    {
+      "symbol_id": "pine:method:array.concat",
+      "changed_fields": [
+        "parameter_bindings",
+        "return"
+      ],
+      "version_availability": [
+        5,
+        6
+      ],
+      "producer_overload_ids": [
+        "pine:method:array.concat#canonical"
+      ]
+    }
+  ],
+  "manifest_raw_lf_sha256": "db3c9a5069f789f80d9f4003db5eee5cc2242f5b4c00823333b1bbc6059a2255",
+  "narrow_receiver_negative_controls": [
+    {
+      "name": "array.concat",
+      "category": "methods",
+      "id1_binding": "METHOD_RECEIVER"
+    },
+    {
+      "name": "array.concat",
+      "category": "functions",
+      "id1_binding": "UNBOUND_FAIL_CLOSED"
+    },
+    {
+      "name": "array.other",
+      "category": "methods",
+      "id1_binding": "UNBOUND_FAIL_CLOSED"
+    },
+    {
+      "name": "matrix.concat",
+      "category": "methods",
+      "id1_binding": "UNBOUND_FAIL_CLOSED"
+    }
+  ],
+  "baseline_preservation": {
+    "base_file_count": 151,
+    "changed_existing_production_files": 5,
+    "unchanged_existing_files": 146,
+    "all_preexisting_test_and_fixture_files_unchanged": 49,
+    "removed_files": 0
+  },
+  "independent_manual_fixture_check": {
+    "cases": 30,
+    "versions": [
+      4,
+      5,
+      6
+    ],
+    "sha256": "20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e",
+    "all_literal_expected_payloads_and_alias_identities_checked": true,
+    "source_of_expected": "Root-authored manual table; reviewer checked append and identity equations without importing runtime/compiler outputs as expected values.",
+    "self_and_slice_compositions_are_derived_not_tradingview_exported": true
+  },
+  "independent_xml": [
+    {
+      "path": ".runtime/evidence/array-concat-independent-py311.xml",
+      "sha256": "bab732741a3a036d9b5cdc8d945835843e8476099980ac2ab0905b61c18214d4",
+      "passed": 112,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "path": ".runtime/evidence/array-concat-independent-py313.xml",
+      "sha256": "d610276f34a523f6937b65d80d1e0e07f795f0b384150ec277a14d89cb25373b",
+      "passed": 112,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    }
+  ],
+  "exact_new_nodeids": [
+    "tests.test_array_concat_identity::test_manual_fixture_is_the_original_independent_table",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-reference-example]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-empty-target]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-empty-source]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-both-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-self]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-self-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-duplicates]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-fractional]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-boolean]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v4-string]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-reference-example]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-empty-target]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-empty-source]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-both-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-self]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-self-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-duplicates]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-fractional]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-boolean]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v5-string]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-reference-example]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-empty-target]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-empty-source]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-both-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-self]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-self-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-duplicates]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-fractional]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-boolean]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[owner-v6-string]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-reference-example]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-empty-target]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-empty-source]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-both-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-self]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-self-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-duplicates]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-fractional]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-boolean]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v4-string]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-reference-example]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-empty-target]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-empty-source]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-both-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-self]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-self-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-duplicates]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-fractional]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-boolean]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v5-string]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-reference-example]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-empty-target]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-empty-source]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-both-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-self]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-self-empty]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-duplicates]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-fractional]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-boolean]",
+    "tests.test_array_concat_identity::test_manual_first_id_alias_and_payloads[abi-v6-string]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[target-parent_expected0-target_expected0-4]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[target-parent_expected0-target_expected0-5]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[target-parent_expected0-target_expected0-6]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[source-parent_expected1-target_expected1-4]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[source-parent_expected1-target_expected1-5]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[source-parent_expected1-target_expected1-6]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[self_view-parent_expected2-target_expected2-4]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[self_view-parent_expected2-target_expected2-5]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[self_view-parent_expected2-target_expected2-6]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[overlapping-parent_expected3-target_expected3-4]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[overlapping-parent_expected3-target_expected3-5]",
+    "tests.test_array_concat_identity::test_slice_target_identity_parent_insertion_and_snapshot_source[overlapping-parent_expected3-target_expected3-6]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[var-aborted0-final0-False-5]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[var-aborted0-final0-False-6]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[var-aborted0-final0-True-5]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[var-aborted0-final0-True-6]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[varip-aborted1-final1-False-5]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[varip-aborted1-final1-False-6]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[varip-aborted1-final1-True-5]",
+    "tests.test_array_concat_identity::test_return_alias_ordinary_and_varip_abort_retry_checkpoint[varip-aborted1-final1-True-6]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[wrong_kind-False-4]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[wrong_kind-False-5]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[wrong_kind-False-6]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[wrong_kind-True-4]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[wrong_kind-True-5]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[wrong_kind-True-6]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[missing-False-4]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[missing-False-5]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[missing-False-6]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[missing-True-4]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[missing-True-5]",
+    "tests.test_array_concat_identity::test_existing_invalid_reference_guards_leave_heap_unchanged[missing-True-6]",
+    "tests.test_array_concat_identity::test_size_overflow_is_atomic_including_parent_and_slice[False-4]",
+    "tests.test_array_concat_identity::test_size_overflow_is_atomic_including_parent_and_slice[False-5]",
+    "tests.test_array_concat_identity::test_size_overflow_is_atomic_including_parent_and_slice[False-6]",
+    "tests.test_array_concat_identity::test_size_overflow_is_atomic_including_parent_and_slice[True-4]",
+    "tests.test_array_concat_identity::test_size_overflow_is_atomic_including_parent_and_slice[True-5]",
+    "tests.test_array_concat_identity::test_size_overflow_is_atomic_including_parent_and_slice[True-6]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[False-1]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[False-2]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[False-3]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[False-4]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[False-5]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[False-6]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[True-1]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[True-2]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[True-3]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[True-4]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[True-5]",
+    "tests.test_array_concat_identity::test_exact_versioned_return_and_receiver_contract[True-6]",
+    "tests.test_array_concat_identity::test_every_non_concat_manifest_field_is_unchanged_and_disk_is_exact"
+  ],
+  "primary_sources": [
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/v4/essential/arrays/#concatenation",
+      "supports": "Append second array into first and return first ID; official push-through-result example."
+    },
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/v5/language/arrays/#concatenation",
+      "supports": "Same first-array return and alias example."
+    },
+    {
+      "url": "https://www.tradingview.com/pine-script-docs/language/arrays/#concatenation",
+      "supports": "Current first-array return and alias example."
+    }
+  ],
+  "limitations": [
+    "Runtime-only frozen eight-file review. Root producer companion typing/named method argument changes require separate review.",
+    "Generated host execution and exact joint Linux checks are pending and are not inferred from the native/public ABI tests.",
+    "No new arbitrary mixed element coercion or malformed host payload semantics are claimed.",
+    "No full Stage2 or TradingView-server parity acceptance."
+  ],
+  "owner_receipt": {
+    "path": ".runtime/evidence/array-concat-implementation-receipt.json",
+    "sha256": "52417b43393630f125d6d1827c42fc269f6b864791404a4c390b17128d7c5230"
+  },
+  "script_sha256": "f809097c08e274528871724b41f693af5923cdb1e29bb801ef0abcbdec730229"
+}

@@ -1,0 +1,280 @@
+{
+  "schema_id": "openpine.rolling_floor_cleanup_execution_independent_review.v1",
+  "status": "ALL_14_ARCHIVES_AND_14_DELETIONS_VERIFIED",
+  "reviewed_at_utc": "2026-09-08T02:35:52.966688+00:00",
+  "repos": {
+    "pine2ast": {
+      "repository": "s7cret/pine2ast",
+      "run_id": 34179873695,
+      "run_url": "https://github.com/s7cret/pine2ast/actions/runs/34179873695",
+      "job_id": 101916618290,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "1f141b86db93ccc1fa95413dc5e6cee986b7affa",
+      "cleanup_tree": "91f514c647460bfe8b91fc1ec2897edc5b415c4e",
+      "workflow_sha256": "12b891a0e928b0920eed55903583766f3990b067777dc136eed3c13f48d34e51",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10038511055,
+      "artifact_name": "rolling-floor-cleanup-20260908-34176337191-pine2ast-34179873695-1",
+      "zip_sha256": "5d2844d7c272593a9031cf9ed25fb4944cfac5a7c46d6aa74f2a3c9ebb9d7edd",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "65ff750afe382916dbf148d46c08a3672cdd7fe23a5f1f1c3f04f8fa921f5a93",
+      "artifact_receipt_sha256": "2a999d300579e01fb5f203d84ea62952aca60c0064dc4a21171d33ae98b842ed",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "1f141b86db93ccc1fa95413dc5e6cee986b7affa",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "91463cfa4cc4813742eff2ebe04806c95c703101",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-1": "853f8e251a92dacfcb225895e491261a795fb13a"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/library-result-context-20260908": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+        "refs/heads/codex/rolling-floor-cleanup-20260908-34176337191": "1f141b86db93ccc1fa95413dc5e6cee986b7affa",
+        "refs/heads/codex/callable-results-20260908": "91463cfa4cc4813742eff2ebe04806c95c703101",
+        "refs/heads/codex/rolling-statistics-20260908": "853f8e251a92dacfcb225895e491261a795fb13a"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "7ff9fd31580b16145d7e07a00b580e425df98c9c",
+        "tree": "f0d0e6531bb6c446986721671eda516700ead89c",
+        "unchanged": true
+      },
+      "operations": null,
+      "candidate_tree": "f0d0e6531bb6c446986721671eda516700ead89c",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 41,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/heads/codex/array-concat-identity-20260908": "31b8a0ff958324c70c3c41779d238e3eb24218f5",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "91463cfa4cc4813742eff2ebe04806c95c703101",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-1": "853f8e251a92dacfcb225895e491261a795fb13a",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "1f141b86db93ccc1fa95413dc5e6cee986b7affa"
+        },
+        "removed": {
+          "refs/heads/codex/callable-results-20260908": "91463cfa4cc4813742eff2ebe04806c95c703101",
+          "refs/heads/codex/library-result-context-20260908": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+          "refs/heads/codex/rolling-statistics-20260908": "853f8e251a92dacfcb225895e491261a795fb13a"
+        },
+        "changed": {}
+      },
+      "separate_next_wave_additions_exactly_match_publication_objects": {
+        "refs/heads/codex/array-concat-identity-20260908": "31b8a0ff958324c70c3c41779d238e3eb24218f5"
+      },
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    },
+    "ast2python": {
+      "repository": "s7cret/ast2python",
+      "run_id": 34179874433,
+      "run_url": "https://github.com/s7cret/ast2python/actions/runs/34179874433",
+      "job_id": 101916620262,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "10e56df9c0aad5d9f84213aa1d992cc9abdff0ae",
+      "cleanup_tree": "aecd90fb238f5ec091535c6cfcc53f5bc7f01aff",
+      "workflow_sha256": "cb17c666c3083b8bbe413edf410031de57bb3f3c2d60112011128e8dc767bbd6",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10038510921,
+      "artifact_name": "rolling-floor-cleanup-20260908-34176337191-ast2python-34179874433-1",
+      "zip_sha256": "c575d3231773e46b38ed696efc62ff0ca90ebdb14d14667e19b4e5ccf68d327c",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "75aef6f2541b4478c3311b5c6f60b50c86be35dae53de6bd157799ff8cf28a4d",
+      "artifact_receipt_sha256": "e9f1a2487e945b6d4c28a78ca9e9651c4a1e94d909f36f8913c544cf3e895cdd",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "10e56df9c0aad5d9f84213aa1d992cc9abdff0ae",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "f1092609a3b5d3f245ec7a30e9552edecd0bf56a"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/library-result-context-20260908": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+        "refs/heads/codex/rolling-floor-cleanup-20260908-34176337191": "10e56df9c0aad5d9f84213aa1d992cc9abdff0ae",
+        "refs/heads/codex/varip-nominal-arrays-20260908": "f1092609a3b5d3f245ec7a30e9552edecd0bf56a"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "89e644128640e552b5c22ceb21fc37b1d653a9ab",
+        "tree": "37d85bffcc6c52543d3aec13e5ebf620b1f9e8a0",
+        "unchanged": true
+      },
+      "operations": null,
+      "candidate_tree": "37d85bffcc6c52543d3aec13e5ebf620b1f9e8a0",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 35,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "f1092609a3b5d3f245ec7a30e9552edecd0bf56a",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "10e56df9c0aad5d9f84213aa1d992cc9abdff0ae"
+        },
+        "removed": {
+          "refs/heads/codex/library-result-context-20260908": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+          "refs/heads/codex/varip-nominal-arrays-20260908": "f1092609a3b5d3f245ec7a30e9552edecd0bf56a"
+        },
+        "changed": {}
+      },
+      "separate_next_wave_additions_exactly_match_publication_objects": {},
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    },
+    "pinelib": {
+      "repository": "s7cret/pinelib",
+      "run_id": 34179875282,
+      "run_url": "https://github.com/s7cret/pinelib/actions/runs/34179875282",
+      "job_id": 101916622537,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "96a6d0be0e0a360d28fa96fdf6b423e8457d3b0f",
+      "cleanup_tree": "ef929407ea2301b92f0c215564276b3ba0115719",
+      "workflow_sha256": "47ebfc92a22920ee841bc687e88d4c99ad5de4bf9f0ec366f74b5ce1b93276b2",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10038512141,
+      "artifact_name": "rolling-floor-cleanup-20260908-34176337191-pinelib-34179875282-1",
+      "zip_sha256": "8299d892059eeeb47f0c0c2dc3b7bd49913e76a6d6cc02cccfc9e36898f630b2",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "d0ac03287b268e1ad581ffc49d61242800c724572d077eb047a02370943fb865",
+      "artifact_receipt_sha256": "07271eb7e7d18b308b58778d40d2af3336c77989de8db0719fa1ecf6c38c7f07",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "ff3fda01541795c793068bced47a0d195bf27e37",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "96a6d0be0e0a360d28fa96fdf6b423e8457d3b0f",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "441b3d632d18ac964efb343bdb81e66c3a891b0e",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-1": "b9687356ba30f6cfbb14fb23938850eda3fb196f"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/array-search-boundaries-20260908": "ff3fda01541795c793068bced47a0d195bf27e37",
+        "refs/heads/codex/rolling-floor-cleanup-20260908-34176337191": "96a6d0be0e0a360d28fa96fdf6b423e8457d3b0f",
+        "refs/heads/codex/varip-nominal-arrays-20260908": "b9687356ba30f6cfbb14fb23938850eda3fb196f",
+        "refs/heads/codex/rolling-statistics-20260908": "441b3d632d18ac964efb343bdb81e66c3a891b0e"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "ef95595ede8688f3f3cb40bc87739e5eb21aab7a",
+        "tree": "9fee61583fa010efe0cfb3a5b85e199634e9370b",
+        "unchanged": true
+      },
+      "operations": null,
+      "candidate_tree": "9fee61583fa010efe0cfb3a5b85e199634e9370b",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 40,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/heads/codex/array-concat-identity-20260908": "5366a5889f7b66a216f80629ca6c8f1a94fc1f62",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "441b3d632d18ac964efb343bdb81e66c3a891b0e",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-1": "b9687356ba30f6cfbb14fb23938850eda3fb196f",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "ff3fda01541795c793068bced47a0d195bf27e37",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "96a6d0be0e0a360d28fa96fdf6b423e8457d3b0f"
+        },
+        "removed": {
+          "refs/heads/codex/array-search-boundaries-20260908": "ff3fda01541795c793068bced47a0d195bf27e37",
+          "refs/heads/codex/rolling-statistics-20260908": "441b3d632d18ac964efb343bdb81e66c3a891b0e",
+          "refs/heads/codex/varip-nominal-arrays-20260908": "b9687356ba30f6cfbb14fb23938850eda3fb196f"
+        },
+        "changed": {}
+      },
+      "separate_next_wave_additions_exactly_match_publication_objects": {
+        "refs/heads/codex/array-concat-identity-20260908": "5366a5889f7b66a216f80629ca6c8f1a94fc1f62"
+      },
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    },
+    "openpine": {
+      "repository": "s7cret/openpine",
+      "run_id": 34179875789,
+      "run_url": "https://github.com/s7cret/openpine/actions/runs/34179875789",
+      "job_id": 101916624188,
+      "all_six_steps_succeeded": true,
+      "cleanup_commit": "e784462beb53e5f9312c530dad8d6f7cc152e78e",
+      "cleanup_tree": "44c252036be4bf5d2dd4c7063b0327d62e4b12b3",
+      "workflow_sha256": "6a3ad7cb022a77fbe6bdc968765d13a6ef1f6a08686fb77d4e1fb1fc3319d5aa",
+      "workflow_single_file_child_of_release": true,
+      "artifact_id": 10038512751,
+      "artifact_name": "rolling-floor-cleanup-20260908-34176337191-openpine-34179875789-1",
+      "zip_sha256": "275f85ff7c2b2e49c88af3e792da7e8bff6f88db1f3d3ec5b27fb1395d507524",
+      "zip_digest_matches_independent_api": true,
+      "artifact_plan_sha256": "276a3133417575dccb1f8c4eb2ab9fd1e36b2895ab8cb22f506a8ea7b88a4f3f",
+      "artifact_receipt_sha256": "82d971e17bbaba724e634041cbe8395a779272ac00d59f669aaadbba9dda660c",
+      "exact_original_plan": true,
+      "archives": {
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "e784462beb53e5f9312c530dad8d6f7cc152e78e",
+        "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "2845ae12037294b122dbb6165df7987539613798"
+      },
+      "deleted_refs": {
+        "refs/heads/codex/library-result-context-20260908": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+        "refs/heads/codex/rolling-floor-cleanup-20260908-34176337191": "e784462beb53e5f9312c530dad8d6f7cc152e78e",
+        "refs/heads/codex/rolling-statistics-20260908": "2845ae12037294b122dbb6165df7987539613798"
+      },
+      "release": {
+        "ref": "refs/heads/release/5.0.0rc6",
+        "sha": "d43afee4ed2921265971a90abaac958fdad4fcac",
+        "tree": "2cb63bcf6ec654da9812544da105c0f027699477",
+        "unchanged": true
+      },
+      "operations": {
+        "ref": "refs/heads/stage2/nominal-ci-20260907",
+        "sha": "e072d2c719e1e79ba5d2f415709dc559ee5c5886",
+        "verified_operations_reachable": true,
+        "unchanged": true
+      },
+      "candidate_tree": "de8ba1e027f6a3bd11077b83467b4bb5179cc1f4",
+      "all_ancestor_histories_reachable": true,
+      "all_preexisting_unrelated_refs_unchanged": true,
+      "unchanged_ref_count": 67,
+      "fresh_remote_delta_from_pre_dispatch": {
+        "added": {
+          "refs/heads/codex/array-concat-identity-20260908": "0aeb5b2b95e68fc5e6de4d61516a07b864191f93",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/ancestor-0": "2845ae12037294b122dbb6165df7987539613798",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/candidate": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+          "refs/tags/archive/stage2/rolling-floor-cleanup-20260908-34176337191/cleanup-workflow": "e784462beb53e5f9312c530dad8d6f7cc152e78e"
+        },
+        "removed": {
+          "refs/heads/codex/library-result-context-20260908": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+          "refs/heads/codex/rolling-statistics-20260908": "2845ae12037294b122dbb6165df7987539613798"
+        },
+        "changed": {}
+      },
+      "separate_next_wave_additions_exactly_match_publication_objects": {
+        "refs/heads/codex/array-concat-identity-20260908": "0aeb5b2b95e68fc5e6de4d61516a07b864191f93"
+      },
+      "cleanup_branch_preexistence_and_exact_tip_recorded_by_workflow": true
+    }
+  },
+  "counts": {
+    "successful_runs": 4,
+    "successful_steps": 24,
+    "archives": 14,
+    "deleted_branches": 14,
+    "primary_features": 4,
+    "ancestor_features": 6,
+    "cleanup_branches": 4,
+    "unchanged_releases": 4
+  },
+  "runner_sha256": "f0fe1e7967770a95b85f4b821633034d2fe002f627a14523ebf51c30f3c6a15f",
+  "prior_plan_review_sha256": "ed7b4d48da093a9dcb11319c0745b7a8172906c9c1044dc1d76c8eeeae1f0b4d",
+  "independent_api_snapshot": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\rolling-floor-cleanup\\independent-final-api.json",
+    "sha256": "45e4ad6f98210c38a3957a60b2bdb5f96e2d218b1c47f26bcd52cc2c6f2ed410"
+  },
+  "fresh_ref_snapshot": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\rolling-floor-cleanup\\independent-final-ref-snapshot.json",
+    "sha256": "228d45b0eba15e00667d525502a5f0083681f6597775cb465db315e749f3d1e5"
+  },
+  "publication_objects_sha256": "58292e6b22ac9dfae0c47ad65698039d1e820d48b6bc844c431ae99ba21d0aca",
+  "next_wave_publication_objects": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\array-concat-publication-commits.json",
+    "sha256": "3117203b82c03057d993967d2fec8838e25eee3cc3a348dbae94041c512739b4",
+    "new_branches_are_separate_from_cleanup": true
+  },
+  "initial_strict_ref_assertion_observation": {
+    "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\rolling-floor-cleanup\\initial-next-wave-ref-observation.json",
+    "sha256": "b66827ae210d7d23b710ba912db74f8b067f995739876566bc5dc7ce88d50b5c",
+    "old_ref_preservation_assertions_unchanged": true
+  },
+  "all_old_tags_and_unrelated_heads_preserved": true,
+  "verified_operations_e072_reachable_and_unchanged": true,
+  "all_deleted_histories_archived": true,
+  "full_stage2_accepted": false,
+  "remote_mutations_performed_by_reviewer": false,
+  "scope": "Actual cleanup execution and preservation only; prior 9685-test bounded CI acceptance remains separate. No new semantic acceptance is inferred from successful cleanup.",
+  "digest_newlines": "LF",
+  "script_sha256": "8965e0baf227da7266f6197e4e0893c053dd4b5d4de3e6b46fb46856d0a8aac1"
+}
