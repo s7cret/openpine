@@ -27,3 +27,10 @@ The expected files were fixed before execution and remain unchanged throughout
 the implementation corrections. Runtime state migration, resource boundaries,
 native package tests and a coordinated Linux run must also pass before the
 whole block can be accepted. Stage 2 remains in progress.
+
+## Completed coordinated execution
+
+This bounded source passed run 34176337191 on Python 3.11 and 3.13: 9685 tests
+per interpreter, all preserved native gates, frontend and builds. See
+`RC6_STAGE2_ROLLING_CONTEXT_PUBLICATION.md` and the independent execution review.
+Full Stage 2 acceptance remains pending.

@@ -1,0 +1,47 @@
+{
+  "schema_id": "openpine.independent_rolling_floor_final_metadata_review.v1",
+  "status": "EXACT_METADATA_AND_WORKFLOW_REVIEW_PASSED_EXECUTION_PENDING",
+  "source": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+  "tree": "de8ba1e027f6a3bd11077b83467b4bb5179cc1f4",
+  "collection_source": "8d1e6d3e5858c2cced1669a401a7f4804633f8a6",
+  "full_tree_files": 1618,
+  "exact_changed_paths": [
+    "verification/inventory.json",
+    "verification/rolling-floor-inventory-review.json",
+    "verification/rolling-floor-metadata-independent-review.json",
+    "verification/stage2-progress.json"
+  ],
+  "metadata_hashes": {
+    "verification/inventory.json": "bea439c072ca283435f2920756d2d5f3c49fef2976befaa4a22abefd218492a8",
+    "verification/rolling-floor-inventory-review.json": "50d35b3a5b23f84c3318e8c9f5d7c7089e488fc2b8fc8e0373ffa0a098a5c74a",
+    "verification/rolling-floor-metadata-independent-review.json": "832a6dee83b7b901a15da93ce81edff7ae8d37669d0d919ec96294cfbd9c3027",
+    "verification/stage2-progress.json": "903398934baa6d64ccfb83b38421601fa8d0379cb506df53ca4068b74e655c39"
+  },
+  "pins_unchanged": true,
+  "permanent_workflow_sha256": "c1eb7e8d5c5c02cf1183a534cfa7593aaaddcd65b1e0df90b6dd57a4010811f5",
+  "operations_sha": "e072d2c719e1e79ba5d2f415709dc559ee5c5886",
+  "operations_tree": "e15d68b1fdcc8ba1167a510e589eec978daeb9fc",
+  "workflow_sha256": "bbf139bf0c0058c2bc6be72e4d4c82e2a45be398ad26804fb1b3f743bed0d9ec",
+  "step_preservation": {
+    "verify": {
+      "all_permanent_steps_identical_except_exact_checkout_ref": true,
+      "unchanged_run_steps": 7,
+      "added_identity_guard": "Require exact candidate and committed reviewed inventory",
+      "source_receipt_upload_added": true,
+      "protected_worker_and_ui_gate_steps_preserved": true
+    },
+    "frontend": {
+      "all_permanent_steps_identical_except_exact_checkout_ref": true,
+      "unchanged_run_steps": 4,
+      "added_identity_guard": "Require frontend and backend from the same exact source",
+      "source_receipt_upload_added": false,
+      "protected_worker_and_ui_gate_steps_preserved": true
+    }
+  },
+  "expected_tests_each_python": 9685,
+  "expected_builtin_observations_each_python": 1160,
+  "execution_acceptance": false,
+  "full_stage2_accepted": false,
+  "inventory_changed_by_reviewer": false,
+  "script_sha256": "6387287e378218107ca183eb130e6fa2d1a2737791c4619e9a06d50a241fca13"
+}

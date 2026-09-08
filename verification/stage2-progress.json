@@ -100,19 +100,24 @@
     "verification/varip-remote-source-review.json",
     "verification/exported-floor-denominator-reconciliation.json",
     "verification/rolling-floor-inventory-review.json",
-    "verification/rolling-floor-metadata-independent-review.json"
+    "verification/rolling-floor-metadata-independent-review.json",
+    "verification/rolling-floor-execution-review.json",
+    "verification/rolling-floor-final-metadata-independent-review.json",
+    "verification/rolling-floor-joint-receipt.json",
+    "docs/RC6_STAGE2_ROLLING_CONTEXT_PUBLICATION.md",
+    "docs/RC6_STAGE2_ROLLING_STATISTICS.md"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
-  "joint_test_count": 8470,
+  "joint_test_count": 9685,
   "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
   "core_verification_run": 34068163602,
   "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-  "latest_verified_source": "81c5cfc37e5445dcc8ce806d286450b27848c080",
-  "latest_verified_tree": "6eb3da1092a4feadd7759cdeda34b120ea658d80",
-  "integrated_head": "ea63766a7b5899602c71420b1fac6152381cab92",
-  "joint_verification_run": 34171225525,
-  "publication_receipt": "docs/RC6_STAGE2_LANGUAGE_STATE_PUBLICATION.md",
+  "latest_verified_source": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+  "latest_verified_tree": "de8ba1e027f6a3bd11077b83467b4bb5179cc1f4",
+  "integrated_head": "ac118eecb4a69f45eb6935de7ea91dc46facfcbd",
+  "joint_verification_run": 34176337191,
+  "publication_receipt": "docs/RC6_STAGE2_ROLLING_CONTEXT_PUBLICATION.md",
   "gate_results": {
     "python_3_11": "passed",
     "python_3_13": "passed",
@@ -124,12 +129,16 @@
   "locked_library_imports": {
     "status": "published_and_joint_verified",
     "initial_published_source": "79c89ea4e79f9925b4c7e3e9085f02eff0492492",
-    "profile": "offline_same_version_pine5_pine6_scalar_array_function_exports",
+    "profile": "offline_same_version_pine5_pine6_reference_types_v4",
     "external_tradingview_oracle": false,
-    "exported_types_methods_enums": "unsupported",
+    "exported_types_methods_enums": "udt_and_enum_exports_verified_methods_not_supported",
     "cross_version_imports": "not_accepted",
     "ui_registry": "not_implemented",
-    "automatic_projected_diagnostics": "projection_map_available_not_fully_integrated"
+    "automatic_projected_diagnostics": "projection_map_available_not_fully_integrated",
+    "exported_udt": "joint_verified",
+    "exported_enum": "joint_verified",
+    "exported_methods": "not_supported",
+    "exported_result_qualifier_context": "producer_reconstructed_and_joint_verified"
   },
   "nominal_language": {
     "status": "integrated_and_joint_linux_verified",
@@ -333,7 +342,7 @@
     "cleanup_receipt": "verification/language-state-cleanup-final-execution-review.json"
   },
   "rolling_library_context_block": {
-    "status": "inventory_reviewed_pending_joint_linux",
+    "status": "integrated_and_joint_linux_verified",
     "scope": [
       "callable_result_qualifiers_including_nested_control",
       "varip_arrays_of_admitted_udt",
@@ -383,13 +392,21 @@
     "full_stage2_accepted": false,
     "tradingview_verified": false,
     "excluded_next_waves": [
-      "constant_metadata_round_and_udf",
-      "global_constant_qualifier_prepass"
+      "array_concat_return_identity_and_named_receiver",
+      "constant_round_variadic_binding",
+      "constant_udf_value_evidence",
+      "exported_library_methods"
     ],
     "inventory_run": 34175811673,
     "inventory_sha256": "bea439c072ca283435f2920756d2d5f3c49fef2976befaa4a22abefd218492a8",
     "inventory_review": "verification/rolling-floor-inventory-review.json",
     "selected_tests": 9685,
-    "removed_tests": 0
+    "removed_tests": 0,
+    "verification_run": 34176337191,
+    "verified_source": "d8f165088c27d29d2d7d6b467c31c52f648b17eb",
+    "verified_tree": "de8ba1e027f6a3bd11077b83467b4bb5179cc1f4",
+    "integration": "ac118eecb4a69f45eb6935de7ea91dc46facfcbd",
+    "receipt": "verification/rolling-floor-joint-receipt.json",
+    "cleanup": "pending"
   }
 }
