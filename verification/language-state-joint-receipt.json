@@ -1,77 +1,64 @@
 {
-  "schema_id": "openpine.scalar_joint_publication.v1",
-  "workflow_run_id": 34168428781,
-  "workflow_url": "https://github.com/s7cret/openpine/actions/runs/34168428781",
-  "operations_sha": "5663db7b40f6d550def438ecb976de4b7c164562",
-  "source_receipt": {
-    "source_sha": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
-    "source_tree": "afbd13813cd3f7f637f6d1236e9e5800cb770ef4",
-    "inventory_sha256": "5a975b2efa88f94bc0d8617434f9f9bf6c70659913da16f18790e377d08c864f",
-    "permanent_workflow_sha256": "c1eb7e8d5c5c02cf1183a534cfa7593aaaddcd65b1e0df90b6dd57a4010811f5",
-    "digest_newlines": "LF",
-    "inventory_rewritten_in_ci": false,
-    "release_publication_performed": false
-  },
+  "schema_id": "openpine.language_state_joint_publication.v1",
+  "workflow_run_id": 34171225525,
+  "workflow_url": "https://github.com/s7cret/openpine/actions/runs/34171225525",
+  "operations_sha": "bd2a37fba27e330dde9a49d82ddd4785b185f7ae",
+  "source_sha": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+  "source_tree": "6eb3da1092a4feadd7759cdeda34b120ea658d80",
   "source_pins": {
     "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
     "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
     "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
     "ast2python": "70309934a05b29e1b1696109460c05db32a6f519",
-    "pinelib": "66890b5aeec8db206fc756681a414e33d7fe5b68",
+    "pinelib": "fa7d7ab7f7ffdb1afd29f6167e61a6bb3f719ca7",
     "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
-    "pine2ast": "cae5ad7b688bad9a542d1ea100ce38d20600c99c"
+    "pine2ast": "5fe76f6ce6a4e49b04d9bf66b6263f201ecffe0e"
   },
-  "independent_review": "verification/scalar-execution-review.json",
-  "independent_review_sha256": "ed17216d2de789b64b22086ebd8719a9b0462347701110a3562a3bc9c6f31a04",
+  "independent_review": "verification/language-state-execution-review.json",
+  "independent_review_sha256": "a1699959286b4105c927dc24c77b42a85cce6864124bc2b4f61f78de04748fec",
   "integrations": [
     {
       "name": "pine2ast",
-      "prior": "61c503259744d1faa88959809776f4512d48c516",
-      "tested": "cae5ad7b688bad9a542d1ea100ce38d20600c99c",
-      "tree": "aebd919488a8119b5056c936cc5eda7df1dc76ea",
-      "integration": "663f042343548ea7c12d79fd01655396b89e0430"
+      "prior": "663f042343548ea7c12d79fd01655396b89e0430",
+      "tested": "5fe76f6ce6a4e49b04d9bf66b6263f201ecffe0e",
+      "tree": "976c13afa03ba33a82f37d5a16c7dca980d1f4c4",
+      "integration": "f6ccca777c3947974b07a3592491148f4d7ec51f"
     },
     {
       "name": "pinelib",
-      "prior": "85e76ec5eab106b8e5700f8d6ee2efe10ebef127",
-      "tested": "66890b5aeec8db206fc756681a414e33d7fe5b68",
-      "tree": "e8dfe2d5621cd70f982ec3d3c0392ff0413bddf9",
-      "integration": "4dd43f269b769c21baa859f434eea17afb74332a"
-    },
-    {
-      "name": "ast2python",
-      "prior": "700682f5ffb9c343462c1a23db58a7e6e904fa62",
-      "tested": "70309934a05b29e1b1696109460c05db32a6f519",
-      "tree": "7da3877797f717bab83614aa1f9ecb7cfe4278d9",
-      "integration": "53767c031e686c6df830b8ce9cc08be1812865a3"
+      "prior": "4dd43f269b769c21baa859f434eea17afb74332a",
+      "tested": "fa7d7ab7f7ffdb1afd29f6167e61a6bb3f719ca7",
+      "tree": "c621b5c00d026eaf4bde455222ee77925ca66d9c",
+      "integration": "f980e79ef2e09ac36233fa35dc303a32a61f0d86"
     },
     {
       "name": "OpenPine",
-      "prior": "58aa4f8aa76573eb1e9d1c3c6ca04eb606954fc8",
-      "tested": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
-      "tree": "afbd13813cd3f7f637f6d1236e9e5800cb770ef4",
-      "integration": "603fb836a2cca5273938b5c9b7eeb5380f1c8864"
+      "prior": "e5d3cc58801069a095e88c404a37ae9a857a434e",
+      "tested": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+      "tree": "6eb3da1092a4feadd7759cdeda34b120ea658d80",
+      "integration": "ea63766a7b5899602c71420b1fac6152381cab92"
     }
   ],
   "release_updates": "fast_forward_without_force",
-  "complete_history_and_exact_tested_trees_preserved": true,
-  "backend_tests_each_python": 7754,
-  "baseline_tests": 7243,
-  "added_tests": 511,
+  "exact_tested_trees_and_history_preserved": true,
+  "backend_tests_each_python": 8470,
+  "baseline_tests": 7754,
+  "added_tests": 716,
   "removed_tests": 0,
   "new_skips": 0,
   "existing_provider_deselections": 5,
   "frontend": {
-    "job_id": 101886437374,
+    "job_id": 101894552270,
     "status": "success",
-    "same_source_sha": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
+    "same_source_sha": "81c5cfc37e5445dcc8ce806d286450b27848c080",
     "vitest_passed": 152,
     "node_passed": 22,
     "failures": 0,
+    "errors": 0,
     "skips": 0,
     "production_build": "passed",
     "artifact_files": {
-      "_temp/ui-tests.xml": "c6631c4ac4a7e7f87412844bba55cb5991693871b2ec85d1b6556e57e9658e22",
+      "_temp/ui-tests.xml": "2115275e8585149614d753cb2a5067a38f0aef677421df584bcbcdc6968d3ce5",
       "openpine/openpine/openpine-ui/dist/assets/Achievements-BbauJzJz.js": "a5d390a1d45c45524e1eab17c0cb411cc9227d0eb32d04e800d2c6fabb66bd54",
       "openpine/openpine/openpine-ui/dist/assets/Backtests-TezrwpGY.js": "c13468a949d4a594b52d8c6208f3f35f7c681da717a15440a40448239514ecc4",
       "openpine/openpine/openpine-ui/dist/assets/client-Dhz9_LtG.js": "683194e7db11db031912f665b4f9275311b8156d4c2605c186d979c56f7a8d0d",
@@ -101,23 +88,22 @@
       "openpine/openpine/openpine-ui/dist/index.html": "1b17b69654a68c72f0503b94920aa4f2bdeeec684b64a51c455d59927ff76c69"
     }
   },
-  "frozen_stage1_unchanged": true,
-  "manual_builtin_cases": 47,
-  "manual_scalar_cases": 75,
-  "paths_per_case": 5,
-  "cleanup_status": "archived_and_deleted_verified",
+  "manual_expected_observations_per_python": 830,
+  "stage1_cases_per_python": 12,
+  "corpus_cases": {
+    "original_builtins": 47,
+    "scalars": 75,
+    "transcendentals": 44
+  },
+  "execution_paths_per_case": 5,
+  "cleanup_status": "pending_archive_and_guarded_delete",
   "full_stage2_accepted": false,
   "full_builtin_expected_accepted": false,
   "tradingview_verified": false,
   "excluded_next_waves": [
-    "abort_control",
-    "input_qualifiers",
-    "parameter_inference",
-    "mathematical44",
     "callable_result_qualifiers",
     "varip_nominal_arrays",
+    "rolling_statistics",
     "library_return_floor"
-  ],
-  "cleanup_receipt": "verification/scalar-cleanup-final-execution-review.json",
-  "cleanup_receipt_sha256": "479d46abe96180df6115a41a2f56399eb0a671e892d500ee69c7d238e6620949"
+  ]
 }

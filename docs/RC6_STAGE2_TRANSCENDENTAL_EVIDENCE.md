@@ -30,3 +30,10 @@ and3.13. Local working owner changes are not joint Linux acceptance: the exact
 published source still needs the full eight-owner pipeline and unchanged
 Stage1,sandbox,architecture and frontend gates. Full builtin and Stage2
 acceptance remain false.
+
+## Completed joint execution
+
+The bounded source above is integrated after run34171225525:8470 tests passed
+on each Python3.11/3.13, with native gates, frontend and builds. See
+`RC6_STAGE2_LANGUAGE_STATE_PUBLICATION.md` and the independent execution review.
+This accepts the described block; full Stage2 remains in progress.

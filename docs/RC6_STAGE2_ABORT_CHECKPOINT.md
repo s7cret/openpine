@@ -49,3 +49,10 @@ The previous successful registry run and the pending scalar run do not accept
 this newer source. It requires a fresh retained inventory and complete joint
 Linux execution with the unchanged Stage1, sandbox, architecture and frontend
 gates. Stage2 remains in progress.
+
+## Completed joint execution
+
+The bounded source above is integrated after run34171225525:8470 tests passed
+on each Python3.11/3.13, with native gates, frontend and builds. See
+`RC6_STAGE2_LANGUAGE_STATE_PUBLICATION.md` and the independent execution review.
+This accepts the described block; full Stage2 remains in progress.
