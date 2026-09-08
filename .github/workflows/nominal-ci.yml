@@ -1,6 +1,6 @@
 # Temporary operations workflow; source is checked out at the explicit immutable SHA.
 # Read-only CI. This workflow never updates release branches or accepts Stage 2.
-name: Nominal types Linux inventory proposal (collection only)
+name: Nominal types Linux verification
 'on':
   push:
     branches:
@@ -8,12 +8,12 @@ name: Nominal types Linux inventory proposal (collection only)
 permissions:
   contents: read
 concurrency:
-  group: nominal-inventory proposal (collection only)-${{ github.ref }}
+  group: nominal-verification-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  propose:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
@@ -23,277 +23,184 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: d8f165088c27d29d2d7d6b467c31c52f648b17eb
         persist-credentials: false
-        path: baseline
-    - uses: actions/checkout@v4
-      with:
-        ref: b97005c979f59e306de4f54c0639ebea9a42a402
-        persist-credentials: false
-        path: candidate
+        ref: 4d952ccac1f051bd75e7a4ef2dd7644cdf379b83
     - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
-    - name: Collect exact baseline and candidate inventories with real installed dependencies
+    - name: Require exact candidate and committed reviewed inventory
+      shell: bash
+      run: |
+        python - <<'PY'
+        import hashlib, json, os, pathlib, subprocess
+        expected_sha = "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83"
+        expected_inventory = "8d7db289ca78e8baf6167f6422544a3d2a22fa597f8860d1101e7bdbfdf90af3"
+        expected_permanent = "c1eb7e8d5c5c02cf1183a534cfa7593aaaddcd65b1e0df90b6dd57a4010811f5"
+        root = pathlib.Path.cwd()
+        sha = subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+        if sha != expected_sha:
+            raise SystemExit('Source checkout does not match exact reviewed candidate')
+        inventory = (root/'verification/inventory.json').read_bytes().replace(b'\r\n', b'\n')
+        permanent = (root/'.github/workflows/rc6-native.yml').read_bytes().replace(b'\r\n', b'\n')
+        if hashlib.sha256(inventory).hexdigest() != expected_inventory:
+            raise SystemExit('Candidate does not contain the reviewed and committed inventory')
+        if hashlib.sha256(permanent).hexdigest() != expected_permanent:
+            raise SystemExit('Candidate permanent workflow differs from copied verification steps')
+        if subprocess.check_output(['git','status','--porcelain','--untracked-files=no'],text=True).strip():
+            raise SystemExit('Tracked candidate checkout is dirty')
+        receipt = {'source_sha':sha, 'source_tree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),
+                   'inventory_sha256':expected_inventory, 'permanent_workflow_sha256':expected_permanent,
+                   'digest_newlines':'LF', 'inventory_rewritten_in_ci':False, 'release_publication_performed':False}
+        (pathlib.Path(os.environ['RUNNER_TEMP'])/'nominal-source-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        PY
+    - name: Install pinned sibling sources
       shell: bash
       run: |
         set -euo pipefail
-        cat > "$RUNNER_TEMP/nominal_collect_inventory.py" <<'NOMINAL_COLLECTOR'
-        """Linux-only, collection-only proposal; never execution/Stage 2 acceptance."""
-
-        from __future__ import annotations
-
-        import argparse
-        import hashlib
-        import json
-        import os
-        from pathlib import Path
-        import re
-        import subprocess
-        import sys
-
-
-        PRE_NOMINAL_BASELINE_SHA = "668d009a5754fac138431a83dfc7eb83f73f408e"
-        BASELINE_SHA = "6b3ac81b46575d2bc105cfda334348b1a62387c7"
-        REPOSITORIES = (
-            "openpine-contracts", "pinelib", "pine2ast", "ast2python",
-            "backtest_engine", "optimizer", "marketdata-provider",
-        )
-        SUITES = (*REPOSITORIES, "openpine")
-        BOOTSTRAP = ("setuptools==84.0.0", "wheel==0.48.0", "hatchling==1.32.0", "build==1.6.0")
-
-
-        def run(command: list[str], *, cwd: Path | None = None, env: dict | None = None) -> None:
-            subprocess.run(command, cwd=cwd, env=env, check=True)
-
-
-        def output(command: list[str], *, cwd: Path | None = None) -> str:
-            return subprocess.check_output(command, cwd=cwd, text=True).strip()
-
-
-        def write_json(path: Path, value: object) -> None:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
-
-        def hash_nodes(nodes: list[str]) -> str:
-            data = json.dumps(sorted(nodes), ensure_ascii=False, separators=(",", ":")).encode()
-            return "sha256:" + hashlib.sha256(data).hexdigest()
-
-
-        def check_sha(value: str) -> str:
-            if re.fullmatch(r"[0-9a-f]{40}", value) is None:
-                raise ValueError("An exact lower-case source SHA is required")
-            return value
-
-
-        def source_snapshot(source: Path, sha: str, evidence: Path, name: str) -> None:
-            if output(["git", "rev-parse", "HEAD"], cwd=source) != sha:
-                raise ValueError(f"Wrong checkout for {name}")
-            if output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=source):
-                raise ValueError(f"Dirty tracked checkout for {name}")
-            run(["git", "archive", "--format=tar.gz", f"--output={evidence / (name + '.source.tar.gz')}", sha], cwd=source)
-
-
-        def install_archive(source: Path, destination: Path, sha: str) -> None:
-            destination.mkdir(parents=True)
-            archive = subprocess.check_output(["git", "archive", sha], cwd=source)
-            subprocess.run(["tar", "-x", "-C", str(destination)], input=archive, check=True)
-
-
-        def collect_phase(label: str, host: Path, host_sha: str, work: Path, evidence: Path) -> dict:
-            phase = work / label
-            phase.mkdir()
-            evidence.mkdir(parents=True)
-            source_snapshot(host, host_sha, evidence, "openpine")
-            pins = json.loads((host / "docs/RC6_LIFECYCLE_SOURCES.json").read_text())
-            if set(pins) != set(REPOSITORIES):
-                raise ValueError(f"{label}: seven source pins are required")
-            for sha in pins.values():
-                check_sha(sha)
-            write_json(evidence / "source-pins.json", pins)
-            write_json(evidence / "host-identity.json", {
-                "sha": host_sha,
-                "tree": output(["git", "rev-parse", "HEAD^{tree}"], cwd=host),
-                "collection_only": True,
-                "execution_acceptance": False,
-            })
-            run([sys.executable, "-m", "venv", str(phase / "venv")])
-            python = str(phase / "venv/bin/python")
-            env = dict(os.environ)
-            env.pop("PYTHONPATH", None)
-            env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
-            run([python, "-m", "pip", "install", *BOOTSTRAP], env=env)
-            paths = {}
-            archives = []
-            for name in REPOSITORIES:
-                path = phase / "stack" / name
-                run(["git", "clone", "--quiet", "https://github.com/s7cret/" + name + ".git", str(path)])
-                run(["git", "checkout", "--detach", pins[name]], cwd=path)
-                source_snapshot(path, pins[name], evidence, name)
-                clean = phase / "install-sources" / name
-                install_archive(path, clean, pins[name])
-                extras = "[parquet,stream,zstd]" if name == "marketdata-provider" else "[dev]" if name == "optimizer" else ""
-                archives.append(str(clean) + extras)
-                paths[name] = path
-            clean_host = phase / "install-sources/openpine"
-            install_archive(host, clean_host, host_sha)
-            # Normal non-editable installs of all eight pinned packages. No PYTHONPATH,
-            # sibling import injection, local stubs, or replacements for real dependencies.
-            run([python, "-m", "pip", "install", *archives, str(clean_host) + "[dev]"], env=env)
-            paths["openpine"] = host
-            installed_probe = r'''
-        import importlib, importlib.metadata, json, pathlib, sys
-        names = {
-            "openpine": "openpine", "openpine-contracts": "openpine_contracts",
-            "pinelib": "pinelib", "pine2ast": "pine2ast", "ast2python": "ast2python",
-            "backtest_engine": "backtest_engine", "optimizer": "optimizer",
-            "marketdata-provider": "marketdata_provider",
-        }
-        prefix = pathlib.Path(sys.prefix).resolve()
-        result = {}
-        for distribution, module in names.items():
-            imported = importlib.import_module(module)
-            origin = pathlib.Path(imported.__file__).resolve()
-            if not origin.is_relative_to(prefix):
-                raise SystemExit("Package is outside its isolated installation: " + str(origin))
-            dist = importlib.metadata.distribution(distribution)
-            direct = json.loads(dist.read_text("direct_url.json") or "{}")
-            if direct.get("dir_info", {}).get("editable", False):
-                raise SystemExit("Editable package installation is forbidden")
-            result[distribution] = {"origin": str(origin), "version": dist.version, "direct_url": direct}
-        print(json.dumps(result, indent=2))
-        '''
-            imports = subprocess.check_output([python, "-I", "-c", installed_probe], cwd=phase, env=env, text=True)
-            (evidence / "installed-package-origins.json").write_text(imports, encoding="utf-8")
-            freeze = subprocess.check_output([python, "-m", "pip", "freeze"], env=env, text=True)
-            (evidence / "environment.txt").write_text(freeze, encoding="utf-8")
-            selected = json.loads((host / "rc6_tests/selected_regressions.json").read_text())
-            if (not isinstance(selected, list) or not all(isinstance(p, str) for p in selected)
-                    or len(set(selected)) != len(selected)
-                    or any(not p.startswith("tests/test_") or not p.endswith(".py")
-                           or not (host / p).is_file() for p in selected)):
-                raise ValueError("Invalid explicit regression inventory")
-            write_json(evidence / "selected-tests.json", sorted(selected))
-            results = {}
-            failures = []
-            for suite in SUITES:
-                inventory = evidence / f"{suite}.inventory.json"
-                command = [python, "-m", "pytest", "-q", "--collect-only"]
-                if suite == "openpine":
-                    command += ["-p", "pytest_asyncio.plugin"]
-                command += ["-p", "openpine.verification.pytest_gate",
-                            "--verification-suite=" + suite, "--verification-output=" + str(inventory)]
-                if label == "baseline":
-                    command += ["--verification-lock=" + str(host / "verification/inventory.json")]
-                if suite == "marketdata-provider":
-                    command += ["-m", "not live_network"]
-                if suite == "openpine":
-                    command += ["rc6_tests", *sorted(selected)]
-                print("::group::" + label + ": collect " + suite, flush=True)
-                result = subprocess.run(command, cwd=paths[suite], env=env, capture_output=True, text=True)
-                log = result.stdout + result.stderr
-                (evidence / f"{suite}.collection.log").write_text(log, encoding="utf-8")
-                print(log, flush=True)
-                print("::endgroup::", flush=True)
-                if result.returncode:
-                    failures.append(f"{suite}: pytest collection exit {result.returncode}")
-                if not inventory.is_file():
-                    failures.append(f"{suite}: no inventory output")
-                    continue
-                rows = json.loads(inventory.read_text())
-                nodes = rows.get("nodeids")
-                if (not isinstance(nodes, list) or not nodes or not all(isinstance(n, str) for n in nodes)
-                        or len(set(nodes)) != len(nodes)
-                        or rows.get("suite") != suite or rows.get("collect_only") is not True
-                        or rows.get("ok") is not False or rows.get("errors") != []
-                        or rows.get("count") != len(nodes) or rows.get("sha256") != hash_nodes(nodes)
-                        or type(rows.get("deselected")) is not int or rows["deselected"] < 0):
-                    failures.append(f"{suite}: malformed or failed collection evidence")
-                    continue
-                results[suite] = rows
-            write_json(evidence / "collection-status.json", {
-                "errors": failures, "collection_only": True, "execution_acceptance": False,
-            })
-            if failures:
-                raise ValueError("; ".join(failures))
-            return results
-
-
-        def compare(baseline: dict, candidate: dict, locked: dict,
-                    baseline_sha: str = BASELINE_SHA) -> tuple[dict, dict]:
-            check_sha(baseline_sha)
-            if set(baseline) != set(SUITES) or set(candidate) != set(SUITES) or set(locked) != set(SUITES):
-                raise ValueError("All eight suites must be present")
-            proposal = {}
-            changes = {}
-            failures = []
-            for suite in SUITES:
-                old, new = baseline[suite], candidate[suite]
-                old_identity = {key: old[key] for key in ("count", "sha256", "deselected")}
-                expected = {**locked[suite], "deselected": locked[suite].get("deselected", 0)}
-                if old_identity != expected:
-                    failures.append(f"{suite}: baseline differs from frozen {baseline_sha} inventory")
-                added = sorted(set(new["nodeids"]) - set(old["nodeids"]))
-                removed = sorted(set(old["nodeids"]) - set(new["nodeids"]))
-                if removed:
-                    failures.append(f"{suite}: candidate removed baseline nodeids")
-                if new["deselected"] > old["deselected"]:
-                    failures.append(f"{suite}: candidate increased deselections")
-                proposal[suite] = {key: new[key] for key in ("count", "sha256", "deselected")}
-                changes[suite] = {
-                    "baseline": old_identity, "candidate": proposal[suite],
-                    "added": added, "removed": removed,
-                    "deselected_delta": new["deselected"] - old["deselected"],
-                }
-            return proposal, {
-                "baseline_host_sha": baseline_sha,
-                "collection_only": True, "execution_acceptance": False,
-                "review_required": True, "errors": failures, "suites": changes,
-            }
-
-
-        def main() -> None:
-            parser = argparse.ArgumentParser(description=__doc__)
-            parser.add_argument("--baseline", required=True, type=Path)
-            parser.add_argument("--baseline-sha", type=check_sha, default=BASELINE_SHA)
-            parser.add_argument("--candidate", required=True, type=Path)
-            parser.add_argument("--candidate-sha", required=True, type=check_sha)
-            parser.add_argument("--work", required=True, type=Path)
-            parser.add_argument("--evidence", required=True, type=Path)
-            args = parser.parse_args()
-            if sys.platform != "linux":
-                raise SystemExit("Run this proposal collector on the real Linux CI runner")
-            args.work.mkdir(parents=True)
-            args.evidence.mkdir(parents=True)
-            baseline = collect_phase("baseline", args.baseline.resolve(), args.baseline_sha,
-                                     args.work.resolve(), args.evidence.resolve() / "baseline")
-            candidate = collect_phase("candidate", args.candidate.resolve(), args.candidate_sha,
-                                      args.work.resolve(), args.evidence.resolve() / "candidate")
-            locked = json.loads((args.baseline / "verification/inventory.json").read_text())
-            proposal, differences = compare(baseline, candidate, locked, args.baseline_sha)
-            differences["candidate_host_sha"] = args.candidate_sha
-            write_json(args.evidence / "baseline-locked-inventory.json", locked)
-            write_json(args.evidence / "inventory-diff.json", differences)
-            # Failed comparisons remain reviewable without producing an installable lock.
-            if differences["errors"]:
-                raise SystemExit("; ".join(differences["errors"]))
-            write_json(args.evidence / "proposed-inventory.json", proposal)
-            (args.evidence / "NOT-EXECUTION-ACCEPTANCE.txt").write_text(
-                "Collection only. Review added/removed nodeids, commit the approved lock, "
-                "then run the unchanged permanent backend and frontend gates at that exact source SHA.\n",
-                encoding="utf-8",
-            )
-
-
-        if __name__ == "__main__":
-            main()
-        NOMINAL_COLLECTOR
-        python "$RUNNER_TEMP/nominal_collect_inventory.py" --baseline "$GITHUB_WORKSPACE/baseline" --candidate "$GITHUB_WORKSPACE/candidate" --baseline-sha d8f165088c27d29d2d7d6b467c31c52f648b17eb --candidate-sha b97005c979f59e306de4f54c0639ebea9a42a402 --work "$RUNNER_TEMP/nominal-collection" --evidence "$RUNNER_TEMP/nominal-proposal"
+        python -m pip install setuptools==84.0.0 wheel==0.48.0 hatchling==1.32.0 build==1.6.0
+        python - <<'PY'
+        import json, os, pathlib, re, subprocess
+        root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'stack'
+        evidence = root.parent / 'evidence'
+        root.mkdir()
+        evidence.mkdir()
+        pins = json.loads(pathlib.Path('docs/RC6_LIFECYCLE_SOURCES.json').read_text())
+        expected = {'openpine-contracts','pine2ast','ast2python','pinelib','backtest_engine','marketdata-provider','optimizer'}
+        if set(pins) != expected or not all(re.fullmatch('[0-9a-f]{40}', sha) for sha in pins.values()):
+            raise SystemExit('Invalid source pins')
+        sources = []
+        build_root = root.parent / 'install-sources'
+        build_root.mkdir()
+        for name, sha in pins.items():
+            path = root / name
+            subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(path)],check=True)
+            subprocess.run(['git','-C',str(path),'checkout','--detach',sha],check=True)
+            if subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip() != sha:
+                raise SystemExit('Source identity mismatch')
+            # Keep generated packaging output out of the source hygiene check.
+            clean = build_root / name
+            clean.mkdir()
+            archive = subprocess.check_output(['git','-C',str(path),'archive',sha])
+            subprocess.run(['tar','-x','-C',str(clean)],input=archive,check=True)
+            sources.append(str(clean) + ('[parquet,stream,zstd]' if name == 'marketdata-provider' else '[dev]' if name == 'optimizer' else ''))
+        subprocess.run(['python','-m','pip','install',*sources,'.[dev]'],check=True)
+        (evidence / 'source-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
+        with open(os.environ['GITHUB_ENV'],'a') as stream:
+            stream.write('PINE_STACK_ROOT='+str(root)+'\n')
+        PY
+    - name: Complete contracts runtime compiler broker and optimizer functional suites
+      env:
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      run: |
+        set -euo pipefail
+        for repo in openpine-contracts pinelib pine2ast ast2python backtest_engine optimizer; do
+          (cd "$PINE_STACK_ROOT/$repo" && python -m pytest -q -p openpine.verification.pytest_gate --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-suite="$repo" --verification-output="$RUNNER_TEMP/evidence/$repo.inventory.json" --junitxml="$RUNNER_TEMP/evidence/$repo.xml")
+        done
+    - name: Deterministic provider suite (external network checks are separate)
+      env:
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      run: |
+        cd "$PINE_STACK_ROOT/marketdata-provider"
+        python -m pytest -q -p openpine.verification.pytest_gate --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-suite=marketdata-provider --verification-output="$RUNNER_TEMP/evidence/marketdata-provider.inventory.json" -m 'not live_network' --junitxml="$RUNNER_TEMP/evidence/marketdata-provider.xml"
+    - name: Enable the real protected worker environment
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install --no-install-recommends -y apparmor-profiles apparmor-utils bubblewrap
+        sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+        sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+        if ! getent passwd openpine-worker >/dev/null; then
+          sudo useradd --system --no-create-home --shell /usr/sbin/nologin openpine-worker
+        fi
+        sudo -n -u openpine-worker -- /usr/bin/id -u
+        /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+    - name: Native sandbox plus affected storage CLI gateway and branch regressions
+      env:
+        OPENPINE_STAGE1_EVIDENCE: ${{ runner.temp }}/evidence
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      run: |
+        python - <<'PY'
+        import json, os, pathlib, subprocess
+        evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'evidence'
+        selected = json.loads(pathlib.Path('rc6_tests/selected_regressions.json').read_text())
+        if (not isinstance(selected,list) or len(set(selected)) != len(selected)
+                or any(not isinstance(p,str) or not p.startswith('tests/test_')
+                       or not p.endswith('.py') or not pathlib.Path(p).is_file() for p in selected)):
+            raise SystemExit('Invalid explicit regression inventory')
+        (evidence/'selected-tests.json').write_text(json.dumps(sorted(selected),indent=2)+'\n')
+        subprocess.run(['python','-m','pytest','-p','pytest_asyncio.plugin','-p','openpine.verification.pytest_gate',
+                        '--verification-lock='+str(pathlib.Path.cwd()/'verification/inventory.json'),
+                        '--verification-suite=openpine','--verification-output='+str(evidence/'openpine.inventory.json'),
+                        '-q','rc6_tests',*sorted(selected),
+                        '--junitxml='+str(evidence/'openpine.xml')],check=True)
+        PY
+    - name: Architecture capability and frozen conformance gate
+      run: python -m openpine.verification stage1 --host-root "$GITHUB_WORKSPACE" --stack-root "$PINE_STACK_ROOT" --evidence
+        "$RUNNER_TEMP/evidence"
+    - name: Validate changed runtime lint imports and build clean distributions
+      run: |
+        python -m ruff check openpine/runtime/bulk_result.py openpine/runtime/bulk_worker.py openpine/runtime/progress.py openpine/runtime/engine.py openpine/runtime/isolated_run.py openpine/runtime/isolated_worker.py openpine/runtime/rc6_worker_runtime.py openpine/storage/parquet.py openpine/runtime/request_data.py openpine/runtime/request_requirements.py openpine/runtime/generated_checkpoint.py openpine/runtime/worker_capabilities.py rc6_tests/test_rc6_requests.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_receipts.py rc6_tests/test_rc6_request_preflight.py rc6_tests/test_rc6_request_causality.py rc6_tests/test_rc6_worker_capabilities.py openpine/runtime/request_transport.py rc6_tests/test_rc6_nested_integration.py rc6_tests/test_rc6_request_transport.py openpine/optimizer/isolated_runner.py rc6_tests/test_rc6_optimizer_requests.py rc6_tests/test_rc6_review_ledger.py openpine/runtime/rc6_config.py openpine/runtime/strategy_host.py rc6_tests/test_rc6_deferred_exits.py rc6_tests/test_rc6_mintick_binding.py rc6_tests/test_rc6_price_entry_exits.py rc6_tests/test_rc6_all_entry_exits.py rc6_tests/test_rc6_all_entry_literal_ids.py rc6_tests/test_rc6_strategy_surface.py rc6_tests/test_rc6_exit_price_pairs.py rc6_tests/test_rc6_trailing_exits.py rc6_tests/test_rc6_order_metadata.py rc6_tests/test_rc6_absolute_exit_lots.py rc6_tests/test_rc6_bulk_output_metadata.py rc6_tests/test_rc6_entry_risk.py openpine/verification openpine/runtime/effective_config.py rc6_tests/test_rc6_stage1_foundation.py rc6_tests/test_rc6_stage1_corpus.py rc6_tests/test_rc6_stage2_language.py rc6_tests/test_rc6_canonical_na_admission.py rc6_tests/test_rc6_library_imports.py rc6_tests/test_rc6_reference_loop_values.py openpine/compile/native_rc6.py rc6_tests/test_rc6_intrabar_collections.py
+        python -m compileall -q openpine
+        python scripts/export_openapi.py "$RUNNER_TEMP/evidence/openapi.json"
+        mkdir -p "$RUNNER_TEMP/build-source"
+        git archive HEAD | tar -x -C "$RUNNER_TEMP/build-source"
+        python -m build --no-isolation --outdir "$RUNNER_TEMP/evidence/dist" "$RUNNER_TEMP/build-source"
+        python -m pip freeze > "$RUNNER_TEMP/evidence/environment.txt"
+        git rev-parse HEAD > "$RUNNER_TEMP/evidence/code-head.txt"
+        git rev-parse HEAD^{tree} > "$RUNNER_TEMP/evidence/code-tree.txt"
+        git archive --format=tar.gz --output="$RUNNER_TEMP/evidence/source.tar.gz" HEAD
+        test -z "$(git status --porcelain --untracked-files=no)"
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: nominal-proposal-${{ matrix.python }}-${{ github.run_id }}
-        path: ${{ runner.temp }}/nominal-proposal/
+        name: rc6-checks-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/evidence/
         if-no-files-found: error
+        retention-days: 30
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: nominal-source-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/nominal-source-receipt.json
+        if-no-files-found: warn
+        retention-days: 30
+  frontend:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: openpine-ui
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+        ref: 4d952ccac1f051bd75e7a4ef2dd7644cdf379b83
+    - uses: actions/download-artifact@v4
+      with:
+        name: rc6-checks-3.13-${{ github.run_id }}
+        path: ${{ runner.temp }}/backend-evidence
+    - name: Require frontend and backend from the same exact source
+      working-directory: .
+      shell: bash
+      run: |
+        test "$(git rev-parse HEAD)" = "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83"
+        test "$(cat "$RUNNER_TEMP/backend-evidence/code-head.txt")" = "4d952ccac1f051bd75e7a4ef2dd7644cdf379b83"
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: openpine-ui/package-lock.json
+    - run: npm ci
+    - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
+    - run: npm run build
+    - run: npm run test:node
+      env:
+        OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend-evidence/openapi.json
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: rc6-ui-${{ github.run_id }}
+        path: |
+          ${{ runner.temp }}/ui-tests.xml
+          openpine-ui/dist/
         retention-days: 30
