@@ -142,7 +142,12 @@
     "verification/semantic-wave-composed-local-execution-review.json",
     "verification/concat-variadic-cleanup-final-execution-review.json",
     "verification/map-operations-host-independent-review.json",
-    "verification/constant-metadata-host-independent-review.json"
+    "verification/constant-metadata-host-independent-review.json",
+    "verification/semantic-wave-inventory-independent-review.json",
+    "verification/semantic-wave-host-metadata-independent-review.json",
+    "verification/semantic-wave-proposal-source-archive-review.json",
+    "verification/semantic-wave-host-publication-source-review.json",
+    "verification/semantic-wave-metadata-addendum.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -525,7 +530,7 @@
     "cleanup_receipt": "verification/concat-variadic-cleanup-final-execution-review.json"
   },
   "method_context_contracts_block": {
-    "status": "independently_reviewed_source_pending_inventory_and_joint_linux",
+    "status": "inventory_reviewed_pending_joint_linux",
     "scope": [
       "contextual_constant_values_and_child_types",
       "ordinary_method_candidate_selection",
@@ -663,13 +668,19 @@
       "generic_map_get_contains_remove_key_contract",
       "float_midpoint_constant_folding",
       "finite_large_literal_lexer",
-      "constant_modulo_value_evidence"
+      "constant_modulo_value_evidence",
+      "v5_UDF_const_admissibility"
     ],
     "excluded_next_waves": [
       "matrix_operation_corpus",
       "receiver_qualifier_A2"
     ],
     "full_stage2_accepted": false,
-    "tradingview_verified": false
+    "tradingview_verified": false,
+    "inventory_run": 34199147637,
+    "inventory_sha256": "bff145bcbfb81a78069150f283f7cc8aef5f2395f5e72d9aa3b30dcd2b0326c3",
+    "inventory_review": "verification/semantic-wave-inventory-independent-review.json",
+    "selected_tests": 16745,
+    "removed_tests": 0
   }
 }

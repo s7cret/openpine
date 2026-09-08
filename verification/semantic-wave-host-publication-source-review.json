@@ -1,0 +1,15 @@
+{
+  "source": "c32a89b18a2c5c12fbd425536df0226b3c05c0a2",
+  "tree": "16e4772dc3e27a338611d82ef60c459f73fe0018",
+  "files": 2996,
+  "verified_grouped_trees_and_parents": true,
+  "changed_old_paths": [
+    ".gitattributes",
+    "docs/RC6_LIFECYCLE_SOURCES.json",
+    "verification/stage2-progress.json"
+  ],
+  "independent_metadata_review_sha256": "1c08b7ad95735a3ff4202fd4b0da6198c4b30cd7b362075736bd622f1c2a6c2f",
+  "release_unchanged": true,
+  "joint_ci_accepted": false,
+  "full_stage2_accepted": false
+}
