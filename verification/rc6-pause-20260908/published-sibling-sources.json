@@ -1,0 +1,90 @@
+{
+  "status": "paused_pending_joint_linux",
+  "repositories": [
+    {
+      "name": "ast2python",
+      "branch": "codex/recursive-method-contracts-20260908",
+      "sha": "caadb136a52dcb49cea7bb838e8a0d5d2724cf30",
+      "tree": "ffe103e43e826d7a05f4f3910a4ad96efb56ccb2",
+      "commits": [
+        {
+          "kind": "functional",
+          "sha": "6daa2ee7970332130194f5be4134403890ef83a8",
+          "tree": "9f8c37d6360201d741406beae64f63b57df495f4",
+          "files": 4
+        },
+        {
+          "kind": "new_tests",
+          "sha": "e80160a0cc5abe093973a845549e0fd16d055963",
+          "tree": "35240af06d7f5a7066aa800621bbe348d226336b",
+          "files": 2
+        },
+        {
+          "kind": "documentation",
+          "sha": "caadb136a52dcb49cea7bb838e8a0d5d2724cf30",
+          "tree": "ffe103e43e826d7a05f4f3910a4ad96efb56ccb2",
+          "files": 1
+        }
+      ]
+    },
+    {
+      "name": "pine2ast",
+      "branch": "codex/recursive-method-contracts-20260908",
+      "sha": "9820fe4f28d01d32d8a13f328517d9d7a5779497",
+      "tree": "b777c95b2aea5a55c7e7ad879ace42ab4dfc9b13",
+      "commits": [
+        {
+          "kind": "functional",
+          "sha": "bdcf448f2b1018a137ec2f6bf7df82d7620524ef",
+          "tree": "dd1d33fbcb2a33b8e060700723f875c5048c90c6",
+          "files": 18
+        },
+        {
+          "kind": "new_tests",
+          "sha": "0ebbb74ab99362243711795440fc2d7aed2c802a",
+          "tree": "6bcf8c12aa5e99da266ec152d2c05950915df49e",
+          "files": 15
+        },
+        {
+          "kind": "documentation",
+          "sha": "9820fe4f28d01d32d8a13f328517d9d7a5779497",
+          "tree": "b777c95b2aea5a55c7e7ad879ace42ab4dfc9b13",
+          "files": 3
+        }
+      ]
+    },
+    {
+      "name": "pinelib",
+      "branch": "codex/recursive-method-contracts-20260908",
+      "sha": "97902943bd8f1300c3bb3e3e314465ac92fa057a",
+      "tree": "be176834b8d6b975bbec58c8ffc66c6695a2edf9",
+      "commits": [
+        {
+          "kind": "functional",
+          "sha": "f885a012260a41092412d29c56ebd148e6024f59",
+          "tree": "565ffc4cd9098e9f147871c315eb4b38f8eb0318",
+          "files": 5
+        },
+        {
+          "kind": "new_tests",
+          "sha": "c0cffee7d2bd3368f63168871886a93ccda3eaf1",
+          "tree": "65c6139a01d92de916469d32a1aa389427698c8b",
+          "files": 14
+        },
+        {
+          "kind": "fixture_migration",
+          "sha": "61e7b25d9103f34176823a237fa8a633dd4b19b9",
+          "tree": "b1d3263e7ae0d3e55d2c4577ff9cb6a4db9fd69b",
+          "files": 7
+        },
+        {
+          "kind": "documentation",
+          "sha": "97902943bd8f1300c3bb3e3e314465ac92fa057a",
+          "tree": "be176834b8d6b975bbec58c8ffc66c6695a2edf9",
+          "files": 4
+        }
+      ]
+    }
+  ],
+  "full_stage2_accepted": false
+}
