@@ -1,0 +1,772 @@
+{
+  "authoring_helper": {
+    "path": ".runtime/ci-tools/author_concat_host_corpus.py",
+    "sha256": "sha256:842cdce04fcbfb3492c2c926d9403a5c97b14a7e00c78e8c2c2b52eb29d6685a"
+  },
+  "before": {
+    "error": [],
+    "failure": [
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-reference-example-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-empty-target-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-empty-source-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-both-empty-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-self-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-self-empty-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-duplicates-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-fractional-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-boolean-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v4-string-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-reference-example-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-reference-example-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-empty-target-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-empty-target-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-empty-source-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-empty-source-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-both-empty-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-both-empty-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-self-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-self-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-self-empty-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-self-empty-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-duplicates-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-duplicates-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-fractional-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-fractional-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-boolean-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-boolean-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-string-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v5-string-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-reference-example-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-reference-example-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-empty-target-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-empty-target-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-empty-source-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-empty-source-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-both-empty-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-both-empty-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-self-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-self-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-self-empty-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-self-empty-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-duplicates-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-duplicates-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-fractional-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-fractional-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-boolean-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-boolean-method]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-string-function]"
+      },
+      {
+        "message": "pine2ast.hardening.consumer_bundle.ConsumerBundleError: frontend result contains production-blocking diagnostics",
+        "node": "rc6_tests.test_rc6_array_concat_expected::test_independent_concat_full_arrays_and_identity[full-compiled_historical-v6-string-method]"
+      }
+    ],
+    "passed": 7,
+    "path": ".runtime/evidence/array-concat-host-before-py311.xml",
+    "sha256": "sha256:b89a6ddb5d6c3021e31bb8bf7b09f4dc25eaf44d96c6dbd4bdaea6ee75eb298c",
+    "skipped": [],
+    "tests": 57
+  },
+  "corpus": {
+    "content_hash": "sha256:9b08b8cbd14d94b4df58b978dd274d821797f01301d70006d5b7bc6b0c686d54",
+    "expanded_cases": 50,
+    "manual_rows": 30,
+    "manual_table": {
+      "path": "verification/builtin-array-concat-v1/array-concat-manual-expected.json",
+      "sha256": "sha256:20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e"
+    },
+    "oracle_kind": "manual_fixture",
+    "source_files": 154
+  },
+  "coverage": [
+    {
+      "executions": 500,
+      "final_snapshots": 2000,
+      "json_restore_controls": 400,
+      "python": "311",
+      "reports": 10,
+      "trial_snapshots": 600,
+      "versioned_tuples": [
+        [
+          4,
+          "pine:function:array.concat",
+          "pine:function:array.concat#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:function:array.concat",
+          "pine:function:array.concat#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:method:array.concat",
+          "pine:method:array.concat#canonical",
+          "METHOD"
+        ],
+        [
+          6,
+          "pine:function:array.concat",
+          "pine:function:array.concat#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:method:array.concat",
+          "pine:method:array.concat#canonical",
+          "METHOD"
+        ]
+      ]
+    },
+    {
+      "executions": 500,
+      "final_snapshots": 2000,
+      "json_restore_controls": 400,
+      "python": "313",
+      "reports": 10,
+      "trial_snapshots": 600,
+      "versioned_tuples": [
+        [
+          4,
+          "pine:function:array.concat",
+          "pine:function:array.concat#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:function:array.concat",
+          "pine:function:array.concat#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          5,
+          "pine:method:array.concat",
+          "pine:method:array.concat#canonical",
+          "METHOD"
+        ],
+        [
+          6,
+          "pine:function:array.concat",
+          "pine:function:array.concat#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        [
+          6,
+          "pine:method:array.concat",
+          "pine:method:array.concat#canonical",
+          "METHOD"
+        ]
+      ]
+    }
+  ],
+  "cross_python_observations_identical": true,
+  "execution_scope": "5paths x50cases x2transcript_modes; 7 additional provenance/negative comparison controls",
+  "full_stage2_accepted": false,
+  "limitations": [
+    "Independent manual and explicitly derived expectations, no TradingView execution/export",
+    "UDT/enum elements, mixed types, missing handles and nested requests are outside this corpus",
+    "Native checkpoint continuation does not establish outer host checkpoint publication eligibility",
+    "Frozen source overlays are not published producer/runtime Git pins; final coordinated Linux CI is pending"
+  ],
+  "local_launcher": {
+    "path": ".runtime/ci-tools/run_concat_host_validation.py",
+    "sha256": "sha256:aec6b3e6c57e1d4c8b63731aef8513e357ec70f870554bc0ef85e9c8bf43eca5"
+  },
+  "new_tests": 507,
+  "no_existing_source_or_test_edits": true,
+  "published_pin_claim": false,
+  "reports": [
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/abi/assignments.json",
+        "sha256": "sha256:1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/abi/observations.json",
+        "sha256": "sha256:ccb57f5b7747b6350cb76e5ed31ba92853eac44e4a84f031e5f63d664dda78c6"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/abi/report.json",
+      "sha256": "sha256:67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_checkpoint/assignments.json",
+        "sha256": "sha256:6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_checkpoint/observations.json",
+        "sha256": "sha256:fee02308efbd0cc235898613e6a11e476af1ad67eba14254f5b1c1a9cc9def6f"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_checkpoint/report.json",
+      "sha256": "sha256:cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_historical/assignments.json",
+        "sha256": "sha256:498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_historical/observations.json",
+        "sha256": "sha256:f341a1cde6b109c3cffc936c5605e3a2a481613d3bd64e80135ff51b13ccd51f"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_historical/report.json",
+      "sha256": "sha256:f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_realtime/assignments.json",
+        "sha256": "sha256:64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_realtime/observations.json",
+        "sha256": "sha256:9100aa363b0d2931e208149f3e065ce0d4c44f08256a4590ef903aedc8dd55a2"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_realtime/report.json",
+      "sha256": "sha256:5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_rollback/assignments.json",
+        "sha256": "sha256:de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_rollback/observations.json",
+        "sha256": "sha256:1ed708b8e2564c07b1527a5c9949dd41a0eff1d3bd8e468712c1598ba4eabab0"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/compact/compiled_rollback/report.json",
+      "sha256": "sha256:b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/abi/assignments.json",
+        "sha256": "sha256:1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/abi/observations.json",
+        "sha256": "sha256:247a66e28faee3213fcfd4ff6b01e54e47d2f5d009631f4ff72c1031c5966d24"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/abi/report.json",
+      "sha256": "sha256:67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_checkpoint/assignments.json",
+        "sha256": "sha256:6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_checkpoint/observations.json",
+        "sha256": "sha256:d24a022999fc006ae3f80f3bc5c35c4fc2a74b4554a08d810993b05b9329eff1"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_checkpoint/report.json",
+      "sha256": "sha256:cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_historical/assignments.json",
+        "sha256": "sha256:498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_historical/observations.json",
+        "sha256": "sha256:cbd97ae32174620d44b85f81d8194d0744b8938f78c34c38f497be033d37f808"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_historical/report.json",
+      "sha256": "sha256:f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_realtime/assignments.json",
+        "sha256": "sha256:64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_realtime/observations.json",
+        "sha256": "sha256:2e557068465388823a38ea850df8c55c07a2bbcb7847742b344823b654d1178a"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_realtime/report.json",
+      "sha256": "sha256:5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_rollback/assignments.json",
+        "sha256": "sha256:de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_rollback/observations.json",
+        "sha256": "sha256:efeadfc6827cad2c5c3319fd07248e9bfd57499bccf4433f6681cbb5ad2444ca"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py311/builtin-array-concat-reports/full/compiled_rollback/report.json",
+      "sha256": "sha256:b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/abi/assignments.json",
+        "sha256": "sha256:1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/abi/observations.json",
+        "sha256": "sha256:ccb57f5b7747b6350cb76e5ed31ba92853eac44e4a84f031e5f63d664dda78c6"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/abi/report.json",
+      "sha256": "sha256:67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_checkpoint/assignments.json",
+        "sha256": "sha256:6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_checkpoint/observations.json",
+        "sha256": "sha256:fee02308efbd0cc235898613e6a11e476af1ad67eba14254f5b1c1a9cc9def6f"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_checkpoint/report.json",
+      "sha256": "sha256:cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_historical/assignments.json",
+        "sha256": "sha256:498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_historical/observations.json",
+        "sha256": "sha256:f341a1cde6b109c3cffc936c5605e3a2a481613d3bd64e80135ff51b13ccd51f"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_historical/report.json",
+      "sha256": "sha256:f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_realtime/assignments.json",
+        "sha256": "sha256:64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_realtime/observations.json",
+        "sha256": "sha256:9100aa363b0d2931e208149f3e065ce0d4c44f08256a4590ef903aedc8dd55a2"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_realtime/report.json",
+      "sha256": "sha256:5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_rollback/assignments.json",
+        "sha256": "sha256:de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_rollback/observations.json",
+        "sha256": "sha256:1ed708b8e2564c07b1527a5c9949dd41a0eff1d3bd8e468712c1598ba4eabab0"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/compact/compiled_rollback/report.json",
+      "sha256": "sha256:b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/abi/assignments.json",
+        "sha256": "sha256:1fae6f325b33f60fe272411266446bd6a843411a66b6ef83667d4979e3085a3a"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/abi/observations.json",
+        "sha256": "sha256:247a66e28faee3213fcfd4ff6b01e54e47d2f5d009631f4ff72c1031c5966d24"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/abi/report.json",
+      "sha256": "sha256:67e79140b927fe37c87e654516e43be8e9db59d1c006c2e3265ca2f7eba10597"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_checkpoint/assignments.json",
+        "sha256": "sha256:6ae744d82a1dbc025c158ff008c7d103eb3589830bc46b0649c737ebb7e421fd"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_checkpoint/observations.json",
+        "sha256": "sha256:d24a022999fc006ae3f80f3bc5c35c4fc2a74b4554a08d810993b05b9329eff1"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_checkpoint/report.json",
+      "sha256": "sha256:cf33b985315e7a4523b8d1a7a89127bd6820353c531a4721fdb58901e0baf299"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_historical/assignments.json",
+        "sha256": "sha256:498aea1658b5f3d24b8ff0833d2aa03fb0f2f5c57519a13cf6c0d42025a5b46d"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_historical/observations.json",
+        "sha256": "sha256:cbd97ae32174620d44b85f81d8194d0744b8938f78c34c38f497be033d37f808"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_historical/report.json",
+      "sha256": "sha256:f71ae1bfdca4b1d0a8ea08db9de6ede645e6e53ea8145617284037a82d11ffd4"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_realtime/assignments.json",
+        "sha256": "sha256:64f2ca6879001c1e3a68f104f460579b370aaa67cf06638cc51dd86d28808222"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_realtime/observations.json",
+        "sha256": "sha256:2e557068465388823a38ea850df8c55c07a2bbcb7847742b344823b654d1178a"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_realtime/report.json",
+      "sha256": "sha256:5501aa306767e522c6624830fd757c960a5a65f1b2c2f2e5cc3f9b443b1b3d3e"
+    },
+    {
+      "assigned": 50,
+      "assignments": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_rollback/assignments.json",
+        "sha256": "sha256:de27634c8d6d4f8e37bbe0a8ef9f3f97ba54f21a27814afb41b2f28d2f943e69"
+      },
+      "covered_versioned_tuples": 5,
+      "full_builtin_expected_accepted": false,
+      "observations": {
+        "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_rollback/observations.json",
+        "sha256": "sha256:efeadfc6827cad2c5c3319fd07248e9bfd57499bccf4433f6681cbb5ad2444ca"
+      },
+      "passed": 50,
+      "path": ".runtime/evidence/array-concat-host-after-py313/builtin-array-concat-reports/full/compiled_rollback/report.json",
+      "sha256": "sha256:b58d677d8ecb48ac0edc725810fc1cbb2f844a92c8b29a3af5e8844bf58d0e0a"
+    }
+  ],
+  "results": [
+    {
+      "error": [],
+      "failure": [],
+      "passed": 507,
+      "path": ".runtime/evidence/array-concat-host-after-py311.xml",
+      "sha256": "sha256:fb33ae040daaced31c57465f489046fa7687816651ab9e13aaf20a8f73b1e42a",
+      "skipped": [],
+      "tests": 507
+    },
+    {
+      "error": [],
+      "failure": [],
+      "passed": 507,
+      "path": ".runtime/evidence/array-concat-host-after-py313.xml",
+      "sha256": "sha256:5ea117f4d49f3d37ee3f517692c8f04f97983fcb58ffa213de718e4d3e021dbf",
+      "skipped": [],
+      "tests": 507
+    }
+  ],
+  "schema_id": "openpine.array_concat_host_local_review.v1",
+  "source_contract": {
+    "compiler_commit": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+    "formal_test_pins": "docs/RC6_LIFECYCLE_SOURCES.json",
+    "local_mode": "frozen_content_snapshot",
+    "producer_bundle": "a6c16032a3a3f7427bc905e5f05348f5327715758404a112eb7fdc99fb0a221f",
+    "runtime_bundle": "6b53f0ff67c05081e7eda1efc1c46b05806508d9461a807c5ddf3b3ef6d8dcc1"
+  },
+  "source_files": {
+    "documentation": {
+      "path": "docs/RC6_STAGE2_ARRAY_CONCAT_EXPECTED.md",
+      "sha256": "sha256:2ccbeb52177e9abd662fe16c3e1740aa12343c8c0741307013362dd6f6b17147"
+    },
+    "test": {
+      "path": "rc6_tests/test_rc6_array_concat_expected.py",
+      "sha256": "sha256:f90e1496e46d5d0a49f02a7b84e5e5f3498a617efa9ba2fc1eb0c2f1d4744a38"
+    }
+  },
+  "source_identities": [
+    {
+      "identity": {
+        "corpus_hash": "sha256:9b08b8cbd14d94b4df58b978dd274d821797f01301d70006d5b7bc6b0c686d54",
+        "exit_code": 0,
+        "full_stage2_accepted": false,
+        "published_pin_claim": false,
+        "schema_id": "openpine.concat_host_local_validation.v1",
+        "source_identity": {
+          "ast2python": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+          "base_commits": {
+            "ast2python": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+            "pine2ast": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+            "pinelib": "ff3fda01541795c793068bced47a0d195bf27e37"
+          },
+          "mode": "frozen_content_snapshot",
+          "pine2ast": null,
+          "pinelib": null,
+          "producer_bundle": "a6c16032a3a3f7427bc905e5f05348f5327715758404a112eb7fdc99fb0a221f",
+          "runtime_bundle": "6b53f0ff67c05081e7eda1efc1c46b05806508d9461a807c5ddf3b3ef6d8dcc1"
+        },
+        "sources": {
+          "ast2python": {
+            "base_commit": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+            "file_count": 170,
+            "snapshot_sha256": "46386e51132859b492f72d52ea39868334435d6e82bdc6c102554186e17ee8ba"
+          },
+          "pine2ast": {
+            "base_commit": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+            "file_count": 376,
+            "snapshot_sha256": "1687870b4bcb931b9a48a3d25bf1cd0955b4ba3dabc34bf26deabaecf38c6873"
+          },
+          "pinelib": {
+            "base_commit": "ff3fda01541795c793068bced47a0d195bf27e37",
+            "file_count": 154,
+            "snapshot_sha256": "685fcf0d262f121572dd48b0726efab0b97f35a2b7f5d51d28586299d6311ec7"
+          }
+        },
+        "test_sha256": "f90e1496e46d5d0a49f02a7b84e5e5f3498a617efa9ba2fc1eb0c2f1d4744a38"
+      },
+      "path": ".runtime/evidence/array-concat-host-after-py311-identity.json",
+      "sha256": "sha256:b3b81696eb565597d6ee0cd52a69388cf1d92e5f6ca7afc7ec698277b61a3f5f"
+    },
+    {
+      "identity": {
+        "corpus_hash": "sha256:9b08b8cbd14d94b4df58b978dd274d821797f01301d70006d5b7bc6b0c686d54",
+        "exit_code": 0,
+        "full_stage2_accepted": false,
+        "published_pin_claim": false,
+        "schema_id": "openpine.concat_host_local_validation.v1",
+        "source_identity": {
+          "ast2python": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+          "base_commits": {
+            "ast2python": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+            "pine2ast": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+            "pinelib": "ff3fda01541795c793068bced47a0d195bf27e37"
+          },
+          "mode": "frozen_content_snapshot",
+          "pine2ast": null,
+          "pinelib": null,
+          "producer_bundle": "a6c16032a3a3f7427bc905e5f05348f5327715758404a112eb7fdc99fb0a221f",
+          "runtime_bundle": "6b53f0ff67c05081e7eda1efc1c46b05806508d9461a807c5ddf3b3ef6d8dcc1"
+        },
+        "sources": {
+          "ast2python": {
+            "base_commit": "7be8a705a1285d73401677a3589e96c6ecfcbd38",
+            "file_count": 170,
+            "snapshot_sha256": "46386e51132859b492f72d52ea39868334435d6e82bdc6c102554186e17ee8ba"
+          },
+          "pine2ast": {
+            "base_commit": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+            "file_count": 376,
+            "snapshot_sha256": "1687870b4bcb931b9a48a3d25bf1cd0955b4ba3dabc34bf26deabaecf38c6873"
+          },
+          "pinelib": {
+            "base_commit": "ff3fda01541795c793068bced47a0d195bf27e37",
+            "file_count": 154,
+            "snapshot_sha256": "685fcf0d262f121572dd48b0726efab0b97f35a2b7f5d51d28586299d6311ec7"
+          }
+        },
+        "test_sha256": "f90e1496e46d5d0a49f02a7b84e5e5f3498a617efa9ba2fc1eb0c2f1d4744a38"
+      },
+      "path": ".runtime/evidence/array-concat-host-after-py313-identity.json",
+      "sha256": "sha256:b3b81696eb565597d6ee0cd52a69388cf1d92e5f6ca7afc7ec698277b61a3f5f"
+    }
+  ],
+  "status": "LOCAL_FROZEN_CONTENT_VALIDATED_PUBLISHED_PIN_CI_PENDING"
+}
