@@ -160,7 +160,8 @@
     "verification/tuple-repair-integration-guards-independent-review.json",
     "verification/tuple-repair-integration-readback.json",
     "verification/tuple-repair-integrated-release-receipt.json",
-    "verification/tuple-repair-verify-artifact-metadata.json"
+    "verification/tuple-repair-verify-artifact-metadata.json",
+    "verification/tuple-repair-cleanup-final-execution-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -722,7 +723,7 @@
     "unassigned_observations_per_python": 90,
     "unique_case_path_observations_per_python": 3340,
     "retained_unverified_string_differences_per_python": 30,
-    "cleanup_status": "pending_guarded_archive_and_delete",
+    "cleanup_status": "complete",
     "publication_receipt": "docs/RC6_STAGE2_METHOD_CONTEXT_CONTRACTS_PUBLICATION.md",
     "release_evidence_identities": {
       "tuple-repair-full-execution-independent-review.json": {
@@ -749,6 +750,14 @@
         "raw_sha256": "fc3f25f2ec937ca8584587e4cc53225b2b2f82fecad5ac505dcdb83238588682",
         "published_lf_sha256": "fc3f25f2ec937ca8584587e4cc53225b2b2f82fecad5ac505dcdb83238588682"
       }
-    }
+    },
+    "cleanup_receipt": "verification/tuple-repair-cleanup-final-execution-review.json",
+    "cleanup_runs": [
+      34212529728,
+      34212533539,
+      34212537581
+    ],
+    "archived_tags": 6,
+    "deleted_temporary_branches": 6
   }
 }

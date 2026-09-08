@@ -1,0 +1,442 @@
+{
+  "full_stage2_accepted": false,
+  "operations_unchanged_by_cleanup": true,
+  "releases_unchanged_by_cleanup": true,
+  "reviews": [
+    {
+      "actual_remote_refs": {
+        "refs/heads/release/5.0.0rc6": "dd49acc05f9a00778c37e76573880b7617842d57",
+        "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "05d7e61be58a184b211bc093f989527157005b92",
+        "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "00b83f5999336b840d7c5030dd11d386ee51c0fe"
+      },
+      "artifact_digest": "sha256:91c196448a625e9f1468468c5dc50bd1cebed53cb14c078bf51ad35e6a805374",
+      "completed_steps": 6,
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/s7cret/pine2ast/check-runs/102016625161",
+          "completed_at": "2026-09-08T09:54:09Z",
+          "conclusion": "success",
+          "created_at": "2026-09-08T09:53:55Z",
+          "head_branch": "codex/tuple-repair-cleanup-20260908-34206347276",
+          "head_sha": "00b83f5999336b840d7c5030dd11d386ee51c0fe",
+          "html_url": "https://github.com/s7cret/pine2ast/actions/runs/34212529728/job/102016625161",
+          "id": 102016625161,
+          "labels": [
+            "ubuntu-latest"
+          ],
+          "name": "archive_and_cleanup",
+          "node_id": "CR_kwDOSOeXFM8AAAAXwKoqCQ",
+          "run_attempt": 1,
+          "run_id": 34212529728,
+          "run_url": "https://api.github.com/repos/s7cret/pine2ast/actions/runs/34212529728",
+          "runner_group_id": 0,
+          "runner_group_name": "GitHub Actions",
+          "runner_id": 1000003059,
+          "runner_name": "GitHub Actions 1000003059",
+          "started_at": "2026-09-08T09:53:58Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completed_at": "2026-09-08T09:54:00Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "started_at": "2026-09-08T09:53:59Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:02Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "started_at": "2026-09-08T09:54:00Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:06Z",
+              "conclusion": "success",
+              "name": "Archive exact verified history then delete with old-SHA guards",
+              "number": 3,
+              "started_at": "2026-09-08T09:54:02Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:07Z",
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 4,
+              "started_at": "2026-09-08T09:54:06Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:07Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 8,
+              "started_at": "2026-09-08T09:54:07Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:07Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 9,
+              "started_at": "2026-09-08T09:54:07Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://api.github.com/repos/s7cret/pine2ast/actions/jobs/102016625161",
+          "workflow_name": "Archive verified method and contract histories then remove exact branches"
+        }
+      ],
+      "receipt": {
+        "archives": {
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "05d7e61be58a184b211bc093f989527157005b92",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "00b83f5999336b840d7c5030dd11d386ee51c0fe"
+        },
+        "candidate_tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e",
+        "cleanup_sha": "00b83f5999336b840d7c5030dd11d386ee51c0fe",
+        "deleted_refs": [
+          "refs/heads/codex/method-context-contracts-20260908",
+          "refs/heads/codex/tuple-repair-cleanup-20260908-34206347276"
+        ],
+        "full_stage2_accepted": false,
+        "observed_after": {
+          "refs/heads/release/5.0.0rc6": "dd49acc05f9a00778c37e76573880b7617842d57",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "05d7e61be58a184b211bc093f989527157005b92",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "00b83f5999336b840d7c5030dd11d386ee51c0fe"
+        },
+        "observed_before": {
+          "refs/heads/codex/method-context-contracts-20260908": "05d7e61be58a184b211bc093f989527157005b92",
+          "refs/heads/codex/tuple-repair-cleanup-20260908-34206347276": "00b83f5999336b840d7c5030dd11d386ee51c0fe",
+          "refs/heads/release/5.0.0rc6": "dd49acc05f9a00778c37e76573880b7617842d57"
+        },
+        "plan": {
+          "ancestor_features": [],
+          "archive_prefix": "archive/stage2/tuple-repair-cleanup-20260908-34206347276",
+          "archive_verified_operations": false,
+          "candidate": "05d7e61be58a184b211bc093f989527157005b92",
+          "cleanup_branch": "codex/tuple-repair-cleanup-20260908-34206347276",
+          "feature_branch": "codex/method-context-contracts-20260908",
+          "integration": "dd49acc05f9a00778c37e76573880b7617842d57",
+          "operations_branch": "stage2/nominal-ci-20260907",
+          "publication_only_paths": [],
+          "release": "dd49acc05f9a00778c37e76573880b7617842d57",
+          "release_branch": "release/5.0.0rc6",
+          "repository": "s7cret/pine2ast",
+          "verified_run": "https://github.com/s7cret/OpenPine/actions/runs/34206347276",
+          "workflow_path": ".github/workflows/tuple-repair-cleanup-20260908-34206347276.yml"
+        },
+        "protected_refs": [
+          "refs/heads/release/5.0.0rc6",
+          "refs/heads/stage2/nominal-ci-20260907"
+        ],
+        "publication_changes": [],
+        "release_updated": false,
+        "schema_id": "openpine.builtin_branch_cleanup.v1",
+        "status": "complete"
+      },
+      "repo": "pine2ast",
+      "run_id": 34212529728
+    },
+    {
+      "actual_remote_refs": {
+        "refs/heads/release/5.0.0rc6": "99d67b12bf26c7731ae0b923441d2a1b320b7edf",
+        "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+        "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "62108eb9b8b5a7cb9596e8bb75b454d805af43fa"
+      },
+      "artifact_digest": "sha256:dce2bba11cc46d11995318b75580249143957aaee209097c630da9932bae2df9",
+      "completed_steps": 6,
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/s7cret/pinelib/check-runs/102016637464",
+          "completed_at": "2026-09-08T09:54:10Z",
+          "conclusion": "success",
+          "created_at": "2026-09-08T09:53:58Z",
+          "head_branch": "codex/tuple-repair-cleanup-20260908-34206347276",
+          "head_sha": "62108eb9b8b5a7cb9596e8bb75b454d805af43fa",
+          "html_url": "https://github.com/s7cret/pinelib/actions/runs/34212533539/job/102016637464",
+          "id": 102016637464,
+          "labels": [
+            "ubuntu-latest"
+          ],
+          "name": "archive_and_cleanup",
+          "node_id": "CR_kwDOSOeoVc8AAAAXwKpaGA",
+          "run_attempt": 1,
+          "run_id": 34212533539,
+          "run_url": "https://api.github.com/repos/s7cret/pinelib/actions/runs/34212533539",
+          "runner_group_id": 0,
+          "runner_group_name": "GitHub Actions",
+          "runner_id": 1000003060,
+          "runner_name": "GitHub Actions 1000003060",
+          "started_at": "2026-09-08T09:54:00Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completed_at": "2026-09-08T09:54:02Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "started_at": "2026-09-08T09:54:01Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:03Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "started_at": "2026-09-08T09:54:02Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:07Z",
+              "conclusion": "success",
+              "name": "Archive exact verified history then delete with old-SHA guards",
+              "number": 3,
+              "started_at": "2026-09-08T09:54:03Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:08Z",
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 4,
+              "started_at": "2026-09-08T09:54:07Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:08Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 8,
+              "started_at": "2026-09-08T09:54:08Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:08Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 9,
+              "started_at": "2026-09-08T09:54:08Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://api.github.com/repos/s7cret/pinelib/actions/jobs/102016637464",
+          "workflow_name": "Archive verified method and contract histories then remove exact branches"
+        }
+      ],
+      "receipt": {
+        "archives": {
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "62108eb9b8b5a7cb9596e8bb75b454d805af43fa"
+        },
+        "candidate_tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f",
+        "cleanup_sha": "62108eb9b8b5a7cb9596e8bb75b454d805af43fa",
+        "deleted_refs": [
+          "refs/heads/codex/method-context-contracts-20260908",
+          "refs/heads/codex/tuple-repair-cleanup-20260908-34206347276"
+        ],
+        "full_stage2_accepted": false,
+        "observed_after": {
+          "refs/heads/release/5.0.0rc6": "99d67b12bf26c7731ae0b923441d2a1b320b7edf",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "62108eb9b8b5a7cb9596e8bb75b454d805af43fa"
+        },
+        "observed_before": {
+          "refs/heads/codex/method-context-contracts-20260908": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "refs/heads/codex/tuple-repair-cleanup-20260908-34206347276": "62108eb9b8b5a7cb9596e8bb75b454d805af43fa",
+          "refs/heads/release/5.0.0rc6": "99d67b12bf26c7731ae0b923441d2a1b320b7edf"
+        },
+        "plan": {
+          "ancestor_features": [],
+          "archive_prefix": "archive/stage2/tuple-repair-cleanup-20260908-34206347276",
+          "archive_verified_operations": false,
+          "candidate": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+          "cleanup_branch": "codex/tuple-repair-cleanup-20260908-34206347276",
+          "feature_branch": "codex/method-context-contracts-20260908",
+          "integration": "99d67b12bf26c7731ae0b923441d2a1b320b7edf",
+          "operations_branch": "stage2/nominal-ci-20260907",
+          "publication_only_paths": [],
+          "release": "99d67b12bf26c7731ae0b923441d2a1b320b7edf",
+          "release_branch": "release/5.0.0rc6",
+          "repository": "s7cret/pinelib",
+          "verified_run": "https://github.com/s7cret/OpenPine/actions/runs/34206347276",
+          "workflow_path": ".github/workflows/tuple-repair-cleanup-20260908-34206347276.yml"
+        },
+        "protected_refs": [
+          "refs/heads/release/5.0.0rc6",
+          "refs/heads/stage2/nominal-ci-20260907"
+        ],
+        "publication_changes": [],
+        "release_updated": false,
+        "schema_id": "openpine.builtin_branch_cleanup.v1",
+        "status": "complete"
+      },
+      "repo": "pinelib",
+      "run_id": 34212533539
+    },
+    {
+      "actual_remote_refs": {
+        "refs/heads/release/5.0.0rc6": "47b507f9512543b176c1894f3ad7f68edb42c056",
+        "refs/heads/stage2/nominal-ci-20260907": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0",
+        "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+        "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "5076914791ded7f4bcc4a12b69f15c28c905dadc"
+      },
+      "artifact_digest": "sha256:26f60f080cda49ee7fd9640a3047daad50a46683383a7b39cfa1c75d00b68fdd",
+      "completed_steps": 6,
+      "jobs": [
+        {
+          "check_run_url": "https://api.github.com/repos/s7cret/openpine/check-runs/102016650450",
+          "completed_at": "2026-09-08T09:54:11Z",
+          "conclusion": "success",
+          "created_at": "2026-09-08T09:54:00Z",
+          "head_branch": "codex/tuple-repair-cleanup-20260908-34206347276",
+          "head_sha": "5076914791ded7f4bcc4a12b69f15c28c905dadc",
+          "html_url": "https://github.com/s7cret/openpine/actions/runs/34212537581/job/102016650450",
+          "id": 102016650450,
+          "labels": [
+            "ubuntu-latest"
+          ],
+          "name": "archive_and_cleanup",
+          "node_id": "CR_kwDOSyAbF88AAAAXwKqM0g",
+          "run_attempt": 1,
+          "run_id": 34212537581,
+          "run_url": "https://api.github.com/repos/s7cret/openpine/actions/runs/34212537581",
+          "runner_group_id": 0,
+          "runner_group_name": "GitHub Actions",
+          "runner_id": 1000003061,
+          "runner_name": "GitHub Actions 1000003061",
+          "started_at": "2026-09-08T09:54:03Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completed_at": "2026-09-08T09:54:04Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "started_at": "2026-09-08T09:54:04Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:06Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "started_at": "2026-09-08T09:54:04Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:10Z",
+              "conclusion": "success",
+              "name": "Archive exact verified history then delete with old-SHA guards",
+              "number": 3,
+              "started_at": "2026-09-08T09:54:06Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:10Z",
+              "conclusion": "success",
+              "name": "Run actions/upload-artifact@v4",
+              "number": 4,
+              "started_at": "2026-09-08T09:54:10Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:10Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 8,
+              "started_at": "2026-09-08T09:54:10Z",
+              "status": "completed"
+            },
+            {
+              "completed_at": "2026-09-08T09:54:11Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 9,
+              "started_at": "2026-09-08T09:54:10Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://api.github.com/repos/s7cret/openpine/actions/jobs/102016650450",
+          "workflow_name": "Archive verified method and contract histories then remove exact branches"
+        }
+      ],
+      "receipt": {
+        "archives": {
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "5076914791ded7f4bcc4a12b69f15c28c905dadc"
+        },
+        "candidate_tree": "4ee86715622404b31e174fb2e17d064a6ad579c9",
+        "cleanup_sha": "5076914791ded7f4bcc4a12b69f15c28c905dadc",
+        "deleted_refs": [
+          "refs/heads/codex/method-context-contracts-20260908",
+          "refs/heads/codex/tuple-repair-cleanup-20260908-34206347276"
+        ],
+        "full_stage2_accepted": false,
+        "observed_after": {
+          "refs/heads/release/5.0.0rc6": "47b507f9512543b176c1894f3ad7f68edb42c056",
+          "refs/heads/stage2/nominal-ci-20260907": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/candidate": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+          "refs/tags/archive/stage2/tuple-repair-cleanup-20260908-34206347276/cleanup-workflow": "5076914791ded7f4bcc4a12b69f15c28c905dadc"
+        },
+        "observed_before": {
+          "refs/heads/codex/method-context-contracts-20260908": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+          "refs/heads/codex/tuple-repair-cleanup-20260908-34206347276": "5076914791ded7f4bcc4a12b69f15c28c905dadc",
+          "refs/heads/release/5.0.0rc6": "47b507f9512543b176c1894f3ad7f68edb42c056",
+          "refs/heads/stage2/nominal-ci-20260907": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0"
+        },
+        "plan": {
+          "ancestor_features": [],
+          "archive_prefix": "archive/stage2/tuple-repair-cleanup-20260908-34206347276",
+          "archive_verified_operations": false,
+          "candidate": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+          "candidate_tree": "4ee86715622404b31e174fb2e17d064a6ad579c9",
+          "cleanup_branch": "codex/tuple-repair-cleanup-20260908-34206347276",
+          "feature_branch": "codex/method-context-contracts-20260908",
+          "integration": "88273b589a47fa8ad6424a7523d74f6a6856c413",
+          "operations_branch": "stage2/nominal-ci-20260907",
+          "publication_only_paths": [
+            "verification/tuple-repair-full-execution-independent-review.json",
+            "verification/tuple-repair-full-ci-root-review.json",
+            "verification/tuple-repair-integration-guards-independent-review.json",
+            "verification/tuple-repair-integration-readback.json",
+            "verification/tuple-repair-integrated-release-receipt.json",
+            "verification/tuple-repair-verify-artifact-metadata.json",
+            "docs/RC6_STAGE2_METHOD_CONTEXT_CONTRACTS_PUBLICATION.md",
+            "verification/stage2-progress.json"
+          ],
+          "release": "47b507f9512543b176c1894f3ad7f68edb42c056",
+          "release_branch": "release/5.0.0rc6",
+          "repository": "s7cret/openpine",
+          "verified_operations": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0",
+          "verified_run": "https://github.com/s7cret/OpenPine/actions/runs/34206347276",
+          "workflow_path": ".github/workflows/tuple-repair-cleanup-20260908-34206347276.yml"
+        },
+        "protected_refs": [
+          "refs/heads/release/5.0.0rc6",
+          "refs/heads/stage2/nominal-ci-20260907"
+        ],
+        "publication_changes": [
+          "docs/RC6_STAGE2_METHOD_CONTEXT_CONTRACTS_PUBLICATION.md",
+          "verification/stage2-progress.json",
+          "verification/tuple-repair-full-ci-root-review.json",
+          "verification/tuple-repair-full-execution-independent-review.json",
+          "verification/tuple-repair-integrated-release-receipt.json",
+          "verification/tuple-repair-integration-guards-independent-review.json",
+          "verification/tuple-repair-integration-readback.json",
+          "verification/tuple-repair-verify-artifact-metadata.json"
+        ],
+        "release_updated": false,
+        "schema_id": "openpine.builtin_branch_cleanup.v1",
+        "status": "complete"
+      },
+      "repo": "openpine",
+      "run_id": 34212537581
+    }
+  ],
+  "schema_id": "openpine.tuple_repair_cleanup_execution_review.v1",
+  "status": "complete",
+  "verified_archive_tags": 6,
+  "verified_deleted_branches": 6
+}
