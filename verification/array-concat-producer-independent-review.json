@@ -1,0 +1,449 @@
+{
+  "schema_id": "openpine.array_concat_producer_independent_review.v1",
+  "status": "PRODUCER_SOURCE_REVIEW_PASSED_HOST_CORPUS_AND_JOINT_LINUX_PENDING",
+  "bundle_sha256": "a6c16032a3a3f7427bc905e5f05348f5327715758404a112eb7fdc99fb0a221f",
+  "base": "5b90a733e548a13bd5dc88c922e7ca397059c456",
+  "files": [
+    {
+      "path": "pine2ast/pine2ast/semantic/collection_signatures.py",
+      "raw_sha256": "c00b86968d4d934be5e785c2a79e0d2fa357f075067e8143757b5b249bc09041",
+      "lf_sha256": "2d4c321aea8fe8d835185d54029f6ddcbbcb0d604f57ecb07e91d41da0be0133"
+    },
+    {
+      "path": "pine2ast/tests/test_array_concat_reference_contract.py",
+      "raw_sha256": "1d63fec95b23d69fe2698c76fd843a9722476230d0469320d4f4b5ece00182f8",
+      "lf_sha256": "1d63fec95b23d69fe2698c76fd843a9722476230d0469320d4f4b5ece00182f8"
+    },
+    {
+      "path": "pine2ast/tests/test_collection_named_receivers.py",
+      "raw_sha256": "642b3942cb114a3192767b9e2dacbc0b71265b6f5380a216ff4d7727fe7f8c39",
+      "lf_sha256": "642b3942cb114a3192767b9e2dacbc0b71265b6f5380a216ff4d7727fe7f8c39"
+    },
+    {
+      "path": "pine2ast/docs/RC6_ARRAY_CONCAT_REFERENCE.md",
+      "raw_sha256": "dbf75dc75bf10670962c68ac7fcd72b94e24536e4071e61bfdad88dcbb8f15b4",
+      "lf_sha256": "dbf75dc75bf10670962c68ac7fcd72b94e24536e4071e61bfdad88dcbb8f15b4"
+    }
+  ],
+  "source_checks": [
+    "Function concat names id1/id2 and method payload id2 match the already existing exact catalog contract; collection result retains the first receiver array element type.",
+    "Namespace receiver inference selects the exact named id1 for array.concat or id for other collections, then falls back to the first positional argument. Existing duplicate, missing, unknown and type validators remain unchanged.",
+    "Reversed named array, map and matrix source order retains concrete receiver type instead of specializing from an unrelated first argument.",
+    "Only collection_signatures.py changes in the original tree; no catalog availability, nominal identity, compiler or runtime implementation is changed."
+  ],
+  "baseline_preservation": {
+    "files": 373,
+    "unchanged": 372,
+    "removed": 0,
+    "old_test_fixture_files_unchanged": 62,
+    "all_catalog_source_rules_and_rc5_bytes_unchanged": true
+  },
+  "independent_results": {
+    "311": {
+      "passed": 93,
+      "new_tests": 84,
+      "unchanged_collection_profile_regressions": 9,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "junit_sha256": "4ae916d64bb510972d9c5679fd43fe57a7859239b241d6359897a511e9f8f5ec"
+    },
+    "313": {
+      "passed": 93,
+      "new_tests": 84,
+      "unchanged_collection_profile_regressions": 9,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "junit_sha256": "212c28fe7cfcdbb93ab93bbabdae6b6a7b494ca4edb8e9cdf41158ad6a87ca35"
+    }
+  },
+  "exact_focused_nodeids": [
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-4-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-4-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-4-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-5-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-5-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-5-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-6-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-6-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-6-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-5-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-5-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-6-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[int-1-2-6-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-4-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-4-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-4-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-5-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-5-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-5-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-6-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-6-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-6-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-5-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-5-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-6-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[float-1.5-2.5-6-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-4-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-4-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-4-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-5-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-5-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-5-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-6-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-6-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-6-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-5-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-5-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-6-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[bool-true-false-6-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-4-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-4-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-4-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-5-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-5-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-5-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-6-function-a, b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-6-function-id1=a, id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-6-function-id2=b, id1=a]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-5-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-5-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-6-method-b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_result_is_typed_reference_in_both_call_forms[string-\"a\"-\"b\"-6-method-id2=b]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_specialized_signature_preserves_receiver_type_and_primary_names[int]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_specialized_signature_preserves_receiver_type_and_primary_names[float]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_specialized_signature_preserves_receiver_type_and_primary_names[bool]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_specialized_signature_preserves_receiver_type_and_primary_names[string]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id=a,id2=b-4]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id=a,id2=b-5]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id=a,id2=b-6]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a,array_id=b-4]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a,array_id=b-5]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a,array_id=b-6]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a,id1=a,id2=b-4]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a,id1=a,id2=b-5]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a,id1=a,id2=b-6]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a-4]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a-5]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=a-6]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=1,id2=b-4]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=1,id2=b-5]"
+    ],
+    [
+      "tests.test_array_concat_reference_contract",
+      "test_concat_wrong_primary_binding_is_rejected[id1=1,id2=b-6]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[4-a=array.new_int(1,1)-array.push(value=2,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[4-a=array.new_int(1,1)-x=array.get(index=0,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[4-a=array.new_int(1,1)-array.set(value=2,index=0,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[5-a=array.new_int(1,1)-array.push(value=2,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[5-a=array.new_int(1,1)-x=array.get(index=0,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[5-a=array.new_int(1,1)-array.set(value=2,index=0,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[6-a=array.new_int(1,1)-array.push(value=2,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[6-a=array.new_int(1,1)-x=array.get(index=0,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[6-a=array.new_int(1,1)-array.set(value=2,index=0,id=a)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[5-m=map.new<string,int>()-map.put(value=2,key=\"b\",id=m)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[5-m=matrix.new<int>(1,1,0)-matrix.set(value=2,column=0,row=0,id=m)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[6-m=map.new<string,int>()-map.put(value=2,key=\"b\",id=m)]"
+    ],
+    [
+      "tests.test_collection_named_receivers",
+      "test_named_receiver_after_other_parameters_is_resolved[6-m=matrix.new<int>(1,1,0)-matrix.set(value=2,column=0,row=0,id=m)]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_typed_exports_link_with_new_profile[map-string,int-map.new<string,int>()-map.put(m,\"x\",2)\\n    result=0\\n    for [k,v] in m\\n        result+=v\\n    result-5]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_typed_exports_link_with_new_profile[map-string,int-map.new<string,int>()-map.put(m,\"x\",2)\\n    result=0\\n    for [k,v] in m\\n        result+=v\\n    result-6]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_typed_exports_link_with_new_profile[matrix-int-matrix.new<int>(2,1,3)-result=0\\n    for row in m\\n        result+=array.get(row,0)\\n    result-5]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_typed_exports_link_with_new_profile[matrix-int-matrix.new<int>(2,1,3)-result=0\\n    for row in m\\n        result+=array.get(row,0)\\n    result-6]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_unsupported_element_or_reference_qualifier_not_admitted[simple map<string,int>]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_unsupported_element_or_reference_qualifier_not_admitted[matrix<line>]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_unsupported_element_or_reference_qualifier_not_admitted[map<string,array<int>>]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_unsupported_element_or_reference_qualifier_not_admitted[map<array<int>,int>]"
+    ],
+    [
+      "tests.test_collection_library_profiles",
+      "test_later_array_dependency_does_not_downgrade_collection_profile"
+    ]
+  ],
+  "paired_runtime_review": {
+    "path": ".runtime/evidence/array-concat-runtime-independent-review.json",
+    "sha256": "396bbd2dfd453a6d800ae07bf8d0e4ab7d7b0ebe459b166bbea8d01f964e55d7"
+  },
+  "limitations": [
+    "The independent 93-case selection here is 84 new tests plus tests/test_collection_library_profiles.py (9); the owner also ran a different nine-case coverage selection.",
+    "Reference identity and payload semantics are runtime-owned and checked in the separate frozen runtime8 review. Host multi-path literal corpus and exact joint Linux inventory are separate pending work.",
+    "No TradingView-server equivalence or full Stage2 completion is claimed."
+  ],
+  "full_stage2_accepted": false,
+  "included_in_9685_ci": false,
+  "production_tests_or_inventory_modified_by_reviewer": false,
+  "digest_newlines": "LF",
+  "script_sha256": "41bdf32aa829f1d28a1e65920b897415d13e055f5d007c199a80215a89e502b5"
+}

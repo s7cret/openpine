@@ -1,0 +1,1 @@
+{"case_count":50,"content_hash":"sha256:9b08b8cbd14d94b4df58b978dd274d821797f01301d70006d5b7bc6b0c686d54","expected_events_per_case":4,"full_stage2_accepted":false,"manual_case_count":30,"manual_table":{"path":"array-concat-manual-expected.json","sha256":"20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e"},"versioned_tuple_count":5}

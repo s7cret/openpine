@@ -1,0 +1,14 @@
+//@version=5
+indicator("concat exact arrays")
+var a=array.new_string(0)
+var b=array.new_string(0)
+var c=a
+if bar_index==0
+    array.push(a,"a")
+    array.push(b,"b")
+    array.push(b,"")
+if bar_index==1
+    c:=array.concat(id2=b,id1=a)
+if bar_index==2
+    array.push(c,"c")
+plot(array.size(c))

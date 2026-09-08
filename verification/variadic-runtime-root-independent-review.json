@@ -1,0 +1,25 @@
+{
+  "runtime_bundle": "a7150d00c9a97c9af473e5b28f5a072cb3723ca8766635e18d52736949a2b0f1",
+  "reviewed_files": 4,
+  "baseline_composite_unchanged_or_separately_reviewed": 152,
+  "exact_two_row_literal_derivation": true,
+  "unchanged_remainder_expected_sha256": "4753b25490e608859dc4f843b9e68e0435f46ceb4197c4f63ee95d9585fa3c91",
+  "inspection": "Generator requires exact modern min/max function and values formal, true variadic marker, and VAR_POSITIONAL ABI; runtime numerical implementation unchanged",
+  "tests": [
+    {
+      "python": "311",
+      "tests": 69,
+      "passed": 69,
+      "xml_sha256": "638039a742bdbd2e6603d0d28aef3eb1e3376044813188e2b6dacbc6e9c579a0"
+    },
+    {
+      "python": "313",
+      "tests": 69,
+      "passed": 69,
+      "xml_sha256": "0a212c813b5342890d2078a7e33aefccdd5b543ac5f94c2aab7c568f79d2be76"
+    }
+  ],
+  "compiler_independent_review_sha256": "1cfb694d95328935ba6e138c6ba60656872d0557f7998bde9b5bd94acbfd52dd",
+  "no_remaining_bounded_findings": true,
+  "joint_ci_accepted": false
+}
