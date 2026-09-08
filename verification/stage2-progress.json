@@ -82,19 +82,23 @@
     "docs/RC6_STAGE2_ABORT_CHECKPOINT.md",
     "docs/RC6_STAGE2_TRANSCENDENTAL_EVIDENCE.md",
     "verification/language-state-inventory-review.json",
-    "verification/language-state-metadata-independent-review.json"
+    "verification/language-state-metadata-independent-review.json",
+    "verification/language-state-execution-review.json",
+    "verification/scalar-cleanup-final-execution-review.json",
+    "verification/language-state-joint-receipt.json",
+    "docs/RC6_STAGE2_LANGUAGE_STATE_PUBLICATION.md"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
-  "joint_test_count": 7754,
+  "joint_test_count": 8470,
   "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
   "core_verification_run": 34068163602,
   "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-  "latest_verified_source": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
-  "latest_verified_tree": "afbd13813cd3f7f637f6d1236e9e5800cb770ef4",
-  "integrated_head": "603fb836a2cca5273938b5c9b7eeb5380f1c8864",
-  "joint_verification_run": 34168428781,
-  "publication_receipt": "docs/RC6_STAGE2_SCALAR_PUBLICATION.md",
+  "latest_verified_source": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+  "latest_verified_tree": "6eb3da1092a4feadd7759cdeda34b120ea658d80",
+  "integrated_head": "ea63766a7b5899602c71420b1fac6152381cab92",
+  "joint_verification_run": 34171225525,
+  "publication_receipt": "docs/RC6_STAGE2_LANGUAGE_STATE_PUBLICATION.md",
   "gate_results": {
     "python_3_11": "passed",
     "python_3_13": "passed",
@@ -252,10 +256,11 @@
     "verified_source": "20e2959e0090446177f5a7d52b27e65234fb7b5c",
     "integration": "603fb836a2cca5273938b5c9b7eeb5380f1c8864",
     "receipt": "verification/scalar-joint-receipt.json",
-    "cleanup": "pending"
+    "cleanup": "archived_and_deleted_verified",
+    "cleanup_receipt": "verification/scalar-cleanup-final-execution-review.json"
   },
   "language_state_block": {
-    "status": "inventory_reviewed_pending_joint_linux",
+    "status": "integrated_and_joint_linux_verified",
     "scope": [
       "numeric_input_defval_const_v5_v6",
       "body_inferred_simple_parameters",
@@ -303,6 +308,12 @@
     "inventory_sha256": "ee96d6285f0b295bbeb681aa749c74053dfca10c8c4b8e4f53399b310888fe1d",
     "inventory_review": "verification/language-state-inventory-review.json",
     "selected_tests": 8470,
-    "removed_tests": 0
+    "removed_tests": 0,
+    "verification_run": 34171225525,
+    "verified_source": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+    "verified_tree": "6eb3da1092a4feadd7759cdeda34b120ea658d80",
+    "integration": "ea63766a7b5899602c71420b1fac6152381cab92",
+    "receipt": "verification/language-state-joint-receipt.json",
+    "cleanup": "pending"
   }
 }
