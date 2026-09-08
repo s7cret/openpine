@@ -1,0 +1,296 @@
+{
+  "archives": [
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "marketdata-provider",
+      "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "files": 159,
+      "archive_sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "openpine-contracts",
+      "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "files": 63,
+      "archive_sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "optimizer",
+      "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "files": 129,
+      "archive_sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "ast2python",
+      "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+      "files": 173,
+      "archive_sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "pinelib",
+      "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+      "files": 171,
+      "archive_sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "backtest_engine",
+      "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "files": 222,
+      "archive_sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "pine2ast",
+      "commit": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f",
+      "files": 402,
+      "archive_sha256": "e671ecedb0d2bf90296f6ff78faf10ffd0d7bc4a7dadb2bfffbb919b86cfcbb7",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "baseline",
+      "repository": "openpine",
+      "commit": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+      "files": 3001,
+      "archive_sha256": "37005decaa30eab27b7ecc5540e5dc6decc09b0938b64f44983c931f3131b48f",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "marketdata-provider",
+      "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "files": 159,
+      "archive_sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "openpine-contracts",
+      "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "files": 63,
+      "archive_sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "optimizer",
+      "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "files": 129,
+      "archive_sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "ast2python",
+      "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+      "files": 173,
+      "archive_sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "pinelib",
+      "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+      "files": 171,
+      "archive_sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "backtest_engine",
+      "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "files": 222,
+      "archive_sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "pine2ast",
+      "commit": "05d7e61be58a184b211bc093f989527157005b92",
+      "files": 405,
+      "archive_sha256": "31d2068c5e9d5f37dd6c1119197d09b8790b9b7ed8a41e6b1ba491ce8156c47c",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "311",
+      "phase": "candidate",
+      "repository": "openpine",
+      "commit": "54105a054f9b5f073f0b59d2ee89faacfbff5c6a",
+      "files": 3003,
+      "archive_sha256": "f5ab8b9e5422b00d8637a41bef2bf21f8626b758437990b6f4598e93be29e216",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "marketdata-provider",
+      "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "files": 159,
+      "archive_sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "openpine-contracts",
+      "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "files": 63,
+      "archive_sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "optimizer",
+      "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "files": 129,
+      "archive_sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "ast2python",
+      "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+      "files": 173,
+      "archive_sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "pinelib",
+      "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+      "files": 171,
+      "archive_sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "backtest_engine",
+      "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "files": 222,
+      "archive_sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "pine2ast",
+      "commit": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f",
+      "files": 402,
+      "archive_sha256": "e671ecedb0d2bf90296f6ff78faf10ffd0d7bc4a7dadb2bfffbb919b86cfcbb7",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "baseline",
+      "repository": "openpine",
+      "commit": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+      "files": 3001,
+      "archive_sha256": "37005decaa30eab27b7ecc5540e5dc6decc09b0938b64f44983c931f3131b48f",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "marketdata-provider",
+      "commit": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "files": 159,
+      "archive_sha256": "fdd3f82cb1d92fa060cbb2f6c1abfb1251fd86a99be9462d8d8b489d842b712c",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "openpine-contracts",
+      "commit": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "files": 63,
+      "archive_sha256": "9693fded51f97d7ed766f2913c4c7c696abdda424e4c1b419df2e7efefe99fa2",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "optimizer",
+      "commit": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "files": 129,
+      "archive_sha256": "bf392bbcda12fa90440d03a83a43eea28678de23113b4b00fe54a7fc7d8cd2ef",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "ast2python",
+      "commit": "95a14be4be8987faafb3e7629c744e698fd9f134",
+      "files": 173,
+      "archive_sha256": "a0151ad4879d879dd90797dfa768b26f759850ebdb65c5b23c9f69fbf640a8c5",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "pinelib",
+      "commit": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+      "files": 171,
+      "archive_sha256": "04ceef5f6cced04699b56a9d8679ab6ebe15043cb1216e796a83f564f2408c80",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "backtest_engine",
+      "commit": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "files": 222,
+      "archive_sha256": "97f07aa034418ac4522c797c0bb3160aedfdcb38852aa5306efd8ce8fc3c4261",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "pine2ast",
+      "commit": "05d7e61be58a184b211bc093f989527157005b92",
+      "files": 405,
+      "archive_sha256": "31d2068c5e9d5f37dd6c1119197d09b8790b9b7ed8a41e6b1ba491ce8156c47c",
+      "all_git_blobs_and_modes_match": true
+    },
+    {
+      "python": "313",
+      "phase": "candidate",
+      "repository": "openpine",
+      "commit": "54105a054f9b5f073f0b59d2ee89faacfbff5c6a",
+      "files": 3003,
+      "archive_sha256": "f5ab8b9e5422b00d8637a41bef2bf21f8626b758437990b6f4598e93be29e216",
+      "all_git_blobs_and_modes_match": true
+    }
+  ],
+  "archive_count": 32,
+  "collection_only": true,
+  "execution_accepted": false,
+  "full_stage2_accepted": false
+}

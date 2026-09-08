@@ -1,0 +1,119 @@
+{
+  "schema_id": "openpine.tuple_repair_host_metadata_independent_review.v1",
+  "decision": "APPROVED_METADATA_FOR_COLLECTION_ONLY",
+  "full_stage2_accepted": false,
+  "base": "930e039c2e0ac3c65141e605fe4e85f4c89a47a6",
+  "base_tree": "ff1834b2332170d58e9af8397142709b4d4ad925",
+  "base_files": 3001,
+  "predicted_final_tree": "76d4c3d4634275ce9a15d3676e11d736c0d1c7a4",
+  "predicted_final_files": 3003,
+  "groups": [
+    {
+      "group": "pins",
+      "paths": [
+        "docs/RC6_LIFECYCLE_SOURCES.json"
+      ],
+      "tree": "7e6d76b54000e8604f99048c6edc06d5474682d0"
+    },
+    {
+      "group": "documentation",
+      "paths": [
+        "verification/semantic-wave-failed-execution-independent-review.json",
+        "verification/tuple-loop-repair-independent-source-review.json",
+        "verification/stage2-progress.json"
+      ],
+      "tree": "76d4c3d4634275ce9a15d3676e11d736c0d1c7a4"
+    }
+  ],
+  "changed_old_paths": [
+    "docs/RC6_LIFECYCLE_SOURCES.json",
+    "verification/stage2-progress.json"
+  ],
+  "added_review_paths": [
+    "verification/semantic-wave-failed-execution-independent-review.json",
+    "verification/tuple-loop-repair-independent-source-review.json"
+  ],
+  "unchanged_old_paths": 2999,
+  "inventory_unchanged_blob": "1f4c838aca7e95b8e4afe3f8680c99b4a57bf0cd",
+  "all_executable_sources_corpora_and_permanent_workflows_unchanged": true,
+  "source_pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "95a14be4be8987faafb3e7629c744e698fd9f134",
+    "pinelib": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "05d7e61be58a184b211bc093f989527157005b92"
+  },
+  "published_parser": {
+    "commit": "05d7e61be58a184b211bc093f989527157005b92",
+    "tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e",
+    "files": 405,
+    "all_rows_match_reviewed_frozen_delta": true,
+    "groups": [
+      {
+        "kind": "functional_tuple",
+        "commit": "4148ca48f4be8b3cd6c9e40fa16c7f4480e31e07",
+        "tree": "9fb67806b4402fb879167d6c53a99d1eb93a1440",
+        "parent": "89f07e70da0aa329d1442f2ace15ef6b9b7ee20f"
+      },
+      {
+        "kind": "functional_for_in",
+        "commit": "25e529d658880d7317147b7e11b693526b4e0ab9",
+        "tree": "8c7acba34b3a3ce13f1c45e20f5c2c9b263d9f7c",
+        "parent": "4148ca48f4be8b3cd6c9e40fa16c7f4480e31e07"
+      },
+      {
+        "kind": "tests",
+        "commit": "a51f68e4061b195829441335394572cb626ef1bf",
+        "tree": "e83828de3e6baaf31eb06357b34805712376887a",
+        "parent": "25e529d658880d7317147b7e11b693526b4e0ab9"
+      },
+      {
+        "kind": "documentation",
+        "commit": "05d7e61be58a184b211bc093f989527157005b92",
+        "tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e",
+        "parent": "a51f68e4061b195829441335394572cb626ef1bf"
+      }
+    ]
+  },
+  "progress_check": "Exact prior progress plus the failed-run and repair provenance fields and two appended evidence paths. Every other field, all four DoD, full-Stage2 false, prior joint verified10683 and the historical failed collection16745 remain unchanged.",
+  "limitations": [
+    "Collection proposal has not yet run; expected repaired inventory is16787 with all failed-candidate16745 retained. This is not a new acceptance baseline.",
+    "Failed full run34201053710 remains failed; the review/source receipt does not imply execution of the9124 tests and downstream gates it never reached.",
+    "Source review receipt intentionally records full local runs as pending at its seal; later actual full results require an additive receipt."
+  ],
+  "evidence": [
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-host-publication-prepared.json",
+      "sha256": "d5c6bb00853965476246ae3431fbf2c96f3edb7d8dc84048130cf8d52d88028a",
+      "bytes": 147318
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-host-predicted-trees.json",
+      "sha256": "74dcc7c0a761601233558a994671b29d4c97dc9aae5018a49469b6ff26057682",
+      "bytes": 432
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-repair-source-publication-receipt.json",
+      "sha256": "2d8824041f12216e923c1d05a928dbf1362cc9a1046308576f34b8b6e031d17e",
+      "bytes": 1014
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-final-frozen-bundle.json",
+      "sha256": "923b9ad25141820260917529e5aaa0eaef37663eb124a2fc5773ce7c5540285a",
+      "bytes": 40719
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\semantic-wave-failed-execution-independent-review.json",
+      "sha256": "97862d5736de422dac40dbd24365186d8489f0f7f2e931c7abcb57f872ef7078",
+      "bytes": 40784
+    },
+    {
+      "path": "C:\\Users\\user\\Documents\\OpenPine\\.runtime\\evidence\\tuple-loop-repair-independent-source-review.json",
+      "sha256": "cf116f215efa50ab60d0b785c182d04fdf7944b5d72d1b176f8fb3b41c1b3d59",
+      "bytes": 60644
+    }
+  ],
+  "script_sha256": "5a99e35b600ca6d101d20a8da988e14d78c72b1f5919f6c38a107810ba8110fd"
+}
