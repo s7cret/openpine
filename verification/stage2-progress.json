@@ -116,7 +116,9 @@
     "verification/array-concat-publication-source-review.json",
     "verification/variadic-publication-source-review.json",
     "verification/variadic-concat-fixture-derivation.json",
-    "verification/variadic-compiler-revised-freeze-receipt.json"
+    "verification/variadic-compiler-revised-freeze-receipt.json",
+    "verification/concat-variadic-inventory-review.json",
+    "verification/concat-variadic-metadata-independent-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -423,7 +425,7 @@
     "cleanup_receipt": "verification/rolling-floor-cleanup-final-execution-review.json"
   },
   "concat_variadic_block": {
-    "status": "published_reviewed_source_pending_inventory_and_joint_linux",
+    "status": "inventory_reviewed_pending_joint_linux",
     "scope": [
       "array_concat_receiver_alias_identity_and_named_receivers",
       "modern_finite_constant_rounding",
@@ -480,6 +482,11 @@
       "global_constant_qualifier_prepass",
       "exported_library_methods",
       "array_numeric_statistics"
-    ]
+    ],
+    "inventory_run": 34181257211,
+    "inventory_sha256": "8d7db289ca78e8baf6167f6422544a3d2a22fa597f8860d1101e7bdbfdf90af3",
+    "inventory_review": "verification/concat-variadic-inventory-review.json",
+    "selected_tests": 10683,
+    "removed_tests": 0
   }
 }
