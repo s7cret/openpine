@@ -1,0 +1,498 @@
+{
+  "backend_review_sha256": "8e99e5a2da758d69d4711984d8ab0d83c8444b8cea5cd3af2b277073f31e97e0",
+  "conclusion": "success",
+  "frontend": {
+    "artifact_files": {
+      "_temp\\ui-tests.xml": "3b600a77e205bf83b0902e27b6bdbce46d8b0ffaf7322d34821dd5e5127e2141",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Achievements-BbauJzJz.js": "a5d390a1d45c45524e1eab17c0cb411cc9227d0eb32d04e800d2c6fabb66bd54",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Backtests-TezrwpGY.js": "c13468a949d4a594b52d8c6208f3f35f7c681da717a15440a40448239514ecc4",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Dashboard-Db-9Na1w.js": "96c1a13780fc2c9817ee880a621eee05011a389c4a87e2cceaea643856382686",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Data-BP1N9OOJ.js": "f0a72de825309890dd989380e3ef354b4676ca98a0c7154276a976d8f727b65d",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\DateRangePicker-BI-0XJSP.js": "3afe062852d686869c9142e372db82a12dc894cc72a2336b1fa05c127e77df77",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\DateRangePicker-DH5t_BSB.css": "7fa088dfeb6018829a464afcf353ddb0a039c412d654f8837bebb967354f568f",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\JobDetail-Cvwt37p6.js": "fb8c751d47599e57a8e104b3566fda8de83cbc19a6c1b079aa9727a6cee940b7",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Jobs-DM4qp2pV.js": "e8daa5216cb898c1c207e2281a16407b0ff78c08d30a9d4be6ba05c6bbdbd376",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Live-1BJdWI4_.js": "170a3ce33e5e7636538cf667855eaa1c6bf682f40dab55d44c9345a4448d89c0",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\MtfSeriesEditor-D5e2ksvE.js": "c6d9645fe671d0e37d374631127692721488161b594be8a837bd52e2d6b8050c",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Optimizer-D4LRIU10.js": "9546796fba8548b4f16b976b7194b25a12f954b8d1c6fe2b2c7aa86438be594b",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\PineFiles-kgjuxdhs.js": "3c31a2934a2f6126b530a84ccdabca4f14dce00bdd5743a961d6dcbb6dc4e120",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Settings-n1PVkUnp.js": "510561700d10fbe0e16151dced99ef6b0cc1b4f042f3b3b434bcc6489e41e504",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\Strategies-D3veeDH2.js": "c026be33aa1f690c90cca9b9841a1384494ea3435866926d3b3bec873d23eff8",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\TvParity-CI5LrSDP.js": "cbeaa6cc9cf2154fb3d0dee80b83e5b324f7300c47fb450ef651b0293ed4a8a5",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\client-Dhz9_LtG.js": "683194e7db11db031912f665b4f9275311b8156d4c2605c186d979c56f7a8d0d",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\dataHealth-C5V-Y3dT.js": "3803e3abf93f38b013671d13a57161fb914be3b18041929aa9ddd632eb6ae044",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\index-Celc7Dxs.js": "20b94b39628483e093e8394c5c186497d46d7994d00f1f45ce1677cd6808d9e1",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\index-DMtKSEHb.css": "66fb43b63ee49ccd4d9671adef7110589aeb7e34545410e879039709c634bb40",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\jobs-CYSpVQ4F.js": "067caff72bf2e547460bf17a42ea3afbfd987386755a21fc0cbd1e1dcba8c496",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\marketMetadata-BBf6EiAF.js": "12020f81632bdef11ad829b72acebf43cdd413cf4cb70983ba148d942ffaf51a",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\pineFiles-Db03Z6CX.js": "c64984a50059f20140804fb814fa93262b395f2a643fb9c31b9c85853ff4f076",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\terminalPolling-xCWleYzi.js": "279af4aec53828bf7a2256a5e572e2990ee1336885001d091a847f076b30e055",
+      "openpine\\openpine\\openpine-ui\\dist\\assets\\time-BhZxhHKO.js": "81dffb2187536d0bdfbb2da400f9aadaeba5c39bb06fa5d558394293edc1dc6c",
+      "openpine\\openpine\\openpine-ui\\dist\\favicon.svg": "61bc9a161de58248288e6905425d7180f0624c2865007b97d763fdac12043a66",
+      "openpine\\openpine\\openpine-ui\\dist\\icons.svg": "b45fa506195cfcdef406ba9f0c77b36ddc1a7c224040926ec70abc2fdea7b93a",
+      "openpine\\openpine\\openpine-ui\\dist\\index.html": "1b17b69654a68c72f0503b94920aa4f2bdeeec684b64a51c455d59927ff76c69"
+    },
+    "errors": 0,
+    "failures": 0,
+    "node_passed": 22,
+    "skips": 0,
+    "vitest_passed": 152
+  },
+  "full_stage2_accepted": false,
+  "jobs": [
+    {
+      "check_run_url": "https://api.github.com/repos/s7cret/openpine/check-runs/101996615187",
+      "completed_at": "2026-09-08T09:10:42Z",
+      "conclusion": "success",
+      "created_at": "2026-09-08T08:46:42Z",
+      "head_branch": "stage2/nominal-ci-20260907",
+      "head_sha": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0",
+      "html_url": "https://github.com/s7cret/openpine/actions/runs/34206347276/job/101996615187",
+      "id": 101996615187,
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "name": "verify (3.11)",
+      "node_id": "CR_kwDOSyAbF88AAAAXv3jWEw",
+      "run_attempt": 1,
+      "run_id": 34206347276,
+      "run_url": "https://api.github.com/repos/s7cret/openpine/actions/runs/34206347276",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions",
+      "runner_id": 1000003047,
+      "runner_name": "GitHub Actions 1000003047",
+      "started_at": "2026-09-08T08:46:45Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completed_at": "2026-09-08T08:46:47Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "started_at": "2026-09-08T08:46:46Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:46:49Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "started_at": "2026-09-08T08:46:47Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:46:49Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 3,
+          "started_at": "2026-09-08T08:46:49Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:46:49Z",
+          "conclusion": "success",
+          "name": "Require exact candidate and committed reviewed inventory",
+          "number": 4,
+          "started_at": "2026-09-08T08:46:49Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:47:33Z",
+          "conclusion": "success",
+          "name": "Install pinned sibling sources",
+          "number": 5,
+          "started_at": "2026-09-08T08:46:49Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:53:40Z",
+          "conclusion": "success",
+          "name": "Complete contracts runtime compiler broker and optimizer functional suites",
+          "number": 6,
+          "started_at": "2026-09-08T08:47:33Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:53:52Z",
+          "conclusion": "success",
+          "name": "Deterministic provider suite (external network checks are separate)",
+          "number": 7,
+          "started_at": "2026-09-08T08:53:40Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:54:04Z",
+          "conclusion": "success",
+          "name": "Enable the real protected worker environment",
+          "number": 8,
+          "started_at": "2026-09-08T08:53:52Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:24Z",
+          "conclusion": "success",
+          "name": "Native sandbox plus affected storage CLI gateway and branch regressions",
+          "number": 9,
+          "started_at": "2026-09-08T08:54:04Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:28Z",
+          "conclusion": "success",
+          "name": "Architecture capability and frozen conformance gate",
+          "number": 10,
+          "started_at": "2026-09-08T09:10:24Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:32Z",
+          "conclusion": "success",
+          "name": "Validate changed runtime lint imports and build clean distributions",
+          "number": 11,
+          "started_at": "2026-09-08T09:10:28Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:37Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 12,
+          "started_at": "2026-09-08T09:10:32Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:38Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 13,
+          "started_at": "2026-09-08T09:10:37Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:38Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 25,
+          "started_at": "2026-09-08T09:10:38Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:39Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 26,
+          "started_at": "2026-09-08T09:10:38Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:10:39Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 27,
+          "started_at": "2026-09-08T09:10:39Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://api.github.com/repos/s7cret/openpine/actions/jobs/101996615187",
+      "workflow_name": "Nominal types Linux verification"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/s7cret/openpine/check-runs/101996615552",
+      "completed_at": "2026-09-08T09:11:40Z",
+      "conclusion": "success",
+      "created_at": "2026-09-08T08:46:42Z",
+      "head_branch": "stage2/nominal-ci-20260907",
+      "head_sha": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0",
+      "html_url": "https://github.com/s7cret/openpine/actions/runs/34206347276/job/101996615552",
+      "id": 101996615552,
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "name": "verify (3.13)",
+      "node_id": "CR_kwDOSyAbF88AAAAXv3jXgA",
+      "run_attempt": 1,
+      "run_id": 34206347276,
+      "run_url": "https://api.github.com/repos/s7cret/openpine/actions/runs/34206347276",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions",
+      "runner_id": 1000003048,
+      "runner_name": "GitHub Actions 1000003048",
+      "started_at": "2026-09-08T08:46:46Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completed_at": "2026-09-08T08:46:47Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "started_at": "2026-09-08T08:46:47Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:46:50Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "started_at": "2026-09-08T08:46:47Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:46:50Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-python@v5",
+          "number": 3,
+          "started_at": "2026-09-08T08:46:50Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:46:50Z",
+          "conclusion": "success",
+          "name": "Require exact candidate and committed reviewed inventory",
+          "number": 4,
+          "started_at": "2026-09-08T08:46:50Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:47:43Z",
+          "conclusion": "success",
+          "name": "Install pinned sibling sources",
+          "number": 5,
+          "started_at": "2026-09-08T08:46:50Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:54:10Z",
+          "conclusion": "success",
+          "name": "Complete contracts runtime compiler broker and optimizer functional suites",
+          "number": 6,
+          "started_at": "2026-09-08T08:47:43Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:54:21Z",
+          "conclusion": "success",
+          "name": "Deterministic provider suite (external network checks are separate)",
+          "number": 7,
+          "started_at": "2026-09-08T08:54:10Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T08:54:32Z",
+          "conclusion": "success",
+          "name": "Enable the real protected worker environment",
+          "number": 8,
+          "started_at": "2026-09-08T08:54:21Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:24Z",
+          "conclusion": "success",
+          "name": "Native sandbox plus affected storage CLI gateway and branch regressions",
+          "number": 9,
+          "started_at": "2026-09-08T08:54:32Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:27Z",
+          "conclusion": "success",
+          "name": "Architecture capability and frozen conformance gate",
+          "number": 10,
+          "started_at": "2026-09-08T09:11:24Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:32Z",
+          "conclusion": "success",
+          "name": "Validate changed runtime lint imports and build clean distributions",
+          "number": 11,
+          "started_at": "2026-09-08T09:11:27Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:36Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 12,
+          "started_at": "2026-09-08T09:11:32Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:38Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 13,
+          "started_at": "2026-09-08T09:11:36Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:38Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-python@v5",
+          "number": 25,
+          "started_at": "2026-09-08T09:11:38Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:38Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 26,
+          "started_at": "2026-09-08T09:11:38Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:38Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 27,
+          "started_at": "2026-09-08T09:11:38Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://api.github.com/repos/s7cret/openpine/actions/jobs/101996615552",
+      "workflow_name": "Nominal types Linux verification"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/s7cret/openpine/check-runs/102004067176",
+      "completed_at": "2026-09-08T09:12:16Z",
+      "conclusion": "success",
+      "created_at": "2026-09-08T09:11:41Z",
+      "head_branch": "stage2/nominal-ci-20260907",
+      "head_sha": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0",
+      "html_url": "https://github.com/s7cret/openpine/actions/runs/34206347276/job/102004067176",
+      "id": 102004067176,
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "name": "frontend",
+      "node_id": "CR_kwDOSyAbF88AAAAXv-qLaA",
+      "run_attempt": 1,
+      "run_id": 34206347276,
+      "run_url": "https://api.github.com/repos/s7cret/openpine/actions/runs/34206347276",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions",
+      "runner_id": 1000003051,
+      "runner_name": "GitHub Actions 1000003051",
+      "started_at": "2026-09-08T09:11:44Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completed_at": "2026-09-08T09:11:47Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "started_at": "2026-09-08T09:11:45Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:49Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "started_at": "2026-09-08T09:11:47Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:52Z",
+          "conclusion": "success",
+          "name": "Run actions/download-artifact@v4",
+          "number": 3,
+          "started_at": "2026-09-08T09:11:49Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:52Z",
+          "conclusion": "success",
+          "name": "Require frontend and backend from the same exact source",
+          "number": 4,
+          "started_at": "2026-09-08T09:11:52Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:55Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-node@v4",
+          "number": 5,
+          "started_at": "2026-09-08T09:11:52Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:11:58Z",
+          "conclusion": "success",
+          "name": "Run npm ci",
+          "number": 6,
+          "started_at": "2026-09-08T09:11:55Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:12:02Z",
+          "conclusion": "success",
+          "name": "Run npm test -- --reporter=default --reporter=junit --outputFile.junit=\"$RUNNER_TEMP/ui-tests.xml\"",
+          "number": 7,
+          "started_at": "2026-09-08T09:11:58Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:12:09Z",
+          "conclusion": "success",
+          "name": "Run npm run build",
+          "number": 8,
+          "started_at": "2026-09-08T09:12:02Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:12:12Z",
+          "conclusion": "success",
+          "name": "Run npm run test:node",
+          "number": 9,
+          "started_at": "2026-09-08T09:12:09Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:12:13Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 10,
+          "started_at": "2026-09-08T09:12:12Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:12:13Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-node@v4",
+          "number": 19,
+          "started_at": "2026-09-08T09:12:13Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:12:13Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 20,
+          "started_at": "2026-09-08T09:12:13Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-09-08T09:12:14Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 21,
+          "started_at": "2026-09-08T09:12:13Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://api.github.com/repos/s7cret/openpine/actions/jobs/102004067176",
+      "workflow_name": "Nominal types Linux verification"
+    }
+  ],
+  "log_hashes": {
+    "311": "10acb4bf680bb6a46627a75480aab6eeeaf8595036505bd6eb384c7125adce8a",
+    "313": "864b5a69610b94ba6fa9a73f1b1340ba0874010c075a1e18af3c24d85658b383",
+    "ui": "6184914bb290b17c20aa63cb69c6080749a398deaa27dd17df6c7accfc4c07c7"
+  },
+  "ops_sha": "ff813837858d360480d0e46b8ab3f0d90ecfa6e0",
+  "release_publication_performed": false,
+  "run_id": 34206347276,
+  "schema_id": "openpine.tuple_full_ci_root_review.v1",
+  "source_sha": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2"
+}

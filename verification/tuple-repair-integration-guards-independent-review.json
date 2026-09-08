@@ -1,0 +1,60 @@
+{
+  "compiler_unchanged_and_not_an_integration_target": true,
+  "full_ci_review_sha256": "38ec9ff8e37bb820424dc720066965934dff8f4ef16f89fc49eb262d96eaabf9",
+  "full_stage2_accepted": false,
+  "integrations": [
+    {
+      "actual_merge_tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e",
+      "actual_merge_tree_equals_tested": true,
+      "conflicts": false,
+      "fresh_release_matches": true,
+      "fresh_remote_refs": {
+        "refs/heads/codex/method-context-contracts-20260908": "05d7e61be58a184b211bc093f989527157005b92",
+        "refs/heads/release/5.0.0rc6": "0b67e9ed80faa762100c6a1f282c1a11608f023a"
+      },
+      "head_unchanged": "61c503259744d1faa88959809776f4512d48c516",
+      "name": "pine2ast",
+      "prior": "0b67e9ed80faa762100c6a1f282c1a11608f023a",
+      "remote_readback_sha256": "abfae595e248bc3990d995f4cdc89155b692a70288a59e9effc5a890cb0a7df8",
+      "tested": "05d7e61be58a184b211bc093f989527157005b92",
+      "tree": "0210a2ad39f980bdab839b7e627dfe90fef08e2e"
+    },
+    {
+      "actual_merge_tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f",
+      "actual_merge_tree_equals_tested": true,
+      "conflicts": false,
+      "fresh_release_matches": true,
+      "fresh_remote_refs": {
+        "refs/heads/codex/method-context-contracts-20260908": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+        "refs/heads/release/5.0.0rc6": "4360ae790324458f14c57317adfae0f4b028ca4e"
+      },
+      "head_unchanged": "c90c267c24d4c8dfd8d292995248d09e32e19f92",
+      "name": "pinelib",
+      "prior": "4360ae790324458f14c57317adfae0f4b028ca4e",
+      "remote_readback_sha256": "46bcd366b3401a0b3820b017f1d35be62363c48e641bc8d2eff1a1f1c5bb39ee",
+      "tested": "2148bca8370858ef8f7716ee0ba27d42960563b4",
+      "tree": "dcc8bf717f4ecfc4e4d169220c4d767b6b8a748f"
+    },
+    {
+      "actual_merge_tree": "4ee86715622404b31e174fb2e17d064a6ad579c9",
+      "actual_merge_tree_equals_tested": true,
+      "conflicts": false,
+      "fresh_release_matches": true,
+      "fresh_remote_refs": {
+        "refs/heads/codex/method-context-contracts-20260908": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+        "refs/heads/release/5.0.0rc6": "a9f9d05dc333ea5bed7b67acd3d6d81f6246ff1a"
+      },
+      "head_unchanged": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+      "name": "OpenPine",
+      "prior": "a9f9d05dc333ea5bed7b67acd3d6d81f6246ff1a",
+      "remote_readback_sha256": "000b071e674fd660f26cc7e5e6bf27ffbc022b5aeb62407001833e8afa90981f",
+      "tested": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
+      "tree": "4ee86715622404b31e174fb2e17d064a6ad579c9"
+    }
+  ],
+  "prepared_sha256": "ccc86f0e8efed1e90d845440e589aff22b0e65e9491bce1c83ff9363aa40ca4d",
+  "release_refs_moved_by_reviewer": false,
+  "schema_id": "openpine.independent_integration_guard_review.v1",
+  "script_sha256": "a212a4c2a2340cdb7ed7ead6e9eb89b0f4ae168f5a9cf942553c098707d4568a",
+  "status": "FRESH_THREE_RELEASE_REFS_AND_EXACT_TESTED_MERGE_TREES_VERIFIED"
+}

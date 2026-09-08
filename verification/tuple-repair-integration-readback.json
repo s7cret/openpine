@@ -1,0 +1,20 @@
+[
+  {
+    "name": "pine2ast",
+    "release_sha": "dd49acc05f9a00778c37e76573880b7617842d57",
+    "ordered_parents_exact": true,
+    "tested_tree_exact": true
+  },
+  {
+    "name": "pinelib",
+    "release_sha": "99d67b12bf26c7731ae0b923441d2a1b320b7edf",
+    "ordered_parents_exact": true,
+    "tested_tree_exact": true
+  },
+  {
+    "name": "OpenPine",
+    "release_sha": "88273b589a47fa8ad6424a7523d74f6a6856c413",
+    "ordered_parents_exact": true,
+    "tested_tree_exact": true
+  }
+]
