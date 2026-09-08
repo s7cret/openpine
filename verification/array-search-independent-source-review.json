@@ -1,0 +1,56 @@
+{
+  "schema_id": "openpine.array_search_independent_source_review.v1",
+  "status": "FROZEN_SOURCE_AND_ISOLATED_OWNER_TESTS_PASS",
+  "base": "441b3d632d18ac964efb343bdb81e66c3a891b0e",
+  "frozen_manifest_sha256": "896c14c901851e0a5c18f827c2e2e9d06bc21e7f35bf68e65c9579c9cb6fb5e8",
+  "reviewed_files": [
+    {
+      "path": "docs/STAGE2_ARRAY_SEARCH.md",
+      "lf_sha256": "sha256:d46737878cbe4dc111d750a74ec8a531e7b40a084c0a382866d3dca5a939e75e"
+    },
+    {
+      "path": "pinelib/reference/array.py",
+      "lf_sha256": "sha256:b927bb27c8693c70cd4a01baf581e2c1414208aec968ee54f1bbb85555078dd5"
+    },
+    {
+      "path": "tests/fixtures/array_search_manual_expected.json",
+      "lf_sha256": "sha256:1ef56faf74bbd89bb7c7c7011b1ac3c2b9ca4d0a089f7e248572ef7aa532f746"
+    },
+    {
+      "path": "tests/test_array_search_boundaries.py",
+      "lf_sha256": "sha256:6831ecb6c06cbed0de43c6c9de7975f381d828940a179e4ac6d26fb5c7aebc43"
+    }
+  ],
+  "tests": {
+    "311": {
+      "tests": 85,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "f27ba23b2b87ac0e5a3fb92bb1cccf5416a5ff3c7d7fa1d3dcc2e80dcdfb4e6e"
+    },
+    "313": {
+      "tests": 85,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "c47fa41c04d8d6a5800693f381bef86523e4d844480cfea47d1c984f883132a8"
+    }
+  },
+  "manual_expected_sha256": "1ef56faf74bbd89bb7c7c7011b1ac3c2b9ca4d0a089f7e248572ef7aa532f746",
+  "review": [
+    "Existing lower_bound and upper_bound loops retain logarithmic element comparisons. Absent finite numeric results now select predecessor clamped at zero or successor including size.",
+    "Root authored the24case/48index literal table before runtime edits and independently inspected official v5/v6 examples and v6 boundary clauses. No expected values came from SUT output.",
+    "Exact-match, ordinary search, native1-4, empty, string/bool/nonfinite query behavior remain unchanged by the added numeric fallback gate. No new unspecified NA/mixed/unsorted contract is asserted.",
+    "Reference owner remains read-only and ABI/manifest/schema unchanged. Isolated tests exercise alias/copy/slice, realtime abort/retry, full and compact checkpoint restore.",
+    "Only one existing production file changed, with new test/fixture/doc; no old assertion or test file changes."
+  ],
+  "limitations": [
+    "v5 below-first clamp remains explicitly inferred from v6.",
+    "85 isolated owner tests pass both Python; full candidate Linux is still required.",
+    "Existing heap payload materialization is not claimed logarithmic.",
+    "No complete collection, builtin, TradingView, or Stage2 acceptance."
+  ],
+  "full_stage2_accepted": false,
+  "coordinated_linux_verified": false
+}

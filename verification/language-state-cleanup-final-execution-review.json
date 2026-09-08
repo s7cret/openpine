@@ -1,0 +1,193 @@
+{
+  "schema_id": "openpine.language_state_cleanup_final_execution_review.v1",
+  "status": "COMPLETE",
+  "repositories": {
+    "pine2ast": {
+      "workflow_run_id": 34174029118,
+      "job_ids": [
+        101899767295
+      ],
+      "head_sha": "59467934e7616ddd1901c15205bed153e21b5152",
+      "head_tree": "88696d609845ea2d1deaf613a23d2ae08616153f",
+      "parent_is_exact_reviewed_release": true,
+      "actual_workflow_matches_reviewed_yaml_sha256": "0afffbce0d06a1e2ecf25d20e241b5e65f2b2f1d6cffec672609359a151e40a5",
+      "artifact": {
+        "id": 10036635525,
+        "name": "language-state-cleanup-20260908-34171225525-pine2ast-34174029118-1",
+        "size_in_bytes": 1257,
+        "url": "https://api.github.com/repos/s7cret/pine2ast/actions/artifacts/10036635525",
+        "archive_download_url": "https://api.github.com/repos/s7cret/pine2ast/actions/artifacts/10036635525/zip",
+        "expired": false,
+        "created_at": "2026-09-08T00:39:41Z",
+        "expires_at": "2026-12-07T00:39:29Z",
+        "updated_at": "2026-09-08T00:39:41Z",
+        "digest": "sha256:5277af5f8943ee91eb3c7dffa1679869d7cacf86447fc0ec69fcf6f82cdafcad",
+        "workflow_run": {
+          "id": 34174029118,
+          "repository_id": 1223137044,
+          "head_repository_id": 1223137044,
+          "head_branch": "codex/language-state-cleanup-20260908-34171225525",
+          "head_sha": "59467934e7616ddd1901c15205bed153e21b5152"
+        }
+      },
+      "artifact_receipt_sha256": "b918364811f03ca55284a0fe022c3e5b670dbb701e47a81a607eff613c17ef70",
+      "archives": {
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/candidate": "5fe76f6ce6a4e49b04d9bf66b6263f201ecffe0e",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/cleanup-workflow": "59467934e7616ddd1901c15205bed153e21b5152"
+      },
+      "deleted_refs": [
+        "refs/heads/codex/qualifier-inference-20260908",
+        "refs/heads/codex/language-state-cleanup-20260908-34171225525"
+      ],
+      "protected_refs": [
+        "refs/heads/release/5.0.0rc6",
+        "refs/heads/stage2/nominal-ci-20260907"
+      ],
+      "all_preexisting_unrelated_heads_unchanged": true,
+      "release_unchanged": true,
+      "observed_after": {
+        "refs/heads/codex/callable-results-20260908": "91463cfa4cc4813742eff2ebe04806c95c703101",
+        "refs/heads/codex/rolling-statistics-20260908": "853f8e251a92dacfcb225895e491261a795fb13a",
+        "refs/heads/feat/5.0-contracts-pin": "1715eef9c395b81db24224b6724f16589c1c960a",
+        "refs/heads/main": "325ddd17f4ced3c42739fa58bc902a927c2d4ac6",
+        "refs/heads/release/5.0.0rc5": "325ddd17f4ced3c42739fa58bc902a927c2d4ac6",
+        "refs/heads/release/5.0.0rc6": "f6ccca777c3947974b07a3592491148f4d7ec51f",
+        "refs/heads/release/5.0.0rc6-local-candidate": "892fee8c2b0443e702918248f2d2642c877723e7",
+        "refs/heads/release/v2.17": "0b24779e79d1af3856baf818062a4f7a2a8faa00",
+        "refs/heads/release/v4.0.2": "c57323351a1e638e0337e1be247883da2570ab28",
+        "refs/heads/stage2/reference-values-20260907": "e700ae0cf8496741283e3f0267b083db801af14c",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/candidate": "5fe76f6ce6a4e49b04d9bf66b6263f201ecffe0e",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/cleanup-workflow": "59467934e7616ddd1901c15205bed153e21b5152"
+      }
+    },
+    "pinelib": {
+      "workflow_run_id": 34174030688,
+      "job_ids": [
+        101899771838
+      ],
+      "head_sha": "d7c9f280325653d942bf90ccb868d9aad58a7e38",
+      "head_tree": "5d6c972f025a56b827e2771fa5cb2486940be8c2",
+      "parent_is_exact_reviewed_release": true,
+      "actual_workflow_matches_reviewed_yaml_sha256": "d9f488021fefe2544317a8966afa9c68db323a996721225bb3b5cc8383335c5c",
+      "artifact": {
+        "id": 10036635234,
+        "name": "language-state-cleanup-20260908-34171225525-pinelib-34174030688-1",
+        "size_in_bytes": 1243,
+        "url": "https://api.github.com/repos/s7cret/pinelib/actions/artifacts/10036635234",
+        "archive_download_url": "https://api.github.com/repos/s7cret/pinelib/actions/artifacts/10036635234/zip",
+        "expired": false,
+        "created_at": "2026-09-08T00:39:40Z",
+        "expires_at": "2026-12-07T00:39:31Z",
+        "updated_at": "2026-09-08T00:39:40Z",
+        "digest": "sha256:50b17397493ea7cd83ad63e5972decf5d6ff16b27f3b91f90979dffaecec0aed",
+        "workflow_run": {
+          "id": 34174030688,
+          "repository_id": 1223141461,
+          "head_repository_id": 1223141461,
+          "head_branch": "codex/language-state-cleanup-20260908-34171225525",
+          "head_sha": "d7c9f280325653d942bf90ccb868d9aad58a7e38"
+        }
+      },
+      "artifact_receipt_sha256": "1fe1edfefb65d425cfb2093a072e9e80ba62df5f891d308959978f5fcd00bcdc",
+      "archives": {
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/candidate": "fa7d7ab7f7ffdb1afd29f6167e61a6bb3f719ca7",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/cleanup-workflow": "d7c9f280325653d942bf90ccb868d9aad58a7e38"
+      },
+      "deleted_refs": [
+        "refs/heads/codex/abort-control-20260908",
+        "refs/heads/codex/language-state-cleanup-20260908-34171225525"
+      ],
+      "protected_refs": [
+        "refs/heads/release/5.0.0rc6",
+        "refs/heads/stage2/nominal-ci-20260907"
+      ],
+      "all_preexisting_unrelated_heads_unchanged": true,
+      "release_unchanged": true,
+      "observed_after": {
+        "refs/heads/codex/rolling-statistics-20260908": "441b3d632d18ac964efb343bdb81e66c3a891b0e",
+        "refs/heads/codex/varip-nominal-arrays-20260908": "b9687356ba30f6cfbb14fb23938850eda3fb196f",
+        "refs/heads/feat/5.0-intent-tape": "a0ea8e7177e73217c595f978c76ad34bb47d6bec",
+        "refs/heads/main": "1204d02ed5cea1a3be8b5e8252bc4d881c539a25",
+        "refs/heads/ops/rc6-review-publication-20260905": "c13af409a4e78c20c40ff72d07522045a9400166",
+        "refs/heads/release/5.0.0rc5": "1204d02ed5cea1a3be8b5e8252bc4d881c539a25",
+        "refs/heads/release/5.0.0rc6": "f980e79ef2e09ac36233fa35dc303a32a61f0d86",
+        "refs/heads/release/5.0.0rc6-local-candidate": "66f08b901fabba45ae733cc05cb217066fefa646",
+        "refs/heads/release/v2.17": "b7af7efbd4e315d69a9bb3348a26470f7be8d1b0",
+        "refs/heads/release/v4.0.2": "fcf9c0f92213313db39bc42c83f676786c85400c",
+        "refs/heads/stage2/reference-values-20260907": "861ced18522527f706ffa59daf51a98251827a31",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/candidate": "fa7d7ab7f7ffdb1afd29f6167e61a6bb3f719ca7",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/cleanup-workflow": "d7c9f280325653d942bf90ccb868d9aad58a7e38"
+      }
+    },
+    "openpine": {
+      "workflow_run_id": 34174033052,
+      "job_ids": [
+        101899778688
+      ],
+      "head_sha": "519c086eae7b199678d91dbc0bff00aa7ae0a6a7",
+      "head_tree": "0e821553832405dfaa5d05714d4d4720a019bdac",
+      "parent_is_exact_reviewed_release": true,
+      "actual_workflow_matches_reviewed_yaml_sha256": "3a0a7b7c8f646a527a336cbc1b3d22a8f22534a347b9acd03edde7aed27db0ed",
+      "artifact": {
+        "id": 10036636741,
+        "name": "language-state-cleanup-20260908-34171225525-openpine-34174033052-1",
+        "size_in_bytes": 1741,
+        "url": "https://api.github.com/repos/s7cret/openpine/actions/artifacts/10036636741",
+        "archive_download_url": "https://api.github.com/repos/s7cret/openpine/actions/artifacts/10036636741/zip",
+        "expired": false,
+        "created_at": "2026-09-08T00:39:46Z",
+        "expires_at": "2026-12-07T00:39:34Z",
+        "updated_at": "2026-09-08T00:39:46Z",
+        "digest": "sha256:417a0a62fda49c0bffa61241eb3da87d7f2bb131a0a143363e36335750d654f0",
+        "workflow_run": {
+          "id": 34174033052,
+          "repository_id": 1260395287,
+          "head_repository_id": 1260395287,
+          "head_branch": "codex/language-state-cleanup-20260908-34171225525",
+          "head_sha": "519c086eae7b199678d91dbc0bff00aa7ae0a6a7"
+        }
+      },
+      "artifact_receipt_sha256": "ae63ac89ea502e44cedaa9cb87cae46e4ebb3ff59def5338f5574b38b0ad9109",
+      "archives": {
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/candidate": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/cleanup-workflow": "519c086eae7b199678d91dbc0bff00aa7ae0a6a7"
+      },
+      "deleted_refs": [
+        "refs/heads/codex/language-state-20260908",
+        "refs/heads/codex/language-state-cleanup-20260908-34171225525"
+      ],
+      "protected_refs": [
+        "refs/heads/release/5.0.0rc6",
+        "refs/heads/stage2/nominal-ci-20260907"
+      ],
+      "all_preexisting_unrelated_heads_unchanged": true,
+      "release_unchanged": true,
+      "observed_after": {
+        "refs/heads/codex/rolling-statistics-20260908": "519c45ade284d47f2f7990d54fabe20f95302249",
+        "refs/heads/main": "af697b28b12b672ab46442ef9a3e9f6d241802d4",
+        "refs/heads/release/5.0.0rc6": "81da02dbe1fbd70997ae8780dc38674ddb9715b6",
+        "refs/heads/release/v2.17": "3c026a875c6b83609e4a3fb1183a89a22afd01ef",
+        "refs/heads/release/v4.0.2": "a0b89269bed8d571faf65909e2ac4dbd091764e2",
+        "refs/heads/stage2/language-completion-20260907": "648083aed1b11cba805e0c49095b797bac016327",
+        "refs/heads/stage2/nominal-ci-20260907": "bd2a37fba27e330dde9a49d82ddd4785b185f7ae",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/candidate": "81c5cfc37e5445dcc8ce806d286450b27848c080",
+        "refs/tags/archive/stage2/language-state-cleanup-20260908-34171225525/cleanup-workflow": "519c086eae7b199678d91dbc0bff00aa7ae0a6a7"
+      }
+    }
+  },
+  "archive_tags": 6,
+  "deleted_branches": 6,
+  "all_release_refs_unchanged": true,
+  "all_preexisting_unrelated_heads_unchanged": true,
+  "operations_branch_preserved": true,
+  "callable_varip_and_rolling_branches_preserved": true,
+  "optional_operations_tag_created": false,
+  "source_plan_review_sha256": "58258573f6c98183a5156fc53ca4eb0e9f72e721cc5fb33bdcd072dbb2535720",
+  "full_stage2_accepted": false,
+  "reviewer_performed_remote_mutations": false,
+  "limitations": [
+    "Remote references were checked at the post-cleanup snapshot. Later authorized publications may advance retained branches.",
+    "Rolling-statistics branches were created by the separate authorized source publication; all pre-existing unrelated heads retained their exact prior SHA."
+  ],
+  "audit_body_sha256": "3c646d830da9b29423faf82b84e4ac4ac19a1bb9ceb3c52c1ad06390badc1f0b"
+}

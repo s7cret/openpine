@@ -86,7 +86,19 @@
     "verification/language-state-execution-review.json",
     "verification/scalar-cleanup-final-execution-review.json",
     "verification/language-state-joint-receipt.json",
-    "docs/RC6_STAGE2_LANGUAGE_STATE_PUBLICATION.md"
+    "docs/RC6_STAGE2_LANGUAGE_STATE_PUBLICATION.md",
+    "verification/callable-result-revised-independent-review.json",
+    "verification/varip-nominal-arrays-independent-review.json",
+    "verification/rolling-statistics-independent-source-review.json",
+    "verification/array-search-independent-source-review.json",
+    "verification/language-state-cleanup-final-execution-review.json",
+    "verification/exported-floor-independent-source-review.json",
+    "verification/rolling-remote-source-review.json",
+    "verification/floor-remote-source-review.json",
+    "verification/array-search-remote-source-review.json",
+    "verification/callable-result-remote-source-review.json",
+    "verification/varip-remote-source-review.json",
+    "verification/exported-floor-denominator-reconciliation.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -314,6 +326,63 @@
     "verified_tree": "6eb3da1092a4feadd7759cdeda34b120ea658d80",
     "integration": "ea63766a7b5899602c71420b1fac6152381cab92",
     "receipt": "verification/language-state-joint-receipt.json",
-    "cleanup": "pending"
+    "cleanup": "pending",
+    "cleanup_status": "complete",
+    "cleanup_receipt": "verification/language-state-cleanup-final-execution-review.json"
+  },
+  "rolling_library_context_block": {
+    "status": "published_reviewed_source_pending_inventory_and_joint_linux",
+    "scope": [
+      "callable_result_qualifiers_including_nested_control",
+      "varip_arrays_of_admitted_udt",
+      "rolling_window_and_series_biased_estimates",
+      "producer_verified_library_result_qualifier_context",
+      "finite_numeric_array_search_neighbors"
+    ],
+    "expected_baseline_tests": 8470,
+    "expected_new_tests": 1215,
+    "expected_candidate_tests": 9685,
+    "new_tests": {
+      "pinelib": 549,
+      "pine2ast": 267,
+      "ast2python": 68,
+      "openpine": 331
+    },
+    "manual_expected_cases": 66,
+    "manual_execution_paths": 5,
+    "array_search_manual_cases": 24,
+    "array_search_manual_indices": 48,
+    "receipt_identities": {
+      "callable-result-revised-independent-review.json": {
+        "raw_artifact_sha256": "120681e0f20b2b66ba3c64470ed81676f0870fbdbade450df1072cdabff9c78a",
+        "published_lf_sha256": "120681e0f20b2b66ba3c64470ed81676f0870fbdbade450df1072cdabff9c78a"
+      },
+      "varip-nominal-arrays-independent-review.json": {
+        "raw_artifact_sha256": "aea97c4d728562e38a25e57f08ff394cc58c48fbe36d3b3ac0e2d991c13683d8",
+        "published_lf_sha256": "aea97c4d728562e38a25e57f08ff394cc58c48fbe36d3b3ac0e2d991c13683d8"
+      },
+      "rolling-statistics-independent-source-review.json": {
+        "raw_artifact_sha256": "02b07c6d35f144edaded8e69e844ff9d939d31961af923ee3159547d7b8eb372",
+        "published_lf_sha256": "02b07c6d35f144edaded8e69e844ff9d939d31961af923ee3159547d7b8eb372"
+      },
+      "array-search-independent-source-review.json": {
+        "raw_artifact_sha256": "766de03dba924a14829ea81b62da6e3e9258aa1152c27f5216a9163a4f22edf1",
+        "published_lf_sha256": "766de03dba924a14829ea81b62da6e3e9258aa1152c27f5216a9163a4f22edf1"
+      },
+      "language-state-cleanup-final-execution-review.json": {
+        "raw_artifact_sha256": "04a5551f16d77ac6d77936a9f036151588c64d670f1af80f63d26ddb6e85dc47",
+        "published_lf_sha256": "04a5551f16d77ac6d77936a9f036151588c64d670f1af80f63d26ddb6e85dc47"
+      },
+      "exported-floor-independent-source-review.json": {
+        "raw_artifact_sha256": "19b171824ea6902c2095d8a350133dfc09e15a92cd94a11218eb8b09c7f32627",
+        "published_lf_sha256": "19b171824ea6902c2095d8a350133dfc09e15a92cd94a11218eb8b09c7f32627"
+      }
+    },
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "excluded_next_waves": [
+      "constant_metadata_round_and_udf",
+      "global_constant_qualifier_prepass"
+    ]
   }
 }

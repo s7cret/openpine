@@ -1,0 +1,173 @@
+{
+  "schema_id": "openpine.varip_nominal_arrays_independent_review.v1",
+  "status": "BOUNDED_SOURCE_AND_LOCAL_REVIEW_PASS_NOT_LINUX_ACCEPTANCE",
+  "owner_receipt_sha256": "751f2695a81db17bfe6c469b1a587d7bc8c20065300a2d9799606a677c5439e0",
+  "immutable_bundle": "varip-nominal-array-content/e75f2e917c520ca9b623aaad501f57bac6fe92d067433fbff8b32bd8c5bc6249",
+  "files": {
+    "pinelib/docs/STAGE2_VARIP_NOMINAL_ARRAYS.md": {
+      "raw_sha256": "3f28ad9c0ec6fb3c4cd89cf488c8a5ea9eeb3266c7c5f2100da23a5832a4d535",
+      "lf_sha256": "3f28ad9c0ec6fb3c4cd89cf488c8a5ea9eeb3266c7c5f2100da23a5832a4d535",
+      "category": "documentation"
+    },
+    "pinelib/pinelib/abi/manifest_v2_builder.py": {
+      "raw_sha256": "9f069a857fcb413de91d34621689b353c2736090457d8f14de28ba2b97a2f6e8",
+      "lf_sha256": "8f6a5b69fccc6bb7f78bd04b118ea0f1ef7bc6d1f30d28fbab009394134068ef",
+      "category": "production"
+    },
+    "pinelib/pinelib/abi/target_manifest.json": {
+      "raw_sha256": "b16dec20209cb378b6ce424d4e5b3ec4912f7ca299c411777bb7dad51fae6a19",
+      "lf_sha256": "b16dec20209cb378b6ce424d4e5b3ec4912f7ca299c411777bb7dad51fae6a19",
+      "category": "production"
+    },
+    "pinelib/pinelib/reference/heap.py": {
+      "raw_sha256": "9a84b93038cdafe97ddb27bedef280fa9dcf550ac65f4aea5ebf1073ae64a319",
+      "lf_sha256": "ee519b65e0117de1701e99639ef054de6d0cf830c2b096562ba81ec620fb472e",
+      "category": "production"
+    },
+    "pinelib/pinelib/reference/persistence.py": {
+      "raw_sha256": "95f962a82b6cf30d9a21822014638ba0123102010f13517672d065c2c28b4566",
+      "lf_sha256": "755d824323d3a54a1237d09fb42204f27e8a998859f80e5eb03905363634bf02",
+      "category": "production"
+    },
+    "pinelib/pinelib/runtime/language.py": {
+      "raw_sha256": "a0b8eccfa78ab164493deb3793764a13782b0f554f45fb847131958638ab4d64",
+      "lf_sha256": "600f040a22ba8b013bfa9646c6852a8cb559fda2d99fb9f2917b46eec3dea3a6",
+      "category": "production"
+    },
+    "pinelib/tests/test_varip_nominal_arrays.py": {
+      "raw_sha256": "c84f1325cead75444caeae9735b5ae78adf5718208a9a6bb7119e89a3dd2b2a9",
+      "lf_sha256": "c84f1325cead75444caeae9735b5ae78adf5718208a9a6bb7119e89a3dd2b2a9",
+      "category": "new_test"
+    },
+    "ast2python/ast2python/emission/nominal.py": {
+      "raw_sha256": "17a315435c75ebc265ceb6620f5f6e62ebb3f09a5fa9e4252ccc4bdfe99b337e",
+      "lf_sha256": "17a315435c75ebc265ceb6620f5f6e62ebb3f09a5fa9e4252ccc4bdfe99b337e",
+      "category": "production"
+    },
+    "ast2python/ast2python/emission/python.py": {
+      "raw_sha256": "4d099e463ce943cafa48c1a5bd82430d802e42a47695b16bdd7549255b6b860c",
+      "lf_sha256": "0b16eaa6707733298211276949f39045e6564d25d5ccaec5523825aeab0f99e1",
+      "category": "production"
+    },
+    "ast2python/ast2python/lowering/builder.py": {
+      "raw_sha256": "a68662b84df22a042dd2dde9fd89983c922a23fedafe249554e5396c80c65daf",
+      "lf_sha256": "813cf64e2e2fd75ac142b987f5f77569e0aad04da030134742af44369a4a3492",
+      "category": "production"
+    },
+    "ast2python/ast2python/lowering/pinelib_target.py": {
+      "raw_sha256": "6b9df47d9bfdeeffc4875a51b22c592defb94c72eca5d9161bf72235348480f7",
+      "lf_sha256": "56b140b10e5bda397108f27de7c6d98be2b2e29de74330b88f7e9c7eef4e5346",
+      "category": "production"
+    },
+    "ast2python/tests/test_varip_nominal_arrays_execution.py": {
+      "raw_sha256": "25d85966ad18f27efe52d98382f2822e624fc258ad52f2e501db1e449533076b",
+      "lf_sha256": "25d85966ad18f27efe52d98382f2822e624fc258ad52f2e501db1e449533076b",
+      "category": "new_test"
+    }
+  },
+  "base_sources": {
+    "pinelib": "fa7d7ab7f7ffdb1afd29f6167e61a6bb3f719ca7",
+    "ast2python": "70309934a05b29e1b1696109460c05db32a6f519",
+    "pine2ast": "5fe76f6ce6a4e49b04d9bf66b6263f201ecffe0e"
+  },
+  "new_tests": {
+    "runtime": 93,
+    "compiler": 52,
+    "total": 145
+  },
+  "prior_abort_tests_retained_and_executed": 317,
+  "all_original_test_sources_preserved": true,
+  "manifest_only_additive_profile_and_content_hash_changed": true,
+  "target_profile": {
+    "element_type": "udt",
+    "field_profile": "fundamentals-and-ordinary-fundamental-array-matrix",
+    "min_pine_version": 5,
+    "persistence": "array-elements-and-declared-varip-fields",
+    "registry_schema_id": "pinelib.nominal_registry.v1",
+    "revision": 1
+  },
+  "checks": [
+    "Registry declaration admission precedes empty/NA binding initialization; constructors and restored payloads cannot define eligibility.",
+    "Compiler advertises the exact closed capability only with nominal registry and fundamental varip dependencies; runtime imports are absent from the compiler diff.",
+    "Explicit outer array/slice backing alone get persistence flags; ordinary UDT fields and primitive child payloads retain ordinary rollback.",
+    "Identity retention traverses both constructor and working edges; no permanent referent promotion remains after root removal.",
+    "Graph validation sees candidate native and portable reference handles, checks both baseline/working typed owners, and rejects before payload/flag/revision publication.",
+    "Transient slice bounds remain with established public/private abort owners; typed graph traversal does not materialize invalid working views or widen checkpoint decoding.",
+    "Cached root index is derived from admitted heap metadata and rebuilt after begin/restore; no new checkpoint or registry schema introduced.",
+    "Initial source failures and operational compiler temp failures remain visible; no old expected or test assertions changed."
+  ],
+  "additional_independent_probe": {
+    "path": "varip-transient-constructor-probe.py",
+    "sha256": "b2283d9ebf49775e2863add5492d1022cac9afbda630cd721cd58c67ebfb45a0",
+    "description": "New UDT constructor field points to ordinary slice A, then switches to B; backing A becomes temporarily out of bounds before insertion into a varip array. First abort repairs A and roundtrips; retry checks ordinary alias type failure atomicity; root removal plus second abort collects the full temporary graph and roundtrips."
+  },
+  "results": {
+    "311": {
+      "pinelib": {
+        "passed": 410,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0,
+        "junit_sha256": "118252684cfc4371c15c65aaf28f93d3926b3dd2baf1c4b8e35268a026eaf558"
+      },
+      "ast2python": {
+        "passed": 52,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0,
+        "junit_sha256": "08216aae7fc4e6f7f00963f86d3e081a85a1983cf36c8594180670c22bfd859b"
+      },
+      "independent_composed_probe": {
+        "cases": 4,
+        "passed": 4,
+        "sha256": "9d8bf5b30074e325f274811578a8f04eb385ee629f84b43a78abc5ad86b78cff"
+      },
+      "initial_compiler_temp_permission_errors": {
+        "passed": 43,
+        "errors": 9,
+        "xml_sha256": "09c252049df514fe47b7e15a7b83159dcab94c984eda72223a001830a1eb36be",
+        "resolution": "Same immutable sources and same52nodeids rerun with a verified fresh private basetemp; no test change or skips."
+      }
+    },
+    "313": {
+      "pinelib": {
+        "passed": 410,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0,
+        "junit_sha256": "9aa5ef5fc8d50a8b9a64961489c266953a311b36a7401a4ebea89621c774b5d5"
+      },
+      "ast2python": {
+        "passed": 52,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0,
+        "junit_sha256": "6a5a9a395e7cd1116c97fb219c1c8b234b668202e072f2e4527495af5941f12c"
+      },
+      "independent_composed_probe": {
+        "cases": 4,
+        "passed": 4,
+        "sha256": "9d8bf5b30074e325f274811578a8f04eb385ee629f84b43a78abc5ad86b78cff"
+      },
+      "initial_compiler_temp_permission_errors": {
+        "passed": 43,
+        "errors": 9,
+        "xml_sha256": "e1b870f7d72ff888a66ab27ecd52feacbdfedbf07b9f016d4273522242c66fe8",
+        "resolution": "Same immutable sources and same52nodeids rerun with a verified fresh private basetemp; no test change or skips."
+      }
+    }
+  },
+  "primary_authority": [
+    "https://www.tradingview.com/pine-script-docs/v5/language/arrays/#using-var-and-varip-keywords",
+    "https://www.tradingview.com/pine-script-docs/language/arrays/#using-var-and-varip-keywords",
+    "https://www.tradingview.com/pine-script-docs/language/objects/#creating-objects"
+  ],
+  "limitations": [
+    "This is the documented common Pine5/6 profile only: fundamentals and ordinary fundamental array/matrix fields. Enum/map/nested-UDT/reference-valued-varip-field profiles remain deferred, not declared invalid Pine.",
+    "No external TradingView execution oracle is claimed for transitive primitive collection behavior.",
+    "Local owner full-suite Windows packaging/symlink limitations remain recorded. Exact joint Linux execution and inventory acceptance are still required.",
+    "Callable result/floor and rolling-TA next-wave production changes are excluded."
+  ],
+  "production_or_tests_edited_by_reviewer": false,
+  "full_stage2_accepted": false
+}

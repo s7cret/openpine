@@ -1,0 +1,22 @@
+{
+  "repositories": {
+    "pinelib": {
+      "base": "fa7d7ab7f7ffdb1afd29f6167e61a6bb3f719ca7",
+      "source": "b9687356ba30f6cfbb14fb23938850eda3fb196f",
+      "tree": "a50dc44d676a41e1dfd93c2d6db35c042d9bed01",
+      "files": 144,
+      "overlay_files": 7,
+      "complete_tree_matches": true
+    },
+    "ast2python": {
+      "base": "70309934a05b29e1b1696109460c05db32a6f519",
+      "source": "f1092609a3b5d3f245ec7a30e9552edecd0bf56a",
+      "tree": "390a3c743b513161bd71fd4c38e156d5c1ef3b2c",
+      "files": 167,
+      "overlay_files": 5,
+      "complete_tree_matches": true
+    }
+  },
+  "rolling_statistics_and_linkage_floor_excluded": true,
+  "full_stage2_accepted": false
+}
