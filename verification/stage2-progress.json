@@ -164,19 +164,23 @@
     "verification/tuple-repair-cleanup-final-execution-review.json",
     "docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md",
     "verification/recursive-wave-review-20260911.json",
-    "verification/recursive-wave-integration-20260911.json"
+    "verification/recursive-wave-integration-20260911.json",
+    "docs/RC6_STAGE2_QUALIFIER_PUBLICATION.md",
+    "verification/qualifier-joint-receipt-20260911.json",
+    "docs/RC6_STAGE2_LIBRARY_METHODS.md",
+    "rc6_tests/test_rc6_library_methods.py"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
-  "joint_test_count": 20259,
+  "joint_test_count": 20423,
   "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
   "core_verification_run": 34068163602,
   "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-  "latest_verified_source": "8aa6a3e4f6f172652daf3ba37aade9f21e122c6c",
-  "latest_verified_tree": "2a7869613ed508f86e25b202a1302cc5e3164b6a",
-  "integrated_head": "5fbb5907f44aefb1f56674d2be7781d9e7cda37c",
-  "joint_verification_run": 34594834647,
-  "publication_receipt": "docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md",
+  "latest_verified_source": "4d83645ea6373e74530e13c4cdcc48779803c836",
+  "latest_verified_tree": "ec4e5d2f3a0d74bc55047d99e91281379b9ee3c6",
+  "integrated_head": "cf45adb47f495194729ec0bd7508caab8e751147",
+  "joint_verification_run": 34627696246,
+  "publication_receipt": "docs/RC6_STAGE2_QUALIFIER_PUBLICATION.md",
   "gate_results": {
     "python_3_11": "passed",
     "python_3_13": "passed",
@@ -770,7 +774,7 @@
     "selected_tests_per_interpreter": 20259,
     "previous_tests_retained": 16787,
     "added_tests": 3472,
-    "compiler_normalized_target_qualifiers": "open_residual_normal_source_enforced_by_producer",
+    "compiler_normalized_target_qualifiers": "superseded_by_local_qualifier_boundary_20260911_joint_verified",
     "exported_imported_methods_bc": "design_only_not_implemented",
     "full_stage2_accepted": false,
     "integrated_head": "5fbb5907f44aefb1f56674d2be7781d9e7cda37c",
@@ -778,7 +782,7 @@
     "integration_receipt": "verification/recursive-wave-integration-20260911.json"
   },
   "local_qualifier_boundary_20260911": {
-    "status": "local_implemented_not_published",
+    "status": "integrated_and_joint_linux_verified",
     "base": "4c4b080e405c45a87051499a50c76117d690017c",
     "normalized_schema": "ast2python.target_manifest.v2",
     "actual_argument_admission": "producer_and_target",
@@ -805,10 +809,55 @@
         "reason": "bubblewrap_required"
       }
     },
-    "python311": "not_run",
-    "github_ci": "not_run",
-    "frontend": "not_run",
+    "python311": "passed",
+    "github_ci": "passed",
+    "frontend": "passed",
     "full_stage2_accepted": false,
-    "documentation": "docs/RC6_STAGE2_QUALIFIER_BOUNDARY.md"
+    "documentation": "docs/RC6_STAGE2_QUALIFIER_BOUNDARY.md",
+    "joint_run": 34627696246,
+    "integrated_head": "cf45adb47f495194729ec0bd7508caab8e751147",
+    "total_per_interpreter": 20423,
+    "receipt": "docs/RC6_STAGE2_QUALIFIER_PUBLICATION.md"
+  },
+  "library_methods_20260911": {
+    "status": "implemented_candidate_joint_verification_pending",
+    "profile": "same_version_methods_v5",
+    "pine_versions": [
+      5,
+      6
+    ],
+    "call_form": "receiver_dot",
+    "compiler_capability": "library_method_projection_v1",
+    "source_context": "pine2ast.library_qualifier_context.v2",
+    "source_pins": {
+      "pine2ast": "c7e5ab40395eca3dd33eea285ef85b9bae8a5dfa",
+      "ast2python": "da5834e72153143cf84f3a80f77db8caf2a4c4df",
+      "pinelib": "075c59e451bff68790582028b1b0c8f3b78db267"
+    },
+    "local_python313": {
+      "pine2ast": {
+        "passed": 2951
+      },
+      "ast2python": {
+        "passed": 1311
+      },
+      "new_host": {
+        "passed": 22,
+        "failed": 4,
+        "failure_reason": "bubblewrap_required"
+      }
+    },
+    "added_tests": 103,
+    "candidate_inventory": 20526,
+    "retained_previous_test_ids": 20423,
+    "remaining": [
+      "full_cross_version_imports",
+      "namespace_spelled_user_method_calls",
+      "complete_versioned_catalog",
+      "complete_independent_builtin_expected"
+    ],
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "documentation": "docs/RC6_STAGE2_LIBRARY_METHODS.md"
   }
 }

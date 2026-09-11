@@ -1,0 +1,26 @@
+{
+  "run": 34627696246,
+  "source_head": "65851271ff451987beff26a6837f8c4fa740d100",
+  "source_tree": "ec4e5d2f3a0d74bc55047d99e91281379b9ee3c6",
+  "counts": {
+    "ast2python": 1275,
+    "backtest_engine": 1102,
+    "marketdata-provider": 601,
+    "openpine-contracts": 557,
+    "openpine": 8790,
+    "optimizer": 281,
+    "pine2ast": 2910,
+    "pinelib": 4907
+  },
+  "total_per_python": 20423,
+  "reports_match": true,
+  "frontend_vitest": 152,
+  "artifact_sha256": {
+    "311": "363d80fda8de653b527d352b4a5358410f6883d3844d95bf2adaec99f52f66be",
+    "313": "e11f8e50b967f9b5795ce185204ff87a1da0a8e6b8b3144e09d3fb1b2e0ac49d"
+  },
+  "status": "joint_verified_and_integrated",
+  "integrated_head": "cf45adb47f495194729ec0bd7508caab8e751147",
+  "frontend_jobs": "passed",
+  "frontend_artifact_sha256": "dce7e38406bcc3f5147b9372fa6b508cbf88ed742ae0c42e8581c14675c5e25e"
+}
