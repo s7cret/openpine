@@ -1,0 +1,138 @@
+{
+  "schema_id": "openpine.consumer_library_local_receipt.v1",
+  "stage": 2,
+  "date": "2026-09-12",
+  "status": "implemented_local_pending_joint",
+  "full_stage2_accepted": false,
+  "tradingview_verified": false,
+  "remote_mutations": [],
+  "previous_host": "18981fb0b5ee9cfc3c4aa0a2986ca685854cf647",
+  "functional_host": "ea51ea65eea6d8cf70f79cc3e02e54d20912b5ca",
+  "source_pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "756d9c73ae4346e8645d413d6ae6cc2d50a6d7b7",
+    "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "9bc5a9efff0e32ec5393ccd10ec7081acdeeb810"
+  },
+  "python": "3.13.5",
+  "test_results": {
+    "Pine2AST": {
+      "total": 3059,
+      "passed": 3059,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "producer-final.xml"
+    },
+    "Ast2Python": {
+      "total": 1378,
+      "passed": 1378,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "compiler-final.xml"
+    },
+    "PineLib": {
+      "total": 4944,
+      "passed": 4944,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "pinelib-full.xml"
+    },
+    "Contracts": {
+      "total": 557,
+      "passed": 557,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "contracts-final.xml"
+    },
+    "Engine": {
+      "total": 1102,
+      "passed": 1102,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "engine-full.xml"
+    },
+    "Provider": {
+      "total": 601,
+      "passed": 601,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "provider-full.xml"
+    },
+    "Host affected": {
+      "total": 157,
+      "passed": 153,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "report": "host-final-admitted.xml"
+    },
+    "Stage 1 corpus/worker": {
+      "total": 14,
+      "passed": 12,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "report": "stage1-corpus.xml"
+    }
+  },
+  "totals": {
+    "total": 11812,
+    "passed": 11806,
+    "failures": 6,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_tests": {
+    "total": 101,
+    "passed": 97,
+    "failed": 4,
+    "reason": "Bubblewrap unavailable"
+  },
+  "previous_required": 21446,
+  "new_required": 21557,
+  "promoted_existing_tests": 10,
+  "previous_required_ids_removed": 0,
+  "wheel_install": {
+    "clean_venv_no_system_site_packages": true,
+    "offline": true,
+    "production_from_wheels_only": true,
+    "pip_check": "passed",
+    "new_test_total": 101,
+    "new_tests_passed": 97,
+    "new_tests_failed": 4,
+    "reason": "Bubblewrap unavailable",
+    "production_python_files_compared": 535,
+    "source_checkout_on_pythonpath": false,
+    "test_harness_contains_production": false,
+    "exact_build_ids_explicitly_configured": true
+  },
+  "architecture": "passed",
+  "openapi_schema_export": "passed",
+  "ruff": "passed",
+  "compileall": "passed",
+  "not_run": [
+    "Python 3.11",
+    "GitHub Actions",
+    "complete host inventory",
+    "standalone optimizer suite",
+    "browser/Node frontend tests",
+    "current full builtin index",
+    "whole-product performance benchmark"
+  ],
+  "notes": [
+    "Source tests include six full library suites except standalone optimizer; five Provider live-network cases deselected.",
+    "The two earlier non-worker HTTP/CLI failures were missing installed build-identity input; a baseline fake CLI reproduced the old failure. The final configured-source run passes both, with original assertions unchanged.",
+    "Initial producer defensive tests detected copying during empty admission errors; empty diagnostic paths corrected, original three tests retained.",
+    "First clean-wheel run intentionally lacked explicit host build identity and failed five HTTP jobs; final run supplies actual build/dependency commits using existing public configuration, with no identity fallback.",
+    "Previous unverified str.tonumber numeric expected conflicts remain unresolved; old index evidence is not attached to current source pins."
+  ]
+}
