@@ -153,6 +153,8 @@ class NativeRC6CompilerAdapter:
                     "strategy_host": host_evidence,
                     "bundle_hash": bundle["content_hash"],
                     "target_manifest_hash": target.content_hash,
+                    "normalized_target_schema": target.schema_id,
+                    "argument_qualifier_admission": "producer_and_exact_target",
                     "lowering_plan_hash": compiled.plan.content_hash,
                     "emitted_module_hash": compiled.emitted.code_hash,
                     "source_map_hash": compiled.emitted.source_map.content_hash,

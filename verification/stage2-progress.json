@@ -776,5 +776,39 @@
     "integrated_head": "5fbb5907f44aefb1f56674d2be7781d9e7cda37c",
     "final_gate_run": 34597926403,
     "integration_receipt": "verification/recursive-wave-integration-20260911.json"
+  },
+  "local_qualifier_boundary_20260911": {
+    "status": "local_implemented_not_published",
+    "base": "4c4b080e405c45a87051499a50c76117d690017c",
+    "normalized_schema": "ast2python.target_manifest.v2",
+    "actual_argument_admission": "producer_and_target",
+    "signature_qualifier_domain_audit": "separate_from_structural_and_numerical_evidence",
+    "source_refs": {
+      "pinelib": "075c59e451bff68790582028b1b0c8f3b78db267",
+      "ast2python": "c91e94396e5501812284dcf2478f18971f839c77"
+    },
+    "candidate_inventory": 20423,
+    "added_tests": 164,
+    "tests": {
+      "python313_compiler": {
+        "passed": 1275
+      },
+      "python313_runtime": {
+        "passed": 4907
+      },
+      "python313_engine": {
+        "passed": 1102
+      },
+      "python313_selected_host": {
+        "passed": 628,
+        "failed": 8,
+        "reason": "bubblewrap_required"
+      }
+    },
+    "python311": "not_run",
+    "github_ci": "not_run",
+    "frontend": "not_run",
+    "full_stage2_accepted": false,
+    "documentation": "docs/RC6_STAGE2_QUALIFIER_BOUNDARY.md"
   }
 }
