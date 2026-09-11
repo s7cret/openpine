@@ -918,6 +918,16 @@
     "full_stage2_accepted": false,
     "tradingview_verified": false,
     "source_published": false,
-    "note": "counts are bounded examples and work packages, not a Stage 2 completion percentage"
+    "note": "counts are bounded examples and work packages, not a Stage 2 completion percentage",
+    "tested_host_source": "e10eb6137ef606851a1f69589f5f9d424b5a5e70",
+    "local_receipt": "verification/numeric-index-local-receipt-20260911.json",
+    "candidate_inventory": 21306,
+    "added_cases": 720,
+    "new_cases_passed": 716,
+    "new_worker_failures": 4,
+    "direct_examples_all_paths": 284,
+    "direct_remaining_without_all_paths": 19,
+    "conditioned_tsi_signatures": 2,
+    "strict_corpus_group_gate": "90_of_100_three_preexisting_unverified_string_disagreements"
   }
 }
