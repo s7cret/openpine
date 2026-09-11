@@ -1,49 +1,88 @@
-name: Export exact Stage 2 review sources
+name: Archive merged Stage 2 branches
 'on':
   push:
     branches: ['ops/stage2-methods-review-20260911']
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: stage2-methods-archive-20260911
+  cancel-in-progress: false
 jobs:
-  source:
+  archive:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 52a1130192aa695fe29b9dbe947cfa5bb991e359
           fetch-depth: 0
-          persist-credentials: false
-      - name: Export pinned code and histories without changing refs
+      - name: Archive exact tips and atomically remove only the three finished branches
         shell: bash
         run: |
           python - <<'PY'
-          import hashlib, json, os, pathlib, re, subprocess
-          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'review-sources'; out.mkdir()
-          pins=json.loads(pathlib.Path('docs/RC6_LIFECYCLE_SOURCES.json').read_text())
-          expected={'pine2ast','ast2python','pinelib','openpine-contracts','backtest_engine','optimizer','marketdata-provider'}
-          if set(pins)!=expected or any(not re.fullmatch('[0-9a-f]{40}', s) for s in pins.values()):
-              raise SystemExit('invalid pins')
-          pins={'openpine':'52a1130192aa695fe29b9dbe947cfa5bb991e359',**pins}
-          manifest={}
-          for name,sha in pins.items():
-              repo=pathlib.Path.cwd() if name=='openpine' else out.parent/('source-'+name)
-              if name!='openpine':
-                  subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(repo)],check=True)
-              def git(*args):
-                  return subprocess.check_output(['git','-C',str(repo),*args],text=True).strip()
-              git('cat-file','-e',sha+'^{commit}')
-              target=out/(name+'.tar.gz')
-              git('archive','--format=tar.gz','--output='+str(target),sha)
-              git('update-ref','refs/heads/exported-source',sha)
-              bundle=out/(name+'.bundle')
-              git('bundle','create',str(bundle),'refs/heads/exported-source')
-              manifest[name]={'head':sha,'tree':git('rev-parse',sha+'^{tree}'),'source_sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'bundle_sha256':hashlib.sha256(bundle.read_bytes()).hexdigest()}
-          (out/'source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          import json, os, pathlib, subprocess
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          def refs():
+              return {ref: sha for sha, ref in (line.split() for line in git('ls-remote', '--refs', 'origin').splitlines())}
+          def require(ok, message):
+              if not ok:
+                  raise SystemExit(message)
+          repo = 's7cret/openpine'
+          ops = 'ops/stage2-methods-review-20260911'
+          original_ops = 'd069deb981e69614c5690f1e7695ec6f3e2fd816'
+          release = 'c336e587ba89830fa4d702946acf49f23566593e'
+          source = '964d434cedb6a7a64546113b5b53b623d8e04c09'
+          qualifier = '4d83645ea6373e74530e13c4cdcc48779803c836'
+          current = os.environ['GITHUB_SHA']
+          require(os.environ['GITHUB_REPOSITORY'] == repo and os.environ['GITHUB_REF'] == 'refs/heads/' + ops, 'wrong repository or branch')
+          require(git('rev-parse', current + '^') == original_ops, 'unexpected maintenance ancestry')
+          evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'archive-evidence'
+          evidence.mkdir()
+          before = refs()
+          (evidence / 'before.json').write_text(json.dumps(before, indent=2) + '\n')
+          primary = {
+              'refs/heads/main': 'af697b28b12b672ab46442ef9a3e9f6d241802d4',
+              'refs/heads/release/v2.17': '3c026a875c6b83609e4a3fb1183a89a22afd01ef',
+              'refs/heads/release/v4.0.2': 'a0b89269bed8d571faf65909e2ac4dbd091764e2',
+              'refs/heads/release/5.0.0rc6': release,
+          }
+          temporary = {
+              'refs/heads/stage2/library-methods-20260911': source,
+              'refs/heads/stage2/qualifier-boundary-20260911': qualifier,
+              'refs/heads/' + ops: current,
+          }
+          require({k:v for k,v in before.items() if k.startswith('refs/heads/')} == {**primary, **temporary}, 'branch inventory changed; no deletion performed')
+          for commit in (source, qualifier, '52a1130192aa695fe29b9dbe947cfa5bb991e359'):
+              git('merge-base', '--is-ancestor', commit, release)
+          require(git('rev-parse', release + '^{tree}') == '7e85951eb7e7b307618d923eb7d4e5ae42071214', 'release does not match tested tree')
+          require(git('diff', '--name-only', '52a1130192aa695fe29b9dbe947cfa5bb991e359', original_ops).splitlines() == ['.github/workflows/stage2-review-source.yml'], 'review branch contains unmerged functional changes')
+          archived = {
+              'refs/tags/archive/20260911/stage2/library-methods-20260911': source,
+              'refs/tags/archive/20260911/stage2/qualifier-boundary-20260911': qualifier,
+              'refs/tags/archive/20260911/' + ops: original_ops,
+              'refs/tags/archive/20260911/ops/stage2-methods-cleanup': current,
+          }
+          leases = ['--force-with-lease=' + ref + ':' + tip for ref, tip in temporary.items()]
+          updates = [':' + ref for ref in temporary]
+          for ref, tip in archived.items():
+              require(before.get(ref) in (None, tip), 'conflicting existing archive tag: ' + ref)
+              if ref not in before:
+                  leases.append('--force-with-lease=' + ref + ':')
+                  updates.append(tip + ':' + ref)
+          git('push', '--atomic', *leases, 'origin', *updates)
+          after = refs()
+          expected = {k:v for k,v in before.items() if k not in temporary}
+          expected.update(archived)
+          (evidence / 'after.json').write_text(json.dumps(after, indent=2) + '\n')
+          require(after == expected, 'post-archive refs differ from plan')
+          receipt = {'repository': repo, 'release': release, 'tested_tree': '7e85951eb7e7b307618d923eb7d4e5ae42071214', 'merged_pr': 16, 'joint_run': 34639113593, 'archived': archived, 'deleted_branches': sorted(temporary), 'remaining_branches': primary, 'source_changed': False, 'full_stage2_accepted': False}
+          (evidence / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print(json.dumps(receipt, indent=2))
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: stage2-review-sources-${{ github.run_id }}
-          path: ${{ runner.temp }}/review-sources/
+          name: stage2-methods-archive-${{ github.run_id }}
+          path: ${{ runner.temp }}/archive-evidence/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
