@@ -1,0 +1,186 @@
+diff --git a/docs/RC6_STAGE2_METHOD_IDENTITY.md b/docs/RC6_STAGE2_METHOD_IDENTITY.md
+new file mode 100644
+index 0000000..4ee9823
+--- /dev/null
++++ b/docs/RC6_STAGE2_METHOD_IDENTITY.md
+@@ -0,0 +1,55 @@
++# Stage 2: preserve library method selection and lexical mutation identity
++
++This repair continues the existing source-bound method candidate, not a new
++interpreter or a claim of full Stage 2 completion.
++
++## Reproduced problems and owner fixes
++
++The scoped preview correctly chose a public float-argument method, but its private
++int-argument overload shared the generated name. Final analysis could rebind the
++call to that more-specific private declaration. A literal test produced 1003 where
++the public declaration requires 103. Projection now assigns a unique private name
++to each source-bound method declaration. Receiver/argument evaluation, callsite state
++and source provenance remain owned by the existing compiler/runtime.
++
++A second bug associated reassignment with a bare name across every scope. Updating
++local n in a method could incorrectly strengthen an unrelated global n=2 to series,
++rejecting a valid simple receiver or const input default. An iterative lexical
++prepass now records declaration identities, preserving source order and shadowing.
++Ordinary checking and call-specific qualifier inference use the same classifier.
++Real outer assignments remain mutations; parameters, loop and tuple bindings do
++not contaminate an unrelated declaration. Legacy v1/v2 predeclaration rules remain
++unchanged. No general series-to-simple coercion is introduced.
++
++## Required evidence
++
++60 added cases: 38 producer, 10 compiler and 12 host. No prior test ID was removed.
++The fixed inventory is 20586, including existing accounting/infrastructure checks;
++it is not a TradingView compatibility percentage. Four new protected-worker cases
++are mandatory in addition to the original four imported-method worker cases.
++
++The broker fixture keeps public and private state separate: on the third bar the
++public counter is 103 and the internal private counter is 1003. It submits qty=3
++only when both are correct, filling at 102 on close or 103 at the next open. Pine
++5/6, both transports, named arguments and fill recalculation are covered. Separate
++compiler cases check checkpoint equality. Expectations are hand-derived, not TV
++exports. Old tests were not removed or rewritten to manufacture these values.
++
++Local Python 3.13 complete suites: Pine2AST 2989, Ast2Python 1321, zero failures,
++errors or skips. An initial environment lacked installed packages/build tooling;
++it was replaced by actual offline wheel installation, not by disabling isolation
++tests. Full new Linux Python 3.11/3.13, sandbox, architecture/corpus, frontend and
++build acceptance must be observed before RC6 merge. Prior candidate run
++34632849181 passed, but did not contain these repairs and is not their acceptance.
++
++## Compatibility and remaining scope
++
++Recompile linked artifacts with the coordinated source pins. Generated symbol
++identity changes intentionally with this producer repair; checkpoint/source hashes
++must not be ignored. Existing library lock semantics and the pinned exact source
++checks remain intact.
++
++Custom methods in ordinary/namespace call syntax, cross-version imports, the full
++versioned catalog and complete independent builtin evidence remain outside this
++repair. Full Stage 2 remains in progress. No measured speedup or external
++TradingView equivalence is claimed.
+diff --git a/rc6_tests/test_rc6_library_method_identity.py b/rc6_tests/test_rc6_library_method_identity.py
+new file mode 100644
+index 0000000..5c4699d
+--- /dev/null
++++ b/rc6_tests/test_rc6_library_method_identity.py
+@@ -0,0 +1,83 @@
++"""Execution must keep the exact public overload selected at the import boundary.
++
++A private, more-specific overload is legal inside its own library, never selected
++by an unrelated consumer after source projection. Values/prices are hand-derived.
++"""
++
++import pytest
++
++from openpine.runtime.rc6_worker_runtime import _engine_bar
++from rc6_tests.test_rc6_deferred_exits import compare_modes
++from rc6_tests.test_rc6_library_imports import prepare
++from rc6_tests.test_rc6_worker_admission import _manifest
++
++
++def setup(version=6, on_close=False, recalc=False):
++    library = f"""//@version={version}
++library("Identity")
++method value(simple int self,int step)=>
++    var int n=1000
++    n+=step
++    n
++export method value(simple int self,float step)=>
++    var float n=100
++    n+=step
++    n
++export method inside(simple int self)=>self.value(1)
++"""
++    source = f"""//@version={version}
++strategy("private selection must not escape")
++import qa/Identity/1 as lib
++n=2
++publicResult=n.value(step=1)
++internalResult=n.inside()
++if bar_index==2 and strategy.position_size==0 and publicResult==103 and internalResult==1003
++    strategy.entry("identity",strategy.long,qty=publicResult-100)
++"""
++    return prepare(
++        version, on_close, recalc, source_override=source, libs={"qa/Identity/1": library}
++    )
++
++
++@pytest.mark.parametrize("version", [5, 6])
++@pytest.mark.parametrize("on_close", [False, True])
++@pytest.mark.parametrize("recalc", [False, True])
++def test_public_and_private_overloads_produce_distinct_results_and_exact_order(
++    monkeypatch, tmp_path, version, on_close, recalc
++):
++    case, rows = setup(version, on_close, recalc)
++    result, tape = compare_modes(monkeypatch, tmp_path, case, rows)
++    assert [(e["command_id"], e["bar_index"], float(e["qty"])) for e in tape] == [
++        ("identity", 2, 3)
++    ]
++    assert [(t.entry_price, t.qty) for t in result.open_trades] == [(102 if on_close else 103, 3)]
++
++
++@pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
++@pytest.mark.parametrize("on_close", [False, True])
++def test_protected_worker_preserves_exact_library_method_identity(tmp_path, mode, on_close):
++    from openpine.runtime.isolated_run import run_isolated_artifact
++
++    case, rows = setup(on_close=on_close, recalc=True)
++    compiled, context, config = case
++    for name, value in dict(
++        execution_context=context,
++        admitted_manifest=_manifest(),
++        instrument_id=context["instrument_id"],
++        generated_artifact=compiled.generated_artifact,
++        bar_envelopes=rows,
++        run_hash="sha256:" + "1" * 64,
++        protocol_artifact_dir=str(tmp_path / "protocol"),
++        isolated_protocol=mode,
++    ).items():
++        setattr(config, name, value)
++    output = run_isolated_artifact(
++        compiled.python_code.encode(), bars=[_engine_bar(b) for b in rows], config=config, params={}
++    )
++    assert output["ok"] and output["bars_processed"] == 6
++    assert [(e["command_id"], e["bar_index"], float(e["qty"])) for e in output["intent_tape"]] == [
++        ("identity", 2, 3)
++    ]
++    assert [(t.entry_price, t.qty) for t in output["raw_result"].open_trades] == [
++        (102 if on_close else 103, 3)
++    ]
+diff --git a/verification/inventory.json b/verification/inventory.json
+index a157dd9..fa3e13f 100644
+--- a/verification/inventory.json
++++ b/verification/inventory.json
+@@ -1,7 +1,7 @@
+ {
+   "ast2python": {
+-    "count": 1311,
+-    "sha256": "sha256:5d41cefc7b0cc9a7a8d531fe435cec4d8400d10fa821f88bdd9c99a13f92f31d",
++    "count": 1321,
++    "sha256": "sha256:dc7669d42916ab8659f9dc77b2fa4f4ae35e5e1893c01ba30a765522c455e34d",
+     "deselected": 0
+   },
+   "backtest_engine": {
+@@ -15,8 +15,8 @@
+     "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+   },
+   "openpine": {
+-    "count": 8816,
+-    "sha256": "sha256:7fa9e0db76f320d648603b2c6a18c3a83b1ee59717cea310e143c9bf2635d08a",
++    "count": 8828,
++    "sha256": "sha256:96acd4c89166dcdc831d0d3d5841a471ff744b5e208c4325d01211c697dd3c3d",
+     "deselected": 0
+   },
+   "openpine-contracts": {
+@@ -30,8 +30,8 @@
+     "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+   },
+   "pine2ast": {
+-    "count": 2951,
+-    "sha256": "sha256:259698aa64827d2914fda28d7f17d3569bfdb3b7ae414a8b862632894c0890a2",
++    "count": 2989,
++    "sha256": "sha256:a1a43f360890cb53880422101a55fc816f4ecf693caa8eba81b43c9bf6e43055",
+     "deselected": 0
+   },
+   "pinelib": {

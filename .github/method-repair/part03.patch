@@ -1,0 +1,128 @@
+diff --git a/verification/method-identity-inventory-review.json b/verification/method-identity-inventory-review.json
+new file mode 100644
+index 0000000..bf5c943
+--- /dev/null
++++ b/verification/method-identity-inventory-review.json
+@@ -0,0 +1,91 @@
++{
++  "baseline": "52a1130192aa695fe29b9dbe947cfa5bb991e359",
++  "changes": {
++    "pine2ast": {
++      "before": 2951,
++      "after": 2989,
++      "removed": [],
++      "added": [
++        "tests/test_lexical_mutation_identity.py::test_function_local_mutation_does_not_change_global_constant[3]",
++        "tests/test_lexical_mutation_identity.py::test_function_local_mutation_does_not_change_global_constant[4]",
++        "tests/test_lexical_mutation_identity.py::test_function_local_mutation_does_not_change_global_constant[5]",
++        "tests/test_lexical_mutation_identity.py::test_function_local_mutation_does_not_change_global_constant[6]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[block-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[block-6]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[loop-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[loop-6]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[parameter-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[parameter-6]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[tuple-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_shadow_bindings_never_mark_outer_variable[tuple-6]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[input_default-function-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[input_default-function-6]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[input_default-method-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[input_default-method-6]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[receiver-function-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[receiver-function-6]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[receiver-method-5]",
++        "tests/test_lexical_mutation_identity.py::test_local_write_does_not_strengthen_unrelated_global_qualifier[receiver-method-6]",
++        "tests/test_lexical_mutation_identity.py::test_real_global_mutation_still_rejects_simple_receiver[if bar_index>0\\n    n+=1-5]",
++        "tests/test_lexical_mutation_identity.py::test_real_global_mutation_still_rejects_simple_receiver[if bar_index>0\\n    n+=1-6]",
++        "tests/test_lexical_mutation_identity.py::test_real_global_mutation_still_rejects_simple_receiver[n+=1-5]",
++        "tests/test_lexical_mutation_identity.py::test_real_global_mutation_still_rejects_simple_receiver[n+=1-6]",
++        "tests/test_lexical_mutation_identity.py::test_unrelated_mutated_method_local_does_not_poison_simple_result[5]",
++        "tests/test_lexical_mutation_identity.py::test_unrelated_mutated_method_local_does_not_poison_simple_result[6]",
++        "tests/test_lexical_mutation_identity.py::test_write_before_local_shadow_marks_outer_but_later_write_marks_local[5]",
++        "tests/test_lexical_mutation_identity.py::test_write_before_local_shadow_marks_outer_but_later_write_marks_local[6]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[False-False-5]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[False-False-6]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[False-True-5]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[False-True-6]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[True-False-5]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[True-False-6]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[True-True-5]",
++        "tests/test_library_method_selection_identity.py::test_private_more_specific_overload_cannot_replace_public_selection[True-True-6]",
++        "tests/test_library_method_selection_identity.py::test_private_selection_inside_library_and_public_selection_outside_are_distinct[5]",
++        "tests/test_library_method_selection_identity.py::test_private_selection_inside_library_and_public_selection_outside_are_distinct[6]"
++      ],
++      "sha256": "sha256:a1a43f360890cb53880422101a55fc816f4ecf693caa8eba81b43c9bf6e43055"
++    },
++    "ast2python": {
++      "before": 1311,
++      "after": 1321,
++      "removed": [],
++      "added": [
++        "tests/test_imported_method_selection_identity.py::test_internal_private_and_external_public_overloads_keep_separate_state_on_restore[5]",
++        "tests/test_imported_method_selection_identity.py::test_internal_private_and_external_public_overloads_keep_separate_state_on_restore[6]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[False-False-5]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[False-False-6]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[False-True-5]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[False-True-6]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[True-False-5]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[True-False-6]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[True-True-5]",
++        "tests/test_imported_method_selection_identity.py::test_public_method_is_not_rebound_to_private_overload[True-True-6]"
++      ],
++      "sha256": "sha256:dc7669d42916ab8659f9dc77b2fa4f4ae35e5e1893c01ba30a765522c455e34d"
++    },
++    "openpine": {
++      "before": 8816,
++      "after": 8828,
++      "removed": [],
++      "added": [
++        "rc6_tests/test_rc6_library_method_identity.py::test_protected_worker_preserves_exact_library_method_identity[False-bulk_backtest]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_protected_worker_preserves_exact_library_method_identity[False-interactive]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_protected_worker_preserves_exact_library_method_identity[True-bulk_backtest]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_protected_worker_preserves_exact_library_method_identity[True-interactive]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[False-False-5]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[False-False-6]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[False-True-5]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[False-True-6]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[True-False-5]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[True-False-6]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[True-True-5]",
++        "rc6_tests/test_rc6_library_method_identity.py::test_public_and_private_overloads_produce_distinct_results_and_exact_order[True-True-6]"
++      ],
++      "sha256": "sha256:96acd4c89166dcdc831d0d3d5841a471ff744b5e208c4325d01211c697dd3c3d"
++    }
++  },
++  "total": 20586,
++  "added_count": 60
++}
+diff --git a/verification/stage2-progress.json b/verification/stage2-progress.json
+index f4cc3fa..9da100e 100644
+--- a/verification/stage2-progress.json
++++ b/verification/stage2-progress.json
+@@ -168,7 +168,10 @@
+     "docs/RC6_STAGE2_QUALIFIER_PUBLICATION.md",
+     "verification/qualifier-joint-receipt-20260911.json",
+     "docs/RC6_STAGE2_LIBRARY_METHODS.md",
+-    "rc6_tests/test_rc6_library_methods.py"
++    "rc6_tests/test_rc6_library_methods.py",
++    "docs/RC6_STAGE2_METHOD_IDENTITY.md",
++    "rc6_tests/test_rc6_library_method_identity.py",
++    "verification/method-identity-inventory-review.json"
+   ],
+   "tradingview_verified": false,
+   "full_stage2_accepted": false,
+@@ -859,5 +862,14 @@
+     "full_stage2_accepted": false,
+     "tradingview_verified": false,
+     "documentation": "docs/RC6_STAGE2_LIBRARY_METHODS.md"
++  },
++  "library_method_identity_repair": {
++    "status": "candidate_pending_joint_ci",
++    "producer": "bac8db4a012f37aa6d50770c2cc1be3cbe047c9b",
++    "compiler": "b3df12d84e9471d872d4591a0c05500b4ca6f3f5",
++    "expected_inventory_count": 20586,
++    "added_cases": 60,
++    "removed_test_ids": 0,
++    "full_stage2_accepted": false
+   }
+ }
