@@ -1,0 +1,47 @@
+{
+  "schema_id": "openpine.stage2_integration_receipt.v1",
+  "date": "2026-09-11",
+  "pull_request": 16,
+  "status": "merged_and_branches_archived",
+  "merge_commit": "c336e587ba89830fa4d702946acf49f23566593e",
+  "candidate_head": "964d434cedb6a7a64546113b5b53b623d8e04c09",
+  "ci_checkout_commit": "5286490984c58a01736abe884256aa176635e297",
+  "tested_tree": "7e85951eb7e7b307618d923eb7d4e5ae42071214",
+  "joint_run": 34639113593,
+  "selected_cases_per_interpreter": 20586,
+  "python_versions": ["3.11", "3.13"],
+  "failures": 0,
+  "errors": 0,
+  "skipped_selected_cases": 0,
+  "provider_live_network_deselected": 5,
+  "scope": "six_complete_library_suites_provider_without_live_network_and_native_selected_host_regressions",
+  "frontend_jobs": "success",
+  "protected_worker_jobs": "success",
+  "stage1_engineering_corpus": {"earned": 12, "denominator": 12, "tradingview_verified": false},
+  "backend_artifact_sha256": {
+    "10280581134": "55289c96a638ef9af03bdcc754e66c8929182f3f8b4145efa7a88d926fbb22c3",
+    "10280895000": "2636304f55d18f571aa1f23438f1d247f547ac4a2b481e6eaa73c273dfb2e5cd"
+  },
+  "independent_readback": ["backend_zip_hashes", "junit_totals_and_outcomes", "matching_test_id_inventories", "matching_source_pins", "matching_ci_and_merge_tree"],
+  "source_pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "b3df12d84e9471d872d4591a0c05500b4ca6f3f5",
+    "pinelib": "075c59e451bff68790582028b1b0c8f3b78db267",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "bac8db4a012f37aa6d50770c2cc1be3cbe047c9b"
+  },
+  "archived_tags": {
+    "archive/20260911/stage2/library-methods-20260911": "964d434cedb6a7a64546113b5b53b623d8e04c09",
+    "archive/20260911/stage2/qualifier-boundary-20260911": "4d83645ea6373e74530e13c4cdcc48779803c836",
+    "archive/20260911/ops/stage2-methods-review-20260911": "bfdc2f37c87af84a3ddd387e613697fae6342ae7"
+  },
+  "original_ops_tip_preserved_as_ancestor": "d069deb981e69614c5690f1e7695ec6f3e2fd816",
+  "remaining_openpine_branches": ["main", "release/v2.17", "release/v4.0.2", "release/5.0.0rc6"],
+  "historical_heads_unchanged": true,
+  "runtime_changes_during_integration": false,
+  "full_stage2_accepted": false,
+  "tradingview_verified": false,
+  "next_development_mode": "local_archive_then_explicit_publish_command"
+}
