@@ -168,7 +168,10 @@
     "docs/RC6_STAGE2_QUALIFIER_PUBLICATION.md",
     "verification/qualifier-joint-receipt-20260911.json",
     "docs/RC6_STAGE2_LIBRARY_METHODS.md",
-    "rc6_tests/test_rc6_library_methods.py"
+    "rc6_tests/test_rc6_library_methods.py",
+    "docs/RC6_STAGE2_METHOD_IDENTITY.md",
+    "rc6_tests/test_rc6_library_method_identity.py",
+    "verification/method-identity-inventory-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -859,5 +862,14 @@
     "full_stage2_accepted": false,
     "tradingview_verified": false,
     "documentation": "docs/RC6_STAGE2_LIBRARY_METHODS.md"
+  },
+  "library_method_identity_repair": {
+    "status": "candidate_pending_joint_ci",
+    "producer": "bac8db4a012f37aa6d50770c2cc1be3cbe047c9b",
+    "compiler": "b3df12d84e9471d872d4591a0c05500b4ca6f3f5",
+    "expected_inventory_count": 20586,
+    "added_cases": 60,
+    "removed_test_ids": 0,
+    "full_stage2_accepted": false
   }
 }
