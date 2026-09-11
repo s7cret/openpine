@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ast2python.lowering import (
     audit_pinelib_call_binding,
+    audit_pinelib_qualifier_binding,
     audit_pinelib_value_binding,
     load_pinelib_target_manifest,
 )
@@ -57,6 +58,27 @@ def binding_reasons(binding, version: int, *, source_parameters=None) -> list[st
         reasons.append("COMPILER_BINDING_TYPE_UNAVAILABLE")
     return sorted(set(reasons))
 
+
+
+def qualifier_binding_evidence(binding, version: int, source_parameters) -> dict:
+    """Qualifier-domain evidence, not whole-type compatibility or a runtime oracle.
+
+    Structural binding status is intentionally unchanged. A callable can handle
+    a constant while failing inclusion for the producer's complete series domain.
+    Keeping this separate avoids turning a passing example into full acceptance.
+    """
+    if not isinstance(binding, TargetCallBinding):
+        return {"status": "UNVERIFIED", "reasons": ["COMPILER_BINDING_MISSING"]}
+    reasons = list(audit_pinelib_qualifier_binding(
+        binding, source_parameters, pine_version=version,
+    ))
+    if not reasons:
+        status = "COMPATIBLE"
+    elif all(code.endswith("UNVERIFIED") for code in reasons):
+        status = "UNVERIFIED"
+    else:
+        status = "INCOMPATIBLE"
+    return {"status": status, "reasons": reasons}
 
 def build_builtin_surface(*, target=None) -> dict:
     """Enumerate every installed producer signature, without symbol-only fallbacks."""
@@ -134,6 +156,9 @@ def build_builtin_surface(*, target=None) -> dict:
                         "status": status,
                         "reasons": reasons,
                         "target_binding": binding.to_dict() if binding else None,
+                        "qualifier_contract": qualifier_binding_evidence(
+                            binding, version, contract["parameters"],
+                        ),
                         "oracle": "missing",
                     }
     values = [rows[key] for key in sorted(rows)]
@@ -145,6 +170,8 @@ def build_builtin_surface(*, target=None) -> dict:
             "denominator_kind": "all_installed_frontend_callable_signatures",
             "rows": values,
             "counts": dict(Counter(row["status"] for row in values)),
+            "qualifier_counts": dict(Counter(row["qualifier_contract"]["status"] for row in values)),
+            "qualifier_evidence_scope": "domain_inclusion_not_full_types_defaults_or_numerical_semantics",
             "full_catalog_verified": False,
             "tradingview_verified": False,
         }

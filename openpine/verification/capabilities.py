@@ -15,7 +15,9 @@ from pine2ast.catalog import CatalogRepository
 from openpine.runtime.strategy_host import strategy_host_surface
 from openpine.runtime.worker_capabilities import WORKER_CAPABILITIES
 from openpine.verification.identity import seal
-from openpine.verification.builtins import binding_reasons, callable_exists as _callable
+from openpine.verification.builtins import (
+    binding_reasons, callable_exists as _callable, qualifier_binding_evidence,
+)
 from pine2ast.semantic.signatures import SignatureResolver
 from pine2ast.versioning import PineVersionResolver
 
@@ -130,6 +132,10 @@ def build_capability_graph(mode: str = "interactive") -> dict[str, Any]:
                             "overload_id": binding_key[1],
                             "call_form": form,
                             "reasons": missing,
+                            "qualifier_contract": qualifier_binding_evidence(
+                                target.call_bindings.get(binding_key), version,
+                                candidate.get("parameters"),
+                            ),
                         }
                     )
                 if not frontend_available:
