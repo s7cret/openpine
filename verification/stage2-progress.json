@@ -163,7 +163,8 @@
     "verification/tuple-repair-verify-artifact-metadata.json",
     "verification/tuple-repair-cleanup-final-execution-review.json",
     "docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md",
-    "verification/recursive-wave-review-20260911.json"
+    "verification/recursive-wave-review-20260911.json",
+    "verification/recursive-wave-integration-20260911.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -173,7 +174,7 @@
   "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
   "latest_verified_source": "8aa6a3e4f6f172652daf3ba37aade9f21e122c6c",
   "latest_verified_tree": "2a7869613ed508f86e25b202a1302cc5e3164b6a",
-  "integrated_head": "88273b589a47fa8ad6424a7523d74f6a6856c413",
+  "integrated_head": "5fbb5907f44aefb1f56674d2be7781d9e7cda37c",
   "joint_verification_run": 34594834647,
   "publication_receipt": "docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md",
   "gate_results": {
@@ -763,7 +764,7 @@
     "deleted_temporary_branches": 6
   },
   "saved_recursive_wave": {
-    "status": "joint_linux_verified_pending_guarded_release_readback",
+    "status": "integrated_and_joint_linux_verified",
     "source": "8aa6a3e4f6f172652daf3ba37aade9f21e122c6c",
     "source_run": 34594834647,
     "selected_tests_per_interpreter": 20259,
@@ -771,6 +772,9 @@
     "added_tests": 3472,
     "compiler_normalized_target_qualifiers": "open_residual_normal_source_enforced_by_producer",
     "exported_imported_methods_bc": "design_only_not_implemented",
-    "full_stage2_accepted": false
+    "full_stage2_accepted": false,
+    "integrated_head": "5fbb5907f44aefb1f56674d2be7781d9e7cda37c",
+    "final_gate_run": 34597926403,
+    "integration_receipt": "verification/recursive-wave-integration-20260911.json"
   }
 }
