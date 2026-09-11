@@ -1,0 +1,84 @@
+name: Record integrated saved wave and archive completed working branch
+'on':
+  push:
+    branches: ['codex/recursive-method-contracts-20260908']
+    paths: ['.github/workflows/rc6-recursive-cleanup.yml']
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify coordinated releases and atomically record and archive
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          release='5fbb5907f44aefb1f56674d2be7781d9e7cda37c'
+          source='8aa6a3e4f6f172652daf3ba37aade9f21e122c6c'
+          branch='refs/heads/codex/recursive-method-contracts-20260908'
+          target='refs/heads/release/5.0.0rc6'
+          archive='refs/tags/archive/20260911/codex/recursive-method-contracts-20260908'
+          maintenance='refs/tags/archive/20260911/recursive-wave-cleanup'
+          sha=os.environ['GITHUB_SHA']
+          def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+          def refs():return {ref:tip for tip,ref in (x.split() for x in git('ls-remote','--refs','origin').splitlines())}
+          def write(path,value):
+              p=pathlib.Path(path);p.parent.mkdir(parents=True,exist_ok=True)
+              p.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          if os.environ['GITHUB_REPOSITORY']!='s7cret/openpine' or os.environ['GITHUB_REF']!=branch:raise SystemExit('wrong repository/ref')
+          before=refs()
+          if before.get(target)!=release or before.get(branch)!=sha or archive in before or maintenance in before:raise SystemExit('concurrent or conflicting refs')
+          git('merge-base','--is-ancestor',source,release)
+          pins={'pine2ast':'9820fe4f28d01d32d8a13f328517d9d7a5779497','pinelib':'97902943bd8f1300c3bb3e3e314465ac92fa057a','ast2python':'caadb136a52dcb49cea7bb838e8a0d5d2724cf30'}
+          actual={}
+          for repo,expected in pins.items():
+              text=git('ls-remote','--refs','https://github.com/s7cret/'+repo+'.git',target)
+              actual[repo]=text.split()[0] if text else None
+              if actual[repo]!=expected:raise SystemExit('coordinated release mismatch: '+repo)
+          git('checkout','--detach',release)
+          progress=json.loads(pathlib.Path('verification/stage2-progress.json').read_text())
+          if progress['full_stage2_accepted'] or progress['latest_verified_source']!=source:raise SystemExit('unexpected stage status')
+          progress['integrated_head']=release
+          progress['saved_recursive_wave'].update({'status':'integrated_and_joint_linux_verified','integrated_head':release,'final_gate_run':34597926403,'integration_receipt':'verification/recursive-wave-integration-20260911.json'})
+          path='verification/recursive-wave-integration-20260911.json'
+          if path not in progress['evidence_paths']:progress['evidence_paths'].append(path)
+          write('verification/stage2-progress.json',progress)
+          integration={'schema_id':'openpine.recursive_wave_integration.v1','date':'2026-09-11','integrated_head':release,'integrated_tree':'acb5011aee9d48fd1ac92f5680b904b13779cb54','executed_runtime_source':source,'functional_run':34594834647,'final_gate_run':34597926403,'tests_per_interpreter':20259,'metadata_regressions_per_interpreter':80,'language_release_refs':actual,'archived_source_tip':release,'archive_tag':archive,'maintenance_tag':maintenance,'full_stage2_accepted':False,'tradingview_verified':False,'final_ref_mutation':'guarded_atomic_fast_forward_and_archive_recorded_in_workflow_artifact'}
+          write(path,integration)
+          p=pathlib.Path('docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md')
+          addition='\n## Подтверждённая интеграция 11 сентября\n\nКомплект перенесён обычным fast-forward: OpenPine `'+release+'`, Pine2AST `'+pins['pine2ast']+'`, PineLib `'+pins['pinelib']+'`, Ast2Python `'+pins['ast2python']+'`. Remote refs повторно прочитаны перед публикацией. Финальный gate `34597926403` на двух интерпретаторах подтвердил неизменённый Stage1 агрегатор, 80 метаданных/архитектурных регрессий, постоянный lint/build и одинаковый итоговый tree. Эти 80 случаев пересекаются с исходными 20 259 и не увеличивают знаменатель. Последующий коммит меняет только документы и progress/integration receipts, не runtime/tests/CI.\n\nОбъединённая рабочая ветка OpenPine сохраняется точным тегом и удаляется под lease-ограничениями; итоговое чтение refs хранится в артефакте этого workflow. Остаются четыре основные ветки. Другие старые ветки языковых библиотек в этот шаг не удаляются. Full Stage2 и внешний TradingView oracle не объявлены завершёнными.\n'
+          p.write_text(p.read_text()+addition,encoding='utf-8')
+          p=pathlib.Path('docs/RC6_REVIEW_PROGRESS.md');text=p.read_text()
+          text=text.replace('## Принятая база и проверенный следующий комплект','## Интегрированная RC6 и проверенный комплект')
+          text=text.replace('Сохранённый исходник следующего комплекта:','В RC6 интегрирован комплект на основе исходника:')
+          text=text.replace('Рабочая `codex/recursive-method-contracts-20260908` сохраняется до подтверждённой интеграции.','Объединённая `codex/recursive-method-contracts-20260908` сохраняется тегом `archive/20260911/codex/recursive-method-contracts-20260908` и удаляется guarded atomic cleanup.')
+          text+='\n## Итог интеграции\n\nПодтверждён согласованный host `'+release+'` и три библиотечные RC6-вершины. Финальный gate `34597926403` повторил неизменённый агрегатор на реальных execution receipts, выполнил 80 метаданных/архитектурных регрессий на каждом Python и постоянный lint/build. Итоговые source trees и aggregate reports совпали. Это дополнительная приёмка метаданных, не ещё один полный прогон 20 259 случаев. Последний документационный коммит не меняет runtime, tests, corpus или CI. Детали — `verification/recursive-wave-integration-20260911.json`.\n'
+          p.write_text(text,encoding='utf-8')
+          allowed={'verification/stage2-progress.json','verification/recursive-wave-integration-20260911.json','docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md','docs/RC6_REVIEW_PROGRESS.md'}
+          git('add','--',*sorted(allowed))
+          if set(git('diff','--cached','--name-only',release).splitlines())!=allowed:raise SystemExit('unexpected runtime change')
+          git('config','user.name','OpenPine Review');git('config','user.email','openpine-review@users.noreply.github.com')
+          git('commit','-m','docs(stage2): record coordinated integration and archived completed branches')
+          final=git('rev-parse','HEAD');git('merge-base','--is-ancestor',release,final)
+          git('push','--atomic','--force-with-lease='+target+':'+release,'--force-with-lease='+branch+':'+sha,'--force-with-lease='+archive+':','--force-with-lease='+maintenance+':','origin',final+':'+target,release+':'+archive,sha+':'+maintenance,':'+branch)
+          after=refs();expected=dict(before);expected.pop(branch);expected.update({target:final,archive:release,maintenance:sha})
+          if after!=expected:raise SystemExit('final refs differ from exact plan')
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'publication';out.mkdir()
+          for name,value in [('before',before),('after',after),('receipt',{**integration,'final_head':final,'final_tree':git('rev-parse','HEAD^{tree}'),'cleanup_run':int(os.environ['GITHUB_RUN_ID']),'branch_cleanup_confirmed':True})]:write(out/(name+'.json'),value)
+          git('update-ref','refs/heads/final-saved-wave',final);git('bundle','create',str(out/'published.bundle'),'refs/heads/final-saved-wave')
+          for name in allowed:
+              dest=out/'metadata'/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(pathlib.Path(name).read_bytes())
+          print(json.dumps({'head':final,'branches':{k:v for k,v in after.items() if k.startswith('refs/heads/')},'language_heads':actual},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: saved-wave-final-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/publication/
+          if-no-files-found: error
+          retention-days: 30
