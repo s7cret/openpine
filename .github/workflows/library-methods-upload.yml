@@ -1,0 +1,32 @@
+name: Publish exact library method host candidate
+'on':
+  push:
+    branches: ['ops/publish-library-methods-20260911']
+permissions:
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pine2ast
+          ref: b63ff45446bbe50b5b23375fd5e8760fdcf7cc34
+          path: publisher
+          sparse-checkout: .github/method-upload/publish.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher/.github/method-upload/publish.py "$RUNNER_TEMP/publish.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify exact patch and publish candidate only
+        run: python "$RUNNER_TEMP/publish.py"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: method-source-${{ github.run_id }}
+          path: ${{ runner.temp }}/publication/
+          if-no-files-found: error
+          retention-days: 30
