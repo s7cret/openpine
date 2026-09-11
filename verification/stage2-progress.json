@@ -180,7 +180,10 @@
     "rc6_tests/test_rc6_explicit_method_calls.py",
     "verification/explicit-method-inventory-review.json",
     "verification/explicit-method-matrix-review.json",
-    "verification/explicit-method-local-receipt.json"
+    "verification/explicit-method-local-receipt.json",
+    "docs/RC6_STAGE2_CONSUMER_LIBRARIES.md",
+    "rc6_tests/test_rc6_consumer_library_project.py",
+    "rc6_tests/test_rc6_consumer_library_api.py"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -968,5 +971,35 @@
     "new_cases_passed": 136,
     "new_worker_failures": 4,
     "all_selected_outcomes_green": false
+  },
+  "consumer_libraries_20260912": {
+    "status": "implemented_local_pending_joint",
+    "base": "18981fb0b5ee9cfc3c4aa0a2986ca685854cf647",
+    "source_pins": {
+      "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "ast2python": "756d9c73ae4346e8645d413d6ae6cc2d50a6d7b7",
+      "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748",
+      "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "pine2ast": "9bc5a9efff0e32ec5393ccd10ec7081acdeeb810"
+    },
+    "scope": [
+      "explicit_inline_and_directory_lock_inputs",
+      "standard_cli_compile_validate",
+      "optional_http_compile_validate_inputs",
+      "original_virtual_source_artifact_roundtrip",
+      "source_bound_diagnostic_projection",
+      "detached_queued_compilation_and_local_stale_activation_guard"
+    ],
+    "remaining_work_item": "IMPORT-04",
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "remote_mutations": [],
+    "documentation": "docs/RC6_STAGE2_CONSUMER_LIBRARIES.md",
+    "full_joint_ci": "not_run",
+    "python311": "not_run",
+    "browser": "not_run",
+    "current_builtin_index": "not_rerun"
   }
 }

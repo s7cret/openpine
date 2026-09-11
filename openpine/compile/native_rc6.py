@@ -13,6 +13,9 @@ from ast2python.errors import BundleInvariantError
 from ast2python.lowering import load_pinelib_target_manifest
 from openpine_contracts import SchemaValidationError, validate_payload
 from pine2ast.hardening.consumer_bundle import ConsumerBundleError, build_consumer_bundle
+from .source_context import PreparedSource, prepare_source, projected_source_map
+from .library_inputs import requested_lock_hash
+from .diagnostics import exception_diagnostics, frontend_diagnostics, format_diagnostic
 
 
 _SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -42,6 +45,7 @@ class CompileResult:
     frontend_artifact: dict[str, Any] | None = None
     support_profile: dict[str, Any] | None = None
     ast_artifact: dict[str, Any] | None = None
+    diagnostics: list[dict[str, Any]] = field(default_factory=list)
 
 
 class CompilerAdapter(Protocol):
@@ -109,21 +113,25 @@ class NativeRC6CompilerAdapter:
         }
         compile_meta.update(self.library_status().versions)
 
+        requested = requested_lock_hash(library_store=kwargs.get("library_store"), library_payload=kwargs.get("library_payload"))
+        if requested is not None:
+            compile_meta["requested_library_lock_hash"] = requested
+        bundle = None
+        prepared = PreparedSource(source_text, source_name)
+        phase = "library_admission"
+        compile_meta.update(prepared.metadata())
         try:
-            linked_source = None
-            if kwargs.get("library_store") is not None:
-                from pine2ast.libraries import has_library_imports, link_libraries
-                if has_library_imports(source_text, source_name=source_name):
-                    linked_source = link_libraries(source_text, kwargs["library_store"], source_name=source_name)
-                    compile_meta["library_linkage"] = linked_source.receipt()
-                    source_text = linked_source.code
+            prepared = prepare_source(source_text, source_name,
+                library_store=kwargs.get("library_store"), library_payload=kwargs.get("library_payload"))
+            compile_meta.update(prepared.metadata())
+            linked_source = prepared.linked
+            phase = "frontend"
             bundle = build_consumer_bundle(
-                source_text,
-                source_name=source_name,
-                producer_commit=pine2ast_commit,
-                require_clean_frontend=True,
-                linked_source=linked_source,
+                prepared.code, source_name=source_name, producer_commit=pine2ast_commit,
+                require_clean_frontend=True, linked_source=linked_source,
             )
+            diagnostics = frontend_diagnostics(bundle.get("diagnostics", []), prepared)
+            phase = "compiler"
             target = load_pinelib_target_manifest()
             compiled = compile_consumer_bundle(
                 bundle,
@@ -145,6 +153,7 @@ class NativeRC6CompilerAdapter:
             validate_payload("openpine.generated_artifact.v3", generated_artifact)
             source_map = compiled.emitted.source_map.to_dict()
             from openpine.runtime.strategy_host import validate_strategy_host
+            phase = "host_admission"
             host_evidence = validate_strategy_host(compiled.emitted.code, generated_artifact["version_context"]["pine_version"])
             linked = bundle.get("linked_artifacts")
             linked_artifacts = linked if isinstance(linked, Mapping) else {}
@@ -161,8 +170,12 @@ class NativeRC6CompilerAdapter:
                     "input_descriptors": list(compiled.emitted.script_metadata.get("inputs", {}).values()),
                 }
             )
+            projection = projected_source_map(source_map, prepared)
+            if projection is not None:
+                compile_meta["original_source_projection"] = projection
             return CompileResult(
                 success=True,
+                diagnostics=diagnostics,
                 python_code=compiled.emitted.code,
                 compile_meta=compile_meta,
                 ast_json=json.dumps(bundle["ast"], ensure_ascii=False, sort_keys=True),
@@ -182,13 +195,38 @@ class NativeRC6CompilerAdapter:
             TypeError,
             ValueError,
         ) as exc:
-            code = getattr(exc, "code", None)
-            message = f"{code}: {exc}" if isinstance(code, str) else str(exc)
+            diagnostics = exception_diagnostics(exc, prepared, phase=phase, bundle=bundle)
             return CompileResult(
-                success=False,
-                errors=[message],
-                compile_meta=compile_meta,
+                success=False, errors=[format_diagnostic(d) for d in diagnostics],
+                compile_meta=compile_meta, diagnostics=diagnostics,
             )
+
+    def validate(self, source_text: str, **kwargs: Any) -> CompileResult:
+        """Use the same explicit inputs and clean producer gate without emitting code."""
+        commits = _producer_commits(kwargs.get("producer_commits"))
+        if commits is None:
+            return CompileResult(success=False, errors=["exact producer_commits required"])
+        name = str(kwargs.get("source_name", "<memory>"))
+        prepared = PreparedSource(source_text, name)
+        meta = {"adapter": "native-rc6-python-library", "producer_commits": dict(zip(("pine2ast", "ast2python"), commits)),
+                **prepared.metadata()}
+        requested = requested_lock_hash(library_store=kwargs.get("library_store"), library_payload=kwargs.get("library_payload"))
+        if requested is not None:
+            meta["requested_library_lock_hash"] = requested
+        phase = "library_admission"
+        try:
+            prepared = prepare_source(source_text, name, library_store=kwargs.get("library_store"),
+                                      library_payload=kwargs.get("library_payload"))
+            meta.update(prepared.metadata())
+            phase = "frontend"
+            bundle = build_consumer_bundle(prepared.code, source_name=name, producer_commit=commits[0],
+                                           require_clean_frontend=True, linked_source=prepared.linked)
+            return CompileResult(success=True, consumer_bundle=bundle, compile_meta=meta,
+                                 diagnostics=frontend_diagnostics(bundle.get("diagnostics", []), prepared))
+        except (ConsumerBundleError, ImportError, OSError, TypeError, ValueError) as exc:
+            diagnostics = exception_diagnostics(exc, prepared, phase=phase)
+            return CompileResult(success=False, errors=[format_diagnostic(d) for d in diagnostics],
+                                 compile_meta=meta, diagnostics=diagnostics)
 
 
 def _dict_or_none(value: object) -> dict[str, Any] | None:

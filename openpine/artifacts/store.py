@@ -130,9 +130,24 @@ class ArtifactStore:
         if not isinstance(pine2ast_commit, str) or not isinstance(ast2python_commit, str):
             raise ValueError("compile metadata producer commits are malformed")
 
+        from openpine.compile.source_context import stored_source_context, projected_source_map
+
+        prepared = stored_source_context(source_text, consumer_bundle)
+        if prepared.linked is not None:
+            receipt = prepared.linked.receipt()
+            expected_dependencies = {**receipt["dependencies"], "@linkage": receipt["content_hash"]}
+            if generated_artifact.get("external_library_dependency_hashes") != expected_dependencies:
+                raise ValueError("generated artifact dependencies differ from sealed library context")
+            if compile_meta.get("library_linkage") != receipt:
+                raise ValueError("compile metadata linkage differs from sealed library context")
+            projection = compile_meta.get("original_source_projection")
+            if projection is not None and projection != projected_source_map(source_map, prepared):
+                raise ValueError("original source projection differs from sealed source map")
+        elif generated_artifact.get("external_library_dependency_hashes"):
+            raise ValueError("artifact has external dependencies without a sealed library context")
         verify_consumer_bundle(
             consumer_bundle,
-            source=source_text,
+            source=prepared.code,
             expected_producer_commit=pine2ast_commit,
         )
         validate_payload("openpine.generated_artifact.v3", generated_artifact)

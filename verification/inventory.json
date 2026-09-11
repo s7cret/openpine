@@ -15,8 +15,8 @@
     "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
   },
   "openpine": {
-    "count": 9537,
-    "sha256": "sha256:73ae680f1e365fb1c8d164d7141c64f354c5d299b3e6beda1aad8b944ddb38f1",
+    "count": 9635,
+    "sha256": "sha256:3bc08f61bc935d1f62167da9bef9b4d93238b1d15e72f11283b48774203b4f21",
     "deselected": 0
   },
   "openpine-contracts": {
@@ -30,8 +30,8 @@
     "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
   },
   "pine2ast": {
-    "count": 3046,
-    "sha256": "sha256:832fd6eaa87bf14086a673a9f3bfc3682b02537ae45c63c46f0b0c8b047b5a12",
+    "count": 3059,
+    "sha256": "sha256:c918291594e2d64e02f95d84afe946e37573953f3874ff5e6fb2bcd3c3bfdd4e",
     "deselected": 0
   },
   "pinelib": {

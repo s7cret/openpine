@@ -1,6 +1,6 @@
 {
   "schema_id": "openpine.stage2_remaining_matrix.v1",
-  "revision": 2,
+  "revision": 3,
   "baseline": "5b714812dd1cdbec89827ff512e8b9cfecf92f12",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
   "tasks": [
@@ -181,13 +181,16 @@
       "id": "IMPORT-04",
       "criterion": "imports",
       "title": "Обычный потребительский путь lock и исходных diagnostics",
-      "status": "partial",
+      "status": "implemented_local_pending_joint",
       "owner": "openpine",
       "completion": "Закрыть library-lock admission и проекцию ошибок в обычном compile API/CLI. Полный browser UX остаётся этапом 7; сетевой latest resolver не вводить.",
       "evidence": [
-        "docs/RC6_STAGE2_LOCKED_IMPORTS.md"
+        "docs/RC6_STAGE2_LOCKED_IMPORTS.md",
+        "docs/RC6_STAGE2_CONSUMER_LIBRARIES.md",
+        "rc6_tests/test_rc6_consumer_library_project.py",
+        "rc6_tests/test_rc6_consumer_library_api.py"
       ],
-      "notes": ""
+      "notes": "Обычный CLI/Python/HTTP lock admission, shared compile/validate, artifact persistence/readback and original-source diagnostics implemented. Full joint CI and browser/runtime traceback integration not claimed; source mapping preserves normalized Unicode coordinates."
     },
     {
       "id": "BUILTIN-01",
@@ -243,5 +246,5 @@
   ],
   "full_stage2_accepted": false,
   "tradingview_verified": false,
-  "content_hash": "sha256:27815159c8bb189ce49b7524c6ab8b3c858774e571edc34c424e950a9b670c32"
+  "content_hash": "sha256:6b53552b9cbc266164649ee8a834d1776219a0dc2d6155384e8282cd1050fe81"
 }

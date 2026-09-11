@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+import uuid
+
+from pydantic import BaseModel, ConfigDict, Field
+from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 
@@ -15,6 +19,36 @@ log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/pine", tags=["pine-operations"])
 
 
+class LibraryInputs(BaseModel):
+    """Inline locked source snapshot, never a server filesystem path."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    lock: dict[str, object]
+    sources: dict[str, str] = Field(min_length=1, max_length=64)
+    expected_lock_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
+class PineCompileRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    libraries: LibraryInputs | None = None
+
+
+def _admit_request_libraries(body: PineCompileRequest | None):
+    from openpine.compile.library_inputs import admit_library_payload
+    from pine2ast.libraries import LibraryError
+
+    try:
+        return admit_library_payload(body.libraries.model_dump() if body and body.libraries else None)
+    except (LibraryError, UnicodeError) as exc:
+        raise HTTPException(400, detail={"code": getattr(exc, "code", "P2A_LIBRARY_INPUT"), "message": str(exc)}) from exc
+
+
+def _source_snapshot(source):
+    from openpine.pine.source import PineSource
+
+    return PineSource(id=source.id, name=source.name, source_text=source.source_text,
+                      source_path=getattr(source, "source_path", None))
+
+
 def _path_is_under(path: Path, root: Path) -> bool:
     try:
         path.relative_to(root)
@@ -23,7 +57,7 @@ def _path_is_under(path: Path, root: Path) -> bool:
     return True
 
 
-def _compile_native_rc6(source: object, *, producer_commits: dict[str, str]):
+def _compile_native_rc6(source: object, *, producer_commits: dict[str, str], library_store=None):
     from openpine.compile import NativeRC6CompilerAdapter
 
     name = str(getattr(source, "name"))
@@ -33,11 +67,12 @@ def _compile_native_rc6(source: object, *, producer_commits: dict[str, str]):
         module_name=name,
         source_name=str(source_path or f"{name}.pine"),
         producer_commits=producer_commits,
+        library_store=library_store,
     )
 
 
 def _validate_native_rc6(
-    source: object, *, producer_commit: str
+    source: object, *, producer_commit: str, library_store=None
 ) -> dict[str, object]:
     from pine2ast.hardening.consumer_bundle import (
         build_consumer_bundle,
@@ -47,14 +82,17 @@ def _validate_native_rc6(
     name = str(getattr(source, "name"))
     source_text = str(getattr(source, "source_text"))
     source_path = getattr(source, "source_path", None)
+    from openpine.compile.source_context import prepare_source
+    prepared = prepare_source(source_text, str(source_path or f"{name}.pine"), library_store=library_store)
     bundle = build_consumer_bundle(
-        source_text,
+        prepared.code,
         source_name=str(source_path or f"{name}.pine"),
         producer_commit=producer_commit,
+        linked_source=prepared.linked,
     )
     verify_consumer_bundle(
         bundle,
-        source=source_text,
+        source=prepared.code,
         expected_producer_commit=producer_commit,
     )
     return bundle
@@ -97,6 +135,7 @@ async def compile_pine(
     source_id: str,
     background_tasks: BackgroundTasks,
     state: GatewayState = Depends(get_state),
+    body: PineCompileRequest | None = None,
 ) -> dict[str, str]:
     """Compile a Pine source into an artifact (async with progress)."""
     from openpine.gateway.side_effects import persist_gateway_job, require_http_admit
@@ -107,7 +146,16 @@ async def compile_pine(
     except KeyError:
         raise HTTPException(404, f"Pine source not found: {source_id}")
 
-    operation_id = f"compile_{source_id}_{int(__import__('time').time() * 1000)}"
+    # Snapshot before scheduling: source edits and caller mutations cannot change
+    # the queued compilation. Filesystem paths are never accepted over HTTP.
+    libraries = _admit_request_libraries(body)
+    src = _source_snapshot(src)
+    from openpine.build_identity import BuildIdentityError, compiler_producer_commits
+    try:
+        producer_commits = dict(compiler_producer_commits())
+    except BuildIdentityError as exc:
+        raise HTTPException(503, detail={"code": "OPENPINE_BUILD_IDENTITY", "message": str(exc)}) from exc
+    operation_id = f"compile_{source_id}_{uuid.uuid4().hex}"
     persist_gateway_job(
         state,
         job_id=operation_id,
@@ -122,66 +170,32 @@ async def compile_pine(
                 operation_id, "compile", "running", 0.1, "Building RC6 consumer bundle..."
             )
             await ws_manager.broadcast_progress(operation_id)
-            from openpine.build_identity import compiler_producer_commits
-            producer_commits = compiler_producer_commits()
-            compilation = _compile_native_rc6(
-                src, producer_commits=producer_commits
+            compilation = await run_in_threadpool(
+                _compile_native_rc6, src, producer_commits=producer_commits, library_store=libraries
             )
+            from openpine.compile.pipeline import persist_compile_result
+            persisted = persist_compile_result(src, compilation, params_hash="", artifact_store=state.artifact_store)
+            artifact_id = persisted["artifact_id"]
             if not compilation.success:
                 ws_manager.update_progress(
-                    operation_id,
-                    "compile",
-                    "failed",
-                    0.6,
-                    f"RC6 compile failed: {compilation.errors[:3]}",
+                    operation_id, "compile", "failed", 1.0, "Pine compilation failed",
+                    detail={"artifact_id": artifact_id, "diagnostics": compilation.diagnostics, "errors": compilation.errors},
                 )
                 await ws_manager.broadcast_progress(operation_id)
                 return
+            # A completed background compile must not activate an artifact for a
+            # different revision edited while it was running.
+            try:
+                current_source = state.pine_registry.get_source(source_id)
+                activated = current_source.source_text == src.source_text
+            except KeyError:
+                activated = False
+            if activated:
+                state.pine_registry.set_active_artifact(source_id, artifact_id)
 
             ws_manager.update_progress(
-                operation_id, "compile", "running", 0.7, "Saving artifact..."
-            )
-            await ws_manager.broadcast_progress(operation_id)
-            generated_artifact = compilation.generated_artifact
-            consumer_bundle = compilation.consumer_bundle
-            source_map = compilation.source_map
-            if (
-                generated_artifact is None
-                or consumer_bundle is None
-                or source_map is None
-                or compilation.python_code is None
-                or compilation.ast_json is None
-            ):
-                raise RuntimeError("successful RC6 compile returned incomplete artifacts")
-            artifact_id = state.artifact_store.artifact_id_for_envelope(
-                generated_artifact
-            )
-            compile_meta = {
-                **compilation.compile_meta,
-                "compile_status": "OK",
-                "source_id": source_id,
-                "artifact_id": artifact_id,
-                "generated_artifact_hash": generated_artifact["content_hash"],
-            }
-            state.artifact_store.save_artifact(
-                artifact_id=artifact_id,
-                source_id=source_id,
-                params_hash="",
-                python_code=compilation.python_code,
-                compile_meta=compile_meta,
-                source_text=src.source_text,
-                ast_json=compilation.ast_json,
-                source_map=source_map,
-                generated_artifact=generated_artifact,
-                consumer_bundle=consumer_bundle,
-                frontend_artifact=compilation.frontend_artifact,
-                support_profile=compilation.support_profile,
-                ast_artifact=compilation.ast_artifact,
-            )
-            state.pine_registry.set_active_artifact(source_id, artifact_id)
-
-            ws_manager.update_progress(
-                operation_id, "compile", "completed", 1.0, f"Compiled: {artifact_id}"
+                operation_id, "compile", "completed", 1.0, f"Compiled: {artifact_id}",
+                detail={"artifact_id": artifact_id, "activated": activated, "diagnostics": compilation.diagnostics}
             )
             await ws_manager.broadcast_progress(operation_id)
             log.info("pine_compiled", source_id=source_id, artifact_id=artifact_id)
@@ -199,29 +213,35 @@ async def compile_pine(
 async def validate_pine(
     source_id: str,
     state: GatewayState = Depends(get_state),
+    body: PineCompileRequest | None = None,
 ) -> dict[str, object]:
-    """Validate a Pine source without compiling."""
+    """Validate through the same source preparation path; no artifact is activated."""
+    from openpine.build_identity import compiler_producer_commits
+    from openpine.compile import NativeRC6CompilerAdapter
+
     try:
-        src = state.pine_registry.get_source(source_id)
+        src = _source_snapshot(state.pine_registry.get_source(source_id))
     except KeyError:
         raise HTTPException(404, f"Pine source not found: {source_id}")
-
+    libraries = _admit_request_libraries(body)
+    from openpine.build_identity import BuildIdentityError
     try:
-        from openpine.build_identity import compiler_producer_commits
-
-        commits = compiler_producer_commits()
-        bundle = _validate_native_rc6(
-            src, producer_commit=commits["pine2ast"]
-        )
-        return {
-            "source_id": source_id,
-            "valid": True,
-            "diagnostics": [],
-            "consumer_bundle_hash": bundle["content_hash"],
-            "release_axes": bundle["release_axes"],
-        }
-    except Exception as exc:
-        return {"source_id": source_id, "valid": False, "error": str(exc)}
+        commits = dict(compiler_producer_commits())
+    except BuildIdentityError as exc:
+        return {"source_id": source_id, "valid": False, "error": str(exc), "errors": [str(exc)],
+                "diagnostics": [{"code": "OPENPINE_BUILD_IDENTITY", "message": str(exc),
+                                 "severity": "ERROR", "phase": "compiler_identity", "location": None}]}
+    validation = await run_in_threadpool(
+        NativeRC6CompilerAdapter().validate, src.source_text,
+        source_name=src.source_path or f"{src.name}.pine", producer_commits=commits, library_store=libraries,
+    )
+    result = {"source_id": source_id, "valid": validation.success, "diagnostics": validation.diagnostics}
+    if validation.success:
+        bundle = validation.consumer_bundle
+        result.update(consumer_bundle_hash=bundle["content_hash"], release_axes=bundle["release_axes"])
+    else:
+        result.update(error="; ".join(validation.errors), errors=validation.errors)
+    return result
 
 
 @router.get("/{source_id}/artifacts")
@@ -295,6 +315,8 @@ async def inspect_artifact(
         "artifact_id": artifact_id,
         "source_id": source_id,
         "compile_meta": artifact.get("compile_meta", {}),
+        "structured_diagnostics": artifact.get("compile_meta", {}).get("diagnostics", []),
+        "original_source_projection": artifact.get("compile_meta", {}).get("original_source_projection"),
     }
 
     # Read generated Python if exists
