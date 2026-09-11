@@ -1,0 +1,4 @@
+//@version=3
+study("Independent numeric closure")
+result = rsi(close, 5) // PRIMARY
+plot(result)

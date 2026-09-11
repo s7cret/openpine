@@ -1,0 +1,23 @@
+{
+  "schema_id": "openpine.remaining_matrix_review.v1",
+  "content_hash": "sha256:8680c95271b9c0c7d9176ed5ca3d31b67a370d14106c185f570fcbdbb07726a0",
+  "ids": [
+    "CAT-01",
+    "CAT-02",
+    "CAT-03",
+    "CAT-04",
+    "STATE-01",
+    "STATE-02",
+    "STATE-03",
+    "STATE-04",
+    "IMPORT-01",
+    "IMPORT-02",
+    "IMPORT-03",
+    "IMPORT-04",
+    "BUILTIN-01",
+    "BUILTIN-02",
+    "BUILTIN-03",
+    "BUILTIN-04"
+  ],
+  "policy": "Explicit review required for changing scope/status; this is not full stage acceptance."
+}

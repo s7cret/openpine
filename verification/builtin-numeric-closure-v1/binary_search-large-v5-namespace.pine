@@ -1,0 +1,10 @@
+//@version=5
+indicator("Independent numeric closure")
+a = array.new_float(0)
+array.push(a, -1000000000000.0)
+array.push(a, -4000000.0)
+array.push(a, 0.0)
+array.push(a, 4000000.0)
+array.push(a, 1000000000000.0)
+result = array.binary_search(a, close) // PRIMARY
+plot(result)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Independent numeric closure")
+result = ta.tsi(close, 2, 3) // PRIMARY
+plot(result)

@@ -25,6 +25,17 @@ def main(argv=None) -> int:
     builtin_expected.add_argument("--assignments", type=Path, required=True)
     builtin_expected.add_argument("--expected-hash", required=True)
     builtin_expected.add_argument("--output", type=Path, required=True)
+    index = commands.add_parser("builtin-index")
+    index.add_argument("--host-root", type=Path, required=True)
+    index.add_argument("--evidence", type=Path, required=True, action="append")
+    index.add_argument("--surface-lock", type=Path, required=True)
+    index.add_argument("--plan", type=Path, required=True)
+    index.add_argument("--expected-plan-hash", required=True)
+    index.add_argument("--output", type=Path, required=True)
+    remaining = commands.add_parser("stage2-remaining")
+    remaining.add_argument("--host-root", type=Path, required=True)
+    remaining.add_argument("--builtin-index", type=Path, required=True)
+    remaining.add_argument("--output", type=Path, required=True)
     compare = commands.add_parser("compare")
     compare.add_argument("--corpus", type=Path, required=True)
     compare.add_argument("--observations", type=Path, required=True)
@@ -40,7 +51,28 @@ def main(argv=None) -> int:
 
         run_stage_gate(args.host_root, args.stack_root, args.evidence)
         return 0
-    if args.command == "architecture":
+    if args.command == "stage2-remaining":
+        from openpine.verification.stage2_remaining import build_stage2_remaining
+
+        report = build_stage2_remaining(args.host_root, read_json(args.builtin_index))
+    elif args.command == "builtin-index":
+        from openpine.verification.builtins import build_builtin_surface
+        from openpine.verification.evidence_index import build_evidence_index
+        from openpine.verification.identity import verify
+
+        plan = read_json(args.plan)
+        verify(plan, "openpine.builtin_evidence_plan.v1")
+        if plan["content_hash"] != args.expected_plan_hash:
+            raise ValueError("evidence plan changed: review the required groups explicitly")
+        report = build_evidence_index(
+            build_builtin_surface(),
+            read_json(args.surface_lock),
+            plan,
+            host_root=args.host_root,
+            evidence_roots=args.evidence,
+            source_pins=read_json(args.host_root / "docs/RC6_LIFECYCLE_SOURCES.json"),
+        )
+    elif args.command == "architecture":
         from openpine.verification.architecture import check_architecture
 
         report = check_architecture(args.stack_root)

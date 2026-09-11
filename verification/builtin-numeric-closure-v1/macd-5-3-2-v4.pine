@@ -1,0 +1,6 @@
+//@version=4
+study("Independent numeric closure")
+[line, signal, histogram] = macd(close, 5, 3, 2) // PRIMARY
+plot(line)
+plot(signal)
+plot(histogram)
