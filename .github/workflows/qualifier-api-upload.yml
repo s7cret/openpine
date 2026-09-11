@@ -1,0 +1,47 @@
+name: Preserve original qualifier candidate via API upload
+'on':
+  push:
+    branches: ['ops/publish-qualifiers-api-20260911']
+permissions:
+  contents: write
+concurrency:
+  group: qualifier-api-upload
+  cancel-in-progress: false
+jobs:
+  publish-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pinelib
+          ref: effe092f23da23106d3a93ae14205fc5261b877c
+          path: publisher
+          sparse-checkout: .github/qualifier-upload/publish.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - run: cp publisher/.github/qualifier-upload/publish.py "$RUNNER_TEMP/publish.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Assemble original bundle and verify exact source identities
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('.github/qualifier-upload')
+          plan=json.loads((root/'plan.json').read_text())
+          parts=sorted((root/'bundle').glob('part*'))
+          if [p.name for p in parts] != [f'part{i:02}' for i in range(plan['bundle_parts'])]:
+              raise SystemExit('missing or unexpected bundle part')
+          data=bytes.fromhex(''.join(p.read_text() for p in parts))
+          (root/'source.bundle').write_bytes(data)
+          PY
+          python "$RUNNER_TEMP/publish.py"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qualifier-source-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/qualifier-publication/
+          if-no-files-found: error
+          retention-days: 30
