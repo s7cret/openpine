@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Archive exact tips and atomically remove only the three finished branches
+      - name: Preserve history and atomically remove only the three finished branches
         shell: bash
         run: |
           python - <<'PY'
@@ -35,7 +35,8 @@ jobs:
           qualifier = '4d83645ea6373e74530e13c4cdcc48779803c836'
           current = os.environ['GITHUB_SHA']
           require(os.environ['GITHUB_REPOSITORY'] == repo and os.environ['GITHUB_REF'] == 'refs/heads/' + ops, 'wrong repository or branch')
-          require(git('rev-parse', current + '^') == original_ops, 'unexpected maintenance ancestry')
+          require(git('rev-parse', current + '^') == '3e040c3606862a6fede218153910e0c5cf950aa9', 'unexpected maintenance parent')
+          git('merge-base', '--is-ancestor', original_ops, current)
           evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'archive-evidence'
           evidence.mkdir()
           before = refs()
@@ -56,11 +57,13 @@ jobs:
               git('merge-base', '--is-ancestor', commit, release)
           require(git('rev-parse', release + '^{tree}') == '7e85951eb7e7b307618d923eb7d4e5ae42071214', 'release does not match tested tree')
           require(git('diff', '--name-only', '52a1130192aa695fe29b9dbe947cfa5bb991e359', original_ops).splitlines() == ['.github/workflows/stage2-review-source.yml'], 'review branch contains unmerged functional changes')
+          # Archive the current maintenance tip. Its ancestry retains the exact
+          # original review and failed cleanup commits without republishing an old
+          # workflow snapshot through an Actions token lacking workflows scope.
           archived = {
               'refs/tags/archive/20260911/stage2/library-methods-20260911': source,
               'refs/tags/archive/20260911/stage2/qualifier-boundary-20260911': qualifier,
-              'refs/tags/archive/20260911/' + ops: original_ops,
-              'refs/tags/archive/20260911/ops/stage2-methods-cleanup': current,
+              'refs/tags/archive/20260911/' + ops: current,
           }
           leases = ['--force-with-lease=' + ref + ':' + tip for ref, tip in temporary.items()]
           updates = [':' + ref for ref in temporary]
@@ -75,7 +78,7 @@ jobs:
           expected.update(archived)
           (evidence / 'after.json').write_text(json.dumps(after, indent=2) + '\n')
           require(after == expected, 'post-archive refs differ from plan')
-          receipt = {'repository': repo, 'release': release, 'tested_tree': '7e85951eb7e7b307618d923eb7d4e5ae42071214', 'merged_pr': 16, 'joint_run': 34639113593, 'archived': archived, 'deleted_branches': sorted(temporary), 'remaining_branches': primary, 'source_changed': False, 'full_stage2_accepted': False}
+          receipt = {'repository': repo, 'release': release, 'tested_tree': '7e85951eb7e7b307618d923eb7d4e5ae42071214', 'merged_pr': 16, 'joint_run': 34639113593, 'archived': archived, 'original_review_commit_preserved_in_archive_ancestry': original_ops, 'deleted_branches': sorted(temporary), 'remaining_branches': primary, 'release_source_changed': False, 'full_stage2_accepted': False}
           (evidence / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
           print(json.dumps(receipt, indent=2))
           PY
