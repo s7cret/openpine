@@ -1,0 +1,49 @@
+name: Export exact Stage 2 review sources
+'on':
+  push:
+    branches: ['ops/stage2-methods-review-20260911']
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 52a1130192aa695fe29b9dbe947cfa5bb991e359
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export pinned code and histories without changing refs
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'review-sources'; out.mkdir()
+          pins=json.loads(pathlib.Path('docs/RC6_LIFECYCLE_SOURCES.json').read_text())
+          expected={'pine2ast','ast2python','pinelib','openpine-contracts','backtest_engine','optimizer','marketdata-provider'}
+          if set(pins)!=expected or any(not re.fullmatch('[0-9a-f]{40}', s) for s in pins.values()):
+              raise SystemExit('invalid pins')
+          pins={'openpine':'52a1130192aa695fe29b9dbe947cfa5bb991e359',**pins}
+          manifest={}
+          for name,sha in pins.items():
+              repo=pathlib.Path.cwd() if name=='openpine' else out.parent/('source-'+name)
+              if name!='openpine':
+                  subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(repo)],check=True)
+              def git(*args):
+                  return subprocess.check_output(['git','-C',str(repo),*args],text=True).strip()
+              git('cat-file','-e',sha+'^{commit}')
+              target=out/(name+'.tar.gz')
+              git('archive','--format=tar.gz','--output='+str(target),sha)
+              git('update-ref','refs/heads/exported-source',sha)
+              bundle=out/(name+'.bundle')
+              git('bundle','create',str(bundle),'refs/heads/exported-source')
+              manifest[name]={'head':sha,'tree':git('rev-parse',sha+'^{tree}'),'source_sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'bundle_sha256':hashlib.sha256(bundle.read_bytes()).hexdigest()}
+          (out/'source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stage2-review-sources-${{ github.run_id }}
+          path: ${{ runner.temp }}/review-sources/
+          if-no-files-found: error
+          retention-days: 7
