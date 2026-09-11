@@ -179,7 +179,8 @@
     "docs/RC6_STAGE2_EXPLICIT_METHOD_CALLS.md",
     "rc6_tests/test_rc6_explicit_method_calls.py",
     "verification/explicit-method-inventory-review.json",
-    "verification/explicit-method-matrix-review.json"
+    "verification/explicit-method-matrix-review.json",
+    "verification/explicit-method-local-receipt.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -962,6 +963,10 @@
     "python311": "not_run",
     "published": false,
     "full_stage2_accepted": false,
-    "tradingview_verified": false
+    "tradingview_verified": false,
+    "tests_receipt": "verification/explicit-method-local-receipt.json",
+    "new_cases_passed": 136,
+    "new_worker_failures": 4,
+    "all_selected_outcomes_green": false
   }
 }
