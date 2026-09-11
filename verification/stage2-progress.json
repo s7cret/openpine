@@ -161,19 +161,21 @@
     "verification/tuple-repair-integration-readback.json",
     "verification/tuple-repair-integrated-release-receipt.json",
     "verification/tuple-repair-verify-artifact-metadata.json",
-    "verification/tuple-repair-cleanup-final-execution-review.json"
+    "verification/tuple-repair-cleanup-final-execution-review.json",
+    "docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md",
+    "verification/recursive-wave-review-20260911.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
-  "joint_test_count": 16787,
+  "joint_test_count": 20259,
   "core_verified_source": "d09ff57721655918d3313634b2291c45a7e414e4",
   "core_verification_run": 34068163602,
   "core_integrated_head": "c04a21344f3d50f267884836634b5658afb1b75c",
-  "latest_verified_source": "5b0a7318cda871bef12d835e8b074d0f3f6d23d2",
-  "latest_verified_tree": "4ee86715622404b31e174fb2e17d064a6ad579c9",
+  "latest_verified_source": "8aa6a3e4f6f172652daf3ba37aade9f21e122c6c",
+  "latest_verified_tree": "2a7869613ed508f86e25b202a1302cc5e3164b6a",
   "integrated_head": "88273b589a47fa8ad6424a7523d74f6a6856c413",
-  "joint_verification_run": 34206347276,
-  "publication_receipt": "docs/RC6_STAGE2_METHOD_CONTEXT_CONTRACTS_PUBLICATION.md",
+  "joint_verification_run": 34594834647,
+  "publication_receipt": "docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md",
   "gate_results": {
     "python_3_11": "passed",
     "python_3_13": "passed",
@@ -759,5 +761,16 @@
     ],
     "archived_tags": 6,
     "deleted_temporary_branches": 6
+  },
+  "saved_recursive_wave": {
+    "status": "joint_linux_verified_pending_guarded_release_readback",
+    "source": "8aa6a3e4f6f172652daf3ba37aade9f21e122c6c",
+    "source_run": 34594834647,
+    "selected_tests_per_interpreter": 20259,
+    "previous_tests_retained": 16787,
+    "added_tests": 3472,
+    "compiler_normalized_target_qualifiers": "open_residual_normal_source_enforced_by_producer",
+    "exported_imported_methods_bc": "design_only_not_implemented",
+    "full_stage2_accepted": false
   }
 }

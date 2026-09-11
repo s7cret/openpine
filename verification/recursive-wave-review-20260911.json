@@ -1,0 +1,150 @@
+{
+  "schema_id": "openpine.recursive_wave_review.v1",
+  "date": "2026-09-11",
+  "source": "8aa6a3e4f6f172652daf3ba37aade9f21e122c6c",
+  "baseline": "4a84ff2873caef95d8eb986dc1e999c379f33fbf",
+  "root_run": 34594834647,
+  "execution": {
+    "3.11": {
+      "ast2python": {
+        "baseline": 1110,
+        "executed": 1145,
+        "node_ids_sha256": "sha256:5bde6c503a9f53cc9fe70725151e3aa5d0083801eaa1a2c300bae78ec7f8285d"
+      },
+      "backtest_engine": {
+        "baseline": 1102,
+        "executed": 1102,
+        "node_ids_sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+      },
+      "marketdata-provider": {
+        "baseline": 601,
+        "executed": 601,
+        "node_ids_sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+      },
+      "openpine": {
+        "baseline": 7140,
+        "executed": 8761,
+        "node_ids_sha256": "sha256:b6e939338b562d8e22a786c2cf44b11c24f7fe059c77242d695bebeec3069187"
+      },
+      "openpine-contracts": {
+        "baseline": 557,
+        "executed": 557,
+        "node_ids_sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+      },
+      "optimizer": {
+        "baseline": 281,
+        "executed": 281,
+        "node_ids_sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+      },
+      "pine2ast": {
+        "baseline": 2473,
+        "executed": 2910,
+        "node_ids_sha256": "sha256:50d7651560a2918a828eac0c6f4637d1bc64f59cc19b9771c8ed926e26d21a5f"
+      },
+      "pinelib": {
+        "baseline": 3523,
+        "executed": 4902,
+        "node_ids_sha256": "sha256:da80acd0dfef1850631da602b68c3d251627e291702b8b3cf8ab9fc7a172aa96"
+      }
+    },
+    "3.13": {
+      "ast2python": {
+        "baseline": 1110,
+        "executed": 1145,
+        "node_ids_sha256": "sha256:5bde6c503a9f53cc9fe70725151e3aa5d0083801eaa1a2c300bae78ec7f8285d"
+      },
+      "backtest_engine": {
+        "baseline": 1102,
+        "executed": 1102,
+        "node_ids_sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+      },
+      "marketdata-provider": {
+        "baseline": 601,
+        "executed": 601,
+        "node_ids_sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+      },
+      "openpine": {
+        "baseline": 7140,
+        "executed": 8761,
+        "node_ids_sha256": "sha256:b6e939338b562d8e22a786c2cf44b11c24f7fe059c77242d695bebeec3069187"
+      },
+      "openpine-contracts": {
+        "baseline": 557,
+        "executed": 557,
+        "node_ids_sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+      },
+      "optimizer": {
+        "baseline": 281,
+        "executed": 281,
+        "node_ids_sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+      },
+      "pine2ast": {
+        "baseline": 2473,
+        "executed": 2910,
+        "node_ids_sha256": "sha256:50d7651560a2918a828eac0c6f4637d1bc64f59cc19b9771c8ed926e26d21a5f"
+      },
+      "pinelib": {
+        "baseline": 3523,
+        "executed": 4902,
+        "node_ids_sha256": "sha256:da80acd0dfef1850631da602b68c3d251627e291702b8b3cf8ab9fc7a172aa96"
+      }
+    }
+  },
+  "reviewed_inventory": {
+    "ast2python": {
+      "count": 1145,
+      "deselected": 0,
+      "sha256": "sha256:5bde6c503a9f53cc9fe70725151e3aa5d0083801eaa1a2c300bae78ec7f8285d"
+    },
+    "backtest_engine": {
+      "count": 1102,
+      "deselected": 0,
+      "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+    },
+    "marketdata-provider": {
+      "count": 601,
+      "deselected": 5,
+      "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+    },
+    "openpine": {
+      "count": 8761,
+      "deselected": 0,
+      "sha256": "sha256:b6e939338b562d8e22a786c2cf44b11c24f7fe059c77242d695bebeec3069187"
+    },
+    "openpine-contracts": {
+      "count": 557,
+      "deselected": 0,
+      "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+    },
+    "optimizer": {
+      "count": 281,
+      "deselected": 0,
+      "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+    },
+    "pine2ast": {
+      "count": 2910,
+      "deselected": 0,
+      "sha256": "sha256:50d7651560a2918a828eac0c6f4637d1bc64f59cc19b9771c8ed926e26d21a5f"
+    },
+    "pinelib": {
+      "count": 4902,
+      "deselected": 0,
+      "sha256": "sha256:da80acd0dfef1850631da602b68c3d251627e291702b8b3cf8ab9fc7a172aa96"
+    }
+  },
+  "metadata_review": {
+    "raw_manifest_changes": [
+      "ta.tsi.short_length:series->simple",
+      "ta.tsi.long_length:series->simple",
+      "ta.valuewhen.occurrence:series->simple"
+    ],
+    "literal_transformed_hash": "sha256:3bbb194318736ff97aff6a50ef4a3c4238fda3191f3971ab2e5fe9e14e27c2f7",
+    "old_parser_compiler_tests_unchanged": true,
+    "legacy_catalog_v1_v4_unchanged": true,
+    "recursive_manual_rows_independently_recalculated": 20,
+    "recursive_unknown_rows_preserved": 13
+  },
+  "full_stage2_accepted": false,
+  "tradingview_verified": false,
+  "integration": "requires_final_gate_and_remote_ref_readback"
+}
