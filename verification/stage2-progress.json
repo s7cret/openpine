@@ -175,7 +175,11 @@
     "verification/stage2-callable-lock.json",
     "verification/stage2-evidence-plan.json",
     "verification/stage2-remaining-matrix.json",
-    "docs/RC6_STAGE2_NUMERIC_INDEX.md"
+    "docs/RC6_STAGE2_NUMERIC_INDEX.md",
+    "docs/RC6_STAGE2_EXPLICIT_METHOD_CALLS.md",
+    "rc6_tests/test_rc6_explicit_method_calls.py",
+    "verification/explicit-method-inventory-review.json",
+    "verification/explicit-method-matrix-review.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -929,5 +933,35 @@
     "direct_remaining_without_all_paths": 19,
     "conditioned_tsi_signatures": 2,
     "strict_corpus_group_gate": "90_of_100_three_preexisting_unverified_string_disagreements"
+  },
+  "explicit_method_calls_local": {
+    "status": "implemented_local_pending_joint",
+    "baseline": "8cb17ba3395e610c73cf3feca88ca9c109fb4cb6",
+    "source_pins": {
+      "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "ast2python": "756d9c73ae4346e8645d413d6ae6cc2d50a6d7b7",
+      "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748",
+      "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "pine2ast": "6224e81f99ddc02817dadf3dfd878ba2cb29fcd9"
+    },
+    "scope": [
+      "bare_method_function_notation",
+      "library_namespace_explicit_receiver",
+      "shared_exact_signature_resolution",
+      "source_order_named_arguments",
+      "typed_checkpoint_and_broker_matrix"
+    ],
+    "consumer_capability": "user_method_function_calls_v1",
+    "new_cases": 140,
+    "candidate_inventory": 21446,
+    "inventory_review": "verification/explicit-method-inventory-review.json",
+    "remaining_matrix_hash": "sha256:27815159c8bb189ce49b7524c6ab8b3c858774e571edc34c424e950a9b670c32",
+    "joint_ci": "not_run",
+    "python311": "not_run",
+    "published": false,
+    "full_stage2_accepted": false,
+    "tradingview_verified": false
   }
 }

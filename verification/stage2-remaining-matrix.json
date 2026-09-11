@@ -1,6 +1,6 @@
 {
   "schema_id": "openpine.stage2_remaining_matrix.v1",
-  "revision": 1,
+  "revision": 2,
   "baseline": "5b714812dd1cdbec89827ff512e8b9cfecf92f12",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
   "tasks": [
@@ -141,13 +141,15 @@
       "id": "IMPORT-01",
       "criterion": "imports",
       "title": "Namespace-вызовы пользовательских методов",
-      "status": "open",
+      "status": "implemented_local_pending_joint",
       "owner": "pine2ast/ast2python",
       "completion": "Реализовать source-bound namespace call form с явным receiver, overload identity, приватностью, qualifier floors и независимым состоянием; receiver-dot путь не дублировать.",
       "evidence": [
-        "docs/RC6_STAGE2_LIBRARY_METHODS.md"
+        "docs/RC6_STAGE2_LIBRARY_METHODS.md",
+        "docs/RC6_STAGE2_EXPLICIT_METHOD_CALLS.md",
+        "rc6_tests/test_rc6_explicit_method_calls.py"
       ],
-      "notes": ""
+      "notes": "Namespace и local function notation реализованы в существующем профиле методов v5/v6. Полная совместная приёмка и разрешённые более широкие перегрузки не объявлены завершёнными."
     },
     {
       "id": "IMPORT-02",
@@ -170,9 +172,10 @@
       "completion": "Проверить оставшиеся транзитивные/public/private/type/method контексты по точной декларации; не открывать private или непрямой import как обход.",
       "evidence": [
         "docs/RC6_STAGE2_LIBRARY_METHODS.md",
-        "docs/RC6_STAGE2_METHOD_IDENTITY.md"
+        "docs/RC6_STAGE2_METHOD_IDENTITY.md",
+        "docs/RC6_STAGE2_EXPLICIT_METHOD_CALLS.md"
       ],
-      "notes": ""
+      "notes": "Добавлены exact-source namespace selection, explicit/private/transitive вызовы и проверка составных callee ranges. Общий критерий остальных экспортных/overload-контекстов остаётся partial."
     },
     {
       "id": "IMPORT-04",
@@ -240,5 +243,5 @@
   ],
   "full_stage2_accepted": false,
   "tradingview_verified": false,
-  "content_hash": "sha256:8680c95271b9c0c7d9176ed5ca3d31b67a370d14106c185f570fcbdbb07726a0"
+  "content_hash": "sha256:27815159c8bb189ce49b7524c6ab8b3c858774e571edc34c424e950a9b670c32"
 }
