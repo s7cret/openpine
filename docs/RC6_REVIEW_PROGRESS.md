@@ -1,3 +1,17 @@
+# Latest Stage 2 continuation — 2026-09-11
+
+The qualifier boundary is jointly verified and integrated at `cf45adb47f495194729ec0bd7508caab8e751147`:
+[qualifier publication](RC6_STAGE2_QUALIFIER_PUBLICATION.md), 20,423 cases per Python
+3.11/3.13 plus protected workers, existing corpus, frontend and builds. Earlier
+local-only notes for that block are superseded, not erased.
+
+[Library methods](RC6_STAGE2_LIBRARY_METHODS.md) are the next implemented candidate,
+with 103 additional cases and a 20,526-case locked inventory. Its local source tests
+are not a substitute for a new joint Linux run. Full Stage 2 remains in progress;
+no original OP criteria are dropped.
+
+---
+
 # OpenPine RC6 — актуальное состояние на 11 сентября 2026
 
 ## Интегрированная RC6 и проверенный комплект
