@@ -32,6 +32,34 @@ jobs:
           python-version: '3.13'
       - name: Restore original commits and publish only the candidate ref
         run: python "$RUNNER_TEMP/publish.py"
+      - name: Archive and remove only the completed transfer branch
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          def refs():
+              return {r:s for s,r in (x.split() for x in git('ls-remote','--refs','origin').splitlines())}
+          before=refs()
+          branch='refs/heads/ops/local-transfer-20260912'
+          tag='refs/tags/archive/20260912/local-transfer'
+          sha=os.environ['GITHUB_SHA']
+          assert os.environ['GITHUB_REPOSITORY']=='s7cret/openpine'
+          assert os.environ['GITHUB_REF']==branch and before.get(branch)==sha
+          assert before.get('refs/heads/stage2/cumulative-local-20260912')=='203cd09ea89e16b1e690815620a8d3f41c6b34ac'
+          assert before.get('refs/heads/release/5.0.0rc6')=='5b714812dd1cdbec89827ff512e8b9cfecf92f12'
+          assert tag not in before
+          git('merge-base','--is-ancestor','396502348d7e68ebddcece6ca0531e8de60660f0',sha)
+          git('push','--atomic','--force-with-lease='+branch+':'+sha,'--force-with-lease='+tag+':','origin',sha+':'+tag,':'+branch)
+          after=refs()
+          expected={r:s for r,s in before.items() if r.startswith(('refs/heads/','refs/tags/')) and r!=branch}
+          expected[tag]=sha
+          assert {r:s for r,s in after.items() if r.startswith(('refs/heads/','refs/tags/'))}==expected
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'publication'
+          receipt={'archived':{tag:sha},'removed_branch':branch,'candidate':'203cd09ea89e16b1e690815620a8d3f41c6b34ac','release_changed':False,'tests_run':False,'full_stage2_accepted':False}
+          (out/'cleanup.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt,indent=2))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
