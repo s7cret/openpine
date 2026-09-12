@@ -1,0 +1,26 @@
+//@version=5
+indicator("OpenPine v5 string probe P5-CONV-20260912-A", overlay=true)
+
+valueText(float value) =>
+    na(value) ? "na" : str.tostring(value, "#.############")
+
+var string[] samples = array.from("12.5", "abc", "1_000", "1e2", " 1 ", "NaN", "Infinity")
+float[] literalResults = array.from(str.tonumber("12.5"), str.tonumber("abc"), str.tonumber("1_000"), str.tonumber("1e2"), str.tonumber(" 1 "), str.tonumber("NaN"), str.tonumber("Infinity"))
+var table report = table.new(position.top_right, 3, 10, bgcolor=color.black, border_width=1)
+
+if barstate.islast
+    table.cell(report, 0, 0, "Input (brackets show spaces)", text_color=color.white)
+    table.cell(report, 1, 0, "Literal", text_color=color.white)
+    table.cell(report, 2, 0, "Series string", text_color=color.white)
+    for i = 0 to array.size(samples) - 1
+        string sample = array.get(samples, i)
+        float seriesResult = str.tonumber(sample)
+        table.cell(report, 0, i + 1, "[" + sample + "]", text_color=color.white)
+        table.cell(report, 1, i + 1, valueText(array.get(literalResults, i)), text_color=color.white)
+        table.cell(report, 2, i + 1, valueText(seriesResult), text_color=color.white)
+    table.cell(report, 0, 8, "Pine v5", text_color=color.white)
+    table.cell(report, 1, 8, "P5-CONV", text_color=color.white)
+    table.cell(report, 2, 8, "20260912-A", text_color=color.white)
+    table.cell(report, 0, 9, "No orders / no alerts", text_color=color.white)
+
+plot(float(na), title="hidden", display=display.none)

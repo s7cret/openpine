@@ -1,52 +1,68 @@
-name: Capture public full-translation literal metadata
+name: Validate reproducible v5 probe and archive investigation
 'on':
   push:
     branches: ['ops/string-authority-20260912']
 permissions:
-  contents: read
+  contents: write
 jobs:
-  capture:
+  preserve:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Request literal-only metadata and stop on unavailable anonymous translation
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Type-check the public screenshot probe without claiming numerical output
         shell: bash
         run: |
           python3 - <<'PY'
-          import datetime, hashlib, json, os, pathlib, time, urllib.error, urllib.parse, urllib.request
-          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'translation-probe';out.mkdir()
-          url='https://pine-facade.tradingview.com/pine-facade/translate?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000'
-          records=[]
-          for index,(label,text) in enumerate([('decimal-control','12.5'),('invalid-control','abc'),('underscore','1_000'),('exponent','1e2'),('whitespace',' 1 ')]):
-              source='//@version=5\nindicator("OpenPine independent literal probe")\nprobe=input.float(str.tonumber('+json.dumps(text)+'), title="literal-result")\nplot(probe)\n'
-              stem=f'{index:02}-{label}'
-              (out/(stem+'.pine')).write_text(source)
-              req=urllib.request.Request(url,data=urllib.parse.urlencode({'source':source}).encode(),method='POST',headers={'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded','Referer':'https://www.tradingview.com/'})
-              row={'label':label,'input':text,'source_sha256':hashlib.sha256(source.encode()).hexdigest(),'requested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'credentials_used':False}
-              try:
-                  with urllib.request.urlopen(req,timeout=15) as response:
-                      row['status']=response.status;data=response.read(2000000)
-              except urllib.error.HTTPError as error:
-                  row['status']=error.code;data=error.read(50000)
-              except Exception as error:
-                  row['error']=str(error);data=b''
-              row['response_sha256']=hashlib.sha256(data).hexdigest()
-              (out/(stem+'.response')).write_bytes(data)
-              records.append(row);print(json.dumps(row),flush=True)
-              if row.get('status')!=200 or 'error' in row:
-                  break
-              try:
-                  result=json.loads(data).get('result',{})
-                  if not isinstance(result,dict) or not result.get('metaInfo'):
-                      print('No evaluated metadata exposed; stopping.');break
-              except (ValueError,AttributeError):
-                  break
-              time.sleep(1)
-          (out/'capture.json').write_text(json.dumps({'endpoint':url,'records':records,'evidence_status':'RAW_CAPTURE_REQUIRES_REVIEW','runtime_changed':False,'expected_values_changed':False,'release_changed':False,'tradingview_verified':False},indent=2)+'\n')
+          import hashlib,json,os,pathlib,urllib.request,urllib.parse,urllib.error
+          source=pathlib.Path('verification/string-authority-probe-20260912/probe.pine').read_bytes()
+          if hashlib.sha256(source).hexdigest()!='f654eca00b7a75e1d225874af258ba9b19b21153c535c43e483b25a2c42b1981':
+              raise SystemExit('probe checksum mismatch')
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'probe-review';out.mkdir()
+          (out/'probe.pine').write_bytes(source)
+          url='https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000'
+          request=urllib.request.Request(url,data=urllib.parse.urlencode({'source':source.decode()}).encode(),method='POST',headers={'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded','Referer':'https://www.tradingview.com/'})
+          with urllib.request.urlopen(request,timeout=15) as response:
+              data=response.read(2000000)
+          (out/'syntax-response.json').write_bytes(data)
+          value=json.loads(data);inner=value.get('result')
+          ok=value.get('success') is True and isinstance(inner,dict) and not inner.get('errors2') and not value.get('error')
+          (out/'syntax-review.json').write_text(json.dumps({'syntax_valid':ok,'source_sha256':hashlib.sha256(source).hexdigest(),'response_sha256':hashlib.sha256(data).hexdigest(),'numerical_output_obtained':False,'tradingview_verified':False},indent=2)+'\n')
+          if not ok:
+              raise SystemExit('probe has syntax diagnostics; do not request user execution yet')
+          PY
+      - name: Archive only the completed helper without changing candidate or release
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          def git(*args):
+              return subprocess.check_output(['git',*args],text=True).strip()
+          def refs():
+              return {ref:sha for sha,ref in (line.split() for line in git('ls-remote','--refs','origin').splitlines())}
+          branch='refs/heads/ops/string-authority-20260912'
+          tag='refs/tags/archive/20260912/ops/string-authority'
+          sha=os.environ['GITHUB_SHA']
+          if os.environ['GITHUB_REPOSITORY']!='s7cret/openpine' or os.environ['GITHUB_REF']!=branch:
+              raise SystemExit('wrong repository/ref')
+          before=refs()
+          if before.get(branch)!=sha or tag in before:
+              raise SystemExit('concurrent or conflicting archive')
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'probe-review'
+          (out/'before.json').write_text(json.dumps(before,indent=2)+'\n')
+          git('push','--atomic','--force-with-lease='+branch+':'+sha,'--force-with-lease='+tag+':','origin',sha+':'+tag,':'+branch)
+          after=refs();expected={k:v for k,v in before.items() if k!=branch};expected[tag]=sha
+          (out/'after.json').write_text(json.dumps(after,indent=2)+'\n')
+          if after!=expected:
+              raise SystemExit('concurrent unrelated ref change; inspect recorded inventories')
+          print(json.dumps({'archived':tag,'candidate_unchanged':True,'release_unchanged':True,'merge_performed':False}))
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: string-translation-probe-${{ github.run_id }}
-          path: ${{ runner.temp }}/translation-probe/
+          name: string-probe-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/probe-review/
           if-no-files-found: error
           retention-days: 30
