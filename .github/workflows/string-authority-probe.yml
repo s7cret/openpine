@@ -1,4 +1,4 @@
-name: Capture controlled Pine v5 constant validation evidence
+name: Capture independent Pine v5 evaluated title evidence
 'on':
   push:
     branches: ['ops/string-authority-20260912']
@@ -9,23 +9,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Check observable constant validation with positive and negative controls
+      - name: Read evaluated declaration title with true and false controls
         shell: bash
         run: |
           python3 - <<'PY'
           import datetime, hashlib, json, os, pathlib, time, urllib.error, urllib.parse, urllib.request
-          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'constant-probe';out.mkdir()
-          url='https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000'
-          records=[]
-          probes=[('valid-limit','100'),('invalid-limit','501')]
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'title-probe';out.mkdir()
+          url='https://pine-facade.tradingview.com/pine-facade/parse_title'
+          probes=[('true-control','true ? "CONTROL_TRUE" : "CONTROL_FALSE"'),('false-control','false ? "CONTROL_TRUE" : "CONTROL_FALSE"')]
           for label,text in [('decimal-control','12.5'),('invalid-control','abc'),('underscore','1_000'),('exponent','1e2'),('whitespace',' 1 ')]:
-              probes.append((label,'na(str.tonumber('+json.dumps(text)+')) ? 501 : 100'))
+              call='str.tonumber('+json.dumps(text)+')'
+              expr='na('+call+') ? "RESULT_NA" : '+call+' == 12.5 ? "RESULT_12_5" : '+call+' == 1000 ? "RESULT_1000" : '+call+' == 100 ? "RESULT_100" : '+call+' == 1 ? "RESULT_1" : "RESULT_OTHER"'
+              probes.append((label,expr))
+          records=[]
           for index,(label,expression) in enumerate(probes):
-              source='//@version=5\nindicator("OpenPine constant validation probe", max_labels_count='+expression+')\nplot(close)\n'
+              source='//@version=5\nindicator('+expression+')\nplot(close)\n'
               stem=f'{index:02}-{label}'
               (out/(stem+'.pine')).write_text(source)
               req=urllib.request.Request(url,data=urllib.parse.urlencode({'source':source}).encode(),method='POST',headers={'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded','Referer':'https://www.tradingview.com/'})
-              row={'label':label,'expression':expression,'source_sha256':hashlib.sha256(source.encode()).hexdigest(),'requested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'credentials_used':False}
+              row={'label':label,'source_sha256':hashlib.sha256(source.encode()).hexdigest(),'requested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'credentials_used':False}
               try:
                   with urllib.request.urlopen(req,timeout=15) as response:
                       row['status']=response.status;data=response.read(2000000)
@@ -38,17 +40,14 @@ jobs:
               records.append(row);print(json.dumps(row),flush=True)
               if row.get('status') in (401,403,429) or 'error' in row:
                   break
-              if index==1:
-                  a=json.loads((out/'00-valid-limit.response').read_text())
-                  b=json.loads(data)
-                  if a==b:
-                      print('No observable control difference; further probes cannot provide numerical evidence.');break
+              if index==1 and (out/'00-true-control.response').read_bytes()==data:
+                  print('Controls do not expose evaluated values; stopping.');break
               time.sleep(1)
-          (out/'capture.json').write_text(json.dumps({'endpoint':url,'records':records,'evidence_status':'RAW_CAPTURE_REQUIRES_POSITIVE_AND_NEGATIVE_CONTROL_REVIEW','runtime_changed':False,'expected_values_changed':False,'release_changed':False,'tradingview_verified':False},indent=2)+'\n')
+          (out/'capture.json').write_text(json.dumps({'endpoint':url,'records':records,'evidence_status':'RAW_CAPTURE_REQUIRES_REVIEW','runtime_changed':False,'expected_values_changed':False,'release_changed':False,'tradingview_verified':False},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: string-constant-probe-${{ github.run_id }}
-          path: ${{ runner.temp }}/constant-probe/
+          name: string-title-probe-${{ github.run_id }}
+          path: ${{ runner.temp }}/title-probe/
           if-no-files-found: error
           retention-days: 30
