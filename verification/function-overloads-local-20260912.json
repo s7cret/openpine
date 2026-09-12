@@ -286,11 +286,11 @@
   "wheel_repeated_tests": {
     "pine2ast": {
       "total": 65,
-      "failed": 8,
+      "failed": 0,
       "errors": 0,
       "skipped": 0,
       "file": "wheel-pine2ast-new.xml",
-      "passed": 57
+      "passed": 65
     },
     "ast2python": {
       "total": 77,
@@ -301,12 +301,12 @@
       "passed": 77
     },
     "openpine": {
-      "total": 1,
-      "failed": 0,
-      "errors": 1,
+      "total": 35,
+      "failed": 4,
+      "errors": 0,
       "skipped": 0,
       "file": "wheel-openpine-new.xml",
-      "passed": 0
+      "passed": 31
     }
   },
   "wheel_installation": {
@@ -338,7 +338,20 @@
     "complete current builtin-index",
     "whole-product benchmark"
   ],
+  "wheel_fixture_replay": {
+    "finished": true,
+    "initial_fixture_packaging_errors_preserved": true,
+    "fix": "test-only package roots; no production or assertions changed",
+    "counts": {
+      "total": 177,
+      "passed": 173,
+      "failed_bubblewrap": 4,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
   "scope_notes": [
+    "First installed-wheel test fixture lacked importable tests/rc6_tests package roots. Eight producer tests and host collection failed; empty test-package markers were added only to the copied harness and the unchanged wheel tests rerun. Original logs are preserved.",
     "Manual engineering expectations are independent derivations, not recorded TradingView executions.",
     "Provider explicitly excludes five live-network tests.",
     "One initial all-tests run was interrupted and never counted as acceptance.",
