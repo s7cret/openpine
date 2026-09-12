@@ -1,6 +1,6 @@
 {
   "schema_id": "openpine.stage2_remaining_matrix.v1",
-  "revision": 4,
+  "revision": 5,
   "baseline": "5b714812dd1cdbec89827ff512e8b9cfecf92f12",
   "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
   "tasks": [
@@ -110,9 +110,11 @@
         "docs/RC6_STAGE2_NOMINAL_REGISTRY.md",
         "docs/RC6_STAGE2_ROLLING_CONTEXT_PUBLICATION.md",
         "docs/RC6_STAGE2_FUNCTION_OVERLOADS.md",
-        "rc6_tests/test_rc6_function_overloads.py"
+        "rc6_tests/test_rc6_function_overloads.py",
+        "docs/RC6_STAGE2_MIXED_CALLABLE_FAMILIES.md",
+        "rc6_tests/test_rc6_mixed_callable_families.py"
       ],
-      "notes": " Ordinary user-function overload families now implemented locally for v5/v6 with declaration-bound resolution, typed/untyped distinct arities, public/private export projection, independent state and source-free proof reconstruction. Mixed function/method families, cross-version libraries and complete generic/reference matrix remain unaccepted. Joint CI pending."
+      "notes": " Ordinary user-function overload families now implemented locally for v5/v6 with declaration-bound resolution, typed/untyped distinct arities, public/private export projection, independent state and source-free proof reconstruction. Mixed function/method families, cross-version libraries and complete generic/reference matrix remain unaccepted. Joint CI pending. Mixed ordinary-function/method explicit calls now use shared declaration-bound selection and source-scoped library visibility in local Pine 5/6 profile. Receiver-dot stays method-only. Exact collision precedence and the full broader matrix remain unaccepted; independent TV execution was not obtained."
     },
     {
       "id": "STATE-03",
@@ -177,9 +179,11 @@
         "docs/RC6_STAGE2_METHOD_IDENTITY.md",
         "docs/RC6_STAGE2_EXPLICIT_METHOD_CALLS.md",
         "docs/RC6_STAGE2_FUNCTION_OVERLOADS.md",
-        "rc6_tests/test_rc6_function_overloads.py"
+        "rc6_tests/test_rc6_function_overloads.py",
+        "docs/RC6_STAGE2_MIXED_CALLABLE_FAMILIES.md",
+        "rc6_tests/test_rc6_mixed_callable_families.py"
       ],
-      "notes": "Добавлены exact-source namespace selection, explicit/private/transitive вызовы и проверка составных callee ranges. Общий критерий остальных экспортных/overload-контекстов остаётся partial. Ordinary user-function overload families now implemented locally for v5/v6 with declaration-bound resolution, typed/untyped distinct arities, public/private export projection, independent state and source-free proof reconstruction. Mixed function/method families, cross-version libraries and complete generic/reference matrix remain unaccepted. Joint CI pending."
+      "notes": "Добавлены exact-source namespace selection, explicit/private/transitive вызовы и проверка составных callee ranges. Общий критерий остальных экспортных/overload-контекстов остаётся partial. Ordinary user-function overload families now implemented locally for v5/v6 with declaration-bound resolution, typed/untyped distinct arities, public/private export projection, independent state and source-free proof reconstruction. Mixed function/method families, cross-version libraries and complete generic/reference matrix remain unaccepted. Joint CI pending. Mixed ordinary-function/method explicit calls now use shared declaration-bound selection and source-scoped library visibility in local Pine 5/6 profile. Receiver-dot stays method-only. Exact collision precedence and the full broader matrix remain unaccepted; independent TV execution was not obtained."
     },
     {
       "id": "IMPORT-04",
@@ -250,5 +254,5 @@
   ],
   "full_stage2_accepted": false,
   "tradingview_verified": false,
-  "content_hash": "sha256:49df9b678e6c482e157db0e47b4e97c069d1891c92b9296c808dcf4b11fd93e0"
+  "content_hash": "sha256:a1a244d0013982314c8dcf3312453922a5743a2a02df2b079d9dc7237fdf148e"
 }

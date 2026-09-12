@@ -1055,5 +1055,25 @@
     "candidate_inventory": 21734,
     "local_python313": "11943_passed_14_bubblewrap_failures",
     "joint_ci": "not_run"
+  },
+  "mixed_callable_families_local_20260912": {
+    "status": "implemented_local_verification_in_progress",
+    "profile": "same_version_mixed_callables_v7",
+    "capability": "mixed_user_callable_families_v1",
+    "source_pins": {
+      "pine2ast": "4720bc5a4abc3f5accba3d9dde32a4e64e75f7c3",
+      "ast2python": "3c4a6caa5270b4a5978a0097942aa3f2c160cc95"
+    },
+    "inventory_count": 21891,
+    "new_tests": 157,
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "remaining": [
+      "full_cross_version_imports",
+      "independent_exact_collision_policy",
+      "remaining_generic_reference_matrix",
+      "complete_versioned_catalog",
+      "complete_builtin_expected"
+    ]
   }
 }
