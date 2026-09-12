@@ -1,0 +1,41 @@
+name: Restore exact cumulative Stage 2 host source
+'on':
+  push:
+    branches: ['ops/local-transfer-20260912']
+permissions:
+  contents: write
+defaults:
+  run:
+    shell: bash
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: s7cret/pinelib
+          ref: 49df3e13c130777d4156877dee39fa11fd59430b
+          path: publisher
+          sparse-checkout: .github/local-transfer/publish.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Preserve the pinned original source restorer
+        run: |
+          test "$(git -C publisher hash-object .github/local-transfer/publish.py)" = 7d51bdd762f1712001ce7331fc1144c6bfcb6104
+          cp publisher/.github/local-transfer/publish.py "$RUNNER_TEMP/publish.py"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Restore original commits and publish only the candidate ref
+        run: python "$RUNNER_TEMP/publish.py"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cumulative-host-transfer-${{ github.run_id }}
+          path: ${{ runner.temp }}/publication/
+          if-no-files-found: error
+          retention-days: 30
