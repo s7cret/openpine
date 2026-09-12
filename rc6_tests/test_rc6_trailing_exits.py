@@ -112,7 +112,20 @@ def test_unsupported_or_incomplete_shapes_fail_before_execution(arguments, fragm
         f'//@version=6\nstrategy("negative")\nstrategy.exit("X","A",{arguments})\n',
         producer_commits={"pine2ast": "a" * 40, "ast2python": "b" * 40},
     )
-    assert not result.success and fragment in str(result.errors)
+    assert not result.success
+    assert result.python_code is None and result.generated_artifact is None
+    if fragment == "production-blocking diagnostics":
+        # Keep the original parametrized ID; test the structured source diagnostic
+        # introduced by consumer libraries, not the superseded exception summary.
+        errors = [d for d in result.diagnostics if d["severity"] == "ERROR"]
+        assert len(errors) == 1
+        error = errors[0]
+        assert error["code"] == "P2A1404" and error["phase"] == "frontend"
+        assert error["location"]["source"] == "<memory>"
+        assert error["location"]["line"] == 3 and error["location"]["column"] == 1
+        assert "P2A1404" in result.errors[0] and error["message"] in result.errors[0]
+    else:
+        assert fragment in str(result.errors)
 
 
 @pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])

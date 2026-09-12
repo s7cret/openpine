@@ -496,7 +496,14 @@ def test_reviewed_remaining_matrix_preserves_original_tasks_and_criteria():
     assert matrix["full_stage2_accepted"] is matrix["tradingview_verified"] is False
     for row in matrix["items"]:
         assert row["owner"] and row["completion"] and row["evidence"]
-        assert row["status"] in {"open", "partial", "unresolved_authority", "local_gate_ready"}
+        assert row["status"] in {
+            "open", "partial", "unresolved_authority", "local_gate_ready",
+            "implemented_local_pending_joint",
+        }
+        if row["status"] == "implemented_local_pending_joint":
+            # A completed local implementation still cannot grant joint acceptance.
+            assert matrix["full_stage2_accepted"] is False
+            assert any(path.startswith("rc6_tests/") for path in row["evidence"])
         for path in row["evidence"]:
             assert (root / path).is_file()
 
