@@ -1,4 +1,4 @@
-name: Capture independent Pine v5 evaluated title evidence
+name: Capture public full-translation literal metadata
 'on':
   push:
     branches: ['ops/string-authority-20260912']
@@ -9,25 +9,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Read evaluated declaration title with true and false controls
+      - name: Request literal-only metadata and stop on unavailable anonymous translation
         shell: bash
         run: |
           python3 - <<'PY'
           import datetime, hashlib, json, os, pathlib, time, urllib.error, urllib.parse, urllib.request
-          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'title-probe';out.mkdir()
-          url='https://pine-facade.tradingview.com/pine-facade/parse_title'
-          probes=[('true-control','true ? "CONTROL_TRUE" : "CONTROL_FALSE"'),('false-control','false ? "CONTROL_TRUE" : "CONTROL_FALSE"')]
-          for label,text in [('decimal-control','12.5'),('invalid-control','abc'),('underscore','1_000'),('exponent','1e2'),('whitespace',' 1 ')]:
-              call='str.tonumber('+json.dumps(text)+')'
-              expr='na('+call+') ? "RESULT_NA" : '+call+' == 12.5 ? "RESULT_12_5" : '+call+' == 1000 ? "RESULT_1000" : '+call+' == 100 ? "RESULT_100" : '+call+' == 1 ? "RESULT_1" : "RESULT_OTHER"'
-              probes.append((label,expr))
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'translation-probe';out.mkdir()
+          url='https://pine-facade.tradingview.com/pine-facade/translate?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000'
           records=[]
-          for index,(label,expression) in enumerate(probes):
-              source='//@version=5\nindicator('+expression+')\nplot(close)\n'
+          for index,(label,text) in enumerate([('decimal-control','12.5'),('invalid-control','abc'),('underscore','1_000'),('exponent','1e2'),('whitespace',' 1 ')]):
+              source='//@version=5\nindicator("OpenPine independent literal probe")\nprobe=input.float(str.tonumber('+json.dumps(text)+'), title="literal-result")\nplot(probe)\n'
               stem=f'{index:02}-{label}'
               (out/(stem+'.pine')).write_text(source)
               req=urllib.request.Request(url,data=urllib.parse.urlencode({'source':source}).encode(),method='POST',headers={'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded','Referer':'https://www.tradingview.com/'})
-              row={'label':label,'source_sha256':hashlib.sha256(source.encode()).hexdigest(),'requested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'credentials_used':False}
+              row={'label':label,'input':text,'source_sha256':hashlib.sha256(source.encode()).hexdigest(),'requested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'credentials_used':False}
               try:
                   with urllib.request.urlopen(req,timeout=15) as response:
                       row['status']=response.status;data=response.read(2000000)
@@ -38,16 +33,20 @@ jobs:
               row['response_sha256']=hashlib.sha256(data).hexdigest()
               (out/(stem+'.response')).write_bytes(data)
               records.append(row);print(json.dumps(row),flush=True)
-              if row.get('status') in (401,403,429) or 'error' in row:
+              if row.get('status')!=200 or 'error' in row:
                   break
-              if index==1 and (out/'00-true-control.response').read_bytes()==data:
-                  print('Controls do not expose evaluated values; stopping.');break
+              try:
+                  result=json.loads(data).get('result',{})
+                  if not isinstance(result,dict) or not result.get('metaInfo'):
+                      print('No evaluated metadata exposed; stopping.');break
+              except (ValueError,AttributeError):
+                  break
               time.sleep(1)
           (out/'capture.json').write_text(json.dumps({'endpoint':url,'records':records,'evidence_status':'RAW_CAPTURE_REQUIRES_REVIEW','runtime_changed':False,'expected_values_changed':False,'release_changed':False,'tradingview_verified':False},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: string-title-probe-${{ github.run_id }}
-          path: ${{ runner.temp }}/title-probe/
+          name: string-translation-probe-${{ github.run_id }}
+          path: ${{ runner.temp }}/translation-probe/
           if-no-files-found: error
           retention-days: 30
