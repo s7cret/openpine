@@ -188,7 +188,9 @@
     "verification/consumer-library-inventory-review.json",
     "docs/RC6_STAGE2_CONSUMER_LOCAL_RESULT.md",
     "docs/RC6_STAGE2_FUNCTION_OVERLOADS.md",
-    "rc6_tests/test_rc6_function_overloads.py"
+    "rc6_tests/test_rc6_function_overloads.py",
+    "docs/RC6_STAGE2_FUNCTION_OVERLOADS_LOCAL.md",
+    "verification/function-overloads-local-20260912.json"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -1044,6 +1046,14 @@
       "full_generic_reference_matrix",
       "complete_catalog_builtin_oracle",
       "joint_acceptance"
-    ]
+    ],
+    "local_receipt": "verification/function-overloads-local-20260912.json",
+    "functional_host": "5016b5bded8376912630c25d933812e923cc030a",
+    "new_tests": 177,
+    "new_passed": 173,
+    "new_protected_worker_failed": 4,
+    "candidate_inventory": 21734,
+    "local_python313": "11943_passed_14_bubblewrap_failures",
+    "joint_ci": "not_run"
   }
 }
