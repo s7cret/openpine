@@ -186,7 +186,9 @@
     "rc6_tests/test_rc6_consumer_library_api.py",
     "verification/consumer-library-local-receipt.json",
     "verification/consumer-library-inventory-review.json",
-    "docs/RC6_STAGE2_CONSUMER_LOCAL_RESULT.md"
+    "docs/RC6_STAGE2_CONSUMER_LOCAL_RESULT.md",
+    "docs/RC6_STAGE2_FUNCTION_OVERLOADS.md",
+    "rc6_tests/test_rc6_function_overloads.py"
   ],
   "tradingview_verified": false,
   "full_stage2_accepted": false,
@@ -1020,5 +1022,28 @@
     },
     "required_inventory": 21557,
     "local_implementation_source": "ea51ea65eea6d8cf70f79cc3e02e54d20912b5ca"
+  },
+  "ordinary_function_overloads_local": {
+    "status": "implemented_local_pending_joint",
+    "supported_pine_versions": [
+      5,
+      6
+    ],
+    "profile": "same_version_function_overloads_v6",
+    "source_pins": {
+      "pine2ast": "2d902ced6767c4619bc006fba9964daa3ea50eb0",
+      "ast2python": "1e40a800d593747ca2d96439aadad4ff7bc91b2f",
+      "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748"
+    },
+    "evidence": "docs/RC6_STAGE2_FUNCTION_OVERLOADS.md",
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "remaining": [
+      "mixed_function_method_families",
+      "cross_version_libraries",
+      "full_generic_reference_matrix",
+      "complete_catalog_builtin_oracle",
+      "joint_acceptance"
+    ]
   }
 }
