@@ -1,0 +1,463 @@
+{
+  "schema_id": "openpine.mixed_callable_local_receipt.v1",
+  "date": "2026-09-12",
+  "stage": 2,
+  "status": "implemented_local_pending_joint",
+  "full_stage2_accepted": false,
+  "tradingview_verified": false,
+  "remote_mutations": [],
+  "previous_host": "88b7df08fbef36ea66dac2dfd16f2b555ef53f55",
+  "functional_source_heads": {
+    "pine2ast": "4720bc5a4abc3f5accba3d9dde32a4e64e75f7c3",
+    "ast2python": "3c4a6caa5270b4a5978a0097942aa3f2c160cc95",
+    "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748",
+    "openpine": "a43a90ea0353f3680e7d31a8f0c6677e541cc882"
+  },
+  "python": "3.13.5",
+  "test_results": {
+    "Pine2AST": {
+      "total": 3191,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "producer-final.xml",
+      "passed": 3191
+    },
+    "Ast2Python": {
+      "total": 1509,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "compiler-final.xml",
+      "passed": 1509
+    },
+    "PineLib": {
+      "total": 4944,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "runtime-final.xml",
+      "passed": 4944
+    },
+    "Contracts": {
+      "total": 557,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "contracts-corrected-final.xml",
+      "passed": 557
+    },
+    "Engine": {
+      "total": 1102,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "engine-final.xml",
+      "passed": 1102
+    },
+    "Provider": {
+      "total": 601,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "provider-final.xml",
+      "passed": 601
+    },
+    "Host affected": {
+      "total": 135,
+      "failed": 20,
+      "errors": 0,
+      "skipped": 0,
+      "file": "host-final.xml",
+      "passed": 115,
+      "all_failures_require_bubblewrap": true
+    },
+    "Stage 1": {
+      "total": 14,
+      "failed": 2,
+      "errors": 0,
+      "skipped": 0,
+      "file": "stage1-final.xml",
+      "passed": 12,
+      "all_failures_require_bubblewrap": true
+    }
+  },
+  "totals": {
+    "total": 12053,
+    "passed": 12031,
+    "failed": 22,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_tests": {
+    "total": 157,
+    "passed": 153,
+    "failed": 4,
+    "errors": 0,
+    "skipped": 0,
+    "reason": "Bubblewrap unavailable",
+    "pine2ast": 67,
+    "ast2python": 54,
+    "openpine": 36
+  },
+  "previous_required": 21734,
+  "new_required": 21891,
+  "previous_required_ids_removed": 0,
+  "execution_identity_review": {
+    "pine2ast": {
+      "exact_collected_ids_equal_executed": true,
+      "count": 3191
+    },
+    "ast2python": {
+      "exact_collected_ids_equal_executed": true,
+      "count": 1509
+    },
+    "openpine": {
+      "executed_selection_in_locked_set": true,
+      "no_duplicates": true,
+      "count": 149,
+      "full_host_executed": false
+    }
+  },
+  "wheel_tests": {
+    "pine2ast": {
+      "total": 67,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "wheel-pine2ast.xml",
+      "passed": 67
+    },
+    "ast2python": {
+      "total": 54,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "wheel-ast2python.xml",
+      "passed": 54
+    },
+    "openpine": {
+      "total": 36,
+      "failed": 4,
+      "errors": 0,
+      "skipped": 0,
+      "file": "wheel-openpine.xml",
+      "passed": 32,
+      "all_failures_require_bubblewrap": true
+    }
+  },
+  "wheel_installation": {
+    "no_system_site_packages": true,
+    "offline": true,
+    "pip_check": "passed",
+    "isolated_python": true,
+    "only_test_harness_on_path": true,
+    "production_files": {
+      "pine2ast": {
+        "installed_root": "/mnt/data/stage2_mixed/wheel_env/lib/python3.13/site-packages/pine2ast",
+        "python_files_equal": 197
+      },
+      "ast2python": {
+        "installed_root": "/mnt/data/stage2_mixed/wheel_env/lib/python3.13/site-packages/ast2python",
+        "python_files_equal": 59
+      },
+      "pinelib": {
+        "installed_root": "/mnt/data/stage2_mixed/wheel_env/lib/python3.13/site-packages/pinelib",
+        "python_files_equal": 75
+      },
+      "openpine": {
+        "installed_root": "/mnt/data/stage2_mixed/wheel_env/lib/python3.13/site-packages/openpine",
+        "python_files_equal": 207
+      }
+    }
+  },
+  "architecture": true,
+  "ruff": "passed",
+  "compileall": "passed",
+  "openapi_export": "passed",
+  "not_run": [
+    "Python 3.11",
+    "GitHub Actions",
+    "full host inventory",
+    "standalone optimizer",
+    "current complete builtin-index",
+    "frontend/browser",
+    "whole-product benchmarks"
+  ],
+  "scope_notes": [
+    "Fixed final source runs do not reuse earlier failed/interrupted checks. No mandatory assertion, expected value or test was removed.",
+    "Two exploratory mixed compiler runs were terminated by short external command timeouts; neither had a final XML or is counted as acceptance.",
+    "Initial full producer setup missed the actual wheel build dependency; installed its real offline wheel then reran the full suite. The previous module build was available.",
+    "Initial host collection missed structlog; installed actual offline dependencies. A first multi-package installation attempt included unavailable aiosqlite and made no progress; no project requirement was changed.",
+    "Initial Contracts test import collided with sibling tests namespaces; rerun used only its own root on PYTHONPATH, with source and assertions unchanged.",
+    "Initial transitive inference failures were repaired by removing unresolved callable markers from concrete value-type merging; final parser/compiler sets contain every previous test.",
+    "Method/function exact-shape collision parity has no independent TradingView execution proof. Only the documented bounded shared-selection profile is claimed.",
+    "Existing unresolved v5 str.tonumber expectations and broader catalog/cross-version gaps are unchanged."
+  ],
+  "preserved_paths": {
+    "openpine": true,
+    "openpine-ui": true,
+    "rc6_tests/selected_regressions.json": true,
+    "verification/stages.json": true,
+    "verification/stage2-callable-lock.json": true,
+    "verification/stage2-evidence-plan.json": true
+  },
+  "matrix": {
+    "schema_id": "openpine.stage2_remaining_matrix.v1",
+    "revision": 5,
+    "baseline": "5b714812dd1cdbec89827ff512e8b9cfecf92f12",
+    "source_spec_sha256": "4df7ba22428e859fb60feb68027c8ad63f150a21d594bc12660284d9507cc515",
+    "tasks": [
+      "OP-02",
+      "OP-13",
+      "OP-14",
+      "OP-16",
+      "OP-17",
+      "OP-18",
+      "OP-19",
+      "OP-31"
+    ],
+    "criteria": [
+      "versioned_catalog",
+      "stateful_language_matrix",
+      "imports",
+      "independent_builtin_expected"
+    ],
+    "count_policy": "16 work packages, not exhaustive semantic cases or a percentage denominator; original four criteria remain authoritative.",
+    "exclusions_not_removed_from_catalog": {
+      "stage3": "request datasets and alignment execution",
+      "stage4": "complete external job/broker/IPC crash recovery",
+      "stage5": "broker fills and full strategy semantics",
+      "stage7": "visual rendering and external alert transport"
+    },
+    "baseline_confirmed": [
+      "qualifier metadata and actual argument admission",
+      "receiver-dot public imported methods and declaration-bound recursion",
+      "UDT/enum nominal registry and per-field rollback",
+      "varip admitted collection profiles",
+      "completed loop values and callsite history",
+      "once historical fill rollback matrix in accepted nominal profile"
+    ],
+    "baseline_receipt": "verification/methods-merge-20260911.json",
+    "items": [
+      {
+        "id": "CAT-01",
+        "criterion": "versioned_catalog",
+        "title": "Полнота датированного официального каталога v1–v6",
+        "status": "open",
+        "owner": "pine2ast",
+        "completion": "Сопоставить каждую официальную сигнатуру с фиксированной установленной матрицей; добавить отсутствующее и отрицательные пары по версии, не переносить современные правила назад.",
+        "evidence": [
+          "verification/stage2-callable-lock.json"
+        ],
+        "notes": "2374 — установленный знаменатель, не доказательство полноты официального Pine."
+      },
+      {
+        "id": "CAT-02",
+        "criterion": "versioned_catalog",
+        "title": "Неисполняемые и делегированные сигнатуры: точные владельцы",
+        "status": "open",
+        "owner": "pine2ast/pinelib/openpine",
+        "completion": "Для каждой строки UNAVAILABLE/UNVERIFIED определить языковой дефект или конкретный owner следующего этапа; не вычитать строки из общего знаменателя.",
+        "evidence": [
+          "verification/stage2-callable-lock.json",
+          "verification/stages.json"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "CAT-03",
+        "criterion": "versioned_catalog",
+        "title": "Полная совместимость областей квалификаторов",
+        "status": "partial",
+        "owner": "pine2ast/ast2python/pinelib",
+        "completion": "Проверить включение всей producer-области в target, типы/defaults/перегрузки и отрицательные значения; успешный const-вызов не принимает более широкий series-контракт.",
+        "evidence": [
+          "docs/RC6_STAGE2_QUALIFIER_PUBLICATION.md"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "CAT-04",
+        "criterion": "versioned_catalog",
+        "title": "Историческая доступность бинарного поиска v4",
+        "status": "unresolved_authority",
+        "owner": "pine2ast",
+        "completion": "Получить версионно применимое основание доступности и поведения absent-neighbor; только после этого исправлять каталог или реализацию v4.",
+        "evidence": [
+          "verification/builtin-numeric-closure-v1/lock.json"
+        ],
+        "notes": "Новые provisional v4 fixtures не принимались; существующие строки и тесты сохранены."
+      },
+      {
+        "id": "STATE-01",
+        "criterion": "stateful_language_matrix",
+        "title": "Единая матрица версия × тип × callsite × lifecycle",
+        "status": "partial",
+        "owner": "pine2ast/ast2python/pinelib",
+        "completion": "Привязать имеющиеся проверки scalar/collection/UDT/enum/functions/methods к ячейкам historical/realtime/abort/restore; найти и закрыть непокрытые сочетания, не переписывать уже принятое.",
+        "evidence": [
+          "docs/RC6_STAGE2_NOMINAL_PUBLICATION.md",
+          "docs/RC6_STAGE2_LIBRARY_METHODS.md",
+          "docs/RC6_STAGE2_METHOD_IDENTITY.md"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "STATE-02",
+        "criterion": "stateful_language_matrix",
+        "title": "Расширенные generic/reference/overload-контракты",
+        "status": "partial",
+        "owner": "pine2ast/ast2python/pinelib",
+        "completion": "Для реально допущенных комбинаций типов, ссылок, полей и перегрузок предъявить положительные/отрицательные и stateful-проверки. Unsupported не считать реализованным.",
+        "evidence": [
+          "docs/RC6_STAGE2_NOMINAL_REGISTRY.md",
+          "docs/RC6_STAGE2_ROLLING_CONTEXT_PUBLICATION.md",
+          "docs/RC6_STAGE2_FUNCTION_OVERLOADS.md",
+          "rc6_tests/test_rc6_function_overloads.py",
+          "docs/RC6_STAGE2_MIXED_CALLABLE_FAMILIES.md",
+          "rc6_tests/test_rc6_mixed_callable_families.py"
+        ],
+        "notes": " Ordinary user-function overload families now implemented locally for v5/v6 with declaration-bound resolution, typed/untyped distinct arities, public/private export projection, independent state and source-free proof reconstruction. Mixed function/method families, cross-version libraries and complete generic/reference matrix remain unaccepted. Joint CI pending. Mixed ordinary-function/method explicit calls now use shared declaration-bound selection and source-scoped library visibility in local Pine 5/6 profile. Receiver-dot stays method-only. Exact collision precedence and the full broader matrix remain unaccepted; independent TV execution was not obtained."
+      },
+      {
+        "id": "STATE-03",
+        "criterion": "stateful_language_matrix",
+        "title": "RSI/MACD v1–v2: исторические seed/warmup правила",
+        "status": "unresolved_authority",
+        "owner": "pinelib",
+        "completion": "Закрепить независимые версионные ожидания v1/v2 и проверить пять путей исполнения; не выводить правила только из справочника v3.",
+        "evidence": [
+          "verification/builtin-numeric-closure-v1/lock.json"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "STATE-04",
+        "criterion": "stateful_language_matrix",
+        "title": "TSI: startup, flat source и NA-политика",
+        "status": "unresolved_authority",
+        "owner": "pinelib",
+        "completion": "Установить и проверить начальную и NA-семантику отдельно от условного продолжения после известного steady-state. Нулевой прогрев нельзя выбирать по наблюдаемому output.",
+        "evidence": [
+          "verification/builtin-numeric-closure-v1/lock.json",
+          "docs/RC6_STAGE2_RECURSIVE_PUBLICATION.md"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "IMPORT-01",
+        "criterion": "imports",
+        "title": "Namespace-вызовы пользовательских методов",
+        "status": "implemented_local_pending_joint",
+        "owner": "pine2ast/ast2python",
+        "completion": "Реализовать source-bound namespace call form с явным receiver, overload identity, приватностью, qualifier floors и независимым состоянием; receiver-dot путь не дублировать.",
+        "evidence": [
+          "docs/RC6_STAGE2_LIBRARY_METHODS.md",
+          "docs/RC6_STAGE2_EXPLICIT_METHOD_CALLS.md",
+          "rc6_tests/test_rc6_explicit_method_calls.py"
+        ],
+        "notes": "Namespace и local function notation реализованы в существующем профиле методов v5/v6. Полная совместная приёмка и разрешённые более широкие перегрузки не объявлены завершёнными."
+      },
+      {
+        "id": "IMPORT-02",
+        "criterion": "imports",
+        "title": "Межверсионные библиотеки",
+        "status": "open",
+        "owner": "pine2ast/ast2python/pinelib",
+        "completion": "Зафиксировать допустимую версионную матрицу consumer/library; сохранять семантическую политику источника, dependency identity и отрицательные сочетания.",
+        "evidence": [
+          "docs/RC6_STAGE2_LIBRARY_METHODS.md"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "IMPORT-03",
+        "criterion": "imports",
+        "title": "Полнота пограничных контекстов экспорта и перегрузок",
+        "status": "partial",
+        "owner": "pine2ast",
+        "completion": "Проверить оставшиеся транзитивные/public/private/type/method контексты по точной декларации; не открывать private или непрямой import как обход.",
+        "evidence": [
+          "docs/RC6_STAGE2_LIBRARY_METHODS.md",
+          "docs/RC6_STAGE2_METHOD_IDENTITY.md",
+          "docs/RC6_STAGE2_EXPLICIT_METHOD_CALLS.md",
+          "docs/RC6_STAGE2_FUNCTION_OVERLOADS.md",
+          "rc6_tests/test_rc6_function_overloads.py",
+          "docs/RC6_STAGE2_MIXED_CALLABLE_FAMILIES.md",
+          "rc6_tests/test_rc6_mixed_callable_families.py"
+        ],
+        "notes": "Добавлены exact-source namespace selection, explicit/private/transitive вызовы и проверка составных callee ranges. Общий критерий остальных экспортных/overload-контекстов остаётся partial. Ordinary user-function overload families now implemented locally for v5/v6 with declaration-bound resolution, typed/untyped distinct arities, public/private export projection, independent state and source-free proof reconstruction. Mixed function/method families, cross-version libraries and complete generic/reference matrix remain unaccepted. Joint CI pending. Mixed ordinary-function/method explicit calls now use shared declaration-bound selection and source-scoped library visibility in local Pine 5/6 profile. Receiver-dot stays method-only. Exact collision precedence and the full broader matrix remain unaccepted; independent TV execution was not obtained."
+      },
+      {
+        "id": "IMPORT-04",
+        "criterion": "imports",
+        "title": "Обычный потребительский путь lock и исходных diagnostics",
+        "status": "implemented_local_pending_joint",
+        "owner": "openpine",
+        "completion": "Закрыть library-lock admission и проекцию ошибок в обычном compile API/CLI. Полный browser UX остаётся этапом 7; сетевой latest resolver не вводить.",
+        "evidence": [
+          "docs/RC6_STAGE2_LOCKED_IMPORTS.md",
+          "docs/RC6_STAGE2_CONSUMER_LIBRARIES.md",
+          "rc6_tests/test_rc6_consumer_library_project.py",
+          "rc6_tests/test_rc6_consumer_library_api.py"
+        ],
+        "notes": "Обычный CLI/Python/HTTP lock admission, shared compile/validate, artifact persistence/readback and original-source diagnostics implemented. Full joint CI and browser/runtime traceback integration not claimed; source mapping preserves normalized Unicode coordinates."
+      },
+      {
+        "id": "BUILTIN-01",
+        "criterion": "independent_builtin_expected",
+        "title": "Оставшиеся direct-сигнатуры без пяти путей",
+        "status": "partial",
+        "owner": "pinelib/openpine",
+        "completion": "Выполнить builtin-index на текущем комплекте. Для каждой NO_EXAMPLES/PARTIAL_EXAMPLES direct-строки добавить независимый корпус либо явно сохранить unresolved owner/authority.",
+        "evidence": [
+          "verification/stage2-evidence-plan.json",
+          "verification/stage2-callable-lock.json"
+        ],
+        "notes": "Список вычисляется из результата, а не поддерживается вторым ручным счетчиком."
+      },
+      {
+        "id": "BUILTIN-02",
+        "criterion": "independent_builtin_expected",
+        "title": "Границы полных численных контрактов",
+        "status": "partial",
+        "owner": "pinelib",
+        "completion": "Расширять per-overload expectations: NA, warmup, длины, ties, float tolerance, state and abort. EXAMPLES_ALL_PATHS — лишь ограниченные примеры, не полная приёмка контракта.",
+        "evidence": [
+          "verification/stage2-evidence-plan.json"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "BUILTIN-03",
+        "criterion": "independent_builtin_expected",
+        "title": "Существующие неатрибутированные ожидаемые случаи",
+        "status": "open",
+        "owner": "pine2ast/openpine",
+        "completion": "Разобрать старые случаи array/string corpus, пока не связанные с точными overloads. Не скрывать их удалением assignment и не считать успешной неподтверждённую привязку.",
+        "evidence": [
+          "verification/builtin-assignment-locks/builtin-array-operations.json",
+          "verification/builtin-assignment-locks/builtin-string-operations.json"
+        ],
+        "notes": ""
+      },
+      {
+        "id": "BUILTIN-04",
+        "criterion": "independent_builtin_expected",
+        "title": "Актуальный полный согласованный прогон и защита доказательств",
+        "status": "local_gate_ready",
+        "owner": "openpine",
+        "completion": "Прогнать текущие источники и оба Python с fixed inventories, protected workers, неизменённым stage1, frontend/build; обязательный builtin-index должен replay всех групп. Старые source pins не дают новой приёмки.",
+        "evidence": [
+          "verification/stage2-evidence-plan-lock.json",
+          ".github/workflows/rc6-native.yml"
+        ],
+        "notes": ""
+      }
+    ],
+    "full_stage2_accepted": false,
+    "tradingview_verified": false,
+    "content_hash": "sha256:a1a244d0013982314c8dcf3312453922a5743a2a02df2b079d9dc7237fdf148e"
+  }
+}

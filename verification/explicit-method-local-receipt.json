@@ -1,0 +1,202 @@
+{
+  "schema_id": "openpine.explicit_methods_local_receipt.v1",
+  "date": "2026-09-11",
+  "functional_source": {
+    "pine2ast": "6224e81f99ddc02817dadf3dfd878ba2cb29fcd9",
+    "ast2python": "756d9c73ae4346e8645d413d6ae6cc2d50a6d7b7",
+    "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748",
+    "openpine": "112021e00ca357a08f26d2872f2f0c70a9f41e18"
+  },
+  "python": "3.13.5",
+  "results": {
+    "pine2ast": {
+      "selected": 3046,
+      "passed": 3043,
+      "failures": 0,
+      "errors": 3,
+      "skipped": 0,
+      "junit": "pine2ast.final.xml",
+      "failure_details": [
+        {
+          "classname": "tests.test_reference_package_data",
+          "name": "test_wheel_and_sdist_include_every_reference_resource",
+          "message": "failed on setup with \"AssertionError: /mnt/data/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\n  \nassert 1 == 0\n +  where 1 = CompletedProcess(args=['/mnt/data/stage2_work/venv/bin/python', '-m', 'build', '--wheel', '--sdist', '--no-isolation',...a/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\\n\").returncode\"",
+          "text": "tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x7f452d0f4d60>, _basetemp=PosixPath('/tmp/pytest-of-root/pytest-4'), _retention_count=3, _retention_policy='all')\n\n    @pytest.fixture(scope=\"module\")\n    def reference_artifacts(tmp_path_factory):\n        output = tmp_path_factory.mktemp(\"reference-artifacts\")\n        result = subprocess.run(\n            [sys.executable, \"-m\", \"build\", \"--wheel\", \"--sdist\", \"--no-isolation\", \"--outdir\", str(output)],\n            cwd=PROJECT,\n            text=True,\n            capture_output=True,\n            timeout=120,\n        )\n>       assert result.returncode == 0, result.stdout + result.stderr\nE       AssertionError: /mnt/data/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\nE         \nE       assert 1 == 0\nE        +  where 1 = CompletedProcess(args=['/mnt/data/stage2_work/venv/bin/python', '-m', 'build', '--wheel', '--sdist', '--no-isolation',...a/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\\n\").returncode\n\ntests/test_reference_package_data.py:35: AssertionError"
+        },
+        {
+          "classname": "tests.test_reference_package_data",
+          "name": "test_extracted_wheel_validates_default_catalog_and_matrix",
+          "message": "failed on setup with \"AssertionError: /mnt/data/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\n  \nassert 1 == 0\n +  where 1 = CompletedProcess(args=['/mnt/data/stage2_work/venv/bin/python', '-m', 'build', '--wheel', '--sdist', '--no-isolation',...a/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\\n\").returncode\"",
+          "text": "tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x7f452d0f4d60>, _basetemp=PosixPath('/tmp/pytest-of-root/pytest-4'), _retention_count=3, _retention_policy='all')\n\n    @pytest.fixture(scope=\"module\")\n    def reference_artifacts(tmp_path_factory):\n        output = tmp_path_factory.mktemp(\"reference-artifacts\")\n        result = subprocess.run(\n            [sys.executable, \"-m\", \"build\", \"--wheel\", \"--sdist\", \"--no-isolation\", \"--outdir\", str(output)],\n            cwd=PROJECT,\n            text=True,\n            capture_output=True,\n            timeout=120,\n        )\n>       assert result.returncode == 0, result.stdout + result.stderr\nE       AssertionError: /mnt/data/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\nE         \nE       assert 1 == 0\nE        +  where 1 = CompletedProcess(args=['/mnt/data/stage2_work/venv/bin/python', '-m', 'build', '--wheel', '--sdist', '--no-isolation',...a/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\\n\").returncode\n\ntests/test_reference_package_data.py:35: AssertionError"
+        },
+        {
+          "classname": "tests.test_reference_package_data",
+          "name": "test_extracted_wheel_missing_resources_cannot_fall_back_to_checkout",
+          "message": "failed on setup with \"AssertionError: /mnt/data/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\n  \nassert 1 == 0\n +  where 1 = CompletedProcess(args=['/mnt/data/stage2_work/venv/bin/python', '-m', 'build', '--wheel', '--sdist', '--no-isolation',...a/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\\n\").returncode\"",
+          "text": "tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x7f452d0f4d60>, _basetemp=PosixPath('/tmp/pytest-of-root/pytest-4'), _retention_count=3, _retention_policy='all')\n\n    @pytest.fixture(scope=\"module\")\n    def reference_artifacts(tmp_path_factory):\n        output = tmp_path_factory.mktemp(\"reference-artifacts\")\n        result = subprocess.run(\n            [sys.executable, \"-m\", \"build\", \"--wheel\", \"--sdist\", \"--no-isolation\", \"--outdir\", str(output)],\n            cwd=PROJECT,\n            text=True,\n            capture_output=True,\n            timeout=120,\n        )\n>       assert result.returncode == 0, result.stdout + result.stderr\nE       AssertionError: /mnt/data/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\nE         \nE       assert 1 == 0\nE        +  where 1 = CompletedProcess(args=['/mnt/data/stage2_work/venv/bin/python', '-m', 'build', '--wheel', '--sdist', '--no-isolation',...a/stage2_work/venv/bin/python: No module named build.__main__; 'build' is a package and cannot be directly executed\\n\").returncode\n\ntests/test_reference_package_data.py:35: AssertionError"
+        }
+      ]
+    },
+    "ast2python": {
+      "selected": 1378,
+      "passed": 1378,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit": "ast2python.final.xml",
+      "failure_details": []
+    },
+    "pinelib": {
+      "selected": 4944,
+      "passed": 4944,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "junit": "pinelib.final.xml",
+      "failure_details": []
+    },
+    "host": {
+      "selected": 89,
+      "passed": 75,
+      "failures": 14,
+      "errors": 0,
+      "skipped": 0,
+      "junit": "host.final.xml",
+      "failure_details": [
+        {
+          "classname": "rc6_tests.test_rc6_explicit_method_calls",
+          "name": "test_real_protected_workers_execute_explicit_method_artifacts[False-interactive]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:320: in run_isolated_artifact\n    with InteractiveWorkerSession(\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_explicit_method_calls.py:100: in test_real_protected_workers_execute_explicit_method_artifacts\n    out=run_isolated_artifact(compiled.python_code.encode(),bars=[_engine_bar(b) for b in rows],config=cfg,params={})\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_run.py:408: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_explicit_method_calls",
+          "name": "test_real_protected_workers_execute_explicit_method_artifacts[False-bulk_backtest]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:272: in run_isolated_artifact\n    with BulkWorkerSession(\nopenpine/runtime/bulk_worker.py:71: in __init__\n    super().__init__(*args, **kwargs)\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_explicit_method_calls.py:100: in test_real_protected_workers_execute_explicit_method_artifacts\n    out=run_isolated_artifact(compiled.python_code.encode(),bars=[_engine_bar(b) for b in rows],config=cfg,params={})\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_run.py:289: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_explicit_method_calls",
+          "name": "test_real_protected_workers_execute_explicit_method_artifacts[True-interactive]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:320: in run_isolated_artifact\n    with InteractiveWorkerSession(\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_explicit_method_calls.py:100: in test_real_protected_workers_execute_explicit_method_artifacts\n    out=run_isolated_artifact(compiled.python_code.encode(),bars=[_engine_bar(b) for b in rows],config=cfg,params={})\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_run.py:408: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_explicit_method_calls",
+          "name": "test_real_protected_workers_execute_explicit_method_artifacts[True-bulk_backtest]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:272: in run_isolated_artifact\n    with BulkWorkerSession(\nopenpine/runtime/bulk_worker.py:71: in __init__\n    super().__init__(*args, **kwargs)\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_explicit_method_calls.py:100: in test_real_protected_workers_execute_explicit_method_artifacts\n    out=run_isolated_artifact(compiled.python_code.encode(),bars=[_engine_bar(b) for b in rows],config=cfg,params={})\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_run.py:289: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_methods",
+          "name": "test_real_protected_worker_runs_exported_methods_without_library_files[False-interactive]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:320: in run_isolated_artifact\n    with InteractiveWorkerSession(\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_methods.py:133: in test_real_protected_worker_runs_exported_methods_without_library_files\n    out = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:408: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_methods",
+          "name": "test_real_protected_worker_runs_exported_methods_without_library_files[False-bulk_backtest]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:272: in run_isolated_artifact\n    with BulkWorkerSession(\nopenpine/runtime/bulk_worker.py:71: in __init__\n    super().__init__(*args, **kwargs)\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_methods.py:133: in test_real_protected_worker_runs_exported_methods_without_library_files\n    out = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:289: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_methods",
+          "name": "test_real_protected_worker_runs_exported_methods_without_library_files[True-interactive]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:320: in run_isolated_artifact\n    with InteractiveWorkerSession(\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_methods.py:133: in test_real_protected_worker_runs_exported_methods_without_library_files\n    out = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:408: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_methods",
+          "name": "test_real_protected_worker_runs_exported_methods_without_library_files[True-bulk_backtest]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:272: in run_isolated_artifact\n    with BulkWorkerSession(\nopenpine/runtime/bulk_worker.py:71: in __init__\n    super().__init__(*args, **kwargs)\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_methods.py:133: in test_real_protected_worker_runs_exported_methods_without_library_files\n    out = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:289: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_method_identity",
+          "name": "test_protected_worker_preserves_exact_library_method_identity[False-interactive]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:320: in run_isolated_artifact\n    with InteractiveWorkerSession(\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_method_identity.py:74: in test_protected_worker_preserves_exact_library_method_identity\n    output = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:408: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_method_identity",
+          "name": "test_protected_worker_preserves_exact_library_method_identity[False-bulk_backtest]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:272: in run_isolated_artifact\n    with BulkWorkerSession(\nopenpine/runtime/bulk_worker.py:71: in __init__\n    super().__init__(*args, **kwargs)\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_method_identity.py:74: in test_protected_worker_preserves_exact_library_method_identity\n    output = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:289: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_method_identity",
+          "name": "test_protected_worker_preserves_exact_library_method_identity[True-interactive]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:320: in run_isolated_artifact\n    with InteractiveWorkerSession(\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_method_identity.py:74: in test_protected_worker_preserves_exact_library_method_identity\n    output = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:408: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_library_method_identity",
+          "name": "test_protected_worker_preserves_exact_library_method_identity[True-bulk_backtest]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:272: in run_isolated_artifact\n    with BulkWorkerSession(\nopenpine/runtime/bulk_worker.py:71: in __init__\n    super().__init__(*args, **kwargs)\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_library_method_identity.py:74: in test_protected_worker_preserves_exact_library_method_identity\n    output = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:289: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_stage1_corpus",
+          "name": "test_real_worker_exports_matching_effective_config_receipt[interactive]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:320: in run_isolated_artifact\n    with InteractiveWorkerSession(\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_stage1_corpus.py:102: in test_real_worker_exports_matching_effective_config_receipt\n    output = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:408: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        },
+        {
+          "classname": "rc6_tests.test_rc6_stage1_corpus",
+          "name": "test_real_worker_exports_matching_effective_config_receipt[bulk_backtest]",
+          "message": "openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution",
+          "text": "openpine/runtime/isolated_run.py:272: in run_isolated_artifact\n    with BulkWorkerSession(\nopenpine/runtime/bulk_worker.py:71: in __init__\n    super().__init__(*args, **kwargs)\nopenpine/runtime/isolated_worker.py:638: in __init__\n    _bwrap_argv(admitted_manifest, self.unit_name),\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nopenpine/runtime/isolated_worker.py:250: in _bwrap_argv\n    raise IsolatedWorkerError(\"bubblewrap is required for isolated execution\")\nE   openpine.runtime.isolated_worker.IsolatedWorkerError: bubblewrap is required for isolated execution\n\nThe above exception was the direct cause of the following exception:\nrc6_tests/test_rc6_stage1_corpus.py:102: in test_real_worker_exports_matching_effective_config_receipt\n    output = run_isolated_artifact(\nopenpine/runtime/isolated_run.py:289: in run_isolated_artifact\n    raise IsolatedRunError(str(exc)) from exc\nE   openpine.runtime.isolated_run.IsolatedRunError: bubblewrap is required for isolated execution"
+        }
+      ]
+    }
+  },
+  "new_tests": {
+    "pine2ast": {
+      "count": 57,
+      "passed": 57
+    },
+    "ast2python": {
+      "count": 57,
+      "passed": 57
+    },
+    "host": {
+      "count": 26,
+      "passed": 22
+    }
+  },
+  "retained_old_test_ids": 21306,
+  "candidate_inventory": 21446,
+  "all_selected_outcomes_green": false,
+  "full_stage2_accepted": false,
+  "tradingview_verified": false,
+  "remote_mutations": [],
+  "github_actions_run": false,
+  "python311": "not_run",
+  "frontend": "not_run",
+  "ruff": "unavailable_in_environment",
+  "full_current_builtin_index": "not_rerun; predecessor had 90/100 with unverified string authority conflicts",
+  "source_order_side_effect_policy": "engineering rule based on preserving written AST order, not independently observed TradingView argument/default evaluation",
+  "wheels_built": [
+    "pine2ast",
+    "ast2python",
+    "openpine"
+  ],
+  "sdists_built": [
+    "pine2ast",
+    "ast2python",
+    "openpine"
+  ],
+  "other_packages": "unchanged wheels/sdists inherited from previous local deliverable",
+  "installed_wheel_smoke_cases": 4,
+  "installed_wheel_python_files_matched": 532,
+  "architecture_gate": "passed",
+  "not_executed": [
+    "full_contracts",
+    "full_backtest_engine",
+    "provider",
+    "optimizer",
+    "remaining_host_inventory",
+    "full_joint_ci"
+  ],
+  "comparison_policy": "full parser/compiler/runtime suites plus selected host; smoke/targeted repeats excluded from main total"
+}

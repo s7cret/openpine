@@ -148,7 +148,14 @@ def test_unavailable_host_surface_fails_at_compilation_even_in_unexecuted_branch
         # separate host-gate test checks malformed externally supplied modules.
         from pine2ast import parse_code
 
-        assert "production-blocking diagnostics" in result.errors[0]
+        assert result.python_code is None and result.generated_artifact is None
+        errors = [d for d in result.diagnostics if d["severity"] == "ERROR"]
+        assert len(errors) == 1
+        error = errors[0]
+        assert error["code"] == "P2A1404" and error["phase"] == "frontend"
+        assert error["location"]["source"] == "<memory>"
+        assert error["location"]["line"] == 4 and error["location"]["column"] == 5
+        assert "P2A1404" in result.errors[0] and error["message"] in result.errors[0]
         diagnostics = parse_code(program).diagnostics
         assert any(
             d.is_error and d.code == "P2A1404" and d.span.start_line == 4 for d in diagnostics

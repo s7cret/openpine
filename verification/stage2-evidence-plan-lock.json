@@ -1,0 +1,1 @@
+{"expected_group_paths":100,"group_count":12,"plan_hash":"sha256:b5bcf397cf49d2f0702b59e0218b8861c88134e71e5f756ae3d0134feceb943c","policy":"Explicit review required when adding/replacing any group; not derived from whichever files happen to exist.","schema_id":"openpine.evidence_plan_review.v1"}

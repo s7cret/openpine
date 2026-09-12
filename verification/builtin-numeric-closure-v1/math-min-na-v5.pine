@@ -1,0 +1,5 @@
+//@version=5
+indicator("Independent numeric closure")
+sample = bar_index == 2 or bar_index == 5 ? na : close
+result = math.min(sample, -close, 2.5) // PRIMARY
+plot(result)

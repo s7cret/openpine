@@ -1,0 +1,596 @@
+{
+  "schema_id": "openpine.local_numeric_index_receipt.v1",
+  "date": "2026-09-11",
+  "status": "local_candidate_not_accepted",
+  "source_baseline": "5b714812dd1cdbec89827ff512e8b9cfecf92f12",
+  "tested_host_source": "e10eb6137ef606851a1f69589f5f9d424b5a5e70",
+  "tested_pinelib_source": "547620ee70e707532dbabd6026645e4d9abaf748",
+  "source_pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "b3df12d84e9471d872d4591a0c05500b4ca6f3f5",
+    "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "bac8db4a012f37aa6d50770c2cc1be3cbe047c9b"
+  },
+  "python_version": "3.13.5",
+  "python311": "not_run",
+  "remote_mutations": [],
+  "github_ci": "not_run",
+  "frontend": "not_run_unchanged_tree",
+  "full_stage2_accepted": false,
+  "tradingview_verified": false,
+  "test_reports": {
+    "pinelib": {
+      "file": "pinelib-final.xml",
+      "sha256": "3d6018f23136103992b2b62903a144b036b902787d77526f4ab8a4af124d87e2",
+      "cases": 4944,
+      "passed": 4944,
+      "failed_or_error": 0,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 0
+      }
+    },
+    "pine2ast": {
+      "file": "parser-final.xml",
+      "sha256": "dac787aca2a1da8b753df993df38b8b99daef03f99687b72cfa04e66ef32c2bf",
+      "cases": 2989,
+      "passed": 2989,
+      "failed_or_error": 0,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 0
+      }
+    },
+    "ast2python": {
+      "file": "compiler-final.xml",
+      "sha256": "e60aab4d2e98eae77c3dfd634d6eaaefe7622fb4150674057828ef241753664e",
+      "cases": 1321,
+      "passed": 1321,
+      "failed_or_error": 0,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 0
+      }
+    },
+    "openpine-contracts": {
+      "file": "openpine-contracts-final.xml",
+      "sha256": "36ec486fe05decbfcb50025ddef5ec8dd5095b760b26eaffb61881d022229914",
+      "cases": 557,
+      "passed": 557,
+      "failed_or_error": 0,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 0
+      }
+    },
+    "backtest_engine": {
+      "file": "backtest_engine-final.xml",
+      "sha256": "ce02149d103788b935de54d14c9a98a0eebddc65b04bb9092d41b2dc13d8c273",
+      "cases": 1102,
+      "passed": 1102,
+      "failed_or_error": 0,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 0
+      }
+    },
+    "marketdata-provider": {
+      "file": "marketdata-provider-final.xml",
+      "sha256": "f87c4f8b0b7af8c88242c352cfde8c1e7d10145fa41c3ee8f567d84774cce377",
+      "cases": 601,
+      "passed": 426,
+      "failed_or_error": 175,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 173
+      }
+    },
+    "host_builtin_corpora": {
+      "file": "builtin-current.xml",
+      "sha256": "d80c3071377e32700def43ee8856500eba6844a845b75beb33b34d26315b9940",
+      "cases": 7794,
+      "passed": 7794,
+      "failed_or_error": 0,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 0
+      }
+    },
+    "host_evidence_validation": {
+      "file": "verification-final.xml",
+      "sha256": "fad20986809cd75cec99f6ad44552cfa3dfdb44b85ef56f2184a697ba59406da",
+      "cases": 65,
+      "passed": 65,
+      "failed_or_error": 0,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 0,
+        "storage_io": 0
+      }
+    },
+    "host_search_broker": {
+      "file": "search-broker.xml",
+      "sha256": "fa706dad444cd35b60e8d8ce355fdbc83753fe74b722aac606ded38b4119e988",
+      "cases": 36,
+      "passed": 32,
+      "failed_or_error": 4,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 4,
+        "storage_io": 0
+      }
+    },
+    "host_stage1_corpus": {
+      "file": "stage1-corpus-local.xml",
+      "sha256": "1363816692e30fe25ab8fd6858bdf8d7127e4303dfdb4a27b436faa4bc08f38a",
+      "cases": 14,
+      "passed": 12,
+      "failed_or_error": 2,
+      "skipped": 0,
+      "failure_classes": {
+        "bubblewrap_required": 2,
+        "storage_io": 0
+      }
+    }
+  },
+  "distinct_cases": 19423,
+  "passed": 19242,
+  "failed_or_error": 181,
+  "skipped": 0,
+  "candidate_inventory": 21306,
+  "baseline_inventory": 20586,
+  "added_test_ids": 720,
+  "removed_test_ids": 0,
+  "new_cases_passed": 716,
+  "new_cases_failed_protected_worker": 4,
+  "builtin_index": {
+    "locked_denominator": 2374,
+    "direct_denominator": 303,
+    "baseline_examples_all_paths": 270,
+    "current_examples_all_paths": 284,
+    "new_signature_keys": [
+      [
+        3,
+        "pine:function:ta.macd",
+        "pine:function:ta.macd#canonical",
+        "FUNCTION"
+      ],
+      [
+        3,
+        "pine:function:ta.rsi",
+        "pine:function:ta.rsi#overload:0",
+        "FUNCTION"
+      ],
+      [
+        4,
+        "pine:function:ta.macd",
+        "pine:function:ta.macd#canonical",
+        "FUNCTION"
+      ],
+      [
+        4,
+        "pine:function:ta.rsi",
+        "pine:function:ta.rsi#overload:0",
+        "FUNCTION"
+      ],
+      [
+        5,
+        "pine:function:array.binary_search_leftmost",
+        "pine:function:array.binary_search_leftmost#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        5,
+        "pine:function:array.binary_search_rightmost",
+        "pine:function:array.binary_search_rightmost#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        5,
+        "pine:function:math.max",
+        "pine:function:math.max#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        5,
+        "pine:function:math.min",
+        "pine:function:math.min#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        5,
+        "pine:function:ta.tsi",
+        "pine:function:ta.tsi#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        5,
+        "pine:method:array.binary_search_leftmost",
+        "pine:method:array.binary_search_leftmost#canonical",
+        "METHOD"
+      ],
+      [
+        5,
+        "pine:method:array.binary_search_rightmost",
+        "pine:method:array.binary_search_rightmost#canonical",
+        "METHOD"
+      ],
+      [
+        6,
+        "pine:function:math.max",
+        "pine:function:math.max#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        6,
+        "pine:function:math.min",
+        "pine:function:math.min#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        6,
+        "pine:function:ta.tsi",
+        "pine:function:ta.tsi#canonical",
+        "NAMESPACE_FUNCTION"
+      ]
+    ],
+    "current_horizon_only": [
+      [
+        5,
+        "pine:function:ta.tsi",
+        "pine:function:ta.tsi#canonical",
+        "NAMESPACE_FUNCTION"
+      ],
+      [
+        6,
+        "pine:function:ta.tsi",
+        "pine:function:ta.tsi#canonical",
+        "NAMESPACE_FUNCTION"
+      ]
+    ],
+    "direct_without_all_paths": [
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          1,
+          "pine:function:request.security",
+          "pine:function:request.security#canonical",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          1,
+          "pine:function:ta.macd",
+          "pine:function:ta.macd#canonical",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [
+            "A2P_TARGET_QUALIFIER_CONTRACT"
+          ],
+          "status": "INCOMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          1,
+          "pine:function:ta.rsi",
+          "pine:function:ta.rsi#overload:0",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          2,
+          "pine:function:request.security",
+          "pine:function:request.security#canonical",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          2,
+          "pine:function:ta.macd",
+          "pine:function:ta.macd#canonical",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [
+            "A2P_TARGET_QUALIFIER_CONTRACT"
+          ],
+          "status": "INCOMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          2,
+          "pine:function:ta.rsi",
+          "pine:function:ta.rsi#overload:0",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          3,
+          "pine:function:request.security",
+          "pine:function:request.security#canonical",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          4,
+          "pine:function:array.binary_search",
+          "pine:function:array.binary_search#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          4,
+          "pine:function:array.binary_search_leftmost",
+          "pine:function:array.binary_search_leftmost#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          4,
+          "pine:function:array.binary_search_rightmost",
+          "pine:function:array.binary_search_rightmost#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          4,
+          "pine:function:request.security",
+          "pine:function:request.security#canonical",
+          "FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          5,
+          "pine:function:request.security",
+          "pine:function:request.security#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          5,
+          "pine:function:request.security_lower_tf",
+          "pine:function:request.security_lower_tf#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          5,
+          "pine:method:label.delete",
+          "pine:method:label.delete#canonical",
+          "METHOD"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          5,
+          "pine:method:line.delete",
+          "pine:method:line.delete#canonical",
+          "METHOD"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          6,
+          "pine:function:request.security",
+          "pine:function:request.security#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          6,
+          "pine:function:request.security_lower_tf",
+          "pine:function:request.security_lower_tf#canonical",
+          "NAMESPACE_FUNCTION"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          6,
+          "pine:method:label.delete",
+          "pine:method:label.delete#canonical",
+          "METHOD"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      },
+      {
+        "evidence_status": "NO_EXAMPLES",
+        "key": [
+          6,
+          "pine:method:line.delete",
+          "pine:method:line.delete#canonical",
+          "METHOD"
+        ],
+        "qualifier_contract": {
+          "reasons": [],
+          "status": "COMPATIBLE"
+        }
+      }
+    ],
+    "group_paths_passed": 90,
+    "group_paths_required": 100,
+    "accepted": false,
+    "blocker": "three preexisting unverified v5 str.tonumber expectation disagreements in ten transcript/path runs, NOT a newly established runtime defect",
+    "current_index_sha256": "a824ded363aa0d737ab0f8d79382c8dabf3469c7219d84b4ceabe4532b683188",
+    "baseline_index_sha256": "1e4b53f22aa9afb1f50393265ca3a75ed2d0a0bac9bb96fb2a6aeacb920501be"
+  },
+  "source_reconstruction": "exact eight source trees from read-only published artifact bundles; no new Actions started",
+  "builds": {
+    "openpine-contracts": {
+      "returncode": 0,
+      "head": "5950e0f99214e60b64162d074ed47f1e4bbc7141"
+    },
+    "pine2ast": {
+      "returncode": 0,
+      "head": "bac8db4a012f37aa6d50770c2cc1be3cbe047c9b"
+    },
+    "pinelib": {
+      "returncode": 0,
+      "head": "547620ee70e707532dbabd6026645e4d9abaf748"
+    },
+    "ast2python": {
+      "returncode": 0,
+      "head": "b3df12d84e9471d872d4591a0c05500b4ca6f3f5"
+    },
+    "backtest_engine": {
+      "returncode": 0,
+      "head": "f7d286c2309ef8f8679c37cf5ba730414c13e575"
+    },
+    "marketdata-provider": {
+      "returncode": 0,
+      "head": "4e269bb7e3d389cae6214da9e17898c32c7ead15"
+    },
+    "optimizer": {
+      "returncode": 0,
+      "head": "95570459e50492dea8872b0a25f094e29d3e821f"
+    },
+    "openpine": {
+      "returncode": 0,
+      "head": "e10eb6137ef606851a1f69589f5f9d424b5a5e70"
+    }
+  },
+  "environment_probe": {
+    "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+    "fsync_module": "posix",
+    "bubblewrap": null,
+    "probe_uses_project_code": false,
+    "fsync": {
+      "type": "OSError",
+      "errno": 5,
+      "message": "[Errno 5] Input/output error"
+    },
+    "sqlite": {
+      "type": "OperationalError",
+      "message": "disk I/O error"
+    }
+  },
+  "performance": "whole backtest speed not measured",
+  "installed_wheel_check": {
+    "cases": 647,
+    "passed": 647,
+    "duplicates_main_cases": true,
+    "no_source_checkout_in_import_path": true,
+    "initial_fixture_run": {
+      "passed": 646,
+      "failed": 1,
+      "cause": "metadata fixture omitted .github/workflows/rc6-native.yml; copied missing metadata without changing code/assertions"
+    },
+    "production_files_compared": 279
+  },
+  "preserved_host_files": [
+    "openpine/runtime/request_data.py",
+    "openpine/runtime/request_transport.py",
+    "openpine/runtime/generated_checkpoint.py",
+    "openpine/runtime/rc6_config.py",
+    "openpine/runtime/worker_capabilities.py",
+    "openpine/runtime/rc6_worker_runtime.py",
+    "openpine/runtime/strategy_host.py",
+    "openpine/optimizer/isolated_runner.py",
+    "openpine/runtime/isolated_run.py"
+  ],
+  "ui_tree_unchanged": true
+}

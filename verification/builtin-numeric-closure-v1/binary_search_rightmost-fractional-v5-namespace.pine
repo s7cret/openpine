@@ -1,0 +1,10 @@
+//@version=5
+indicator("Independent numeric closure")
+a = array.new_float(0)
+array.push(a, -3.5)
+array.push(a, -1.25)
+array.push(a, 0.125)
+array.push(a, 2.25)
+array.push(a, 8.5)
+result = array.binary_search_rightmost(a, close) // PRIMARY
+plot(result)

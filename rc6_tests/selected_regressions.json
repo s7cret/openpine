@@ -15,6 +15,7 @@
   "tests/test_bulk_backtest.py",
   "tests/test_candle_dedup.py",
   "tests/test_cli_semantic_profile.py",
+  "tests/test_compile_pipeline.py",
   "tests/test_data_orchestrator_source_policy.py",
   "tests/test_data_series_delete_canonical_market.py",
   "tests/test_exports.py",

@@ -770,7 +770,11 @@ def pine_add(name: str, source_path: str) -> None:
 @click.option(
     "--force", is_flag=True, help="Force recompile even if cached artifact exists"
 )
-def pine_compile(name: str, force: bool) -> None:
+@click.option("--library-lock", type=click.Path(dir_okay=False, path_type=Path), default=None,
+              help="Offline Pine library lock file; requires an independently pinned hash")
+@click.option("--expected-library-lock-hash", default=None, help="Expected sha256:... identity of the library lock")
+def pine_compile(name: str, force: bool, library_lock: Path | None = None,
+                 expected_library_lock_hash: str | None = None) -> None:
     """Compile a Pine source and produce a CompileArtifact."""
     from openpine.admission import admit_configured_deployment
     from openpine.build_identity import compiler_producer_commits
@@ -783,6 +787,12 @@ def pine_compile(name: str, force: bool) -> None:
     except AdmitError as exc:
         raise click.ClickException(str(exc)) from exc
 
+    from openpine.compile.library_inputs import load_library_lock
+    from pine2ast.libraries import LibraryError
+    try:
+        libraries = load_library_lock(library_lock, expected_library_lock_hash)
+    except (LibraryError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
     registry = SQLitePineSourceRegistry()
     try:
         try:
@@ -799,6 +809,7 @@ def pine_compile(name: str, force: bool) -> None:
                 "module_name": source.name,
                 "source_name": source.source_path or f"{source.name}.pine",
                 "producer_commits": compiler_producer_commits(),
+                "library_store": libraries,
             },
         )
 
@@ -812,7 +823,55 @@ def pine_compile(name: str, force: bool) -> None:
         else:
             console.print("[red]Compile failed:[/red]")
             for err in result["errors"]:
-                console.print(f"  [red]- {err}[/red]")
+                console.print(f"  - {err}", markup=False)
+            raise click.ClickException("Pine compilation failed; diagnostics saved")
+    finally:
+        registry.close()
+
+
+# Natural spelling; keep the existing pine-compile command for compatibility.
+pine.add_command(pine_compile, "compile")
+
+
+@pine.command("validate")
+@click.argument("name")
+@click.option("--library-lock", type=click.Path(dir_okay=False, path_type=Path), default=None)
+@click.option("--expected-library-lock-hash", default=None)
+@click.option("--json-output", is_flag=True, help="Print structured diagnostics as JSON")
+def pine_validate(name: str, library_lock: Path | None, expected_library_lock_hash: str | None,
+                  json_output: bool) -> None:
+    """Validate registered Pine and locked dependencies without creating an artifact."""
+    import json
+    from openpine.build_identity import compiler_producer_commits
+    from openpine.compile import NativeRC6CompilerAdapter
+    from openpine.compile.library_inputs import load_library_lock
+    from openpine.pine.registry import SQLitePineSourceRegistry
+    from pine2ast.libraries import LibraryError
+
+    try:
+        libraries = load_library_lock(library_lock, expected_library_lock_hash)
+    except (LibraryError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    registry = SQLitePineSourceRegistry()
+    try:
+        try:
+            source = registry.get_source(name)
+        except KeyError as exc:
+            raise click.ClickException(f"Pine source not found: {name}") from exc
+        result = NativeRC6CompilerAdapter().validate(
+            source.source_text, source_name=source.source_path or f"{source.name}.pine",
+            producer_commits=compiler_producer_commits(), library_store=libraries,
+        )
+        if json_output:
+            click.echo(json.dumps({"source_id": source.id, "valid": result.success,
+                                   "diagnostics": result.diagnostics, "errors": result.errors}, ensure_ascii=False))
+        elif result.success:
+            console.print("Pine validation passed")
+        else:
+            for error in result.errors:
+                console.print(error, markup=False)
+        if not result.success:
+            raise click.exceptions.Exit(1)
     finally:
         registry.close()
 

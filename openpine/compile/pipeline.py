@@ -1,59 +1,53 @@
-"""Compile pipeline — orchestrates Pine compilation via CompilerAdapter."""
+"""One compiler-result persistence path for CLI, Python API and HTTP."""
 
 from __future__ import annotations
 
 import hashlib
+import json
 import time
+from typing import Any
 
-from openpine.compile.native_rc6 import CompilerAdapter
+from openpine.compile.native_rc6 import CompilerAdapter, CompileResult
 from openpine.pine.source import PineSource
 
 
-def compile_pipeline(
+def persist_compile_result(
     source: PineSource,
-    adapter: CompilerAdapter,
+    result: CompileResult,
     params_hash: str = "default",
-    extra_options: dict | None = None,
+    *,
+    artifact_store: Any = None,
 ) -> dict:
-    """Compile a PineSource via the given adapter and save to ArtifactStore.
+    """Save successes and failures with original Pine and structured diagnostics.
 
-    Args:
-        source: PineSource to compile.
-        adapter: Native RC6 CompilerAdapter instance.
-        params_hash: Parameter hash for this artifact.
-        extra_options: Extra compile options passed to the adapter.
-
-    Returns:
-        dict with keys: artifact_id, source_id, params_hash, success,
-        compile_meta, artifact_path.
+    Failures have a separate identity including exact source, admitted dependencies,
+    producer identities and diagnostics. A failed recompile never activates output.
     """
     from openpine.artifacts.store import ArtifactStore
 
-    extra_options = dict(extra_options or {})
-
-    result = adapter.compile(source.source_text, **extra_options)
-
     if result.success:
         if not result.python_code:
-            raise RuntimeError(
-                "successful compile result did not include generated Python code"
-            )
+            raise RuntimeError("successful compile result did not include generated Python code")
         if result.generated_artifact is None:
             raise RuntimeError(
                 "successful compile result did not include sealed generated artifact"
             )
         artifact_id = ArtifactStore.artifact_id_for_envelope(result.generated_artifact)
     else:
-        compile_key = (
-            f"{source.id}"
-            f"|{params_hash}"
-            f"|{result.compile_meta.get('pine2ast_version', '?')}"
-            f"|{result.compile_meta.get('ast2python_version', '?')}"
+        identity = {
+            "schema_id": "openpine.failed_compile_identity.v2",
+            "source_id": source.id,
+            "source": source.source_text,
+            "params_hash": params_hash,
+            "compile_meta": result.compile_meta,
+            "errors": result.errors,
+            "diagnostics": result.diagnostics,
+        }
+        encoded = json.dumps(
+            identity, sort_keys=True, ensure_ascii=False, allow_nan=False, separators=(",", ":")
         )
-        art_hash = hashlib.sha256(compile_key.encode()).hexdigest()[:16]
-        artifact_id = f"art_{art_hash}"
-
-    compile_meta = {
+        artifact_id = "err_" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:24]
+    meta = {
         **result.compile_meta,
         "source_id": source.id,
         "source_name": source.name,
@@ -62,50 +56,57 @@ def compile_pipeline(
         "schema_version": "openpine.compile_meta.v1",
         "compile_status": "OK" if result.success else "FAILED",
         "errors": result.errors,
+        "diagnostics": result.diagnostics,
         "created_at": int(time.time() * 1000),
     }
-
+    store = artifact_store if artifact_store is not None else ArtifactStore()
+    payloads = {}
     if result.success:
-        store = ArtifactStore()
-        artifact_path = store.save_artifact(
-            artifact_id=artifact_id,
-            source_id=source.id,
-            params_hash=params_hash,
-            python_code=result.python_code,
-            compile_meta=compile_meta,
-            source_text=source.source_text,
-            ast_json=result.ast_json,
-            diagnostics="",
-            source_map=result.source_map,
-            generated_artifact=result.generated_artifact,
-            consumer_bundle=result.consumer_bundle,
-            frontend_artifact=result.frontend_artifact,
-            support_profile=result.support_profile,
-            ast_artifact=result.ast_artifact,
-        )
-    else:
-        # Save failed artifact for diagnostics
-        store = ArtifactStore()
-        compile_meta["compile_status"] = "FAILED"
-        artifact_path = store.save_artifact(
-            artifact_id=artifact_id,
-            source_id=source.id,
-            params_hash=params_hash,
-            python_code=None,
-            compile_meta=compile_meta,
-            source_text=source.source_text,
-            ast_json=result.ast_json,
-            diagnostics="\n".join(result.errors),
-        )
-
+        payloads = {
+            key: getattr(result, key)
+            for key in (
+                "source_map",
+                "generated_artifact",
+                "consumer_bundle",
+                "frontend_artifact",
+                "support_profile",
+                "ast_artifact",
+            )
+        }
+    artifact_path = store.save_artifact(
+        artifact_id=artifact_id,
+        source_id=source.id,
+        params_hash=params_hash,
+        python_code=result.python_code if result.success else None,
+        compile_meta=meta,
+        source_text=source.source_text,
+        ast_json=result.ast_json,
+        diagnostics="\n".join(result.errors),
+        **payloads,
+    )
     return {
         "artifact_id": artifact_id,
         "source_id": source.id,
         "params_hash": params_hash,
         "success": result.success,
         "errors": result.errors,
-        "compile_meta": compile_meta,
+        "diagnostics": result.diagnostics,
+        "compile_meta": meta,
         "artifact_path": str(artifact_path),
         "python_code": result.python_code if result.success else None,
         "generated_artifact": result.generated_artifact if result.success else None,
     }
+
+
+def compile_pipeline(
+    source: PineSource,
+    adapter: CompilerAdapter,
+    params_hash: str = "default",
+    extra_options: dict | None = None,
+    *,
+    artifact_store: Any = None,
+) -> dict:
+    options = dict(extra_options or {})
+    options.setdefault("source_name", source.source_path or f"{source.name}.pine")
+    result = adapter.compile(source.source_text, **options)
+    return persist_compile_result(source, result, params_hash, artifact_store=artifact_store)

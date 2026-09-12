@@ -1,0 +1,12 @@
+{
+  "previous_matrix_hash": "sha256:8680c95271b9c0c7d9176ed5ca3d31b67a370d14106c185f570fcbdbb07726a0",
+  "current_matrix_hash": "sha256:27815159c8bb189ce49b7524c6ab8b3c858774e571edc34c424e950a9b670c32",
+  "ids_unchanged": true,
+  "criteria_unchanged": true,
+  "changed_items": [
+    "IMPORT-01",
+    "IMPORT-03"
+  ],
+  "full_stage2_accepted": false,
+  "no_package_removed": true
+}

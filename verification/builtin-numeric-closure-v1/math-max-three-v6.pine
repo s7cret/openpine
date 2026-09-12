@@ -1,0 +1,4 @@
+//@version=6
+indicator("Independent numeric closure")
+result = math.max(close, -close, 2.5) // PRIMARY
+plot(result)
