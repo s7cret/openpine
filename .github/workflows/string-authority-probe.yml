@@ -1,0 +1,47 @@
+name: Capture independent Pine v5 literal conversion evidence
+'on':
+  push:
+    branches: ['ops/string-authority-20260912']
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Compile only public literal probes without credentials or repository sources
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib, time, urllib.error, urllib.parse, urllib.request
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'literal-probe';out.mkdir()
+          url='https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=Guest&pine_id=00000000-0000-0000-0000-000000000000'
+          records=[]
+          for index,(label,text) in enumerate([('decimal-control','12.5'),('invalid-control','abc'),('underscore','1_000'),('exponent','1e2'),('whitespace',' 1 ')]):
+              source='//@version=5\nindicator("OpenPine independent literal probe")\nprobe=input.float(str.tonumber('+json.dumps(text)+'), title="literal-result")\nplot(probe)\n'
+              stem=f'{index:02}-{label}'
+              (out/(stem+'.pine')).write_text(source)
+              body=urllib.parse.urlencode({'source':source}).encode()
+              req=urllib.request.Request(url,data=body,method='POST',headers={'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded','Referer':'https://www.tradingview.com/'})
+              row={'label':label,'input':text,'source_sha256':hashlib.sha256(source.encode()).hexdigest(),'requested_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'credentials_used':False}
+              try:
+                  with urllib.request.urlopen(req,timeout=15) as response:
+                      row['status']=response.status;data=response.read(2000000)
+              except urllib.error.HTTPError as error:
+                  row['status']=error.code;data=error.read(50000)
+              except Exception as error:
+                  row['error']=str(error);data=b''
+              row['response_sha256']=hashlib.sha256(data).hexdigest()
+              (out/(stem+'.response')).write_bytes(data)
+              records.append(row);print(json.dumps(row),flush=True)
+              if row.get('status') in (401,403,429) or 'error' in row:
+                  break
+              time.sleep(1)
+          (out/'capture.json').write_text(json.dumps({'endpoint':url,'records':records,'evidence_status':'RAW_CAPTURE_REQUIRES_REVIEW','runtime_changed':False,'expected_values_changed':False,'release_changed':False,'tradingview_verified':False},indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: string-literal-probe-${{ github.run_id }}
+          path: ${{ runner.temp }}/literal-probe/
+          if-no-files-found: error
+          retention-days: 30
