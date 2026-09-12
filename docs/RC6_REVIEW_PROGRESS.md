@@ -1,3 +1,9 @@
+# Текущий локальный накопительный срез: смешанные функции и методы
+
+Продолжение обычных перегрузок от `88b7df08fbef`: единый выбор function/method, лексические return/lvalue факты, библиотечная видимость и исполнение после сохранения артефакта. Результат — [локальный отчёт](RC6_STAGE2_MIXED_CALLABLE_PUBLICATION_LOCAL.md). Накоплены также consumer libraries, explicit methods и numeric/index. Не опубликовано, Stage 2 не принят.
+
+---
+
 # Локальное продолжение: явные вызовы методов
 
 После numeric/index поставки реализован explicit receiver block. Результаты и ограничения — [локальный отчёт](RC6_STAGE2_EXPLICIT_METHOD_PUBLICATION_LOCAL.md). Это не опубликованная RC6 и не принятый этап 2.

@@ -1057,7 +1057,7 @@
     "joint_ci": "not_run"
   },
   "mixed_callable_families_local_20260912": {
-    "status": "implemented_local_verification_in_progress",
+    "status": "implemented_local_pending_joint",
     "profile": "same_version_mixed_callables_v7",
     "capability": "mixed_user_callable_families_v1",
     "source_pins": {
@@ -1074,6 +1074,10 @@
       "remaining_generic_reference_matrix",
       "complete_versioned_catalog",
       "complete_builtin_expected"
-    ]
+    ],
+    "functional_host": "a43a90ea0353f3680e7d31a8f0c6677e541cc882",
+    "receipt": "verification/mixed-callable-local-receipt-20260912.json",
+    "new_tests_passed": 153,
+    "new_worker_failures": 4
   }
 }
