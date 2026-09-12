@@ -1,0 +1,60 @@
+--- a/rc6_tests/test_rc6_evidence_index.py
++++ b/rc6_tests/test_rc6_evidence_index.py
+@@ -496,7 +496,14 @@
+     assert matrix["full_stage2_accepted"] is matrix["tradingview_verified"] is False
+     for row in matrix["items"]:
+         assert row["owner"] and row["completion"] and row["evidence"]
+-        assert row["status"] in {"open", "partial", "unresolved_authority", "local_gate_ready"}
++        assert row["status"] in {
++            "open", "partial", "unresolved_authority", "local_gate_ready",
++            "implemented_local_pending_joint",
++        }
++        if row["status"] == "implemented_local_pending_joint":
++            # A completed local implementation still cannot grant joint acceptance.
++            assert matrix["full_stage2_accepted"] is False
++            assert any(path.startswith("rc6_tests/") for path in row["evidence"])
+         for path in row["evidence"]:
+             assert (root / path).is_file()
+ 
+--- a/rc6_tests/test_rc6_strategy_surface.py
++++ b/rc6_tests/test_rc6_strategy_surface.py
+@@ -148,7 +148,14 @@
+         # separate host-gate test checks malformed externally supplied modules.
+         from pine2ast import parse_code
+ 
+-        assert "production-blocking diagnostics" in result.errors[0]
++        assert result.python_code is None and result.generated_artifact is None
++        errors = [d for d in result.diagnostics if d["severity"] == "ERROR"]
++        assert len(errors) == 1
++        error = errors[0]
++        assert error["code"] == "P2A1404" and error["phase"] == "frontend"
++        assert error["location"]["source"] == "<memory>"
++        assert error["location"]["line"] == 4 and error["location"]["column"] == 5
++        assert "P2A1404" in result.errors[0] and error["message"] in result.errors[0]
+         diagnostics = parse_code(program).diagnostics
+         assert any(
+             d.is_error and d.code == "P2A1404" and d.span.start_line == 4 for d in diagnostics
+--- a/rc6_tests/test_rc6_trailing_exits.py
++++ b/rc6_tests/test_rc6_trailing_exits.py
+@@ -112,7 +112,20 @@
+         f'//@version=6\nstrategy("negative")\nstrategy.exit("X","A",{arguments})\n',
+         producer_commits={"pine2ast": "a" * 40, "ast2python": "b" * 40},
+     )
+-    assert not result.success and fragment in str(result.errors)
++    assert not result.success
++    assert result.python_code is None and result.generated_artifact is None
++    if fragment == "production-blocking diagnostics":
++        # Keep the original parametrized ID; test the structured source diagnostic
++        # introduced by consumer libraries, not the superseded exception summary.
++        errors = [d for d in result.diagnostics if d["severity"] == "ERROR"]
++        assert len(errors) == 1
++        error = errors[0]
++        assert error["code"] == "P2A1404" and error["phase"] == "frontend"
++        assert error["location"]["source"] == "<memory>"
++        assert error["location"]["line"] == 3 and error["location"]["column"] == 1
++        assert "P2A1404" in result.errors[0] and error["message"] in result.errors[0]
++    else:
++        assert fragment in str(result.errors)
+ 
+ 
+ @pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])
