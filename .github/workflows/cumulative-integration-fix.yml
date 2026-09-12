@@ -1,75 +1,53 @@
-name: Prepare reviewed cumulative integration assertions
+name: Archive completed integration repair transport
 'on':
   push:
     branches: ['ops/cumulative-integration-fix-20260912']
 permissions:
   contents: write
 jobs:
-  prepare:
+  archive:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Apply exactly the reviewed three-file test correction
+      - name: Preserve helper history and remove only its finished branch
         shell: bash
         run: |
           python - <<'PY'
-          import ast, hashlib, json, os, pathlib, subprocess
+          import json, os, pathlib, subprocess
           def git(*args):
               return subprocess.check_output(['git', *args], text=True).strip()
+          def refs():
+              return {ref:sha for sha,ref in (line.split() for line in git('ls-remote','--refs','origin').splitlines())}
           def require(ok, message):
               if not ok:
                   raise SystemExit(message)
-          base = '203cd09ea89e16b1e690815620a8d3f41c6b34ac'
-          branch = 'refs/heads/stage2/cumulative-local-20260912'
-          tag = 'refs/tags/integration/cumulative-ci-assertions-20260912'
-          require(os.environ['GITHUB_REPOSITORY'] == 's7cret/openpine', 'wrong repository')
-          require(os.environ['GITHUB_REF'] == 'refs/heads/ops/cumulative-integration-fix-20260912', 'wrong maintenance branch')
-          require(git('ls-remote', 'origin', branch).split()[0] == base, 'candidate advanced; stop')
-          require(not git('ls-remote', 'origin', tag), 'prepared tag already exists; stop')
-          patch = pathlib.Path('.github/cumulative-integration-fix.patch').read_bytes()
-          require(hashlib.sha256(patch).hexdigest() == '89fb88689d9c861ff9e7036af6f0eb3c0a1d5a882e64b732e18fc10c8450d736', 'patch checksum mismatch')
-          out = pathlib.Path(os.environ['RUNNER_TEMP']) / 'integration-fix'
-          out.mkdir()
-          patch_path = out / 'reviewed.patch'
-          patch_path.write_bytes(patch)
-          git('checkout', '--detach', base)
-          require(git('rev-parse', 'HEAD^{tree}') == '88c7c9b3c9ecc608c5dec3cafe1d5097950e3e60', 'base tree mismatch')
-          hashes = {
-              'rc6_tests/test_rc6_evidence_index.py': ('d0a53a2729cb0c2f6b067e82c29f7d272bd0a57e015f7eb63402447ba057407d','0b111e38b632b74910b78af520c33f6f6bcb800adb319ddd5fa77f66546c6285'),
-              'rc6_tests/test_rc6_strategy_surface.py': ('9cdb00f701311738eb6ea3c5c5f9677866ae930f88439421472744bf5a6acb90','a2739a2c24b6ee085e9aab7a7a043d6f6e8fedb4f67f73a5cb8f3037898014e9'),
-              'rc6_tests/test_rc6_trailing_exits.py': ('5c9e80bf808d086b587582548b0d459fa7f0e3f4bfa6860a4cfca94727d0a87b','a1bf5ade05cda7002c164109be8bca205bdeb9add2e926eb28eb97ae48682425'),
-          }
-          def identities(path):
-              return [(n.name, ast.dump(n.args), [ast.dump(d) for d in n.decorator_list]) for n in ast.walk(ast.parse(pathlib.Path(path).read_text())) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name.startswith('test_')]
-          before_ids = {p: identities(p) for p in hashes}
-          for path, (before, after) in hashes.items():
-              require(hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() == before, 'unreviewed source: '+path)
-          git('apply', '--check', str(patch_path))
-          git('apply', str(patch_path))
-          require(git('diff', '--name-only').splitlines() == sorted(hashes), 'unexpected changed paths')
-          for path, (before, after) in hashes.items():
-              require(hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() == after, 'result checksum mismatch: '+path)
-              require(identities(path) == before_ids[path], 'test names/arguments/parameter IDs changed: '+path)
-          git('diff', '--check')
-          git('config', 'user.name', 'OpenPine integration bot')
-          git('config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com')
-          git('add', *sorted(hashes))
-          git('commit', '-m', 'test(stage2): align cumulative acceptance assertions with structured diagnostics', '-m', 'Preserve all test IDs and mandatory inventories. Replace obsolete generic exception text with exact P2A1404/error/phase/source-coordinate and no-artifact assertions. Recognize implemented_local_pending_joint only as a nonaccepted status backed by tests. Runtime, expected numeric data, evidence locks, sandbox and all workflows are unchanged. The unverified v5 string expectation blocker remains open.')
-          head = git('rev-parse', 'HEAD')
-          require(git('rev-parse', 'HEAD^') == base, 'unexpected ancestry')
-          git('push', '--force-with-lease='+tag+':', 'origin', head+':'+tag)
-          require(git('ls-remote', 'origin', tag).split()[0] == head, 'tag readback mismatch')
-          receipt = {'base':base,'head':head,'tree':git('rev-parse','HEAD^{tree}'),'tag':tag,'files':hashes,'test_identities_preserved':True,'functional_tests_run':False,'runtime_changed':False,'release_refs_changed':False,'full_stage2_accepted':False}
-          (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
-          print(json.dumps(receipt,indent=2))
+          branch='refs/heads/ops/cumulative-integration-fix-20260912'
+          archive='refs/tags/archive/20260912/ops/cumulative-integration-fix'
+          source='da413b1a9f6c8f62de590adfad94db5254f357c9'
+          current=os.environ['GITHUB_SHA']
+          require(os.environ['GITHUB_REPOSITORY']=='s7cret/openpine' and os.environ['GITHUB_REF']==branch,'wrong repository/ref')
+          require(git('rev-parse',current+'^')=='586ccee4b60b72cb8e83cb7d0f402c1be70f55a0','unexpected maintenance parent')
+          before=refs()
+          require(before.get(branch)==current and archive not in before,'concurrent helper update')
+          require(before.get('refs/tags/integration/cumulative-ci-assertions-20260912')==source,'source fix is not preserved')
+          candidate=before.get('refs/heads/stage2/cumulative-local-20260912')
+          require(bool(candidate),'candidate missing')
+          git('merge-base','--is-ancestor',source,candidate)
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'cleanup';out.mkdir()
+          (out/'before.json').write_text(json.dumps(before,indent=2)+'\n')
+          git('push','--atomic','--force-with-lease='+branch+':'+current,'--force-with-lease='+archive+':','origin',current+':'+archive,':'+branch)
+          after=refs();expected={k:v for k,v in before.items() if k!=branch};expected[archive]=current
+          (out/'after.json').write_text(json.dumps(after,indent=2)+'\n')
+          require(after==expected,'unrelated refs changed; inspect snapshots')
+          print(json.dumps({'archived':archive,'removed':branch,'candidate':candidate,'release_unchanged':True,'merge_performed':False},indent=2))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cumulative-ci-assertions-${{ github.run_id }}
-          path: ${{ runner.temp }}/integration-fix/
+          name: integration-helper-cleanup-${{ github.run_id }}
+          path: ${{ runner.temp }}/cleanup/
           if-no-files-found: error
           retention-days: 30
