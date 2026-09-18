@@ -1,0 +1,38 @@
+{
+  "as_of": "2026-09-16",
+  "collections": {
+    "ast2python": {
+      "count": 1557,
+      "deselected": 0,
+      "listing": "delivery-evidence/test-results/stage22_ast2python_collect.txt",
+      "listing_sha256": "b01b5d45c9cc3cc574150db0d17fcc3819ced2bfa373520ba7186c8f2f511b9b",
+      "previous_count": 1554,
+      "shrink": false
+    },
+    "pine2ast": {
+      "count": 3238,
+      "deselected": 0,
+      "listing": "delivery-evidence/test-results/stage22_pine2ast_collect.txt",
+      "listing_sha256": "14e753e94e7e4de9f307e9e1317b29c09c31f70bfaf28f4963e002de9fb52da3",
+      "previous_count": 3232,
+      "shrink": false
+    },
+    "pinelib": {
+      "count": 5011,
+      "deselected": 0,
+      "listing": "delivery-evidence/test-results/stage22_pinelib_collect.txt",
+      "listing_sha256": "e68627e289071d9c63487bfbcfc54aa00aaf6bce279d16fd81fbc148cd8d0cdf",
+      "previous_count": 4978,
+      "shrink": false
+    }
+  },
+  "content_hash": "sha256:d3fbf4ce5435d64ae7cc4ae2b75c9a986490a21473c8f4cc0a54c83e36f1bab0",
+  "purpose": "Explicit inventory growth for Stage 2.2; no silent shrink.",
+  "rules": [
+    "collection identity is evidence separate from execution acceptance",
+    "no component test inventory was reduced for Stage 2.2",
+    "new tests cover positive, negative, regression, and version-specific Bool/NA/history behavior"
+  ],
+  "schema_id": "openpine.stage2_2_inventory_review.v1",
+  "status": "accepted_no_shrink"
+}

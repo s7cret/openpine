@@ -1,0 +1,18 @@
+{
+  "full_stage2_accepted": false,
+  "open_findings": [
+    "S2-13",
+    "S2-14",
+    "S2-15",
+    "S2-23"
+  ],
+  "validation_interrupted": false,
+  "delivery_mode": "baseline_plus_unaccepted_work",
+  "mixed_version_integration_enabled": false,
+  "integrity_verified": false,
+  "archive": "/mnt/data/OpenPine_Stage2_Continuation_Delivery_2026-09-18.zip",
+  "report": "/mnt/data/OpenPine_Stage2_Continuation_Delivery_Report_2026-09-18.md",
+  "zip_bytes": 21357109,
+  "zip_sha256": "66d05e6250302708cd8949c57ab4a1a6cf325c491312f7425478a89ed7253fd5",
+  "crc_verified": true
+}

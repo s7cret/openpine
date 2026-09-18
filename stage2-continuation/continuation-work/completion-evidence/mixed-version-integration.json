@@ -1,0 +1,8 @@
+{
+  "integration_enabled": false,
+  "branch_candidates": [
+    "unit.program.version_context.pine_version != self.version"
+  ],
+  "integration_error": "receipt dictionary not uniquely identified",
+  "unit_returncode": 0
+}

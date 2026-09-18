@@ -21,6 +21,23 @@ def collection_hash(nodeids: list[str]) -> str:
 def validate_inventory(nodeids: list[str], expected: dict, deselected: int) -> None:
     if not nodeids or len(set(nodeids)) != len(nodeids):
         raise ValueError("empty or duplicate test inventory")
+    if expected.get("identity_mode") == "reviewed_addition_to_hashed_baseline":
+        # Exact additive proof when the immutable historical lock contains a
+        # hash but not its expanded node list. No new or removed node can hide.
+        added = expected.get("added_nodeids")
+        baseline = expected.get("baseline")
+        if (not isinstance(added, list) or not added
+            or any(not isinstance(node, str) or not node for node in added)
+            or len(set(added)) != len(added) or not isinstance(baseline, dict)
+            or baseline.get("identity_mode") is not None
+            or not set(added).issubset(nodeids)
+            or expected.get("count") != len(nodeids)
+            or expected.get("count") != baseline.get("count", -1) + len(added)
+            or expected.get("deselected", 0) != deselected):
+            raise ValueError("invalid or incomplete reviewed additive inventory")
+        original_nodes = [node for node in nodeids if node not in set(added)]
+        validate_inventory(original_nodes, baseline, deselected)
+        return
     if (
         expected.get("count") != len(nodeids)
         or expected.get("sha256") != collection_hash(nodeids)

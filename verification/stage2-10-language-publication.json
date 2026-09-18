@@ -1,0 +1,47 @@
+{
+  "acceptance_profile": "audit_repair_candidate_local_checks",
+  "catalog_hashes": {
+    "1": "sha256:f98f23c68395990c32744cbb05a0068bd8b247b0ecdd64747a52648fd6c7fd2a",
+    "2": "sha256:38e735fb3b7cd4417c481f248256e1a020bc59e63319f23797f490bb49116315",
+    "3": "sha256:2e0ddb60e225d41f3d46d9803b2ba655d6acc342925e4e168206a8504197fc3d",
+    "4": "sha256:697b84a50cd1f9bb5e7bad44cae7fe023a74704f35063ddb97abd58d8c32229a",
+    "5": "sha256:4e0aca9cfbd8e3d51e296466cf7f0f259f5193ea669fd95cc6c896a62c34f5b3",
+    "6": "sha256:c0a5765c209518853aa1e27e887c2700fd753d48d3e697ef870b22a5343a0160"
+  },
+  "compiler_target_hash": "sha256:2635a58b890610efd8a678b8bf8a2c31787e7ee6703d88ecd75d9708cf4cb97f",
+  "compiler_target_name": "pinelib",
+  "compiler_target_version": "sha256:edd7499240e0ca738379a102569c867172c4c1ad3044916c485d70411814b685",
+  "criteria": {
+    "imports": "not_accepted",
+    "independent_builtin_expected": "not_accepted",
+    "stateful_language_matrix": "not_accepted",
+    "versioned_catalog": "not_accepted"
+  },
+  "current_execution_receipt": "sources/openpine/verification/stage2-current-acceptance.json",
+  "full_stage2_accepted": false,
+  "inventory": {
+    "ast2python": 1685,
+    "pine2ast": 3420,
+    "pinelib": 5048
+  },
+  "inventory_scope": "incoming_candidate_inventory_only_not_current_execution_receipt",
+  "packages": {
+    "ast2python": "5.0.0rc6",
+    "pine2ast": "5.0.0rc6",
+    "pinelib": "5.0.0rc6"
+  },
+  "publication": "openpine-rc6-stage2-language",
+  "python_verified_here": null,
+  "residuals": [
+    "full_builtin_oracle",
+    "CAT-04_v4_binary_search_authority",
+    "STATE-03_rsi_macd_v1_v2_seed_authority",
+    "STATE-04_tsi_startup_authority",
+    "python_3.11_and_3.13_not_sealed_on_this_tree",
+    "protected_workers_not_sealed_on_this_tree",
+    "mixed_version_library_imports"
+  ],
+  "runtime_target_file_hash": "sha256:600a21c4a45f0f9102199aaf3a5644f9dda78ff854a19fe041ab3f737f839cce",
+  "schema_id": "openpine.stage2_10_language_publication.v1",
+  "status": "candidate_not_full_acceptance"
+}

@@ -1,0 +1,53 @@
+{
+  "schema_id": "openpine.exact_candidate_execution.v1",
+  "started_at": "2026-09-18T14:49:04.600785+00:00",
+  "source_hash": "sha256:4c9f46fe2d5c3a619c2764d03be3b3c8688f76124c57c4f47d01dcaa992a108a",
+  "group": "preflight",
+  "results": [
+    {
+      "name": "interpreter-3.11",
+      "status": "blocked",
+      "error": "[Errno 2] No such file or directory: 'python3.11'",
+      "required": "3.11"
+    },
+    {
+      "name": "interpreter-3.13",
+      "status": "passed",
+      "version": [
+        3,
+        13,
+        5
+      ],
+      "executable": "/opt/pyvenv/bin/python3.13"
+    },
+    {
+      "name": "dependencies-3.13",
+      "command": [
+        "python3.13",
+        "-I",
+        "-c",
+        "import pytest,build,hatchling,structlog;print('declared test/build preflight OK')"
+      ],
+      "cwd": ".",
+      "source_hash_before": "sha256:4c9f46fe2d5c3a619c2764d03be3b3c8688f76124c57c4f47d01dcaa992a108a",
+      "log": "dependencies-3.13.log",
+      "status": "failed",
+      "returncode": 1,
+      "elapsed_seconds": 0.821,
+      "source_hash_after": "sha256:4c9f46fe2d5c3a619c2764d03be3b3c8688f76124c57c4f47d01dcaa992a108a"
+    },
+    {
+      "name": "protected-worker-prerequisites",
+      "status": "blocked",
+      "reason": "bubblewrap unavailable; no in-process replacement"
+    }
+  ],
+  "semantic_acceptance": false,
+  "full_stage2_accepted": false,
+  "scope_note": "execution evidence only; catalogue, import and independent oracle criteria remain separate",
+  "final_source_hash": "sha256:4c9f46fe2d5c3a619c2764d03be3b3c8688f76124c57c4f47d01dcaa992a108a",
+  "source_unchanged": true,
+  "execution_group_clean": false,
+  "finished_at": "2026-09-18T14:49:06.757863+00:00",
+  "content_hash": "sha256:4283e01d1b4c2417064a479ec065320fb5650983991455e4d777f89560b75d86"
+}

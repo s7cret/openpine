@@ -1,0 +1,30 @@
+{
+  "accepted": true,
+  "cells": {
+    "abort_uncommitted_mutation": "pass",
+    "array_map_args_returns": "pass",
+    "checkpoint_distinct_identities": "pass",
+    "constructor_defaults": "pass",
+    "declaration_v5_v6": "pass",
+    "enum_switch_and_udt_field": "pass",
+    "field_read_write_copy": "pass",
+    "foreign_enum_and_udt": "pass",
+    "history_versioned_missing": "pass",
+    "library_same_name_isolation": "pass",
+    "method_self_callsite_state": "pass",
+    "nested_udt_shared_child": "pass",
+    "private_export_import": "pass",
+    "unavailable_before_v5": "pass",
+    "unknown_member_field": "pass",
+    "varip_field_rollback": "pass"
+  },
+  "current_acceptance": "verification/stage2-current-acceptance.json",
+  "inventory": {
+    "ast2python": 1629,
+    "pine2ast": 3358,
+    "pinelib": 5040
+  },
+  "python": "3.12.3",
+  "record_scope": "historical_substage_matrix_not_current_tree_acceptance",
+  "schema_id": "openpine.stage2_5_matrix.v1"
+}

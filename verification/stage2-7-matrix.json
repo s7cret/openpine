@@ -1,0 +1,23 @@
+{
+  "accepted": true,
+  "cells": {
+    "break_continue_zero_nested": "pass",
+    "for_while_for_in_values": "pass",
+    "if_switch_values": "pass",
+    "once_fill_abort_rollback": "pass",
+    "once_not_expression": "pass",
+    "once_not_varip": "pass",
+    "once_statement_v6": "pass",
+    "shared_iteration_budget": "pass",
+    "udt_enum_loop_results": "pass"
+  },
+  "current_acceptance": "verification/stage2-current-acceptance.json",
+  "inventory": {
+    "ast2python": 1654,
+    "pine2ast": 3391,
+    "pinelib": 5043
+  },
+  "python": "3.12.3",
+  "record_scope": "historical_substage_matrix_not_current_tree_acceptance",
+  "schema_id": "openpine.stage2_7_matrix.v1"
+}

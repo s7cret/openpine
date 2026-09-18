@@ -1,0 +1,156 @@
+{
+  "as_of": "2026-09-18",
+  "content_hash": "sha256:2c4f1c49eac35cae3b026b324995513260eeb191c2137c170a6d1d0c6f8c7488",
+  "criteria": {
+    "imports": "same_version_subset_only",
+    "independent_builtin_expected": "not_accepted",
+    "stateful_language_matrix": "not_accepted",
+    "versioned_catalog": "not_accepted"
+  },
+  "environment": {
+    "frontend": "failed_missing_build_dependencies",
+    "full_host": "not_run_missing_structlog",
+    "protected_workers": "not_run_no_bubblewrap",
+    "python": "3.13.5",
+    "python_3.11": "unavailable"
+  },
+  "final_targeted_smoke": {
+    "errors": 0,
+    "evidence": "repair-evidence/results/delivery-targeted/summary.json",
+    "failures": 0,
+    "skipped": 0,
+    "source_lock_hash": "sha256:1b2fa36bff884fa92c853efadf722b74dd3be637e10d0b2b2021b256be4ea8b1",
+    "status": "passed",
+    "tests_by_component": {
+      "ast2python": 132,
+      "openpine": 39,
+      "pine2ast": 24,
+      "pinelib": 43
+    }
+  },
+  "fixed_findings": [
+    "S2-01",
+    "S2-02",
+    "S2-03",
+    "S2-04",
+    "S2-05",
+    "S2-06",
+    "S2-07",
+    "S2-08",
+    "S2-09",
+    "S2-10",
+    "S2-11",
+    "S2-12",
+    "S2-16",
+    "S2-17",
+    "S2-18",
+    "S2-19",
+    "S2-20",
+    "S2-21",
+    "S2-22",
+    "S2-24",
+    "S2-25"
+  ],
+  "full_stage2_accepted": false,
+  "historical_artifacts": "repair-evidence/baseline",
+  "open_findings": {
+    "S2-13": "Historical version-exact authority remains incomplete, including CAT-04.",
+    "S2-14": "Mixed-version imports are not implemented; same-version lock semantics preserved.",
+    "S2-15": "Full independent builtin expected corpus and all mandatory execution paths remain incomplete.",
+    "S2-23": "Complete coordinated Python 3.11/3.13, protected-worker, Stage1, frontend and package CI not achieved."
+  },
+  "package_builds": {
+    "blocked": "backtest_engine: missing hatchling",
+    "evidence": "repair-evidence/results/package-builds.json",
+    "passed": 7,
+    "total": 8
+  },
+  "report": "REPAIR_REPORT.md",
+  "results": {
+    "ast2python-full-final": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/ast2python-full-final.xml",
+      "passed": 1783,
+      "skipped": 0,
+      "tests": 1783
+    },
+    "direct-value-regressions": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/direct-value-regressions.xml",
+      "passed": 27,
+      "skipped": 0,
+      "tests": 27
+    },
+    "host-audit-mutations-final": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/host-audit-mutations-final.xml",
+      "passed": 17,
+      "skipped": 0,
+      "tests": 17
+    },
+    "host-foundation-final": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/host-foundation-final.xml",
+      "passed": 60,
+      "skipped": 0,
+      "tests": 60
+    },
+    "host-selected-final": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/host-selected-final.xml",
+      "passed": 309,
+      "skipped": 0,
+      "tests": 309
+    },
+    "openpine-gates-final": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/openpine-gates-final.xml",
+      "passed": 34,
+      "skipped": 0,
+      "tests": 34
+    },
+    "pine2ast-full-final": {
+      "errors": 3,
+      "failures": 0,
+      "junit": "repair-evidence/results/pine2ast-full-final.xml",
+      "passed": 3431,
+      "skipped": 0,
+      "tests": 3434
+    },
+    "pine2ast-gates-final": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/pine2ast-gates-final.xml",
+      "passed": 17,
+      "skipped": 0,
+      "tests": 17
+    },
+    "pinelib-full-complete": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/pinelib-full-complete.xml",
+      "passed": 5079,
+      "skipped": 0,
+      "tests": 5079
+    },
+    "repaired-runtime": {
+      "errors": 0,
+      "failures": 0,
+      "junit": "repair-evidence/results/repaired-runtime.xml",
+      "passed": 117,
+      "skipped": 0,
+      "tests": 117
+    }
+  },
+  "schema_id": "openpine.stage2_current_acceptance.v1",
+  "scope": "audited_defect_repairs_with_local_evidence_not_full_stage2_acceptance",
+  "source_lock_hash": "sha256:1b2fa36bff884fa92c853efadf722b74dd3be637e10d0b2b2021b256be4ea8b1",
+  "status": "in_progress",
+  "test_identity_note": "Full suite results precede final metadata reconciliation; not a single immutable-tree CI receipt. Final targeted smoke is recorded separately."
+}

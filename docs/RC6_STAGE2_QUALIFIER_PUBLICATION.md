@@ -1,3 +1,5 @@
+> **Исторический документ, не текущая приёмка.** Результаты и статусы ниже относятся к прежним прогонам. Текущий статус исправленного кандидата от 18.09.2026 — `in_progress`, `full_stage2_accepted=false`. Единственный текущий реестр: `verification/stage2-current-acceptance.json`.
+
 # Qualifier boundary — verified and integrated on 2026-09-11
 
 PR #15 merged normally as `cf45adb47f495194729ec0bd7508caab8e751147`.

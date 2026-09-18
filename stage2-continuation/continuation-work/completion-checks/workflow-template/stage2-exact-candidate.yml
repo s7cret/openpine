@@ -1,0 +1,33 @@
+name: Stage 2 exact archived candidate
+on:
+  workflow_dispatch:
+jobs:
+  exact-tree:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify the delivered tree before installing anything
+        run: python verify_sources.py
+      - name: Install actual build and test dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel build hatchling pytest
+          for component in openpine-contracts pine2ast pinelib ast2python backtest_engine marketdata-provider optimizer openpine; do
+            python -m pip install -e "sources/$component[test]"
+          done
+      - name: Full local component suites on exactly this tree
+        run: python run_exact_stage2.py --python '${{ matrix.python }}' --group stack --output 'local-check-results/ci-${{ matrix.python }}'
+      - name: Build every wheel and sdist
+        if: always()
+        run: python run_exact_stage2.py --python '${{ matrix.python }}' --group packages --output 'local-check-results/packages-${{ matrix.python }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exact-stage2-${{ matrix.python }}
+          path: local-check-results/

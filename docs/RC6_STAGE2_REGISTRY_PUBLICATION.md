@@ -1,3 +1,5 @@
+> **Исторический документ, не текущая приёмка.** Результаты и статусы ниже относятся к прежним прогонам. Текущий статус исправленного кандидата от 18.09.2026 — `in_progress`, `full_stage2_accepted=false`. Единственный текущий реестр: `verification/stage2-current-acceptance.json`.
+
 # Stage 2 nominal registry joint publication
 
 The artifact-admitted nominal registry now binds enum members, UDT field schemas

@@ -1,0 +1,33 @@
+{
+  "as_of": "2026-09-15",
+  "content_hash": "sha256:03ba53c32e58e929bcbb8282e6f663816920f4f18aefb93d9eaec33ea2fe7e1d",
+  "executables": {
+    "bwrap": null,
+    "python3.11": null,
+    "python3.13": "/opt/pyvenv/bin/python3.13",
+    "ruff": null,
+    "unshare": "/usr/bin/unshare"
+  },
+  "full_stage2_1_acceptance": false,
+  "package_build_tooling": {
+    "reason": "PyPA build module unavailable and network installation is unavailable.",
+    "status": "BLOCKED_IN_THIS_ENVIRONMENT"
+  },
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "protected_worker": {
+    "bubblewrap_available": false,
+    "reason": "bubblewrap executable is unavailable; protected-worker acceptance was not replaced with an in-process or unsandboxed pass.",
+    "sandbox_weakened": false,
+    "status": "BLOCKED_IN_THIS_ENVIRONMENT"
+  },
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "python_3_11": {
+    "path": null,
+    "status": "NOT_RUN_IN_THIS_ENVIRONMENT"
+  },
+  "python_build_module": {
+    "available": false,
+    "error": "ModuleNotFoundError: No module named 'build'"
+  },
+  "schema_id": "openpine.stage2_1_post_audit_environment.v1"
+}

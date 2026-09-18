@@ -1,0 +1,24 @@
+{
+  "accepted": true,
+  "cells": {
+    "ambiguity_and_recursion": "pass",
+    "callsite_state_and_loop_reuse": "pass",
+    "collection_element_receivers": "pass",
+    "cross_library_receiver_rejected": "pass",
+    "defaults_named_arguments": "pass",
+    "function_is_not_method": "pass",
+    "invisible_private_method": "pass",
+    "library_exported_methods": "pass",
+    "not_backported_before_v5": "pass",
+    "receiver_typed_udt_methods": "pass"
+  },
+  "current_acceptance": "verification/stage2-current-acceptance.json",
+  "inventory": {
+    "ast2python": 1643,
+    "pine2ast": 3376,
+    "pinelib": 5040
+  },
+  "python": "3.12.3",
+  "record_scope": "historical_substage_matrix_not_current_tree_acceptance",
+  "schema_id": "openpine.stage2_6_matrix.v1"
+}

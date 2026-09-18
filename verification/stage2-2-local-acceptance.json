@@ -1,0 +1,43 @@
+{
+  "as_of": "2026-09-16",
+  "changed_semantic_owners": [
+    "pinelib.core.values",
+    "pinelib.runtime.language",
+    "pinelib.state.series",
+    "pinelib.runtime.session",
+    "pinelib.abi.primitives",
+    "pinelib.abi.catalog",
+    "pine2ast catalog signature enrichment",
+    "ast2python exact target consumption"
+  ],
+  "content_hash": "sha256:6bba364a1c8ec177304e74c1bd4ef21b1ca72b4b66195580bfe32cbf7474ae65",
+  "criteria": {
+    "direct_and_generated_paths": "accepted",
+    "dynamic_history_offsets_and_limits": "accepted",
+    "explicit_bool_int_casts": "accepted",
+    "false_zero_na_missing_transport_are_distinct": "accepted",
+    "first_bar_and_missing_history": "accepted",
+    "history_reservation_commit_abort_restore": "accepted",
+    "no_python_truthiness": "accepted",
+    "stage21_evidence_preserved_by_explicit_delta_lock": "accepted",
+    "version_exact_bool_na_matrix": "accepted"
+  },
+  "evidence": [
+    "verification/stage2-2-version-matrix.json",
+    "verification/stage2-2-test-results.json",
+    "verification/stage2-2-inventory-review.json",
+    "docs/RC6_STAGE2_2_ACCEPTANCE.md",
+    "pinelib/abi/stage22_manifest_delta_lock.json"
+  ],
+  "full_stage2_accepted": false,
+  "github_modified": false,
+  "known_non_package_blockers": [
+    "full Stage 2 protected-worker and coordinated Python 3.11/3.13 execution belongs to 2.10",
+    "independent builtin numerical/TradingView behavior oracle belongs to 2.9"
+  ],
+  "schema_id": "openpine.stage2_2_local_acceptance.v1",
+  "scope": "Bool, NA, numeric conversions and history values",
+  "stage": "2.2",
+  "stage2_2_accepted": true,
+  "status": "accepted"
+}

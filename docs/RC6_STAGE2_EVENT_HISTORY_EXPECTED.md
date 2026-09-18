@@ -1,3 +1,5 @@
+> **Исторический документ, не текущая приёмка.** Результаты и статусы ниже относятся к прежним прогонам. Текущий статус исправленного кандидата от 18.09.2026 — `in_progress`, `full_stage2_accepted=false`. Единственный текущий реестр: `verification/stage2-current-acceptance.json`.
+
 # Event-history expected corpus
 
 This engineering corpus contains 20 Pine v5/v6 cases derived from ten independently authored rows: six `ta.barssince` patterns and four canonical float `ta.valuewhen` patterns with literal occurrence zero. Four versioned callable tuples receive examples. This is not whole-function parity or Stage2 acceptance.

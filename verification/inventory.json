@@ -1,8 +1,8 @@
 {
   "ast2python": {
-    "count": 1509,
-    "sha256": "sha256:c9563b1aaf44010f4433f0f6a4759b94ab87711ade3e5911cad8e15e1829a283",
-    "deselected": 0
+    "count": 1783,
+    "deselected": 0,
+    "sha256": "sha256:d52da20f050b6eba79003a7fc32191ac3c21d23a9c9bc6e2a8bf288446f75039"
   },
   "backtest_engine": {
     "count": 1102,
@@ -15,9 +15,34 @@
     "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
   },
   "openpine": {
-    "count": 9706,
-    "sha256": "sha256:0052fec11717dacb89d92c0e91228c542e8e8a00e601a4fcd930828bed4e1c80",
-    "deselected": 0
+    "added_nodeids": [
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[none]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[renamed_old]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[unreviewed_extra]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_complete_dimension_shape_is_represented",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_omitted_dimension_is_reported_even_when_not_returned",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[parameters-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[return_qualifier-qualifiers]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[returns-return_type]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[symbol_id-overload_identity]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[default-defaults]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[name-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[qualifier_max-qualifiers]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[required-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[type-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_wrong_overload_identity_is_unverified"
+    ],
+    "baseline": {
+      "count": 9706,
+      "deselected": 0,
+      "sha256": "sha256:0052fec11717dacb89d92c0e91228c542e8e8a00e601a4fcd930828bed4e1c80"
+    },
+    "count": 9723,
+    "deselected": 0,
+    "execution_verified": false,
+    "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "openpine-contracts": {
     "count": 557,
@@ -30,13 +55,13 @@
     "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
   },
   "pine2ast": {
-    "count": 3191,
-    "sha256": "sha256:7307c946cbc0c724c2d5d5937abbddc2493ecd64c6e87d22073f2a02df6fe1f0",
-    "deselected": 0
+    "count": 3434,
+    "deselected": 0,
+    "sha256": "sha256:de336c6a67078bd761550ae454464d013cf0420417dfbcf3f56569674c3ad386"
   },
   "pinelib": {
-    "count": 4944,
-    "sha256": "sha256:9170197e3ee02b906700fd42bb69ca8a6023d081def6bf89f793ea79743ecbb6",
-    "deselected": 0
+    "count": 5079,
+    "deselected": 0,
+    "sha256": "sha256:975ac06438136fbe51f058de059433957fd0dd79f333d803402f67772c77b4de"
   }
 }

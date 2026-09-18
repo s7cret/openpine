@@ -1,3 +1,5 @@
+> **Исторический документ, не текущая приёмка.** Результаты и статусы ниже относятся к прежним прогонам. Текущий статус исправленного кандидата от 18.09.2026 — `in_progress`, `full_stage2_accepted=false`. Единственный текущий реестр: `verification/stage2-current-acceptance.json`.
+
 # Stage 2 — declaration-bound ordinary function overloads
 
 Local cumulative development after consumer-library delivery `e85021a7233adb083fd9631856bf24203d513b7c`.
