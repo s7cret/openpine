@@ -5,11 +5,17 @@ The pre-v4 float type constant is a separate, retained catalogue identity.
 """
 
 from importlib import import_module
+from pathlib import Path
 
 import pytest
 from pine2ast.semantic.signatures import SignatureResolver
 
 from openpine.verification.builtins import build_builtin_surface
+from openpine.verification.identity import read_json
+
+ROOT = Path(__file__).resolve().parents[1]
+CALLABLE_LOCK = read_json(ROOT / "verification/stage2-callable-lock.json")
+EXPECTED_DENOMINATOR = len(CALLABLE_LOCK["rows"])
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +43,7 @@ def test_float_surface_retains_exact_unavailable_versions(scalar_surface, versio
     assert row["status"] == ("RUNTIME_DIRECT" if version >= 4 else "UNAVAILABLE")
     assert ("FRONTEND_VERSION_UNAVAILABLE" in row["reasons"]) is (version < 4)
     assert row["oracle"] == "missing"
-    assert len(scalar_surface["rows"]) == 2374
+    assert len(scalar_surface["rows"]) == EXPECTED_DENOMINATOR
     assert not scalar_surface["full_catalog_verified"]
 
 
@@ -120,7 +126,7 @@ def test_surface_admits_active_alternative_without_duplicate_denominator(monkeyp
     monkeypatch.setattr(SignatureResolver, "candidate_entries", alternatives)
     surface = build_builtin_surface()
     rows = [row for row in surface["rows"] if row["symbol_id"] == "pine:function:math.sqrt"]
-    assert len(surface["rows"]) == 2374
+    assert len(surface["rows"]) == EXPECTED_DENOMINATOR
     assert len(rows) == 6
     assert all(row["status"] == "RUNTIME_DIRECT" and not row["reasons"] for row in rows)
     assert all(len(row["spellings"]) == 1 for row in rows)

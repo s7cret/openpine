@@ -1,3 +1,5 @@
+> **Исторический документ, не текущая приёмка.** Результаты и статусы ниже относятся к прежним прогонам. Текущий статус исправленного кандидата от 18.09.2026 — `in_progress`, `full_stage2_accepted=false`. Единственный текущий реестр: `verification/stage2-current-acceptance.json`.
+
 # Independent array.concat host examples
 
 The corpus at `verification/builtin-array-concat-v1/manifest.json` expands the original 30 manually authored rows into 50 source cases: namespace calls in Pine v4/v5/v6 and method calls in v5/v6. The original table bytes remain unchanged (SHA256 `20d833ca9c31265c48c250dbec7edc5a9da3f9b2885e098fd0196e4d4e86ee9e`). Its 50-case corpus hash is `sha256:9b08b8cbd14d94b4df58b978dd274d821797f01301d70006d5b7bc6b0c686d54`.

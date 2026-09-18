@@ -1,3 +1,5 @@
+> **Исторический документ, не текущая приёмка.** Результаты и статусы ниже относятся к прежним прогонам. Текущий статус исправленного кандидата от 18.09.2026 — `in_progress`, `full_stage2_accepted=false`. Единственный текущий реестр: `verification/stage2-current-acceptance.json`.
+
 # RC6 method, context, contract and tuple repair publication
 
 The exact candidate `5b0a7318cda871bef12d835e8b074d0f3f6d23d2` (tree `4ee86715622404b31e174fb2e17d064a6ad579c9`) passed the coordinated Linux run [34206347276](https://github.com/s7cret/OpenPine/actions/runs/34206347276). Both Python versions executed all 16,787 selected tests with zero failures, errors or skips. Every previously accepted 10,683 test and every 16,745 failed-candidate test remains present. The original 12 Stage 1 cases, protected worker tests, architecture checks, package builds and frontend passed; frontend includes 152 Vitest tests and 22 Node tests.

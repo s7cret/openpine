@@ -151,7 +151,12 @@ def test_same_titles_preserve_independent_override_targets():
 )
 def test_falsey_values_reach_actual_pine_series(body, params, name, expected):
     case = input_case(body)
+    resolved = resolve_inputs(case[0].python_code, params)
     session = session_for(case, params)
+    descriptor = read_input_descriptors(case[0].python_code)[0]
+    assert resolved.values_hash == session.inputs.values_hash
+    assert resolved.get(descriptor["input_id"]) == expected
+    assert session.inputs.get(descriptor["input_id"]) == expected
     execute_series(session, 1)
     assert variable_values(case, session, name) == [expected]
 
@@ -197,7 +202,12 @@ def test_worker_rejects_claimed_hash_for_unapplied_values():
 
 def test_input_source_selects_numeric_chart_series_each_bar():
     case = input_case("src=input.source(close)\nm=ta.sma(src,2)")
+    resolved = resolve_inputs(case[0].python_code, {"src": "high"})
     session = session_for(case, {"src": "high"})
+    descriptor = read_input_descriptors(case[0].python_code)[0]
+    assert resolved.values_hash == session.inputs.values_hash
+    assert resolved.get(descriptor["input_id"]) == "high"
+    assert session.inputs.get(descriptor["input_id"]) == "high"
     execute_series(session, 3)
     assert variable_values(case, session, "m")[1:] == [2.5, 3.5]
 

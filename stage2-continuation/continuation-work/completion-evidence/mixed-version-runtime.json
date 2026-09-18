@@ -1,0 +1,77 @@
+{
+  "kind": "cross_version_stateless_scalar_metamorphic_regression",
+  "cases": [
+    {
+      "consumer": 5,
+      "library": 6,
+      "case": "literal",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    },
+    {
+      "consumer": 5,
+      "library": 6,
+      "case": "arithmetic",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    },
+    {
+      "consumer": 5,
+      "library": 6,
+      "case": "private_helper",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    },
+    {
+      "consumer": 5,
+      "library": 6,
+      "case": "string",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    },
+    {
+      "consumer": 6,
+      "library": 5,
+      "case": "literal",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    },
+    {
+      "consumer": 6,
+      "library": 5,
+      "case": "arithmetic",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    },
+    {
+      "consumer": 6,
+      "library": 5,
+      "case": "private_helper",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    },
+    {
+      "consumer": 6,
+      "library": 5,
+      "case": "string",
+      "status": "failed",
+      "error": "AttributeError(\"'tuple' object has no attribute 'artifact'\")",
+      "traceback": "Traceback (most recent call last):\n  File \"/mnt/data/test_stage2_mixed.py\", line 24, in <module>\n    control=run(body,src,consumer,consumer)\n  File \"/mnt/data/test_stage2_mixed.py\", line 18, in run\n    runtime,cls=d['runtime_for'](compiled)\n                ~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/mnt/data/stage2_work/openpine/sources/ast2python/tests/test_locked_library_execution.py\", line 47, in runtime_for\n    compiled.artifact.payload, emitted=compiled.emitted, plan=compiled.plan\n    ^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'artifact'\n"
+    }
+  ],
+  "passed": false,
+  "helper_signatures": {
+    "library": "(body, name='Lib', version=6)",
+    "script": "(body, imports='import user/Lib/1 as lib', version=6)",
+    "compile_linked": "(source, libs)",
+    "runtime_for": "(compiled, overrides=None)",
+    "advance": "(runtime, cls, closes, start=0)"
+  }
+}

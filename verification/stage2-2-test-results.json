@@ -1,0 +1,80 @@
+{
+  "as_of": "2026-09-16",
+  "content_hash": "sha256:444576a8436837f2e04819f17e2b674fafd88250df69d46e812d9b4701448205",
+  "inventories": {
+    "ast2python": {
+      "count": 1557,
+      "deselected": 0,
+      "listing": "delivery-evidence/test-results/stage22_ast2python_collect.txt",
+      "listing_sha256": "b01b5d45c9cc3cc574150db0d17fcc3819ced2bfa373520ba7186c8f2f511b9b",
+      "previous_count": 1554,
+      "shrink": false
+    },
+    "pine2ast": {
+      "count": 3238,
+      "deselected": 0,
+      "listing": "delivery-evidence/test-results/stage22_pine2ast_collect.txt",
+      "listing_sha256": "14e753e94e7e4de9f307e9e1317b29c09c31f70bfaf28f4963e002de9fb52da3",
+      "previous_count": 3232,
+      "shrink": false
+    },
+    "pinelib": {
+      "count": 5011,
+      "deselected": 0,
+      "listing": "delivery-evidence/test-results/stage22_pinelib_collect.txt",
+      "listing_sha256": "e68627e289071d9c63487bfbcfc54aa00aaf6bce279d16fd81fbc148cd8d0cdf",
+      "previous_count": 4978,
+      "shrink": false
+    }
+  },
+  "python": "3.13.5",
+  "results": {
+    "ast2python_full_suite": {
+      "acceptance_role": "not_required_for_package_2_2_local_gate; coordinated full Stage 2 suite remains Stage 2.10",
+      "note": "A monolithic full-suite run exceeded the process window after environment dependency setup; Stage 2.2 exact generated-path tests are green.",
+      "ok": false
+    },
+    "ast2python_targeted": {
+      "file": "delivery-evidence/test-results/stage22_ast2python_targeted.log",
+      "ok": true,
+      "sha256": "cf426ab35f3b06fccef8290fde5325d90af130a79da1d1752031518df77c4236",
+      "tests": 3
+    },
+    "pine2ast_catalog_check": {
+      "file": "delivery-evidence/test-results/stage22_pine2ast_catalog_check.log",
+      "ok": true,
+      "sha256": "a68204f8710b857d48e803526933269576b14617c73c645023451974c6c7e516"
+    },
+    "pine2ast_full_suite": {
+      "acceptance_role": "not_required_for_package_2_2_local_gate; coordinated full Stage 2 suite remains Stage 2.10",
+      "note": "Full-suite collection is current and non-shrinking; package-specific semantic/version tests and catalog --check are green.",
+      "ok": false
+    },
+    "pine2ast_targeted": {
+      "file": "delivery-evidence/test-results/stage22_pine2ast_targeted.log",
+      "ok": true,
+      "sha256": "f44919a3367dc52929a8af8f8919d5f9536d2eb90b5c6c6d38b1e58904be21bc",
+      "tests": 17
+    },
+    "pinelib_abi_check": {
+      "file": "delivery-evidence/test-results/stage22_pinelib_abi_check.log",
+      "ok": true,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pinelib_full_split": {
+      "file": "delivery-evidence/test-results/stage22_pinelib_full_split.log",
+      "ok": true,
+      "sha256": "e49b1f13e6d41f1019ac01c03ddcc9f6a6d20de551867fa5c9e972a4a5f8f59b",
+      "tests": 5011
+    },
+    "pinelib_targeted": {
+      "file": "delivery-evidence/test-results/stage22_pinelib_targeted.log",
+      "ok": true,
+      "sha256": "78c6fa4b5cbd888924eee5890e4eefa17bdf6aa3dcf5f7ecc65dade3d5492d43",
+      "tests": 75
+    }
+  },
+  "schema_id": "openpine.stage2_2_test_results.v1",
+  "scope_boundary": "Package 2.2 local semantic acceptance only. Full Stage 2 coordinated CI/protected-worker/Python 3.11+3.13 gate remains 2.10.",
+  "stage": "2.2"
+}

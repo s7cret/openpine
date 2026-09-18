@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-17",
+  "python": "3.12.3",
+  "pine2ast": {
+    "collected": 3336,
+    "passed": 3336,
+    "failed": 0,
+    "skipped": 0,
+    "exit": 0
+  },
+  "ast2python": {
+    "collected": 1605,
+    "passed": 1605,
+    "failed": 0,
+    "skipped": 0,
+    "exit": 0
+  },
+  "pinelib_prior_complete": {
+    "collected": 5030,
+    "passed": 5030
+  },
+  "toolchain": [
+    "setuptools>=77",
+    "build",
+    "pytest",
+    "jsonschema",
+    "tzdata==2026.2",
+    "editable pine2ast+ast2python+pinelib"
+  ],
+  "not_run": [
+    "python3.11",
+    "python3.13",
+    "protected_worker_bubblewrap"
+  ]
+}

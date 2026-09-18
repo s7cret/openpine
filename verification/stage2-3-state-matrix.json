@@ -1,0 +1,60 @@
+{
+  "acceptance_blockers": [
+    "Full Pine2AST 3299-test execution has not completed after the final re-audit fixes.",
+    "Coordinated protected-worker/Python 3.11+3.13/package CI is not rerun in this local re-audit."
+  ],
+  "accepted": false,
+  "as_of": "2026-09-16",
+  "callsite_invariants": {
+    "branch_written_calls": "independent local state per written branch call",
+    "exception_abort_checkpoint_restore": "function path unwinds and state restores/replays consistently",
+    "multiple_calls_same_bar": "same written callsite reuses state consistently",
+    "nested_calls": "outer written callsite participates in identity",
+    "parameter_history": "independent per written callsite",
+    "result_history": "runtime series history; not a Python-local substitute",
+    "same_written_callsite_in_loop": "one identity reused across iterations",
+    "skipped_call": "local history advances only on executed calls",
+    "two_written_calls": "independent state/history identities",
+    "var_vs_varip": "var rolls back intrabar, varip persists intrabar"
+  },
+  "content_hash": "sha256:278c5fb66d0f4c812a3dcb7399822b580bce31d2121db39757e1b5ded2bf91ca",
+  "current_acceptance": "verification/stage2-current-acceptance.json",
+  "owners": {
+    "compiler": "Ast2Python exact UDF lowering/default binding",
+    "producer": "Pine2AST declaration/binding/scope diagnostics",
+    "runtime": "existing PineLib invoke_function_v1/scoped_id_v1 + state slots"
+  },
+  "reaudit_findings": [
+    "Previous candidate wrongly classified polyline.new as forbidden in local/UDF scope because a frozen modern source flag contradicted documented drawing-object semantics.",
+    "Single-expression UDFs/methods admitted script declarations indicator/strategy/library (and legacy study/strategy) because DeclarationStatement-only checks did not cover call-expression parsing.",
+    "The Stage 2.3 input archive already failed the Stage 2.1 catalog regression because Stage 2.2 bool signature deltas were not admitted by the Stage 2.1 frozen drift guard; restored with an explicit cumulative delta.",
+    "Third re-audit found stale Stage 2.1 whole-pack guards that did not subtract reviewed later catalog deltas; guards now use a sealed cumulative rollback and pass 103/103 without rebasing expected values."
+  ],
+  "record_scope": "historical_substage_matrix_not_current_tree_acceptance",
+  "regression_status": {
+    "historical_guard_regression": "103/103 PASS",
+    "pine2ast_full": "incomplete_not_counted_as_pass_after_v3_fix",
+    "stage2_1_catalog": "11/11 PASS",
+    "stage2_2": "42/42 PASS"
+  },
+  "schema_id": "openpine.stage2_3_udf_callsite_matrix.v3",
+  "scope_invariants": {
+    "drawing_constructors": "label.new and polyline.new remain allowed in local/UDF scope where version/catalog permits",
+    "global_and_parameter_reassignment": "forbidden in UDF/method; reference-object mutation remains distinct",
+    "global_capture_order": "global declared before function is visible; later global is not forward-captured",
+    "global_only_visuals": "plot/plotchar/plotshape/plotbar/plotcandle/plotarrow/hline/fill/barcolor/bgcolor/alertcondition rejected in FUNCTION/METHOD/local scope",
+    "nested_definitions": "rejected v2-v6",
+    "parameters_defaults_positional_named": "targeted execution green; defaults are bound in callee lexical scope",
+    "recursion": "direct and mutual recursion rejected v2-v6",
+    "script_declarations": "study/indicator/strategy/library rejected inside single-expression UDF and method",
+    "shadowing": "local binding may shadow global without mutating the outer binding"
+  },
+  "stage": "2.3",
+  "status": "corrected_candidate_pending_full_pine2ast_regression",
+  "version_matrix": {
+    "1": "UDF unavailable",
+    "2-3": "UDF available with legacy declaration study/strategy global-only",
+    "4": "typed parameters available; same UDF restrictions",
+    "5-6": "modern indicator/strategy/library declarations global-only; same callsite-state rules"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "as_of": "2026-09-15",
+  "content_hash": "sha256:241463f4d4938bec1c8fc84c70125839c5790d03f0f26b1c96b68355e3ba507c",
+  "generator_checks": {
+    "pine2ast_catalog_check": "PASS",
+    "pinelib_abi_check": "PASS"
+  },
+  "interpretation": {
+    "ast2python": "full exact-inventory execution green",
+    "full_stage2_1_acceptance": false,
+    "pine2ast": "exact inventory executed; only three package-artifact tests error because PyPA build module is unavailable in this environment; no functional assertion failures remain",
+    "pinelib": "full exact-inventory execution green"
+  },
+  "python": "3.13.5",
+  "schema_id": "openpine.stage2_1_post_audit_test_results.v1",
+  "suites": {
+    "ast2python": {
+      "collect_only": false,
+      "count": 1554,
+      "errors": [],
+      "inventory_sha256": "sha256:ab76e019579a25b74613a314cb7b8f88ce49037d30ea238507163cf57baae31e",
+      "ok": true,
+      "receipt_file": "ast2python_full_final3_receipt.json",
+      "receipt_sha256": "95f43b47145606fa398ce6a256db774928937b7ec5870906f27d9628e8133b78",
+      "suite": "ast2python"
+    },
+    "openpine_stage21_catalog": {
+      "errors": 0,
+      "failures": 0,
+      "log_file": "openpine_stage21_catalog_final.log",
+      "log_sha256": "08faea39fd19189f6544839f505d91d76ecb1367e219f5db362cdf22916ef869",
+      "ok": true,
+      "skipped": 0,
+      "tests": 11
+    },
+    "pine2ast": {
+      "collect_only": false,
+      "count": 3225,
+      "errors": [
+        "required test did not pass all phases: tests/test_reference_package_data.py::test_wheel_and_sdist_include_every_reference_resource",
+        "required test did not pass all phases: tests/test_reference_package_data.py::test_extracted_wheel_validates_default_catalog_and_matrix",
+        "required test did not pass all phases: tests/test_reference_package_data.py::test_extracted_wheel_missing_resources_cannot_fall_back_to_checkout"
+      ],
+      "inventory_sha256": "sha256:2ae5653239c35f3a38b6fb9a6dbbfbe56066d248a8bed90acbf2b94d6b72794b",
+      "ok": false,
+      "receipt_file": "pine2ast_full_final4_receipt.json",
+      "receipt_sha256": "deb10ff475669c83af0cbf45f443297c99997171bea28ae6f30d932a3bf4fb51",
+      "suite": "pine2ast"
+    },
+    "pinelib": {
+      "collect_only": false,
+      "count": 4978,
+      "errors": [],
+      "inventory_sha256": "sha256:2d6b827c5415264dbd9514482048b0807b9e885875b9091eff385f77b5c4018d",
+      "ok": true,
+      "receipt_file": "pinelib_full_final_receipt.json",
+      "receipt_sha256": "2096687ac2dfaa774cb40c3f15f80dc60b90526d9550b77a89a75d90f62088d5",
+      "suite": "pinelib"
+    }
+  }
+}

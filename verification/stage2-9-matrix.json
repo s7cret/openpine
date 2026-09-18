@@ -1,0 +1,42 @@
+{
+  "accepted_cells": {
+    "abi_round_ties_plus_inf": "pass",
+    "abi_sqrt_negative_na": "pass",
+    "array_map_size_get": "pass",
+    "history_na": "pass",
+    "int_float_str_length": "pass",
+    "math_abs_sqrt_pow": "pass",
+    "math_max_min_v5_v6": "pass",
+    "ta_sma_warmup": "pass"
+  },
+  "accepted_subset": true,
+  "current_acceptance": "verification/stage2-current-acceptance.json",
+  "existing_frozen_corpora": [
+    "verification/builtins-v1",
+    "verification/builtin-scalars-v1"
+  ],
+  "explicitly_not_accepted": [
+    "str.contains",
+    "nz",
+    "color.r",
+    "unbound_catalog_rows"
+  ],
+  "full_catalog_accepted": false,
+  "full_stage2_accepted": false,
+  "independent_builtin_expected": "partial",
+  "independent_sources": [
+    "https://www.tradingview.com/pine-script-docs/language/built-ins/",
+    "https://www.tradingview.com/pine-script-docs/language/operators/",
+    "https://www.tradingview.com/pine-script-docs/language/type-system/",
+    "https://www.tradingview.com/pine-script-reference/v6/"
+  ],
+  "inventory": {
+    "ast2python": 1682,
+    "pine2ast": 3412,
+    "pinelib": 5046
+  },
+  "notes": "str.contains is TARGET_DIRECT with UNBOUND substring; not an accepted executable builtin.",
+  "python": "3.12.3",
+  "record_scope": "historical_substage_matrix_not_current_tree_acceptance",
+  "schema_id": "openpine.stage2_9_matrix.v1"
+}

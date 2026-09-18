@@ -1,0 +1,44 @@
+{
+  "as_of": "2026-09-16",
+  "content_hash": "sha256:92513a63b168652f06ae857ae1ab5179a508fdd583c1f65bd4f5a108cd304d82",
+  "history": {
+    "abort": "working reservation rolled back",
+    "builtin_ohlc_time_max_offset": 10000,
+    "checkpoint_restore": "committed reservation preserved",
+    "commit": "reservation committed",
+    "dynamic_offset_type": "exact Pine int only; bool/float/string/negative fail closed",
+    "lazy_branch": "unexecuted history branch does not reserve",
+    "ordinary_series_max_offset": 5000,
+    "reservation": "transactional in existing SeriesStorage state owner"
+  },
+  "invariants": {
+    "bool_cast_strings_and_objects": "fail_closed",
+    "false_is_not_numeric_zero": true,
+    "int_cast_float_policy": "truncate toward zero",
+    "pine_boundary_materializes_missing_numeric_history_as_na": true,
+    "python_truthiness_fallback_forbidden": true,
+    "storage_missing_history_is_not_pine_na_marker": true,
+    "transport_null_is_not_pine_na": true
+  },
+  "paths": {
+    "direct_runtime": "PineLib RuntimeSession / core values",
+    "generated": "Pine2AST -> Ast2Python -> exact PineLib ABI target"
+  },
+  "schema_id": "openpine.stage2_2_bool_na_history_matrix.v1",
+  "scope": "Bool / NA / numeric casts / history values and reservation",
+  "stage": "2.2",
+  "versions": {
+    "1-5": {
+      "explicit_bool_na": "preserves Pine na",
+      "implicit_numeric_condition": "allowed; zero=false, nonzero=true",
+      "missing_bool_history": "Pine na",
+      "pine_na_in_condition": "false branch"
+    },
+    "6": {
+      "explicit_bool_na": "false (two-state bool)",
+      "implicit_numeric_condition": "forbidden; explicit bool() required",
+      "missing_bool_history": "false",
+      "pine_na_in_condition": "forbidden"
+    }
+  }
+}

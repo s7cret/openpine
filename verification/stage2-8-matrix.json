@@ -1,0 +1,27 @@
+{
+  "accepted": true,
+  "cells": {
+    "cycles_rejected": "pass",
+    "dependency_invalidates_artifact": "pass",
+    "exact_revision_lock": "pass",
+    "function_udt_enum_method_execution": "pass",
+    "missing_revision_fail_closed": "pass",
+    "no_latest_fallback": "pass",
+    "no_similar_name_substitution": "pass",
+    "original_source_coordinates": "pass",
+    "private_symbols_rejected": "pass",
+    "same_name_libraries_distinct": "pass",
+    "source_checksum": "pass",
+    "transitive_diamond_deterministic": "pass"
+  },
+  "current_acceptance": "verification/stage2-current-acceptance.json",
+  "inventory": {
+    "ast2python": 1659,
+    "pine2ast": 3403,
+    "pinelib": 5043
+  },
+  "profile": "same_version_locked_imports",
+  "python": "3.12.3",
+  "record_scope": "historical_substage_matrix_not_current_tree_acceptance",
+  "schema_id": "openpine.stage2_8_matrix.v1"
+}

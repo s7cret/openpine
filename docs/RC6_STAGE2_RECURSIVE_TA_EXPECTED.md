@@ -1,3 +1,5 @@
+> **Исторический документ, не текущая приёмка.** Результаты и статусы ниже относятся к прежним прогонам. Текущий статус исправленного кандидата от 18.09.2026 — `in_progress`, `full_stage2_accepted=false`. Единственный текущий реестр: `verification/stage2-current-acceptance.json`.
+
 # Independent recursive TA expectations
 
 The corpus contains 40 ordinary Pine v5/v6 scripts from 20 independently authored formula rows: seven EMA, six RSI, and seven MACD rows. MACD comparisons include all three outputs. The immutable 33-row source table and its arithmetic review are retained verbatim. Its other 13 rows remain UNVERIFIED and are never assigned passing evidence by this corpus.

@@ -1,0 +1,61 @@
+{
+  "as_of": "2026-09-15",
+  "content_hash": "sha256:e14e24962c548d2969b0fd39219f53ff5c7d78fd0249191a909c385bab0bfe69",
+  "generator_checks": {
+    "pine2ast_catalog_check": "PASS"
+  },
+  "pine2ast_current_full_execution": {
+    "counted_as_acceptance": false,
+    "partial_log_file": "delivery-evidence/test-results/pine2ast_reaudit_full_aborted.log",
+    "partial_log_sha256": "6d0d2c861962310242f89bdd9c9a674da1270a0341396589b9591d54891d05e6",
+    "reason": "a fresh full run did not complete in the current execution environment; no PASS is claimed",
+    "status": "NOT_COMPLETED"
+  },
+  "pine2ast_inventory": {
+    "collect_only": true,
+    "collection_errors": [],
+    "count": 3232,
+    "deselected": 0,
+    "ok": true,
+    "receipt_file": "delivery-evidence/test-results/pine2ast_reaudit_collect2_receipt.json",
+    "receipt_sha256": "7739df423e2f2df4381240f90d9aa0988ebc65219e0d2a187ab1c2c4bb8268e7",
+    "sha256": "sha256:adce8144b7957769204b7f2bb1b28a7958af03816a402348df9d37e84f9e1e50"
+  },
+  "python": "3.13.5",
+  "schema_id": "openpine.stage2_1_reaudit_test_results.v1",
+  "stage2_1_acceptance": false,
+  "targeted_stage21": {
+    "errors": 0,
+    "failures": 0,
+    "junit_file": "delivery-evidence/test-results/stage21_reaudit_targeted_junit.xml",
+    "junit_sha256": "c19a4d90cf51223d428076570118009575fd4648fb393c61d9318bab218d6b80",
+    "log_file": "delivery-evidence/test-results/stage21_reaudit_targeted.log",
+    "log_sha256": "c3046abf09f4cef8abee6a8b567a15b90b3a43ae63933b8b78f3f07fc2a6702a",
+    "ok": true,
+    "skipped": 0,
+    "tests": 171
+  },
+  "unchanged_source_full_execution_receipts": {
+    "ast2python": {
+      "collect_only": false,
+      "count": 1554,
+      "errors": [],
+      "inventory_sha256": "sha256:ab76e019579a25b74613a314cb7b8f88ce49037d30ea238507163cf57baae31e",
+      "ok": true,
+      "receipt_file": "ast2python_full_final3_receipt.json",
+      "receipt_sha256": "95f43b47145606fa398ce6a256db774928937b7ec5870906f27d9628e8133b78",
+      "suite": "ast2python"
+    },
+    "pinelib": {
+      "collect_only": false,
+      "count": 4978,
+      "errors": [],
+      "inventory_sha256": "sha256:2d6b827c5415264dbd9514482048b0807b9e885875b9091eff385f77b5c4018d",
+      "ok": true,
+      "receipt_file": "pinelib_full_final_receipt.json",
+      "receipt_sha256": "2096687ac2dfaa774cb40c3f15f80dc60b90526d9550b77a89a75d90f62088d5",
+      "suite": "pinelib"
+    },
+    "reason": "these component source trees were not changed by the re-audit"
+  }
+}

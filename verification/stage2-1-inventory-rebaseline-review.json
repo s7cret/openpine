@@ -1,0 +1,148 @@
+{
+  "as_of": "2026-09-15",
+  "changes": {
+    "ast2python": {
+      "collection_only": true,
+      "execution_acceptance": false,
+      "new": {
+        "count": 1554,
+        "deselected": 0,
+        "sha256": "sha256:ab76e019579a25b74613a314cb7b8f88ce49037d30ea238507163cf57baae31e"
+      },
+      "old": {
+        "count": 1509,
+        "deselected": 0,
+        "sha256": "sha256:c9563b1aaf44010f4433f0f6a4759b94ab87711ade3e5911cad8e15e1829a283"
+      }
+    },
+    "pine2ast": {
+      "collection_only": true,
+      "execution_acceptance": false,
+      "new": {
+        "count": 3232,
+        "deselected": 0,
+        "sha256": "sha256:adce8144b7957769204b7f2bb1b28a7958af03816a402348df9d37e84f9e1e50"
+      },
+      "old": {
+        "count": 3191,
+        "deselected": 0,
+        "sha256": "sha256:7307c946cbc0c724c2d5d5937abbddc2493ecd64c6e87d22073f2a02df6fe1f0"
+      },
+      "reaudit_pr12_reconciliation": {
+        "collection_receipt": "delivery-evidence/test-results/pine2ast_reaudit_collect_receipt.json",
+        "new": {
+          "count": 3232,
+          "deselected": 0,
+          "sha256": "sha256:adce8144b7957769204b7f2bb1b28a7958af03816a402348df9d37e84f9e1e50"
+        },
+        "old": {
+          "count": 3225,
+          "deselected": 0,
+          "sha256": "sha256:2ae5653239c35f3a38b6fb9a6dbbfbe56066d248a8bed90acbf2b94d6b72794b"
+        },
+        "reason": "Seven explicit CAT-01 version-boundary tests were added while reconciling the useful, compatible coverage from open Pine2AST PR #12. No test was removed or deselected."
+      }
+    },
+    "pinelib": {
+      "collection_only": true,
+      "execution_acceptance": false,
+      "new": {
+        "count": 4978,
+        "deselected": 0,
+        "sha256": "sha256:2d6b827c5415264dbd9514482048b0807b9e885875b9091eff385f77b5c4018d"
+      },
+      "old": {
+        "count": 4944,
+        "deselected": 0,
+        "sha256": "sha256:9170197e3ee02b906700fd42bb69ca8a6023d081def6bf89f793ea79743ecbb6"
+      },
+      "post_audit_test_update": {
+        "new": {
+          "count": 4978,
+          "deselected": 0,
+          "sha256": "sha256:2d6b827c5415264dbd9514482048b0807b9e885875b9091eff385f77b5c4018d"
+        },
+        "old": {
+          "count": 4976,
+          "deselected": 0,
+          "sha256": "sha256:958f39dbdc1bf6a8417721c3ee05d498d2d0959c632eb28775aa049e7fe9f198"
+        },
+        "reason": "two explicit post-audit delta-lock tests added; helper module itself adds no test nodeids"
+      }
+    }
+  },
+  "content_hash": "sha256:548610dd3a5051c2452dfacdae1ce79c6f7b90bb84881e60f223f7b79a8c284d",
+  "environment": {
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]"
+  },
+  "latest_execution": {
+    "ast2python": {
+      "count": 1554,
+      "errors": 0,
+      "ok": true,
+      "sha256": "sha256:ab76e019579a25b74613a314cb7b8f88ce49037d30ea238507163cf57baae31e"
+    },
+    "pine2ast": {
+      "assertion_failures": 0,
+      "blocker": "PYTHON_BUILD_MODULE_UNAVAILABLE",
+      "count": 3232,
+      "environment_setup_errors": 3,
+      "ok": false,
+      "sha256": "sha256:adce8144b7957769204b7f2bb1b28a7958af03816a402348df9d37e84f9e1e50"
+    },
+    "pinelib": {
+      "count": 4978,
+      "errors": 0,
+      "ok": true,
+      "sha256": "sha256:2d6b827c5415264dbd9514482048b0807b9e885875b9091eff385f77b5c4018d"
+    }
+  },
+  "not_rebaselined": {
+    "marketdata-provider": {
+      "locked": {
+        "count": 601,
+        "deselected": 5,
+        "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+      },
+      "reason": "the locked suite intentionally records 5 deselections; current generic collect-only profile is not the same reviewed suite profile"
+    },
+    "openpine": {
+      "locked": {
+        "count": 9706,
+        "deselected": 0,
+        "sha256": "sha256:0052fec11717dacb89d92c0e91228c542e8e8a00e601a4fcd930828bed4e1c80"
+      },
+      "reason": "full collection cannot be independently reconstructed in this environment because optional runtime dependencies (including structlog) are unavailable"
+    },
+    "openpine-contracts": {
+      "locked": {
+        "count": 557,
+        "deselected": 0,
+        "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+      },
+      "reason": "full collection hit an existing test-module import dependency in this extracted source-only environment"
+    }
+  },
+  "purpose": "Prevent stale test inventory from being treated as current acceptance evidence.",
+  "rules": [
+    "collection-only proves inventory identity only and is not execution acceptance",
+    "no unchanged component inventory was silently rewritten",
+    "full Stage 2.1 acceptance remains blocked until the coordinated mandatory inventory is executed in the protected release environment",
+    "the OpenPine nodeid inventory was not changed: new Stage 2.1 assertions were folded into existing test nodeids to avoid an unverifiable host-wide rebaseline in this extracted environment"
+  ],
+  "schema_id": "openpine.stage2_1_inventory_rebaseline_review.v1",
+  "status": "explicit_rebaseline_matches_reaudited_sources; execution evidence pending refresh; release_environment_gate_pending",
+  "unchanged_verified_collection": {
+    "backtest_engine": {
+      "count": 1102,
+      "deselected": 0,
+      "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+    },
+    "optimizer": {
+      "count": 281,
+      "deselected": 0,
+      "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+    }
+  }
+}
