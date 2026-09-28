@@ -166,7 +166,7 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert (HOST / 'verification/ci-bootstrap-requirements.txt').is_file()
     assert (HOST / 'verification/ci-runtime-requirements.txt').is_file()
     runtime_lock = (HOST / 'verification/ci-runtime-requirements.txt').read_text()
-    assert 'pytest_asyncio==' in runtime_lock and 'ruff==' in runtime_lock
+    assert all(f'{package}==' in runtime_lock for package in ('pytest_asyncio', 'ruff', 'mypy', 'mypy_extensions', 'pathspec', 'librt'))
     assert '--hash=sha256:' in runtime_lock
     platform_workflow = yaml.safe_load((HOST / '.github/workflows/rc6-test-platform.yml').read_text())
     platform_paths = set(platform_workflow.get('on', platform_workflow.get(True))['pull_request']['paths'])

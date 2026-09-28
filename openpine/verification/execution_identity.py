@@ -15,7 +15,7 @@ from typing import Any, Mapping
 from openpine.verification.identity import canonical, read_json, seal
 SOURCE_SCHEMA = 'openpine.execution_sources.v1'
 ENV_SCHEMA = 'openpine.execution_environment.v1'
-ROOT_OUTPUT_DIRS = frozenset({'.git', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.venv', 'venv', 'build', 'dist'})
+ROOT_OUTPUT_DIRS = frozenset({'.git', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.marketdata-cache', '.venv', 'venv', 'build', 'dist'})
 NESTED_OUTPUT_DIRS = frozenset({'__pycache__', 'node_modules'})
 
 def hash_file(path: Path) -> str:
