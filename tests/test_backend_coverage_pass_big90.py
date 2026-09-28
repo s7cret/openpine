@@ -239,7 +239,7 @@ def test_runtime_helper_error_and_indicator_output_paths(tmp_path, monkeypatch):
     assert (tmp_path / "out" / "run_meta.json").exists()
 
 
-def test_cli_state_accounts_and_providers_deeper(monkeypatch, tmp_path):
+def test_cli_state_accounts_and_providers_deeper(monkeypatch, tmp_path, synthetic_admitted_marketdata_manifest):
     import importlib
     cm = importlib.import_module("openpine.cli.main")
     from click.testing import CliRunner

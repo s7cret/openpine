@@ -52,6 +52,19 @@ def _bind_exact_test_admission_identity(monkeypatch, request):
     yield
 
 
+@pytest.fixture
+def synthetic_admitted_marketdata_manifest(monkeypatch):
+    """Unit-only producer identity for CLI paths that instantiate a candle store.
+
+    This is not a deployment or release acceptance receipt. Production still
+    requires a real admitted manifest at the same boundary.
+    """
+    monkeypatch.setattr(
+        "openpine.runtime.admitted_manifest.load_admitted_manifest",
+        lambda: admitted_manifest(),
+    )
+
+
 @pytest.fixture(autouse=True)
 def _cleanup_repo_runtime_artifacts():
     """Keep release-gate tests hermetic after tests that exercise default paths."""

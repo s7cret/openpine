@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import sys
+import traceback
 import types
 from types import SimpleNamespace
 
@@ -208,7 +209,7 @@ def test_deep_checks_and_doctor_branches(monkeypatch, tmp_path):
         events.StrategyRuntimeErrorPayload = old_payload
 
 
-def test_cli_indicator_compare_streams_state_and_plugins_more(monkeypatch, tmp_path):
+def test_cli_indicator_compare_streams_state_and_plugins_more(monkeypatch, tmp_path, synthetic_admitted_marketdata_manifest):
     runner = CliRunner()
     # pine run-plots happy path through dependency injection helpers
     prepared = SimpleNamespace(
@@ -271,7 +272,12 @@ def test_cli_indicator_compare_streams_state_and_plugins_more(monkeypatch, tmp_p
         def __init__(self, *a, **k): pass
         def rebuild(self, strategy_id, from_bar_time): return SimpleNamespace(strategy_id=strategy_id, artifact_id="art", bar_time=from_bar_time)
     monkeypatch.setattr(recovery_mod, "StateRebuilder", Rebuilder)
-    assert runner.invoke(cli_main.cli, ["state", "rebuild", "s1"]).exit_code == 0
+    rebuilt = runner.invoke(cli_main.cli, ["state", "rebuild", "s1"])
+    assert rebuilt.exit_code == 0, (
+        "".join(traceback.format_exception(rebuilt.exception))
+        if rebuilt.exception is not None
+        else rebuilt.output
+    )
 
     # risk kill switch branches
     assert runner.invoke(cli_main.cli, ["risk", "kill-switch", "on"]).exit_code == 0

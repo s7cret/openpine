@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from marketdata_provider.contracts import (
     Bar,
@@ -41,6 +42,8 @@ def _bar(time_ms: int) -> Bar:
 
 
 class _Provider:
+    persists_fetches = False
+
     def __init__(self) -> None:
         self.calls = 0
 
@@ -62,26 +65,27 @@ class _Provider:
         )
 
 
-def test_data_orchestrator_reuses_persistent_cache_between_instances(
+def test_data_orchestrator_rejects_unsealed_legacy_cache_between_instances(
     tmp_path: Path,
 ) -> None:
     provider = _Provider()
-    first = DataOrchestrator(provider=provider, cache_dir=tmp_path, cache_enabled=True)
-    second = DataOrchestrator(provider=provider, cache_dir=tmp_path, cache_enabled=True)
+    first = DataOrchestrator(provider=provider, store=SimpleNamespace(), cache_dir=tmp_path, cache_enabled=True)
+    second = DataOrchestrator(provider=provider, store=SimpleNamespace(), cache_dir=tmp_path, cache_enabled=True)
 
     first_series = first.load_bars(_query())
     second_series = second.load_bars(_query())
 
-    assert provider.calls == 1
+    # Legacy BarSeries lacks canonical bar envelopes and must not be cached.
+    assert provider.calls == 2
     assert [bar.time for bar in first_series.bars] == [0, 60_000]
     assert [bar.time for bar in second_series.bars] == [0, 60_000]
 
 
 def test_data_orchestrator_can_disable_persistent_cache(tmp_path: Path) -> None:
     provider = _Provider()
-    first = DataOrchestrator(provider=provider, cache_dir=tmp_path, cache_enabled=False)
+    first = DataOrchestrator(provider=provider, store=SimpleNamespace(), cache_dir=tmp_path, cache_enabled=False)
     second = DataOrchestrator(
-        provider=provider, cache_dir=tmp_path, cache_enabled=False
+        provider=provider, store=SimpleNamespace(), cache_dir=tmp_path, cache_enabled=False
     )
 
     first.load_bars(_query())

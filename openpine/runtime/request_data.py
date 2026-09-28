@@ -20,7 +20,7 @@ from pinelib.request.snapshots import RequestSource, SnapshotRequestProvider, no
 from pinelib.runtime.metadata import InstrumentContext
 from pinelib.errors import PineRuntimeError
 from marketdata_provider.errors import MarketDataError
-from marketdata_provider.timeframes import to_pine_timeframe
+from marketdata_provider import to_pine_timeframe
 from openpine.runtime.rc6_marketdata import decode_canonical_bar
 
 SCHEMA = "openpine.request_snapshots.v1"

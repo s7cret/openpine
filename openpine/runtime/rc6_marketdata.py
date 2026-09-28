@@ -12,7 +12,7 @@ from decimal import Decimal
 from typing import Any
 
 from backtest_engine.models import Bar
-from marketdata_provider.timeframes import close_time_ms
+from marketdata_provider import close_time_ms
 from openpine_contracts import Finality, content_hash, validate_payload, verify_content_hash
 
 SCHEMA = "openpine.marketdata.bar.v2"
