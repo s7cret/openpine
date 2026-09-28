@@ -14,6 +14,7 @@
   "tests/test_backtest_semantic_profile.py",
   "tests/test_bulk_backtest.py",
   "tests/test_candle_dedup.py",
+  "tests/test_ci_commit_provenance.py",
   "tests/test_cli_semantic_profile.py",
   "tests/test_compile_pipeline.py",
   "tests/test_data_orchestrator_source_policy.py",

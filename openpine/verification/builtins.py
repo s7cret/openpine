@@ -7,8 +7,10 @@ denominator. A callable or a passing example never implies complete conformance.
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from importlib import import_module
+from importlib.resources import files
 from pathlib import Path
 
 from ast2python.lowering import (
@@ -23,7 +25,62 @@ from pine2ast.semantic.signatures import SignatureResolver
 from pine2ast.versioning import PineVersionResolver
 
 from openpine.verification.conformance import compare_corpus, load_corpus
-from openpine.verification.identity import digest, seal
+from openpine.verification.identity import digest, seal, verify
+
+_HISTORICAL_SOURCE = "1a42c1435a647f1859b96ea2d3cf5e1e8a09147a"
+_HISTORICAL_LOCK = "sha256:27d61a34a3429bb6ef4508ecb26d8514cd6a72bef7abeb78906024590bf04b7c"
+_HISTORICAL_RESOURCE = "sha256:9fa2b632ea10f709cd0914cfc265ef21275bf8ea1b052c24bdc10f016dd3a698"
+_HISTORICAL_NAMES = (
+    "pine:function:array.binary_search",
+    "pine:function:array.binary_search_leftmost",
+    "pine:function:array.binary_search_rightmost",
+)
+
+
+def historical_unavailable_rows(repo: CatalogRepository) -> list[dict]:
+    """Preserve reviewed old-lock identities without admitting them in the v4 catalog."""
+    resource = files("openpine.verification").joinpath("stage2-historical-unavailable.json")
+    data = json.loads(resource.read_text(encoding="utf-8"))
+    verify(data, "openpine.historical_unavailable_callables.v1")
+    if (
+        data["content_hash"] != _HISTORICAL_RESOURCE
+        or data["prior_lock_hash"] != _HISTORICAL_LOCK
+        or data["source_commit"] != _HISTORICAL_SOURCE
+        or len(data["rows"]) != len(_HISTORICAL_NAMES)
+        or [row["symbol_id"] for row in data["rows"]] != list(_HISTORICAL_NAMES)
+    ):
+        raise ValueError("historical callable supplement changed without review")
+    current = repo.view(4)
+    result = []
+    for row in data["rows"]:
+        symbol = row["symbol_id"]
+        if (
+            row["pine_version"] != 4
+            or row["overload_id"] != f"{symbol}#canonical"
+            or row["call_form"] != "NAMESPACE_FUNCTION"
+            or row["contract_hash"] != digest(row["contract"])
+            or symbol.removeprefix("pine:function:") in current["functions"]
+        ):
+            raise ValueError("historical callable is not a sealed unavailable signature")
+        result.append(
+            {
+                **{
+                    key: row[key]
+                    for key in (
+                        "pine_version", "symbol_id", "overload_id", "call_form",
+                        "contract", "contract_hash",
+                    )
+                },
+                "spellings": [symbol.removeprefix("pine:function:")],
+                "frontend_available": False,
+                "status": "UNAVAILABLE",
+                "reasons": ["HISTORICAL_CATALOG_UNAVAILABLE"],
+                "target_binding": None,
+                "qualifier_contract": {"status": "UNVERIFIED", "reasons": ["HISTORICAL_CATALOG_UNAVAILABLE"]},
+                "oracle": "missing",
+            }
+        )
+    return result
 
 
 def callable_exists(path: object) -> bool:
@@ -161,13 +218,18 @@ def build_builtin_surface(*, target=None) -> dict:
                         ),
                         "oracle": "missing",
                     }
+    for row in historical_unavailable_rows(repo):
+        key = (row["pine_version"], row["symbol_id"], row["overload_id"], row["call_form"])
+        if key in rows:
+            raise ValueError("historical callable overlaps installed catalog")
+        rows[key] = row
     values = [rows[key] for key in sorted(rows)]
     return seal(
         {
             "schema_id": "openpine.builtin_surface.v1",
             "catalogs": {str(v): repo.identity(v).catalog_hash for v in range(1, 7)},
             "target_manifest_hash": target.content_hash,
-            "denominator_kind": "all_installed_frontend_callable_signatures",
+            "denominator_kind": "installed_plus_sealed_historical_unavailable_signatures",
             "rows": values,
             "counts": dict(Counter(row["status"] for row in values)),
             "qualifier_counts": dict(Counter(row["qualifier_contract"]["status"] for row in values)),

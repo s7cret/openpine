@@ -175,7 +175,8 @@ def test_invalid_import_admission_is_explicit_without_running_worker(fault):
     elif fault == "missing_revision":
         source = source.replace("Signal/1", "Signal/2")
     elif fault == "wrong_pine_version":
-        kwargs = {"library_store": LibraryStore.create(sources(5))}
+        # The v6 library is not admissible to a v5 consumer (v6 -> v5 is valid).
+        source = source.replace("version=6", "version=5", 1)
     else:
         # A manually constructed store still undergoes hash admission before linking.
         changed = dict(store._sources)
@@ -185,6 +186,8 @@ def test_invalid_import_admission_is_explicit_without_running_worker(fault):
         source, producer_commits={"pine2ast": "a" * 40, "ast2python": "b" * 40}, **kwargs
     )
     assert not result.success and not result.python_code
+    if fault == "wrong_pine_version":
+        assert any(d["code"] == "P2A_LIBRARY_VERSION_CONTEXT" for d in result.diagnostics)
 
 
 @pytest.mark.parametrize("mode", ["interactive", "bulk_backtest"])

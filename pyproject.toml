@@ -59,7 +59,7 @@ include = ["openpine*"]
 exclude = ["openpine-ui*"]
 
 [tool.setuptools.package-data]
-openpine = ["py.typed", "stack-lock.json", "storage/migrations/*.sql"]
+openpine = ["py.typed", "stack-lock.json", "storage/migrations/*.sql", "verification/stage2-historical-unavailable.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

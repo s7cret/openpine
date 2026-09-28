@@ -272,6 +272,27 @@ def test_worker_argv_mounts_optional_lib64_read_only(monkeypatch: pytest.MonkeyP
     assert argv == expected
 
 
+def test_trusted_stage_is_accessible_outside_private_test_tmp(monkeypatch, tmp_path: Path) -> None:
+    import openpine.runtime.isolated_worker as worker
+
+    private_tmp = tmp_path / "private" / "tmp"
+    private_tmp.mkdir(parents=True)
+    private_tmp.chmod(0o700)
+    monkeypatch.setenv("TMPDIR", str(private_tmp))
+    worker._cleanup_trusted_stage()
+    selected: dict[str, object] = {}
+
+    def record_stage(**kwargs):
+        selected.update(kwargs)
+        raise RuntimeError("stage location recorded")
+
+    monkeypatch.setattr(worker.tempfile, "mkdtemp", record_stage)
+    with pytest.raises(RuntimeError, match="stage location recorded"):
+        worker._stage_trusted_packages()
+    assert selected["dir"] == "/tmp"
+    assert worker._TRUSTED_STAGE is None
+
+
 def test_trusted_stage_cleanup_removes_partial_copy(monkeypatch, tmp_path: Path) -> None:
     from types import SimpleNamespace
 

@@ -158,6 +158,13 @@ def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
     if plan.get('profile') not in PROFILES or not HASH.fullmatch(plan.get('policy_hash', '')):
         raise ValueError('invalid plan policy/profile')
     verify(plan['source'], SOURCE_SCHEMA)
+    if 'source_commits' in plan:
+        commits = plan['source_commits']
+        if not isinstance(commits, dict) or set(commits) != set(plan['source']['components']) or any(
+            not isinstance(value, str) or re.fullmatch('[0-9a-f]{40}', value) is None
+            for value in commits.values()
+        ):
+            raise ValueError('plan producer commits do not match source components')
     if set(plan['roots']) != set(plan['source']['components']) or any((not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', n) for n in plan['roots'])) or any((not Path(p).is_absolute() for p in plan['roots'].values())):
         raise ValueError('plan root mismatch')
     for name, env in plan['environments'].items():

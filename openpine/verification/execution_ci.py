@@ -6,6 +6,7 @@ can change Git refs, install a fake dependency or declare Stage 2 accepted.
 """
 from __future__ import annotations
 import json
+import re
 import shutil
 import sys
 import tarfile
@@ -16,6 +17,23 @@ from openpine.verification.execution_process import run_logged
 from openpine.verification.identity import read_json, seal, verify
 COMPONENTS = ('openpine', 'openpine-contracts', 'pine2ast', 'ast2python', 'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer')
 BUNDLE_SCHEMA = 'openpine.ci_prepared_environment.v1'
+
+def attest_ci_source_commits(reports: list[dict]) -> dict[str, str]:
+    """Freeze the Git revisions that produced all eight archived source trees."""
+    if not reports:
+        raise ValueError('prepared producer commits are missing')
+    first = reports[0]
+    pins = first.get('source_pins')
+    commits = {'openpine': first.get('host_commit'), **pins} if isinstance(pins, dict) else {}
+    if set(commits) != set(COMPONENTS) or any(
+        not isinstance(value, str) or re.fullmatch('[0-9a-f]{40}', value) is None
+        for value in commits.values()
+    ) or any(
+        report.get('host_commit') != commits['openpine'] or report.get('source_pins') != pins
+        for report in reports
+    ):
+        raise ValueError('prepared producer commits are missing or inconsistent')
+    return commits
 
 def create_source_archive(roots: dict[str, Path], output: Path) -> dict:
     from openpine.verification.execution_identity import ensure_external_output
@@ -245,8 +263,11 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
     result = bundle_manifest(bundle, source=source, environment=observed, source_pins=pins, host_commit=head)
     return result
 
-def restore(bundle: Path, work: Path, *, expected_source_hash: str | None=None) -> tuple[dict, dict[str, Path], Path]:
+def restore(bundle: Path, work: Path, *, expected_source_hash: str | None=None, expected_commits: dict[str, str] | None=None) -> tuple[dict, dict[str, Path], Path]:
     report = verify_bundle(bundle, expected_source_hash=expected_source_hash)
+    source_commits = attest_ci_source_commits([report])
+    if expected_commits is not None and source_commits != expected_commits:
+        raise ValueError('restored producer commits differ from frozen plan')
     work.mkdir(parents=True, exist_ok=False)
     command = Commands(work)
     roots = unpack_source_archive(bundle / 'sources.tar.gz', work / 'stack', report['source'])
@@ -258,15 +279,17 @@ def restore(bundle: Path, work: Path, *, expected_source_hash: str | None=None) 
     observed = json.loads(command.run([str(executable), '-c', 'import json; from openpine.verification.execution_identity import environment_snapshot; print(json.dumps(environment_snapshot()))'], cwd=work, roots=roots))
     if observed != report['environment']:
         raise ValueError('restored interpreter/environment differs from prepared lane')
-    write_once_json(work / 'restored.json', {'candidate_hash': report['source']['content_hash'], 'roots': {n: str(p) for n, p in roots.items()}, 'executable': str(executable), 'environment': observed})
+    write_once_json(work / 'restored.json', {'candidate_hash': report['source']['content_hash'], 'roots': {n: str(p) for n, p in roots.items()}, 'executable': str(executable), 'environment': observed, 'source_commits': source_commits})
     return (report, roots, executable)
 
-def make_ci_plan(collection_files: list[Path], roots: dict[str, Path], output: Path) -> dict:
+def make_ci_plan(collection_files: list[Path], roots: dict[str, Path], output: Path, source_commits: dict[str, str]) -> dict:
     from openpine.verification.execution_collections import join_collections
-    from openpine.verification.execution_plan import make_plan
+    from openpine.verification.execution_plan import make_plan, validate_plan
     collected = join_collections([read_json(p) for p in collection_files], roots)
     policy = read_json(roots['openpine'] / 'verification/execution-policy.json')
     plan = make_plan(profile='stage-full', policy=policy, roots=roots, source=collected['source'], inventories=collected['inventories'], environments=collected['environments'], shard_count=4, coverage=True)
+    plan = seal({**{key: value for key, value in plan.items() if key != 'content_hash'}, 'source_commits': source_commits})
+    validate_plan(plan)
     write_once_json(output, plan)
     return plan
 
@@ -283,7 +306,7 @@ def run_ci_task(plan: dict, plan_path: Path, roots: dict[str, Path], task_id: st
     from openpine.verification.execution_resources import resource_profile
     resources = resource_profile()
     memory_mib = min(6144, resources['memory_limit_bytes']//(1024*1024)*3//4) if resources['memory_limit_bytes'] else 6144
-    run_campaign(plan, plan_path, output, jobs=min(2, resources['cpu_slots']), run_id=run_id, shard_keys=keys, binding=binding, memory_mib=memory_mib)
+    run_campaign(plan, plan_path, output, jobs=min(2, resources['cpu_slots']), run_id=run_id, shard_keys=keys, binding=binding, memory_mib=memory_mib, build_commit=plan['source_commits']['openpine'])
     report = aggregate_campaign(plan, output, expected_plan_hash=plan['content_hash'], expected_run_id=run_id, expected_shards=keys)
     write_once_json(output / 'aggregate.json', report)
     if not report['pytest_scope_passed']:
@@ -389,25 +412,28 @@ def run_ci_command(args):
         return prepare(args.host_root.resolve(), args.work.resolve(), args.python_version)
     if args.ci_action == 'plan':
         reports = [verify_bundle(path) for path in args.bundle]
+        source_commits = attest_ci_source_commits(reports)
         if any((row['source'] != reports[0]['source'] for row in reports)):
             raise ValueError('prepared interpreter lanes have different source candidates')
         roots = unpack_source_archive(args.bundle[0] / 'sources.tar.gz', args.work / 'stack', reports[0]['source'])
-        plan = make_ci_plan([path / 'collection.json' for path in args.bundle], roots, args.output)
+        plan = make_ci_plan([path / 'collection.json' for path in args.bundle], roots, args.output, source_commits)
         matrix = {'include': [{'task': task['id'], 'python': '.'.join(plan['environments'][task['environment']]['identity']['python'].split('.')[:2])} for task in plan['tasks']]}
         write_once_json(args.output.with_name('matrix.json'), matrix)
         return plan
     plan = validate_plan(read_json(args.plan))
+    if 'source_commits' not in plan:
+        raise ValueError('CI plan must bind exact producer commits')
     if args.ci_action == 'execute':
         observed = read_json(args.restored)
         roots = {name: Path(path) for name, path in observed['roots'].items()}
-        if source_snapshot(roots) != plan['source'] or observed['environment'] != environment_snapshot():
-            raise ValueError('restored interpreter or source changed before execution')
+        if source_snapshot(roots) != plan['source'] or observed['environment'] != environment_snapshot() or observed.get('source_commits') != plan['source_commits']:
+            raise ValueError('restored interpreter, source or producer commits changed before execution')
         if args.task:
             return run_ci_task(plan, args.plan.resolve(), roots, args.task, args.output.resolve(), args.run_id)
         if not args.fragment:
             raise ValueError('foundation execution requires all raw fragments')
         return finalize_foundation(plan, roots, args.fragment, args.output.resolve(), args.run_id)
-    _, roots, executable = restore(args.bundle.resolve(), args.work.resolve(), expected_source_hash=plan['source']['content_hash'])
+    _, roots, executable = restore(args.bundle.resolve(), args.work.resolve(), expected_source_hash=plan['source']['content_hash'], expected_commits=plan['source_commits'])
     if args.ci_action == 'restore':
         return {'ok': True, 'restored': str(args.work / 'restored.json'), 'full_stage_accepted': False}
     argv = [str(executable), '-m', 'openpine.verification', 'test-ci', 'execute', '--restored', str(args.work.resolve() / 'restored.json'), '--plan', str(args.plan.resolve()), '--output', str(args.output.resolve()), '--run-id', args.run_id]

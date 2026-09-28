@@ -59,13 +59,13 @@ def validate_junit(path: Path, nodeids: list[str]) -> dict:
                 raise ValueError('JUnit has a missing/nonzero failure/error/skip count')
     return {'tests': len(actual), 'nodeids_hash': collection_hash(actual)}
 
-def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard: dict, run_id: str, cancellation: threading.Event, binding: dict | None=None) -> dict:
+def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard: dict, run_id: str, cancellation: threading.Event, binding: dict | None=None, build_commit: str | None=None) -> dict:
     attempt = 'a001'
     relative = task['id'] + '/' + shard['id'] + '/' + attempt
     folder = output / relative
     folder.mkdir(parents=True, exist_ok=False)
     execution_roots, executables = locations(plan, binding)
-    env = clean_environment(execution_roots, folder / 'private')
+    env = clean_environment(execution_roots, folder / 'private', build_commit=build_commit if task['component'] == 'openpine' else None)
     env['OPENPINE_STAGE1_EVIDENCE'] = str(folder / 'owner-evidence')
     selectors = folder / 'nodeids.args'
     selectors.write_text('\n'.join(shard['nodeids']) + '\n', encoding='utf-8')
@@ -132,8 +132,10 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
     write_once_json(folder / 'execution.json', result)
     return result
 
-def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_id: str | None=None, shard_keys: list[tuple[str, str]] | None=None, binding: dict | None=None, memory_mib: int | None=None) -> dict:
+def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_id: str | None=None, shard_keys: list[tuple[str, str]] | None=None, binding: dict | None=None, memory_mib: int | None=None, build_commit: str | None=None) -> dict:
     validate_plan(plan)
+    if build_commit is not None and build_commit != plan.get('source_commits', {}).get('openpine'):
+        raise ValueError('campaign build commit differs from frozen source plan')
     from openpine.verification.execution_resources import resource_profile
     observed_resources = resource_profile()
     available = observed_resources['cpu_slots']
@@ -198,7 +200,7 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_
                 for task, shard in list(queued):
                     if used + task['cpu_slots'] > jobs or (memory_mib is not None and reserved_memory + task.get('memory_mib', 256) > memory_mib) or (task['exclusive_group'] and task['exclusive_group'] in groups):
                         continue
-                    future = pool.submit(_execute_shard, plan, plan_path.resolve(), output.resolve(), task, shard, run_id, cancellation, binding)
+                    future = pool.submit(_execute_shard, plan, plan_path.resolve(), output.resolve(), task, shard, run_id, cancellation, binding, build_commit)
                     running[future] = (task, shard)
                     queued.remove((task, shard))
                     used += task['cpu_slots']

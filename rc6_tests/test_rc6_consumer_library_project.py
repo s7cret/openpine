@@ -196,7 +196,8 @@ def test_invalid_library_is_a_structured_failure_before_emission(action, bad):
     elif bad == "private":
         d["sources"]["qa/Public/1"] = d["sources"]["qa/Public/1"].replace("export ", "")
     elif bad == "version":
-        d["sources"]["qa/Base/1"] = d["sources"]["qa/Base/1"].replace("version=6", "version=5")
+        # Pine v6 may import v5 libraries; the forbidden direction is v5 -> v6.
+        src = src.replace("version=6", "version=5", 1)
     else:
         src = src.replace("Public/1", "Public/2")
     s = LibraryStore.create(d["sources"])
@@ -205,6 +206,8 @@ def test_invalid_library_is_a_structured_failure_before_emission(action, bad):
     )
     assert not r.success and r.python_code is None
     assert r.diagnostics and r.diagnostics[0]["code"].startswith("P2A_LIBRARY_")
+    if bad == "version":
+        assert any(d["code"] == "P2A_LIBRARY_VERSION_CONTEXT" for d in r.diagnostics)
 
 
 @pytest.mark.parametrize(
