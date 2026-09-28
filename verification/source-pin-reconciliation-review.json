@@ -1,0 +1,52 @@
+{
+  "schema_id": "openpine.source_pin_reconciliation_review.v1",
+  "scope": "RC6 sibling release-head reconciliation; no sibling source overlay and no historical evidence rewrite",
+  "previous_pins": {
+    "marketdata-provider": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+    "openpine-contracts": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+    "optimizer": "95570459e50492dea8872b0a25f094e29d3e821f",
+    "ast2python": "3c4a6caa5270b4a5978a0097942aa3f2c160cc95",
+    "pinelib": "547620ee70e707532dbabd6026645e4d9abaf748",
+    "backtest_engine": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+    "pine2ast": "4720bc5a4abc3f5accba3d9dde32a4e64e75f7c3"
+  },
+  "release_heads": {
+    "marketdata-provider": "4610c93b904d7e70fe6cbfe2914a07f29935933e",
+    "openpine-contracts": "7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34",
+    "optimizer": "762f97e306467f505fc4ade22acaf40577214e24",
+    "ast2python": "ce2e6eed49be541543654ebc0439d545c3084f30",
+    "pinelib": "fcfdab59767103cbc6903c0fa251d895d58b1568",
+    "backtest_engine": "8eba0eb7350d5eab1529dbaff96f7bf9ada82572",
+    "pine2ast": "ddb164a8819d889150378a303b0d3255cf0b5102"
+  },
+  "derived_inventory_review": {
+    "platform_inventory": {
+      "path": "verification/platform-inventory.json",
+      "kind": "host test-collection lock",
+      "action": "recomputed from the integrated host collection on Python 3.13: 138 nodeids, zero deselected, sha256:d0fc0bc150fa0e488dc68a09dbed0e3fa7906fbba45fcb3269dc85382d8710b9; no denominator, deselection, or coverage threshold relaxation"
+    },
+    "stabilization_inventory": {
+      "paths": [
+        "verification/stabilization-inventory-review.json",
+        "verification/stabilization-inventory-delta.json"
+      ],
+      "action": "retained as additive host-inventory review; it does not attest sibling release-head test inventories"
+    },
+    "historical_source_bound_evidence": {
+      "paths": [
+        "verification/builtin-inventory-review.json",
+        "verification/builtin-joint-review.json",
+        "verification/builtin-joint-receipt.json",
+        "verification/numeric-index-local-receipt-20260911.json"
+      ],
+      "action": "not rewritten: each record remains evidence for its recorded source revision and must fail closed or be regenerated against the new pins"
+    },
+    "stage2_gate": {
+      "path": "openpine/verification/stage2_remaining.py",
+      "action": "retained strict source-pin comparison; no shim, fallback, or rollback to historical pins"
+    }
+  },
+  "full_stage1_accepted": false,
+  "full_stage2_accepted": false,
+  "requires_fresh_sibling_collection_and_evidence": true
+}

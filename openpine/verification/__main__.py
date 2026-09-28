@@ -45,7 +45,11 @@ def main(argv=None) -> int:
     stage.add_argument("--host-root", type=Path, required=True)
     stage.add_argument("--stack-root", type=Path, required=True)
     stage.add_argument("--evidence", type=Path, required=True)
+    from openpine.verification.execution_cli import add_commands, run_command
+    add_commands(commands)
     args = parser.parse_args(argv)
+    if args.command.startswith("test-"):
+        return run_command(args)
     if args.command == "stage1":
         from openpine.verification.stage_gate import run_stage_gate
 

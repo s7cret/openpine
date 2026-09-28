@@ -1,0 +1,258 @@
+{
+  "schema_id": "openpine.test_execution_policy.v1",
+  "components": {
+    "openpine-contracts": {
+      "dependencies": [],
+      "imports": [
+        "openpine_contracts"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "extras": [
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.12",
+        "3.13"
+      ],
+      "cpu_slots": 1,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "tests/test_*.py::*"
+      ]
+    },
+    "pine2ast": {
+      "dependencies": [
+        "openpine-contracts"
+      ],
+      "imports": [
+        "pine2ast"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "extras": [
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.12",
+        "3.13"
+      ],
+      "cpu_slots": 1,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "tests/test_*.py::*"
+      ]
+    },
+    "pinelib": {
+      "dependencies": [
+        "openpine-contracts"
+      ],
+      "imports": [
+        "pinelib"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "extras": [
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.12",
+        "3.13"
+      ],
+      "cpu_slots": 1,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "tests/test_*.py::*"
+      ]
+    },
+    "ast2python": {
+      "dependencies": [
+        "pine2ast",
+        "pinelib"
+      ],
+      "imports": [
+        "ast2python"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "extras": [
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.12",
+        "3.13"
+      ],
+      "cpu_slots": 1,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "tests/test_*.py::*"
+      ]
+    },
+    "backtest_engine": {
+      "dependencies": [
+        "openpine-contracts"
+      ],
+      "imports": [
+        "backtest_engine"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "extras": [
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.12",
+        "3.13"
+      ],
+      "cpu_slots": 1,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "tests/test_*.py::*"
+      ]
+    },
+    "marketdata-provider": {
+      "dependencies": [
+        "openpine-contracts"
+      ],
+      "imports": [
+        "marketdata_provider"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "markers": "not live_network",
+      "extras": [
+        "parquet",
+        "stream",
+        "zstd",
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.12",
+        "3.13"
+      ],
+      "cpu_slots": 1,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "tests/test_*.py::*"
+      ]
+    },
+    "optimizer": {
+      "dependencies": [
+        "backtest_engine",
+        "marketdata-provider"
+      ],
+      "imports": [
+        "optimizer"
+      ],
+      "selectors": [
+        "tests"
+      ],
+      "extras": [
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.12",
+        "3.13"
+      ],
+      "cpu_slots": 2,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "tests/test_*.py::*"
+      ],
+      "exclusive_group": "optimizer-trials"
+    },
+    "openpine": {
+      "dependencies": [
+        "openpine-contracts",
+        "pine2ast",
+        "ast2python",
+        "pinelib",
+        "backtest_engine",
+        "marketdata-provider",
+        "optimizer"
+      ],
+      "imports": [
+        "openpine"
+      ],
+      "selectors": [
+        "rc6_tests"
+      ],
+      "plugins": [
+        "pytest_asyncio.plugin"
+      ],
+      "extras": [
+        "dev"
+      ],
+      "pythons": [
+        "3.11",
+        "3.13"
+      ],
+      "cpu_slots": 1,
+      "timeout_seconds": 3600,
+      "smoke": [
+        "rc6_tests/test_rc6_execution_platform.py::*"
+      ]
+    }
+  },
+  "node_major": 24,
+  "critical_paths": [
+    "schemas/*",
+    "*/schemas/*",
+    "*catalog*",
+    "*abi*",
+    "*state*",
+    "*conftest*",
+    "*pyproject.toml",
+    "*lock*",
+    "verification/*",
+    "openpine/verification/*",
+    "*generator*"
+  ],
+  "required_gates": {
+    "integration": [
+      "protected-workers",
+      "frontend-contracts"
+    ],
+    "stage-full": [
+      "branch-reconciliation",
+      "foundation",
+      "protected-workers",
+      "coverage",
+      "frontend",
+      "packages",
+      "test-performance"
+    ],
+    "release-full": [
+      "branch-reconciliation",
+      "foundation",
+      "protected-workers",
+      "coverage",
+      "frontend",
+      "packages",
+      "test-performance",
+      "language",
+      "data",
+      "lifecycle",
+      "broker",
+      "optimizer",
+      "browser",
+      "immutable-delivery"
+    ]
+  },
+  "untraced_markers": [
+    "performance"
+  ]
+}
