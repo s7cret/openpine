@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from click.testing import CliRunner
 
 from openpine.cli.config import config as config_group
+from openpine.cli import runtime_helpers
 from openpine.cli.optimizer import optimizer as optimizer_group
 from openpine.cli.reports import (
     _find_report_files,
@@ -14,6 +15,11 @@ from openpine.cli.reports import (
     _report_search_names,
     reports as reports_group,
 )
+
+
+def test_runtime_helpers_public_export_names_resolve():
+    assert "_run_indicator_plot_runtime" in runtime_helpers.__all__
+    assert all(hasattr(runtime_helpers, name) for name in runtime_helpers.__all__)
 
 
 @dataclass

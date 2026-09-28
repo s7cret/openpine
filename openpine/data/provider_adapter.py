@@ -14,7 +14,6 @@ from marketdata_provider.contracts import (
     CoverageReport,
     InstrumentKey,
     MarketDataProvider,
-    parse_timeframe,
 )
 
 import structlog
