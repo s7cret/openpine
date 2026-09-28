@@ -1,22 +1,22 @@
 {
   "ast2python": {
-    "count": 1509,
-    "sha256": "sha256:c9563b1aaf44010f4433f0f6a4759b94ab87711ade3e5911cad8e15e1829a283",
+    "count": 2079,
+    "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c",
     "deselected": 0
   },
   "backtest_engine": {
-    "count": 1102,
+    "count": 1219,
     "deselected": 0,
-    "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+    "sha256": "sha256:3c1f6fb4eafb76548e2e0efee4a780544329c6b066dfc0c6012177e045b3be30"
   },
   "marketdata-provider": {
-    "count": 601,
+    "count": 621,
     "deselected": 5,
-    "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+    "sha256": "sha256:13d07f05c8c8d65c9bb1767db9b298d0565e5505dcebdb67e5d9464802f776ce"
   },
   "openpine": {
-    "count": 9706,
-    "sha256": "sha256:0052fec11717dacb89d92c0e91228c542e8e8a00e601a4fcd930828bed4e1c80",
+    "count": 9844,
+    "sha256": "sha256:484bd8f29b5ff2033d845e030eb3de9bac4165e9bf23db9f962c16154f23908c",
     "deselected": 0
   },
   "openpine-contracts": {
@@ -25,18 +25,18 @@
     "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
   },
   "optimizer": {
-    "count": 281,
+    "count": 286,
     "deselected": 0,
-    "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+    "sha256": "sha256:c343d0fe2095d8905b3dfb9b4166cfec18d337d2c7c1f065c28fc44b52fd77f9"
   },
   "pine2ast": {
-    "count": 3191,
-    "sha256": "sha256:7307c946cbc0c724c2d5d5937abbddc2493ecd64c6e87d22073f2a02df6fe1f0",
+    "count": 3547,
+    "sha256": "sha256:bb8d02ed74177f70a6e7eafcaecbbabc8ace81ee2d75c52e2dd35602e41975dc",
     "deselected": 0
   },
   "pinelib": {
-    "count": 4944,
-    "sha256": "sha256:9170197e3ee02b906700fd42bb69ca8a6023d081def6bf89f793ea79743ecbb6",
+    "count": 5172,
+    "sha256": "sha256:4b216d1a399cae2b4beebafcc09ee7a87c7f4f828fd883312b6388cffe8e0379",
     "deselected": 0
   }
 }

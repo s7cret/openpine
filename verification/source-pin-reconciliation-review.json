@@ -23,14 +23,18 @@
     "platform_inventory": {
       "path": "verification/platform-inventory.json",
       "kind": "host test-collection lock",
-      "action": "recomputed from the integrated host collection on Python 3.13: 138 nodeids, zero deselected, sha256:d0fc0bc150fa0e488dc68a09dbed0e3fa7906fbba45fcb3269dc85382d8710b9; no denominator, deselection, or coverage threshold relaxation"
+      "action": "138 nodeids, zero deselected, sha256:d0fc0bc150fa0e488dc68a09dbed0e3fa7906fbba45fcb3269dc85382d8710b9; no denominator, deselection, or coverage threshold relaxation"
+    },
+    "rc6_current_inventory": {
+      "path": "verification/rc6-current-inventory-review.json",
+      "action": "eight exact-source candidate collections compared to prior pinned source nodeids on Python 3.11/3.12/3.13; two replaced upstream pinelib cases disclosed, no silent inventory shrink"
     },
     "stabilization_inventory": {
       "paths": [
         "verification/stabilization-inventory-review.json",
         "verification/stabilization-inventory-delta.json"
       ],
-      "action": "retained as additive host-inventory review; it does not attest sibling release-head test inventories"
+      "action": "retained as historical partial snapshots; not used as evidence of the current eight-repository inventories"
     },
     "historical_source_bound_evidence": {
       "paths": [

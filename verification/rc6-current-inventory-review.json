@@ -1,0 +1,205 @@
+{
+  "schema_id": "openpine.rc6_current_inventory_review.v1",
+  "scope": "collection-only inventory reconciliation; not functional acceptance",
+  "candidate_commit_before_lock_update": "ef585f97f48721678ef74e74268eede7a239201d",
+  "python_versions": [
+    "3.11",
+    "3.12",
+    "3.13"
+  ],
+  "components": {
+    "ast2python": {
+      "prior_pin": "3c4a6caa5270b4a5978a0097942aa3f2c160cc95",
+      "current_source_pin": "ce2e6eed49be541543654ebc0439d545c3084f30",
+      "previous_lock": {
+        "count": 1509,
+        "sha256": "sha256:c9563b1aaf44010f4433f0f6a4759b94ab87711ade3e5911cad8e15e1829a283",
+        "deselected": 0
+      },
+      "previous_observed": {
+        "count": 1509,
+        "deselected": 0,
+        "sha256": "sha256:c9563b1aaf44010f4433f0f6a4759b94ab87711ade3e5911cad8e15e1829a283",
+        "nodeids_digest": "sha256:6c0aeba0bf3585f93a4f7b6d629d100fc17289c4e6ab6a6c2be2090a07b735bc"
+      },
+      "current_lock": {
+        "count": 2079,
+        "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c",
+        "deselected": 0
+      },
+      "current_observed_nodeids_digest": "sha256:8e9a7cd5235919956680227146e63fdb729fc2bb1af29194f120f61bdba38744",
+      "added_nodeids_count": 570,
+      "removed_nodeids": []
+    },
+    "backtest_engine": {
+      "prior_pin": "f7d286c2309ef8f8679c37cf5ba730414c13e575",
+      "current_source_pin": "8eba0eb7350d5eab1529dbaff96f7bf9ada82572",
+      "previous_lock": {
+        "count": 1102,
+        "deselected": 0,
+        "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+      },
+      "previous_observed": {
+        "count": 1102,
+        "deselected": 0,
+        "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641",
+        "nodeids_digest": "sha256:d14badb2454c66ab3a48f81283d3e4a12e8734b78f5f94ccc0939bc5c05262b7"
+      },
+      "current_lock": {
+        "count": 1219,
+        "deselected": 0,
+        "sha256": "sha256:3c1f6fb4eafb76548e2e0efee4a780544329c6b066dfc0c6012177e045b3be30"
+      },
+      "current_observed_nodeids_digest": "sha256:0bbfcbebbae083954ec3443796d63062bc35cd26f834f33a0d7a0177605d63e6",
+      "added_nodeids_count": 117,
+      "removed_nodeids": []
+    },
+    "marketdata-provider": {
+      "prior_pin": "4e269bb7e3d389cae6214da9e17898c32c7ead15",
+      "current_source_pin": "4610c93b904d7e70fe6cbfe2914a07f29935933e",
+      "previous_lock": {
+        "count": 601,
+        "deselected": 5,
+        "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+      },
+      "previous_observed": {
+        "count": 601,
+        "deselected": 5,
+        "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892",
+        "nodeids_digest": "sha256:a9b9cf5dc4bb729896f0ff65dd6a08c393f3de1bd15405567427c2ded871da1d"
+      },
+      "current_lock": {
+        "count": 621,
+        "deselected": 5,
+        "sha256": "sha256:13d07f05c8c8d65c9bb1767db9b298d0565e5505dcebdb67e5d9464802f776ce"
+      },
+      "current_observed_nodeids_digest": "sha256:991612272e479e73627a0494e24704e9148cc1176c30dd71017228fe28aa09e6",
+      "added_nodeids_count": 20,
+      "removed_nodeids": []
+    },
+    "openpine": {
+      "prior_pin": "501e5df5eb05ddd189f87d7aafc56a024415b543",
+      "current_source_pin": "pending final candidate commit; collection from reviewed working tree",
+      "previous_lock": {
+        "count": 9706,
+        "sha256": "sha256:0052fec11717dacb89d92c0e91228c542e8e8a00e601a4fcd930828bed4e1c80",
+        "deselected": 0
+      },
+      "previous_observed": {
+        "count": 9706,
+        "deselected": 0,
+        "sha256": "sha256:0052fec11717dacb89d92c0e91228c542e8e8a00e601a4fcd930828bed4e1c80",
+        "nodeids_digest": "sha256:1778020533d7b6ec1cd5fbce017ee4a54c32c3d2111b950b18197062b4fb81fe"
+      },
+      "current_lock": {
+        "count": 9844,
+        "sha256": "sha256:484bd8f29b5ff2033d845e030eb3de9bac4165e9bf23db9f962c16154f23908c",
+        "deselected": 0
+      },
+      "current_observed_nodeids_digest": "sha256:b6bea4e6c7e3127edfd499b69d7e188e1f9db246d05f5c2def1534db32d41d07",
+      "added_nodeids_count": 138,
+      "removed_nodeids": []
+    },
+    "openpine-contracts": {
+      "prior_pin": "5950e0f99214e60b64162d074ed47f1e4bbc7141",
+      "current_source_pin": "7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34",
+      "previous_lock": {
+        "count": 557,
+        "deselected": 0,
+        "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+      },
+      "previous_observed": {
+        "count": 546,
+        "deselected": 0,
+        "sha256": "sha256:7fb470e1c5e7f437d8e7b44d50f97bb77659defbf7b72db295d1387cb41226bf",
+        "nodeids_digest": "sha256:6d5ef6346b576e65d383cab71bd0206ee34a9a50badf8e90b3d06a6744ae45c4"
+      },
+      "current_lock": {
+        "count": 557,
+        "deselected": 0,
+        "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
+      },
+      "current_observed_nodeids_digest": "sha256:bcb28a72ec08f0c4dbc7b595a64948353ff3cfaa96a2e3f4f4770cd339bd9596",
+      "added_nodeids_count": 11,
+      "removed_nodeids": []
+    },
+    "optimizer": {
+      "prior_pin": "95570459e50492dea8872b0a25f094e29d3e821f",
+      "current_source_pin": "762f97e306467f505fc4ade22acaf40577214e24",
+      "previous_lock": {
+        "count": 281,
+        "deselected": 0,
+        "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+      },
+      "previous_observed": {
+        "count": 281,
+        "deselected": 0,
+        "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb",
+        "nodeids_digest": "sha256:05a07afbbcd2b576dd14d7b9988b75fbc39c685d788705b60bbc17ad41bcbd6e"
+      },
+      "current_lock": {
+        "count": 286,
+        "deselected": 0,
+        "sha256": "sha256:c343d0fe2095d8905b3dfb9b4166cfec18d337d2c7c1f065c28fc44b52fd77f9"
+      },
+      "current_observed_nodeids_digest": "sha256:61c546dffc652f0721d82766ec05af40e376a37fa4ebeae0f9daa66f4ced2b2c",
+      "added_nodeids_count": 5,
+      "removed_nodeids": []
+    },
+    "pine2ast": {
+      "prior_pin": "4720bc5a4abc3f5accba3d9dde32a4e64e75f7c3",
+      "current_source_pin": "ddb164a8819d889150378a303b0d3255cf0b5102",
+      "previous_lock": {
+        "count": 3191,
+        "sha256": "sha256:7307c946cbc0c724c2d5d5937abbddc2493ecd64c6e87d22073f2a02df6fe1f0",
+        "deselected": 0
+      },
+      "previous_observed": {
+        "count": 3191,
+        "deselected": 0,
+        "sha256": "sha256:7307c946cbc0c724c2d5d5937abbddc2493ecd64c6e87d22073f2a02df6fe1f0",
+        "nodeids_digest": "sha256:6610d40220c7c62f649d810b3e19275a932fc17a3cb342074bcb5914999caa4d"
+      },
+      "current_lock": {
+        "count": 3547,
+        "sha256": "sha256:bb8d02ed74177f70a6e7eafcaecbbabc8ace81ee2d75c52e2dd35602e41975dc",
+        "deselected": 0
+      },
+      "current_observed_nodeids_digest": "sha256:1f55a2ff78627a61608a59d8dea3ae0f054bdedceaf8a4fa7eedcb7e91d324c6",
+      "added_nodeids_count": 356,
+      "removed_nodeids": []
+    },
+    "pinelib": {
+      "prior_pin": "547620ee70e707532dbabd6026645e4d9abaf748",
+      "current_source_pin": "fcfdab59767103cbc6903c0fa251d895d58b1568",
+      "previous_lock": {
+        "count": 4944,
+        "sha256": "sha256:9170197e3ee02b906700fd42bb69ca8a6023d081def6bf89f793ea79743ecbb6",
+        "deselected": 0
+      },
+      "previous_observed": {
+        "count": 4944,
+        "deselected": 0,
+        "sha256": "sha256:9170197e3ee02b906700fd42bb69ca8a6023d081def6bf89f793ea79743ecbb6",
+        "nodeids_digest": "sha256:b69d57623cbe08f20e0846c5455c4c4d0c7e1f5a67043c59600645b793b9822a"
+      },
+      "current_lock": {
+        "count": 5172,
+        "sha256": "sha256:4b216d1a399cae2b4beebafcc09ee7a87c7f4f828fd883312b6388cffe8e0379",
+        "deselected": 0
+      },
+      "current_observed_nodeids_digest": "sha256:876dc28bc53cf696a3aa14619c7a5d5624ce330fbeb7655714a5f0708f6b39bf",
+      "added_nodeids_count": 230,
+      "removed_nodeids": [
+        "tests/test_reference_type_identity.py::test_non_numeric_descriptors_do_not_acquire_numeric_neighbor_fallback[bool-values1-0.5]",
+        "tests/test_reference_type_identity.py::test_non_numeric_descriptors_do_not_acquire_numeric_neighbor_fallback[string-values0-b]"
+      ]
+    }
+  },
+  "review_notes": [
+    "Host: all 9,706 prior node IDs preserved; 138 added node IDs exactly equal the locked execution-platform collection.",
+    "pinelib: two old parameterized node IDs were replaced upstream by separate string-search and wrong-typed-argument rejection tests; review the pinned source diff in tests/test_reference_type_identity.py.",
+    "marketdata-provider: deselected remains 5 on both source revisions; no deselection change.",
+    "Observed hashes/counts/deselections are identical across CPython 3.11/3.12/3.13; previous pinelib removed node IDs are disclosed, not silently discarded."
+  ]
+}
