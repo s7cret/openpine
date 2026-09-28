@@ -153,7 +153,7 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
     roots = {name: stack / name for name in COMPONENTS}
     source = create_source_archive(roots, bundle / 'sources.tar.gz')
     env_root = work / 'venv'
-    venv.EnvBuilder(with_pip=True).create(env_root)
+    venv.EnvBuilder(with_pip=True, symlinks=True).create(env_root)
     executable = str(env_root / 'bin/python')
     tools_lock = host / 'verification/ci-bootstrap-requirements.txt'
     if not tools_lock.is_file():
@@ -251,7 +251,7 @@ def restore(bundle: Path, work: Path, *, expected_source_hash: str | None=None) 
     command = Commands(work)
     roots = unpack_source_archive(bundle / 'sources.tar.gz', work / 'stack', report['source'])
     environment = work / 'venv'
-    venv.EnvBuilder(with_pip=True).create(environment)
+    venv.EnvBuilder(with_pip=True, symlinks=True).create(environment)
     executable = environment / 'bin/python'
     command.run([str(executable), '-m', 'pip', 'install', '--no-index', '--no-deps', '--find-links', str(bundle / 'wheelhouse'), '-r', str(bundle / 'locked-versions.txt')], cwd=work)
     command.run([str(executable), '-m', 'pip', 'check'], cwd=work)
