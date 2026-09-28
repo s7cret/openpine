@@ -135,7 +135,10 @@ jobs:
       if: always()
       with:
         name: rc6-task-${{ matrix.task }}-${{ github.run_id }}
-        path: ${{ runner.temp }}/fragment/
+        path: |-
+          ${{ runner.temp }}/fragment/
+          !${{ runner.temp }}/fragment/**/private/**
+        include-hidden-files: true
         if-no-files-found: error
         retention-days: 30
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

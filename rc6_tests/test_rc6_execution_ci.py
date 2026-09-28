@@ -148,6 +148,15 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert jobs['verify']['strategy']['matrix']['python'] == ['3.11', '3.13']
     assert jobs['frontend']['needs'] == ['prepare']
     assert jobs['component']['needs'] == ['plan']
+    task_upload = next(
+        step for step in jobs['component']['steps']
+        if step.get('with', {}).get('name', '').startswith('rc6-task-')
+    )
+    task_paths = task_upload['with']['path'].splitlines()
+    assert '${{ runner.temp }}/fragment/' in task_paths
+    assert '!${{ runner.temp }}/fragment/**/private/**' in task_paths
+    assert task_upload['with']['include-hidden-files'] is True
+    assert task_upload['if'] == 'always()'
     assert jobs['aggregate']['if'] == 'always()'
     assert set(jobs['aggregate']['needs']) == set(jobs) - {'aggregate'}
     assert workflow['permissions'] == {'contents': 'read'}
