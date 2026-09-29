@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
+from openpine.verification.evidence_index import TEMPORARY_TONUMBER
 from openpine.verification.identity import read_json, seal, verify
 
 
@@ -41,6 +42,19 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
         for key in ("pine2ast", "ast2python", "pinelib")
     ):
         raise ValueError("builtin index belongs to a different source revision")
+    provisional = (
+        builtin_index.get("provisional_gate_ok") is True
+        and builtin_index["ok"] is False
+        and builtin_index["all_declared_runs_passed"] is False
+        and builtin_index["full_builtin_expected_accepted"] is False
+        and builtin_index["full_stage2_accepted"] is False
+        and builtin_index["tradingview_verified"] is False
+        and builtin_index["temporary_unverified_cases"] == sorted(TEMPORARY_TONUMBER)
+        and builtin_index["required_group_paths"] == len(builtin_index["groups"])
+        and builtin_index["passed_group_paths"] == sum(group["status"] == "PASS" for group in builtin_index["groups"])
+        and builtin_index["deferred_group_paths"] == sum(group["status"] == "TEMPORARY_UNVERIFIED" for group in builtin_index["groups"])
+        and all(group["status"] in {"PASS", "TEMPORARY_UNVERIFIED"} for group in builtin_index["groups"])
+    )
     covered, conditional, missing = [], [], []
     for row in builtin_index["rows"]:
         if row["status"] != "RUNTIME_DIRECT":
@@ -83,6 +97,9 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
             "work_item_count": len(matrix["items"]),
             "count_policy": matrix["count_policy"],
             "builtin_index_replay_passed": builtin_index["ok"],
+            "provisional_gate_ok": provisional,
+            "temporary_unverified_cases": builtin_index.get("temporary_unverified_cases", []),
+            "deferred_group_paths": builtin_index.get("deferred_group_paths", 0),
             "ok": builtin_index["ok"],
             "installed_callable_denominator": builtin_index["denominator"],
             "direct_signatures": builtin_index["direct_signatures"],

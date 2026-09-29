@@ -13,7 +13,7 @@ import pytest
 
 from openpine.verification import execution_ci
 from openpine.verification.execution_coverage import verify_task_coverage
-from openpine.verification.execution_identity import environment_snapshot, source_snapshot, write_once_json
+from openpine.verification.execution_identity import environment_snapshot, hash_file, source_snapshot, write_once_json
 from openpine.verification.execution_plan import make_plan
 from openpine.verification.identity import read_json, seal
 from openpine.verification.pytest_gate import collection_hash
@@ -205,6 +205,32 @@ def test_foundation_exports_real_owner_evidence_but_refuses_incomplete_component
         "expected_square": 81,
     }
     assert (foundation / "owner-coverage" / task_id / "receipt.json").is_file()
+
+    # The builtin verifier reads a separate evidence root. It must receive the
+    # existing foundation receipt, not silently treat missing pins as stale.
+    merged = tmp_path / "merged"
+    owner = merged / "owner.json"
+    owner.parent.mkdir()
+    owner.write_text('{"observed": 81}', encoding="utf-8")
+    write_once_json(merged / "run.json", {"attempts": [{
+        "task": task_id,
+        "artifacts": {"owner:observations/contract.json": {
+            "path": "owner.json", "sha256": hash_file(owner),
+        }},
+    }]})
+    builtin = tmp_path / "builtin"
+    execution_ci.retain_builtin_owner_evidence(
+        merged, foundation / "suites", builtin, task_id.split("@", 1)[1],
+        roots["openpine"] / "docs/RC6_LIFECYCLE_SOURCES.json",
+    )
+    assert read_json(builtin / "source-pins.json") == read_json(evidence / "source-pins.json")
+    assert read_json(builtin / "observations/contract.json") == {"observed": 81}
+    (builtin / "source-pins.json").write_text('{"invalid":"pin"}', encoding="utf-8")
+    with pytest.raises(ValueError, match="conflicting builtin owner source pins"):
+        execution_ci.retain_builtin_owner_evidence(
+            merged, foundation / "suites", builtin, task_id.split("@", 1)[1],
+            roots["openpine"] / "docs/RC6_LIFECYCLE_SOURCES.json",
+        )
 
 
 def test_execute_command_rechecks_restored_candidate_before_running_child(

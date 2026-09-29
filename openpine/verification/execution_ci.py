@@ -36,6 +36,40 @@ def attest_ci_source_commits(reports: list[dict]) -> dict[str, str]:
         raise ValueError('prepared producer commits are missing or inconsistent')
     return commits
 
+def retain_builtin_owner_evidence(merged: Path, suites: Path, evidence: Path, version: str, declared_pins: Path) -> None:
+    """Carry the foundation owner's exact source receipt into the builtin join."""
+    if version not in {'py311', 'py313'}:
+        raise ValueError('unsupported builtin owner interpreter')
+    pins = read_json(suites / version / 'source-pins.json')
+    if pins != read_json(declared_pins):
+        raise ValueError('foundation source pins differ from restored release pins')
+    evidence.mkdir(parents=True, exist_ok=True)
+    target = evidence / 'source-pins.json'
+    if target.exists():
+        if read_json(target) != pins:
+            raise ValueError('conflicting builtin owner source pins')
+    else:
+        write_once_json(target, pins)
+    run = read_json(merged / 'run.json')
+    for attempt in run['attempts']:
+        if not attempt['task'].endswith('@' + version):
+            continue
+        for key, desc in attempt['artifacts'].items():
+            if not key.startswith('owner:'):
+                continue
+            relative = PurePosixPath(key[6:])
+            if relative.is_absolute() or not relative.parts or any(part in {'', '.', '..'} for part in key[6:].split('/')):
+                raise ValueError('invalid builtin owner artifact path')
+            destination = evidence.joinpath(*relative.parts)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            data = (merged / desc['path']).read_bytes()
+            if hash_file(merged / desc['path']) != desc['sha256']:
+                raise ValueError('builtin owner artifact checksum mismatch')
+            if destination.exists() and destination.read_bytes() != data:
+                raise ValueError('conflicting builtin owner evidence')
+            if not destination.exists():
+                destination.write_bytes(data)
+
 def create_source_archive(roots: dict[str, Path], output: Path) -> dict:
     from openpine.verification.execution_identity import ensure_external_output
     ensure_external_output(output, roots)

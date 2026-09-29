@@ -261,22 +261,16 @@ jobs:
         export PATH="$(dirname "$EXACT_PYTHON"):$PATH"
         cd "$EXACT_HOST"
         mkdir -p "$RUNNER_TEMP/evidence"
-        # Oracle outputs are captured per shard; preserve each immutable output root.
+        # Carry the already-attested foundation source pins beside raw owner outputs.
         python - <<'PYOWNER'
-        import json,os,pathlib,shutil
+        import os,pathlib,sys
+        from openpine.verification.execution_ci import retain_builtin_owner_evidence
         root=pathlib.Path(os.environ['RUNNER_TEMP'])
-        merged=root/'foundation/merged'
-        run=json.loads((merged/'run.json').read_text())
-        version='py'+''.join(__import__('sys').version.split()[0].split('.')[:2])
-        for attempt in run['attempts']:
-         if not attempt['task'].endswith('@'+version): continue
-         for key,desc in attempt['artifacts'].items():
-          if not key.startswith('owner:'): continue
-          target=root/'evidence'/key[6:]
-          target.parent.mkdir(parents=True,exist_ok=True)
-          data=(merged/desc['path']).read_bytes()
-          if target.exists() and target.read_bytes()!=data: raise SystemExit('conflicting owner evidence')
-          target.write_bytes(data)
+        version='py'+''.join(map(str,sys.version_info[:2]))
+        retain_builtin_owner_evidence(
+         root/'foundation/merged', root/'foundation/suites', root/'evidence',
+         version, pathlib.Path(os.environ['EXACT_HOST'])/'docs/RC6_LIFECYCLE_SOURCES.json',
+        )
         PYOWNER
         bash scripts/rc6_builtin_remainder.sh
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

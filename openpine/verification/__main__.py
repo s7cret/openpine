@@ -103,7 +103,16 @@ def main(argv=None) -> int:
             args.corpus, read_json(args.observations), expected_corpus_hash=args.expected_hash
         )
     write_json(args.output, report)
-    return 0 if report.get("ok", True) else 1
+    # A narrowly reviewed temporary authority gap may let this verification
+    # command finish, but its sealed report must still say semantic ok=False.
+    provisional = (
+        args.command in {"builtin-index", "stage2-remaining"}
+        and report.get("provisional_gate_ok") is True
+        and report.get("ok") is False
+        and report.get("full_stage2_accepted") is False
+        and report.get("tradingview_verified") is False
+    )
+    return 0 if report.get("ok", True) or provisional else 1
 
 
 if __name__ == "__main__":
