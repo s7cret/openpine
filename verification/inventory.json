@@ -15,14 +15,15 @@
     "sha256": "sha256:7f7cc3d2bdf514dcd460d94cc39eb580486ee4121b3e49125b1a8bad691032ec"
   },
   "openpine": {
-    "count": 11032,
+    "count": 11033,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "added_nodeids": [
       "rc6_tests/test_rc6_evidence_index.py::test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred",
       "rc6_tests/test_rc6_evidence_index.py::test_provisional_cli_exit_does_not_forge_full_acceptance",
       "rc6_tests/test_rc6_evidence_index.py::test_provisional_numeric_group_never_counts_as_semantic_pass",
       "rc6_tests/test_rc6_evidence_index.py::test_stage2_remainder_keeps_provisional_cases_open",
-      "tests/test_verification_campaign_cli_failclosed_new.py::test_completed_pytest_group_gets_bounded_quiescence_not_a_false_orphan"
+      "tests/test_verification_campaign_cli_failclosed_new.py::test_completed_pytest_group_gets_bounded_quiescence_not_a_false_orphan",
+      "tests/test_verification_campaign_cli_failclosed_new.py::test_zombie_only_process_group_is_quiescent_without_live_members"
     ],
     "baseline": {
       "count": 11027,

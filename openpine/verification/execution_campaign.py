@@ -80,6 +80,9 @@ def _wait_for_process_group_exit(pgid: int, grace_seconds: float = 2.0) -> bool:
             os.killpg(pgid, 0)
         except ProcessLookupError:
             return True
+        members = _remaining_group_members(pgid)
+        if members and all(member['status'] in {'zombie', 'dead'} for member in members):
+            return True
         if time.monotonic() >= deadline:
             return False
         time.sleep(min(0.05, max(0.0, deadline - time.monotonic())))
@@ -92,12 +95,14 @@ def _remaining_group_members(pgid: int) -> list[dict[str, object]]:
     except ImportError:
         return []
     members = []
-    for process in psutil.process_iter(['pid', 'name', 'status']):
+    for process in psutil.process_iter():
         try:
             if os.getpgid(process.pid) == pgid:
-                members.append({key: process.info[key] for key in ('pid', 'name', 'status')})
-        except (ProcessLookupError, PermissionError, psutil.NoSuchProcess, psutil.AccessDenied):
+                members.append({'pid': process.pid, 'name': process.name(), 'status': process.status()})
+        except (ProcessLookupError, psutil.NoSuchProcess):
             continue
+        except (PermissionError, psutil.AccessDenied):
+            return []  # Incomplete snapshot must never waive the process guard.
     return sorted(members, key=lambda row: row['pid'])
 
 

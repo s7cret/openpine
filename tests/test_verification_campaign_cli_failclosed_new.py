@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import time
 from types import SimpleNamespace
 import sys
 
@@ -23,6 +24,49 @@ from openpine.verification.pytest_gate import collection_hash
 
 
 HOST = Path(__file__).resolve().parents[1]
+
+
+def test_zombie_only_process_group_is_quiescent_without_live_members() -> None:
+    from openpine.verification.execution_campaign import _remaining_group_members, _wait_for_process_group_exit
+    import psutil
+
+    holder_script = (
+        "import subprocess,sys,time; "
+        "p=subprocess.Popen([sys.executable, '-c', 'pass'], start_new_session=True, "
+        "stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); "
+        "print(p.pid, flush=True); sys.stdin.buffer.read(1); p.wait()"
+    )
+    holder = subprocess.Popen(  # noqa: S603 -- fixed interpreter and script
+        [sys.executable, '-c', holder_script],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        assert holder.stdout is not None
+        pgid = int(holder.stdout.readline())
+        deadline = time.monotonic() + 3
+        while psutil.Process(pgid).status() != psutil.STATUS_ZOMBIE:
+            assert time.monotonic() < deadline
+            time.sleep(0.02)
+        assert [m['status'] for m in _remaining_group_members(pgid)] == [psutil.STATUS_ZOMBIE]
+        os.killpg(pgid, 0)  # A zombie still makes the group's existence check succeed.
+        assert _wait_for_process_group_exit(pgid, 0.2)
+    finally:
+        if holder.stdin is not None:
+            try:
+                holder.stdin.write(b'x')
+                holder.stdin.flush()
+            except BrokenPipeError:
+                pass
+            holder.stdin.close()
+        try:
+            holder.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            holder.terminate()
+            holder.wait(timeout=3)
+        if holder.stdout is not None:
+            holder.stdout.close()
 
 
 def test_completed_pytest_group_gets_bounded_quiescence_not_a_false_orphan() -> None:
