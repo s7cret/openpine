@@ -131,7 +131,21 @@ The catalog test module shares an immutable serialized observation, then decodes
 a fresh nested graph for every test. Runtime/session/heap/broker state is not
 shared. Authority mutation scenarios still call the real generator with their
 own modified inputs. New regressions verify mutation isolation and repeatable
-fresh generation. Original test IDs and assertions are preserved.
+fresh generation. The archived test IDs are preserved; the historical-baseline
+assertion is adapted for the newer pinned pine2ast release.
+
+`stage2-1-catalog` and `stage2-1-lock` use the restored Stage 2.1 owner and
+archived authority. `rc6_tests/test_rc6_stage2_audit_gate_mutations.py` retains
+the archived fail-closed audit obligations. The archived frozen catalog baseline
+is unchanged and still reports its mismatch against newer RC6 packs. A separate
+sealed `rc6_catalog_source_pin.json`, derived from pine2ast Git commit
+`ddb164a8819d889150378a303b0d3255cf0b5102`, checks the installed pack
+bytes. Review against the archive found metadata changes in v1-v3 and v5-v6,
+and the removal of the three `array.binary_search*` function rows in v4.
+These exact RC6 source checks replace the obsolete archive baseline as the
+*current* integrity gate; the historical mismatch stays visible in the report.
+Neither the source pin nor green catalog tests imply Stage 2 acceptance:
+unverified contract dimensions and TradingView authority remain open.
 
 ## Current limits
 

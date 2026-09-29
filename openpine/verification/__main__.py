@@ -36,6 +36,14 @@ def main(argv=None) -> int:
     remaining.add_argument("--host-root", type=Path, required=True)
     remaining.add_argument("--builtin-index", type=Path, required=True)
     remaining.add_argument("--output", type=Path, required=True)
+    stage21_catalog = commands.add_parser("stage2-1-catalog")
+    stage21_catalog.add_argument("--authority", type=Path, required=True)
+    stage21_catalog.add_argument("--output", type=Path, required=True)
+    stage21_lock = commands.add_parser("stage2-1-lock")
+    stage21_lock.add_argument("--stack-root", type=Path, required=True)
+    stage21_lock.add_argument("--authority", type=Path, required=True)
+    stage21_lock.add_argument("--catalog-output", type=Path, required=True)
+    stage21_lock.add_argument("--output", type=Path, required=True)
     compare = commands.add_parser("compare")
     compare.add_argument("--corpus", type=Path, required=True)
     compare.add_argument("--observations", type=Path, required=True)
@@ -55,7 +63,20 @@ def main(argv=None) -> int:
 
         run_stage_gate(args.host_root, args.stack_root, args.evidence)
         return 0
-    if args.command == "stage2-remaining":
+    if args.command == "stage2-1-lock":
+        from openpine.verification.stage2_catalog import (
+            build_source_lock,
+            build_version_exact_catalog,
+        )
+
+        matrix = build_version_exact_catalog(read_json(args.authority))
+        write_json(args.catalog_output, matrix)
+        report = build_source_lock(args.stack_root, matrix)
+    elif args.command == "stage2-1-catalog":
+        from openpine.verification.stage2_catalog import build_version_exact_catalog
+
+        report = build_version_exact_catalog(read_json(args.authority))
+    elif args.command == "stage2-remaining":
         from openpine.verification.stage2_remaining import build_stage2_remaining
 
         report = build_stage2_remaining(args.host_root, read_json(args.builtin_index))
