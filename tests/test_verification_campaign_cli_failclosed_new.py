@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import signal
+import subprocess
 from types import SimpleNamespace
 import sys
 
@@ -20,6 +23,41 @@ from openpine.verification.pytest_gate import collection_hash
 
 
 HOST = Path(__file__).resolve().parents[1]
+
+
+def test_completed_pytest_group_gets_bounded_quiescence_not_a_false_orphan() -> None:
+    from openpine.verification.execution_campaign import _remaining_group_members, _wait_for_process_group_exit
+
+    child_script = (
+        "import sys,time; time.sleep(float(sys.argv[1]))"
+    )
+    leader_script = (
+        "import subprocess,sys; "
+        "subprocess.Popen([sys.executable, '-c', sys.argv[2], sys.argv[1]], "
+        "stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)"
+    )
+    for child_seconds, grace_seconds, expected in ((0.35, 2.0, True), (5.0, 0.15, False)):
+        # The leader exits successfully before its same-session child does.
+        leader = subprocess.Popen(  # noqa: S603 -- fixed interpreter and in-test scripts
+            [sys.executable, "-c", leader_script, str(child_seconds), child_script],
+            start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            assert leader.wait(timeout=3) == 0
+            assert _wait_for_process_group_exit(leader.pid, grace_seconds) is expected
+            if not expected:
+                members = _remaining_group_members(leader.pid)
+                assert members and any(row["status"] not in {"zombie", "dead"} for row in members)
+                assert all(set(row) == {"pid", "name", "status"} for row in members)
+        finally:
+            try:
+                os.killpg(leader.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            leader.wait(timeout=3)
 
 
 def _tiny_optimizer(tmp_path: Path) -> tuple[Path, str]:

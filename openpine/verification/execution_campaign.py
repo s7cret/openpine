@@ -72,6 +72,35 @@ def validate_junit(path: Path, nodeids: list[str]) -> dict:
                 raise ValueError('JUnit has a missing/nonzero failure/error/skip count')
     return {'tests': len(actual), 'nodeids_hash': collection_hash(actual)}
 
+def _wait_for_process_group_exit(pgid: int, grace_seconds: float = 2.0) -> bool:
+    """Allow an exiting test's same-session children to finish, never waive a live orphan."""
+    deadline = time.monotonic() + grace_seconds
+    while True:
+        try:
+            os.killpg(pgid, 0)
+        except ProcessLookupError:
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(min(0.05, max(0.0, deadline - time.monotonic())))
+
+
+def _remaining_group_members(pgid: int) -> list[dict[str, object]]:
+    """Report process identity/state only; never collect arguments or payloads."""
+    try:
+        import psutil
+    except ImportError:
+        return []
+    members = []
+    for process in psutil.process_iter(['pid', 'name', 'status']):
+        try:
+            if os.getpgid(process.pid) == pgid:
+                members.append({key: process.info[key] for key in ('pid', 'name', 'status')})
+        except (ProcessLookupError, PermissionError, psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return sorted(members, key=lambda row: row['pid'])
+
+
 def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard: dict, run_id: str, cancellation: threading.Event, binding: dict | None=None, build_commit: str | None=None) -> dict:
     attempt = 'a001'
     relative = task['id'] + '/' + shard['id'] + '/' + attempt
@@ -122,14 +151,11 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
         if process is not None and process.poll() is None:
             _stop_group(process)
         elif process is not None and os.name == 'posix':
-            try:
-                os.killpg(process.pid, 0)
-            except ProcessLookupError:  # noqa: S110 -- absent process/resource is already cleaned up
-                pass
-            else:
+            if not _wait_for_process_group_exit(process.pid, 2.0 if status == 'completed' else 0.0):
+                members = _remaining_group_members(process.pid)
                 _stop_group(process)
                 if status == 'completed':
-                    status, error = ('failed', 'orphan child process after pytest exit')
+                    status, error = ('failed', f'orphan child process after pytest exit; group members: {members[:16]!r}')
     artifacts = {}
     for key, filename in (('phases', 'phases.json'), ('junit', 'junit.xml'), ('stdout', 'stdout.log'), ('selectors', 'nodeids.args'), ('coverage', '.coverage')):
         path = folder / filename
