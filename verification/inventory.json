@@ -15,8 +15,19 @@
     "sha256": "sha256:7f7cc3d2bdf514dcd460d94cc39eb580486ee4121b3e49125b1a8bad691032ec"
   },
   "openpine": {
-    "count": 11027,
-    "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd",
+    "count": 11031,
+    "identity_mode": "reviewed_addition_to_hashed_baseline",
+    "added_nodeids": [
+      "rc6_tests/test_rc6_evidence_index.py::test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred",
+      "rc6_tests/test_rc6_evidence_index.py::test_provisional_cli_exit_does_not_forge_full_acceptance",
+      "rc6_tests/test_rc6_evidence_index.py::test_provisional_numeric_group_never_counts_as_semantic_pass",
+      "rc6_tests/test_rc6_evidence_index.py::test_stage2_remainder_keeps_provisional_cases_open"
+    ],
+    "baseline": {
+      "count": 11027,
+      "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd",
+      "deselected": 0
+    },
     "deselected": 0
   },
   "openpine-contracts": {
