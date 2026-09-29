@@ -280,9 +280,20 @@ def test_restore_recreates_a_real_venv_from_archived_source_and_local_wheelhouse
         "[tool.setuptools.packages.find]\ninclude = [\"openpine*\"]\n",
         encoding="utf-8",
     )
+    commits = {}
+    for name, root in roots.items():
+        _run(["git", "init", "--quiet"], cwd=root)
+        _run(["git", "add", "."], cwd=root)
+        _run(
+            ["git", "-c", "user.email=ci@example.invalid", "-c", "user.name=CI fixture", "commit", "--quiet", "-m", "fixture"],
+            cwd=root,
+        )
+        commits[name] = _run(["git", "rev-parse", "HEAD"], cwd=root).stdout.strip()
     bundle = tmp_path / "bundle"
     bundle.mkdir()
     source = execution_ci.create_source_archive(roots, bundle / "sources.tar.gz")
+    for name, root in roots.items():
+        execution_ci.export_git_provenance(root, bundle / "git" / (name + ".bundle"), commits[name])
     wheelhouse = bundle / "wheelhouse"
     wheelhouse.mkdir()
     _run(
@@ -332,20 +343,20 @@ def test_restore_recreates_a_real_venv_from_archived_source_and_local_wheelhouse
         ).stdout
     )
     (bundle / "locked-versions.txt").write_text("openpine==0.0.0\n", encoding="utf-8")
-    pins = {name: "c" * 40 for name in execution_ci.COMPONENTS if name != "openpine"}
+    pins = {name: commits[name] for name in execution_ci.COMPONENTS if name != "openpine"}
     report = execution_ci.bundle_manifest(
         bundle,
         source=source,
         environment=observed,
         source_pins=pins,
-        host_commit="d" * 40,
+        host_commit=commits["openpine"],
     )
 
     restored_report, restored_roots, executable = execution_ci.restore(
         bundle,
         tmp_path / "restored-work",
         expected_source_hash=source["content_hash"],
-        expected_commits={"openpine": "d" * 40, **pins},
+        expected_commits=commits,
     )
 
     assert restored_report["content_hash"] == report["content_hash"]
@@ -363,4 +374,4 @@ def test_restore_recreates_a_real_venv_from_archived_source_and_local_wheelhouse
     restored = read_json(tmp_path / "restored-work/restored.json")
     assert restored["candidate_hash"] == source["content_hash"]
     assert restored["environment"] == observed
-    assert restored["source_commits"] == {"openpine": "d" * 40, **pins}
+    assert restored["source_commits"] == commits

@@ -5,6 +5,8 @@ import inspect
 import io
 import os
 import re
+import shutil
+import subprocess
 import sys
 import tarfile
 from pathlib import Path
@@ -38,6 +40,62 @@ def test_source_archive_roundtrip_preserves_every_input_and_executable_bit(tmp_p
     assert source_snapshot(restored) == manifest
     assert restored['openpine'].joinpath('source.py').stat().st_mode & 73
     assert (restored['pine2ast'] / 'tests/test_contract.py').read_bytes() == (roots['pine2ast'] / 'tests/test_contract.py').read_bytes()
+
+
+def test_git_provenance_restores_exact_head_and_historical_objects_without_changing_sources(tmp_path):
+    from openpine.verification.execution_ci import export_git_provenance, restore_git_provenance
+    from openpine.verification.execution_identity import source_snapshot
+
+    repo = tmp_path / 'pine2ast'
+    repo.mkdir()
+    git_exe = shutil.which('git')
+    assert git_exe is not None
+    def git(*args):
+        return subprocess.run([git_exe, '-C', str(repo), *args], check=True, capture_output=True, text=True).stdout.strip()  # noqa: S603 -- fixed test Git executable and argv
+    git('init', '-q')
+    git('config', 'user.email', 'ci@example.invalid')
+    git('config', 'user.name', 'CI fixture')
+    (repo / 'source.py').write_text('answer = 1\n')
+    git('add', 'source.py')
+    git('commit', '-qm', 'historical')
+    historical = git('rev-parse', 'HEAD')
+    (repo / 'source.py').write_text('answer = 42\n')
+    git('add', 'source.py')
+    git('commit', '-qm', 'candidate')
+    candidate = git('rev-parse', 'HEAD')
+    git('checkout', '--detach', candidate)
+    bundle = tmp_path / 'provenance.bundle'
+    export_git_provenance(repo, bundle, candidate)
+    archive = tmp_path / 'sources.tar.gz'
+    source = create_source_archive({'pine2ast': repo}, archive)
+    restored = unpack_source_archive(archive, tmp_path / 'restored', source)['pine2ast']
+    restore_git_provenance(restored, bundle, 'pine2ast', candidate)
+    assert subprocess.run([git_exe, '-C', str(restored), 'rev-parse', 'HEAD'], check=True, capture_output=True, text=True).stdout.strip() == candidate  # noqa: S603 -- fixed test Git executable and argv
+    assert subprocess.run([git_exe, '-C', str(restored), 'symbolic-ref', '-q', 'HEAD'], capture_output=True).returncode == 1  # noqa: S603 -- fixed test Git executable and argv
+    subprocess.run([git_exe, '-C', str(restored), 'cat-file', '-e', historical + '^{commit}'], check=True)  # noqa: S603 -- fixed test Git executable and argv
+    assert source_snapshot({'pine2ast': restored}) == source
+    tampered = unpack_source_archive(archive, tmp_path / 'tampered', source)['pine2ast']
+    (tampered / 'source.py').write_text('tampered\n')
+    with pytest.raises(ValueError, match='differs from archived source'):
+        restore_git_provenance(tampered, bundle, 'pine2ast', candidate)
+    (repo / 'untracked.py').write_text('unexpected_input = True\n')
+    extra_archive = tmp_path / 'source-with-untracked.tar.gz'
+    extra_source = create_source_archive({'pine2ast': repo}, extra_archive)
+    extra = unpack_source_archive(extra_archive, tmp_path / 'with-untracked', extra_source)['pine2ast']
+    with pytest.raises(ValueError, match='not present in Git commit'):
+        restore_git_provenance(extra, bundle, 'pine2ast', candidate)
+
+
+def test_compiler_commit_environment_uses_exact_plan_producer_identity(monkeypatch):
+    from openpine.build_identity import compiler_producer_commits
+    from openpine.verification.execution_campaign import compiler_commit_environment
+    expected = {name: str(index) * 40 for index, name in enumerate(('pine2ast', 'ast2python', 'pinelib', 'openpine-contracts'), start=1)}
+    value = compiler_commit_environment({'openpine': 'f' * 40, **expected})
+    monkeypatch.setenv('OPENPINE_PRODUCER_COMMITS_JSON', value)
+    assert compiler_producer_commits() == expected
+    with pytest.raises(ValueError, match='producer commits'):
+        compiler_commit_environment({'openpine': 'f' * 40})
+
 
 @pytest.mark.parametrize('mutation', ['traversal', 'symlink', 'duplicate', 'missing', 'tamper', 'unknown'])
 def test_source_archive_rejects_incomplete_or_unsafe_transfer(tmp_path, mutation):
@@ -145,6 +203,11 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     workflow = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())
     jobs = workflow['jobs']
     assert jobs['prepare']['strategy']['matrix']['python'] == ['3.11', '3.12', '3.13']
+    prepare_checkout = next(step for step in jobs['prepare']['steps'] if step.get('uses', '').startswith('actions/checkout@'))
+    assert prepare_checkout['with']['fetch-depth'] == 0
+    from openpine.verification import execution_ci
+    assert 'export_git_provenance' in inspect.getsource(execution_ci.prepare)
+    assert 'restore_git_provenance' in inspect.getsource(execution_ci.restore)
     assert jobs['verify']['strategy']['matrix']['python'] == ['3.11', '3.13']
     assert jobs['frontend']['needs'] == ['prepare']
     assert jobs['component']['needs'] == ['plan']

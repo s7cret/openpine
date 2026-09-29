@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
 import sys
 import tarfile
 import venv
@@ -82,6 +83,46 @@ def unpack_source_archive(path: Path, destination: Path, expected: dict) -> dict
     if source_snapshot(roots) != expected:
         raise ValueError('source archive omitted required files')
     return roots
+
+def _git_provenance(repo: Path, *args: str) -> str:
+    git = shutil.which('git')
+    if git is None:
+        raise ValueError('git is required for exact source provenance')
+    result = subprocess.run([git, '-C', str(repo), *args], capture_output=True, text=True, check=False, timeout=300)  # noqa: S603 -- fixed Git executable and declared argv
+    if result.returncode != 0:
+        raise ValueError('exact Git provenance command failed: ' + ' '.join(args[:2]))
+    return result.stdout.strip()
+
+def export_git_provenance(repo: Path, output: Path, expected_head: str) -> None:
+    if re.fullmatch('[0-9a-f]{40}', expected_head) is None or _git_provenance(repo, 'rev-parse', 'HEAD') != expected_head:
+        raise ValueError('source checkout differs from exact producer commit')
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if output.exists() or output.is_symlink():
+        raise ValueError('Git provenance bundle must be new')
+    _git_provenance(repo, 'bundle', 'create', str(output), 'HEAD', '--all')
+    if _git_provenance(repo, 'rev-parse', 'HEAD') != expected_head:
+        raise ValueError('source checkout changed during provenance export')
+
+def restore_git_provenance(repo: Path, bundle: Path, component: str, expected_head: str) -> None:
+    if component not in COMPONENTS or re.fullmatch('[0-9a-f]{40}', expected_head) is None or (repo / '.git').exists():
+        raise ValueError('invalid or already restored Git provenance target')
+    _git_provenance(repo, 'init', '-q')
+    _git_provenance(repo, 'bundle', 'verify', str(bundle))
+    _git_provenance(repo, 'bundle', 'unbundle', str(bundle))
+    _git_provenance(repo, 'cat-file', '-e', expected_head + '^{commit}')
+    _git_provenance(repo, 'update-ref', '--no-deref', 'HEAD', expected_head)
+    _git_provenance(repo, 'reset', '--mixed', '-q', 'HEAD')
+    _git_provenance(repo, 'remote', 'add', 'origin', 'https://github.com/s7cret/' + component + '.git')
+    if _git_provenance(repo, 'rev-parse', 'HEAD') != expected_head:
+        raise ValueError('restored Git head differs from exact producer commit')
+    try:
+        _git_provenance(repo, 'diff', '--exit-code', 'HEAD')
+    except ValueError as error:
+        raise ValueError('Git checkout differs from archived source') from error
+    tracked = set(_git_provenance(repo, 'ls-files', '--cached', '-z').split('\0')) - {''}
+    archived = set(source_snapshot({component: repo})['components'][component]['files'])
+    if archived - tracked:
+        raise ValueError('archived source contains files not present in Git commit')
 
 def bundle_manifest(bundle: Path, *, source: dict, environment: dict, source_pins: dict, host_commit: str) -> dict:
     files = {}
@@ -170,6 +211,9 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
             raise ValueError('sibling source commit mismatch')
     roots = {name: stack / name for name in COMPONENTS}
     source = create_source_archive(roots, bundle / 'sources.tar.gz')
+    for name in COMPONENTS:
+        checkout = host if name == 'openpine' else roots[name]
+        export_git_provenance(checkout, bundle / 'git' / (name + '.bundle'), head if name == 'openpine' else pins[name])
     env_root = work / 'venv'
     venv.EnvBuilder(with_pip=True, symlinks=True).create(env_root)
     executable = str(env_root / 'bin/python')
@@ -271,6 +315,10 @@ def restore(bundle: Path, work: Path, *, expected_source_hash: str | None=None, 
     work.mkdir(parents=True, exist_ok=False)
     command = Commands(work)
     roots = unpack_source_archive(bundle / 'sources.tar.gz', work / 'stack', report['source'])
+    for name, commit in source_commits.items():
+        restore_git_provenance(roots[name], bundle / 'git' / (name + '.bundle'), name, commit)
+    if source_snapshot(roots) != report['source']:
+        raise ValueError('restored Git provenance changed archived source')
     environment = work / 'venv'
     venv.EnvBuilder(with_pip=True, symlinks=True).create(environment)
     executable = environment / 'bin/python'

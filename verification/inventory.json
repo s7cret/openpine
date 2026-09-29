@@ -15,8 +15,8 @@
     "sha256": "sha256:7f7cc3d2bdf514dcd460d94cc39eb580486ee4121b3e49125b1a8bad691032ec"
   },
   "openpine": {
-    "count": 11025,
-    "sha256": "sha256:46c1a8727cebe794641988e972fb1167e3cbf36df9d9c603cbe8818ae07dad41",
+    "count": 11027,
+    "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd",
     "deselected": 0
   },
   "openpine-contracts": {

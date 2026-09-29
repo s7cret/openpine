@@ -5,7 +5,9 @@ summary count. A successful scoped campaign is not stage or release acceptance.
 """
 from __future__ import annotations
 import concurrent.futures
+import json
 import os
+import re
 import subprocess
 import threading
 import time
@@ -21,6 +23,17 @@ from openpine.verification.pytest_gate import collection_hash, validate_phase_re
 from openpine.verification.execution_process import _stop_group
 RUN_SCHEMA = 'openpine.test_campaign_run.v1'
 AGGREGATE_SCHEMA = 'openpine.test_campaign_aggregate.v1'
+
+def compiler_commit_environment(source_commits: dict[str, str]) -> str:
+    """Bind compiler identities to the verified plan, not the test process HOME."""
+    names = ('pine2ast', 'ast2python', 'pinelib', 'openpine-contracts')
+    if not isinstance(source_commits, dict) or any(
+        not isinstance(source_commits.get(name), str)
+        or re.fullmatch('[0-9a-f]{40}', source_commits[name]) is None
+        for name in names
+    ):
+        raise ValueError('exact plan producer commits are required')
+    return json.dumps({name: source_commits[name] for name in names}, sort_keys=True, separators=(',', ':'))
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -66,6 +79,8 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
     folder.mkdir(parents=True, exist_ok=False)
     execution_roots, executables = locations(plan, binding)
     env = clean_environment(execution_roots, folder / 'private', build_commit=build_commit if task['component'] == 'openpine' else None)
+    if task['component'] == 'openpine':
+        env['OPENPINE_PRODUCER_COMMITS_JSON'] = compiler_commit_environment(plan.get('source_commits', {}))
     env['OPENPINE_STAGE1_EVIDENCE'] = str(folder / 'owner-evidence')
     selectors = folder / 'nodeids.args'
     selectors.write_text('\n'.join(shard['nodeids']) + '\n', encoding='utf-8')
