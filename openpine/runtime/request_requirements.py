@@ -10,7 +10,7 @@ import ast
 from dataclasses import dataclass
 from collections.abc import Mapping
 
-from marketdata_provider.timeframes import to_pine_timeframe
+from marketdata_provider import to_pine_timeframe
 from pinelib.request.snapshots import normalized_period
 from pinelib.runtime.metadata import TimeframeContext
 

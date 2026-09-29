@@ -153,7 +153,7 @@ def test_periodic_fetcher_error_paths_and_provider_load(monkeypatch):
     assert calls["n"] == 0
 
 
-def test_parallel_fetcher_chunk_merge_progress_and_errors(monkeypatch):
+def test_parallel_fetcher_chunk_merge_progress_and_errors(monkeypatch, synthetic_admitted_marketdata_manifest):
     assert _default_workers() >= 1
     pf = ParallelDataFetcher(max_workers=2)
     pf._orchestrator = Orchestrator(load_bars=[_bar(0), _bar(60_000)])

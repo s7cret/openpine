@@ -755,7 +755,16 @@ class BacktestResultStore:
             (run_id,),
         ).fetchall()
         if not rows:
-            # Fallback: read from run row if metrics_json column exists
+            # Older and current backtest schemas need not expose metrics_json.
+            # Probe the row shape before selecting an optional compatibility field.
+            columns = {
+                description[0]
+                for description in self._storage.execute(
+                    "SELECT * FROM backtest_runs LIMIT 0"
+                ).description
+            }
+            if "metrics_json" not in columns:
+                return stored_metrics or None
             row = self._storage.execute(
                 "SELECT metrics_json FROM backtest_runs WHERE run_id = ?",
                 (run_id,),

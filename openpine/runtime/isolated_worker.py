@@ -104,22 +104,46 @@ class IsolatedWorkerError(RuntimeError):
 
 _TRUSTED_STAGE: Path | None = None
 _TRUSTED_NAMES = (
+    "anyio",
     "ast2python",
     "attr",
     "attrs",
     "backtest_engine",
+    "certifi",
+    "h11",
+    "httpcore",
+    "httpx",
+    "idna",
     "jsonschema",
     "jsonschema_specifications",
     "marketdata_provider",
     "msgpack",
     "openpine_rc6_worker_runtime",
+    "openpine_worker_support",
     "openpine_contracts",
+    "pine2ast",
     "pinelib",
     "referencing",
     "rpds",
     "typing_extensions",
 )
 _RUNTIME_ROOTS = ("/usr", "/lib", "/lib64")
+_WORKER_SUPPORT_MODULES = (
+    "runtime/worker_capabilities.py",
+    "runtime/strategy_host.py",
+    "runtime/generated_checkpoint.py",
+    "runtime/rc6_lifecycle.py",
+    "runtime/rc6_marketdata.py",
+    "runtime/rc6_config.py",
+    "runtime/inputs.py",
+    "runtime/effective_config.py",
+    "runtime/request_transport.py",
+    "runtime/request_data.py",
+    "runtime/request_requirements.py",
+    "runtime/bulk_result.py",
+    "runtime/progress.py",
+    "verification/identity.py",
+)
 
 
 def _chmod_tree(root: Path) -> None:
@@ -144,10 +168,24 @@ def _stage_trusted_packages() -> list[tuple[str, str]]:
     global _TRUSTED_STAGE
     dest_root = Path(TRUSTED_DEST)
     if _TRUSTED_STAGE is None:
-        stage = Path(tempfile.mkdtemp(prefix="openpine-trusted-"))
+        # The sandbox runs as a different UID. Test/CI TMPDIR is private and
+        # cannot be traversed by that UID even after stage itself becomes 0755.
+        stage = Path(tempfile.mkdtemp(prefix="openpine-trusted-", dir="/tmp"))
         try:
             stage.chmod(0o755)
             for name in _TRUSTED_NAMES:
+                if name == "openpine_worker_support":
+                    package_root = stage / "openpine"
+                    source_root = Path(__file__).resolve().parents[1]
+                    for subpackage in ("", "runtime", "verification"):
+                        directory = package_root / subpackage
+                        directory.mkdir(parents=True, exist_ok=True)
+                        (directory / "__init__.py").write_bytes(b"")
+                    for relative in _WORKER_SUPPORT_MODULES:
+                        destination = package_root / relative
+                        shutil.copy2(source_root / relative, destination)
+                    _chmod_tree(package_root)
+                    continue
                 if name == "openpine_rc6_worker_runtime":
                     source = Path(__file__).with_name("rc6_worker_runtime.py")
                     target = stage / f"{name}.py"
@@ -823,6 +861,8 @@ class InteractiveWorkerSession:
 
     @staticmethod
     def _raise_response(response: dict[str, Any]) -> None:
+        if "error_type" in response and "detail" in response:
+            raise IsolatedWorkerError(f"{response['error_type']}: {response['detail']}")
         code = str(response.get("error_code") or "WORKER_REJECTED")
         detail = str(response.get("error") or "worker rejected message")
         raise IsolatedWorkerError(f"{code}: {detail}")

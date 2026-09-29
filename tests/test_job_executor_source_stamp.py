@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
 from marketdata_provider.contracts import Bar, InstrumentKey, parse_timeframe
 from openpine_contracts import seal_content_hash, validate_payload, verify_content_hash
 
@@ -127,7 +128,13 @@ class _Adapter:
         return SimpleNamespace(ok=True)
 
 
-def test_job_executor_stamps_source_once_across_bars(monkeypatch) -> None:
+@pytest.fixture
+def source_and_htf_unit_boundary(monkeypatch):
+    """Focus on source/HTF forwarding; integration tests cover deployment binding."""
+    monkeypatch.setattr(StrategyJobExecutor, "_bind_isolated_config", lambda *a: None)
+
+
+def test_job_executor_stamps_source_once_across_bars(monkeypatch, source_and_htf_unit_boundary) -> None:
     captures: list[tuple] = []
 
     def capture(*args, **kwargs):
@@ -153,7 +160,7 @@ def test_job_executor_stamps_source_once_across_bars(monkeypatch) -> None:
     assert adapter.sources == [b"STAMPED", b"STAMPED"]
 
 
-def test_job_executor_forwards_confirmed_htf_bars(monkeypatch) -> None:
+def test_job_executor_forwards_confirmed_htf_bars(monkeypatch, source_and_htf_unit_boundary) -> None:
     monkeypatch.setattr(
         "openpine.workers.strategy_job_executor.capture_generated_source",
         lambda *a, **k: b"STAMPED",
@@ -190,7 +197,7 @@ def test_job_executor_forwards_confirmed_htf_bars(monkeypatch) -> None:
     assert seen["htf_bars"] == htf_bars
 
 
-def test_job_executor_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
+def test_job_executor_stamps_confirmed_provider_htf_bars(monkeypatch, source_and_htf_unit_boundary) -> None:
     monkeypatch.setattr(
         "openpine.workers.strategy_job_executor.capture_generated_source",
         lambda *a, **k: b"STAMPED",
@@ -225,7 +232,7 @@ def test_job_executor_stamps_confirmed_provider_htf_bars(monkeypatch) -> None:
     ]
 
 
-def test_job_executor_does_not_invent_time_close(monkeypatch) -> None:
+def test_job_executor_does_not_invent_time_close(monkeypatch, source_and_htf_unit_boundary) -> None:
     monkeypatch.setattr(
         "openpine.workers.strategy_job_executor.capture_generated_source",
         lambda *a, **k: b"STAMPED",
@@ -250,7 +257,7 @@ def test_job_executor_does_not_invent_time_close(monkeypatch) -> None:
     assert seen["htf_bars"] is None
 
 
-def test_job_executor_fetches_explicit_htf_timeframe(monkeypatch) -> None:
+def test_job_executor_fetches_explicit_htf_timeframe(monkeypatch, source_and_htf_unit_boundary) -> None:
     monkeypatch.setattr(
         "openpine.workers.strategy_job_executor.capture_generated_source",
         lambda *a, **k: b"STAMPED",
@@ -303,7 +310,7 @@ def test_job_executor_fetches_explicit_htf_timeframe(monkeypatch) -> None:
     ]
 
 
-def test_job_executor_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
+def test_job_executor_same_htf_timeframe_does_not_refetch(monkeypatch, source_and_htf_unit_boundary) -> None:
     monkeypatch.setattr(
         "openpine.workers.strategy_job_executor.capture_generated_source",
         lambda *a, **k: b"STAMPED",
@@ -329,7 +336,7 @@ def test_job_executor_same_htf_timeframe_does_not_refetch(monkeypatch) -> None:
     assert seen["htf_bars"][0]["timeframe"] == "15m"
 
 
-def test_job_executor_passes_sealed_v3_envelope_to_run_isolated(monkeypatch) -> None:
+def test_job_executor_passes_sealed_v3_envelope_to_run_isolated(monkeypatch, source_and_htf_unit_boundary) -> None:
     envelope = {
         "schema_id": "openpine.generated_artifact.v3",
         "content_hash": "sha256:" + "1" * 64,
@@ -361,7 +368,7 @@ def test_job_executor_passes_sealed_v3_envelope_to_run_isolated(monkeypatch) -> 
     seen: dict[str, object] = {}
 
     class Adapter:
-        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None):
+        def run_isolated(self, source, bars, config, resume_state=None, htf_bars=None, params=None):
             seen["source"] = source
             seen["generated_artifact"] = getattr(config, "generated_artifact", None)
             seen["execution_context"] = getattr(config, "execution_context", None)

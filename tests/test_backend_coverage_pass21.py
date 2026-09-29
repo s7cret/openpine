@@ -157,7 +157,7 @@ def test_periodic_fetcher_lifecycle_variable_tf_conflicts_and_http(monkeypatch):
     assert failing_fetcher._load_source_bars(key, parse_timeframe("1m"), 0, 60_000) == []
 
 
-def test_cli_data_commands_cover_success_and_error_paths(monkeypatch, tmp_path):
+def test_cli_data_commands_cover_success_and_error_paths(monkeypatch, tmp_path, synthetic_admitted_marketdata_manifest):
     runner = CliRunner()
 
     class FakeCursor:

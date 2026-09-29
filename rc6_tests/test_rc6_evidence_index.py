@@ -579,3 +579,153 @@ def test_unassigned_unverified_mismatch_is_visible_and_blocks_complete_group(tmp
         assert group["unassigned_outcomes"][0]["authority"] == "UNVERIFIED"
         assert group["unassigned_outcomes"][0]["first_divergence"] is not None
         assert "UNVERIFIED_EXPECTATION_MISMATCH" in group["reasons"]
+
+
+def test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred():
+    from pathlib import Path
+    from openpine.verification.conformance import load_corpus
+    from openpine.verification.evidence_index import _temporary_tonumber_gaps
+
+    root = Path(__file__).resolve().parents[1]
+    corpus = load_corpus(root / "verification/builtin-string-operations-v1/manifest.json")
+    ids = ("manual-tonumber-7-v5", "manual-tonumber-8-v5", "manual-tonumber-9-v5")
+    observations = {}
+    details = []
+    for case_id in ids:
+        observations[case_id] = {
+            "semantic_authority": {"classification": "UNVERIFIED", "confirmed": False,
+                "independent_receipt_sha256": "e21bf08a0f41341edcc47c8c5d70ab4c8ac9ef73150d3969c91d7aaea3010f6b"},
+            "source_identity": PINS, "transcript_mode": "full",
+        }
+        details.append({"id": case_id, "status": "RUNTIME_MISMATCH", "authority": "UNVERIFIED",
+                        "first_divergence": "events"})
+    assert _temporary_tonumber_gaps(root, corpus, details, observations, PINS, "full") == list(ids)
+    for case_id in ids:
+        altered = deepcopy(observations)
+        altered[case_id]["source_identity"] = {**PINS, "pinelib": "z" * 40}
+        assert _temporary_tonumber_gaps(root, corpus, details, altered, PINS, "full") == []
+    assert _temporary_tonumber_gaps(root, corpus, details[:-1], observations, PINS, "full") == []
+    assert _temporary_tonumber_gaps(root, corpus, [*details, {"id": "other", "status": "RUNTIME_MISMATCH", "authority": "UNVERIFIED"}], observations, PINS, "full") == []
+    altered = deepcopy(observations)
+    altered[ids[0]]["semantic_authority"]["confirmed"] = True
+    assert _temporary_tonumber_gaps(root, corpus, details, altered, PINS, "full") == []
+
+
+def test_provisional_numeric_group_never_counts_as_semantic_pass(tmp_path, monkeypatch):
+    from openpine.verification import evidence_index
+
+    fixture = list(setup(tmp_path))
+    host, root, surface, _, plan = fixture
+    corpus = read_json(host / "manifest.json")
+    corpus["cases"].append({**deepcopy(corpus["cases"][0]), "id": "uncertain"})
+    corpus = reseal(corpus)
+    write_json(host / "manifest.json", corpus)
+    frozen = read_json(host / "assignments-lock.json")
+    frozen["corpus_hash"] = corpus["content_hash"]
+    frozen = reseal(frozen)
+    write_json(host / "assignments-lock.json", frozen)
+    plan["groups"][0].update(id="builtin-string-operations", corpus_hash=corpus["content_hash"], assignment_hash=frozen["content_hash"])
+    fixture[4] = reseal(plan)
+    for variant in ("full", "compact"):
+        for path in EXECUTION_PATHS:
+            folder = root / "reports" / variant / path
+            observations = read_json(folder / "observations.json")
+            observations["uncertain"] = {**deepcopy(observations["min"]),
+                "events": [{"bar": 0, "value": 999}],
+                "semantic_authority": {"classification": "UNVERIFIED"}}
+            assignments = read_json(folder / "assignments.json")
+            write_json(folder / "observations.json", observations)
+            write_json(folder / "report.json", builtin_evidence_report(
+                surface, host / "manifest.json", observations,
+                corpus_hash=corpus["content_hash"], assignments=assignments,
+            ))
+    monkeypatch.setattr(evidence_index, "_temporary_tonumber_gaps", lambda *args: ["uncertain"])
+    report = index(fixture)
+    assert report["denominator"] == 1 and report["required_group_paths"] == 10
+    assert report["passed_group_paths"] == 0 and report["deferred_group_paths"] == 10
+    assert all(g["status"] == "TEMPORARY_UNVERIFIED" and g["deferred_cases"] == ["uncertain"] for g in report["groups"])
+    assert report["provisional_gate_ok"] and not report["ok"]
+    assert report["full_builtin_expected_accepted"] is report["full_stage2_accepted"] is False
+
+    # A different unresolved failure cannot be hidden behind the three-case exception.
+    corpus["cases"].append({**deepcopy(corpus["cases"][0]), "id": "other"})
+    corpus = reseal(corpus)
+    write_json(host / "manifest.json", corpus)
+    frozen["corpus_hash"] = corpus["content_hash"]
+    frozen = reseal(frozen)
+    write_json(host / "assignments-lock.json", frozen)
+    plan["groups"][0].update(corpus_hash=corpus["content_hash"], assignment_hash=frozen["content_hash"])
+    fixture[4] = reseal(plan)
+    for variant in ("full", "compact"):
+        for path in EXECUTION_PATHS:
+            folder = root / "reports" / variant / path
+            observations = read_json(folder / "observations.json")
+            observations["other"] = {**deepcopy(observations["min"]), "events": [{"bar": 0, "value": 444}],
+                                     "semantic_authority": {"classification": "SUPPORTED"}}
+            assignments = read_json(folder / "assignments.json")
+            write_json(folder / "observations.json", observations)
+            write_json(folder / "report.json", builtin_evidence_report(
+                surface, host / "manifest.json", observations,
+                corpus_hash=corpus["content_hash"], assignments=assignments,
+            ))
+    report = index(fixture)
+    assert not report["provisional_gate_ok"] and report["deferred_group_paths"] == 0
+    assert all(group["status"] == "FAILED" for group in report["groups"])
+
+
+def test_provisional_cli_exit_does_not_forge_full_acceptance(tmp_path, monkeypatch):
+    from openpine.verification.__main__ import main
+    from openpine.verification import builtins, evidence_index, stage2_remaining
+
+    fixture = setup(tmp_path)
+    host, evidence, surface, lock, plan = fixture
+    write_json(host / "plan.json", plan)
+    write_json(host / "surface-lock.json", lock)
+    write_json(host / "docs/RC6_LIFECYCLE_SOURCES.json", PINS)
+    report = index(fixture)
+    report = reseal({**report, "ok": False, "provisional_gate_ok": True,
+                     "deferred_group_paths": 10, "full_stage2_accepted": False})
+    monkeypatch.setattr(builtins, "build_builtin_surface", lambda: surface)
+    monkeypatch.setattr(evidence_index, "build_evidence_index", lambda *a, **k: report)
+    output = tmp_path / "index.json"
+    args = ["builtin-index", "--host-root", str(host), "--evidence", str(evidence),
+            "--surface-lock", str(host / "surface-lock.json"), "--plan", str(host / "plan.json"),
+            "--expected-plan-hash", plan["content_hash"], "--output", str(output)]
+    assert main(args) == 0
+    assert read_json(output)["ok"] is False
+    failed = reseal({**report, "provisional_gate_ok": False})
+    monkeypatch.setattr(evidence_index, "build_evidence_index", lambda *a, **k: failed)
+    assert main(args) == 1
+
+    monkeypatch.setattr(stage2_remaining, "build_stage2_remaining", lambda *a: report)
+    args = ["stage2-remaining", "--host-root", str(host),
+            "--builtin-index", str(output), "--output", str(tmp_path / "remaining.json")]
+    assert main(args) == 0
+    assert read_json(tmp_path / "remaining.json")["full_stage2_accepted"] is False
+    monkeypatch.setattr(stage2_remaining, "build_stage2_remaining", lambda *a: failed)
+    assert main(args) == 1
+
+
+def test_stage2_remainder_keeps_provisional_cases_open(tmp_path):
+    from pathlib import Path
+    from openpine.verification.stage2_remaining import build_stage2_remaining
+
+    root = Path(__file__).resolve().parents[1]
+    report = index(setup(tmp_path))
+    pins = read_json(root / "docs/RC6_LIFECYCLE_SOURCES.json")
+    plan_lock = read_json(root / "verification/stage2-evidence-plan-lock.json")
+    surface_lock = read_json(root / "verification/stage2-callable-lock.json")
+    groups = [{**row, "status": "TEMPORARY_UNVERIFIED",
+               "deferred_cases": ["manual-tonumber-7-v5", "manual-tonumber-8-v5", "manual-tonumber-9-v5"]}
+              for row in report["groups"]]
+    report = reseal({**report, "groups": groups, "plan_hash": plan_lock["plan_hash"],
+                     "lock_hash": surface_lock["content_hash"], "source_pins": pins,
+                     "ok": False, "all_declared_runs_passed": False,
+                     "provisional_gate_ok": True, "passed_group_paths": 0,
+                     "deferred_group_paths": len(groups),
+                     "temporary_unverified_cases": groups[0]["deferred_cases"]})
+    remaining = build_stage2_remaining(root, report)
+    assert remaining["provisional_gate_ok"] is True
+    assert remaining["builtin_index_replay_passed"] is remaining["ok"] is False
+    assert remaining["temporary_unverified_cases"] == groups[0]["deferred_cases"]
+    assert remaining["full_stage2_accepted"] is remaining["tradingview_verified"] is False

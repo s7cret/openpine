@@ -1,22 +1,66 @@
 {
   "ast2python": {
-    "count": 1509,
-    "sha256": "sha256:c9563b1aaf44010f4433f0f6a4759b94ab87711ade3e5911cad8e15e1829a283",
+    "count": 2079,
+    "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c",
     "deselected": 0
   },
   "backtest_engine": {
-    "count": 1102,
+    "count": 1219,
     "deselected": 0,
-    "sha256": "sha256:a9d7032ee66382a6431282879e191f5a7e9020c7e99a250a1de11cb7e5825641"
+    "sha256": "sha256:3c1f6fb4eafb76548e2e0efee4a780544329c6b066dfc0c6012177e045b3be30"
   },
   "marketdata-provider": {
-    "count": 601,
+    "count": 624,
     "deselected": 5,
-    "sha256": "sha256:9cf9b22e1e11d727444eb601c7b6bf5889c676dd53cc54fd1a51a25b26b06892"
+    "sha256": "sha256:7f7cc3d2bdf514dcd460d94cc39eb580486ee4121b3e49125b1a8bad691032ec"
   },
   "openpine": {
-    "count": 9706,
-    "sha256": "sha256:0052fec11717dacb89d92c0e91228c542e8e8a00e601a4fcd930828bed4e1c80",
+    "count": 11064,
+    "identity_mode": "reviewed_addition_to_hashed_baseline",
+    "added_nodeids": [
+      "rc6_tests/test_rc6_evidence_index.py::test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred",
+      "rc6_tests/test_rc6_evidence_index.py::test_provisional_cli_exit_does_not_forge_full_acceptance",
+      "rc6_tests/test_rc6_evidence_index.py::test_provisional_numeric_group_never_counts_as_semantic_pass",
+      "rc6_tests/test_rc6_evidence_index.py::test_stage2_remainder_keeps_provisional_cases_open",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_authority_tamper_and_missing_form_fail_closed",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_catalog_has_six_cells_per_symbol_and_no_unexplained_gap",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_catalog_preparation_has_no_mutable_cross_test_alias",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_catalog_repeated_generation_matches_shared_observation",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_catalog_status_vocabulary_is_explicit_and_preserves_unknowns",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_every_modern_input_form_is_authority_locked_and_runtime_mapped[5]",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_every_modern_input_form_is_authority_locked_and_runtime_mapped[6]",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_input_version_differences_and_qualifier_ceilings_are_exact",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_modern_input_functions_are_not_backported_as_functions",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_numeric_options_bounds_and_defaults_are_disjoint",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_source_lock_covers_all_components_and_detects_byte_changes",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_symbol_has_no_foreign_options_and_enum_keeps_nominal_rule",
+      "rc6_tests/test_rc6_stage21_catalog.py::test_unclosed_direct_contract_remains_unverified",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[none]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[renamed_old]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[unreviewed_extra]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_complete_dimension_shape_is_represented",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_omitted_dimension_is_reported_even_when_not_returned",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_rc6_catalog_pin_rejects_a_changed_pack_resource",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[parameters-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[return_qualifier-qualifiers]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[returns-return_type]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_contract_metadata_cannot_remain_green[symbol_id-overload_identity]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[default-defaults]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[name-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[qualifier_max-qualifiers]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[required-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[type-parameters]",
+      "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_wrong_overload_identity_is_unverified",
+      "tests/test_verification_campaign_cli_failclosed_new.py::test_completed_pytest_group_gets_bounded_quiescence_not_a_false_orphan",
+      "tests/test_verification_campaign_cli_failclosed_new.py::test_zombie_only_process_group_is_quiescent_without_live_members"
+    ],
+    "baseline": {
+      "count": 11027,
+      "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd",
+      "deselected": 0
+    },
     "deselected": 0
   },
   "openpine-contracts": {
@@ -25,18 +69,18 @@
     "sha256": "sha256:135ba2f906b7a105c41f194162a5646f118e966b0cf11029d45ad1995c7293a3"
   },
   "optimizer": {
-    "count": 281,
+    "count": 286,
     "deselected": 0,
-    "sha256": "sha256:fbe29062f5b51ec348a86dfb4a186238406a0ff078be04b84d06d946c7bc9eeb"
+    "sha256": "sha256:c343d0fe2095d8905b3dfb9b4166cfec18d337d2c7c1f065c28fc44b52fd77f9"
   },
   "pine2ast": {
-    "count": 3191,
-    "sha256": "sha256:7307c946cbc0c724c2d5d5937abbddc2493ecd64c6e87d22073f2a02df6fe1f0",
+    "count": 3547,
+    "sha256": "sha256:bb8d02ed74177f70a6e7eafcaecbbabc8ace81ee2d75c52e2dd35602e41975dc",
     "deselected": 0
   },
   "pinelib": {
-    "count": 4944,
-    "sha256": "sha256:9170197e3ee02b906700fd42bb69ca8a6023d081def6bf89f793ea79743ecbb6",
+    "count": 5172,
+    "sha256": "sha256:4b216d1a399cae2b4beebafcc09ee7a87c7f4f828fd883312b6388cffe8e0379",
     "deselected": 0
   }
 }

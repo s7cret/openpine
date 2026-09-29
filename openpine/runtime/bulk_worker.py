@@ -100,6 +100,8 @@ class BulkWorkerSession(InteractiveWorkerSession):
                             raise IsolatedWorkerError("invalid bulk progress frame")
                         progress.report(message["bars_done"], message["bars_total"])
                         continue
+                    if "error_type" in message and "detail" in message:
+                        self._raise_response(message)
                     payload = receiver.accept(message)
                     if payload is not None:
                         manifest = receiver.manifest

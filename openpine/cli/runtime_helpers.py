@@ -1773,7 +1773,6 @@ __all__ = [
     "_default_qty_rounding_mode",
     "_default_qty_step",
     "_ensure_output_dir",
-    "_execute_indicator_plot_runtime",
     "_exit_if_no_strategy_bars",
     "_exit_if_strategy_not_ready_for_backtest",
     "_fmt_utc_ms",

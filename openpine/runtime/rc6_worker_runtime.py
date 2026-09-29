@@ -25,7 +25,7 @@ from backtest_engine.core.intent_replay import IntentReplayIdentity
 from backtest_engine.core.strategy_capabilities import (
     strategy_values_from_projection, strategy_values_from_state,
 )
-from marketdata_provider.timeframes import to_pine_timeframe
+from marketdata_provider import to_pine_timeframe
 from openpine_contracts import (
     ExecutionEvent,
     aggregate_batch_hash,

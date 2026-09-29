@@ -9,7 +9,7 @@ from marketdata_provider.contracts import Bar, BarQuery, BarSeries, CoverageRepo
 
 from openpine.data.direct_provider import DirectBinanceProvider
 from openpine.data.orchestrator import DataOrchestrator
-from openpine.data.persistent_cache import save_bar_series
+from openpine.data.persistent_cache import load_bar_series, save_bar_series
 from openpine.gateway.routes import backtest, pine_sources, strategies
 from openpine.gateway.schemas import StrategyCreate
 from openpine.pine.registry import SQLitePineSourceRegistry
@@ -204,15 +204,16 @@ def test_persistent_cache_reports_chunked_load_progress(tmp_path):
     save_bar_series(tmp_path, _series(query, 2_500))
 
     events = []
+    loaded = load_bar_series(
+        tmp_path, query, progress_callback=lambda *args: events.append(args)
+    )
+    assert loaded is not None
+    # A CSV cache can report read progress, but cannot supply the canonical
+    # envelopes required by the RC6 execution boundary.
     orchestrator = DataOrchestrator(
-        store=SimpleNamespace(),
-        cache_dir=tmp_path,
-        cache_enabled=True,
+        store=SimpleNamespace(), cache_dir=tmp_path, cache_enabled=True
     )
-    loaded = orchestrator.load_bars(
-        query,
-        progress_callback=lambda *args: events.append(args),
-    )
+    assert orchestrator._load_cache(query) is None
 
     cache_read_events = [event for event in events if event[-1] == "cache_read"]
     assert len(loaded.bars) == 2_500

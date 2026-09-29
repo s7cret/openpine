@@ -115,8 +115,9 @@ def test_p0_006_engine_canonical_projection_is_forwarded_unchanged(
     seen: dict[str, object] = {}
 
     class Callbacks:
-        def __init__(self, *, on_protocol_callback) -> None:
+        def __init__(self, *, on_protocol_callback, on_bar_end) -> None:
             self.on_protocol_callback = on_protocol_callback
+            self.on_bar_end = on_bar_end
 
     class Engine:
         def __init__(self, config) -> None:
@@ -136,7 +137,8 @@ def test_p0_006_engine_canonical_projection_is_forwarded_unchanged(
                 }
             )
             strategy_class({}, None, SimpleNamespace()).run_bar(bars[0], 0)
-            return SimpleNamespace(score_ledger_hash="hash")
+            callbacks.on_bar_end(bars[0], 0, None)
+            return SimpleNamespace(status="completed", score_ledger_hash="hash")
 
     class Session:
         hello = {"isolation": {}}
@@ -167,7 +169,7 @@ def test_p0_006_engine_canonical_projection_is_forwarded_unchanged(
     monkeypatch.setattr(
         isolated_run,
         "require_live_tape",
-        lambda events: SimpleNamespace(events=tuple(events), identity="identity"),
+        lambda events, **kwargs: SimpleNamespace(events=tuple(events), identity="identity"),
     )
     monkeypatch.setattr(
         isolated_run,
@@ -180,7 +182,10 @@ def test_p0_006_engine_canonical_projection_is_forwarded_unchanged(
     isolated_run.run_isolated_artifact(
         b"unused",
         bars=[bar],
-        config=SimpleNamespace(semantic_profile="strict_5x", timeframe="1m"),
+        config=SimpleNamespace(
+            symbol="BTCUSDT", timeframe="1m", start_time=1, end_time=60_001,
+            semantic_profile="strict_5x",
+        ),
     )
 
     assert seen["projection"] is canonical_projection

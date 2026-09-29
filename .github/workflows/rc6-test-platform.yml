@@ -1,0 +1,85 @@
+# Supplemental self-checks, not eight-component or stabilization acceptance.
+name: RC6 test-platform self-checks
+'on':
+  pull_request:
+    branches:
+    - release/5.0.0rc6
+    paths:
+    - openpine/verification/**
+    - rc6_tests/test_rc6_execution_platform.py
+    - verification/platform-inventory.json
+    - .github/workflows/rc6-test-platform.yml
+    - rc6_tests/test_rc6_execution_*.py
+    - verification/execution-policy.json
+    - verification/ci-bootstrap-requirements.txt
+    - verification/ci-runtime-requirements.txt
+    - docs/RC6_LIFECYCLE_SOURCES.json
+    - pyproject.toml
+    - .github/workflows/rc6-native.yml
+    - scripts/rc6_*.sh
+  workflow_dispatch: null
+permissions:
+  contents: read
+jobs:
+  platform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+        - '3.11'
+        - '3.12'
+        - '3.13'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install the verifier test environment
+      run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - name: Install exact owner contracts used by prerequisite tests
+      shell: bash
+      run: |-
+        set -euo pipefail
+        python - <<'PYOWNER'
+        import json,os,pathlib,subprocess,sys
+        pins=json.loads(pathlib.Path('docs/RC6_LIFECYCLE_SOURCES.json').read_text())
+        root=pathlib.Path(os.environ['RUNNER_TEMP'])/'platform-owners'
+        root.mkdir()
+        paths=[]
+        for name in ('openpine-contracts','optimizer'):
+         path=root/name
+         subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(path)],check=True)
+         subprocess.run(['git','-C',str(path),'checkout','--detach',pins[name]],check=True)
+         assert subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip()==pins[name]
+         paths.append(str(path))
+        subprocess.run([sys.executable,'-m','pip','install','--no-build-isolation','--no-deps',*paths],check=True)
+        PYOWNER
+    - name: Execute the complete locked platform self-test inventory
+      env:
+        PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      run: |
+        mkdir -p "$RUNNER_TEMP/platform-evidence"
+        python -m pytest -q rc6_tests/test_rc6_execution_platform.py rc6_tests/test_rc6_execution_fragments.py rc6_tests/test_rc6_execution_coordination.py rc6_tests/test_rc6_execution_ci.py \
+          -p openpine.verification.pytest_gate \
+          --verification-suite=execution-platform \
+          --verification-lock=verification/platform-inventory.json \
+          --verification-output="$RUNNER_TEMP/platform-evidence/inventory.json" \
+          --junitxml="$RUNNER_TEMP/platform-evidence/junit.xml"
+    - name: Record the actual checkout and interpreter
+      if: always()
+      run: |
+        mkdir -p "$RUNNER_TEMP/platform-evidence"
+        git rev-parse HEAD > "$RUNNER_TEMP/platform-evidence/commit.txt"
+        git rev-parse HEAD^{tree} > "$RUNNER_TEMP/platform-evidence/tree.txt"
+        python --version > "$RUNNER_TEMP/platform-evidence/python.txt"
+        python -m pip freeze > "$RUNNER_TEMP/platform-evidence/environment.txt"
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-test-platform-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/platform-evidence/
+        if-no-files-found: error

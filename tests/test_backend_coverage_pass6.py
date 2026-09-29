@@ -731,11 +731,12 @@ def test_strategy_job_executor_helper_branches(monkeypatch):
 
     monkeypatch.setattr(worker, "default_qty_step", lambda *_: 0.001)
     monkeypatch.setattr(worker, "default_qty_rounding_mode", lambda *_: "floor")
-    monkeypatch.setattr(worker, "_artifact_declaration_args", lambda _: {})
+    monkeypatch.setattr(worker, "_load_sealed_artifact", lambda *a, **k: None)
     default_cfg = worker._build_bar_run_config(strategy, _bar())
     assert default_cfg.initial_capital == 1000000.0
     assert default_cfg.pyramiding == 1
-    monkeypatch.setattr(worker, "_artifact_declaration_args", lambda _: {"commission_type": "cash_per_order", "close_entries_rule": "any", "initial_capital": 123.0})
+    declaration = {"commission_type": "cash_per_order", "close_entries_rule": "any", "initial_capital": 123.0}
+    monkeypatch.setattr(worker, "_load_sealed_artifact", lambda *a, **k: {"compile_meta": {"translation_metadata": {"declaration": {"arguments": declaration}}}})
     cfg = worker._build_bar_run_config(strategy, _bar())
     assert cfg.initial_capital == 123.0
     assert getattr(cfg, "commission_type", None) in {"fixed_per_order", "cash_per_order", None}
