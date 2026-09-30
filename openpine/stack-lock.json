@@ -58,7 +58,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "70947ab248db1edb955c7addc9a855834d342883",
+      "commit": "b453a2b05bc825884270c81500aa879fc543a208",
       "contracts": {
         "runtime": "1.4",
         "segment_manifest": "stage-d-csv-2"
@@ -66,7 +66,7 @@
       "name": "marketdata_provider",
       "package": "marketdata-provider",
       "repository": "s7cret/marketdata-provider",
-      "tree_sha256": "990b20e3485d1664f2fe4772c20328e53bd3fa40e8730b5c5fb1c38140f302b6",
+      "tree_sha256": "d88bdaab73aa5cc9c2efddb3ccde682f522ed24b71b7b495f827a8b34e276120",
       "version": "5.0.0rc6"
     },
     {

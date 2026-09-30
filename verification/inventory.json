@@ -20,9 +20,21 @@
     "sha256": "sha256:3c1f6fb4eafb76548e2e0efee4a780544329c6b066dfc0c6012177e045b3be30"
   },
   "marketdata-provider": {
-    "count": 624,
+    "added_nodeids": [
+      "tests/test_distribution_runtime_cache.py::test_distribution_fails_closed_when_source_disappears[manifest]",
+      "tests/test_distribution_runtime_cache.py::test_distribution_fails_closed_when_source_disappears[zip]",
+      "tests/test_distribution_runtime_cache.py::test_distribution_ignores_sqlite_sidecar_removed_after_enumeration[manifest]",
+      "tests/test_distribution_runtime_cache.py::test_distribution_ignores_sqlite_sidecar_removed_after_enumeration[zip]",
+      "tests/test_distribution_runtime_cache.py::test_distribution_omits_entire_runtime_cache_tree"
+    ],
+    "baseline": {
+      "count": 624,
+      "deselected": 5,
+      "sha256": "sha256:7f7cc3d2bdf514dcd460d94cc39eb580486ee4121b3e49125b1a8bad691032ec"
+    },
+    "count": 629,
     "deselected": 5,
-    "sha256": "sha256:7f7cc3d2bdf514dcd460d94cc39eb580486ee4121b3e49125b1a8bad691032ec"
+    "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "openpine": {
     "added_nodeids": [
