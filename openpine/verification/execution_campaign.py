@@ -178,6 +178,14 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
     write_once_json(folder / 'execution.json', result)
     return result
 
+def component_window(queued: list, running: dict) -> str | None:
+    """Serialize component campaigns while allowing bounded same-owner shards."""
+    components = {task['component'] for task, _ in running.values()}
+    if len(components) > 1:
+        raise ValueError('mixed component workers violate the serial component window')
+    return next(iter(components)) if components else (queued[0][0]['component'] if queued else None)
+
+
 def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_id: str | None=None, shard_keys: list[tuple[str, str]] | None=None, binding: dict | None=None, memory_mib: int | None=None, build_commit: str | None=None) -> dict:
     validate_plan(plan)
     if build_commit is not None and build_commit != plan.get('source_commits', {}).get('openpine'):
@@ -243,7 +251,10 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_
                 used = sum((t['cpu_slots'] for t, _ in running.values()))
                 reserved_memory = sum((t.get('memory_mib', 256) for t, _ in running.values()))
                 groups = {t['exclusive_group'] for t, _ in running.values() if t['exclusive_group']}
+                component = component_window(queued, running)
                 for task, shard in list(queued):
+                    if task['component'] != component:
+                        continue
                     if used + task['cpu_slots'] > jobs or (memory_mib is not None and reserved_memory + task.get('memory_mib', 256) > memory_mib) or (task['exclusive_group'] and task['exclusive_group'] in groups):
                         continue
                     future = pool.submit(_execute_shard, plan, plan_path.resolve(), output.resolve(), task, shard, run_id, cancellation, binding, build_commit)
@@ -317,6 +328,7 @@ def aggregate_campaign(plan: dict, evidence_root: Path, *, expected_plan_hash: s
         expected = {k: v for k, v in expected.items() if k in selected}
     seen, executed = (set(), set())
     binding_hash = None
+    runtime_binding = None
     if run.get('binding') is not None:
         runtime_binding = read_artifact(evidence_root, run['binding'])
         validate_binding(plan, runtime_binding)
@@ -356,6 +368,14 @@ def aggregate_campaign(plan: dict, evidence_root: Path, *, expected_plan_hash: s
                 raise ValueError('shard failed/cancelled/crashed/timed out or never ran')
             if attempt.get('run_id') != expected_run_id:
                 raise ValueError('attempt belongs to another campaign')
+            expected_roots, expected_executables = locations(plan, runtime_binding if run.get('binding') is not None else None)
+            if run.get('merged_fragments') is None:
+                if attempt.get('cwd') != expected_roots[task['component']] or not isinstance(attempt.get('argv'), list) or not attempt['argv'] or attempt['argv'][0] != expected_executables[task['environment']]:
+                    raise ValueError('execution command interpreter/cwd differs from frozen plan')
+                argv = attempt['argv']
+                required_args = ['--verification-plan-hash=' + plan['content_hash'], '--verification-suite=' + task['component'], '--verification-task=' + task['id'], '--verification-shard=' + shard['id'], '--verification-run-id=' + expected_run_id, '--verification-attempt-id=' + attempt_id]
+                if any(argv.count(arg) != 1 for arg in required_args) or argv.count('openpine.verification.pytest_gate') != 1:
+                    raise ValueError('execution argv is not the planned verification command')
             artifacts = attempt['artifacts']
             for desc in artifacts.values():
                 if hash_file(evidence_path(evidence_root, desc['path'])) != desc['sha256']:

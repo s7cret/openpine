@@ -8,7 +8,7 @@ import re
 from openpine.verification.architecture import COMPONENTS, check_architecture
 from openpine.verification.capabilities import build_capability_graph
 from openpine.verification.conformance import compare_corpus, load_corpus
-from openpine.verification.identity import read_json, seal, write_json
+from openpine.verification.identity import read_json, seal, verify, write_json
 from openpine.verification.pytest_gate import validate_inventory
 
 
@@ -30,7 +30,9 @@ def validate_stages(plan: dict, ledger: dict) -> None:
             or len(set(stage["exit_criteria"])) != len(stage["exit_criteria"])
         ):
             raise ValueError("stage needs distinct exit criteria")
-        if any(type(n) is not int or not 1 <= n < stage["id"] for n in stage["depends_on"]):
+        if any(
+            type(n) is not int or not 1 <= n < stage["id"] for n in stage["depends_on"]
+        ):
             raise ValueError("stage dependency is missing or cyclic")
         tasks.extend(stage["tasks"])
     expected = {r["id"] for r in ledger["tasks"]}
@@ -55,10 +57,14 @@ def validate_capabilities(graph: dict, policy: dict) -> None:
             and r["pine_version"] == required["pine_version"]
         ]
         if not rows or any(r["status"] != "BOUND" for r in rows):
-            raise ValueError("required capability chain is incomplete: " + str(required))
+            raise ValueError(
+                "required capability chain is incomplete: " + str(required)
+            )
 
 
-def run_stage_gate(host: Path, stack: Path, evidence: Path) -> dict:
+def run_stage_gate(
+    host: Path, stack: Path, evidence: Path, *, persist: bool = True
+) -> dict:
     plan = read_json(host / "verification/stages.json")
     validate_stages(plan, read_json(host / "docs/RC6_REVIEW_36.json"))
     sources = read_json(host / "docs/RC6_LIFECYCLE_SOURCES.json")
@@ -70,32 +76,44 @@ def run_stage_gate(host: Path, stack: Path, evidence: Path) -> dict:
     receipts = {}
     for name in sorted(COMPONENTS):
         receipt = read_json(evidence / (name + ".inventory.json"))
-        if receipt.get("suite") != name or not receipt.get("ok") or receipt.get("collect_only"):
+        if (
+            receipt.get("suite") != name
+            or not receipt.get("ok")
+            or receipt.get("collect_only")
+        ):
             raise ValueError("missing or unsuccessful mandatory test suite: " + name)
-        validate_inventory(receipt["nodeids"], inventory_lock[name], receipt["deselected"])
+        validate_inventory(
+            receipt["nodeids"], inventory_lock[name], receipt["deselected"]
+        )
         receipts[name] = {k: receipt[k] for k in ("count", "sha256", "deselected")}
     architecture = check_architecture(stack, host_root=host)
-    write_json(evidence / "architecture.json", architecture)
+    if persist:
+        write_json(evidence / "architecture.json", architecture)
     if not architecture["ok"]:
         raise ValueError("component ownership violations")
     graphs = {}
     policy = read_json(host / "verification/capability-policy.json")
     for mode in ("interactive", "bulk_backtest"):
         graph = build_capability_graph(mode)
-        write_json(evidence / ("capabilities-" + mode + ".json"), graph)
+        if persist:
+            write_json(evidence / ("capabilities-" + mode + ".json"), graph)
         validate_capabilities(graph, policy)
         graphs[mode] = {"hash": graph["content_hash"], "counts": graph["counts"]}
     corpus = host / "verification/corpus-v1/manifest.json"
     cases = load_corpus(corpus)["cases"]
     observations = {
-        c["id"]: read_json(evidence / "observations" / (c["id"] + ".json")) for c in cases
+        c["id"]: read_json(evidence / "observations" / (c["id"] + ".json"))
+        for c in cases
     }
     result = compare_corpus(
         corpus,
         observations,
-        expected_corpus_hash=read_json(host / "verification/corpus-lock.json")["content_hash"],
+        expected_corpus_hash=read_json(host / "verification/corpus-lock.json")[
+            "content_hash"
+        ],
     )
-    write_json(evidence / "conformance.json", result)
+    if persist:
+        write_json(evidence / "conformance.json", result)
     if not result["ok"]:
         raise ValueError("critical manual corpus regression")
     report = seal(
@@ -111,5 +129,287 @@ def run_stage_gate(host: Path, stack: Path, evidence: Path) -> dict:
             "scope": "stage1_foundation_not_full_OP03_12_15_32_35_acceptance",
         }
     )
-    write_json(evidence / "stage1.json", report)
+    if persist:
+        write_json(evidence / "stage1.json", report)
     return report
+
+
+STABILIZATION_GATES = (
+    "branch-reconciliation",
+    "foundation",
+    "protected-workers",
+    "coverage",
+    "frontend",
+    "packages",
+    "test-performance",
+)
+CURRENT_SCHEMA = "openpine.rc6_current_acceptance.v1"
+
+
+def run_stabilization_gate(
+    host: Path, plan: dict, evidence: Path, *, expected_plan_hash: str, run_id: str
+) -> dict:
+    """Extend the foundation owner with exact, fail-closed RC6 stabilization.
+
+    Evidence is a locator packet, not authority. Its gate entries are never
+    accepted from saved booleans. Each reader re-opens its primary inputs.
+    Stage 2 is intentionally separate and cannot be promoted by this scope.
+    """
+    from openpine.verification.execution_campaign import aggregate_campaign
+    from openpine.verification.execution_coverage import verify_task_coverage
+    from openpine.verification.execution_identity import evidence_path, source_snapshot
+    from openpine.verification.execution_plan import validate_plan
+    from openpine.verification.identity import digest
+    from openpine.verification import stabilization_evidence as raw
+
+    validate_plan(plan, expected_hash=expected_plan_hash)
+    roots = {name: Path(value) for name, value in plan["roots"].items()}
+    if roots.get("openpine", Path()).resolve() != host.resolve():
+        raise ValueError("current host differs from plan")
+    if source_snapshot(roots) != plan["source"]:
+        raise ValueError("current candidate is stale")
+    policy = read_json(host / "verification/execution-policy.json")
+    if digest(policy) != plan["policy_hash"]:
+        raise ValueError("current execution policy differs from plan")
+    if plan["profile"] != "stage-full" or set(plan["required_gates"]) != set(
+        STABILIZATION_GATES
+    ):
+        raise ValueError("stabilization requires the full named seven-gate plan")
+    inventory = read_json(host / "verification/inventory.json")
+    commits = plan.get("source_commits", {})
+    source_pins = read_json(host / "docs/RC6_LIFECYCLE_SOURCES.json")
+    if set(commits) != set(COMPONENTS) or any(
+        commits.get(name) != value for name, value in source_pins.items()
+    ):
+        raise ValueError(
+            "exact candidate source commits differ from current lifecycle pins"
+        )
+    if set(inventory) != set(COMPONENTS) or set(roots) != set(COMPONENTS):
+        raise ValueError("stabilization requires all eight candidate components")
+    for name in COMPONENTS:
+        tasks = [t for t in plan["tasks"] if t["component"] == name]
+        versions = {
+            ".".join(
+                plan["environments"][t["environment"]]["identity"]["python"].split(".")[
+                    :2
+                ]
+            )
+            for t in tasks
+        }
+        if not set(policy["components"][name]["pythons"]).issubset(versions):
+            raise ValueError("mandatory interpreter missing: " + name)
+        for task in tasks:
+            validate_inventory(task["nodeids"], inventory[name], task["deselected"])
+    packet = read_json(evidence_path(evidence, "stabilization-inputs.json"))
+    if (
+        packet.get("schema_id") != "openpine.rc6_stabilization_inputs.v1"
+        or packet.get("plan_hash") != plan["content_hash"]
+        or packet.get("candidate_hash") != plan["source"]["content_hash"]
+        or packet.get("run_id") != run_id
+    ):
+        raise ValueError("stabilization packet is historical/stale or foreign")
+    campaign = raw.evidence_folder(evidence, packet["campaign"])
+    aggregation = aggregate_campaign(
+        plan, campaign, expected_plan_hash=expected_plan_hash, expected_run_id=run_id
+    )
+    specs = policy.get("stabilization", {})
+    entries = packet.get("gates", {})
+    if set(entries) - set(STABILIZATION_GATES):
+        raise ValueError("unexpected stabilization owner")
+    gates = {}
+    for gate in STABILIZATION_GATES:
+        if not aggregation["pytest_scope_passed"]:
+            gates[gate] = {"status": "blocked", "errors": aggregation["errors"]}
+            continue
+        if gate not in entries or gate not in specs:
+            gates[gate] = {
+                "status": "not_run",
+                "errors": ["missing owner evidence or reviewed raw-evidence policy"],
+            }
+            continue
+        entry, spec = entries[gate], specs[gate]
+        try:
+            if gate == "branch-reconciliation":
+                result = raw.verify_reconciliation(plan, host, spec)
+            elif gate == "foundation":
+                environments = {
+                    key
+                    for key in plan["environments"]
+                    if {
+                        t["component"] for t in plan["tasks"] if t["environment"] == key
+                    }
+                    == set(COMPONENTS)
+                }
+                if not environments or set(entry["environments"]) != environments:
+                    raise ValueError("missing foundation interpreter export")
+                foundation_stack = Path(spec["stack_root"])
+                foundation_sources = {
+                    name: host if name == "openpine" else foundation_stack / name
+                    for name in COMPONENTS
+                }
+                if source_snapshot(foundation_sources) != plan["source"]:
+                    raise ValueError(
+                        "foundation reader source roots differ from exact candidate"
+                    )
+                result = {}
+                for environment, relative in entry["environments"].items():
+                    folder = raw.evidence_folder(evidence, relative)
+                    rebuilt = run_stage_gate(
+                        host, Path(spec["stack_root"]), folder, persist=False
+                    )
+                    if rebuilt != read_json(folder / "stage1.json"):
+                        raise ValueError(
+                            "saved foundation receipt differs from raw replay"
+                        )
+                    for name in COMPONENTS:
+                        receipt = read_json(folder / (name + ".inventory.json"))
+                        if (
+                            receipt.get("plan_hash") != plan["content_hash"]
+                            or receipt.get("source_candidate_hash")
+                            != plan["source"]["content_hash"]
+                            or receipt.get("run_id") != run_id
+                            or receipt.get("environment_hash")
+                            != plan["environments"][environment]["identity"][
+                                "content_hash"
+                            ]
+                            or receipt.get("verified_aggregate_hash")
+                            != aggregation["content_hash"]
+                        ):
+                            raise ValueError("historical foundation suite export")
+                    result[environment] = rebuilt["content_hash"]
+            elif gate == "protected-workers":
+                result = raw.verify_workers(plan, campaign, run_id, spec)
+            elif gate == "coverage":
+                tasks = [t["id"] for t in plan["tasks"] if t.get("coverage")]
+                if (
+                    not tasks
+                    or set(entry["tasks"]) != set(tasks)
+                    or len(tasks) != len(plan["tasks"])
+                ):
+                    raise ValueError("missing required coverage owner/interpreter")
+                result = {
+                    task: verify_task_coverage(
+                        plan,
+                        campaign,
+                        task,
+                        raw.evidence_folder(evidence, entry["tasks"][task]),
+                        run_id=run_id,
+                    )["content_hash"]
+                    for task in tasks
+                }
+            elif gate == "frontend":
+                result = raw.verify_frontend(evidence, entry, spec)
+            elif gate == "packages":
+                mandatory_package_versions = set().union(
+                    *(set(row["pythons"]) for row in policy["components"].values())
+                )
+                if set(entry) != set(spec) or not mandatory_package_versions.issubset(
+                    spec
+                ):
+                    raise ValueError("missing package interpreter")
+                result = {
+                    version: raw.verify_packages(
+                        plan, evidence, entry[version], specification
+                    )
+                    for version, specification in spec.items()
+                }
+            else:
+                result = raw.verify_performance(plan, evidence, entry, spec)
+            gates[gate] = {
+                "status": "passed",
+                "raw_result_hash": digest(result),
+                "errors": [],
+            }
+        except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
+            gates[gate] = {"status": "blocked", "errors": [str(error)]}
+    accepted = all(row["status"] == "passed" for row in gates.values())
+    # Frozen remaining matrix is authority for the language debt, not summaries
+    # of historical test counts. This gate has no full-language promotion path.
+    matrix = read_json(host / "verification/stage2-remaining-matrix.json")
+    verify(matrix, "openpine.stage2_remaining_matrix.v1")
+    if (
+        matrix["content_hash"]
+        != read_json(host / "verification/stage2-remaining-matrix-lock.json")[
+            "content_hash"
+        ]
+    ):
+        raise ValueError("unreviewed Stage 2 remainder")
+    return seal(
+        {
+            "schema_id": CURRENT_SCHEMA,
+            "scope": "rc6_stabilization_not_full_language",
+            "candidate_hash": plan["source"]["content_hash"],
+            "source_commits": plan.get("source_commits", {}),
+            "plan_hash": plan["content_hash"],
+            "policy_hash": plan["policy_hash"],
+            "inventory_hash": digest(inventory),
+            "interpreters": {
+                key: value["identity"] for key, value in plan["environments"].items()
+            },
+            "run_id": run_id,
+            "pytest_aggregate_hash": aggregation["content_hash"],
+            "stabilization": {
+                "status": "accepted" if accepted else "blocked",
+                "accepted": accepted,
+                "gates": gates,
+            },
+            "stage2": {
+                "status": "in_progress",
+                "full_stage2_accepted": False,
+                "matrix_hash": matrix["content_hash"],
+                "criteria": matrix["criteria"],
+                "remaining": matrix["items"],
+            },
+            "ok": accepted,
+            "full_stage2_accepted": False,
+            "full_release_accepted": False,
+        }
+    )
+
+
+def current_views(current: dict) -> dict:
+    """One validated current contract feeds progress, remainder and reporting."""
+    from openpine.verification.identity import verify
+
+    verify(current, CURRENT_SCHEMA)
+    stage2 = current["stage2"]
+    if (
+        stage2["status"] != "in_progress"
+        or stage2["full_stage2_accepted"] is not False
+        or current["full_stage2_accepted"] is not False
+    ):
+        raise ValueError("stabilization is not full Stage 2 acceptance")
+    accepted = all(
+        current["stabilization"]["gates"].get(g, {}).get("status") == "passed"
+        for g in STABILIZATION_GATES
+    )
+    if (
+        set(current["stabilization"]["gates"]) != set(STABILIZATION_GATES)
+        or current["stabilization"]["accepted"] is not accepted
+        or current["ok"] is not accepted
+        or current["stabilization"]["status"] != ("accepted" if accepted else "blocked")
+    ):
+        raise ValueError("current verdict contradicts required owner gates")
+    common = {
+        key: current[key]
+        for key in ("candidate_hash", "plan_hash", "inventory_hash", "run_id")
+    }
+    return {
+        "progress": {
+            **common,
+            "status": stage2["status"],
+            "stabilization": current["stabilization"],
+        },
+        "remainder": {
+            **common,
+            "criteria": stage2["criteria"],
+            "items": stage2["remaining"],
+            "full_stage2_accepted": False,
+        },
+        "summary": {
+            **common,
+            "stabilization_status": current["stabilization"]["status"],
+            "stage2_status": stage2["status"],
+            "full_stage2_accepted": False,
+        },
+    }

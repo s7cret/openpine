@@ -1,8 +1,8 @@
 {
   "ast2python": {
     "count": 2079,
-    "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c",
-    "deselected": 0
+    "deselected": 0,
+    "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c"
   },
   "backtest_engine": {
     "count": 1219,
@@ -15,13 +15,56 @@
     "sha256": "sha256:7f7cc3d2bdf514dcd460d94cc39eb580486ee4121b3e49125b1a8bad691032ec"
   },
   "openpine": {
-    "count": 11064,
-    "identity_mode": "reviewed_addition_to_hashed_baseline",
     "added_nodeids": [
       "rc6_tests/test_rc6_evidence_index.py::test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred",
       "rc6_tests/test_rc6_evidence_index.py::test_provisional_cli_exit_does_not_forge_full_acceptance",
       "rc6_tests/test_rc6_evidence_index.py::test_provisional_numeric_group_never_counts_as_semantic_pass",
       "rc6_tests/test_rc6_evidence_index.py::test_stage2_remainder_keeps_provisional_cases_open",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[execution_path]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[mode]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[nodes]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[plugin]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[policy]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[python]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[scope]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[source]",
+      "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[variant]",
+      "rc6_tests/test_rc6_performance_scope.py::test_traced_performance_cannot_be_admitted",
+      "rc6_tests/test_rc6_performance_scope.py::test_untraced_performance_matches_traced_acceptance_denominator",
+      "rc6_tests/test_rc6_serial_components.py::test_empty_component_window",
+      "rc6_tests/test_rc6_serial_components.py::test_idle_window_selects_first_queued_component",
+      "rc6_tests/test_rc6_serial_components.py::test_mixed_running_components_fail_closed",
+      "rc6_tests/test_rc6_serial_components.py::test_running_component_owns_window_until_all_its_shards_finish",
+      "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
+      "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
+      "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[failed]",
+      "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[missing-log]",
+      "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[resealed-output]",
+      "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[stdout]",
+      "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[branch-reconciliation]",
+      "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[coverage]",
+      "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[foundation]",
+      "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[frontend]",
+      "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[packages]",
+      "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[protected-workers]",
+      "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[test-performance]",
+      "rc6_tests/test_rc6_stabilization.py::test_false_full_stage2_flag_and_cli_reader_agreement",
+      "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[candidate_hash]",
+      "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[plan_hash]",
+      "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[run_id]",
+      "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[coverage]",
+      "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[foundation]",
+      "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[frontend]",
+      "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[packages]",
+      "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[test-performance]",
+      "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[coverage]",
+      "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[foundation]",
+      "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[packages]",
+      "rc6_tests/test_rc6_stabilization.py::test_real_command_raw_result",
+      "rc6_tests/test_rc6_stabilization.py::test_resealed_campaign_and_execution_command_interpreter_rejected",
+      "rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt",
+      "rc6_tests/test_rc6_stabilization.py::test_stale_source_and_resealed_plan_cannot_change_expected_identity",
+      "rc6_tests/test_rc6_stabilization.py::test_tampered_installed_resource_is_rejected_against_frozen_wheel",
       "rc6_tests/test_rc6_stage21_catalog.py::test_authority_tamper_and_missing_form_fail_closed",
       "rc6_tests/test_rc6_stage21_catalog.py::test_catalog_has_six_cells_per_symbol_and_no_unexplained_gap",
       "rc6_tests/test_rc6_stage21_catalog.py::test_catalog_preparation_has_no_mutable_cross_test_alias",
@@ -53,15 +96,20 @@
       "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[required-parameters]",
       "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[type-parameters]",
       "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_wrong_overload_identity_is_unverified",
+      "tests/test_stack_lock.py::test_rc6_lock_rejects_changed_lifecycle_pin",
+      "tests/test_stack_lock.py::test_rc6_runtime_lock_matches_all_eight_source_and_installed_modules",
       "tests/test_verification_campaign_cli_failclosed_new.py::test_completed_pytest_group_gets_bounded_quiescence_not_a_false_orphan",
-      "tests/test_verification_campaign_cli_failclosed_new.py::test_zombie_only_process_group_is_quiescent_without_live_members"
+      "tests/test_verification_campaign_cli_failclosed_new.py::test_zombie_only_process_group_is_quiescent_without_live_members",
+      "tests/test_verification_plan_gate_failclosed_new.py::test_generated_ui_typescript_buildinfo_does_not_change_source_identity"
     ],
     "baseline": {
       "count": 11027,
-      "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd",
-      "deselected": 0
+      "deselected": 0,
+      "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "deselected": 0
+    "count": 11112,
+    "deselected": 0,
+    "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "openpine-contracts": {
     "count": 557,
@@ -74,13 +122,58 @@
     "sha256": "sha256:c343d0fe2095d8905b3dfb9b4166cfec18d337d2c7c1f065c28fc44b52fd77f9"
   },
   "pine2ast": {
-    "count": 3547,
-    "sha256": "sha256:bb8d02ed74177f70a6e7eafcaecbbabc8ace81ee2d75c52e2dd35602e41975dc",
-    "deselected": 0
+    "identity_mode": "reviewed_addition_to_hashed_baseline",
+    "baseline": {
+      "count": 3547,
+      "deselected": 0,
+      "sha256": "sha256:bb8d02ed74177f70a6e7eafcaecbbabc8ace81ee2d75c52e2dd35602e41975dc"
+    },
+    "count": 3585,
+    "deselected": 0,
+    "added_nodeids": [
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[add-v5]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[add-v6]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[subtract-v5]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[subtract-v6]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[multiply-v5]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[multiply-v6]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[modulo-v5]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[modulo-v6]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[unary-minus-v5]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[unary-minus-v6]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[unary-plus-v5]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[unary-plus-v6]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[literal-v5]",
+      "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[literal-v6]",
+      "tests/stage2/test_version_invariance_retained.py::test_local_acyclic_calls",
+      "tests/stage2/test_version_invariance_retained.py::test_string_comment_scanning",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[division]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[na]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[global-close]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[true-name]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[comparison]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[history]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[conditional]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[builtin-abs]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[default-parameter]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[recursive-call]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[persistent-state]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[multiline]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[external-import]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[overloads]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[nonfinite-literal]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[none-literal]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[bool-parameter]",
+      "tests/stage2/test_version_invariance_retained.py::test_sensitive_constructs_are_never_converted[python-import]",
+      "tests/stage2/test_version_invariance_retained.py::test_rehashed_forgery_is_rejected",
+      "tests/stage2/test_version_invariance_retained.py::test_wrong_versions_and_directives[v4]",
+      "tests/stage2/test_version_invariance_retained.py::test_wrong_versions_and_directives[duplicate-directive]",
+      "tests/stage2/test_version_invariance_retained.py::test_wrong_versions_and_directives[missing-directive]"
+    ]
   },
   "pinelib": {
     "count": 5172,
-    "sha256": "sha256:4b216d1a399cae2b4beebafcc09ee7a87c7f4f828fd883312b6388cffe8e0379",
-    "deselected": 0
+    "deselected": 0,
+    "sha256": "sha256:4b216d1a399cae2b4beebafcc09ee7a87c7f4f828fd883312b6388cffe8e0379"
   }
 }

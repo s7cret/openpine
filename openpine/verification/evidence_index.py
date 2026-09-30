@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 import hashlib
 from pathlib import Path, PurePosixPath
+import re
 from typing import Any
 
 from openpine.verification.builtins import builtin_evidence_report
@@ -25,53 +26,6 @@ EXECUTION_PATHS = (
     "compiled_checkpoint",
 )
 SOURCE_COMPONENTS = ("pine2ast", "ast2python", "pinelib")
-TEMPORARY_TONUMBER = {
-    "manual-tonumber-7-v5": "1_000",
-    "manual-tonumber-8-v5": "1e2",
-    "manual-tonumber-9-v5": " 1 ",
-}
-TEMPORARY_AUTHORITY_SHA256 = "e21bf08a0f41341edcc47c8c5d70ab4c8ac9ef73150d3969c91d7aaea3010f6b"
-
-
-def _temporary_tonumber_gaps(
-    host_root: Path, corpus: dict, mismatches: list[dict], observations: dict,
-    source_pins: dict[str, str], variant: str,
-) -> list[str]:
-    """Defer only the three documented unknown grammars, never an assigned result."""
-    if {row["id"] for row in mismatches} != set(TEMPORARY_TONUMBER) or len(mismatches) != 3:
-        return []
-    authority_path = _under(host_root, "verification/builtin-string-operations-v1/string-v5-case-authority-independent-review.json")
-    if hashlib.sha256(authority_path.read_bytes()).hexdigest() != TEMPORARY_AUTHORITY_SHA256:
-        return []
-    authority = {row["manual_id"]: row for row in read_json(authority_path)["rows"]}
-    cases = {case["id"]: case for case in corpus["cases"]}
-    for detail in mismatches:
-        case_id = detail["id"]
-        case = cases.get(case_id)
-        observation = observations.get(case_id, {})
-        row_id = case_id.removeprefix("manual-").removesuffix("-v5")
-        row = authority.get(row_id, {})
-        if not case or case["pine_version"] != 5 or detail.get("status") != "RUNTIME_MISMATCH" or detail.get("authority") != "UNVERIFIED" or detail.get("first_divergence") is None:
-            return []
-        settings = read_json(_under(host_root, str(Path("verification/builtin-string-operations-v1") / case["settings"]["path"])))
-        if not (settings.get("unverified_numeric_disagreement") is True
-                and settings.get("initial_v5_inference") is True
-                and settings.get("id") == case_id
-                and settings.get("row_id") == row_id
-                and settings.get("argument") == {"kind": "value", "value": TEMPORARY_TONUMBER[case_id]}
-                and settings.get("expected") == row.get("original_expected") == {"kind": "na"}
-                and row.get("argument") == TEMPORARY_TONUMBER[case_id]
-                and row.get("authority_status") == "UNVERIFIED"
-                and row.get("assignment_authority_eligible") is False):
-            return []
-        claim = observation.get("semantic_authority", {})
-        if not (claim.get("classification") == "UNVERIFIED"
-                and claim.get("confirmed") is False
-                and claim.get("independent_receipt_sha256") == TEMPORARY_AUTHORITY_SHA256
-                and observation.get("transcript_mode") == variant
-                and all(observation.get("source_identity", {}).get(name) == source_pins[name] for name in SOURCE_COMPONENTS)):
-            return []
-    return list(TEMPORARY_TONUMBER)
 
 
 def key_of(row: dict) -> tuple:
@@ -160,6 +114,80 @@ def _under(root: Path, relative: str) -> Path:
     if not result.resolve().is_relative_to(base):
         raise ValueError("evidence path escapes its root")
     return result
+
+
+def _declared_unresolved_authority_gaps(
+    host_root: Path, corpus: dict, mismatches: list[dict], observations: dict,
+    source_pins: dict[str, str], variant: str,
+) -> list[dict]:
+    """Validate declared unresolved authority without assigning language behavior.
+
+    The registry is generic data keyed by requirement/case/provenance.  It may
+    justify a diagnostic report only when every non-passing unassigned case is
+    declared and still carries the exact unresolved authority receipt.
+    """
+    if not mismatches:
+        return []
+    registry_path = _under(host_root, "verification/unresolved-authority.json")
+    if not registry_path.is_file():
+        return []
+    registry = verify(read_json(registry_path), "openpine.unresolved_authority_registry.v1")
+    if set(registry) != {"schema_id", "policy", "rows"} or not isinstance(registry["rows"], list):
+        raise ValueError("malformed unresolved authority registry")
+    cases = {case.get("id"): case for case in corpus.get("cases", []) if isinstance(case, dict)}
+    declared: dict[str, dict] = {}
+    for row in registry["rows"]:
+        if not isinstance(row, dict) or set(row) != {
+            "requirement_id", "case_id", "authority_status", "provenance"
+        }:
+            raise ValueError("malformed unresolved authority record")
+        requirement, case_id, status, provenance = (
+            row["requirement_id"], row["case_id"], row["authority_status"], row["provenance"]
+        )
+        if (
+            not isinstance(requirement, str)
+            or re.fullmatch(r"[A-Z][A-Z0-9_-]*", requirement) is None
+            or not isinstance(case_id, str)
+            or not case_id
+            or case_id in declared
+            or status != "UNVERIFIED"
+            or not isinstance(provenance, dict)
+            or set(provenance) != {"path", "sha256"}
+            or not isinstance(provenance["sha256"], str)
+            or re.fullmatch(r"[0-9a-f]{64}", provenance["sha256"]) is None
+            or case_id not in cases
+        ):
+            raise ValueError("invalid unresolved authority record")
+        if hashlib.sha256(_under(host_root, provenance["path"]).read_bytes()).hexdigest() != provenance["sha256"]:
+            raise ValueError("unresolved authority provenance hash mismatch")
+        declared[case_id] = row
+    mismatched = {
+        case_id: row
+        for row in mismatches
+        if isinstance(row, dict) and isinstance((case_id := row.get("id")), str) and case_id
+    }
+    if not mismatched or set(mismatched) != set(declared):
+        return []
+    for case_id, detail in mismatched.items():
+        observation = observations.get(case_id, {})
+        claim = observation.get("semantic_authority", {})
+        row = declared[case_id]
+        if not (
+            detail.get("status") == "RUNTIME_MISMATCH"
+            and detail.get("authority") == row["authority_status"]
+            and detail.get("first_divergence") is not None
+            and claim.get("classification") == row["authority_status"]
+            and claim.get("confirmed") is False
+            and claim.get("independent_receipt_sha256") == row["provenance"]["sha256"]
+            and observation.get("transcript_mode") == variant
+            and isinstance(observation.get("source_identity"), dict)
+            and all(
+                observation["source_identity"].get(name) == source_pins[name]
+                for name in SOURCE_COMPONENTS
+            )
+        ):
+            return []
+    return [declared[case_id] for case_id in sorted(declared)]
 
 
 def _groups(plan: dict) -> list[dict]:
@@ -270,6 +298,7 @@ def build_evidence_index(
                 failures = []
                 unassigned_details = {}
                 deferred_cases = set()
+                deferred_authority = []
                 for root in roots:
                     folder = _under(root, suffix)
                     files = {
@@ -340,24 +369,25 @@ def build_evidence_index(
                             if result["status"] != "PASS" and detail["authority"] == "UNVERIFIED":
                                 unassigned_mismatches.append(detail)
                     trace_ok = rebuilt["trace_comparison"]["ok"]
-                    temporary = (
-                        _temporary_tonumber_gaps(
+                    deferred = (
+                        _declared_unresolved_authority_gaps(
                             host_root, corpus, unassigned_mismatches, values["observations"],
                             source_pins, variant,
                         )
-                        if group["id"] == "builtin-string-operations" and assignment_ok
+                        if assignment_ok
                         and len(unassigned_nonpass) == len(unassigned_mismatches)
                         and rebuilt["execution_evidence"]["all_assigned_passed"]
                         and rebuilt == report else []
                     )
-                    if unassigned_mismatches and not temporary:
+                    if unassigned_mismatches and not deferred:
                         failures.append("UNVERIFIED_EXPECTATION_MISMATCH")
-                    if temporary:
-                        deferred_cases.update(temporary)
+                    if deferred:
+                        deferred_cases.update(row["case_id"] for row in deferred)
+                        deferred_authority.extend(deferred)
                     group_failed = (
                         not assignment_ok
                         or not rebuilt["execution_evidence"]["all_assigned_passed"]
-                        or (not trace_ok and not temporary)
+                        or (not trace_ok and not deferred)
                     )
                     if group_failed:
                         failures.append("OBSERVATION_FAILED")
@@ -406,6 +436,9 @@ def build_evidence_index(
                         ),
                         "unassigned_outcomes": sorted(unassigned_details.values(), key=digest),
                         "deferred_cases": sorted(deferred_cases),
+                        "unresolved_authority": sorted(
+                            {digest(row): row for row in deferred_authority}.values(), key=digest
+                        ),
                         "status": "NOT_RUN"
                         if not found
                         else "PASS"
@@ -486,8 +519,15 @@ def build_evidence_index(
             "required_group_paths": len(group_results),
             "passed_group_paths": sum(row["status"] == "PASS" for row in group_results),
             "deferred_group_paths": sum(row["status"] == "TEMPORARY_UNVERIFIED" for row in group_results),
-            "temporary_unverified_cases": sorted({case for group in group_results for case in group["deferred_cases"]}),
-            "provisional_gate_ok": denominator["ok"] and bool(group_results)
+            "unresolved_authority_cases": sorted(
+                {
+                    digest(row): row
+                    for group in group_results
+                    for row in group["unresolved_authority"]
+                }.values(),
+                key=digest,
+            ),
+            "diagnostic_provisional_ok": denominator["ok"] and bool(group_results)
             and all(row["status"] in {"PASS", "TEMPORARY_UNVERIFIED"} for row in group_results),
             "all_declared_runs_passed": bool(group_results)
             and all(row["status"] == "PASS" for row in group_results),

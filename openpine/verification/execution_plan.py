@@ -56,13 +56,16 @@ def select_components(policy: dict, profile: str, requested: Sequence[str], chan
         affected.add(owner)
     if not affected:
         raise ValueError('affected selection needs changes or owners')
+    # Dependencies remain preparation requirements, but their full suites are
+    # not implied by a consumer's inclusion. Test obligations flow upstream to
+    # consumers/boundary owners only; make_plan records the dependency closure
+    # separately as preparation_components.
     while True:
         expanded = affected | {n for n, d in dependencies.items() if d & affected}
-        expanded |= set().union(*(dependencies[n] for n in expanded))
         if expanded == affected:
             break
         affected = expanded
-    reasons.append('transitive owner/consumer/prerequisite closure (no unvalidated pruning)')
+    reasons.append('transitive owner/consumer boundary closure; prerequisites prepared separately')
     return (sorted(affected), reasons)
 
 def assign_shards(nodes: Sequence[str], count: int, durations: Mapping[str, float] | None=None) -> list[dict]:
@@ -89,6 +92,23 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
     from openpine.verification.pytest_gate import validate_inventory
     verify(source, SOURCE_SCHEMA)
     selected, reasons = select_components(policy, profile, requested, changes)
+    dependencies = {
+        name: set(settings.get('dependencies', []))
+        for name, settings in policy['components'].items()
+    }
+    selected_set = set(selected)
+    preparation_components = set()
+    pending = list(selected)
+    seen = set()
+    while pending:
+        component = pending.pop()
+        if component in seen:
+            continue
+        seen.add(component)
+        for prerequisite in dependencies[component]:
+            pending.append(prerequisite)
+            if prerequisite not in selected_set:
+                preparation_components.add(prerequisite)
     if set(roots) != set(source['components']) or not set(selected).issubset(roots):
         raise ValueError('source roots differ from candidate')
     if not environments:
@@ -122,11 +142,22 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
                 raise ValueError('stale collection source/environment: ' + key)
             full_hash = digest(nodes)
             if profile == 'smoke':
-                from fnmatch import fnmatchcase
                 patterns = settings.get('smoke', [])
-                nodes = [n for n in nodes if any((fnmatchcase(n, p) for p in patterns))]
-                if not nodes:
-                    raise ValueError('smoke selectors matched no required test: ' + name)
+                if (
+                    not isinstance(patterns, list)
+                    or not patterns
+                    or len(set(patterns)) != len(patterns)
+                    or any(
+                        not isinstance(node, str)
+                        or any(token in node for token in ('*', '?', '['))
+                        for node in patterns
+                    )
+                ):
+                    raise ValueError('smoke selectors must be explicit node IDs: ' + name)
+                smoke_nodes = _nodes(patterns)
+                if not set(smoke_nodes).issubset(nodes):
+                    raise ValueError('smoke selector is not a required node ID: ' + name)
+                nodes = smoke_nodes
             markers = inv.get('node_markers', {node: [] for node in inv['nodeids']})
             if set(markers) != set(inv['nodeids']) or any((not isinstance(m, list) or any((not isinstance(v, str) for v in m)) for m in markers.values())):
                 raise ValueError('missing or malformed collection marker evidence')
@@ -147,7 +178,7 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
     gates = list(policy.get('required_gates', {}).get(profile, []))
     if profile in {'stage-full', 'release-full'} and (not gates):
         raise ValueError('full profile must declare non-pytest acceptance gates')
-    plan = seal({'schema_id': PLAN_SCHEMA, 'profile': profile, 'policy_hash': digest(policy), 'source': source, 'roots': {k: str(Path(v).resolve()) for k, v in sorted(roots.items())}, 'environments': environments, 'selection_reasons': reasons, 'tasks': tasks, 'required_gates': gates, 'full_acceptance_requires_owner_gates': True})
+    plan = seal({'schema_id': PLAN_SCHEMA, 'profile': profile, 'policy_hash': digest(policy), 'source': source, 'roots': {k: str(Path(v).resolve()) for k, v in sorted(roots.items())}, 'environments': environments, 'selection_reasons': reasons, 'preparation_components': sorted(preparation_components), 'tasks': tasks, 'required_gates': gates, 'full_acceptance_requires_owner_gates': True})
     validate_plan(plan)
     return plan
 
@@ -167,6 +198,13 @@ def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
             raise ValueError('plan producer commits do not match source components')
     if set(plan['roots']) != set(plan['source']['components']) or any((not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', n) for n in plan['roots'])) or any((not Path(p).is_absolute() for p in plan['roots'].values())):
         raise ValueError('plan root mismatch')
+    preparation_components = plan.get('preparation_components')
+    if (
+        not isinstance(preparation_components, list)
+        or preparation_components != sorted(set(preparation_components))
+        or not set(preparation_components).issubset(plan['roots'])
+    ):
+        raise ValueError('invalid preparation component set')
     for name, env in plan['environments'].items():
         if not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', name) or not Path(env['executable']).is_absolute():
             raise ValueError('invalid environment identity')

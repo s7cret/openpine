@@ -34,7 +34,7 @@ def hash_file(path: Path) -> str:
 
 def _excluded(relative: Path) -> bool:
     parts = relative.parts
-    return any((p in NESTED_OUTPUT_DIRS for p in parts)) or parts[0] in ROOT_OUTPUT_DIRS or parts[0].endswith('.egg-info') or (len(parts) > 1 and parts[0] == 'openpine-ui' and (parts[1] in {'dist', '.vite', '.vitest'})) or (relative.name in {'.coverage'}) or relative.name.startswith('.coverage.')
+    return any((p in NESTED_OUTPUT_DIRS for p in parts)) or parts[0] in ROOT_OUTPUT_DIRS or parts[0].endswith('.egg-info') or (len(parts) > 1 and parts[0] == 'openpine-ui' and (parts[1] in {'dist', '.vite', '.vitest'} or relative.name.endswith('.tsbuildinfo'))) or (relative.name in {'.coverage'}) or relative.name.startswith('.coverage.')
 
 def source_snapshot(roots: Mapping[str, Path]) -> dict:
     if not roots:
@@ -73,7 +73,7 @@ def source_snapshot(roots: Mapping[str, Path]) -> dict:
         if not files:
             raise ValueError(f'empty source root: {name}')
         components[name] = {'files': files, 'file_count': len(files)}
-    return seal({'schema_id': SOURCE_SCHEMA, 'policy': 'execution-inputs-v1', 'components': components})
+    return seal({'schema_id': SOURCE_SCHEMA, 'policy': 'execution-inputs-v2', 'components': components})
 
 def environment_snapshot() -> dict:
     distributions = {}
@@ -109,9 +109,23 @@ def evidence_path(root: Path, relative: str, *, must_exist: bool=True) -> Path:
     return current
 
 def ensure_external_output(output: Path, roots: Mapping[str, Path]) -> None:
+    if output.is_symlink():
+        raise ValueError('execution output cannot be a symlink')
     resolved = output.resolve()
     if any((resolved == Path(p).resolve() or resolved.is_relative_to(Path(p).resolve()) for p in roots.values())):
         raise ValueError('execution output must be outside source roots')
+
+
+def ensure_external_outputs(outputs: tuple[Path, ...], roots: Mapping[str, Path]) -> None:
+    """Validate every declared output before any source-derived work starts."""
+    if not outputs:
+        raise ValueError('no execution outputs')
+    resolved = []
+    for output in outputs:
+        ensure_external_output(output, roots)
+        resolved.append(output.resolve())
+    if len(set(resolved)) != len(resolved):
+        raise ValueError('execution outputs must not overlap')
 
 def write_once_json(path: Path, value: Any) -> None:
     """No overwritten attempts. Publish only fully written files via a hard link."""

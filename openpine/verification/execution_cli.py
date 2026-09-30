@@ -22,6 +22,16 @@ COLLECTION_SCHEMA = 'openpine.test_collection_set.v1'
 def add_commands(commands):
     from openpine.verification.execution_ci import add_ci_commands
     add_ci_commands(commands)
+    for name in ('test-stabilization', 'test-current'):
+        current = commands.add_parser(name, help='Re-read all raw RC6 owner evidence; Stage 2 remains separate')
+        current.add_argument('--host-root', type=Path, required=True)
+        current.add_argument('--plan', type=Path, required=True)
+        current.add_argument('--expected-plan-hash', required=True)
+        current.add_argument('--evidence', type=Path, required=True)
+        current.add_argument('--run-id', required=True)
+        current.add_argument('--output', type=Path, required=True)
+        current.add_argument('--saved-current', type=Path)
+        current.add_argument('--view', choices=('current', 'progress', 'remainder', 'summary'), default='current')
     preflight = commands.add_parser('test-preflight', help='Read-only executable environment preflight')
     collect = commands.add_parser('test-collect', help='Collect and verify frozen inventories; never execution PASS')
     for command in (preflight, collect):
@@ -268,6 +278,18 @@ def collect_inventories(args):
     return report
 
 def run_command(args):
+    if args.command in {'test-stabilization', 'test-current'}:
+        from openpine.verification.stage_gate import current_views, run_stabilization_gate
+        plan = read_json(args.plan)
+        ensure_external_output(args.output, {n: Path(p) for n, p in plan['roots'].items()})
+        report = run_stabilization_gate(args.host_root, plan, args.evidence,
+                                        expected_plan_hash=args.expected_plan_hash, run_id=args.run_id)
+        if args.saved_current is not None and read_json(args.saved_current) != report:
+            raise ValueError('saved current verdict differs from fresh raw-evidence replay')
+        view = report if args.view == 'current' else current_views(report)[args.view]
+        write_once_json(args.output, view)
+        print(json.dumps(current_views(report)['summary'], indent=2))
+        return 0 if report['ok'] else 1
     if args.command in {'test-run', 'test-aggregate', 'test-export-suites'}:
         from openpine.verification.execution_campaign import aggregate_campaign, export_suite_receipts, run_campaign
     if args.command == 'test-ci':

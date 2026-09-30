@@ -23,6 +23,7 @@ EXPECTED_COMPONENTS = (
     "backtest_engine",
     "marketdata_provider",
     "optimizer",
+    "openpine_contracts",
 )
 EXPECTED_COMPONENT_METADATA: dict[str, tuple[str, str]] = {
     "openpine": ("openpine", "s7cret/openpine"),
@@ -32,6 +33,7 @@ EXPECTED_COMPONENT_METADATA: dict[str, tuple[str, str]] = {
     "backtest_engine": ("backtest-engine", "s7cret/backtest_engine"),
     "marketdata_provider": ("marketdata-provider", "s7cret/marketdata-provider"),
     "optimizer": ("optimizer", "s7cret/optimizer"),
+    "openpine_contracts": ("openpine-contracts", "s7cret/openpine-contracts"),
 }
 _NONZERO_SHA40 = re.compile(r"(?!0{40}$)[0-9a-f]{40}")
 _NONZERO_SHA256 = re.compile(r"(?!0{64}$)[0-9a-f]{64}")
@@ -128,8 +130,11 @@ def validate_stack_lock(
     if not isinstance(components, list):
         return (*errors, "stack lock components must be a list")
     names = [item.get("name") if isinstance(item, dict) else None for item in components]
-    if names != list(EXPECTED_COMPONENTS):
-        errors.append(f"stack lock components must be {list(EXPECTED_COMPONENTS)!r}")
+    expected_names = (
+        EXPECTED_COMPONENTS[:-1] if release == "4.0.2" else EXPECTED_COMPONENTS
+    )
+    if names != list(expected_names):
+        errors.append(f"stack lock components must be {list(expected_names)!r}")
     for index, item in enumerate(components):
         if not isinstance(item, dict):
             errors.append("stack lock component must be an object")
@@ -165,8 +170,50 @@ def validate_stack_lock(
         if not isinstance(item.get("contracts"), dict):
             errors.append(f"stack lock component {name} contracts must be an object")
     if root is not None:
-        errors.extend(_pin_coherence_errors(lock, Path(root)))
+        if release == "5.0.0rc6":
+            errors.extend(_rc6_pin_coherence_errors(lock, Path(root)))
+        else:
+            errors.extend(_pin_coherence_errors(lock, Path(root)))
     return tuple(errors)
+
+
+def _rc6_pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:
+    """Bind the RC6 wheel lock to the actual eight-repo execution pin owner."""
+    errors: list[str] = []
+    try:
+        pins = json.loads((root / "docs" / "RC6_LIFECYCLE_SOURCES.json").read_text(encoding="utf-8"))
+        project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+        dependencies = project["dependencies"]
+    except (OSError, ValueError, KeyError, tomllib.TOMLDecodeError) as exc:
+        return [f"RC6 lifecycle pins or dependencies unavailable: {type(exc).__name__}: {exc}"]
+    components = lock.get("components")
+    if not isinstance(components, list) or not isinstance(pins, dict) or not isinstance(dependencies, list):
+        return ["RC6 lifecycle pins or dependencies have invalid structure"]
+    expected_pins = {
+        str(item.get("repository", "")).rsplit("/", 1)[-1]: item.get("commit")
+        for item in components[1:] if isinstance(item, Mapping)
+    }
+    if set(pins) != set(expected_pins):
+        errors.append("RC6 lifecycle pins must name the exact seven sibling repositories")
+    for name, commit in expected_pins.items():
+        if pins.get(name) != commit:
+            errors.append(f"RC6 lifecycle pin {name} does not match stack lock")
+    for item in components[1:]:
+        if not isinstance(item, Mapping):
+            continue
+        package = str(item.get("package", ""))
+        name = str(item.get("name", "<unknown>"))
+        if dependencies.count(f"{package}==5.0.0rc6") != 1:
+            errors.append(f"RC6 dependency {name} version does not match stack lock")
+    for workflow_name in ("rc6-native.yml", "rc6-test-platform.yml", "stack-source-evidence.yml"):
+        try:
+            text = (root / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"RC6 workflow {workflow_name} unavailable: {exc}")
+        else:
+            if "docs/RC6_LIFECYCLE_SOURCES.json" not in text:
+                errors.append(f"RC6 workflow {workflow_name} does not bind lifecycle pins")
+    return errors
 
 
 def _pin_coherence_errors(lock: Mapping[str, Any], root: Path) -> list[str]:

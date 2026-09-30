@@ -153,8 +153,10 @@ def test_distribution_manifest_and_zip_are_deterministic(tmp_path: Path) -> None
     assert output.stat().st_size > 0
 
 
-def test_release_report_rejects_feature_tree_against_frozen_4_0_2_lock() -> None:
+def test_release_report_rejects_feature_tree_against_frozen_4_0_2_lock(monkeypatch) -> None:
     root = Path(__file__).resolve().parents[1]
+    legacy = root / "docs" / "RC6_LEGACY_STACK_LOCK_4_0_2.json"
+    monkeypatch.setattr("openpine.release.load_stack_lock", lambda _path: load_stack_lock(legacy))
     _clean_release_artifacts(root)
     report = release_report(root)
 
@@ -166,10 +168,12 @@ def test_release_report_rejects_feature_tree_against_frozen_4_0_2_lock() -> None
     assert report.checks["latest_migration"] >= 10
 
 
-def test_frozen_stack_lock_stays_valid_but_not_coherent_with_feature_tree() -> None:
+def test_frozen_stack_lock_stays_valid_but_not_coherent_with_feature_tree(monkeypatch) -> None:
     root = Path(__file__).resolve().parents[1]
+    legacy = root / "docs" / "RC6_LEGACY_STACK_LOCK_4_0_2.json"
+    monkeypatch.setattr("openpine.release.load_stack_lock", lambda _path: load_stack_lock(legacy))
     report = release_report(root)
-    lock = load_stack_lock(root / "openpine" / "stack-lock.json")
+    lock = load_stack_lock(legacy)
     stack_checks = report.checks["stack_lock"]
 
     assert isinstance(stack_checks, dict)
@@ -223,10 +227,12 @@ def test_schema_health_tracks_metadata_migration(tmp_path: Path) -> None:
     assert dict(rows)["schema_contract"] == "openpine.sqlite.v4"
 
 
-def test_release_cli_writes_json(tmp_path: Path) -> None:
+def test_release_cli_writes_json(tmp_path: Path, monkeypatch) -> None:
     from openpine.release import main
 
     root = Path(__file__).resolve().parents[1]
+    legacy = root / "docs" / "RC6_LEGACY_STACK_LOCK_4_0_2.json"
+    monkeypatch.setattr("openpine.release.load_stack_lock", lambda _path: load_stack_lock(legacy))
     output = tmp_path / "release.json"
 
     _clean_release_artifacts(root)

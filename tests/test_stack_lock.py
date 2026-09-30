@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import os
 import re
 import subprocess
@@ -79,11 +80,48 @@ def test_transitive_pin_validation_rejects_stale_stack_dependency_refs() -> None
     assert _transitive_pin_errors("ast2python", project, expected) == ()
 
 
-def test_packaged_stack_lock_is_complete_and_immutable() -> None:
+def test_rc6_runtime_lock_matches_all_eight_source_and_installed_modules() -> None:
+    from openpine.gateway.routes.version import _TRACKED_MODULES
+
     lock = load_stack_lock()
+    assert lock["release"] == "5.0.0rc6"
+    assert [item["name"] for item in lock["components"]] == [
+        "openpine", "pine2ast", "ast2python", "pinelib", "backtest_engine",
+        "marketdata_provider", "optimizer", "openpine_contracts",
+    ]
+    assert set(_TRACKED_MODULES) == {item["name"] for item in lock["components"]}
+    root = Path(__file__).resolve().parents[1]
+    assert lock["components"][0]["tree_sha256"] == package_tree_identity(root / "openpine")
+    assert stack_lock_summary()["source_tree_matches"] is True
+    assert validate_stack_lock(lock, root=root) == ()
+
+
+def test_rc6_lock_rejects_changed_lifecycle_pin(tmp_path: Path) -> None:
+    lock = load_stack_lock()
+    root = Path(__file__).resolve().parents[1]
+    assert validate_stack_lock(lock, root=root) == ()
+    fixture = tmp_path / "openpine"
+    (fixture / "docs").mkdir(parents=True)
+    (fixture / ".github" / "workflows").mkdir(parents=True)
+    for name in ("pyproject.toml",):
+        (fixture / name).write_bytes((root / name).read_bytes())
+    for name in ("rc6-native.yml", "rc6-test-platform.yml", "stack-source-evidence.yml"):
+        path = Path(".github/workflows") / name
+        (fixture / path).write_bytes((root / path).read_bytes())
+    pins_path = Path("docs/RC6_LIFECYCLE_SOURCES.json")
+    pins = json.loads((root / pins_path).read_text())
+    pins["pine2ast"] = "a" * 40
+    (fixture / pins_path).write_text(json.dumps(pins))
+    assert any("pine2ast" in error for error in validate_stack_lock(lock, root=fixture))
+
+
+def test_packaged_stack_lock_is_complete_and_immutable() -> None:
+    # The archived 4.0.2 package lock retains its original immutable identity.
+    root = Path(__file__).resolve().parents[1]
+    lock = load_stack_lock(root / "docs" / "RC6_LEGACY_STACK_LOCK_4_0_2.json")
     assert lock["schema"] == "openpine.stack-lock.v1"
     assert lock["release"] == "4.0.2"
-    assert [item["name"] for item in lock["components"]] == list(EXPECTED_COMPONENTS)
+    assert [item["name"] for item in lock["components"]] == list(EXPECTED_COMPONENTS[:-1])
     assert all(item["version"] == "4.0.2" for item in lock["components"])
     siblings = lock["components"][1:]
     assert all(re.fullmatch(r"(?!0{40})[0-9a-f]{40}", item["commit"]) for item in siblings)
@@ -102,8 +140,7 @@ def test_packaged_stack_lock_is_complete_and_immutable() -> None:
     self_identity = lock["components"][0]
     assert "commit" not in self_identity
     assert re.fullmatch(r"(?!0{64})[0-9a-f]{64}", self_identity["tree_sha256"])
-    root = Path(__file__).resolve().parents[1]
-    # The production 4.0.2 lock stays frozen while this checkout is a 5.0 candidate.
+    # The archived production 4.0.2 lock remains available for historical checks.
     assert self_identity["tree_sha256"] != package_tree_identity(root / "openpine")
     assert (root / "candidates" / "stack-candidate-5.0.0-rc.6.template.json").is_file()
     assert validate_stack_lock(lock) == ()
@@ -145,7 +182,9 @@ def test_stack_lock_validation_rejects_valid_looking_wrong_package_and_repositor
 
 
 def test_stack_lock_validation_checks_dependency_and_ci_refs(tmp_path: Path) -> None:
-    lock = load_stack_lock()
+    # Keep verifying the v4 workflow contract against the archived lock.
+    root_archive = Path(__file__).resolve().parents[1] / "docs" / "RC6_LEGACY_STACK_LOCK_4_0_2.json"
+    lock = load_stack_lock(root_archive)
     root = tmp_path / "openpine"
     (root / ".github" / "workflows").mkdir(parents=True)
     dependencies = []
@@ -235,7 +274,7 @@ def test_stack_lock_summary_is_endpoint_safe() -> None:
     assert summary["source_tree_matches"] is (
         summary["source_tree_sha256"] == summary["components"][0]["tree_sha256"]
     )
-    assert len(summary["components"]) == 7
+    assert len(summary["components"]) == 8
     assert set(summary["components"][0]) == {
         "name",
         "version",
@@ -312,7 +351,10 @@ app.dependency_overrides[get_state] = lambda: SimpleNamespace()
 response = TestClient(app).get('/api/version')
 assert response.status_code == 200, response.text
 payload = response.json()
-assert payload['stack_lock']['release'] == '4.0.2'
+assert payload['stack_lock']['release'] == '5.0.0rc6'
+assert len(payload['stack_lock']['components']) == 8
+assert payload['stack_lock']['source_tree_matches'] is True
+assert payload['stack_conforms'] is True
 assert len(payload['stack_lock']['sha256']) == 64
 assert all(len(item['tree_sha256']) == 64 for item in payload['stack_lock']['components'])
 """

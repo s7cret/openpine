@@ -26,6 +26,7 @@ from pine2ast.catalog import CatalogRepository
 from pinelib.abi import load_target_manifest
 
 from openpine.verification.identity import canonical, digest, seal, verify
+from openpine.verification.execution_identity import source_snapshot
 
 VERSIONS = tuple(range(1, 7))
 SECTIONS = (
@@ -41,18 +42,6 @@ SECTIONS = (
     "types",
     "variables",
 )
-EXCLUDED_PARTS = {
-    ".git",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".ruff_cache",
-    "__pycache__",
-    "node_modules",
-    "build",
-    "dist",
-    ".venv",
-    "venv",
-}
 COMPONENTS = (
     "openpine-contracts",
     "pine2ast",
@@ -1071,25 +1060,6 @@ def build_version_exact_catalog(authority: Mapping[str, Any]) -> dict[str, Any]:
     return seal(body)
 
 
-def _source_files(root: Path) -> dict[str, str]:
-    result = {}
-    for path in sorted(root.rglob("*")):
-        if (
-            not path.is_file()
-            or path.is_symlink()
-            or any(part in EXCLUDED_PARTS for part in path.parts)
-        ):
-            continue
-        relative = path.relative_to(root).as_posix()
-        if relative in {
-            "verification/stage2-1-source-lock.json",
-            "verification/stage2-1-local-acceptance.json",
-        } or relative.startswith("local-test-results/"):
-            continue
-        result[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
-    return result
-
-
 def _git_head(root: Path) -> str | None:
     try:
         git = shutil.which("git")
@@ -1105,21 +1075,26 @@ def _git_head(root: Path) -> str | None:
 
 
 def build_source_lock(stack_root: Path, matrix: Mapping[str, Any]) -> dict[str, Any]:
+    roots = {name: stack_root / name for name in COMPONENTS}
+    missing = [name for name, root in roots.items() if not root.is_dir()]
+    if missing:
+        raise ValueError(f"missing Stage 2.1 component: {missing[0]}")
+    snapshot = source_snapshot(roots)
     components = {}
-    for name in COMPONENTS:
-        root = stack_root / name
-        if not root.is_dir():
-            raise ValueError(f"missing Stage 2.1 component: {name}")
-        files = _source_files(root)
+    for name, root in roots.items():
+        component = snapshot["components"][name]
+        files = component["files"]
         components[name] = {
             "base_commit": _git_head(root),
-            "file_count": len(files),
+            "file_count": component["file_count"],
             "content_tree_hash": digest(files),
             "files": files,
         }
     return seal(
         {
-            "schema_id": "openpine.stage2_1_source_lock.v1",
+            "schema_id": "openpine.stage2_1_source_lock.v2",
+            "identity_policy": snapshot["policy"],
+            "execution_source_hash": snapshot["content_hash"],
             "components": components,
             "catalog_matrix_hash": matrix["content_hash"],
             "catalog_pack_hashes": matrix["pack_hashes"],
