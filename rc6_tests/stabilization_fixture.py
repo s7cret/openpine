@@ -316,17 +316,18 @@ def build_fixture(base):
             "resources": {name: [modules[name] + "/fixture-resource.json"] for name in COMPONENTS},
         }
     # Real JS assertion/test result and actual build output, in isolated process.
-    frontend = evidence / "frontend"
-    frontend.mkdir()
+    staged_ui = evidence / "frontend/source"
+    frontend = staged_ui / "dist"
     javascript = (
-        'const assert=require("node:assert/strict"),fs=require("node:fs");assert.equal(2+2,4);fs.writeFileSync('
+        'const assert=require("node:assert/strict"),fs=require("node:fs");assert.equal(JSON.parse(fs.readFileSync("package.json")).name,"fixture-ui");assert.equal(2+2,4);fs.writeFileSync('
         + json.dumps(str(frontend / "bundle.js"))
-        + ',"export const value=4;\\n");console.log(JSON.stringify({numFailedTests:0,numPassedTests:1,numTotalTests:1,testResults:[{assertionResults:[{fullName:"arithmetic",status:"passed"}]}]}));'
+        + ',"export const value=4;\\n");fs.writeFileSync(process.argv[1].split("=")[1],JSON.stringify({numFailedTests:0,numPassedTests:1,numTotalTests:1,testResults:[{assertionResults:[{fullName:"arithmetic",status:"passed"}]}]}));'
     )
     node = shutil.which("node")
-    front_argv = [node, "-e", javascript]
+    front_tests = evidence / "vitest.json"
+    front_argv = [node, "-e", javascript, '--', '--outputFile.json=' + str(front_tests)]
     specs["frontend"] = {
-        "commands": [{"role": "frontend", "argv": front_argv, "cwd": str(base), "inputs": dict(harness_inputs)}],
+        "commands": [{"role": role, "argv": front_argv, "cwd": str(staged_ui), "inputs": dict(harness_inputs)} for role in ("frontend-tests", "frontend-build")],
         "test_names": ["arithmetic"],
         "build_output_count": 1,
     }
@@ -390,17 +391,20 @@ def build_fixture(base):
     plan = seal(plan)
     path = evidence / "plan.json"
     write_once_json(path, plan)
+    shutil.copytree(host / "openpine-ui", staged_ui)
+    frontend.mkdir()
     binding = {
         "plan_hash": plan["content_hash"], "candidate_hash": source["content_hash"],
-        "source_root": str(host / "openpine-ui"),
+        "source_root": str(staged_ui),
         "source_files": {n.removeprefix("openpine-ui/"): m for n, m in source["components"]["openpine"]["files"].items() if n.startswith("openpine-ui/")},
     }
-    front_folder = evidence / f"command-{len(commands)}"
     def front_artifacts():
-        return {"tests": descriptor(evidence, front_folder / "stdout.log"), "outputs": [descriptor(evidence, frontend / "bundle.js")]}
-    harness_inputs.update({"frontend-source:" + n: {"path": str(host / "openpine-ui" / n), "sha256": m["sha256"]} for n, m in binding["source_files"].items()})
-    front_root = command("frontend", front_argv, binding=binding, artifacts=front_artifacts)
-    entries["frontend"] = {"binding": binding, "commands": [commands[-1]], **front_artifacts()}
+        return {"tests": descriptor(evidence, front_tests), "outputs": [descriptor(evidence, frontend / "bundle.js")]}
+    harness_inputs.update({"frontend-source:" + n: {"path": str(staged_ui / n), "sha256": m["sha256"]} for n, m in binding["source_files"].items()})
+    front_start = len(commands)
+    for role in ("frontend-tests", "frontend-build"):
+        command(role, front_argv, cwd=staged_ui, binding=binding, artifacts=front_artifacts if role == "frontend-build" else None)
+    entries["frontend"] = {"binding": binding, "commands": commands[front_start:], **front_artifacts()}
     from openpine.verification.execution_resources import resource_profile
     fixture_jobs = min(4, resource_profile()["cpu_slots"])
     run_campaign(plan, path, evidence / "run-0", jobs=fixture_jobs, run_id="fixture-0")

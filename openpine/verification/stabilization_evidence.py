@@ -144,7 +144,19 @@ def verify_frontend(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
         for name, meta in plan["source"]["components"]["openpine"]["files"].items()
         if name.startswith("openpine-ui/")
     }
-    staged = Path(binding["source_root"])
+    # The frozen command cwd, not producer-supplied binding metadata, owns
+    # the staged source location. OpenAPI export legitimately runs at HOST;
+    # every UI consumer (including client drift) must run at the same UI root.
+    specifications = policy["commands"]
+    test_specs = [s for s in specifications if s.get("role") == "frontend-tests"]
+    build_specs = [s for s in specifications if s.get("role") == "frontend-build"]
+    if len(test_specs) != 1 or len(build_specs) != 1:
+        raise ValueError("frontend test/build source commands are missing/duplicate")
+    staged = Path(test_specs[0]["cwd"])
+    if not staged.is_absolute() or Path(binding["source_root"]).resolve() != staged.resolve():
+        raise ValueError("frontend captured source is detached from execution source")
+    if any(Path(s["cwd"]).resolve() != staged.resolve() for s in specifications if s.get("role") != "frontend-openapi"):
+        raise ValueError("frontend commands consume different staged source roots")
     from openpine.verification.execution_identity import source_snapshot
     actual = source_snapshot({"frontend": staged})["components"]["frontend"]["files"]
     generated = {"dist", "coverage", "test-results", "playwright-report", ".vite", ".vitest"}
@@ -158,6 +170,15 @@ def verify_frontend(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
         specification["inputs"] = {**specification.get("inputs", {}), **ui_inputs}
     commands = command_set(root, supplied["commands"], specifications)
     artifacts = {"tests": supplied["tests"], "outputs": supplied.get("outputs", [])}
+    test_paths = [a.split("=", 1)[1] for a in test_specs[0]["argv"] if a.startswith("--outputFile.json=")]
+    if len(test_paths) != 1 or evidence_path(root, supplied["tests"]["path"]).resolve() != Path(test_paths[0]).resolve():
+        raise ValueError("frontend tests descriptor is detached from command output")
+    # A matching descriptor copied into receipt metadata is not enough: admit
+    # only the complete dist inventory at the independently frozen build cwd.
+    built = {p.resolve() for p in (staged / "dist").rglob("*") if p.is_file()}
+    declared = [evidence_path(root, d["path"]).resolve() for d in artifacts["outputs"]]
+    if not built or len(set(declared)) != len(declared) or set(declared) != built:
+        raise ValueError("frontend build descriptors differ from execution outputs")
     for receipt in commands:
         if receipt.get("binding") != {"plan_hash": plan["content_hash"], "candidate_hash": plan["source"]["content_hash"], "source_files": expected, "source_root": str(staged)}:
             raise ValueError("frontend candidate producer binding is missing/stale")

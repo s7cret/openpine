@@ -42,6 +42,12 @@
       "rc6_tests/test_rc6_performance_scope.py::test_traced_performance_cannot_be_admitted",
       "rc6_tests/test_rc6_performance_scope.py::test_untraced_performance_matches_traced_acceptance_denominator",
       "rc6_tests/test_rc6_review_admission.py::test_deleted_live_input_produces_a_failed_primary_receipt",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_execution_source_binding[detached-capture]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_execution_source_binding[detached-source]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_execution_source_binding[foreign-output]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_execution_source_binding[foreign-tests]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_execution_source_binding[none]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_execution_source_binding[split-cwd]",
       "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[candidate]",
       "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[foreign-artifact]",
       "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[plan]",
@@ -144,7 +150,7 @@
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11139,
+    "count": 11145,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },

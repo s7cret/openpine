@@ -178,11 +178,12 @@ def test_joint_resealing_does_not_replace_raw_owner_evidence(full_fixture, owner
         data["testResults"][0]["assertionResults"][0]["fullName"] = "different test"
         replace(path, data)
         descriptor["sha256"] = hash_file(path)
-        command_path = path.parent / "command.json"
+        command_descriptor = changed["gates"][owner]["commands"][-1]
+        command_path = evidence / command_descriptor["path"]
         command = read_json(command_path)
-        command["files"]["stdout.log"] = hash_file(path)
+        command["artifacts"]["tests"] = copy.deepcopy(descriptor)
         replace(command_path, reseal(command))
-        changed["gates"][owner]["commands"][0]["sha256"] = hash_file(command_path)
+        command_descriptor["sha256"] = hash_file(command_path)
     elif owner == "packages":
         package = next(iter(changed["gates"][owner].values()))["normal"]
         path = evidence / package["probe"]["path"]

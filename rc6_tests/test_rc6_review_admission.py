@@ -44,7 +44,7 @@ def test_frontend_rejects_stale_or_foreign_primary(full_fixture, mutation):
     if mutation in {'plan', 'candidate'}:
         entry['binding'][mutation + '_hash'] = 'foreign'
     elif mutation == 'staged-source':
-        source = host / 'openpine-ui/package.json'
+        source = evidence / 'frontend/source/package.json'
         originals[source] = source.read_bytes()
         source.write_text('{"name":"stale-ui"}')
     elif mutation == 'foreign-artifact':
@@ -165,6 +165,62 @@ def test_performance_organization_rejects_budget_drift(tmp_path, mutation):
     else: raw.pop('resource_profile')
     with pytest.raises(ValueError, match='organization|resource'):
         owner.validate_organization(plan, raw, spec)
+
+
+@pytest.mark.parametrize('mutation', ['none', 'detached-source', 'split-cwd', 'detached-capture', 'foreign-output', 'foreign-tests'])
+def test_frontend_execution_source_binding(tmp_path, mutation):
+    """Miniature real producer: capture agreement cannot replace execution identity."""
+    from openpine.verification.execution_campaign import descriptor
+    from openpine.verification.execution_identity import source_snapshot
+
+    ui = tmp_path / 'source'
+    ui.mkdir()
+    (ui / 'package.json').write_text('{"value":4}')
+    files = source_snapshot({'frontend': ui})['components']['frontend']['files']
+    plan = {'content_hash': 'plan', 'source': {'content_hash': 'candidate', 'components': {
+        'openpine': {'files': {'openpine-ui/' + n: m for n, m in files.items()}}}}}
+    detached = tmp_path / 'detached'
+    detached.mkdir()
+    (detached / 'package.json').write_bytes((ui / 'package.json').read_bytes())
+    captured_root = detached if mutation in {'detached-source', 'detached-capture'} else ui
+    binding = {'plan_hash': 'plan', 'candidate_hash': 'candidate',
+               'source_root': str(captured_root if mutation == 'detached-source' else ui), 'source_files': files}
+    tests = tmp_path / 'vitest.json'
+    code = ('import json,sys; from pathlib import Path; '
+            'assert json.loads(Path("package.json").read_text())["value"]==4; '
+            'Path("dist").mkdir(exist_ok=True); Path("dist/bundle.js").write_text("export const value=4;"); '
+            'Path(sys.argv[1].split("=",1)[1]).write_text(json.dumps({"numFailedTests":0,'
+            '"numPassedTests":1,"numTotalTests":1,"testResults":[{"assertionResults":'
+            '[{"fullName":"arithmetic","status":"passed"}]}]}))')
+    argv = [sys.executable, '-I', '-c', code, '--outputFile.json=' + str(tests)]
+    inputs = {'frontend-source:' + n: {'path': str(captured_root / n), 'sha256': m['sha256']}
+              for n, m in files.items()}
+    commands, specs = [], []
+    for index, role in enumerate(['frontend-tests', 'frontend-build']):
+        cwd = detached if mutation == 'split-cwd' and index == 1 else ui
+        folder = tmp_path / ('command-' + str(index))
+        def artifacts():
+            output = ui / 'dist/bundle.js'
+            result = tests
+            if mutation == 'foreign-output':
+                output = tmp_path / 'foreign.js'
+                output.write_bytes((ui / 'dist/bundle.js').read_bytes())
+            if mutation == 'foreign-tests':
+                result = tmp_path / 'foreign.json'
+                result.write_bytes(tests.read_bytes())
+            return {'tests': descriptor(tmp_path, result), 'outputs': [descriptor(tmp_path, output)]}
+        receipt = run_logged(argv, cwd=cwd, output=folder, env={'PATH': os.environ['PATH']},
+                             inputs=inputs, binding=binding, artifacts=artifacts if index == 1 else None)
+        assert receipt['ok']
+        commands.append(descriptor(tmp_path, folder / 'command.json'))
+        specs.append({'role': role, 'argv': argv, 'cwd': str(cwd)})
+    entry = {'binding': binding, 'commands': commands, **artifacts()}
+    policy = {'commands': specs, 'test_names': ['arithmetic'], 'build_output_count': 1}
+    if mutation == 'none':
+        assert owner.verify_frontend(plan, tmp_path, entry, policy)['commands']
+    else:
+        with pytest.raises(ValueError, match='frontend|input provenance'):
+            owner.verify_frontend(plan, tmp_path, entry, policy)
 
 
 def test_frontend_requires_plan_binding(tmp_path):
