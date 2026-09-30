@@ -307,18 +307,23 @@ def test_cli_full_preflight_records_real_nonacceptance_and_aggregate_dispatches(
     binding = read_json(binding_path)
     assert binding["plan_hash"] == plan["content_hash"]
 
-    run_args = SimpleNamespace(
-        command="test-run",
-        plan=plan_path,
-        expected_plan_hash=plan["content_hash"],
-        output=tmp_path / "cli-run-evidence",
-        jobs=1,
-        run_id="cli-run-001",
-        binding=binding_path,
-        task=[],
-        shard=[],
-        memory_mib=None,
-    )
+    # Exercise the public parser so newly added runner options cannot be
+    # silently omitted by a hand-written Namespace fixture.
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    execution_cli.add_commands(parser.add_subparsers(dest="command", required=True))
+    run_args = parser.parse_args([
+        "test-run",
+        "--plan", str(plan_path),
+        "--expected-plan-hash", plan["content_hash"],
+        "--output", str(tmp_path / "cli-run-evidence"),
+        "--jobs", "1",
+        "--run-id", "cli-run-001",
+        "--binding", str(binding_path),
+    ])
+    assert run_args.max_parallel_shards is None
+    assert run_args.memory_mib is None
     assert execution_cli.run_command(run_args) == 0
     assert read_json(run_args.output / "aggregate.json")["ok"] is True
 

@@ -1,3 +1,5 @@
+> **Historical evidence — not current acceptance.** The source identities, dates, counts and verdicts below belong to the recorded scope only. Current Stage 2 remains `in_progress`, `full_stage2_accepted=false`; this document cannot establish acceptance of the current eight-component candidate. Consult the canonical current-status owner published by FIX-03; do not substitute a historical receipt.
+
 # Qualifier boundary — verified and integrated on 2026-09-11
 
 PR #15 merged normally as `cf45adb47f495194729ec0bd7508caab8e751147`.

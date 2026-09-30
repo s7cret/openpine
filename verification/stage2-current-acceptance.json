@@ -1,0 +1,13 @@
+{
+  "schema_id": "openpine.rc6_current_reference.v1",
+  "scope": "rc6_stabilization_not_full_language",
+  "current_execution": null,
+  "stabilization_status": "not_run",
+  "stage2_status": "in_progress",
+  "full_stage2_accepted": false,
+  "remaining_matrix": "verification/stage2-remaining-matrix.json",
+  "remaining_lock": "verification/stage2-remaining-matrix-lock.json",
+  "historical_progress": "verification/history/stage2-progress-pre-stabilization.json",
+  "reader": "python -m openpine.verification test-current",
+  "note": "No current exact candidate/plan/raw owner bundle is admitted. Source metadata is not an acceptance receipt."
+}

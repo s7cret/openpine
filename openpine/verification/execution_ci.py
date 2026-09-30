@@ -324,6 +324,7 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
     command.run([executable, '-m', 'pip', 'check'], cwd=work)
     smoke = command.run([executable, '-c', 'import importlib,json,pathlib,sys; names=' + repr([name.replace('-', '_') for name in ('openpine', 'openpine-contracts', 'pine2ast', 'ast2python', 'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer')]) + '; origins={name:str(pathlib.Path(importlib.import_module(name).__file__).resolve()) for name in names}; assert all(pathlib.Path(value).is_relative_to(pathlib.Path(sys.prefix).resolve()) for value in origins.values()), origins; print(json.dumps(origins))'], cwd=work)
     write_once_json(bundle / 'installed-origins.json', json.loads(smoke))
+    command.run([executable, '-c', 'import json; from openpine.verification.execution_preflight import catalog_source_preflight; r=catalog_source_preflight(); print(json.dumps(r)); raise SystemExit(0 if r["ok"] else 1)'], cwd=work)
     command.run([executable, '-c', 'import json; from openpine.verification.execution_preflight import optimizer_process_preflight; r=optimizer_process_preflight(); print(json.dumps(r)); raise SystemExit(0 if r["ok"] else 1)'], cwd=work, roots=roots)
     observed = json.loads(command.run([executable, '-c', 'import json; from openpine.verification.execution_identity import environment_snapshot; print(json.dumps(environment_snapshot()))'], cwd=work, roots=roots))
     locked = '\n'.join((n + '==' + v for n, v in observed['distributions'].items())) + '\n'

@@ -11,14 +11,33 @@ from openpine.verification.execution_campaign import aggregate_campaign
 from openpine.verification.execution_plan import validate_plan
 from openpine.verification.identity import digest, seal
 
-def workload_identity(plan: dict) -> str:
+def _workload_identity(plan: dict, *, instrumentation: bool) -> str:
     validate_plan(plan)
     rows = []
     for task in plan['tasks']:
-        row = {key: task[key] for key in ('id', 'component', 'environment', 'nodeids', 'full_inventory_hash', 'deselected', 'plugins', 'variant', 'execution_path', 'mode')}
-        row['coverage'] = task.get('coverage', False)
+        row = {key: task[key] for key in ('id', 'component', 'environment', 'nodeids', 'full_inventory_hash', 'deselected', 'plugins', 'variant', 'execution_path', 'mode', 'cpu_slots', 'memory_mib', 'exclusive_group')}
+        if instrumentation:
+            row['coverage'] = task.get('coverage', False)
         rows.append(row)
-    return digest({'source': plan['source']['content_hash'], 'policy_hash': plan['policy_hash'], 'environment_identities': {key: value['identity']['content_hash'] for key, value in plan['environments'].items()}, 'profile': plan['profile'], 'required_gates': plan['required_gates'], 'tasks': rows})
+    return digest({'source': plan['source']['content_hash'], 'source_commits': plan.get('source_commits'), 'policy_hash': plan['policy_hash'], 'environment_identities': {key: value['identity']['content_hash'] for key, value in plan['environments'].items()}, 'profile': plan['profile'], 'required_gates': plan['required_gates'], 'tasks': rows})
+
+def workload_identity(plan: dict) -> str:
+    # Before/after comparisons MUST retain their instrumentation identity.
+    return _workload_identity(plan, instrumentation=True)
+
+
+def validate_performance_scope(candidate: dict, sample: dict) -> None:
+    """Bind untraced timing to full obligations; coverage is admitted separately.
+
+    Only instrumentation differs from acceptance. Both timing organizations still
+    pass compare_campaigns' strict workload identity, including coverage flags.
+    """
+    validate_plan(sample)
+    if any(t.get('coverage', False) or any(s.get('coverage', False) for s in t['shards']) for t in sample['tasks']):
+        raise ValueError('performance samples must be untraced')
+    if _workload_identity(candidate, instrumentation=False) != _workload_identity(sample, instrumentation=False):
+        raise ValueError('performance sample is not the current full workload')
+
 
 def compare_campaigns(before: list[tuple[dict, Path, str]], after: list[tuple[dict, Path, str]], *, reference_profile: dict, target_speedup: float=2.0) -> dict:
     if len(before) < 5 or len(after) < 5:

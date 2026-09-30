@@ -1,3 +1,5 @@
+> **Historical evidence — not current acceptance.** The source identities, dates, counts and verdicts below belong to the recorded scope only. Current Stage 2 remains `in_progress`, `full_stage2_accepted=false`; this document cannot establish acceptance of the current eight-component candidate. Consult the canonical current-status owner published by FIX-03; do not substitute a historical receipt.
+
 # Stage 2 — declaration-bound ordinary function overloads
 
 Local cumulative development after consumer-library delivery `e85021a7233adb083fd9631856bf24203d513b7c`.

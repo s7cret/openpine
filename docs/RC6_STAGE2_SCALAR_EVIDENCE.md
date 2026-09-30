@@ -1,3 +1,5 @@
+> **Historical evidence — not current acceptance.** The source identities, dates, counts and verdicts below belong to the recorded scope only. Current Stage 2 remains `in_progress`, `full_stage2_accepted=false`; this document cannot establish acceptance of the current eight-component candidate. Consult the canonical current-status owner published by FIX-03; do not substitute a historical receipt.
+
 # Stage 2 scalar version and independent expected candidate
 
 This candidate corrects the exact callable `float` interval to Pine v4-v6 and

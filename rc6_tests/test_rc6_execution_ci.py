@@ -277,12 +277,12 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
 def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound_evidence():
     pins = read_json(HOST / 'docs/RC6_LIFECYCLE_SOURCES.json')
     assert pins == {
-        'ast2python': 'ce2e6eed49be541543654ebc0439d545c3084f30',
+        'ast2python': '17ad5f4b6f9c59cb549f4eb08a2c926561985f16',
         'backtest_engine': '8eba0eb7350d5eab1529dbaff96f7bf9ada82572',
-        'marketdata-provider': '5343c4f750ba021e617395ba86a007710afe22d3',
+        'marketdata-provider': 'b453a2b05bc825884270c81500aa879fc543a208',
         'openpine-contracts': '7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34',
         'optimizer': '762f97e306467f505fc4ade22acaf40577214e24',
-        'pine2ast': 'ddb164a8819d889150378a303b0d3255cf0b5102',
+        'pine2ast': '6dfd47badff5ef5b038dfd48a9fb3d8e762b1836',
         'pinelib': 'fcfdab59767103cbc6903c0fa251d895d58b1568',
     }
     review = read_json(HOST / 'verification/source-pin-reconciliation-review.json')
@@ -290,6 +290,8 @@ def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound
     # newly published marketdata-provider API commit.
     assert review['release_heads'] == {
         **pins,
+        'ast2python': 'ce2e6eed49be541543654ebc0439d545c3084f30',
+        'pine2ast': 'ddb164a8819d889150378a303b0d3255cf0b5102',
         'marketdata-provider': '4610c93b904d7e70fe6cbfe2914a07f29935933e',
     }
     assert review['requires_fresh_sibling_collection_and_evidence'] is True

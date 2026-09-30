@@ -263,22 +263,68 @@ def test_authority_tamper_and_missing_form_fail_closed():
 
 
 def test_source_lock_covers_all_components_and_detects_byte_changes(tmp_path, matrix):
-    stack = tmp_path / "stack"
-    for component in COMPONENTS:
-        root = stack / component
-        root.mkdir(parents=True)
-        (root / "source.py").write_text(f"OWNER={component!r}\n")
-    catalog = matrix
-    first = build_source_lock(stack, catalog)
+    def populate(parent):
+        stack = parent / "stack"
+        for component in COMPONENTS:
+            root = stack / component
+            root.mkdir(parents=True)
+            (root / "source.py").write_text(f"OWNER={component!r}\n")
+            nested = root / "package/build"
+            nested.mkdir(parents=True)
+            (nested / "legitimate_source.py").write_text("VALUE = 1\n")
+            runner = root / "runner.sh"
+            runner.write_text("#!/bin/sh\nexit 0\n")
+            runner.chmod(0o755)
+        return stack
+
+    workspace = populate(tmp_path / "workspace")
+    under_build = populate(tmp_path / "build")
+    first = build_source_lock(workspace, matrix)
+    relocated = build_source_lock(under_build, matrix)
+    assert first["content_hash"] == relocated["content_hash"]
     assert set(first["components"]) == set(COMPONENTS)
-    assert all(value["file_count"] == 1 for value in first["components"].values())
-    (stack / "pinelib/source.py").write_text("OWNER='changed'\n")
-    second = build_source_lock(stack, catalog)
-    assert first["content_hash"] != second["content_hash"]
+    assert all(value["file_count"] == 3 for value in first["components"].values())
+    assert "package/build/legitimate_source.py" in first["components"]["pinelib"]["files"]
+
+    (workspace / "pinelib/runner.sh").chmod(0o644)
+    mode_changed = build_source_lock(workspace, matrix)
+    assert first["content_hash"] != mode_changed["content_hash"]
     assert (
         first["components"]["pinelib"]["content_tree_hash"]
-        != second["components"]["pinelib"]["content_tree_hash"]
+        != mode_changed["components"]["pinelib"]["content_tree_hash"]
     )
+
+    (workspace / "pinelib/escape").symlink_to(tmp_path)
+    with pytest.raises(ValueError, match="symlink"):
+        build_source_lock(workspace, matrix)
+    (workspace / "pinelib/escape").unlink()
+    (workspace / "pinelib/source.py").unlink()
+    (workspace / "pinelib/package/build/legitimate_source.py").unlink()
+    (workspace / "pinelib/runner.sh").unlink()
+    with pytest.raises(ValueError, match="empty source root"):
+        build_source_lock(workspace, matrix)
+
+    from openpine.verification.__main__ import main
+
+    authority = tmp_path / "authority.json"
+    authority.write_text("{}")
+    catalog_output = workspace / "pinelib/catalog.json"
+    lock_output = tmp_path / "lock.json"
+    with pytest.raises(ValueError, match="outside source roots"):
+        main(
+            [
+                "stage2-1-lock",
+                "--stack-root",
+                str(workspace),
+                "--authority",
+                str(authority),
+                "--catalog-output",
+                str(catalog_output),
+                "--output",
+                str(lock_output),
+            ]
+        )
+    assert not catalog_output.exists() and not lock_output.exists()
 
 
 def test_unclosed_direct_contract_remains_unverified():

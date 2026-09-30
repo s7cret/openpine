@@ -1,3 +1,5 @@
+> **Historical evidence — not current acceptance.** The source identities, dates, counts and verdicts below belong to the recorded scope only. Current Stage 2 remains `in_progress`, `full_stage2_accepted=false`; this document cannot establish acceptance of the current eight-component candidate. Consult the canonical current-status owner published by FIX-03; do not substitute a historical receipt.
+
 # Этап 2 — явный получатель пользовательского метода
 
 Локальное продолжение numeric/index поставки `8cb17ba3395e610c73cf3feca88ca9c109fb4cb6`.

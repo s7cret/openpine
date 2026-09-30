@@ -22,6 +22,16 @@ COLLECTION_SCHEMA = 'openpine.test_collection_set.v1'
 def add_commands(commands):
     from openpine.verification.execution_ci import add_ci_commands
     add_ci_commands(commands)
+    for name in ('test-stabilization', 'test-current'):
+        current = commands.add_parser(name, help='Re-read all raw RC6 owner evidence; Stage 2 remains separate')
+        current.add_argument('--host-root', type=Path, required=True)
+        current.add_argument('--plan', type=Path, required=True)
+        current.add_argument('--expected-plan-hash', required=True)
+        current.add_argument('--evidence', type=Path, required=True)
+        current.add_argument('--run-id', required=True)
+        current.add_argument('--output', type=Path, required=True)
+        current.add_argument('--saved-current', type=Path)
+        current.add_argument('--view', choices=('current', 'progress', 'remainder', 'summary'), default='current')
     preflight = commands.add_parser('test-preflight', help='Read-only executable environment preflight')
     collect = commands.add_parser('test-collect', help='Collect and verify frozen inventories; never execution PASS')
     for command in (preflight, collect):
@@ -54,6 +64,7 @@ def add_commands(commands):
     runner.add_argument('--expected-plan-hash', required=True)
     runner.add_argument('--output', type=Path, required=True)
     runner.add_argument('--jobs', type=int, default=1)
+    runner.add_argument('--max-parallel-shards', type=int)
     runner.add_argument('--run-id')
     runner.add_argument('--binding', type=Path)
     runner.add_argument('--task', action='append', default=[])
@@ -268,6 +279,18 @@ def collect_inventories(args):
     return report
 
 def run_command(args):
+    if args.command in {'test-stabilization', 'test-current'}:
+        from openpine.verification.stage_gate import current_views, run_stabilization_gate
+        plan = read_json(args.plan)
+        ensure_external_output(args.output, {n: Path(p) for n, p in plan['roots'].items()})
+        report = run_stabilization_gate(args.host_root, plan, args.evidence,
+                                        expected_plan_hash=args.expected_plan_hash, run_id=args.run_id)
+        if args.saved_current is not None and read_json(args.saved_current) != report:
+            raise ValueError('saved current verdict differs from fresh raw-evidence replay')
+        view = report if args.view == 'current' else current_views(report)[args.view]
+        write_once_json(args.output, view)
+        print(json.dumps(current_views(report)['summary'], indent=2))
+        return 0 if report['ok'] else 1
     if args.command in {'test-run', 'test-aggregate', 'test-export-suites'}:
         from openpine.verification.execution_campaign import aggregate_campaign, export_suite_receipts, run_campaign
     if args.command == 'test-ci':
@@ -330,7 +353,7 @@ def run_command(args):
                     raise ValueError('shard needs TASK/SHARD')
                 keys.append((task, shard))
         binding = read_json(args.binding) if args.binding else None
-        run = run_campaign(plan, args.plan, args.output, jobs=args.jobs, run_id=args.run_id, shard_keys=keys, binding=binding, memory_mib=args.memory_mib)
+        run = run_campaign(plan, args.plan, args.output, jobs=args.jobs, max_parallel_shards=args.max_parallel_shards, run_id=args.run_id, shard_keys=keys, binding=binding, memory_mib=args.memory_mib)
         report = aggregate_campaign(plan, args.output, expected_plan_hash=args.expected_plan_hash, expected_run_id=run['run_id'], expected_shards=keys)
         write_once_json(args.output / 'aggregate.json', report)
     elif args.command == 'test-export-suites':

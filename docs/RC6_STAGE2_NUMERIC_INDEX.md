@@ -1,3 +1,5 @@
+> **Historical evidence — not current acceptance.** The source identities, dates, counts and verdicts below belong to the recorded scope only. Current Stage 2 remains `in_progress`, `full_stage2_accepted=false`; this document cannot establish acceptance of the current eight-component candidate. Consult the canonical current-status owner published by FIX-03; do not substitute a historical receipt.
+
 # Этап 2 — единая численная матрица и native reference identity
 
 Локальная разработка от `5b714812dd1cdbec89827ff512e8b9cfecf92f12`. Никакие remote
@@ -145,23 +147,29 @@ UNVERIFIED authority и не участвовали в accepted assignments. Т�
 Не менялись ни старая string-семантика, ни expected ради зелёного цвета.
 `unassigned_outcomes` сохраняет first divergence и пометку authority.
 
-### Временное решение: не интерпретировать три неподтверждённых значения
+### Declared unresolved authority is diagnostic only
 
-`manual-tonumber-7-v5` (`"1_000"`), `manual-tonumber-8-v5` (`"1e2"`) и
-`manual-tonumber-9-v5` (`" 1 "`) остаются в неизменном corpus, expected и
-inventory. Их прежнее `na` **не подтверждено**; наблюдённые числа также **не
-объявляются** поведением TradingView. Записанные observations сохраняются, но
-семантическое сравнение именно этих трёх unassigned случаев временно отложено.
-Никаких skip/xfail, вычёркивания из знаменателя или expected-from-runtime нет.
+`manual-tonumber-7-v5` (`"1_000"`), `manual-tonumber-8-v5` (`"1e2"`) and
+`manual-tonumber-9-v5` (`" 1 "`) remain unchanged in the corpus, expected data,
+and inventory. Their former `na` **is not confirmed**, and observed numeric
+results are **not declared** TradingView behavior. The observations remain
+available, but semantic comparison records them as unresolved authority.
+There are no skips/xfails, denominator removal, or expected-from-runtime data.
 
-Только если воспроизведённая группа имеет ровно эти три расхождения, все
-назначенные случаи прошли, исходные документы/пины совпадают и иных ошибок нет,
-её пути получают статус `TEMPORARY_UNVERIFIED` (не `PASS`). CLI допускает
-`provisional_gate_ok=true` для продолжения остальных проверок, но сам индекс и
-Stage 2 remainder сохраняют `ok=false`, `full_stage2_accepted=false` и
-`tradingview_verified=false`. Любая другая ошибка по-прежнему останавливает gate.
-После появления независимых результатов Pine v5 эту отсрочку следует удалить,
-сверить три ожидаемых значения и заново провести строгую приёмку точного SHA.
+`verification/unresolved-authority.json` declares unresolved records by
+requirement, case, authority status, and hash-bound provenance. It is not
+function-specific verifier logic: every non-passing unassigned case must match
+that registry, retain the same unresolved receipt, and leave all assigned cases
+passing before a group can be reported `TEMPORARY_UNVERIFIED` (never `PASS`).
+
+The normal CLI is strict: `builtin-index` and `stage2-remaining` exit nonzero
+while their semantic `ok` is false. `--diagnostic-provisional` explicitly opts
+into a successful *diagnostic-report* exit only; the index and Stage 2 remainder
+still retain `ok=false`, `full_stage2_accepted=false`, and
+`tradingview_verified=false`. An undeclared case, mismatched hash, wrong source,
+or genuine runtime failure remains a strict failure. After independent Pine v5
+evidence is available, remove the unresolved records, verify the expected values,
+and rerun strict acceptance for the exact candidate.
 
 Фактический численный охват bounded examples растёт с 270 до 284 из 303 direct-строк,
 но из 284 две TSI-строки имеют только conditioning horizon. Это не доля готовности

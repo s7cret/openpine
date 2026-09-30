@@ -1,3 +1,5 @@
+> **Historical evidence — not current acceptance.** The source identities, dates, counts and verdicts below belong to the recorded scope only. Current Stage 2 remains `in_progress`, `full_stage2_accepted=false`; this document cannot establish acceptance of the current eight-component candidate. Consult the canonical current-status owner published by FIX-03; do not substitute a historical receipt.
+
 # Independent recursive TA expectations
 
 The corpus contains 40 ordinary Pine v5/v6 scripts from 20 independently authored formula rows: seven EMA, six RSI, and seven MACD rows. MACD comparisons include all three outputs. The immutable 33-row source table and its arithmetic review are retained verbatim. Its other 13 rows remain UNVERIFIED and are never assigned passing evidence by this corpus.

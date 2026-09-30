@@ -28,14 +28,14 @@
     "@playwright/test": "^1.62.1",
     "@types/node": "^24.12.3",
     "@vitejs/plugin-vue": "^6.0.6",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "@vue/tsconfig": "^0.9.1",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
-    "vitest": "^4.1.8",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.2.8"
   },
   "packageManager": "npm@11.16.0"

@@ -44,6 +44,7 @@ _TRACKED_MODULES: tuple[str, ...] = (
     "marketdata_provider",
     "backtest_engine",
     "optimizer",
+    "openpine_contracts",
 )
 
 

@@ -1,0 +1,84 @@
+{
+  "schema": "openpine.stack-lock.v1",
+  "release": "4.0.2",
+  "components": [
+    {
+      "name": "openpine",
+      "package": "openpine",
+      "repository": "s7cret/openpine",
+      "version": "4.0.2",
+      "tree_sha256": "4d7cf6bedeef9980ad2236d12b0b8e9c2d38451e19e6ba93446d4e42e63facd3",
+      "contracts": {
+        "version_api": "openpine.version.v1"
+      }
+    },
+    {
+      "name": "pine2ast",
+      "package": "pine2ast",
+      "repository": "s7cret/pine2ast",
+      "version": "4.0.2",
+      "commit": "c57323351a1e638e0337e1be247883da2570ab28",
+      "tree_sha256": "4f05344a48aae9d90a4d94ec467bdea3d915b4ae24acca7faa1fe9320c581670",
+      "contracts": {
+        "ast": "pine.ast_contract.v1",
+        "frontend": "openpine.frontend.v1",
+        "runtime_profile": "runtime_contract_v1_4"
+      }
+    },
+    {
+      "name": "ast2python",
+      "package": "ast2python",
+      "repository": "s7cret/ast2python",
+      "version": "4.0.2",
+      "commit": "b3013b13a32a6e3eb68edc111390e35f206323fc",
+      "tree_sha256": "3f71e33228a1dcee5bf52e130e45d1b26e4fae9a75f11eb41c304677807ca864",
+      "contracts": {
+        "ast": "pine.ast_contract.v1",
+        "runtime": "1.4"
+      }
+    },
+    {
+      "name": "pinelib",
+      "package": "pinelib",
+      "repository": "s7cret/pinelib",
+      "version": "4.0.2",
+      "commit": "fcf9c0f92213313db39bc42c83f676786c85400c",
+      "tree_sha256": "0f746ef57253621b546da75f50cc1d8a1ad29151fd75140d9088c682f654bd35",
+      "contracts": {
+        "runtime": "1.4"
+      }
+    },
+    {
+      "name": "backtest_engine",
+      "package": "backtest-engine",
+      "repository": "s7cret/backtest_engine",
+      "version": "4.0.2",
+      "commit": "329b9905bff2ea0b7b7f48662e4ce8b83d919c60",
+      "tree_sha256": "74332c1deda837fc0e4c7878897c1926f8ce7ff7ba876ffc9627dd87f58511d8",
+      "contracts": {
+        "tick_replay": "deterministic-explicit-v1"
+      }
+    },
+    {
+      "name": "marketdata_provider",
+      "package": "marketdata-provider",
+      "repository": "s7cret/marketdata-provider",
+      "version": "4.0.2",
+      "commit": "b868ace65524f5c3bf62498f667db411e299a4ce",
+      "tree_sha256": "e7898ab7396365d2be685ae6138edd07ea2dacd84c340a9f83257ea05f82094d",
+      "contracts": {
+        "runtime": "1.4",
+        "segment_manifest": "stage-d-csv-2"
+      }
+    },
+    {
+      "name": "optimizer",
+      "package": "optimizer",
+      "repository": "s7cret/optimizer",
+      "version": "4.0.2",
+      "commit": "73d67934d078cb97a4947cc7b0b12665c4086099",
+      "tree_sha256": "c0f7e23b458d01eaf60e8891305a037482c5d79035d4b865e78589f5c9d8fb97",
+      "contracts": {}
+    }
+  ]
+}

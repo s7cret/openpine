@@ -142,7 +142,9 @@ def test_selection_and_assignment_fail_closed_for_unsafe_inputs() -> None:
         },
         "critical_paths": ["shared/*"],
     }
-    assert select_components(policy, "affected", [], ["ui/views.py"])[0] == ["engine", "ui"]
+    # engine is prepared as ui's dependency, but its full suite is not an
+    # affected test obligation for a ui-local source change.
+    assert select_components(policy, "affected", [], ["ui/views.py"])[0] == ["ui"]
     assert select_components(policy, "affected", [], ["engine/shared/schema.py"])[1] == [
         "shared contract/fixture change escalates: engine/shared/schema.py"
     ]
@@ -299,3 +301,19 @@ def test_reviewed_inventory_and_phase_receipts_reject_partial_success() -> None:
     errors = validate_phase_reports([node], {node: broken, "extra::test": []})
     assert "unexpected test report: extra::test" in errors
     assert "required test did not pass all phases: " + node in errors
+
+
+def test_generated_ui_typescript_buildinfo_does_not_change_source_identity(tmp_path: Path) -> None:
+    root = tmp_path / "openpine"
+    root.mkdir()
+    (root / "source.py").write_text("APP = 1\n", encoding="utf-8")
+    baseline = source_snapshot({"openpine": root})
+    ui = root / "openpine-ui"
+    ui.mkdir()
+    generated = ui / "tsconfig.tsbuildinfo"
+    generated.write_text("temporary build metadata\n", encoding="utf-8")
+    assert source_snapshot({"openpine": root}) == baseline
+    generated.write_text("rewritten by vue-tsc\n", encoding="utf-8")
+    assert source_snapshot({"openpine": root}) == baseline
+    (ui / "tsconfig.json").write_text('{"compilerOptions": {}}\n', encoding="utf-8")
+    assert source_snapshot({"openpine": root}) != baseline
