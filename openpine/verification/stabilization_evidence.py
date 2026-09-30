@@ -451,8 +451,10 @@ def validate_organization(plan: dict, raw: dict, specification: dict) -> None:
         events.extend([(start, 1, index, tasks[attempt["task"]]), (end, 0, index, tasks[attempt["task"]])])
     active = {}
     for _, entering, index, task in sorted(events, key=lambda e: e[:3]):
-        if entering: active[index] = task
-        else: active.pop(index)
+        if entering:
+            active[index] = task
+        else:
+            active.pop(index)
         groups = [t["exclusive_group"] for t in active.values() if t["exclusive_group"]]
         if len(active) > parallel or len({t["component"] for t in active.values()}) > 1 or sum(t["cpu_slots"] for t in active.values()) > raw["jobs"] or len(groups) != len(set(groups)):
             raise ValueError("performance organization actual worker overlap violates reservations")
