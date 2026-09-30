@@ -507,6 +507,17 @@ def _rc6_catalog_source_check(packs: Mapping[int, Mapping[str, Any]]) -> dict[st
         resource = files("openpine.verification").joinpath("rc6_catalog_source_pin.json")
         pins = json.loads(resource.read_text(encoding="utf-8"))
         verify(pins, "openpine.rc6_catalog_source_pin.v1")
+        from openpine.stack_lock import load_stack_lock
+
+        # The packaged coordinated lock is independent of the catalog resource
+        # and works in wheels as well as checkouts; a resealed stale pin is not
+        # current authority merely because its pack bytes are unchanged.
+        expected_ref = next(
+            row['commit'] for row in load_stack_lock()['components']
+            if row['name'] == 'pine2ast'
+        )
+        if pins['pine2ast_ref'] != expected_ref:
+            raise ValueError('RC6 catalog source ref differs from coordinated lifecycle pin')
         if set(pins["packs"]) != {str(version) for version in VERSIONS}:
             raise ValueError("RC6 source pin has an incomplete version set")
         changed = []

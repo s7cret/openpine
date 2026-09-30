@@ -19,7 +19,21 @@ def _nodes(values: Sequence[str]) -> list[str]:
     if not isinstance(values, (list, tuple)) or not values:
         raise ValueError('empty inventory')
     result = list(values)
-    if any((not isinstance(n, str) or '::' not in n or n.startswith(('-', '/', '@')) or ('\n' in n) or ('\r' in n) or ('\x00' in n) or ('\\' in n.split('::', 1)[0]) or ('..' in n.split('::', 1)[0].split('/')) for n in result)) or len(set(result)) != len(result):
+    for node in result:
+        if not isinstance(node, str):
+            raise ValueError('invalid node ID')
+        file, separator, identity = node.partition('::')
+        # Only the file selector has path syntax. Parameter identities are
+        # opaque collection bytes, never glob expressions or CLI arguments.
+        if (
+            not separator or not identity
+            or file.startswith(('-', '/', '@'))
+            or re.fullmatch(r'[\w./-]+\.py', file) is None
+            or any(part in {'', '.', '..'} for part in file.split('/'))
+            or any(ord(char) < 32 or ord(char) == 127 for char in node)
+        ):
+            raise ValueError('invalid node ID')
+    if len(set(result)) != len(result):
         raise ValueError('invalid or duplicate node ID')
     return sorted(result)
 
@@ -142,19 +156,13 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
                 raise ValueError('stale collection source/environment: ' + key)
             full_hash = digest(nodes)
             if profile == 'smoke':
-                patterns = settings.get('smoke', [])
-                if (
-                    not isinstance(patterns, list)
-                    or not patterns
-                    or len(set(patterns)) != len(patterns)
-                    or any(
-                        not isinstance(node, str)
-                        or any(token in node for token in ('*', '?', '['))
-                        for node in patterns
-                    )
-                ):
+                selectors = settings.get('smoke', [])
+                if not isinstance(selectors, list) or not selectors:
                     raise ValueError('smoke selectors must be explicit node IDs: ' + name)
-                smoke_nodes = _nodes(patterns)
+                try:
+                    smoke_nodes = _nodes(selectors)
+                except ValueError as exc:
+                    raise ValueError('smoke selectors must be explicit node IDs: ' + name) from exc
                 if not set(smoke_nodes).issubset(nodes):
                     raise ValueError('smoke selector is not a required node ID: ' + name)
                 nodes = smoke_nodes

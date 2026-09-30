@@ -401,6 +401,48 @@ def test_resource_and_selector_policy_validation(tmp_path):
     }
     assert {name: settings['smoke'] for name, settings in release_policy['components'].items()} == expected
 
+def test_smoke_exact_collected_parameter_ids(tmp_path):
+    root = tmp_path / 'exact-smoke'
+    root.mkdir()
+    (root / 'pytest.ini').write_text('[pytest]\ndisable_test_id_escaping_and_forfeit_all_rights_to_community_support = True\n')
+    (root / 'test_exact.py').write_text(
+        'import pytest\n'
+        '@pytest.mark.parametrize("value", [1]*7, ids=["type-parameters", "звезда*", "question?", "bracket[x]", "slash/../x", "-k option", "back\\\\slash"])\n'
+        'def test_value(value): assert value == 1\n'
+        'def test_plain(): assert True\n'
+    )
+    collected = subprocess.run([sys.executable, '-m', 'pytest', '--collect-only', '-q'], cwd=root, text=True, capture_output=True, check=True)
+    nodes = sorted(line for line in collected.stdout.splitlines() if line.startswith('test_exact.py::'))
+    assert len(nodes) == 8
+    source = source_snapshot({'tiny': root})
+    env = environment_snapshot()
+    inventory = {'tiny@py': {'nodeids': nodes, 'reviewed_lock': lock(nodes), 'source_hash': source['content_hash'], 'environment_hash': env['content_hash']}}
+    for node in nodes:
+        policy = {'components': {'tiny': {'smoke': [node]}}}
+        plan = make_plan(profile='smoke', policy=policy, roots={'tiny': root}, source=source, inventories=inventory, environments={'py': {'identity': env, 'executable': sys.executable}}, requested=['tiny'])
+        assert plan['tasks'][0]['nodeids'] == [node]
+        assert plan['tasks'][0]['shards'][0]['nodeids'] == [node]
+        executed = subprocess.run([sys.executable, '-m', 'pytest', '-q', node], cwd=root, text=True, capture_output=True, check=True)
+        assert '1 passed' in executed.stdout
+
+
+@pytest.mark.parametrize('selector', ['test_*.py::test_value', 'tests//test_a.py::test_value', './test_a.py::test_value', 'C:/test_a.py::test_value', 'test_a.txt::test_value', 'test_a.py::'])
+def test_sharding_rejects_unsafe_frozen_file_selectors(selector):
+    with pytest.raises(ValueError, match='node ID'):
+        assign_shards([selector], 1)
+
+
+@pytest.mark.parametrize('selector', ['test_a.py::test_missing', 'test_*.py::*', '--maxfail=0', '../test_a.py::test_value', '/test_a.py::test_value', 'test_a.py::', 'test_a.py/../test_b.py::test_value', 'test_a.py::test_value\n--help', 'test_a.py::test_value\x00', 'duplicate'])
+def test_smoke_rejects_unknown_duplicate_and_unsafe_selectors(tmp_path, selector):
+    plan, _ = tiny_plan(tmp_path)
+    nodes = plan['tasks'][0]['nodeids']
+    smoke = [nodes[0], nodes[0]] if selector == 'duplicate' else [selector]
+    policy = {'components': {'tiny': {'smoke': smoke}}}
+    inventory = {'tiny@py': {'nodeids': nodes, 'reviewed_lock': lock(nodes), 'source_hash': plan['source']['content_hash'], 'environment_hash': plan['environments']['py']['identity']['content_hash']}}
+    with pytest.raises(ValueError):
+        make_plan(profile='smoke', policy=policy, roots={n: Path(p) for n,p in plan['roots'].items()}, source=plan['source'], inventories=inventory, environments=plan['environments'], requested=['tiny'])
+
+
 def test_sharding_preserves_escaped_unicode_parameter_ids():
     nodes = ['tests/test_x.py::test_value[\\u0422\\u0435\\u0441\\u0442]', 'tests/test_y.py::test_value[line\\nnext]']
     shards = assign_shards(nodes, 2)

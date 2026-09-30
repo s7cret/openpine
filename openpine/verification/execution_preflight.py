@@ -3,6 +3,17 @@ from __future__ import annotations
 import os
 import sys
 
+def catalog_source_preflight() -> dict:
+    """Read current packaged catalog authority before expensive execution."""
+    from pine2ast.catalog import CatalogRepository
+    from openpine.verification.stage2_catalog import VERSIONS, _rc6_catalog_source_check
+    try:
+        packs = {version: CatalogRepository.default().pack(version) for version in VERSIONS}
+        return _rc6_catalog_source_check(packs)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return {'ok': False, 'error': str(exc)}
+
+
 def optimizer_process_preflight() -> dict:
     """Use the existing optimizer owner; do not add a containment fallback.
 

@@ -53,6 +53,35 @@ def test_rc6_catalog_pin_rejects_a_changed_pack_resource(monkeypatch):
     assert "4" in result["changed_versions"]
 
 
+def test_catalog_host_preflight_rejects_source_mismatch(monkeypatch):
+    from openpine.verification.execution_preflight import catalog_source_preflight
+    assert catalog_source_preflight()['ok'] is True
+    monkeypatch.setattr(gate, '_resource_sha256', lambda resource: 'sha256:' + '0' * 64)
+    assert catalog_source_preflight()['ok'] is False
+
+
+@pytest.mark.parametrize('mutation', ['wrong-ref', 'stale-ref', 'missing-version', 'broken-seal'])
+def test_rc6_catalog_pin_rejects_invalid_source_binding(monkeypatch, tmp_path, mutation):
+    from pine2ast.catalog import CatalogRepository
+    from openpine.verification.identity import seal
+    pins = json.loads(gate.files('openpine.verification').joinpath('rc6_catalog_source_pin.json').read_text())
+    pins.pop('content_hash')
+    if mutation == 'wrong-ref':
+        pins['pine2ast_ref'] = '0' * 40
+    elif mutation == 'stale-ref':
+        pins['pine2ast_ref'] = 'ddb164a8819d889150378a303b0d3255cf0b5102'
+    elif mutation == 'missing-version':
+        del pins['packs']['1']
+    pins = seal(pins)
+    if mutation == 'broken-seal':
+        pins['content_hash'] = 'sha256:' + '0' * 64
+    (tmp_path / 'rc6_catalog_source_pin.json').write_text(json.dumps(pins))
+    original = gate.files
+    monkeypatch.setattr(gate, 'files', lambda package: tmp_path if package == 'openpine.verification' else original(package))
+    packs = {version: CatalogRepository.default().pack(version) for version in gate.VERSIONS}
+    assert gate._rc6_catalog_source_check(packs)['ok'] is False
+
+
 @pytest.mark.parametrize(
     "field,dimension",
     [
