@@ -186,7 +186,7 @@ def component_window(queued: list, running: dict) -> str | None:
     return next(iter(components)) if components else (queued[0][0]['component'] if queued else None)
 
 
-def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_id: str | None=None, shard_keys: list[tuple[str, str]] | None=None, binding: dict | None=None, memory_mib: int | None=None, build_commit: str | None=None) -> dict:
+def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_parallel_shards: int | None=None, run_id: str | None=None, shard_keys: list[tuple[str, str]] | None=None, binding: dict | None=None, memory_mib: int | None=None, build_commit: str | None=None) -> dict:
     validate_plan(plan)
     if build_commit is not None and build_commit != plan.get('source_commits', {}).get('openpine'):
         raise ValueError('campaign build commit differs from frozen source plan')
@@ -195,6 +195,9 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_
     available = observed_resources['cpu_slots']
     if type(jobs) is not int or not 1 <= jobs <= available:
         raise ValueError(f'jobs must be between 1 and the observed CPU budget ({available})')
+    max_parallel_shards = jobs if max_parallel_shards is None else max_parallel_shards
+    if type(max_parallel_shards) is not int or not 1 <= max_parallel_shards <= jobs:
+        raise ValueError('parallel shard organization exceeds campaign CPU budget')
     all_keys = {(t['id'], s['id']) for t in plan['tasks'] for s in t['shards']}
     selected = all_keys if shard_keys is None else set(shard_keys)
     if not selected or not selected.issubset(all_keys) or (shard_keys is not None and len(selected) != len(shard_keys)):
@@ -255,7 +258,7 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_
                 for task, shard in list(queued):
                     if task['component'] != component:
                         continue
-                    if used + task['cpu_slots'] > jobs or (memory_mib is not None and reserved_memory + task.get('memory_mib', 256) > memory_mib) or (task['exclusive_group'] and task['exclusive_group'] in groups):
+                    if len(running) >= max_parallel_shards or used + task['cpu_slots'] > jobs or (memory_mib is not None and reserved_memory + task.get('memory_mib', 256) > memory_mib) or (task['exclusive_group'] and task['exclusive_group'] in groups):
                         continue
                     future = pool.submit(_execute_shard, plan, plan_path.resolve(), output.resolve(), task, shard, run_id, cancellation, binding, build_commit)
                     running[future] = (task, shard)
@@ -305,7 +308,7 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, run_
             errors.append('source changed during campaign')
     except (OSError, ValueError) as error:
         errors.append(str(error))
-    run = seal({'schema_id': RUN_SCHEMA, 'run_id': run_id, 'plan_hash': plan['content_hash'], 'candidate_hash': plan['source']['content_hash'], 'source_before': before['content_hash'], 'source_after': after_hash, 'started_at': started, 'finished_at': utc_now(), 'wall_seconds': time.perf_counter() - tick, 'jobs': jobs, 'affinity_cpus': observed_resources['affinity_cpus'], 'resource_profile': observed_resources, 'binding': descriptor(output, output / 'binding.json') if binding is not None else None, 'selection': [list(key) for key in sorted(selected)], 'is_fragment': selected != all_keys, 'memory_budget_mib': memory_mib, 'memory_enforcement': 'reservation plus sampled RSS cancellation; not a kernel hard limit' if memory_mib else 'not_requested', 'sampled_process_tree_peak_rss_bytes': peak_total_rss if sample_count else None, 'rss_samples': sample_count, 'rss_sampling_errors': rss_sampling_errors, 'rss_sampling_is_exact_peak': False, 'attempts': sorted(results, key=lambda r: (r['task'], r['shard'])), 'errors': errors})
+    run = seal({'schema_id': RUN_SCHEMA, 'run_id': run_id, 'plan_hash': plan['content_hash'], 'candidate_hash': plan['source']['content_hash'], 'source_before': before['content_hash'], 'source_after': after_hash, 'started_at': started, 'finished_at': utc_now(), 'wall_seconds': time.perf_counter() - tick, 'jobs': jobs, 'max_parallel_shards': max_parallel_shards, 'affinity_cpus': observed_resources['affinity_cpus'], 'resource_profile': observed_resources, 'binding': descriptor(output, output / 'binding.json') if binding is not None else None, 'selection': [list(key) for key in sorted(selected)], 'is_fragment': selected != all_keys, 'memory_budget_mib': memory_mib, 'memory_enforcement': 'reservation plus sampled RSS cancellation; not a kernel hard limit' if memory_mib else 'not_requested', 'sampled_process_tree_peak_rss_bytes': peak_total_rss if sample_count else None, 'rss_samples': sample_count, 'rss_sampling_errors': rss_sampling_errors, 'rss_sampling_is_exact_peak': False, 'attempts': sorted(results, key=lambda r: (r['task'], r['shard'])), 'errors': errors})
     write_once_json(output / 'run.json', run)
     return run
 

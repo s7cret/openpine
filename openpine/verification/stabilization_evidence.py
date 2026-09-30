@@ -40,6 +40,14 @@ def verify_command(root: Path, expected: dict, *, expected_stdout=None) -> dict:
         or receipt.get("ok") is not True
     ):
         raise ValueError("command identity or successful completion mismatch")
+    inputs = expected.get("inputs", {})
+    observed = receipt.get("input_provenance", {})
+    if set(inputs) != set(observed):
+        raise ValueError("command input provenance missing/unbound")
+    for name, spec in inputs.items():
+        row = observed[name]
+        if row.get("source") != spec or row.get("after_sha256") != spec["sha256"] or hash_file(evidence_path(root, row["captured"]["path"])) != spec["sha256"] or row["captured"]["sha256"] != spec["sha256"]:
+            raise ValueError("command input provenance changed")
     files = receipt.get("files", {})
     if not {"stdout.log", "stderr.log"}.issubset(files):
         raise ValueError("both primary command logs are required")
@@ -127,8 +135,34 @@ def verify_reconciliation(plan: dict, host: Path, policy: dict) -> dict:
     return {"register_sha256": policy["sha256"], "decisions": len(rows)}
 
 
-def verify_frontend(root: Path, supplied: dict, policy: dict) -> dict:
-    commands = command_set(root, supplied["commands"], policy["commands"])
+def verify_frontend(plan: dict, root: Path, supplied: dict, policy: dict) -> dict:
+    binding = supplied.get("binding", {})
+    if binding.get("plan_hash") != plan["content_hash"] or binding.get("candidate_hash") != plan.get("source", {}).get("content_hash"):
+        raise ValueError("frontend candidate/plan binding is missing or stale")
+    expected = {
+        name.removeprefix("openpine-ui/"): meta
+        for name, meta in plan["source"]["components"]["openpine"]["files"].items()
+        if name.startswith("openpine-ui/")
+    }
+    staged = Path(binding["source_root"])
+    from openpine.verification.execution_identity import source_snapshot
+    actual = source_snapshot({"frontend": staged})["components"]["frontend"]["files"]
+    generated = {"dist", "coverage", "test-results", "playwright-report", ".vite", ".vitest"}
+    actual = {n: m for n, m in actual.items() if n.split("/")[0] not in generated and not n.endswith(".tsbuildinfo")}
+    if not expected or actual != expected or binding.get("source_files") != expected:
+        raise ValueError("frontend candidate staged inventory differs from exact plan")
+    import copy
+    specifications = copy.deepcopy(policy["commands"])
+    ui_inputs = {"frontend-source:" + n: {"path": str(staged / n), "sha256": m["sha256"]} for n, m in expected.items()}
+    for specification in specifications:
+        specification["inputs"] = {**specification.get("inputs", {}), **ui_inputs}
+    commands = command_set(root, supplied["commands"], specifications)
+    artifacts = {"tests": supplied["tests"], "outputs": supplied.get("outputs", [])}
+    for receipt in commands:
+        if receipt.get("binding") != {"plan_hash": plan["content_hash"], "candidate_hash": plan["source"]["content_hash"], "source_files": expected, "source_root": str(staged)}:
+            raise ValueError("frontend candidate producer binding is missing/stale")
+    if not any(r.get("artifacts") == artifacts for r in commands):
+        raise ValueError("frontend artifacts are unbound to producer receipt")
     tests = read_artifact(root, supplied["tests"])
     # Vitest/Jest JSON is a raw test inventory, unlike a generic {passed:true}.
     required = policy["test_names"]
@@ -166,7 +200,48 @@ def verify_frontend(root: Path, supplied: dict, policy: dict) -> dict:
     }
 
 
+def wheel_members(path: Path, *, max_bytes: int = 512 * 1024**2) -> dict:
+    """Read a bounded, unique, regular-file-only wheel inventory."""
+    import stat
+    from pathlib import PurePosixPath
+    with zipfile.ZipFile(path) as archive:
+        seen, total, members = set(), 0, {}
+        for item in archive.infolist():
+            name = item.filename
+            pure = PurePosixPath(name)
+            mode = item.external_attr >> 16
+            if name in seen or pure.is_absolute() or ".." in pure.parts or "\\" in name or ":" in name or stat.S_ISLNK(mode):
+                raise ValueError("unsafe/duplicate wheel member")
+            seen.add(name)
+            total += item.file_size
+            if total > max_bytes or len(seen) > 100000:
+                raise ValueError("wheel expanded size/member count exceeds bound")
+            if not item.is_dir():
+                if stat.S_IFMT(mode) not in {0, stat.S_IFREG}:
+                    raise ValueError("nonregular wheel member")
+                members[name] = archive.read(item)
+        return members
+
+
 def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict) -> dict:
+    """Admit normal and sdist-rebuilt installations independently."""
+    if set(supplied) != {"normal", "rebuilt"} or set(policy) != {"normal", "rebuilt"}:
+        raise ValueError("normal and rebuilt artifact/install sets are required")
+    results = {}
+    for kind in ("normal", "rebuilt"):
+        results[kind] = _verify_package_installation(plan, root, supplied[kind], policy[kind])
+    prefixes = [read_artifact(root, supplied[k]["probe"])["prefix"] for k in ("normal", "rebuilt")]
+    if Path(prefixes[0]).resolve() == Path(prefixes[1]).resolve():
+        raise ValueError("normal and rebuilt installations require separate prefixes")
+    if supplied["normal"]["probe"] == supplied["rebuilt"]["probe"]:
+        raise ValueError("rebuilt installation needs its own origin probe")
+    for component in plan["source"]["components"]:
+        if supplied["normal"]["artifacts"][component]["wheel"]["path"] == supplied["rebuilt"]["artifacts"][component]["wheel"]["path"]:
+            raise ValueError("rebuilt wheel artifact must be separate from normal wheel")
+    return results
+
+
+def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy: dict) -> dict:
     """Require builds/install/API commands plus wheel-bound installed file origins."""
     commands = command_set(root, supplied["commands"], policy["commands"])
     roles = [s.get("role") for s in policy["commands"]]
@@ -205,6 +280,11 @@ def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
                 raise ValueError(
                     "package semantic commands need independent concrete expected results"
                 )
+    if set(supplied.get("artifacts", {})) != set(plan["source"]["components"]):
+        raise ValueError("missing package artifact component")
+    wheel_paths = {str(evidence_path(root, row["wheel"]["path"])) for row in supplied["artifacts"].values()}
+    if not any(wheel_paths.issubset(set(command["argv"])) for command, role in zip(commands, roles) if role == "install"):
+        raise ValueError("admitted wheels are not bound to an actual complete-stack installation")
     probe_indices = [i for i, role in enumerate(roles) if role == "probe"]
     if len(probe_indices) != 1:
         raise ValueError("exactly one raw installed origin probe is required")
@@ -274,25 +354,28 @@ def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
         files = observed.get("files", {})
         if not files:
             raise ValueError("installed package has no wheel-bound files")
-        with zipfile.ZipFile(wheel) as archive:
-            members = {
-                name: archive.read(name)
-                for name in archive.namelist()
-                if not name.endswith("/")
-            }
+        members = wheel_members(wheel)
         import hashlib
 
         source_files = plan["source"]["components"][component]["files"]
         import tarfile
 
         with tarfile.open(sdist, "r:*") as archive:
-            source_members = {}
-            for member in archive.getmembers():
+            source_members, seen, total = {}, set(), 0
+            for member in archive:
+                if member.name in seen:
+                    raise ValueError("duplicate sdist member")
+                seen.add(member.name)
+                total += member.size
+                if total > 512 * 1024**2 or len(seen) > 100000:
+                    raise ValueError("sdist expanded size/member count exceeds bound")
                 if (
                     member.issym()
                     or member.islnk()
                     or member.name.startswith("/")
                     or ".." in Path(member.name).parts
+                    or "\\" in member.name or ":" in member.name
+                    or not (member.isfile() or member.isdir())
                 ):
                     raise ValueError("unsafe sdist member")
                 if member.isfile():
@@ -352,6 +435,40 @@ def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
     return {"probe_sha256": supplied["probe"]["sha256"], "python": probe["python"]}
 
 
+def validate_organization(plan: dict, raw: dict, specification: dict) -> None:
+    if not isinstance(specification, dict) or raw.get("jobs") != specification.get("jobs"):
+        raise ValueError("performance organization jobs differ from declared policy")
+    parallel = specification.get("max_parallel_shards")
+    if type(parallel) is not int or parallel < 1 or raw.get("max_parallel_shards") != parallel:
+        raise ValueError("performance organization concurrency differs")
+    from datetime import datetime
+    tasks = {t["id"]: t for t in plan["tasks"]}
+    events = []
+    for index, attempt in enumerate(raw.get("attempts", [])):
+        start, end = (datetime.fromisoformat(attempt[k]) for k in ("started_at", "finished_at"))
+        if end <= start:
+            raise ValueError("performance organization invalid execution interval")
+        events.extend([(start, 1, index, tasks[attempt["task"]]), (end, 0, index, tasks[attempt["task"]])])
+    active = {}
+    for _, entering, index, task in sorted(events, key=lambda e: e[:3]):
+        if entering: active[index] = task
+        else: active.pop(index)
+        groups = [t["exclusive_group"] for t in active.values() if t["exclusive_group"]]
+        if len(active) > parallel or len({t["component"] for t in active.values()}) > 1 or sum(t["cpu_slots"] for t in active.values()) > raw["jobs"] or len(groups) != len(set(groups)):
+            raise ValueError("performance organization actual worker overlap violates reservations")
+    maximum = specification.get("max_shards_per_task")
+    if type(maximum) is not int or maximum < 1 or any(len(t["shards"]) > maximum for t in plan["tasks"]):
+        raise ValueError("performance organization shard layout differs")
+    profile = raw.get("resource_profile", {})
+    for key in ("cpu_quota", "memory_limit_bytes", "address_space_limit_bytes"):
+        if key not in specification or key not in profile or profile[key] != specification[key]:
+            raise ValueError("performance resource budget differs: " + key)
+    cap = specification.get("cpu_frequency_max_khz")
+    frequencies = profile.get("cpu_frequency_max_khz")
+    if "cpu_frequency_max_khz" not in specification or not isinstance(frequencies, list) or (cap is not None and (not frequencies or any(type(v) is not int or v != cap for v in frequencies))):
+        raise ValueError("performance resource CPU frequency budget differs")
+
+
 def verify_performance(plan: dict, root: Path, supplied: dict, policy: dict) -> dict:
     from openpine.verification.execution_performance import (
         compare_campaigns,
@@ -364,6 +481,8 @@ def verify_performance(plan: dict, root: Path, supplied: dict, policy: dict) -> 
         for row in supplied[organization]:
             sample_plan = read_artifact(root, row["plan"])
             validate_performance_scope(plan, sample_plan)
+            folder = evidence_folder(root, row["campaign"])
+            validate_organization(sample_plan, read_json(folder / "run.json"), policy["organization_limits"][organization])
             samples[organization].append(
                 (sample_plan, evidence_folder(root, row["campaign"]), row["run_id"])
             )

@@ -15,7 +15,7 @@ def _workload_identity(plan: dict, *, instrumentation: bool) -> str:
     validate_plan(plan)
     rows = []
     for task in plan['tasks']:
-        row = {key: task[key] for key in ('id', 'component', 'environment', 'nodeids', 'full_inventory_hash', 'deselected', 'plugins', 'variant', 'execution_path', 'mode')}
+        row = {key: task[key] for key in ('id', 'component', 'environment', 'nodeids', 'full_inventory_hash', 'deselected', 'plugins', 'variant', 'execution_path', 'mode', 'cpu_slots', 'memory_mib', 'exclusive_group')}
         if instrumentation:
             row['coverage'] = task.get('coverage', False)
         rows.append(row)

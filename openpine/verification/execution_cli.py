@@ -64,6 +64,7 @@ def add_commands(commands):
     runner.add_argument('--expected-plan-hash', required=True)
     runner.add_argument('--output', type=Path, required=True)
     runner.add_argument('--jobs', type=int, default=1)
+    runner.add_argument('--max-parallel-shards', type=int)
     runner.add_argument('--run-id')
     runner.add_argument('--binding', type=Path)
     runner.add_argument('--task', action='append', default=[])
@@ -352,7 +353,7 @@ def run_command(args):
                     raise ValueError('shard needs TASK/SHARD')
                 keys.append((task, shard))
         binding = read_json(args.binding) if args.binding else None
-        run = run_campaign(plan, args.plan, args.output, jobs=args.jobs, run_id=args.run_id, shard_keys=keys, binding=binding, memory_mib=args.memory_mib)
+        run = run_campaign(plan, args.plan, args.output, jobs=args.jobs, max_parallel_shards=args.max_parallel_shards, run_id=args.run_id, shard_keys=keys, binding=binding, memory_mib=args.memory_mib)
         report = aggregate_campaign(plan, args.output, expected_plan_hash=args.expected_plan_hash, expected_run_id=run['run_id'], expected_shards=keys)
         write_once_json(args.output / 'aggregate.json', report)
     elif args.command == 'test-export-suites':

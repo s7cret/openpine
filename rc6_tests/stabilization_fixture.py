@@ -170,15 +170,20 @@ def build_fixture(base):
     wheelhouse = evidence / "wheelhouse"
     wheelhouse.mkdir()
     commands, expected_commands = [], []
+    helper = base / "fixture-helper.py"
+    helper.write_text("# Immutable miniature harness input\n")
+    harness_inputs = {"fixture-helper.py": {"path": str(helper), "sha256": hash_file(helper)}}
+    specs["package_harness_inputs"] = dict(harness_inputs)
+    put(host / "openpine-ui/package.json", {"name": "fixture-ui"})
     clean = {
         "PATH": os.environ["PATH"],
         "HOME": str(base),
         "TMPDIR": os.environ["TMPDIR"],
     }
 
-    def command(role, argv, *, cwd=base, expected_stdout=None):
+    def command(role, argv, *, cwd=base, expected_stdout=None, binding=None, artifacts=None):
         folder = evidence / f"command-{len(commands)}"
-        actual = run_logged(argv, cwd=cwd, output=folder, env=clean, timeout=180)
+        actual = run_logged(argv, cwd=cwd, output=folder, env=clean, timeout=180, inputs=harness_inputs, binding=binding, artifacts=artifacts)
         if not actual["ok"]:
             raise AssertionError(
                 (
@@ -188,7 +193,7 @@ def build_fixture(base):
                 )
             )
         commands.append(descriptor(evidence, folder / "command.json"))
-        spec = {"role": role, "argv": argv, "cwd": str(cwd)}
+        spec = {"role": role, "argv": argv, "cwd": str(cwd), "inputs": dict(harness_inputs)}
         if expected_stdout is not None:
             spec["expected_stdout"] = expected_stdout
         expected_commands.append(spec)
@@ -225,92 +230,91 @@ def build_fixture(base):
         + '\nfor i,p in enumerate(paths):\n d=base/str(i);d.mkdir();tarfile.open(p).extractall(d,filter="data");src=next(d.iterdir());subprocess.run([sys.executable,"-m","build","--no-isolation","--wheel","--outdir",str(base/"wheels"),str(src)],check=True)'
     )
     command("sdist-wheel", [sys.executable, "-I", "-c", rebuild_code])
-    installed = base / "installed"
-    command(
-        "install", [sys.executable, "-I", "-m", "venv", "--without-pip", str(installed)]
-    )
-    py = str(installed / "bin/python")
-    wheels = sorted(wheelhouse.glob("*.whl"))
-    command(
-        "install",
-        [
-            sys.executable,
-            "-I",
-            "-m",
-            "pip",
-            "--python",
-            py,
-            "install",
-            "--no-deps",
-            "--no-index",
-            *[str(p) for p in wheels],
-        ],
-    )
-    probe_root = command(
-        "probe", [py, "-I", "-m", "openpine.verification.installed_probe"]
-    )
-    package_probe = descriptor(evidence, probe_root / "stdout.log")
-    module_list = list(modules.values())
-    for role in ("compile", "run", "library"):
-        code = (
-            "import importlib,json; modules="
-            + repr(module_list)
-            + '; values=[importlib.import_module(m).add(2,2) for m in modules]; assert values==[4]*8; print(json.dumps({"values":values}))'
+    build_commands, build_specs = list(commands), list(expected_commands)
+    entries["packages"] = {version: {}}
+    specs["packages"] = {version: {}}
+    for kind in ("normal", "rebuilt"):
+        start = len(commands)
+        installed = base / ("installed-" + kind)
+        command(
+            "install", [sys.executable, "-I", "-m", "venv", "--without-pip", str(installed)]
         )
-        command(role, [py, "-I", "-c", code], expected_stdout={"values": [4] * 8})
-    code = (
-        "import importlib.resources,json; modules="
-        + repr(module_list)
-        + '; values=[json.loads(importlib.resources.files(m).joinpath("fixture-resource.json").read_text())["value"] for m in modules]; print(json.dumps({"resources":values}))'
-    )
-    command("resources", [py, "-I", "-c", code], expected_stdout={"resources": [4] * 8})
-    for role, mode in (
-        ("missing-resource", "missing"),
-        ("tampered-resource", "tampered"),
-    ):
-        code = 'import importlib.resources,json; p=importlib.resources.files("openpine").joinpath("fixture-resource.json"); old=p.read_bytes(); '
-        if mode == "missing":
-            code += 'p.unlink()\ntry:\n p.read_bytes()\n raise AssertionError("missing resource accepted")\nexcept FileNotFoundError:\n print(json.dumps({"error":"missing resource"}))\nfinally:\n p.write_bytes(old)'
-            expected = {"error": "missing resource"}
-        else:
-            code += 'p.write_text("{\\"value\\":5}")\ntry:\n assert json.loads(p.read_text())["value"] != 4\n print(json.dumps({"error":"tampered resource"}))\nfinally:\n p.write_bytes(old)'
-            expected = {"error": "tampered resource"}
-        command(role, [py, "-I", "-c", code], expected_stdout=expected)
-    # Isolation ignores a poison cwd module; source path is not added to sys.path.
-    poison = base / "poison"
-    put(poison / "openpine.py", 'raise AssertionError("source shadowed wheel")\n')
-    code = 'import openpine,json; assert openpine.add(2,2)==4; print(json.dumps({"value":openpine.add(2,2)}))'
-    command(
-        "source-shadowing",
-        [py, "-I", "-c", code],
-        cwd=poison,
-        expected_stdout={"value": 4},
-    )
-    artifacts = {}
-    for name in COMPONENTS:
-        normalized = name.replace("-", "_")
-        wheel = next(p for p in wheels if p.name.startswith(normalized + "-"))
-        sdist = next(p for p in sdists if p.name.startswith(normalized + "-"))
-        artifacts[name] = {
-            "wheel": descriptor(evidence, wheel),
-            "sdist": descriptor(evidence, sdist),
-        }
-    entries["packages"] = {
-        version: {
-            "commands": list(commands),
+        py = str(installed / "bin/python")
+        wheels = sorted((wheelhouse if kind == "normal" else rebuilt / "wheels").glob("*.whl"))
+        command(
+            "install",
+            [
+                sys.executable,
+                "-I",
+                "-m",
+                "pip",
+                "--python",
+                py,
+                "install",
+                "--no-deps",
+                "--no-index",
+                *[str(p) for p in wheels],
+            ],
+        )
+        probe_root = command(
+            "probe", [py, "-I", "-m", "openpine.verification.installed_probe"]
+        )
+        package_probe = descriptor(evidence, probe_root / "stdout.log")
+        module_list = list(modules.values())
+        for role in ("compile", "run", "library"):
+            code = (
+                "import importlib,json; modules="
+                + repr(module_list)
+                + '; values=[importlib.import_module(m).add(2,2) for m in modules]; assert values==[4]*8; print(json.dumps({"values":values}))'
+            )
+            command(role, [py, "-I", "-c", code], expected_stdout={"values": [4] * 8})
+        code = (
+            "import importlib.resources,json; modules="
+            + repr(module_list)
+            + '; values=[json.loads(importlib.resources.files(m).joinpath("fixture-resource.json").read_text())["value"] for m in modules]; print(json.dumps({"resources":values}))'
+        )
+        command("resources", [py, "-I", "-c", code], expected_stdout={"resources": [4] * 8})
+        for role, mode in (
+            ("missing-resource", "missing"),
+            ("tampered-resource", "tampered"),
+        ):
+            code = 'import importlib.resources,json; p=importlib.resources.files("openpine").joinpath("fixture-resource.json"); old=p.read_bytes(); '
+            if mode == "missing":
+                code += 'p.unlink()\ntry:\n p.read_bytes()\n raise AssertionError("missing resource accepted")\nexcept FileNotFoundError:\n print(json.dumps({"error":"missing resource"}))\nfinally:\n p.write_bytes(old)'
+                expected = {"error": "missing resource"}
+            else:
+                code += 'p.write_text("{\\"value\\":5}")\ntry:\n assert json.loads(p.read_text())["value"] != 4\n print(json.dumps({"error":"tampered resource"}))\nfinally:\n p.write_bytes(old)'
+                expected = {"error": "tampered resource"}
+            command(role, [py, "-I", "-c", code], expected_stdout=expected)
+        # Isolation ignores a poison cwd module; source path is not added to sys.path.
+        poison = base / "poison"
+        put(poison / "openpine.py", 'raise AssertionError("source shadowed wheel")\n')
+        code = 'import openpine,json; assert openpine.add(2,2)==4; print(json.dumps({"value":openpine.add(2,2)}))'
+        command(
+            "source-shadowing",
+            [py, "-I", "-c", code],
+            cwd=poison,
+            expected_stdout={"value": 4},
+        )
+        artifacts = {}
+        for name in COMPONENTS:
+            normalized = name.replace("-", "_")
+            wheel = next(p for p in wheels if p.name.startswith(normalized + "-"))
+            sdist = next(p for p in sdists if p.name.startswith(normalized + "-"))
+            artifacts[name] = {
+                "wheel": descriptor(evidence, wheel),
+                "sdist": descriptor(evidence, sdist),
+            }
+        entries["packages"][version][kind] = {
+            "commands": build_commands + commands[start:],
             "probe": package_probe,
             "artifacts": artifacts,
         }
-    }
-    specs["packages"] = {
-        version: {
+        specs["packages"][version][kind] = {
             "python": version,
-            "commands": list(expected_commands),
-            "resources": {
-                name: [modules[name] + "/fixture-resource.json"] for name in COMPONENTS
-            },
+            "commands": build_specs + expected_commands[start:],
+            "resources": {name: [modules[name] + "/fixture-resource.json"] for name in COMPONENTS},
         }
-    }
     # Real JS assertion/test result and actual build output, in isolated process.
     frontend = evidence / "frontend"
     frontend.mkdir()
@@ -320,14 +324,9 @@ def build_fixture(base):
         + ',"export const value=4;\\n");console.log(JSON.stringify({numFailedTests:0,numPassedTests:1,numTotalTests:1,testResults:[{assertionResults:[{fullName:"arithmetic",status:"passed"}]}]}));'
     )
     node = shutil.which("node")
-    front_root = command("frontend", [node, "-e", javascript])
-    entries["frontend"] = {
-        "commands": [commands[-1]],
-        "tests": descriptor(evidence, front_root / "stdout.log"),
-        "outputs": [descriptor(evidence, frontend / "bundle.js")],
-    }
+    front_argv = [node, "-e", javascript]
     specs["frontend"] = {
-        "commands": [expected_commands[-1]],
+        "commands": [{"role": "frontend", "argv": front_argv, "cwd": str(base), "inputs": dict(harness_inputs)}],
         "test_names": ["arithmetic"],
         "build_output_count": 1,
     }
@@ -340,7 +339,12 @@ def build_fixture(base):
     observation = read_json(observation_root / "stdout.log")
     # Timing targets here are intentionally near zero: this fixture tests the
     # positive reader, not an asserted product speedup or performance budget.
+    from openpine.verification.execution_resources import resource_profile
+    observed = resource_profile()
+    limits = {k: observed[k] for k in ("cpu_quota", "memory_limit_bytes", "address_space_limit_bytes")}
+    limits.update(jobs=min(4, observed["cpu_slots"]), max_parallel_shards=min(4, observed["cpu_slots"]), max_shards_per_task=1, cpu_frequency_max_khz=(observed["cpu_frequency_max_khz"][0] if observed["cpu_frequency_max_khz"] else None))
     specs["test-performance"] = {
+        "organization_limits": {"before": limits, "after": limits},
         "reference_profile": {"affinity_cpus": len(os.sched_getaffinity(0))},
         "target_speedup": 0.00001,
     }
@@ -386,6 +390,17 @@ def build_fixture(base):
     plan = seal(plan)
     path = evidence / "plan.json"
     write_once_json(path, plan)
+    binding = {
+        "plan_hash": plan["content_hash"], "candidate_hash": source["content_hash"],
+        "source_root": str(host / "openpine-ui"),
+        "source_files": {n.removeprefix("openpine-ui/"): m for n, m in source["components"]["openpine"]["files"].items() if n.startswith("openpine-ui/")},
+    }
+    front_folder = evidence / f"command-{len(commands)}"
+    def front_artifacts():
+        return {"tests": descriptor(evidence, front_folder / "stdout.log"), "outputs": [descriptor(evidence, frontend / "bundle.js")]}
+    harness_inputs.update({"frontend-source:" + n: {"path": str(host / "openpine-ui" / n), "sha256": m["sha256"]} for n, m in binding["source_files"].items()})
+    front_root = command("frontend", front_argv, binding=binding, artifacts=front_artifacts)
+    entries["frontend"] = {"binding": binding, "commands": [commands[-1]], **front_artifacts()}
     from openpine.verification.execution_resources import resource_profile
     fixture_jobs = min(4, resource_profile()["cpu_slots"])
     run_campaign(plan, path, evidence / "run-0", jobs=fixture_jobs, run_id="fixture-0")

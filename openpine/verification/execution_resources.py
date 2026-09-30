@@ -80,7 +80,18 @@ def resource_profile(*, cgroup_root: Path=Path('/sys/fs/cgroup'), membership_fil
                     raise ValueError('invalid cgroup memory limit')
                 memory.append(limit)
             observations.append(row)
+    import resource
+    address_space = resource.getrlimit(resource.RLIMIT_AS)[0]
+    if address_space == resource.RLIM_INFINITY:
+        address_space = None
+    frequencies = []
+    for cpu in affinity:
+        try:
+            frequencies.append(int(Path(f'/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_max_freq').read_text().strip()))
+        except (OSError, ValueError):
+            frequencies = []
+            break
     quota = min(quotas) if quotas else None
     cpu_slots = min(len(affinity), max(1, math.floor(quota))) if quota is not None else len(affinity)
     limits = [value for value in [physical_bytes, *memory] if value is not None and value > 0]
-    return {'schema_id': 'openpine.execution_resource_profile.v1', 'affinity': affinity, 'affinity_cpus': len(affinity), 'cpu_quota': quota, 'cpu_slots': cpu_slots, 'memory_limit_bytes': min(limits) if limits else None, 'cgroup_observations': observations, 'cgroup_limits_observed': bool(observations), 'reservation_policy': 'integer CPU slots limited by affinity and inherited quota; minimum one executor', 'memory_policy': 'visible cgroup/physical limit; available headroom is not guaranteed'}
+    return {'schema_id': 'openpine.execution_resource_profile.v1', 'affinity': affinity, 'affinity_cpus': len(affinity), 'cpu_quota': quota, 'cpu_slots': cpu_slots, 'memory_limit_bytes': min(limits) if limits else None, 'address_space_limit_bytes': address_space, 'cpu_frequency_max_khz': frequencies, 'cgroup_observations': observations, 'cgroup_limits_observed': bool(observations), 'reservation_policy': 'integer CPU slots limited by affinity and inherited quota; minimum one executor', 'memory_policy': 'visible cgroup/physical limit; available headroom is not guaranteed'}

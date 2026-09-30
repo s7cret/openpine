@@ -156,6 +156,7 @@ def clean_environment(roots: dict[str, str], private: Path, *, build_commit: str
     for name in ('home', 'tmp', 'cache'):
         (private / name).mkdir(exist_ok=True)
     result = {key: value for key, value in os.environ.items() if key in {'PATH', 'SYSTEMROOT', 'WINDIR', 'LANG', 'LC_ALL', 'TZ'}}
+    result['OPENPINE_SOURCE_ROOTS'] = __import__('json').dumps(roots, sort_keys=True)
     result.update(PYTHONPATH=os.pathsep.join((roots[name] for name in sorted(roots))), PYTEST_DISABLE_PLUGIN_AUTOLOAD='1', PYTHONHASHSEED='0', HOME=str(private / 'home'), TMPDIR=str(private / 'tmp'), XDG_CACHE_HOME=str(private / 'cache'), OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1')
     if build_commit is not None:
         result['OPENPINE_BUILD_COMMIT'] = build_commit

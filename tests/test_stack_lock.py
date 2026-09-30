@@ -288,7 +288,11 @@ def test_stack_lock_summary_is_endpoint_safe() -> None:
 
 
 def test_isolated_installed_wheel_serves_api_version_with_packaged_lock(tmp_path: Path) -> None:
-    root = Path(__file__).resolve().parents[1]
+    import shutil
+    original_root = Path(__file__).resolve().parents[1]
+    root = tmp_path / "source-openpine"
+    ignore = shutil.ignore_patterns(".git", "build", "dist", "*.egg-info", "__pycache__", "node_modules", ".pytest_cache")
+    shutil.copytree(original_root, root, ignore=ignore)
     wheel_dir = tmp_path / "wheel"
     subprocess.run(
         [sys.executable, "-m", "build", "--wheel", "--outdir", str(wheel_dir), str(root)],
@@ -314,7 +318,16 @@ def test_isolated_installed_wheel_serves_api_version_with_packaged_lock(tmp_path
     )
     for index, module in enumerate(sibling_modules):
         sibling_wheel_dir = tmp_path / f"sibling-wheel-{index}"
-        sibling_root = Path(module.__file__).resolve().parents[1]
+        # Installed sibling imports are runtime evidence, not buildable roots.
+        mapping = json.loads(os.environ.get("OPENPINE_SOURCE_ROOTS", "{}"))
+        aliases = {"openpine_contracts": "openpine-contracts", "marketdata_provider": "marketdata-provider"}
+        component = aliases.get(module.__name__, module.__name__)
+        sibling_root = Path(mapping.get(component, original_root.parent / component)).resolve()
+        assert (sibling_root / "pyproject.toml").is_file(), (
+            f"Missing explicit sibling source root for {component}; set OPENPINE_SOURCE_ROOTS JSON mapping"
+        )
+        build_root = tmp_path / f"source-{component}"
+        shutil.copytree(sibling_root, build_root, ignore=ignore)
         subprocess.run(
             [
                 sys.executable,
@@ -323,7 +336,7 @@ def test_isolated_installed_wheel_serves_api_version_with_packaged_lock(tmp_path
                 "--wheel",
                 "--outdir",
                 str(sibling_wheel_dir),
-                str(sibling_root),
+                str(build_root),
             ],
             cwd=tmp_path,
             check=True,

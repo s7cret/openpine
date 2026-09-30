@@ -1,5 +1,7 @@
 # PR #18 continuation decision register (RC6)
 
+> **Historical draft — not the current decision register.** The counts and outstanding decisions below describe the earlier review only. Current reconciliation is owned by `verification/rc6-branch-reconciliation-register.json` and its execution-policy hash; acceptance remains blocked until exact owner receipts are replayed.
+
 Compare `501e5df5eb05ddd189f87d7aafc56a024415b543..07825e876ac2cfcecd9907ad550669ed5d12fd70` to current release base `faa62e08eb08a79723d94b881ba0588db27985a9`. This is the unique PR patch (not the misleading two-endpoint diff that includes newer release additions). No branch is merged or deleted.
 
 Paths examined: **130**; `already_ported` 6, `port_required` 23, `rejected_with_reason` 96, `superseded_with_mapping` 5.

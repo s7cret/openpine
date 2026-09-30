@@ -229,6 +229,16 @@ def run_stabilization_gate(
             continue
         entry, spec = entries[gate], specs[gate]
         try:
+            if gate in {"frontend", "packages"}:
+                import copy
+                spec = copy.deepcopy(spec)
+                harness = specs.get("package_harness_inputs")
+                if not isinstance(harness, dict) or not harness:
+                    raise ValueError("missing frozen harness input provenance policy")
+                owners = [spec] if gate == "frontend" else [installation for version in spec.values() for installation in version.values()]
+                for owner in owners:
+                    for command in owner["commands"]:
+                        command["inputs"] = {**command.get("inputs", {}), **harness}
             if gate == "branch-reconciliation":
                 result = raw.verify_reconciliation(plan, host, spec)
             elif gate == "foundation":
@@ -298,7 +308,7 @@ def run_stabilization_gate(
                     for task in tasks
                 }
             elif gate == "frontend":
-                result = raw.verify_frontend(evidence, entry, spec)
+                result = raw.verify_frontend(plan, evidence, entry, spec)
             elif gate == "packages":
                 mandatory_package_versions = set().union(
                     *(set(row["pythons"]) for row in policy["components"].values())

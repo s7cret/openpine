@@ -184,7 +184,7 @@ def test_joint_resealing_does_not_replace_raw_owner_evidence(full_fixture, owner
         replace(command_path, reseal(command))
         changed["gates"][owner]["commands"][0]["sha256"] = hash_file(command_path)
     elif owner == "packages":
-        package = next(iter(changed["gates"][owner].values()))
+        package = next(iter(changed["gates"][owner].values()))["normal"]
         path = evidence / package["probe"]["path"]
         data = read_json(path)
         data["components"]["openpine"]["origin"] = str(evidence / "plan.json")
@@ -344,7 +344,7 @@ def test_resealed_campaign_and_execution_command_interpreter_rejected(full_fixtu
 
 def test_tampered_installed_resource_is_rejected_against_frozen_wheel(full_fixture):
     _, _, evidence, packet = full_fixture
-    package = next(iter(packet["gates"]["packages"].values()))
+    package = next(iter(packet["gates"]["packages"].values()))["normal"]
     probe = read_json(evidence / package["probe"]["path"])
     component = probe["components"]["openpine"]
     relative = next(

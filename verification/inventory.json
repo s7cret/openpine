@@ -1,8 +1,18 @@
 {
   "ast2python": {
-    "count": 2079,
+    "added_nodeids": [
+      "tests/stage4/test_performance_measurement.py::test_latency_samples_are_untraced_and_memory_runs_real_pipeline",
+      "tests/stage4/test_performance_measurement.py::test_memory_pass_cleans_up_tracing_on_failure",
+      "tests/stage4/test_performance_measurement.py::test_performance_gate_does_not_disable_caller_memory_tracing"
+    ],
+    "baseline": {
+      "count": 2079,
+      "deselected": 0,
+      "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c"
+    },
+    "count": 2082,
     "deselected": 0,
-    "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c"
+    "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "backtest_engine": {
     "count": 1219,
@@ -31,6 +41,33 @@
       "rc6_tests/test_rc6_performance_scope.py::test_performance_scope_rejects_noninstrumentation_drift[variant]",
       "rc6_tests/test_rc6_performance_scope.py::test_traced_performance_cannot_be_admitted",
       "rc6_tests/test_rc6_performance_scope.py::test_untraced_performance_matches_traced_acceptance_denominator",
+      "rc6_tests/test_rc6_review_admission.py::test_deleted_live_input_produces_a_failed_primary_receipt",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[candidate]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[foreign-artifact]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[plan]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[staged-source]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[unbound-producer]",
+      "rc6_tests/test_rc6_review_admission.py::test_frontend_requires_plan_binding",
+      "rc6_tests/test_rc6_review_admission.py::test_frozen_helper_primary_bytes_are_required[changed-capture]",
+      "rc6_tests/test_rc6_review_admission.py::test_frozen_helper_primary_bytes_are_required[missing-capture]",
+      "rc6_tests/test_rc6_review_admission.py::test_frozen_helper_primary_bytes_are_required[missing-provenance]",
+      "rc6_tests/test_rc6_review_admission.py::test_missing_rebuilt_installation_is_not_admitted",
+      "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[address-space]",
+      "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[frequency]",
+      "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[jobs]",
+      "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[memory]",
+      "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[missing]",
+      "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[quota]",
+      "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[shards]",
+      "rc6_tests/test_rc6_review_admission.py::test_resealed_broken_rebuilt_wheel_is_rejected",
+      "rc6_tests/test_rc6_review_admission.py::test_reservation_drift_is_not_the_same_workload[cpu_slots-2]",
+      "rc6_tests/test_rc6_review_admission.py::test_reservation_drift_is_not_the_same_workload[exclusive_group-foreign]",
+      "rc6_tests/test_rc6_review_admission.py::test_reservation_drift_is_not_the_same_workload[memory_mib-999]",
+      "rc6_tests/test_rc6_review_admission.py::test_unbound_helper_is_not_admitted",
+      "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[duplicate]",
+      "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[oversize]",
+      "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[symlink]",
+      "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[traversal]",
       "rc6_tests/test_rc6_serial_components.py::test_empty_component_window",
       "rc6_tests/test_rc6_serial_components.py::test_idle_window_selects_first_queued_component",
       "rc6_tests/test_rc6_serial_components.py::test_mixed_running_components_fail_closed",
@@ -107,7 +144,7 @@
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11112,
+    "count": 11139,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
@@ -122,14 +159,6 @@
     "sha256": "sha256:c343d0fe2095d8905b3dfb9b4166cfec18d337d2c7c1f065c28fc44b52fd77f9"
   },
   "pine2ast": {
-    "identity_mode": "reviewed_addition_to_hashed_baseline",
-    "baseline": {
-      "count": 3547,
-      "deselected": 0,
-      "sha256": "sha256:bb8d02ed74177f70a6e7eafcaecbbabc8ace81ee2d75c52e2dd35602e41975dc"
-    },
-    "count": 3585,
-    "deselected": 0,
     "added_nodeids": [
       "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[add-v5]",
       "tests/stage2/test_version_invariance_retained.py::test_versions_and_exact_bytes[add-v6]",
@@ -169,7 +198,15 @@
       "tests/stage2/test_version_invariance_retained.py::test_wrong_versions_and_directives[v4]",
       "tests/stage2/test_version_invariance_retained.py::test_wrong_versions_and_directives[duplicate-directive]",
       "tests/stage2/test_version_invariance_retained.py::test_wrong_versions_and_directives[missing-directive]"
-    ]
+    ],
+    "baseline": {
+      "count": 3547,
+      "deselected": 0,
+      "sha256": "sha256:bb8d02ed74177f70a6e7eafcaecbbabc8ace81ee2d75c52e2dd35602e41975dc"
+    },
+    "count": 3585,
+    "deselected": 0,
+    "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "pinelib": {
     "count": 5172,

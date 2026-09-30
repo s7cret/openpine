@@ -175,7 +175,7 @@
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:d79dbeb8b14bb8ed1120371e5629004e4f4a10c0ac1c32ea7e806dad62301bee",
+          "sha256": "sha256:d92cf24105c026c62a8a48532d11b90f5c99449ffb2ec1c7b31f564537d83add",
           "nodes": []
         }
       ]
@@ -267,7 +267,7 @@
         {
           "component": "pine2ast",
           "path": "tests/stage2/test_version_invariance_retained.py",
-          "sha256": "sha256:a348f6fe1987e6642bf9081a167ce6ac857f27891c37264dcf0f770177cb6fd2",
+          "sha256": "sha256:47f5e5fdc5021309493ada4ea8733f292e61493035a31b402d42736c76f609b5",
           "nodes": [
             "tests/stage2/test_version_invariance_retained.py::test_local_acyclic_calls",
             "tests/stage2/test_version_invariance_retained.py::test_rehashed_forgery_is_rejected",
@@ -1635,13 +1635,13 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:15a458efbb045d3883e04da4a51b89556b818dc3e1c0226100805f8e687ea5fa",
+          "sha256": "sha256:511044a75d85f38a75df6932440264c393dc304f82f6f70793b8806e734dc690",
           "nodes": []
         },
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:92604302bde6555075c1d8e2aaec05ed19b356fd952d58305e848a5b1da5e18b",
+          "sha256": "sha256:234f0d1595916ce40fa9b016f0fb93a8e7fd9dc753b60f03dbdc7ab3d533d628",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
@@ -1686,13 +1686,13 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:15a458efbb045d3883e04da4a51b89556b818dc3e1c0226100805f8e687ea5fa",
+          "sha256": "sha256:511044a75d85f38a75df6932440264c393dc304f82f6f70793b8806e734dc690",
           "nodes": []
         },
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:92604302bde6555075c1d8e2aaec05ed19b356fd952d58305e848a5b1da5e18b",
+          "sha256": "sha256:234f0d1595916ce40fa9b016f0fb93a8e7fd9dc753b60f03dbdc7ab3d533d628",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
