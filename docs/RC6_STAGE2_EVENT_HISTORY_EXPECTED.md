@@ -1,3 +1,5 @@
+> **Historical evidence — not current acceptance.** The source identities, dates, counts and verdicts below belong to the recorded scope only. Current Stage 2 remains `in_progress`, `full_stage2_accepted=false`; this document cannot establish acceptance of the current eight-component candidate. Consult the canonical current-status owner published by FIX-03; do not substitute a historical receipt.
+
 # Event-history expected corpus
 
 This engineering corpus contains 20 Pine v5/v6 cases derived from ten independently authored rows: six `ta.barssince` patterns and four canonical float `ta.valuewhen` patterns with literal occurrence zero. Four versioned callable tuples receive examples. This is not whole-function parity or Stage2 acceptance.
