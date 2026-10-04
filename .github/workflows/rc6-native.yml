@@ -355,6 +355,7 @@ jobs:
         PYFRONTEND
     - name: Run the complete independently reviewed frontend owner
       env:
+        TMPDIR: ${{ runner.temp }}
         OPENPINE_PLAN: ${{ runner.temp }}/plan/plan.json
         OPENPINE_BINDING: ${{ runner.temp }}/frontend-binding.json
         OPENPINE_ATTEMPT_ROOT: ${{ runner.temp }}/exact-owner

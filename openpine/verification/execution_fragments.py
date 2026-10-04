@@ -12,7 +12,7 @@ from openpine.verification.execution_campaign import RUN_SCHEMA, aggregate_campa
 from openpine.verification.execution_identity import ensure_external_output, evidence_path, hash_file, read_artifact, write_once_json
 from openpine.verification.execution_plan import validate_plan
 from openpine.verification.execution_disk import INLINE_LIMIT, ObservationWriter, iter_observations
-from itertools import chain, zip_longest
+from itertools import zip_longest
 from openpine.verification.identity import read_json, seal, verify
 
 def fragment_selection(plan: dict, run: dict) -> list[tuple[str, str]]:

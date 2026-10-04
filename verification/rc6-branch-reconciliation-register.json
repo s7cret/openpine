@@ -175,7 +175,7 @@
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:377734f1b9aca5ae1c7d4d607d12e6eebf57e37bee845f0cede6f2d9942e21bb",
+          "sha256": "sha256:cf287f31f82c6b3ed6ef3b9b15034c98d8f478a81b2733642bfc38273bada40b",
           "nodes": []
         }
       ]

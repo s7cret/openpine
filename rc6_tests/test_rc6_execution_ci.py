@@ -644,6 +644,21 @@ def test_native_verify_preserves_required_branch_protection_contexts():
     assert jobs['frontend'].get('name', 'frontend') == 'frontend'
 
 
+def test_native_frontend_declares_runner_owned_temporary_root():
+    workflow = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())
+    producers = [
+        step for step in workflow['jobs']['frontend']['steps']
+        if 'frontend_exact.py' in step.get('run', '')
+    ]
+    assert len(producers) == 1
+    environment = {
+        **workflow.get('env', {}),
+        **workflow['jobs']['frontend'].get('env', {}),
+        **producers[0].get('env', {}),
+    }
+    assert environment.get('TMPDIR') == '${{ runner.temp }}'
+
+
 def test_native_inline_scripts_import_existing_verifier_exports():
     import ast
     import importlib

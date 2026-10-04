@@ -152,7 +152,8 @@ def resolve_owner_policy(policy: dict, launch: dict, *, check_live: bool = False
                     while pending:
                         for dependency in dependencies.get(pending.pop(), []):
                             if dependency not in names:
-                                names.add(dependency); pending.append(dependency)
+                                names.add(dependency)
+                                pending.append(dependency)
                     inputs = {'owner-tool:' + n: {'path': targets[n], 'sha256': launch['executables'][n]} for n in sorted(names)}
                     if bind_aliases:
                         for name in names:

@@ -22,9 +22,9 @@ from openpine.verification.execution_binding import locations, validate_binding
 from openpine.verification.identity import read_json, seal, verify
 from openpine.verification.pytest_gate import collection_hash, validate_phase_reports
 from openpine.verification.execution_process import _stop_group
+from openpine.verification.execution_disk import INLINE_LIMIT, ObservationWriter, iter_observations
 RUN_SCHEMA = 'openpine.test_campaign_run.v1'
 AGGREGATE_SCHEMA = 'openpine.test_campaign_aggregate.v1'
-from openpine.verification.execution_disk import INLINE_LIMIT, ObservationWriter, iter_observations
 DISK_INLINE_LIMIT = INLINE_LIMIT
 
 def compiler_commit_environment(source_commits: dict[str, str]) -> str:
