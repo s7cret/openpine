@@ -55,7 +55,7 @@ jobs:
         root=pathlib.Path(os.environ['RUNNER_TEMP'])/'platform-owners'
         root.mkdir()
         paths=[]
-        for name in ('openpine-contracts','optimizer'):
+        for name in ('openpine-contracts','pine2ast','pinelib','marketdata-provider','backtest_engine','ast2python','optimizer'):
          path=root/name
          subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(path)],check=True)
          subprocess.run(['git','-C',str(path),'checkout','--detach',pins[name]],check=True)
@@ -68,6 +68,7 @@ jobs:
       shell: bash
       run: |
         mkdir -p "$RUNNER_TEMP/platform-evidence"
+        python -c "from openpine.verification.stage_gate import run_stabilization_gate; print('owner import closure verified')" > "$RUNNER_TEMP/platform-evidence/owner-imports.txt" 2>&1
         python -m pip check > "$RUNNER_TEMP/platform-evidence/pip-check.txt" 2>&1
     - name: Execute the complete locked platform self-test inventory
       env:

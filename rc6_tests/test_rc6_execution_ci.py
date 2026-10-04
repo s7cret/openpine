@@ -644,6 +644,23 @@ def test_native_verify_preserves_required_branch_protection_contexts():
     assert jobs['frontend'].get('name', 'frontend') == 'frontend'
 
 
+def test_platform_installs_all_pinned_transitive_owner_prerequisites():
+    import ast
+
+    steps = yaml.safe_load((HOST / '.github/workflows/rc6-test-platform.yml').read_text())['jobs']['platform']['steps']
+    owner = next(step for step in steps
+                 if step.get('name') == 'Install exact owner contracts used by prerequisite tests')
+    script = owner['run'].split("python - <<'PYOWNER'\n", 1)[1].rsplit('\nPYOWNER', 1)[0]
+    tree = ast.parse(script)
+    loop = next(node for node in ast.walk(tree)
+                if isinstance(node, ast.For) and isinstance(node.target, ast.Name) and node.target.id == 'name')
+    names = ast.literal_eval(loop.iter)
+    pins = json.loads((HOST / 'docs/RC6_LIFECYCLE_SOURCES.json').read_text())
+    assert len(names) == len(set(names))
+    assert set(names) == set(pins), 'source-installed prerequisites do not close portable owner imports'
+    assert 'ast2python' in names and 'pine2ast' in names and 'pinelib' in names
+
+
 def test_platform_installs_hashed_runtime_closure_before_exact_owners():
     steps = yaml.safe_load((HOST / '.github/workflows/rc6-test-platform.yml').read_text())['jobs']['platform']['steps']
     owner_index = next(i for i, step in enumerate(steps)
@@ -659,7 +676,7 @@ def test_platform_installs_hashed_runtime_closure_before_exact_owners():
     for package in ('jsonschema', 'attrs', 'jsonschema-specifications', 'referencing', 'rpds-py', 'typing_extensions'):
         assert re.search(r'(?m)^' + re.escape(package) + r'==[^\n]+ \\\n\s+--hash=sha256:[0-9a-f]{64}', runtime_lock)
     owner_run = steps[owner_index]['run']
-    assert "for name in ('openpine-contracts','optimizer'):" in owner_run
+    assert "for name in ('openpine-contracts','pine2ast','pinelib','marketdata-provider','backtest_engine','ast2python','optimizer'):" in owner_run
     assert "'checkout','--detach',pins[name]" in owner_run
     assert "'rev-parse','HEAD'" in owner_run
     assert "'--no-deps',*paths],check=True)" in owner_run
