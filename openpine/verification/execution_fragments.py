@@ -6,6 +6,7 @@ checked again without access to original runner paths. Failed or repeated work
 is retained, not silently replaced by a later successful attempt.
 """
 from __future__ import annotations
+import math
 import shutil
 from pathlib import Path
 from openpine.verification.execution_campaign import RUN_SCHEMA, aggregate_campaign, descriptor, utc_now
@@ -179,7 +180,7 @@ def merge_fragments(plan: dict, fragments: list[Path], output: Path, *, expected
             job_budgets.append(raw['jobs'])
         except (OSError, ValueError, KeyError, TypeError) as error:
             errors.append(f'fragment {index}: {error}')
-    run = seal({'schema_id': RUN_SCHEMA, 'run_id': expected_run_id, 'plan_hash': plan['content_hash'], 'candidate_hash': plan['source']['content_hash'], 'source_before': plan['source']['content_hash'], 'source_after': plan['source']['content_hash'], 'selection': [list(k) for k in sorted(set(selections))], 'binding': None, 'merged_fragments': entries, 'attempts': attempts, 'errors': errors, 'started_at': min(starts) if starts else utc_now(), 'finished_at': max(ends) if ends else utc_now(), 'wall_seconds': sum(walls), 'wall_measure': 'sum_of_fragment_runner_wall_seconds', 'fragment_wall_seconds': walls, 'fragment_jobs': job_budgets, 'jobs': sum(job_budgets), 'sampled_process_tree_peak_rss_bytes': None, 'fragment_sampled_peak_rss_bytes': memories})
+    run = seal({'schema_id': RUN_SCHEMA, 'run_id': expected_run_id, 'plan_hash': plan['content_hash'], 'candidate_hash': plan['source']['content_hash'], 'source_before': plan['source']['content_hash'], 'source_after': plan['source']['content_hash'], 'selection': [list(k) for k in sorted(set(selections))], 'binding': None, 'merged_fragments': entries, 'attempts': attempts, 'errors': errors, 'started_at': min(starts) if starts else utc_now(), 'finished_at': max(ends) if ends else utc_now(), 'wall_seconds': math.fsum(walls), 'wall_measure': 'sum_of_fragment_runner_wall_seconds', 'fragment_wall_seconds': walls, 'fragment_jobs': job_budgets, 'jobs': sum(job_budgets), 'sampled_process_tree_peak_rss_bytes': None, 'fragment_sampled_peak_rss_bytes': memories})
     if 'disk_free_guard' in plan:
         try:
             disk = _merged_disk_guard(plan, verified_runs, output=output)

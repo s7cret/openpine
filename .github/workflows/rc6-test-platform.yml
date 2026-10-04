@@ -75,7 +75,7 @@ jobs:
         PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
       run: |
         mkdir -p "$RUNNER_TEMP/platform-evidence"
-        python -m pytest -q rc6_tests/test_rc6_execution_platform.py rc6_tests/test_rc6_execution_fragments.py rc6_tests/test_rc6_execution_coordination.py rc6_tests/test_rc6_execution_ci.py rc6_tests/test_rc6_owner_portability.py rc6_tests/test_rc6_owner_producer_launch.py rc6_tests/test_rc6_execution_disk.py rc6_tests/test_rc6_execution_disk_storage.py rc6_tests/test_rc6_execution_disk_fragments.py rc6_tests/test_rc6_private_retention.py \
+        python -m pytest -q rc6_tests/test_rc6_execution_platform.py rc6_tests/test_rc6_execution_fragments.py rc6_tests/test_rc6_execution_fragment_duration.py rc6_tests/test_rc6_execution_coordination.py rc6_tests/test_rc6_execution_ci.py rc6_tests/test_rc6_owner_portability.py rc6_tests/test_rc6_owner_producer_launch.py rc6_tests/test_rc6_execution_disk.py rc6_tests/test_rc6_execution_disk_storage.py rc6_tests/test_rc6_execution_disk_fragments.py rc6_tests/test_rc6_private_retention.py \
           -p openpine.verification.pytest_gate \
           --verification-suite=execution-platform \
           --verification-lock=verification/platform-inventory.json \

@@ -90,6 +90,10 @@
       "rc6_tests/test_rc6_execution_disk_storage.py::test_stream_rejects_unsafe_or_malformed_evidence[truncated]",
       "rc6_tests/test_rc6_execution_disk_storage.py::test_stream_write_error_cancels_owned_preserves_partial",
       "rc6_tests/test_rc6_execution_disk_storage.py::test_writer_rejects_oversized_inline_record",
+      "rc6_tests/test_rc6_execution_fragment_duration.py::test_common_join_accepts_equal_real_merge_hashes",
+      "rc6_tests/test_rc6_execution_fragment_duration.py::test_common_join_keeps_strict_hash_rejection",
+      "rc6_tests/test_rc6_execution_fragment_duration.py::test_real_merge_uses_exact_stable_hosted_duration[False]",
+      "rc6_tests/test_rc6_execution_fragment_duration.py::test_real_merge_uses_exact_stable_hosted_duration[True]",
       "rc6_tests/test_rc6_execution_platform.py::test_binding_checks_live_locations_before_freezing[source-drift]",
       "rc6_tests/test_rc6_execution_platform.py::test_binding_checks_live_locations_before_freezing[traversal]",
       "rc6_tests/test_rc6_execution_platform.py::test_binding_checks_live_locations_before_freezing[wrong-executable]",
@@ -216,7 +220,7 @@
       "deselected": 0,
       "sha256": "sha256:ac61c67799026fe493bc65cd54165c310d17d948e066fabd637e0bc612c7fccb"
     },
-    "count": 349,
+    "count": 353,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   }

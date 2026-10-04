@@ -98,6 +98,9 @@ test('401 opens LAN unlock flow and all subsequent API calls carry bearer auth',
   const consoleErrors: string[] = []
   page.on('pageerror', error => pageErrors.push(error.message))
   page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
+  await page.addInitScript(() => {
+    Object.defineProperty(window, '__openpineUnlockDocumentId', { value: crypto.randomUUID() })
+  })
   await installApiMock(page)
   const navigation = await page.goto('/dashboard')
   await page.waitForTimeout(250)
@@ -108,14 +111,45 @@ test('401 opens LAN unlock flow and all subsequent API calls carry bearer auth',
   expect(navigation?.status()).toBe(200)
   await expect(dialog).toBeVisible()
   await dialog.getByLabel(/token|токен/i).fill(TOKEN)
-  await dialog.getByRole('button', { name: /unlock|разблок/i }).click()
+  const initialDocumentId = await page.evaluate(() => Object.getOwnPropertyDescriptor(window, '__openpineUnlockDocumentId')?.value)
+  expect(initialDocumentId).toBeTruthy()
+  let replacementDocument = false
+  const unlockRequests: { path: string; authorization: string | undefined; replacementDocument: boolean }[] = []
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname
+    if (path.startsWith('/api/')) {
+      unlockRequests.push({ path, authorization: request.headers().authorization, replacementDocument })
+    }
+  })
+  await Promise.all([
+    page.waitForEvent('framenavigated', {
+      predicate: frame => {
+        if (frame !== page.mainFrame()) return false
+        replacementDocument = true
+        return true
+      },
+    }),
+    dialog.getByRole('button', { name: /unlock|разблок/i }).click(),
+  ])
+  await page.waitForLoadState('domcontentloaded')
 
   await expect(dialog).toBeHidden()
+  const replacementDocumentId = await page.evaluate(() => Object.getOwnPropertyDescriptor(window, '__openpineUnlockDocumentId')?.value)
+  expect(replacementDocumentId).toBeTruthy()
+  expect(replacementDocumentId).not.toBe(initialDocumentId)
   expect(await page.evaluate(() => sessionStorage.getItem('openpine.api.bearer-token'))).toBe(TOKEN)
   await expect.poll(async () => {
     const requests = await page.evaluate(() => performance.getEntriesByType('resource').map(entry => entry.name))
     return requests.some(url => url.includes('/api/'))
   }).toBe(true)
+  const validationRequests = unlockRequests.filter(request => request.path === '/api/version' && !request.replacementDocument)
+  expect(validationRequests.length).toBeGreaterThan(0)
+  expect(validationRequests.every(request => request.authorization === `Bearer ${TOKEN}`)).toBe(true)
+  const replacementRequests = unlockRequests.filter(request => request.replacementDocument)
+  expect(replacementRequests.length).toBeGreaterThan(0)
+  expect(replacementRequests.every(request => request.authorization === `Bearer ${TOKEN}`)).toBe(true)
+  expect(pageErrors).toEqual([])
+  expect(consoleErrors.filter(message => !message.includes('401 (Unauthorized)'))).toEqual([])
 })
 
 test('strategy trade calendar opens on the selected ledger range', async ({ page }, testInfo) => {
