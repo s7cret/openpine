@@ -24,6 +24,7 @@
       "rc6_tests/test_rc6_execution_ci.py::test_logged_matching_declared_tool_alias_preserves_capture[argv]",
       "rc6_tests/test_rc6_execution_ci.py::test_logged_matching_declared_tool_alias_preserves_capture[chromium]",
       "rc6_tests/test_rc6_execution_ci.py::test_logged_matching_declared_tool_alias_preserves_capture[node]",
+      "rc6_tests/test_rc6_execution_ci.py::test_native_inline_scripts_import_existing_verifier_exports",
       "rc6_tests/test_rc6_execution_ci.py::test_native_verify_preserves_required_branch_protection_contexts",
       "rc6_tests/test_rc6_execution_ci.py::test_platform_checks_installed_dependencies_before_locked_tests",
       "rc6_tests/test_rc6_execution_ci.py::test_platform_installs_all_pinned_transitive_owner_prerequisites",
@@ -214,7 +215,7 @@
       "deselected": 0,
       "sha256": "sha256:ac61c67799026fe493bc65cd54165c310d17d948e066fabd637e0bc612c7fccb"
     },
-    "count": 347,
+    "count": 348,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   }

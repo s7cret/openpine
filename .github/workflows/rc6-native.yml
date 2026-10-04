@@ -105,7 +105,7 @@ jobs:
         python - <<'PYOWNERLOC'
         import json,os,pathlib,shutil,subprocess
         from openpine.verification.execution_ci import make_owner_locations
-        from openpine.verification.identity import write_once_json
+        from openpine.verification.execution_identity import write_once_json
         root=pathlib.Path(os.environ['RUNNER_TEMP'])
         reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py311','py312','py313')}
         node=shutil.which('node');npm=shutil.which('npm')
@@ -346,7 +346,7 @@ jobs:
         python - <<'PYFRONTEND'
         import json,os,pathlib
         from openpine.verification.execution_binding import make_binding
-        from openpine.verification.identity import write_once_json
+        from openpine.verification.execution_identity import write_once_json
         root=pathlib.Path(os.environ['RUNNER_TEMP']);r=json.loads((root/'owner-env313/restored.json').read_text());plan=json.loads((root/'plan/plan.json').read_text())
         binding=make_binding(plan,{n:pathlib.Path(p) for n,p in r['roots'].items()},{'py313':r['executable']})
         write_once_json(root/'frontend-binding.json',binding)
@@ -407,7 +407,7 @@ jobs:
         python - <<'PYPACKAGE'
         import json,os,pathlib
         from openpine.verification.execution_binding import make_binding
-        from openpine.verification.identity import write_once_json
+        from openpine.verification.execution_identity import write_once_json
         root=pathlib.Path(os.environ['RUNNER_TEMP']);plan=json.loads((root/'plan/plan.json').read_text())
         reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py311','py312','py313')};r=reports['py313']
         binding=make_binding(plan,{n:pathlib.Path(p) for n,p in r['roots'].items()},{label:row['executable'] for label,row in reports.items()})

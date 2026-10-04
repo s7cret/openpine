@@ -644,6 +644,26 @@ def test_native_verify_preserves_required_branch_protection_contexts():
     assert jobs['frontend'].get('name', 'frontend') == 'frontend'
 
 
+def test_native_inline_scripts_import_existing_verifier_exports():
+    import ast
+    import importlib
+
+    workflow = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())
+    checked = 0
+    for job in workflow['jobs'].values():
+        for step in job.get('steps', []):
+            script = step.get('run', '')
+            for _, body in re.findall(r"python - <<'([A-Z_]+)'\n(.*?)\n\1", script, re.S):
+                for node in ast.walk(ast.parse(body)):
+                    if not isinstance(node, ast.ImportFrom) or not node.module or not node.module.startswith('openpine.verification.'):
+                        continue
+                    module = importlib.import_module(node.module)
+                    for symbol in node.names:
+                        assert hasattr(module, symbol.name), f'{node.module} does not export {symbol.name}'
+                        checked += 1
+    assert checked >= 3
+
+
 def test_platform_installs_all_pinned_transitive_owner_prerequisites():
     import ast
 

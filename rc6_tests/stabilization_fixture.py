@@ -175,10 +175,12 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
     harness_inputs = {"fixture-helper.py": {"path": str(helper), "sha256": hash_file(helper)}}
     specs["package_harness_inputs"] = dict(harness_inputs)
     put(host / "openpine-ui/package.json", {"name": "fixture-ui"})
+    scratch = base / "scratch"
+    scratch.mkdir()
     clean = {
         "PATH": os.environ["PATH"],
         "HOME": str(base),
-        "TMPDIR": os.environ["TMPDIR"],
+        "TMPDIR": str(scratch),
     }
 
     def command(role, argv, *, cwd=base, expected_stdout=None, binding=None, artifacts=None):
