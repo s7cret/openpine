@@ -708,6 +708,8 @@ def test_provisional_cli_exit_does_not_forge_full_acceptance(tmp_path, monkeypat
     failed = reseal({**report, "diagnostic_provisional_ok": False})
     monkeypatch.setattr(evidence_index, "build_evidence_index", lambda *a, **k: failed)
     assert main(args) == 1
+    assert main([*args, "--diagnostic-provisional"]) == 1
+    assert read_json(output)["ok"] is False
 
     monkeypatch.setattr(stage2_remaining, "build_stage2_remaining", lambda *a: report)
     args = ["stage2-remaining", "--host-root", str(host),
@@ -717,6 +719,8 @@ def test_provisional_cli_exit_does_not_forge_full_acceptance(tmp_path, monkeypat
     assert main([*args, "--diagnostic-provisional"]) == 0
     monkeypatch.setattr(stage2_remaining, "build_stage2_remaining", lambda *a: failed)
     assert main(args) == 1
+    assert main([*args, "--diagnostic-provisional"]) == 1
+    assert read_json(tmp_path / "remaining.json")["full_stage2_accepted"] is False
 
 
 def test_stage2_remainder_keeps_provisional_cases_open(tmp_path):

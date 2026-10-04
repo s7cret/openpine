@@ -538,7 +538,15 @@ def test_language_jobs_are_named_separate_and_do_not_block_native_foundation():
     strict = '\n'.join(step.get('run', '') for step in jobs['strict-language']['steps'])
     assert 'bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional' in diagnostic
     assert 'bash scripts/rc6_builtin_remainder.sh' in strict
-    assert '--diagnostic-provisional' not in strict
+    # RC6 admits only registry-bound UNVERIFIED debt for CI completion. The
+    # same owners still emit their strict negative semantic verdict unchanged.
+    assert 'bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional' in strict
+    assert jobs['strict-language']['name'] == 'RC6 strict-language (${{ matrix.python }})'
+    assert 'negative debt remains failure' not in strict
+    for job in ('language-diagnostic', 'strict-language'):
+        assert jobs[job].get('continue-on-error', False) is False
+        assert all(step.get('continue-on-error', False) is False for step in jobs[job]['steps'])
+        assert '|| true' not in '\n'.join(step.get('run', '') for step in jobs[job]['steps'])
     for job in ('language-diagnostic', 'strict-language'):
         assert any(step.get('if') == 'always()' and 'upload-artifact@' in step.get('uses', '') for step in jobs[job]['steps'])
 

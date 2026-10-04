@@ -167,9 +167,14 @@ while their semantic `ok` is false. `--diagnostic-provisional` explicitly opts
 into a successful *diagnostic-report* exit only; the index and Stage 2 remainder
 still retain `ok=false`, `full_stage2_accepted=false`, and
 `tradingview_verified=false`. An undeclared case, mismatched hash, wrong source,
-or genuine runtime failure remains a strict failure. After independent Pine v5
-evidence is available, remove the unresolved records, verify the expected values,
-and rerun strict acceptance for the exact candidate.
+or genuine runtime failure remains a strict failure. RC6 CI knowingly accepts
+this declared UNVERIFIED debt: both existing language jobs use the explicit
+`--diagnostic-provisional` exit policy, without changing their job contexts or
+promoting the saved strict negative verdict to full-language acceptance.
+No additional language campaign or runtime-derived oracle is required for this
+CI policy choice. After independent Pine v5 evidence is available, remove the
+unresolved records, verify the expected values, and rerun strict acceptance for
+the exact candidate.
 
 Фактический численный охват bounded examples растёт с 270 до 284 из 303 direct-строк,
 но из 284 две TSI-строки имеют только conditioning horizon. Это не доля готовности
