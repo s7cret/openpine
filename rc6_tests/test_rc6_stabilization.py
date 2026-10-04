@@ -79,6 +79,152 @@ def replay(fixture):
     )
 
 
+def test_ci_common_owner_invokes_current_and_keeps_missing_owners_negative(full_fixture, tmp_path):
+    import shutil
+    from openpine.verification import execution_ci as ci
+
+    host, plan, evidence, packet = full_fixture
+    native = tmp_path / 'native'
+    shutil.copytree(evidence / packet['campaign'], native / 'merged')
+    for env, relative in packet['gates']['foundation']['environments'].items():
+        shutil.copytree(evidence / relative, native / 'suites' / env)
+    for task, relative in packet['gates']['coverage']['tasks'].items():
+        shutil.copytree(evidence / relative, native / 'owner-coverage' / task)
+    second = tmp_path / 'native-second'
+    shutil.copytree(native, second)
+    frozen = {path: path.read_bytes() for path in native.rglob('*') if path.is_file()}
+    output = tmp_path / 'common'
+    result = ci.finalize_stabilization(plan, host, [native, second], output, packet['run_id'])
+    assert {path: path.read_bytes() for path in frozen} == frozen
+    saved = read_json(output / 'current.json')
+    assert result == saved and not result['ok']
+    assert read_json(output / 'replayed-current.json') == saved
+    assert read_json(output / 'summary.json')['candidate_hash'] == plan['source']['content_hash']
+    assert read_json(output / 'remainder.json')['items']
+    locators = read_json(output / 'evidence/stabilization-inputs.json')
+    assert set(locators['gates']) == {'branch-reconciliation', 'foundation', 'coverage', 'protected-workers'}
+    for gate in ('frontend', 'packages', 'test-performance'):
+        assert saved['stabilization']['gates'][gate]['status'] == 'not_run'
+    for gate in ('foundation', 'coverage', 'protected-workers'):
+        assert saved['stabilization']['gates'][gate]['status'] == 'passed'
+    assert saved['stage2']['status'] == 'in_progress'
+    assert saved['full_stage2_accepted'] is False
+    assert read_json(output / 'invocations.json')['exits'] == [1, 1, 1, 1]
+
+
+@pytest.mark.parametrize('mutation', ['stale-run', 'detached', 'missing-foundation'])
+def test_ci_common_owner_rejects_foreign_or_missing_primaries(full_fixture, tmp_path, mutation):
+    import shutil
+    from openpine.verification import execution_ci as ci
+
+    host, plan, evidence, packet = full_fixture
+    native = tmp_path / 'native'
+    shutil.copytree(evidence / packet['campaign'], native / 'merged')
+    if mutation != 'missing-foundation':
+        for env, relative in packet['gates']['foundation']['environments'].items():
+            shutil.copytree(evidence / relative, native / 'suites' / env)
+    if mutation == 'detached':
+        (native / 'merged/run.json').unlink()
+        (native / 'merged/run.json').symlink_to(evidence / packet['campaign'] / 'run.json')
+    if mutation in {'stale-run', 'detached'}:
+        with pytest.raises((ValueError, OSError)):
+            ci.finalize_stabilization(plan, host, [native], tmp_path / 'common',
+                                      'foreign' if mutation == 'stale-run' else packet['run_id'])
+    else:
+        result = ci.finalize_stabilization(plan, host, [native], tmp_path / 'common', packet['run_id'])
+        assert not result['ok']
+        assert result['stabilization']['gates']['foundation']['status'] == 'not_run'
+        assert result['stabilization']['gates']['coverage']['status'] == 'not_run'
+
+
+def test_current_cli_exposes_checked_replay_binding():
+    import argparse
+    from openpine.verification.execution_cli import add_commands
+
+    parser = argparse.ArgumentParser()
+    commands = parser.add_subparsers(dest='command')
+    add_commands(commands)
+    for name in ('test-current', 'test-stabilization'):
+        args = parser.parse_args([name, '--host-root', '/host', '--plan', '/plan',
+                                 '--expected-plan-hash', 'hash', '--evidence', '/evidence',
+                                 '--run-id', 'run', '--output', '/out', '--binding', '/binding'])
+        assert args.binding == Path('/binding')
+
+
+def test_source_replay_binding_preserves_original_execution_provenance(full_fixture, tmp_path):
+    import shutil
+    from openpine.verification.execution_binding import make_binding
+    from openpine.verification.stage_gate import run_stabilization_gate
+
+    host, plan, evidence, packet = full_fixture
+    original = replay(full_fixture)
+    roots = {}
+    for name, location in plan['roots'].items():
+        roots[name] = tmp_path / name
+        shutil.copytree(location, roots[name], ignore=shutil.ignore_patterns('__pycache__'))
+    binding = make_binding(plan, roots, {name: env['executable'] for name, env in plan['environments'].items()})
+    run_bytes = (evidence / packet['campaign'] / 'run.json').read_bytes()
+    result = run_stabilization_gate(roots['openpine'], plan, evidence,
+                                   expected_plan_hash=plan['content_hash'], run_id=packet['run_id'],
+                                   binding=binding)
+    assert result == original
+    assert (evidence / packet['campaign'] / 'run.json').read_bytes() == run_bytes
+
+
+@pytest.fixture
+def non_sibling_replay(full_fixture, tmp_path):
+    import shutil
+    from openpine.verification.execution_binding import make_binding
+
+    _, plan, evidence, packet = full_fixture
+    roots = {}
+    for index, (name, location) in enumerate(plan['roots'].items()):
+        roots[name] = tmp_path / ('checkout-' + str(index)) / 'source'
+        shutil.copytree(location, roots[name], ignore=shutil.ignore_patterns('__pycache__'))
+    binding = make_binding(plan, roots, {name: env['executable'] for name, env in plan['environments'].items()})
+    return roots, binding, plan, evidence, packet
+
+
+def test_foundation_non_sibling_mapping_preserves_all_replay_bytes(full_fixture, non_sibling_replay):
+    from openpine.verification.stage_gate import run_stage_gate, run_stabilization_gate
+
+    roots, binding, plan, evidence, packet = non_sibling_replay
+    frozen_plan = copy.deepcopy(plan)
+    frozen = {p: p.read_bytes() for p in evidence.rglob('*') if p.is_file()}
+    result = run_stabilization_gate(roots['openpine'], plan, evidence,
+                                   expected_plan_hash=plan['content_hash'], run_id=packet['run_id'],
+                                   binding=binding)
+    assert result == replay(full_fixture), result['stabilization']['gates']['foundation']
+    for relative in packet['gates']['foundation']['environments'].values():
+        folder = evidence / relative
+        assert run_stage_gate(roots['openpine'], roots, folder, persist=False) == read_json(folder / 'stage1.json')
+    assert plan == frozen_plan
+    assert {p: p.read_bytes() for p in frozen} == frozen
+
+
+@pytest.mark.parametrize('mutation', ['drift', 'missing', 'wrong-component', 'symlink', 'missing-mapping'])
+def test_non_sibling_mapping_rejects_unverified_sources(non_sibling_replay, mutation):
+    from openpine.verification.stage_gate import run_stabilization_gate
+
+    roots, binding, plan, evidence, packet = non_sibling_replay
+    if mutation == 'drift':
+        (roots['pine2ast'] / 'unexpected.py').write_text('# drift\n')
+    elif mutation == 'missing':
+        binding['roots']['pine2ast'] = str(roots['pine2ast'].parent / 'absent')
+    elif mutation == 'wrong-component':
+        binding['roots']['pine2ast'], binding['roots']['pinelib'] = binding['roots']['pinelib'], binding['roots']['pine2ast']
+    elif mutation == 'missing-mapping':
+        binding['roots'].pop('pine2ast')
+    else:
+        link = roots['pine2ast'].parent / 'link'
+        link.symlink_to(roots['pine2ast'], target_is_directory=True)
+        binding['roots']['pine2ast'] = str(link)
+    with pytest.raises((ValueError, OSError)):
+        run_stabilization_gate(roots['openpine'], plan, evidence,
+                               expected_plan_hash=plan['content_hash'], run_id=packet['run_id'],
+                               binding=reseal(binding))
+
+
 def test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt(
     full_fixture,
 ):
@@ -360,3 +506,147 @@ def test_tampered_installed_resource_is_rejected_against_frozen_wheel(full_fixtu
         assert current["stabilization"]["gates"]["packages"]["status"] == "blocked"
     finally:
         path.write_bytes(original)
+
+
+@pytest.mark.parametrize('gate,slot', [('frontend', 'attempt'), ('packages', 'package_attempt')])
+@pytest.mark.parametrize('relocated', [False, True])
+def test_owner_evidence_subroot_is_bound_locator(tmp_path, gate, slot, relocated):
+    from openpine.verification import stage_gate
+    _owner_evidence_root = getattr(stage_gate, '_owner_evidence_root', None)
+    assert callable(_owner_evidence_root), 'common reader lacks bound evidence-subroot support'
+
+    attempt = tmp_path / 'owner'
+    attempt.mkdir()
+    historical = tmp_path / 'old' if relocated else attempt
+    plan = {'owner_launch': {'paths': {slot: str(historical)}}}
+    entry = {'evidence_subroot': 'owner', 'original': {'path': 'raw.json', 'sha256': 'unchanged'}}
+    frozen = copy.deepcopy(entry)
+    mappings = {str(historical): str(attempt)} if relocated else None
+    root, supplied = _owner_evidence_root(plan, tmp_path, entry, gate, replay_paths=mappings)
+    assert root == attempt and supplied == {'original': entry['original']}
+    assert entry == frozen
+
+
+@pytest.mark.parametrize('mutation', ['absolute', 'traversal', 'symlink', 'foreign', 'missing-launch', 'missing-mapping', 'empty', 'non-string'])
+def test_owner_evidence_subroot_rejects_unbound_locations(tmp_path, mutation):
+    from openpine.verification import stage_gate
+    _owner_evidence_root = getattr(stage_gate, '_owner_evidence_root', None)
+    assert callable(_owner_evidence_root), 'common reader lacks bound evidence-subroot support'
+
+    attempt = tmp_path / 'owner'
+    attempt.mkdir()
+    plan = {'owner_launch': {'paths': {'attempt': str(attempt)}}}
+    entry = {'evidence_subroot': 'owner'}
+    mappings = None
+    if mutation == 'absolute':
+        entry['evidence_subroot'] = str(attempt)
+    elif mutation == 'traversal':
+        entry['evidence_subroot'] = 'owner/../owner'
+    elif mutation == 'symlink':
+        (tmp_path / 'link').symlink_to(attempt, target_is_directory=True)
+        entry['evidence_subroot'] = 'link'
+    elif mutation == 'foreign':
+        (tmp_path / 'foreign').mkdir()
+        entry['evidence_subroot'] = 'foreign'
+    elif mutation == 'missing-launch':
+        plan = {}
+    elif mutation == 'missing-mapping':
+        mappings = {}
+    elif mutation == 'empty':
+        entry['evidence_subroot'] = ''
+    else:
+        entry['evidence_subroot'] = 42
+    with pytest.raises((ValueError, OSError, KeyError)):
+        _owner_evidence_root(plan, tmp_path, entry, 'frontend', replay_paths=mappings)
+
+
+def test_owner_evidence_subroot_legacy_flat_is_unchanged(tmp_path):
+    from openpine.verification import stage_gate
+    _owner_evidence_root = getattr(stage_gate, '_owner_evidence_root', None)
+    assert callable(_owner_evidence_root), 'common reader lacks bound evidence-subroot support'
+
+    entry = {'commands': [], 'tests': {'path': 'raw.json'}}
+    assert _owner_evidence_root({}, tmp_path, entry, 'frontend') == (tmp_path, entry)
+
+
+def test_owner_evidence_subroot_preserves_real_frontend_receipts(full_fixture):
+    from openpine.verification import stage_gate
+    _owner_evidence_root = getattr(stage_gate, '_owner_evidence_root', None)
+    assert callable(_owner_evidence_root), 'common reader lacks bound evidence-subroot support'
+    from openpine.verification.stabilization_evidence import verify_frontend
+
+    host, plan, evidence, packet = full_fixture
+    entry = packet['gates']['frontend']
+    spec = read_json(host / 'verification/execution-policy.json')['stabilization']['frontend']
+    frozen = {evidence / d['path']: (evidence / d['path']).read_bytes() for d in entry['commands']}
+    expected = verify_frontend(plan, evidence, entry, spec)
+    # Locator-only boundary test; do not change the executed plan or raw receipts.
+    locator_plan = {'owner_launch': {'paths': {'attempt': str(evidence)}}}
+    root, supplied = _owner_evidence_root(locator_plan, evidence.parent,
+                                         {**entry, 'evidence_subroot': evidence.name}, 'frontend')
+    assert supplied == entry
+    assert verify_frontend(plan, root, supplied, spec) == expected
+    assert {p: p.read_bytes() for p in frozen} == frozen
+
+
+@pytest.mark.parametrize('gate', ['frontend', 'packages'])
+def test_common_reader_rejects_subroot_without_frozen_launch(full_fixture, gate):
+    _, _, evidence, packet = full_fixture
+    changed = copy.deepcopy(packet)
+    changed['gates'][gate]['evidence_subroot'] = evidence.name
+    path = evidence / 'stabilization-inputs.json'
+    original = path.read_bytes()
+    try:
+        path.write_text(json.dumps(changed))
+        current = replay(full_fixture)
+        row = current['stabilization']['gates'][gate]
+        assert row['status'] == 'blocked' and 'frozen launch path' in row['errors'][0]
+        assert not current['ok'] and not current['full_stage2_accepted']
+    finally:
+        path.write_bytes(original)
+
+
+def test_common_reader_accepts_frozen_namespaces_and_checked_archive(tmp_path):
+    import shutil
+    from openpine.verification.execution_binding import make_binding
+    from openpine.verification.stage_gate import run_stabilization_gate
+    from rc6_tests.stabilization_fixture import build_fixture
+
+    original = tmp_path/'original'
+    original.mkdir()
+    host, plan, evidence, packet = build_fixture(original, portable=True, owner_namespaces=True)
+    expected = replay((host, plan, evidence, packet))
+    assert expected['ok'] and not expected['full_stage2_accepted']
+    primaries = {p.relative_to(evidence).as_posix(): p.read_bytes() for p in evidence.rglob('*') if p.is_file()}
+    composed = copy.deepcopy(packet)
+    prefix = evidence.relative_to(original).as_posix() + '/'
+    composed['campaign'] = prefix + packet['campaign']
+    for gate, key in [('foundation', 'environments'), ('coverage', 'tasks')]:
+        composed['gates'][gate][key] = {k: prefix + v for k, v in packet['gates'][gate][key].items()}
+    for side in ['before', 'after']:
+        for row in composed['gates']['test-performance'][side]:
+            row['campaign'] = prefix + row['campaign']
+            row['plan']['path'] = prefix + row['plan']['path']
+    for gate in ['frontend', 'packages']:
+        composed['gates'][gate]['evidence_subroot'] = prefix.rstrip('/')
+    (original/'stabilization-inputs.json').write_text(json.dumps(composed))
+    kwargs = {'expected_plan_hash': plan['content_hash'], 'run_id': packet['run_id']}
+    assert run_stabilization_gate(host, plan, original, **kwargs) == expected
+    assert {p.relative_to(evidence).as_posix(): p.read_bytes() for p in evidence.rglob('*') if p.is_file()} == primaries
+
+    archive = tmp_path/'archive'
+    shutil.copytree(original, archive, ignore=lambda directory, names: [n for n in names if (Path(directory)/n).is_symlink()])
+    roots = {name: archive/Path(path).relative_to(original) for name, path in plan['roots'].items()}
+    binding = make_binding(plan, roots, {name: env['executable'] for name, env in plan['environments'].items()})
+    binding.pop('content_hash')
+    binding['owner_paths'] = {str(original): str(archive)}
+    binding = seal(binding)
+    shutil.rmtree(original)
+    assert run_stabilization_gate(roots['openpine'], plan, archive, binding=binding, **kwargs) == expected
+    moved = archive/evidence.relative_to(original)
+    assert {p.relative_to(moved).as_posix(): p.read_bytes() for p in moved.rglob('*') if p.is_file()} == primaries
+    incomplete = {k: v for k, v in binding.items() if k != 'content_hash'}
+    incomplete['owner_paths'] = {}
+    blocked = run_stabilization_gate(roots['openpine'], plan, archive, binding=seal(incomplete), **kwargs)
+    assert all(blocked['stabilization']['gates'][gate]['status'] == 'blocked' for gate in ['frontend', 'packages'])
+    assert not blocked['ok'] and not blocked['full_stage2_accepted']

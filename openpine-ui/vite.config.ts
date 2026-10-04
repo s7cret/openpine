@@ -1,14 +1,13 @@
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
-import vueI18n from '@intlify/unplugin-vue-i18n/vite'
-import tailwindcss from 'tailwindcss'
+import tailwindcss from '@tailwindcss/postcss'
 import autoprefixer from 'autoprefixer'
 import path from 'path'
 
 export default defineConfig({
   plugins: [
     vue(),
-    vueI18n({ include: path.resolve(__dirname, './src/i18n/locales/**') }),
+
   ],
   test: {
     exclude: [...configDefaults.exclude, 'tests/**/*.test.mjs', 'e2e/**'],

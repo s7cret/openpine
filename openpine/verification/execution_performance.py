@@ -16,10 +16,12 @@ def _workload_identity(plan: dict, *, instrumentation: bool) -> str:
     rows = []
     for task in plan['tasks']:
         row = {key: task[key] for key in ('id', 'component', 'environment', 'nodeids', 'full_inventory_hash', 'deselected', 'plugins', 'variant', 'execution_path', 'mode', 'cpu_slots', 'memory_mib', 'exclusive_group')}
+        row['private_retention'] = task.get('private_retention', 'preserve')
         if instrumentation:
             row['coverage'] = task.get('coverage', False)
         rows.append(row)
-    return digest({'source': plan['source']['content_hash'], 'source_commits': plan.get('source_commits'), 'policy_hash': plan['policy_hash'], 'environment_identities': {key: value['identity']['content_hash'] for key, value in plan['environments'].items()}, 'profile': plan['profile'], 'required_gates': plan['required_gates'], 'tasks': rows})
+    guard = {'disk_free_guard': plan['disk_free_guard']} if 'disk_free_guard' in plan else {}
+    return digest({**guard, 'source': plan['source']['content_hash'], 'source_commits': plan.get('source_commits'), 'policy_hash': plan['policy_hash'], 'environment_identities': {key: value['identity']['content_hash'] for key, value in plan['environments'].items()}, 'profile': plan['profile'], 'required_gates': plan['required_gates'], 'tasks': rows})
 
 def workload_identity(plan: dict) -> str:
     # Before/after comparisons MUST retain their instrumentation identity.

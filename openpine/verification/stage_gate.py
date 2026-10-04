@@ -63,7 +63,7 @@ def validate_capabilities(graph: dict, policy: dict) -> None:
 
 
 def run_stage_gate(
-    host: Path, stack: Path, evidence: Path, *, persist: bool = True
+    host: Path, stack: Path | dict[str, Path], evidence: Path, *, persist: bool = True
 ) -> dict:
     plan = read_json(host / "verification/stages.json")
     validate_stages(plan, read_json(host / "docs/RC6_REVIEW_36.json"))
@@ -146,8 +146,38 @@ STABILIZATION_GATES = (
 CURRENT_SCHEMA = "openpine.rc6_current_acceptance.v1"
 
 
+def _owner_evidence_root(
+    plan: dict, evidence: Path, entry: dict, gate: str, *, replay_paths: dict | None = None
+) -> tuple[Path, dict]:
+    """Select an independently frozen owner namespace without rewriting receipts.
+
+    The caller has already validated the plan and any execution binding. Only
+    the optional locator is removed; all producer descriptors remain verbatim.
+    """
+    if "evidence_subroot" not in entry:
+        return evidence, entry
+    from openpine.verification import stabilization_evidence as raw
+
+    relative = entry["evidence_subroot"]
+    if (
+        not isinstance(relative, str) or not relative
+        or Path(relative).is_absolute() or "\\" in relative or ":" in relative
+        or any(part in {"", ".", ".."} for part in relative.split("/"))
+    ):
+        raise ValueError("unsafe owner evidence subroot")
+    slot = {"frontend": "attempt", "packages": "package_attempt"}[gate]
+    frozen = plan.get("owner_launch", {}).get("paths", {}).get(slot)
+    if not frozen:
+        raise ValueError("owner evidence subroot requires frozen launch path: " + slot)
+    folder = raw.evidence_folder(evidence, relative)
+    if folder.resolve() != raw.replay_path(frozen, replay_paths):
+        raise ValueError("owner evidence subroot differs from frozen launch path: " + slot)
+    return folder, {key: value for key, value in entry.items() if key != "evidence_subroot"}
+
+
 def run_stabilization_gate(
-    host: Path, plan: dict, evidence: Path, *, expected_plan_hash: str, run_id: str
+    host: Path, plan: dict, evidence: Path, *, expected_plan_hash: str, run_id: str,
+    binding: dict | None = None
 ) -> dict:
     """Extend the foundation owner with exact, fail-closed RC6 stabilization.
 
@@ -163,7 +193,9 @@ def run_stabilization_gate(
     from openpine.verification import stabilization_evidence as raw
 
     validate_plan(plan, expected_hash=expected_plan_hash)
-    roots = {name: Path(value) for name, value in plan["roots"].items()}
+    from openpine.verification.execution_binding import checked_locations
+    replay_roots, _ = checked_locations(plan, binding)
+    roots = {name: Path(value) for name, value in replay_roots.items()}
     if roots.get("openpine", Path()).resolve() != host.resolve():
         raise ValueError("current host differs from plan")
     if source_snapshot(roots) != plan["source"]:
@@ -171,6 +203,11 @@ def run_stabilization_gate(
     policy = read_json(host / "verification/execution-policy.json")
     if digest(policy) != plan["policy_hash"]:
         raise ValueError("current execution policy differs from plan")
+    if policy.get('schema_id') == 'openpine.execution_policy.v2':
+        from openpine.verification.execution_owner_launch import resolve_owner_policy
+        if 'owner_launch' not in plan:
+            raise ValueError('portable policy has no frozen owner launch')
+        policy = resolve_owner_policy(policy, plan['owner_launch'])
     if plan["profile"] != "stage-full" or set(plan["required_gates"]) != set(
         STABILIZATION_GATES
     ):
@@ -229,7 +266,12 @@ def run_stabilization_gate(
             continue
         entry, spec = entries[gate], specs[gate]
         try:
+            owner_evidence = evidence
             if gate in {"frontend", "packages"}:
+                owner_evidence, entry = _owner_evidence_root(
+                    plan, evidence, entry, gate,
+                    replay_paths=(binding or {}).get("owner_paths"),
+                )
                 import copy
                 spec = copy.deepcopy(spec)
                 harness = specs.get("package_harness_inputs")
@@ -252,11 +294,9 @@ def run_stabilization_gate(
                 }
                 if not environments or set(entry["environments"]) != environments:
                     raise ValueError("missing foundation interpreter export")
-                foundation_stack = Path(spec["stack_root"])
-                foundation_sources = {
-                    name: host if name == "openpine" else foundation_stack / name
-                    for name in COMPONENTS
-                }
+                # checked_locations already admitted the exact complete mapping.
+                # Neither a historical policy path nor the host parent may replace it.
+                foundation_sources = roots
                 if source_snapshot(foundation_sources) != plan["source"]:
                     raise ValueError(
                         "foundation reader source roots differ from exact candidate"
@@ -265,7 +305,7 @@ def run_stabilization_gate(
                 for environment, relative in entry["environments"].items():
                     folder = raw.evidence_folder(evidence, relative)
                     rebuilt = run_stage_gate(
-                        host, Path(spec["stack_root"]), folder, persist=False
+                        host, foundation_sources, folder, persist=False
                     )
                     if rebuilt != read_json(folder / "stage1.json"):
                         raise ValueError(
@@ -303,12 +343,12 @@ def run_stabilization_gate(
                         campaign,
                         task,
                         raw.evidence_folder(evidence, entry["tasks"][task]),
-                        run_id=run_id,
+                        run_id=run_id, source_roots=roots,
                     )["content_hash"]
                     for task in tasks
                 }
             elif gate == "frontend":
-                result = raw.verify_frontend(plan, evidence, entry, spec)
+                result = raw.verify_frontend(plan, owner_evidence, entry, spec, replay_paths=(binding or {}).get("owner_paths"))
             elif gate == "packages":
                 mandatory_package_versions = set().union(
                     *(set(row["pythons"]) for row in policy["components"].values())
@@ -319,7 +359,8 @@ def run_stabilization_gate(
                     raise ValueError("missing package interpreter")
                 result = {
                     version: raw.verify_packages(
-                        plan, evidence, entry[version], specification
+                        plan, owner_evidence, entry[version], specification,
+                        replay_paths=(binding or {}).get("owner_paths"), source_roots=roots
                     )
                     for version, specification in spec.items()
                 }

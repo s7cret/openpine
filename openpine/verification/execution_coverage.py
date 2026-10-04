@@ -50,7 +50,7 @@ def combine_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *,
     write_once_json(output / 'receipt.json', result)
     return result
 
-def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, run_id: str) -> dict:
+def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, run_id: str, source_roots: dict | None = None) -> dict:
     """Re-read the existing coverage owner's command/data receipts, not a PASS flag."""
     from openpine.verification.execution_identity import hash_file, read_artifact
     tasks = [t for t in plan['tasks'] if t['id'] == task_id]
@@ -87,7 +87,15 @@ def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, 
     import json
     import tempfile
     import coverage
-    component_root = Path(plan['roots'][task['component']])
+    # The planner and executor can be on distinct hosts. Raw coverage paths
+    # belong to the campaign's immutable execution binding, not planner roots.
+    run = read_json(root / 'run.json')
+    execution_binding = read_artifact(root, run['binding']) if run.get('binding') else None
+    execution_roots, _ = locations(plan, execution_binding)
+    historical_root = Path(execution_roots[task['component']])
+    component_root = Path((source_roots or plan['roots'])[task['component']])
+    if source_roots and source_snapshot({n: Path(p) for n, p in source_roots.items()}) != plan['source']:
+        raise ValueError('coverage replay source differs from frozen candidate')
     config = component_root / 'pyproject.toml'
     if hash_file(config) != config_hash:
         raise ValueError('coverage owner config is stale')
@@ -97,7 +105,11 @@ def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, 
     run = read_json(root / 'run.json')
     from contextlib import ExitStack
     with ExitStack() as cleanup:
-        union = coverage.CoverageData(no_disk=True)
+        # Disk-backed scratch releases coverage.py's attached shard database
+        # after each update; a persistent no_disk connection cannot be reused
+        # by coverage 7.13's ATTACH-based multi-shard merger.
+        union_scratch = cleanup.enter_context(tempfile.TemporaryDirectory(prefix='openpine-coverage-union-'))
+        union = coverage.CoverageData(basename=str(Path(union_scratch) / '.coverage'))
         cleanup.callback(union.close, force=True)
         for attempt in run['attempts']:
             if attempt['task'] == task_id and 'coverage' in attempt['artifacts']:
@@ -117,9 +129,15 @@ def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, 
             right = combined.arcs(filename) if combined.has_arcs() else combined.lines(filename)
             if set(left or []) != set(right or []):
                 raise ValueError('combined coverage observations differ from executed shards')
-        verifier = coverage.Coverage(data_file=str(raw_data), config_file=str(config))
-        verifier.load()
-        cleanup.callback(verifier.get_data().close)
+        def relocate(filename):
+            path = Path(filename)
+            if path.is_absolute() and path.is_relative_to(historical_root):
+                return str(component_root / path.relative_to(historical_root))
+            return filename
+        # Preserve both raw databases. Remap only the reader's in-memory view.
+        verifier = coverage.Coverage(data_file=None, config_file=str(config))
+        verifier.get_data().update(combined, map_path=relocate)
+        cleanup.callback(verifier.get_data().close, force=True)
         with tempfile.TemporaryDirectory(prefix='openpine-coverage-reader-') as scratch:
             destination = Path(scratch) / 'observations.json'
             verifier.json_report(outfile=str(destination))
@@ -129,9 +147,10 @@ def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, 
     keys = ('summary', 'executed_lines', 'missing_lines', 'executed_branches', 'missing_branches')
     def meaningful(files, base):
         return {str((base / name).resolve()): {k: row[k] for k in keys if k in row} for name, row in files.items()}
-    if meaningful(rebuilt['files'], Path.cwd()) != meaningful(data['files'], component_root):
+    if meaningful(rebuilt['files'], Path.cwd()) != meaningful({relocate(str(historical_root / name)): row for name, row in data['files'].items()}, component_root):
         raise ValueError('coverage file/branch observations differ from raw data')
-    if rebuilt['totals']['percent_covered'] < verifier.config.fail_under:
+    from coverage.results import should_fail_under
+    if should_fail_under(rebuilt['totals']['percent_covered'], verifier.config.fail_under, verifier.config.precision):
         raise ValueError('unchanged owner coverage threshold failed')
     if verifier.config.branch and not rebuilt['meta']['branch_coverage']:
         raise ValueError('mandatory branch coverage was not measured')

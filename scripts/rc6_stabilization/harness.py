@@ -18,6 +18,21 @@ import zipfile
 BASE = Path(__file__).resolve().parent
 NAMES = ('openpine', 'openpine-contracts', 'pine2ast', 'ast2python', 'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer')
 
+def validate_attempt_output(output, roots):
+    """Admit a new external attempt without authorizing source/helper writes."""
+    output = Path(output)
+    if not output.is_absolute() or '..' in output.parts:
+        raise ValueError('attempt output must be absolute and traversal-free')
+    if any(p.is_symlink() for p in (output, *output.parents)):
+        raise ValueError('attempt output crosses a symlink')
+    if output.exists():
+        raise FileExistsError('attempt output must be new')
+    protected = [BASE.resolve(), *(Path(v).resolve(strict=True) for v in roots.values())]
+    if any(output.is_relative_to(p) or p.is_relative_to(output) for p in protected):
+        raise ValueError('attempt output overlaps source or harness inputs')
+    return output
+
+
 def sha(path):
     return 'sha256:' + hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -25,9 +40,11 @@ def write(path, value):
     Path(path).write_text(json.dumps(value, sort_keys=True, indent=2) + '\n')
 
 class Runner:
-    def __init__(self, output, inputs):
+    def __init__(self, output, inputs, *, command_specs=(), uv=None):
         self.output = output
         self.inputs = inputs
+        self.command_specs = command_specs
+        self.uv = uv
         self.commands = []
         self.cwd = output / 'cwd'
         self.cwd.mkdir()
@@ -39,10 +56,17 @@ class Runner:
 
     def run(self, label, argv, cwd=None, expected=0, env=None):
         from openpine.verification.execution_process import run_logged
+        argv = list(argv)
+        if self.uv is not None and argv[0] == 'uv':
+            argv[0] = self.uv
         folder = self.output/'logs'/f'{len(self.commands):03d}-{label}'
         metrics = folder/'resources.json'
         command = [sys.executable, str(BASE/'measure.py'), str(metrics), *map(str, argv)]
-        raw = run_logged(command, cwd=cwd or self.cwd, output=folder, env=env or self.env, timeout=1200, inputs=self.inputs)
+        inputs = dict(self.inputs)
+        for spec in self.command_specs:
+            if spec['argv'] == command and spec['cwd'] == str(cwd or self.cwd):
+                inputs.update(spec.get('inputs', {}))
+        raw = run_logged(command, cwd=cwd or self.cwd, output=folder, env=env or self.env, timeout=1200, inputs=inputs)
         code = raw['returncode']
         row = {'id': label, 'argv': list(map(str, argv)), 'measured_argv': command, 'cwd': str(cwd or self.cwd), 'exit_code': code, 'expected_exit': expected, 'wall_s': raw['wall_seconds'], 'log': {'path': str((folder/'stdout.log').relative_to(self.output)), 'sha256': sha(folder/'stdout.log')}, 'command': {'path': str((folder/'command.json').relative_to(self.output)), 'sha256': sha(folder/'command.json')}}
         row['stderr'] = {'path': str((folder/'stderr.log').relative_to(self.output)), 'sha256': sha(folder/'stderr.log')}
@@ -217,6 +241,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--roots', type=Path, required=True, help='JSON root map or execution plan containing roots')
     p.add_argument('--git-roots', type=Path)
+    p.add_argument('--binding', type=Path, help='Checked execution source/interpreter mapping')
     p.add_argument('--interpreters', type=Path, required=True, help='JSON map 3.11/3.12/3.13 -> executable')
     p.add_argument('--builder', required=True)
     p.add_argument('--output', type=Path, required=True)
@@ -225,25 +250,32 @@ def main():
     p.add_argument('--development', action='store_true')
     p.add_argument('--reuse-artifacts', type=Path, help='Development only: existing artifacts tree')
     args = p.parse_args()
+    binding = json.loads(args.binding.read_text()) if args.binding else None
     plan = json.loads(args.roots.read_text())
     roots = plan
     plan_hash = roots.get('content_hash') if 'roots' in roots else None
     roots = roots.get('roots', roots)
+    if not args.development:
+        from openpine.verification.execution_binding import checked_locations
+        roots, _ = checked_locations(plan, binding)
     assert set(roots) == set(NAMES)
     roots = {k:str(Path(v).resolve()) for k,v in roots.items()}
-    output = args.output.resolve()
-    assert output.is_relative_to(BASE), 'writes restricted to delegated workspace'
-    assert not output.exists(), 'attempt output must be new'
-    assert all(not output.is_relative_to(Path(v)) and not Path(v).is_relative_to(output) for v in roots.values())
+    output = validate_attempt_output(args.output, roots)
     assert args.development or (args.frozen_source and plan_hash and args.run_id != 'development'), 'qualified run requires parent frozen candidate, exact plan, and campaign ID'
     assert not args.reuse_artifacts or args.development
     interpreters = json.loads(args.interpreters.read_text())
     assert set(interpreters) == {'3.11','3.12','3.13'}
     # Bootstrap existing owners in orchestration ONLY. Installed subprocesses never inherit this sys.path.
     sys.path.insert(0, roots['openpine'])
+    reviewed = json.loads((Path(roots['openpine'])/'verification/execution-policy.json').read_text())
+    if not args.development:
+        from openpine.verification.execution_owner_launch import resolve_producer_policy
+        reviewed = resolve_producer_policy(plan, reviewed, attempt=output, helpers=BASE, attempt_slot='package_attempt', owner='packages')
+    frozen_policy = reviewed['stabilization']
     output.mkdir(parents=True)
-    frozen_policy = json.loads((Path(roots['openpine'])/'verification/execution-policy.json').read_text())['stabilization']
-    runner = Runner(output, frozen_policy['package_harness_inputs'])
+    commands = [c for lanes in frozen_policy['packages'].values() for installation in lanes.values() for c in installation['commands']]
+    uv = plan.get('owner_launch', {}).get('paths', {}).get('uv') if not args.development else None
+    runner = Runner(output, frozen_policy['package_harness_inputs'], command_specs=commands, uv=uv)
     write(output/'commands.json', [])
     report = {'schema_id':'openpine.installed_package_receipt.v1', 'owner':'packages', 'scope':'FIX06_installed_wheel_and_sdist', 'development':args.development, 'status':'blocked', 'ok':False, 'full_stage2_accepted':False, 'roots':roots, 'plan_hash':plan_hash, 'run_id':args.run_id, 'harness_sha256':sha(__file__), 'probe_sha256':sha(BASE/'probe.py'), 'helper_hashes':{p.name:sha(p) for p in (BASE/'measure.py',BASE/'shadow_check.py')}}
     try:

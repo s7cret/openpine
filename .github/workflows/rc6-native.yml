@@ -71,6 +71,30 @@ jobs:
       with:
         pattern: rc6-prepared-*-${{ github.run_id }}
         path: ${{ runner.temp }}/prepared-lanes
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.11'
+    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - run: python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.11-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env311"
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.12'
+    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - run: python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.12-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env312"
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.13'
+    - run: python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.13-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env313"
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: openpine-ui/package-lock.json
+    - name: Prepare the reviewed browser, not frontend acceptance
+      working-directory: openpine-ui
+      run: |
+        npm ci
+        npx playwright install --with-deps chromium
     - id: freeze
       name: Freeze one source-bound plan for all 23 component/interpreter tasks
       shell: bash
@@ -78,7 +102,19 @@ jobs:
         set -euo pipefail
         ARGS=()
         for BUNDLE in "$RUNNER_TEMP"/prepared-lanes/*; do ARGS+=(--bundle "$BUNDLE"); done
-        python -m openpine.verification test-ci plan "${ARGS[@]}" --work "$RUNNER_TEMP/planner" --output "$RUNNER_TEMP/plan/plan.json"
+        python - <<'PYOWNERLOC'
+        import json,os,pathlib,shutil,subprocess
+        from openpine.verification.execution_ci import make_owner_locations
+        from openpine.verification.identity import write_once_json
+        root=pathlib.Path(os.environ['RUNNER_TEMP'])
+        reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py311','py312','py313')}
+        node=shutil.which('node');npm=shutil.which('npm')
+        assert node and npm
+        browser=subprocess.check_output([node,'-p','require("@playwright/test").chromium.executablePath()'],cwd=pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'openpine-ui',text=True).strip()
+        locations=make_owner_locations(reports,stack_root=root/'owner-env313/stack',attempt=root/'exact-owner',package_attempt=root/'package-owner',npm=pathlib.Path(npm),node=pathlib.Path(node),chromium=pathlib.Path(browser))
+        write_once_json(root/'plan/owner-locations.json',locations)
+        PYOWNERLOC
+        python -m openpine.verification test-ci plan "${ARGS[@]}" --work "$RUNNER_TEMP/planner" --output "$RUNNER_TEMP/plan/plan.json" --owner-locations "$RUNNER_TEMP/plan/owner-locations.json"
         python - <<'PYMATRIX'
         import json, os, pathlib
         value=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'plan/matrix.json').read_text())
@@ -187,7 +223,7 @@ jobs:
         with open(os.environ['GITHUB_ENV'],'a') as f:
          f.write('EXACT_PYTHON='+r['executable']+'\n')
          f.write('EXACT_HOST='+r['roots']['openpine']+'\n')
-         f.write('PYTHONPATH='+os.pathsep.join(r['roots'].values())+'\n')
+         f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
         PYROOT
     - name: Retained native lint, compileall and OpenAPI checks
       shell: bash
@@ -204,6 +240,7 @@ jobs:
         if-no-files-found: error
         retention-days: 30
   verify:
+    name: verify (${{ matrix.python }})
     if: always()
     needs:
     - prepare
@@ -252,14 +289,306 @@ jobs:
         with open(os.environ['GITHUB_ENV'],'a') as f:
          f.write('EXACT_PYTHON='+r['executable']+'\n')
          f.write('EXACT_HOST='+r['roots']['openpine']+'\n')
-         f.write('PYTHONPATH='+os.pathsep.join(r['roots'].values())+'\n')
+         f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
         PYROOT
-    - name: Retain full builtin index and explicit Stage 2 remainder
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-checks-${{ matrix.python }}-${{ github.run_id }}
+        path: |-
+          ${{ runner.temp }}/foundation/
+          !${{ runner.temp }}/foundation/**/private/**
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 30
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-command-foundation-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/restored/execute-log/commands/
+        if-no-files-found: error
+        retention-days: 30
+  frontend:
+    needs:
+    - prepare
+    - plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.13'
+    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-prepared-3.13-${{ github.run_id }}
+        path: ${{ runner.temp }}/prepared
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-plan-${{ github.run_id }}
+        path: ${{ runner.temp }}/plan
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: openpine-ui/package-lock.json
+    - name: Prepare the frozen browser tool without claiming frontend qualification
+      working-directory: openpine-ui
+      run: |
+        npm ci
+        npx playwright install --with-deps chromium
+    - name: Restore checked source/environment locators
+      run: |
+        python -m openpine.verification test-ci restore --bundle "$RUNNER_TEMP/prepared" --work "$RUNNER_TEMP/owner-env313" --plan "$RUNNER_TEMP/plan/plan.json"
+        python - <<'PYFRONTEND'
+        import json,os,pathlib
+        from openpine.verification.execution_binding import make_binding
+        from openpine.verification.identity import write_once_json
+        root=pathlib.Path(os.environ['RUNNER_TEMP']);r=json.loads((root/'owner-env313/restored.json').read_text());plan=json.loads((root/'plan/plan.json').read_text())
+        binding=make_binding(plan,{n:pathlib.Path(p) for n,p in r['roots'].items()},{'py313':r['executable']})
+        write_once_json(root/'frontend-binding.json',binding)
+        with open(os.environ['GITHUB_ENV'],'a') as f:
+         f.write('EXACT_PYTHON='+r['executable']+'\n');f.write('EXACT_HOST='+r['roots']['openpine']+'\n');f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
+        PYFRONTEND
+    - name: Run the complete independently reviewed frontend owner
+      env:
+        OPENPINE_PLAN: ${{ runner.temp }}/plan/plan.json
+        OPENPINE_BINDING: ${{ runner.temp }}/frontend-binding.json
+        OPENPINE_ATTEMPT_ROOT: ${{ runner.temp }}/exact-owner
+      run: '"$EXACT_PYTHON" "$EXACT_HOST/scripts/rc6_stabilization/frontend_exact.py"'
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-ui-${{ github.run_id }}
+        path: |
+          ${{ runner.temp }}/exact-owner/frontend/
+          !${{ runner.temp }}/exact-owner/frontend/**/private/**
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 30
+  packages:
+    needs:
+    - prepare
+    - plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        pattern: rc6-prepared-*-${{ github.run_id }}
+        path: ${{ runner.temp }}/prepared-lanes
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-plan-${{ github.run_id }}
+        path: ${{ runner.temp }}/plan
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.11'
+    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - run: python -m openpine.verification test-ci restore --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.11-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env311" --plan "$RUNNER_TEMP/plan/plan.json"
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.12'
+    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - run: python -m openpine.verification test-ci restore --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.12-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env312" --plan "$RUNNER_TEMP/plan/plan.json"
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.13'
+    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - run: python -m openpine.verification test-ci restore --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.13-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env313" --plan "$RUNNER_TEMP/plan/plan.json"
+    - name: Bind all three real package interpreters and exact source roots
+      run: |
+        python - <<'PYPACKAGE'
+        import json,os,pathlib
+        from openpine.verification.execution_binding import make_binding
+        from openpine.verification.identity import write_once_json
+        root=pathlib.Path(os.environ['RUNNER_TEMP']);plan=json.loads((root/'plan/plan.json').read_text())
+        reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py311','py312','py313')};r=reports['py313']
+        binding=make_binding(plan,{n:pathlib.Path(p) for n,p in r['roots'].items()},{label:row['executable'] for label,row in reports.items()})
+        write_once_json(root/'package-binding.json',binding)
+        write_once_json(root/'package-interpreters.json',{'.'.join(plan['environments'][label]['identity']['python'].split('.')[:2]):row['executable'] for label,row in reports.items()})
+        write_once_json(root/'package-source.json',plan['source'])
+        with open(os.environ['GITHUB_ENV'],'a') as f:
+         f.write('EXACT_PYTHON='+r['executable']+'\n');f.write('EXACT_HOST='+r['roots']['openpine']+'\n');f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
+        PYPACKAGE
+    - name: Qualify normal and sdist-rebuilt complete stacks on 3.11, 3.12 and 3.13
+      run: '"$EXACT_PYTHON" "$EXACT_HOST/scripts/rc6_stabilization/harness.py" --roots "$RUNNER_TEMP/plan/plan.json" --binding "$RUNNER_TEMP/package-binding.json" --interpreters "$RUNNER_TEMP/package-interpreters.json" --builder "$EXACT_PYTHON" --output "$RUNNER_TEMP/package-owner" --frozen-source "$RUNNER_TEMP/package-source.json" --run-id "rc6-${{ github.run_id }}-${{ github.run_attempt }}"'
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-packages-${{ github.run_id }}
+        path: |
+          ${{ runner.temp }}/package-owner/
+          !${{ runner.temp }}/package-owner/**/private/**
+        include-hidden-files: true
+        if-no-files-found: error
+        retention-days: 30
+  aggregate:
+    name: RC6 native graph (not stabilization or language acceptance)
+    if: always()
+    needs:
+    - prepare
+    - plan
+    - component
+    - quality
+    - verify
+    - frontend
+    - packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+    - name: Reject any missing, skipped, failed or cancelled required job
+      env:
+        NEEDS_JSON: ${{ toJSON(needs) }}
+      run: |-
+        python - <<'PYRESULT'
+        import json,os,pathlib
+        results=json.loads(os.environ['NEEDS_JSON'])
+        required={'prepare','plan','component','quality','verify','frontend','packages'}
+        failed={name:value['result'] for name,value in results.items() if value['result']!='success'}
+        report={'scope':'RC6 native CI graph; not full stabilization or Stage 2 acceptance','jobs':results,'errors':failed,'full_stage_accepted':False}
+        pathlib.Path('job-results.json').write_text(json.dumps(report,indent=2))
+        if set(results)!=required or failed: raise SystemExit(1)
+        PYRESULT
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-job-results-${{ github.run_id }}
+        path: job-results.json
+        if-no-files-found: error
+        retention-days: 30
+  language-diagnostic:
+    name: RC6 language-diagnostic (${{ matrix.python }})
+    needs:
+    - prepare
+    - plan
+    - verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+        - '3.11'
+        - '3.13'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Bootstrap only the planner interface
+      run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-prepared-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/prepared
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-plan-${{ github.run_id }}
+        path: ${{ runner.temp }}/plan
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-checks-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/foundation
+    - name: Restore exact installed tools
+      run: |-
+        python -m openpine.verification test-ci restore --bundle "${{ runner.temp }}/prepared" --work "${{ runner.temp }}/restored" --plan "${{ runner.temp }}/plan/plan.json"
+        python - <<'PYROOT'
+        import json, os, pathlib
+        r=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'restored/restored.json').read_text())
+        with open(os.environ['GITHUB_ENV'],'a') as f:
+         f.write('EXACT_PYTHON='+r['executable']+'\n')
+         f.write('EXACT_HOST='+r['roots']['openpine']+'\n')
+         f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
+        PYROOT
+    - name: Diagnostic report generation (not language acceptance)
       shell: bash
       run: |-
         set -euo pipefail
         export PATH="$(dirname "$EXACT_PYTHON"):$PATH"
         cd "$EXACT_HOST"
+        export GITHUB_WORKSPACE="$EXACT_HOST"
+        mkdir -p "$RUNNER_TEMP/evidence"
+        # Carry the already-attested foundation source pins beside raw owner outputs.
+        python - <<'PYOWNER'
+        import os,pathlib,sys
+        from openpine.verification.execution_ci import retain_builtin_owner_evidence
+        root=pathlib.Path(os.environ['RUNNER_TEMP'])
+        version='py'+''.join(map(str,sys.version_info[:2]))
+        retain_builtin_owner_evidence(
+         root/'foundation/merged', root/'foundation/suites', root/'evidence',
+         version, pathlib.Path(os.environ['EXACT_HOST'])/'docs/RC6_LIFECYCLE_SOURCES.json',
+        )
+        PYOWNER
+        bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-language-diagnostic-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/evidence/
+        if-no-files-found: error
+        retention-days: 30
+  strict-language:
+    name: RC6 strict-language (${{ matrix.python }})
+    needs:
+    - prepare
+    - plan
+    - verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+        - '3.11'
+        - '3.13'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Bootstrap only the planner interface
+      run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-prepared-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/prepared
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-plan-${{ github.run_id }}
+        path: ${{ runner.temp }}/plan
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-checks-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/foundation
+    - name: Restore exact installed tools
+      run: |-
+        python -m openpine.verification test-ci restore --bundle "${{ runner.temp }}/prepared" --work "${{ runner.temp }}/restored" --plan "${{ runner.temp }}/plan/plan.json"
+        python - <<'PYROOT'
+        import json, os, pathlib
+        r=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'restored/restored.json').read_text())
+        with open(os.environ['GITHUB_ENV'],'a') as f:
+         f.write('EXACT_PYTHON='+r['executable']+'\n')
+         f.write('EXACT_HOST='+r['roots']['openpine']+'\n')
+         f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
+        PYROOT
+    - name: Strict language acceptance (negative debt remains failure)
+      shell: bash
+      run: |-
+        set -euo pipefail
+        export PATH="$(dirname "$EXACT_PYTHON"):$PATH"
+        cd "$EXACT_HOST"
+        export GITHUB_WORKSPACE="$EXACT_HOST"
         mkdir -p "$RUNNER_TEMP/evidence"
         # Carry the already-attested foundation source pins beside raw owner outputs.
         python - <<'PYOWNER'
@@ -276,76 +605,69 @@ jobs:
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
       with:
-        name: rc6-checks-${{ matrix.python }}-${{ github.run_id }}
-        path: |-
-          ${{ runner.temp }}/foundation/
-          ${{ runner.temp }}/evidence/
+        name: rc6-strict-language-${{ matrix.python }}-${{ github.run_id }}
+        path: ${{ runner.temp }}/evidence/
         if-no-files-found: error
         retention-days: 30
-  frontend:
-    needs:
-    - prepare
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: openpine-ui
-    steps:
-    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      with:
-        persist-credentials: false
-    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-      with:
-        name: rc6-prepared-3.13-${{ github.run_id }}
-        path: ${{ runner.temp }}/backend-evidence
-    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-      with:
-        node-version: '24'
-        cache: npm
-        cache-dependency-path: openpine-ui/package-lock.json
-    - run: npm ci
-    - run: npm test -- --reporter=default --reporter=junit --outputFile.junit="$RUNNER_TEMP/ui-tests.xml"
-    - run: npm run build
-    - run: npm run test:node
-      env:
-        OPENPINE_OPENAPI_SCHEMA: ${{ runner.temp }}/backend-evidence/openapi.json
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-      if: always()
-      with:
-        name: rc6-ui-${{ github.run_id }}
-        path: |
-          ${{ runner.temp }}/ui-tests.xml
-          openpine-ui/dist/
-        retention-days: 30
-  aggregate:
+  stabilization:
+    name: RC6 common stabilization (not language acceptance)
     if: always()
     needs:
     - prepare
     - plan
-    - component
-    - quality
     - verify
     - frontend
+    - packages
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 35
     steps:
-    - name: Reject any missing, skipped, failed or cancelled required job
-      env:
-        NEEDS_JSON: ${{ toJSON(needs) }}
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      with:
+        python-version: '3.13'
+    - name: Bootstrap only the planner interface
+      run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-prepared-3.13-${{ github.run_id }}
+        path: ${{ runner.temp }}/prepared
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-plan-${{ github.run_id }}
+        path: ${{ runner.temp }}/plan
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        pattern: rc6-checks-*-${{ github.run_id }}
+        path: ${{ runner.temp }}/foundations
+    - name: Restore exact installed tools
       run: |-
-        python - <<'PYRESULT'
-        import json,os,pathlib
-        results=json.loads(os.environ['NEEDS_JSON'])
-        required={'prepare','plan','component','quality','verify','frontend'}
-        failed={name:value['result'] for name,value in results.items() if value['result']!='success'}
-        report={'scope':'RC6 native CI graph; not full stabilization or Stage 2 acceptance','jobs':results,'errors':failed,'full_stage_accepted':False}
-        pathlib.Path('job-results.json').write_text(json.dumps(report,indent=2))
-        if set(results)!=required or failed: raise SystemExit(1)
-        PYRESULT
+        python -m openpine.verification test-ci restore --bundle "${{ runner.temp }}/prepared" --work "${{ runner.temp }}/restored" --plan "${{ runner.temp }}/plan/plan.json"
+        python - <<'PYROOT'
+        import json, os, pathlib
+        r=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'restored/restored.json').read_text())
+        with open(os.environ['GITHUB_ENV'],'a') as f:
+         f.write('EXACT_PYTHON='+r['executable']+'\n')
+         f.write('EXACT_HOST='+r['roots']['openpine']+'\n')
+         f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
+        PYROOT
+    - name: Invoke stabilization and fresh current replay with real native locators
+      shell: bash
+      run: |-
+        set -euo pipefail
+        ARGS=()
+        for FOUNDATION in "$RUNNER_TEMP"/foundations/*; do ARGS+=(--foundation "$FOUNDATION"); done
+        # No frontend/package/performance primaries exist in this native graph.
+        # Their packet entries stay missing; nonaccepted owner exits stay red.
+        "$EXACT_PYTHON" -m openpine.verification test-ci stabilization --restored "$RUNNER_TEMP/restored/restored.json" --plan "$RUNNER_TEMP/plan/plan.json" "${ARGS[@]}" --run-id "rc6-${{ github.run_id }}-${{ github.run_attempt }}" --output "$RUNNER_TEMP/common"
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
       with:
-        name: rc6-job-results-${{ github.run_id }}
-        path: job-results.json
+        name: rc6-common-owner-${{ github.run_id }}
+        path: |-
+          ${{ runner.temp }}/common/
+          !${{ runner.temp }}/common/**/private/**
+        include-hidden-files: true
         if-no-files-found: error
         retention-days: 30

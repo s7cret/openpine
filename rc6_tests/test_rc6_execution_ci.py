@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import inspect
 import io
+import json
 import os
 import re
 import shutil
@@ -20,6 +21,36 @@ from openpine.verification.execution_plan import make_plan
 from openpine.verification.execution_process import run_logged
 from openpine.verification.identity import read_json
 from rc6_tests.test_rc6_execution_platform import HOST, lock, tiny_plan
+
+def test_foundation_passes_verified_restored_sources_to_coverage(tmp_path, monkeypatch):
+    from openpine.verification import execution_ci as ci, execution_coverage as coverage
+    from openpine.verification.identity import seal
+    roots = {'openpine': tmp_path / 'restored'}
+    frozen_source = {'content_hash': 'frozen-source'}
+    plan = {'source': frozen_source, 'content_hash': 'frozen-plan'}
+    fragment = tmp_path / 'fragment'
+    (fragment / 'coverage-owner').mkdir(parents=True)
+    (fragment / 'run.json').write_text('{}')
+    (fragment / 'coverage-owner/receipt.json').write_text('{}')
+    write_once_json(fragment / 'ci-task.json', seal({
+        'schema_id': 'openpine.ci_task.v1', 'task': 'openpine@py311',
+        'plan_hash': plan['content_hash'], 'run_id': 'test-run',
+        'run_sha256': hash_file(fragment / 'run.json'),
+        'coverage_sha256': hash_file(fragment / 'coverage-owner/receipt.json'),
+    }))
+    monkeypatch.setattr(ci, 'source_snapshot', lambda observed: frozen_source)
+
+    class OwnerBoundaryReached(Exception):
+        pass
+
+    def checked_owner(*args, **kwargs):
+        assert kwargs.get('source_roots') == roots
+        raise OwnerBoundaryReached
+
+    monkeypatch.setattr(coverage, 'verify_task_coverage', checked_owner)
+    with pytest.raises(OwnerBoundaryReached):
+        ci.finalize_foundation(plan, roots, [fragment], tmp_path / 'out', 'test-run')
+
 
 def source_roots(tmp_path):
     roots = {}
@@ -170,8 +201,126 @@ def test_logged_commands_retain_actual_exit_and_logs(tmp_path, mode):
         assert hash_file(tmp_path / 'command' / name) == expected
     if mode == 'failure':
         assert report['returncode'] == 7
+        from openpine.verification.execution_ci import Commands
+        with pytest.raises(RuntimeError, match='raw receipt') as error:
+            Commands(tmp_path / 'ci').run([sys.executable, '-c', code], cwd=tmp_path)
+        assert 'failure' in str(error.value)
+        assert 'returncode=7' in str(error.value)
+        assert read_json(tmp_path / 'ci/commands/0000/command.json')['returncode'] == 7
     with pytest.raises(FileExistsError):
         run_logged([sys.executable, '-c', 'pass'], cwd=tmp_path, output=tmp_path / 'command', env=dict(os.environ))
+
+@pytest.mark.parametrize('tool', ['argv', 'node', 'chromium'])
+@pytest.mark.parametrize('mutation', ['before', 'during', 'same-bytes-target', 'target-bytes'])
+def test_logged_declared_tool_alias_drift_fails_closed(tmp_path, tool, mutation):
+    target = tmp_path / 'frozen-tool'
+    foreign = tmp_path / 'foreign-tool'
+    alias = tmp_path / ('node' if tool == 'node' else 'tool-alias')
+    foreign.write_text('#!' + sys.executable + '\nprint("FOREIGN EXECUTED", flush=True)\n')
+    foreign.chmod(0o755)
+    retarget = ('from pathlib import Path\n'
+                f'p=Path({str(alias)!r}); p.unlink(); p.symlink_to({str(foreign)!r})\n')
+    target.write_text('#!' + sys.executable + '\nprint("FROZEN EXECUTED", flush=True)\n'
+                      + (retarget if mutation == 'during' and tool == 'argv' else ''))
+    target.chmod(0o755)
+    alias.symlink_to(target)
+    spec = {'path': str(target), 'sha256': hash_file(target), 'declared_path': str(alias)}
+    frozen_bytes = target.read_bytes()
+    if mutation == 'same-bytes-target':
+        foreign.write_bytes(frozen_bytes)
+    if mutation in {'before', 'same-bytes-target'}:
+        alias.unlink(); alias.symlink_to(foreign)
+    elif mutation == 'target-bytes':
+        target.write_bytes(foreign.read_bytes())
+    env = {**os.environ, 'PATH': str(tmp_path) + os.pathsep + os.environ.get('PATH', ''),
+           'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': str(alias)}
+    if tool == 'argv':
+        argv = [str(alias)]
+    else:
+        selected = 'shutil.which("node")' if tool == 'node' else 'os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"]'
+        code = 'import os,shutil,subprocess\n' + (retarget if mutation == 'during' else '')
+        argv = [sys.executable, '-c', code + f'subprocess.run([{selected}], check=True)']
+    output = tmp_path / 'command'
+    try:
+        report = run_logged(argv, cwd=tmp_path, output=output, env=env, timeout=20,
+                            inputs={'owner-tool:' + tool: spec})
+    except ValueError as error:
+        assert 'provenance' in str(error)
+        assert mutation != 'during'
+        return
+    stdout = (output / 'stdout.log').read_text()
+    assert not report['ok'], f'foreign command admitted: stdout={stdout!r}; report={report!r}'
+    assert report['argv'] == argv
+    assert report['cwd'] == str(tmp_path)
+    assert read_json(output / 'command.json') == report
+    if mutation != 'target-bytes':
+        capture = report['input_provenance']['owner-tool:' + tool]['captured']['path']
+        assert (output / capture).read_bytes() == frozen_bytes
+    if mutation == 'during':
+        assert 'FROZEN EXECUTED' in stdout if tool == 'argv' else 'FOREIGN EXECUTED' in stdout
+
+
+@pytest.mark.parametrize('tool', ['node', 'chromium'])
+def test_logged_auxiliary_selection_must_match_declared_alias(tmp_path, tool):
+    target = tmp_path / 'frozen-tool'
+    foreign = tmp_path / 'foreign-tool'
+    target.write_text('#!' + sys.executable + '\nprint("FROZEN")\n')
+    foreign.write_text('#!' + sys.executable + '\nprint("FOREIGN EXECUTED")\n')
+    target.chmod(0o755); foreign.chmod(0o755)
+    alias = tmp_path / 'declared-alias'
+    alias.symlink_to(target)
+    (tmp_path / 'node').symlink_to(foreign)
+    env = {**os.environ, 'PATH': str(tmp_path), 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': str(foreign)}
+    selection = 'shutil.which("node")' if tool == 'node' else 'os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"]'
+    argv = [sys.executable, '-c', 'import os,shutil,subprocess; subprocess.run([' + selection + '],check=True)']
+    report = run_logged(argv, cwd=tmp_path, output=tmp_path / 'command', env=env, timeout=20,
+                        inputs={'owner-tool:' + tool: {'path': str(target), 'sha256': hash_file(target), 'declared_path': str(alias)}})
+    assert not report['ok'], f'foreign auxiliary admitted: {(tmp_path / "command/stdout.log").read_text()!r}'
+    assert report['argv'] == argv
+    assert read_json(tmp_path / 'command/command.json') == report
+
+
+@pytest.mark.parametrize('mutation', ['missing', 'loop'])
+def test_logged_invalid_declared_alias_retains_failed_receipt(tmp_path, mutation):
+    target = tmp_path / 'frozen-tool'
+    target.write_text('#!' + sys.executable + '\nprint("SHOULD NOT RUN")\n')
+    target.chmod(0o755)
+    alias = tmp_path / 'tool-alias'
+    if mutation == 'loop':
+        alias.symlink_to(alias)
+    argv = [str(alias)]
+    spec = {'path': str(target), 'sha256': hash_file(target), 'declared_path': str(alias)}
+    report = run_logged(argv, cwd=tmp_path, output=tmp_path / 'command', env=dict(os.environ),
+                        inputs={'owner-tool:argv': spec})
+    assert not report['ok']
+    assert report['returncode'] is None
+    assert read_json(tmp_path / 'command/command.json') == report
+    assert (tmp_path / 'command/input-0.bin').read_bytes() == target.read_bytes()
+    assert (tmp_path / 'command/stdout.log').read_bytes() == b''
+
+
+@pytest.mark.parametrize('tool', ['argv', 'node', 'chromium'])
+def test_logged_matching_declared_tool_alias_preserves_capture(tmp_path, tool):
+    target = tmp_path / 'frozen-tool'
+    target.write_text('#!' + sys.executable + '\nprint("FROZEN EXECUTED")\n')
+    target.chmod(0o755)
+    alias = tmp_path / ('node' if tool == 'node' else 'tool-alias')
+    alias.symlink_to(target)
+    env = {**os.environ, 'PATH': str(tmp_path), 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': str(alias)}
+    if tool == 'argv':
+        argv = [str(alias)]
+    else:
+        selection = 'shutil.which("node")' if tool == 'node' else 'os.environ["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"]'
+        argv = [sys.executable, '-c', 'import os,shutil,subprocess; subprocess.run([' + selection + '],check=True)']
+    spec = {'path': str(target), 'sha256': hash_file(target), 'declared_path': str(alias)}
+    report = run_logged(argv, cwd=tmp_path, output=tmp_path / 'command', env=env,
+                        inputs={'owner-tool:' + tool: spec})
+    assert report['ok']
+    assert report['argv'] == argv
+    assert report['input_provenance']['owner-tool:' + tool]['source'] == spec
+    assert (tmp_path / 'command/input-0.bin').read_bytes() == target.read_bytes()
+    assert (tmp_path / 'command/stdout.log').read_text() == 'FROZEN EXECUTED\n'
+
 
 def test_performance_mark_is_untraced_without_shrinking_inventory(tmp_path):
     bodies = {'test_a.py': 'import coverage\nfrom tiny import left\ndef test_value():\n    assert coverage.Coverage.current() is not None\n    assert left(1)==2\n', 'test_b.py': 'import pytest,coverage\nfrom tiny import left\n@pytest.mark.performance\ndef test_value():\n    assert coverage.Coverage.current() is None\n    assert left(2)==3\n'}
@@ -199,6 +348,44 @@ def test_performance_mark_is_untraced_without_shrinking_inventory(tmp_path):
     with pytest.raises(ValueError, match='checksum'):
         verify_task_coverage(plan, tmp_path / 'run', 'tiny@py', tmp_path / 'coverage', run_id='instrumentation')
 
+@pytest.mark.parametrize('relocated', [False, True])
+def test_coverage_replay_unions_multiple_shards_without_mutating_primaries(tmp_path, relocated):
+    bodies = {f'test_{name}.py': f'from tiny import left\ndef test_value():\n    assert left({value}) == {value + 1}\n' for name, value in [('a', 1), ('b', 2)]}
+    previous, _ = tiny_plan(tmp_path, bodies=bodies)
+    roots = {n: Path(p) for n, p in previous['roots'].items()}
+    (roots['tiny'] / 'tiny').mkdir()
+    (roots['tiny'] / 'tiny/__init__.py').write_text('def left(x):\n    a=x\n    b=a\n    c=b\n    d=c\n    e=d\n    return e+1\ndef uncovered():\n    return 0\n')
+    (roots['tiny'] / 'pyproject.toml').write_text('[tool.coverage.run]\nsource=["tiny"]\n[tool.coverage.report]\nfail_under=89\nprecision=0\n')
+    source = source_snapshot(roots)
+    nodes = previous['tasks'][0]['nodeids']
+    inventories = {'tiny@py': {'nodeids': nodes, 'node_markers': {n: [] for n in nodes}, 'reviewed_lock': lock(nodes), 'deselected': 0, 'source_hash': source['content_hash'], 'environment_hash': previous['environments']['py']['identity']['content_hash']}}
+    policy = {'components': {'tiny': {'dependencies': [], 'pythons': [f'{sys.version_info.major}.{sys.version_info.minor}']}}}
+    plan = make_plan(profile='component', policy=policy, roots=roots, source=source, inventories=inventories, environments=previous['environments'], requested=['tiny'], shard_count=2, coverage=True)
+    assert len(plan['tasks'][0]['shards']) == 2
+    path = tmp_path / 'instrumented-plan.json'
+    write_once_json(path, plan)
+    from openpine.verification.execution_binding import make_binding
+    import shutil
+    execution_roots = dict(roots)
+    binding = None
+    if relocated:
+        execution_roots['tiny'] = tmp_path / 'executor-tiny'
+        shutil.copytree(roots['tiny'], execution_roots['tiny'])
+        binding = make_binding(plan, execution_roots, {'py': sys.executable})
+    run_campaign(plan, path, tmp_path / 'run', jobs=2, run_id='multi-shard', binding=binding)
+    result = combine_task_coverage(plan, tmp_path / 'run', 'tiny@py', tmp_path / 'coverage', run_id='multi-shard', binding=binding)
+    assert result['ok'], result
+    if relocated:
+        replay_root = tmp_path / 'third-tiny'
+        shutil.copytree(execution_roots['tiny'], replay_root)
+        shutil.rmtree(execution_roots['tiny'])
+        shutil.rmtree(roots['tiny'])
+        roots['tiny'] = replay_root
+    primaries = {str(p.relative_to(tmp_path)): hash_file(p) for folder in ['run', 'coverage'] for p in (tmp_path / folder).rglob('*') if p.is_file()}
+    assert verify_task_coverage(plan, tmp_path / 'run', 'tiny@py', tmp_path / 'coverage', run_id='multi-shard', source_roots=roots)['ok']
+    assert {str(p.relative_to(tmp_path)): hash_file(p) for folder in ['run', 'coverage'] for p in (tmp_path / folder).rglob('*') if p.is_file()} == primaries
+
+
 def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     workflow = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())
     jobs = workflow['jobs']
@@ -209,7 +396,14 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert 'export_git_provenance' in inspect.getsource(execution_ci.prepare)
     assert 'restore_git_provenance' in inspect.getsource(execution_ci.restore)
     assert jobs['verify']['strategy']['matrix']['python'] == ['3.11', '3.13']
-    assert jobs['frontend']['needs'] == ['prepare']
+    assert jobs['frontend']['needs'] == ['prepare', 'plan']
+    frontend_runs='\n'.join(step.get('run','') for step in jobs['frontend']['steps'])
+    assert 'frontend_exact.py' in frontend_runs
+    assert any(step.get('env',{}).get('OPENPINE_BINDING')=='${{ runner.temp }}/frontend-binding.json' for step in jobs['frontend']['steps'])
+    planner_runs='\n'.join(step.get('run','') for step in jobs['plan']['steps'])
+    assert '--owner-locations' in planner_runs and 'make_owner_locations' in planner_runs
+    assert jobs['packages']['needs'] == ['prepare','plan']
+    assert 'harness.py' in '\n'.join(step.get('run','') for step in jobs['packages']['steps'])
     assert jobs['component']['needs'] == ['plan']
     task_upload = next(
         step for step in jobs['component']['steps']
@@ -221,7 +415,16 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert task_upload['with']['include-hidden-files'] is True
     assert task_upload['if'] == 'always()'
     assert jobs['aggregate']['if'] == 'always()'
-    assert set(jobs['aggregate']['needs']) == set(jobs) - {'aggregate'}
+    assert set(jobs['aggregate']['needs']) == {'prepare', 'plan', 'component', 'quality', 'verify', 'frontend', 'packages'}
+    assert set(jobs) == set(jobs['aggregate']['needs']) | {'aggregate', 'language-diagnostic', 'strict-language', 'stabilization'}
+    assert jobs['stabilization']['if'] == 'always()'
+    assert set(jobs['stabilization']['needs']) == {'prepare', 'plan', 'verify', 'frontend', 'packages'}
+    common_runs = '\n'.join(step.get('run', '') for step in jobs['stabilization']['steps'])
+    assert 'test-ci stabilization' in common_runs
+    assert 'strict-language' not in jobs['stabilization']['needs']
+    assert 'language-diagnostic' not in jobs['stabilization']['needs']
+    assert any(step.get('if') == 'always()' and 'upload-artifact@' in step.get('uses', '')
+               for step in jobs['stabilization']['steps'])
     assert workflow['permissions'] == {'contents': 'read'}
     assert 'pull_request' in workflow['concurrency']['cancel-in-progress']
     for job in jobs.values():
@@ -262,7 +465,22 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert "'--no-index'" in prepare_source
     assert "'--no-deps'" in prepare_source
     verify_steps = jobs['verify']['steps']
-    assert any('bash scripts/rc6_builtin_remainder.sh' in step.get('run', '') for step in verify_steps)
+    foundation_upload = next(step for step in verify_steps
+                             if step.get('with', {}).get('name', '').startswith('rc6-checks-'))
+    assert foundation_upload['with']['include-hidden-files'] is True
+    assert '!${{ runner.temp }}/foundation/**/private/**' in foundation_upload['with']['path'].splitlines()
+    command_upload = next(step for step in verify_steps
+                          if step.get('with', {}).get('name', '').startswith('rc6-command-foundation-'))
+    assert command_upload['if'] == 'always()'
+    assert command_upload['with']['path'] == '${{ runner.temp }}/restored/execute-log/commands/'
+    assert command_upload['with']['if-no-files-found'] == 'error'
+    for job in ('quality', 'verify', 'language-diagnostic', 'strict-language', 'stabilization'):
+        runs = '\n'.join(step.get('run', '') for step in jobs[job]['steps'])
+        assert "f.write('PYTHONPATH='+r['roots']['openpine']+'\\n')" in runs
+        assert 'os.pathsep.join(r[\'roots\'].values())' not in runs
+    assert not any('bash scripts/rc6_builtin_remainder.sh' in step.get('run', '') for step in verify_steps)
+    assert any('bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional' in step.get('run', '') for step in jobs['language-diagnostic']['steps'])
+    assert any('bash scripts/rc6_builtin_remainder.sh' in step.get('run', '') for step in jobs['strict-language']['steps'])
     remainder = (HOST / 'scripts/rc6_builtin_remainder.sh').read_text()
     assert 'builtin-index' in remainder and 'stage2-remaining' in remainder
     assert 'test "$INDEX_STATUS" -eq 0' in remainder
@@ -272,6 +490,57 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert policy['untraced_markers'] == ['performance']
     assert len(policy['components']) == 8
     assert 'test-performance' in policy['required_gates']['stage-full']
+
+
+@pytest.mark.parametrize('diagnostic,owner_status', [(False, 1), (True, 0), (True, 2)])
+def test_remainder_script_keeps_modes_and_raw_exits(tmp_path, diagnostic, owner_status):
+    """Subprocess shim tests orchestration, not language/product acceptance."""
+    tools = tmp_path / 'bin'
+    tools.mkdir()
+    calls = tmp_path / 'calls.jsonl'
+    shim = tools / 'python'
+    shim.write_text('#!' + sys.executable + '\n' +
+                    'import json,os,sys\n'
+                    'with open(os.environ["CALLS"],"a") as f: f.write(json.dumps(sys.argv[1:])+"\\n")\n'
+                    'if sys.argv[1:2]==["-c"]: print("hash"); raise SystemExit(0)\n'
+                    'if sys.argv[1:2]==["scripts/derive_numeric_closure.py"]: raise SystemExit(0)\n'
+                    'if sys.argv[1:2]==["-"]: os.execv(sys.executable, [sys.executable,*sys.argv[1:]])\n'
+                    'raise SystemExit(int(os.environ["OWNER_STATUS"]))\n')
+    shim.chmod(0o755)
+    env = {**os.environ, 'PATH': str(tools) + os.pathsep + os.environ['PATH'],
+           'CALLS': str(calls), 'OWNER_STATUS': str(owner_status),
+           'GITHUB_WORKSPACE': str(HOST), 'RUNNER_TEMP': str(tmp_path)}
+    (tmp_path / 'evidence').mkdir()
+    bash = shutil.which('bash')
+    assert bash is not None
+    result = subprocess.run([bash, str(HOST / 'scripts/rc6_builtin_remainder.sh'),  # noqa: S603 -- fixed source-controlled shell test and explicit mode
+                             *(['--diagnostic-provisional'] if diagnostic else [])],
+                            cwd=HOST, env=env, capture_output=True, text=True, timeout=30)
+    invoked = [json.loads(line) for line in calls.read_text().splitlines()]
+    owners = [row for row in invoked if 'builtin-index' in row or 'stage2-remaining' in row]
+    assert len(owners) == 2
+    assert all(('--diagnostic-provisional' in row) is diagnostic for row in owners)
+    assert (result.returncode == 0) is (owner_status == 0)
+    exits = read_json(tmp_path / 'evidence/language-command-exits.json')
+    assert exits['builtin_index_exit'] == exits['remainder_exit'] == owner_status
+    assert exits['mode'] == ('diagnostic-provisional' if diagnostic else 'strict')
+    assert exits['language_accepted'] is False
+
+
+def test_language_jobs_are_named_separate_and_do_not_block_native_foundation():
+    jobs = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())['jobs']
+    assert 'language-diagnostic' in jobs and 'strict-language' in jobs
+    assert 'strict-language' not in jobs['verify']['needs']
+    assert 'strict-language' not in jobs['aggregate']['needs']
+    assert 'verify' in jobs['language-diagnostic']['needs']
+    assert 'verify' in jobs['strict-language']['needs']
+    diagnostic = '\n'.join(step.get('run', '') for step in jobs['language-diagnostic']['steps'])
+    strict = '\n'.join(step.get('run', '') for step in jobs['strict-language']['steps'])
+    assert 'bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional' in diagnostic
+    assert 'bash scripts/rc6_builtin_remainder.sh' in strict
+    assert '--diagnostic-provisional' not in strict
+    for job in ('language-diagnostic', 'strict-language'):
+        assert any(step.get('if') == 'always()' and 'upload-artifact@' in step.get('uses', '') for step in jobs[job]['steps'])
 
 
 def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound_evidence():
@@ -362,3 +631,52 @@ def test_campaign_rejects_memory_budget_above_host_limit(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='host/cgroup'):
         run_campaign(plan, path, tmp_path / 'run', jobs=1, memory_mib=1024)
     assert not (tmp_path / 'run').exists()
+
+
+def test_native_verify_preserves_required_branch_protection_contexts():
+    jobs = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())['jobs']
+    verify = jobs['verify']
+    contexts = {
+        verify['name'].replace('${{ matrix.python }}', version)
+        for version in verify['strategy']['matrix']['python']
+    }
+    assert contexts == {'verify (3.11)', 'verify (3.13)'}
+    assert jobs['frontend'].get('name', 'frontend') == 'frontend'
+
+
+def test_platform_installs_hashed_runtime_closure_before_exact_owners():
+    steps = yaml.safe_load((HOST / '.github/workflows/rc6-test-platform.yml').read_text())['jobs']['platform']['steps']
+    owner_index = next(i for i, step in enumerate(steps)
+                       if step.get('name') == 'Install exact owner contracts used by prerequisite tests')
+    runtime_runs = [step.get('run', '') for step in steps[:owner_index]
+                    if 'verification/ci-runtime-requirements.txt' in step.get('run', '')]
+    assert runtime_runs, 'owner --no-deps requires the hashed runtime closure first'
+    for run in runtime_runs:
+        assert 'python -m pip install --require-hashes --only-binary=:all:' in run
+        assert '--no-deps' not in run
+    # Contracts requires jsonschema; these are its non-optional transitive owners.
+    runtime_lock = (HOST / 'verification/ci-runtime-requirements.txt').read_text()
+    for package in ('jsonschema', 'attrs', 'jsonschema-specifications', 'referencing', 'rpds-py', 'typing_extensions'):
+        assert re.search(r'(?m)^' + re.escape(package) + r'==[^\n]+ \\\n\s+--hash=sha256:[0-9a-f]{64}', runtime_lock)
+    owner_run = steps[owner_index]['run']
+    assert "for name in ('openpine-contracts','optimizer'):" in owner_run
+    assert "'checkout','--detach',pins[name]" in owner_run
+    assert "'rev-parse','HEAD'" in owner_run
+    assert "'--no-deps',*paths],check=True)" in owner_run
+
+
+def test_platform_checks_installed_dependencies_before_locked_tests():
+    steps = yaml.safe_load((HOST / '.github/workflows/rc6-test-platform.yml').read_text())['jobs']['platform']['steps']
+    owner_index = next(i for i, step in enumerate(steps)
+                       if step.get('name') == 'Install exact owner contracts used by prerequisite tests')
+    test_index = next(i for i, step in enumerate(steps) if 'python -m pytest' in step.get('run', ''))
+    checks = [step for step in steps[owner_index + 1:test_index]
+              if 'python -m pip check' in step.get('run', '')]
+    assert len(checks) == 1, 'real pip check must fail closed after owner install and before tests'
+    check = checks[0]
+    assert check.get('continue-on-error', False) is False
+    assert check.get('if', 'success()') == 'success()'
+    assert check['run'].splitlines()[-1] == 'python -m pip check > "$RUNNER_TEMP/platform-evidence/pip-check.txt" 2>&1'
+    upload = next(step for step in steps if step.get('uses', '').startswith('actions/upload-artifact@'))
+    assert upload['if'] == 'always()'
+    assert upload['with']['path'] == '${{ runner.temp }}/platform-evidence/'

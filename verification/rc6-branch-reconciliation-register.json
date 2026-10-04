@@ -114,7 +114,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stage2_audit_gate_mutations.py",
-          "sha256": "sha256:0cfabb52266d50cec9d86666e36e4ca6284c43ca7886bccae695097b49508bf5",
+          "sha256": "sha256:a0c635b0574c211cb3341f59f657934d63b5636c58cb7eda12a7afaf38fdb130",
           "nodes": [
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
@@ -161,7 +161,7 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage2_catalog.py",
-          "sha256": "sha256:6c3eb21dae5ade620bdb1cec9f08069688e50b67aff2f4d443a396bd97414a8f",
+          "sha256": "sha256:e009fa0330dfed8ba6247c508376d18e8b05eec56f0f44d39be15994b3ae3e03",
           "nodes": []
         }
       ]
@@ -169,13 +169,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11064, baseline 11027 retained.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11258, baseline 11027 retained. Exact collection validates the unchanged baseline and additive node set.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:d92cf24105c026c62a8a48532d11b90f5c99449ffb2ec1c7b31f564537d83add",
+          "sha256": "sha256:c6710d32fdf3324014a82003ed9e064180e43bc9e7bee3d70f89e9b46edda9b5",
           "nodes": []
         }
       ]
@@ -231,7 +231,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_execution_platform.py",
-          "sha256": "sha256:e2e1ac90b3138bcc3e70e8ad9e7c0f648d582731bd8e5ad2ba30eddd43da241b",
+          "sha256": "sha256:e56545b5b098fe0212a314b4bbbd1ab32f4cace1969c985a81a9910738a18258",
           "nodes": [
             "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[collect-only]",
             "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[duplicate-shard]",
@@ -396,7 +396,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stage2_audit_gate_mutations.py",
-          "sha256": "sha256:0cfabb52266d50cec9d86666e36e4ca6284c43ca7886bccae695097b49508bf5",
+          "sha256": "sha256:a0c635b0574c211cb3341f59f657934d63b5636c58cb7eda12a7afaf38fdb130",
           "nodes": [
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
@@ -449,7 +449,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stage2_audit_gate_mutations.py",
-          "sha256": "sha256:0cfabb52266d50cec9d86666e36e4ca6284c43ca7886bccae695097b49508bf5",
+          "sha256": "sha256:a0c635b0574c211cb3341f59f657934d63b5636c58cb7eda12a7afaf38fdb130",
           "nodes": [
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
@@ -629,7 +629,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stage2_audit_gate_mutations.py",
-          "sha256": "sha256:0cfabb52266d50cec9d86666e36e4ca6284c43ca7886bccae695097b49508bf5",
+          "sha256": "sha256:a0c635b0574c211cb3341f59f657934d63b5636c58cb7eda12a7afaf38fdb130",
           "nodes": [
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
@@ -998,7 +998,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stage2_audit_gate_mutations.py",
-          "sha256": "sha256:0cfabb52266d50cec9d86666e36e4ca6284c43ca7886bccae695097b49508bf5",
+          "sha256": "sha256:a0c635b0574c211cb3341f59f657934d63b5636c58cb7eda12a7afaf38fdb130",
           "nodes": [
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
@@ -1602,7 +1602,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stage2_audit_gate_mutations.py",
-          "sha256": "sha256:0cfabb52266d50cec9d86666e36e4ca6284c43ca7886bccae695097b49508bf5",
+          "sha256": "sha256:a0c635b0574c211cb3341f59f657934d63b5636c58cb7eda12a7afaf38fdb130",
           "nodes": [
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_new]",
             "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_additive_inventory_keeps_exact_historical_identity[missing_old]",
@@ -1635,13 +1635,13 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:511044a75d85f38a75df6932440264c393dc304f82f6f70793b8806e734dc690",
+          "sha256": "sha256:d453f90f4936817d545b570aa01785883e3b946419a4b53f0521923f458554af",
           "nodes": []
         },
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:234f0d1595916ce40fa9b016f0fb93a8e7fd9dc753b60f03dbdc7ab3d533d628",
+          "sha256": "sha256:2c583a49427bc7210a151581d2497a9a6435c0e04e31ffb2bce1dcc11926f753",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
@@ -1686,13 +1686,13 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:511044a75d85f38a75df6932440264c393dc304f82f6f70793b8806e734dc690",
+          "sha256": "sha256:d453f90f4936817d545b570aa01785883e3b946419a4b53f0521923f458554af",
           "nodes": []
         },
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:234f0d1595916ce40fa9b016f0fb93a8e7fd9dc753b60f03dbdc7ab3d533d628",
+          "sha256": "sha256:2c583a49427bc7210a151581d2497a9a6435c0e04e31ffb2bce1dcc11926f753",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",

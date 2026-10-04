@@ -21,6 +21,102 @@ def reseal(value):
     result.pop('content_hash', None)
     return seal(result)
 
+@pytest.mark.parametrize('mutation', ['wrong-executable', 'traversal', 'source-drift'])
+def test_binding_checks_live_locations_before_freezing(tmp_path, mutation):
+    from openpine.verification.execution_binding import make_binding
+
+    plan, _ = tiny_plan(tmp_path)
+    roots = {name: Path(value) for name, value in plan['roots'].items()}
+    executable = sys.executable
+    if mutation == 'wrong-executable':
+        executable = str(tmp_path / 'impostor')
+        Path(executable).write_text('#!/bin/sh\nexit 0\n')
+        Path(executable).chmod(0o755)
+    elif mutation == 'traversal':
+        roots['tiny'] = roots['tiny'] / '..' / 'tiny'
+    else:
+        (roots['tiny'] / 'test_a.py').write_text('changed = True\n')
+    with pytest.raises(ValueError):
+        make_binding(plan, roots, {'py': executable})
+
+
+def test_binding_structural_replay_does_not_require_historical_locations(tmp_path):
+    from openpine.verification.execution_binding import make_binding, validate_binding
+    import shutil
+
+    plan, _ = tiny_plan(tmp_path)
+    roots = {name: Path(value) for name, value in plan['roots'].items()}
+    binding = make_binding(plan, roots, {'py': sys.executable})
+    for root in roots.values():
+        shutil.rmtree(root)
+    assert validate_binding(plan, binding) == binding
+
+
+def test_binding_rejects_resealed_authority_override(tmp_path):
+    from openpine.verification.execution_binding import make_binding, validate_binding
+
+    plan, _ = tiny_plan(tmp_path)
+    binding = make_binding(plan, {name: Path(value) for name, value in plan['roots'].items()}, {'py': sys.executable})
+    binding['expected_stdout'] = {'passed': True}
+    with pytest.raises(ValueError, match='fields'):
+        validate_binding(plan, reseal(binding))
+
+
+def test_binding_rejects_source_symlink_ancestor(tmp_path):
+    from openpine.verification.execution_binding import make_binding
+    plan, _ = tiny_plan(tmp_path)
+    alias = tmp_path / 'alias'
+    alias.symlink_to(tmp_path, target_is_directory=True)
+    roots = {name: Path(value) for name, value in plan['roots'].items()}
+    roots['tiny'] = alias / 'tiny'
+    with pytest.raises(ValueError, match='symlink'):
+        make_binding(plan, roots, {'py': sys.executable})
+
+
+def test_two_launch_roots_and_third_archive_replay_preserve_execution_binding(tmp_path):
+    """Actual tiny pytest launches exercise transport, not seven-owner product proof."""
+    import shutil
+    from openpine.verification.execution_binding import make_binding, checked_locations
+    from openpine.verification.execution_ci import create_source_archive, unpack_source_archive
+
+    plan, path = tiny_plan(tmp_path)
+    roots = {name: Path(value) for name, value in plan['roots'].items()}
+    archive = tmp_path / 'sources.tar.gz'
+    create_source_archive(roots, archive)
+    campaigns = []
+    for index in range(2):
+        launch_roots = unpack_source_archive(archive, tmp_path / f'launch-{index}', plan['source'])
+        binding = make_binding(plan, launch_roots, {'py': sys.executable})
+        output = tmp_path / f'campaign-{index}'
+        run_campaign(plan, path, output, binding=binding, run_id=f'launch-{index}')
+        report = aggregate_campaign(plan, output, expected_plan_hash=plan['content_hash'], expected_run_id=f'launch-{index}')
+        assert report['ok'], report
+        campaigns.append((output, report, (output / 'binding.json').read_bytes()))
+        shutil.rmtree(tmp_path / f'launch-{index}')
+    replay_roots = unpack_source_archive(archive, tmp_path / 'replay-third', plan['source'])
+    replay_binding = make_binding(plan, replay_roots, {'py': sys.executable})
+    assert checked_locations(plan, replay_binding)[0] == {n: str(p) for n, p in replay_roots.items()}
+    for index, (output, report, execution_binding) in enumerate(campaigns):
+        moved = tmp_path / f'archived-{index}'
+        shutil.copytree(output, moved)
+        shutil.rmtree(output)
+        assert aggregate_campaign(plan, moved, expected_plan_hash=plan['content_hash'], expected_run_id=f'launch-{index}') == report
+        assert (moved / 'binding.json').read_bytes() == execution_binding
+
+
+def test_campaign_rechecks_resealed_live_binding_before_launch(tmp_path):
+    from openpine.verification.execution_binding import make_binding
+    plan, path = tiny_plan(tmp_path)
+    roots = {name: Path(value) for name, value in plan['roots'].items()}
+    binding = make_binding(plan, roots, {'py': sys.executable})
+    alias = tmp_path / 'alias'
+    alias.symlink_to(tmp_path, target_is_directory=True)
+    binding['roots']['tiny'] = str(alias / 'tiny')
+    with pytest.raises(ValueError, match='symlink'):
+        run_campaign(plan, path, tmp_path / 'refused', binding=reseal(binding))
+    assert not (tmp_path / 'refused').exists()
+
+
 def phases():
     return [{'when': phase, 'outcome': 'passed', 'xfail': False, 'duration': 0.001} for phase in ('setup', 'call', 'teardown')]
 

@@ -8,6 +8,7 @@ import concurrent.futures
 import json
 import os
 import re
+import shutil
 import subprocess
 import threading
 import time
@@ -23,6 +24,8 @@ from openpine.verification.pytest_gate import collection_hash, validate_phase_re
 from openpine.verification.execution_process import _stop_group
 RUN_SCHEMA = 'openpine.test_campaign_run.v1'
 AGGREGATE_SCHEMA = 'openpine.test_campaign_aggregate.v1'
+from openpine.verification.execution_disk import INLINE_LIMIT, ObservationWriter, iter_observations
+DISK_INLINE_LIMIT = INLINE_LIMIT
 
 def compiler_commit_environment(source_commits: dict[str, str]) -> str:
     """Bind compiler identities to the verified plan, not the test process HOME."""
@@ -106,6 +109,66 @@ def _remaining_group_members(pgid: int) -> list[dict[str, object]]:
     return sorted(members, key=lambda row: row['pid'])
 
 
+def _validate_primary_artifacts(plan: dict, evidence_root: Path, task: dict, shard: dict, attempt: dict, expected_binding: str | None) -> dict:
+    """Use the aggregate's primary checks before any opt-in fixture disposal."""
+    expected_source = plan['source']['content_hash']
+    expected_run_id = attempt['run_id']
+    artifacts = attempt['artifacts']
+    for desc in artifacts.values():
+        if hash_file(evidence_path(evidence_root, desc['path'])) != desc['sha256']:
+            raise ValueError('attempt artifact checksum mismatch')
+    if shard.get('coverage', task.get('coverage', False)) and 'coverage' not in artifacts:
+        raise ValueError('required coverage data is missing')
+    phases = read_artifact(evidence_root, artifacts['phases'])
+    verify(phases, 'openpine.test_inventory.v2')
+    binding = {'task': task['id'], 'shard': shard['id'], 'suite': task['component'], 'plan_hash': plan['content_hash'], 'run_id': expected_run_id, 'attempt_id': attempt['attempt_id'], 'candidate_hash': expected_source, 'source_before': expected_source, 'source_after': expected_source, 'environment_hash': plan['environments'][task['environment']]['identity']['content_hash'], 'variant': task['variant'], 'execution_path': task['execution_path'], 'mode': task['mode']}
+    if 'node_markers' in task and phases.get('node_markers') != {n: task['node_markers'][n] for n in shard['nodeids']}:
+        raise ValueError('phase marker evidence differs from plan')
+    if phases.get('coverage', False) != shard.get('coverage', task.get('coverage', False)):
+        raise ValueError('phase instrumentation differs from plan')
+    if phases.get('binding_hash') != expected_binding:
+        raise ValueError('phase binding identity mismatch')
+    if any((phases.get(k) != v for k, v in binding.items())):
+        raise ValueError('source/environment/task/path/attempt identity mismatch')
+    if phases.get('ok') is not True or phases.get('collect_only') is not False or phases.get('exitstatus') != 0 or (phases.get('errors') != []) or (phases.get('deselected') != 0) or (phases.get('nodeids') != shard['nodeids']) or (type(phases.get('count')) is not int) or (phases['count'] != len(shard['nodeids'])) or (phases.get('sha256') != collection_hash(shard['nodeids'])):
+        raise ValueError('unsuccessful/incomplete phase receipt')
+    phase_errors = validate_phase_reports(shard['nodeids'], phases['reports'])
+    if phase_errors:
+        raise ValueError('; '.join(phase_errors))
+    junit_path = evidence_path(evidence_root, artifacts['junit']['path'])
+    if hash_file(junit_path) != artifacts['junit']['sha256']:
+        raise ValueError('JUnit checksum mismatch')
+    validate_junit(junit_path, shard['nodeids'])
+    for artifact_name in ('stdout', 'selectors'):
+        path = evidence_path(evidence_root, artifacts[artifact_name]['path'])
+        if hash_file(path) != artifacts[artifact_name]['sha256']:
+            raise ValueError(artifact_name + ' checksum mismatch')
+    selector_path = evidence_path(evidence_root, artifacts['selectors']['path'])
+    if selector_path.read_text(encoding='utf-8').splitlines() != shard['nodeids']:
+        raise ValueError('selector contents differ from frozen assignment')
+    return phases
+
+
+def _clear_owned_private(output: Path, folder: Path, artifacts: dict) -> None:
+    """Delete only a new attempt's private tree; primary references veto disposal."""
+    private = folder / 'private'
+    if '..' in private.parts or any(path.is_symlink() for path in (private, *private.parents)):
+        raise ValueError('unsafe private cleanup root')
+    relative = folder.relative_to(output)
+    if len(relative.parts) != 3 or not re.fullmatch(r'[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+/s[0-9]{3}/a001', relative.as_posix()):
+        raise ValueError('private cleanup is not a newly owned shard attempt')
+    private = private.resolve(strict=True)
+    if not private.is_dir():
+        raise ValueError('unsafe private cleanup tree')
+    # rmtree unlinks interior symlinks without following their targets; pytest
+    # itself creates current-fixture links inside its basetemp.
+    for desc in artifacts.values():
+        primary = evidence_path(output, desc['path']).resolve(strict=True)
+        if primary == private or private in primary.parents or primary in private.parents:
+            raise ValueError('private cleanup overlaps a primary artifact')
+    shutil.rmtree(private)
+
+
 def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard: dict, run_id: str, cancellation: threading.Event, binding: dict | None=None, build_commit: str | None=None) -> dict:
     attempt = 'a001'
     relative = task['id'] + '/' + shard['id'] + '/' + attempt
@@ -174,6 +237,18 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
                 break
             if path.is_file():
                 artifacts['owner:' + path.relative_to(owner_root).as_posix()] = descriptor(output, path)
+    if status == 'completed' and task.get('private_retention', 'preserve') == 'delete-on-success':
+        try:
+            if cancellation.is_set():
+                status = 'cancelled'
+            else:
+                _validate_primary_artifacts(plan, output, task, shard, {'artifacts': artifacts, 'run_id': run_id, 'attempt_id': attempt}, binding['content_hash'] if binding else None)
+                if cancellation.is_set():
+                    status = 'cancelled'
+                else:
+                    _clear_owned_private(output, folder, artifacts)
+        except (OSError, ValueError, KeyError, TypeError) as caught:
+            status, error = ('infrastructure_error', 'private retention: ' + str(caught))
     result = {'task': task['id'], 'shard': shard['id'], 'attempt_id': attempt, 'run_id': run_id, 'status': status, 'returncode': returncode, 'error': error, 'started_at': started, 'finished_at': utc_now(), 'wall_seconds': time.perf_counter() - tick, 'argv': argv, 'cwd': execution_roots[task['component']], 'artifacts': artifacts, 'binding_hash': binding['content_hash'] if binding else None}
     write_once_json(folder / 'execution.json', result)
     return result
@@ -202,7 +277,8 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_
     selected = all_keys if shard_keys is None else set(shard_keys)
     if not selected or not selected.issubset(all_keys) or (shard_keys is not None and len(selected) != len(shard_keys)):
         raise ValueError('fragment selects empty, unknown or duplicate shards')
-    execution_roots, executables = locations(plan, binding)
+    from openpine.verification.execution_binding import checked_locations
+    execution_roots, executables = checked_locations(plan, binding)
     selected_tasks = [t for t in plan['tasks'] if any((key[0] == t['id'] for key in selected))]
     if any((t['environment'] not in executables for t in selected_tasks)):
         raise ValueError('missing bound interpreter for selected task')
@@ -239,6 +315,48 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_
     queued = [(t, s) for t in plan['tasks'] for s in t['shards'] if (t['id'], s['id']) in selected]
     running = {}
     results, errors = ([], [])
+    disk_diagnostics = None
+    disk_writer = None
+    if 'disk_free_guard' in plan:
+        disk_writer = ObservationWriter(output, DISK_INLINE_LIMIT)
+        disk_diagnostics = {**plan['disk_free_guard'], 'minimum_observed_free_bytes': None,
+                            'samples': 0, 'observation_errors': 0, 'observations': disk_writer.observations,
+                            'tripped': False, 'enforcement': 'sampled cancellation; not a hard disk-size or stop-latency bound'}
+
+    def check_disk_free() -> bool:
+        if disk_diagnostics is None:
+            return True
+        if disk_diagnostics['tripped']:
+            return False
+        observation = {'observed_at': utc_now(), 'free_bytes': None, 'error': None}
+        try:
+            stat = os.statvfs(output)
+            if type(stat.f_bavail) is not int or stat.f_bavail < 0 or type(stat.f_frsize) is not int or stat.f_frsize <= 0:
+                raise ValueError('invalid statvfs available-block observation')
+            free = stat.f_bavail * stat.f_frsize
+            observation['free_bytes'] = free
+            disk_diagnostics['samples'] += 1
+            minimum = disk_diagnostics['minimum_observed_free_bytes']
+            disk_diagnostics['minimum_observed_free_bytes'] = free if minimum is None else min(minimum, free)
+            if free < disk_diagnostics['minimum_free_bytes']:
+                observation['error'] = 'observed available disk bytes below frozen floor'
+        except (OSError, ValueError, TypeError, AttributeError) as error:
+            disk_diagnostics['observation_errors'] += 1
+            observation['error'] = 'disk free observation unavailable: ' + str(error)[:512]
+        try:
+            disk_writer.append(observation)
+        except (OSError, ValueError, TypeError) as error:
+            observation['error'] = 'disk observation storage unavailable: ' + str(error)[:512]
+            disk_diagnostics['storage_error'] = observation['error']
+        if observation['error'] is not None:
+            # Only this scheduler admits work; trip before any further submit.
+            disk_diagnostics['tripped'] = True
+            errors.append(observation['error'])
+            cancellation.set()
+            queued.clear()
+            return False
+        return True
+
     tick, started = (time.perf_counter(), utc_now())
     peak_total_rss = 0
     sample_count = 0
@@ -251,6 +369,7 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_
     with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as pool:
         try:
             while queued or running:
+                check_disk_free()
                 used = sum((t['cpu_slots'] for t, _ in running.values()))
                 reserved_memory = sum((t.get('memory_mib', 256) for t, _ in running.values()))
                 groups = {t['exclusive_group'] for t, _ in running.values() if t['exclusive_group']}
@@ -260,6 +379,8 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_
                         continue
                     if len(running) >= max_parallel_shards or used + task['cpu_slots'] > jobs or (memory_mib is not None and reserved_memory + task.get('memory_mib', 256) > memory_mib) or (task['exclusive_group'] and task['exclusive_group'] in groups):
                         continue
+                    if cancellation.is_set() or not check_disk_free():
+                        break
                     future = pool.submit(_execute_shard, plan, plan_path.resolve(), output.resolve(), task, shard, run_id, cancellation, binding, build_commit)
                     running[future] = (task, shard)
                     queued.remove((task, shard))
@@ -268,6 +389,7 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_
                     if task['exclusive_group']:
                         groups.add(task['exclusive_group'])
                 done, _ = concurrent.futures.wait(running, timeout=0.1, return_when=concurrent.futures.FIRST_COMPLETED)
+                check_disk_free()
                 if process is not None:
                     try:
                         peak_total_rss = max(peak_total_rss, sum((p.memory_info().rss for p in [process, *process.children(recursive=True)])))
@@ -299,6 +421,22 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_
                     results.append(future.result())
                 except Exception as error:  # noqa: BLE001 -- supervision boundary records the real failure
                     errors.append('cancel cleanup: ' + str(error))
+    if disk_writer is not None:
+        try:
+            stream_descriptor = disk_writer.finish() if disk_diagnostics.get('storage_error') is None else None
+            if stream_descriptor is not None:
+                disk_diagnostics['observation_stream'] = stream_descriptor
+        except (OSError, ValueError, TypeError) as error:
+            disk_diagnostics['tripped'] = True
+            disk_diagnostics['storage_error'] = 'disk observation publication failed: ' + str(error)[:512]
+            errors.append(disk_diagnostics['storage_error'])
+            cancellation.set()
+        finally:
+            try:
+                disk_writer.close_partial()
+            except OSError as error:
+                disk_diagnostics['tripped'] = True
+                errors.append('disk observation close failed: ' + str(error)[:512])
     if memory_mib is not None and sample_count == 0:
         errors.append('memory-budget monitoring produced no valid observations')
     after_hash = None
@@ -309,6 +447,8 @@ def run_campaign(plan: dict, plan_path: Path, output: Path, *, jobs: int=1, max_
     except (OSError, ValueError) as error:
         errors.append(str(error))
     run = seal({'schema_id': RUN_SCHEMA, 'run_id': run_id, 'plan_hash': plan['content_hash'], 'candidate_hash': plan['source']['content_hash'], 'source_before': before['content_hash'], 'source_after': after_hash, 'started_at': started, 'finished_at': utc_now(), 'wall_seconds': time.perf_counter() - tick, 'jobs': jobs, 'max_parallel_shards': max_parallel_shards, 'affinity_cpus': observed_resources['affinity_cpus'], 'resource_profile': observed_resources, 'binding': descriptor(output, output / 'binding.json') if binding is not None else None, 'selection': [list(key) for key in sorted(selected)], 'is_fragment': selected != all_keys, 'memory_budget_mib': memory_mib, 'memory_enforcement': 'reservation plus sampled RSS cancellation; not a kernel hard limit' if memory_mib else 'not_requested', 'sampled_process_tree_peak_rss_bytes': peak_total_rss if sample_count else None, 'rss_samples': sample_count, 'rss_sampling_errors': rss_sampling_errors, 'rss_sampling_is_exact_peak': False, 'attempts': sorted(results, key=lambda r: (r['task'], r['shard'])), 'errors': errors})
+    if disk_diagnostics is not None:
+        run = seal({**{k: v for k, v in run.items() if k != 'content_hash'}, 'disk_free_guard': disk_diagnostics})
     write_once_json(output / 'run.json', run)
     return run
 
@@ -317,6 +457,40 @@ def aggregate_campaign(plan: dict, evidence_root: Path, *, expected_plan_hash: s
     run = read_json(evidence_path(evidence_root, 'run.json'))
     verify(run, RUN_SCHEMA)
     errors = list(run['errors'])
+    if 'disk_free_guard' in plan:
+        try:
+            disk = run.get('disk_free_guard')
+            floor = plan['disk_free_guard']['minimum_free_bytes']
+            if (not isinstance(disk, dict) or type(disk.get('minimum_free_bytes')) is not int
+                    or disk['minimum_free_bytes'] <= 0 or disk['minimum_free_bytes'] != floor):
+                raise ValueError('disk guard receipt differs from frozen floor')
+            samples, observation_errors, minimum, rows = 0, 0, None, 0
+            for observation in iter_observations(evidence_root, disk):
+                rows += 1
+                if not isinstance(observation, dict) or not isinstance(observation.get('observed_at'), str):
+                    raise ValueError('invalid disk observation evidence')
+                free = observation.get('free_bytes')
+                if free is None:
+                    observation_errors += 1
+                    if not isinstance(observation.get('error'), str) or not observation['error']:
+                        raise ValueError('disk observation failure lacks diagnostics')
+                elif type(free) is not int or free < 0:
+                    raise ValueError('invalid disk available byte observation')
+                else:
+                    samples += 1
+                    minimum = free if minimum is None else min(minimum, free)
+                    if free < floor or observation.get('error') is not None:
+                        raise ValueError('disk free guard tripped in observation evidence')
+            observed_minimum = disk.get('minimum_observed_free_bytes')
+            if (type(disk.get('samples')) is not int or disk['samples'] != samples
+                    or not rows or not samples or type(observed_minimum) is not int
+                    or observed_minimum < 0 or observed_minimum != minimum
+                    or type(disk.get('observation_errors')) is not int
+                    or disk['observation_errors'] != observation_errors or observation_errors
+                    or disk.get('tripped') is not False or disk.get('storage_error') is not None):
+                raise ValueError('disk guard tripped or inconsistent monitoring counters')
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            errors.append('invalid disk free guard evidence: ' + str(error))
     if run.get('run_id') != expected_run_id or run.get('plan_hash') != plan['content_hash']:
         errors.append('wrong campaign or plan identity')
     expected_source = plan['source']['content_hash']
@@ -379,39 +553,7 @@ def aggregate_campaign(plan: dict, evidence_root: Path, *, expected_plan_hash: s
                 required_args = ['--verification-plan-hash=' + plan['content_hash'], '--verification-suite=' + task['component'], '--verification-task=' + task['id'], '--verification-shard=' + shard['id'], '--verification-run-id=' + expected_run_id, '--verification-attempt-id=' + attempt_id]
                 if any(argv.count(arg) != 1 for arg in required_args) or argv.count('openpine.verification.pytest_gate') != 1:
                     raise ValueError('execution argv is not the planned verification command')
-            artifacts = attempt['artifacts']
-            for desc in artifacts.values():
-                if hash_file(evidence_path(evidence_root, desc['path'])) != desc['sha256']:
-                    raise ValueError('attempt artifact checksum mismatch')
-            if shard.get('coverage', task.get('coverage', False)) and 'coverage' not in artifacts:
-                raise ValueError('required coverage data is missing')
-            phases = read_artifact(evidence_root, artifacts['phases'])
-            verify(phases, 'openpine.test_inventory.v2')
-            binding = {'task': task['id'], 'shard': shard['id'], 'suite': task['component'], 'plan_hash': plan['content_hash'], 'run_id': expected_run_id, 'attempt_id': attempt['attempt_id'], 'candidate_hash': expected_source, 'source_before': expected_source, 'source_after': expected_source, 'environment_hash': plan['environments'][task['environment']]['identity']['content_hash'], 'variant': task['variant'], 'execution_path': task['execution_path'], 'mode': task['mode']}
-            if 'node_markers' in task and phases.get('node_markers') != {n: task['node_markers'][n] for n in shard['nodeids']}:
-                raise ValueError('phase marker evidence differs from plan')
-            if phases.get('coverage', False) != shard.get('coverage', task.get('coverage', False)):
-                raise ValueError('phase instrumentation differs from plan')
-            if phases.get('binding_hash') != expected_binding:
-                raise ValueError('phase binding identity mismatch')
-            if any((phases.get(k) != v for k, v in binding.items())):
-                raise ValueError('source/environment/task/path/attempt identity mismatch')
-            if phases.get('ok') is not True or phases.get('collect_only') is not False or phases.get('exitstatus') != 0 or (phases.get('errors') != []) or (phases.get('deselected') != 0) or (phases.get('nodeids') != shard['nodeids']) or (type(phases.get('count')) is not int) or (phases['count'] != len(shard['nodeids'])) or (phases.get('sha256') != collection_hash(shard['nodeids'])):
-                raise ValueError('unsuccessful/incomplete phase receipt')
-            phase_errors = validate_phase_reports(shard['nodeids'], phases['reports'])
-            if phase_errors:
-                raise ValueError('; '.join(phase_errors))
-            junit_path = evidence_path(evidence_root, artifacts['junit']['path'])
-            if hash_file(junit_path) != artifacts['junit']['sha256']:
-                raise ValueError('JUnit checksum mismatch')
-            validate_junit(junit_path, shard['nodeids'])
-            for artifact_name in ('stdout', 'selectors'):
-                path = evidence_path(evidence_root, artifacts[artifact_name]['path'])
-                if hash_file(path) != artifacts[artifact_name]['sha256']:
-                    raise ValueError(artifact_name + ' checksum mismatch')
-            selector_path = evidence_path(evidence_root, artifacts['selectors']['path'])
-            if selector_path.read_text(encoding='utf-8').splitlines() != shard['nodeids']:
-                raise ValueError('selector contents differ from frozen assignment')
+            phases = _validate_primary_artifacts(plan, evidence_root, task, shard, attempt, expected_binding)
             for node in shard['nodeids']:
                 obligation = (task['id'], node, task['variant'], task['execution_path'], task['mode'])
                 if obligation in executed:

@@ -35,7 +35,7 @@ def put(path, value):
     path.write_text(json.dumps(value) if not isinstance(value, str) else value)
 
 
-def build_fixture(base):
+def build_fixture(base, *, portable=False, owner_namespaces=False):
     stack, evidence = base / "stack", base / "evidence"
     evidence.mkdir()
     roots = {name: stack / name for name in COMPONENTS}
@@ -357,6 +357,23 @@ def build_fixture(base):
         "required_gates": {"stage-full": list(STABILIZATION_GATES)},
         "stabilization": specs,
     }
+    launch = None
+    if portable:
+        from openpine.verification.execution_owner_launch import freeze_owner_launch
+        import copy
+        policy = copy.deepcopy(policy)
+        policy['schema_id'] = 'openpine.execution_policy.v2'
+        policy['owner_locator_slots'] = {'fixture': 'directory'}
+        for owner in [policy['stabilization']['frontend'], *(lane for lanes in policy['stabilization']['packages'].values() for lane in lanes.values())]:
+            for spec in owner['commands']:
+                if isinstance(spec['cwd'], str):
+                    relative = str(Path(spec['cwd']).relative_to(base))
+                    spec['cwd'] = {'owner_locator': 'fixture', 'relative': '' if relative == '.' else relative}
+        locations = {'fixture': str(base)}
+        if owner_namespaces:
+            policy['owner_locator_slots'].update(attempt='directory', package_attempt='directory')
+            locations.update(attempt=str(evidence), package_attempt=str(evidence))
+        launch = freeze_owner_launch(policy, locations)
     put(host / "verification/execution-policy.json", policy)
     # Remove backend build detritus before freezing actual source identity.
     for root in roots.values():
@@ -385,6 +402,7 @@ def build_fixture(base):
         environments={"py": {"identity": env, "executable": sys.executable}},
         shard_count=1,
         coverage=True,
+        owner_launch=launch,
     )
     plan["source_commits"] = {name: "1" * 40 for name in roots}
     plan.pop("content_hash")
@@ -412,7 +430,7 @@ def build_fixture(base):
         profile="stage-full", policy=policy, roots=roots, source=source,
         inventories=inventories,
         environments={"py": {"identity": env, "executable": sys.executable}},
-        shard_count=1, coverage=False,
+        shard_count=1, coverage=False, owner_launch=launch,
     )
     timing_plan["source_commits"] = dict(plan["source_commits"])
     timing_plan.pop("content_hash")

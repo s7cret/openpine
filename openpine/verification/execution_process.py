@@ -51,6 +51,35 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
         if hash_file(captured) != spec['sha256']:
             raise ValueError('command input provenance capture drift')
         provenance[name] = {'source': dict(spec), 'captured': {'path': captured.name, 'sha256': spec['sha256']}}
+    def check_tool_aliases():
+        import shutil
+        for name, row in provenance.items():
+            if not name.startswith('owner-tool:'):
+                continue
+            spec = row['source']
+            # Old single-tool callers bind argv directly. Auxiliary tools need
+            # the frozen launch alias; a resolved target alone is insufficient.
+            alias = spec.get('declared_path')
+            if alias is None:
+                if len([n for n in provenance if n.startswith('owner-tool:')]) != 1:
+                    raise ValueError('command tool provenance lacks declared alias')
+                alias = argv[0]
+            candidates = [alias]
+            if spec.get('is_argv_executable') is True:
+                candidates.append(argv[0])
+            if name == 'owner-tool:node':
+                search = os.get_exec_path(env)
+                search = [str(Path(cwd) / p) if not Path(p).is_absolute() else p for p in search]
+                candidates.append(shutil.which('node', path=os.pathsep.join(search)))
+            elif name == 'owner-tool:chromium':
+                candidates.append(env.get('PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH'))
+            for candidate in candidates:
+                if not isinstance(candidate, str) or not Path(candidate).is_absolute():
+                    raise ValueError('command tool provenance lacks absolute executable alias')
+                target = Path(candidate).resolve(strict=True)
+                if target != Path(spec['path']) or hash_file(target) != spec['sha256']:
+                    raise ValueError('command tool alias provenance differs from frozen target')
+
     process, error, status, returncode = (None, None, 'not_run', None)
     started, tick = (datetime.now(timezone.utc).isoformat(), time.perf_counter())
     input_file = output / 'stdin.bin'
@@ -59,6 +88,7 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
     try:
         with (output / 'stdout.log').open('xb') as out, (output / 'stderr.log').open('xb') as err:
             with input_file.open('rb') if stdin is not None else open(os.devnull, 'rb') as inp:
+                check_tool_aliases()
                 process = subprocess.Popen(argv, cwd=cwd, env=env, stdin=inp, stdout=out, stderr=err, start_new_session=os.name == 'posix')  # noqa: S603, S607 -- declared argv, shell=False; exit status is checked
                 try:
                     returncode = process.wait(timeout=timeout)
@@ -71,7 +101,7 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
                     status = 'cancelled'
                     _stop_group(process)
                     returncode = process.poll()
-    except (OSError, ValueError) as caught:
+    except (OSError, ValueError, RuntimeError) as caught:
         status, error = ('infrastructure_error', str(caught))
     finally:
         if process is not None:
@@ -86,6 +116,10 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
                     _stop_group(process)
                     if status == 'completed':
                         status, error = ('failed', 'orphan process after command exit')
+    try:
+        check_tool_aliases()
+    except (OSError, ValueError, RuntimeError) as caught:
+        status, error = ('failed', 'command tool provenance changed or invalid: ' + str(caught))
     for name, row in provenance.items():
         try:
             row['after_sha256'] = hash_file(Path(row['source']['path']))

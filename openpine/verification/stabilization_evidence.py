@@ -19,6 +19,33 @@ from openpine.verification.execution_identity import (
 from openpine.verification.identity import digest, read_json, verify
 
 
+def replay_path(historical: str | Path, mappings: dict | None = None) -> Path:
+    """Locate historical bytes, never rewrite command/probe identity.
+
+    Maps carry no expected hashes. The consuming owner checks source inventory,
+    captured inputs, descriptors or admitted wheel members independently.
+    An explicit mapping never falls back to an old runner's filesystem.
+    """
+    path = Path(historical)
+    if not path.is_absolute() or '..' in path.parts:
+        raise ValueError("unsafe historical owner path")
+    if mappings is not None:
+        if not isinstance(mappings, dict):
+            raise ValueError("owner replay paths must be a locator mapping")
+        for old, new in mappings.items():
+            for location in (old, new):
+                if not isinstance(location, str) or not Path(location).is_absolute() or '..' in Path(location).parts:
+                    raise ValueError("unsafe owner replay location")
+        matches = [(Path(old), Path(new)) for old, new in mappings.items() if path.is_relative_to(Path(old))]
+        if len(matches) != 1:
+            raise ValueError("missing/ambiguous owner replay location")
+        old, new = matches[0]
+        path = new / path.relative_to(old)
+    if any(p.is_symlink() for p in (path, *path.parents)):
+        raise ValueError("owner replay path crosses a symlink")
+    return path.resolve(strict=True)
+
+
 def evidence_folder(root: Path, relative: str) -> Path:
     path = evidence_path(root, relative, must_exist=False)
     if not path.is_dir():
@@ -135,7 +162,7 @@ def verify_reconciliation(plan: dict, host: Path, policy: dict) -> dict:
     return {"register_sha256": policy["sha256"], "decisions": len(rows)}
 
 
-def verify_frontend(plan: dict, root: Path, supplied: dict, policy: dict) -> dict:
+def verify_frontend(plan: dict, root: Path, supplied: dict, policy: dict, *, replay_paths: dict | None = None) -> dict:
     binding = supplied.get("binding", {})
     if binding.get("plan_hash") != plan["content_hash"] or binding.get("candidate_hash") != plan.get("source", {}).get("content_hash"):
         raise ValueError("frontend candidate/plan binding is missing or stale")
@@ -158,7 +185,8 @@ def verify_frontend(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
     if any(Path(s["cwd"]).resolve() != staged.resolve() for s in specifications if s.get("role") != "frontend-openapi"):
         raise ValueError("frontend commands consume different staged source roots")
     from openpine.verification.execution_identity import source_snapshot
-    actual = source_snapshot({"frontend": staged})["components"]["frontend"]["files"]
+    live_staged = replay_path(staged, replay_paths)
+    actual = source_snapshot({"frontend": live_staged})["components"]["frontend"]["files"]
     generated = {"dist", "coverage", "test-results", "playwright-report", ".vite", ".vitest"}
     actual = {n: m for n, m in actual.items() if n.split("/")[0] not in generated and not n.endswith(".tsbuildinfo")}
     if not expected or actual != expected or binding.get("source_files") != expected:
@@ -171,11 +199,11 @@ def verify_frontend(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
     commands = command_set(root, supplied["commands"], specifications)
     artifacts = {"tests": supplied["tests"], "outputs": supplied.get("outputs", [])}
     test_paths = [a.split("=", 1)[1] for a in test_specs[0]["argv"] if a.startswith("--outputFile.json=")]
-    if len(test_paths) != 1 or evidence_path(root, supplied["tests"]["path"]).resolve() != Path(test_paths[0]).resolve():
+    if len(test_paths) != 1 or evidence_path(root, supplied["tests"]["path"]).resolve() != replay_path(test_paths[0], replay_paths):
         raise ValueError("frontend tests descriptor is detached from command output")
     # A matching descriptor copied into receipt metadata is not enough: admit
     # only the complete dist inventory at the independently frozen build cwd.
-    built = {p.resolve() for p in (staged / "dist").rglob("*") if p.is_file()}
+    built = {p.resolve() for p in (live_staged / "dist").rglob("*") if p.is_file()}
     declared = [evidence_path(root, d["path"]).resolve() for d in artifacts["outputs"]]
     if not built or len(set(declared)) != len(declared) or set(declared) != built:
         raise ValueError("frontend build descriptors differ from execution outputs")
@@ -244,13 +272,13 @@ def wheel_members(path: Path, *, max_bytes: int = 512 * 1024**2) -> dict:
         return members
 
 
-def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict) -> dict:
+def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict, *, replay_paths: dict | None = None, source_roots: dict | None = None) -> dict:
     """Admit normal and sdist-rebuilt installations independently."""
     if set(supplied) != {"normal", "rebuilt"} or set(policy) != {"normal", "rebuilt"}:
         raise ValueError("normal and rebuilt artifact/install sets are required")
     results = {}
     for kind in ("normal", "rebuilt"):
-        results[kind] = _verify_package_installation(plan, root, supplied[kind], policy[kind])
+        results[kind] = _verify_package_installation(plan, root, supplied[kind], policy[kind], replay_paths=replay_paths, source_roots=source_roots)
     prefixes = [read_artifact(root, supplied[k]["probe"])["prefix"] for k in ("normal", "rebuilt")]
     if Path(prefixes[0]).resolve() == Path(prefixes[1]).resolve():
         raise ValueError("normal and rebuilt installations require separate prefixes")
@@ -262,7 +290,7 @@ def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict) -> dic
     return results
 
 
-def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy: dict) -> dict:
+def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy: dict, *, replay_paths: dict | None = None, source_roots: dict | None = None) -> dict:
     """Require builds/install/API commands plus wheel-bound installed file origins."""
     commands = command_set(root, supplied["commands"], policy["commands"])
     roles = [s.get("role") for s in policy["commands"]]
@@ -304,7 +332,13 @@ def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy:
     if set(supplied.get("artifacts", {})) != set(plan["source"]["components"]):
         raise ValueError("missing package artifact component")
     wheel_paths = {str(evidence_path(root, row["wheel"]["path"])) for row in supplied["artifacts"].values()}
-    if not any(wheel_paths.issubset(set(command["argv"])) for command, role in zip(commands, roles) if role == "install"):
+    wheel_names = {Path(row["wheel"]["path"]).name for row in supplied["artifacts"].values()}
+    installed_sets = [
+        {str(replay_path(a, replay_paths)) for a in command["argv"]
+         if Path(a).is_absolute() and Path(a).name in wheel_names}
+        for command, role in zip(commands, roles) if role == "install"
+    ]
+    if not any(wheel_paths.issubset(paths) for paths in installed_sets):
         raise ValueError("admitted wheels are not bound to an actual complete-stack installation")
     probe_indices = [i for i, role in enumerate(roles) if role == "probe"]
     if len(probe_indices) != 1:
@@ -337,16 +371,23 @@ def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy:
         raise ValueError("installed probe used a different interpreter binary")
     if probe["isolated"] is not True or probe["pythonpath"] is not None:
         raise ValueError("installed probe must use -I without PYTHONPATH")
-    cwd = Path(probe["cwd"]).resolve(strict=True)
-    prefix = Path(probe["prefix"]).resolve(strict=True)
-    roots = [Path(p).resolve() for p in plan["roots"].values()]
+    if probe["cwd"] != producer["cwd"]:
+        raise ValueError("installed probe cwd differs from its producer")
+    historical_cwd, historical_prefix = Path(probe["cwd"]), Path(probe["prefix"])
+    historical_roots = [Path(p) for p in plan["roots"].values()]
+    if any(historical_cwd.is_relative_to(p) or historical_prefix.is_relative_to(p) for p in historical_roots):
+        raise ValueError("installed probe overlaps a historical source checkout")
+    cwd = replay_path(historical_cwd, replay_paths)
+    prefix = replay_path(historical_prefix, replay_paths)
+    roots = [Path(p).resolve() for p in (source_roots or plan["roots"]).values()]
     if any(cwd.is_relative_to(p) or prefix.is_relative_to(p) for p in roots):
         raise ValueError("installed probe overlaps a source checkout")
     if set(probe["components"]) != set(plan["source"]["components"]):
         raise ValueError("missing installed component")
-    locked_components = read_json(
-        Path(plan["roots"]["openpine"]) / "openpine/stack-lock.json"
-    )["components"]
+    stack_lock = Path((source_roots or plan["roots"])["openpine"]) / "openpine/stack-lock.json"
+    if hash_file(stack_lock) != plan["source"]["components"]["openpine"]["files"]["openpine/stack-lock.json"]["sha256"]:
+        raise ValueError("replayed stack lock differs from frozen candidate")
+    locked_components = read_json(stack_lock)["components"]
     aliases = {
         "marketdata_provider": "marketdata-provider",
         "openpine_contracts": "openpine-contracts",
@@ -365,7 +406,12 @@ def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy:
         for kind, path in (("wheel", wheel), ("sdist", sdist)):
             if hash_file(path) != supplied["artifacts"][component][kind]["sha256"]:
                 raise ValueError("package artifact hash mismatch")
-        origin = Path(observed["origin"]).resolve(strict=True)
+        historical_origin = Path(observed["origin"])
+        if not historical_origin.is_relative_to(historical_prefix):
+            raise ValueError("historical installed origin escapes prefix")
+        origin = replay_path(historical_origin, replay_paths)
+        if origin != prefix / historical_origin.relative_to(historical_prefix):
+            raise ValueError("replayed installed origin is detached from prefix")
         if (
             not origin.is_relative_to(prefix)
             or any(origin.is_relative_to(p) for p in roots)
@@ -424,7 +470,9 @@ def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy:
                 ):
                     raise ValueError("sdist source bytes differ from frozen candidate")
         for relative, checksum in files.items():
-            installed = prefix / relative
+            if Path(relative).is_absolute() or '..' in Path(relative).parts:
+                raise ValueError("unsafe installed file relative path")
+            installed = replay_path(historical_prefix / relative, replay_paths)
             if (
                 not installed.resolve(strict=True).is_relative_to(prefix)
                 or hash_file(installed) != checksum
