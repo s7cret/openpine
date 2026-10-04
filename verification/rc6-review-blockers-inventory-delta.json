@@ -1,0 +1,57 @@
+{
+  "added_nodeids": [
+    "rc6_tests/test_rc6_review_admission.py::test_deleted_live_input_produces_a_failed_primary_receipt",
+    "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[candidate]",
+    "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[foreign-artifact]",
+    "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[plan]",
+    "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[staged-source]",
+    "rc6_tests/test_rc6_review_admission.py::test_frontend_rejects_stale_or_foreign_primary[unbound-producer]",
+    "rc6_tests/test_rc6_review_admission.py::test_frontend_requires_plan_binding",
+    "rc6_tests/test_rc6_review_admission.py::test_frozen_helper_primary_bytes_are_required[changed-capture]",
+    "rc6_tests/test_rc6_review_admission.py::test_frozen_helper_primary_bytes_are_required[missing-capture]",
+    "rc6_tests/test_rc6_review_admission.py::test_frozen_helper_primary_bytes_are_required[missing-provenance]",
+    "rc6_tests/test_rc6_review_admission.py::test_missing_rebuilt_installation_is_not_admitted",
+    "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[address-space]",
+    "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[frequency]",
+    "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[jobs]",
+    "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[memory]",
+    "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[missing]",
+    "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[quota]",
+    "rc6_tests/test_rc6_review_admission.py::test_performance_organization_rejects_budget_drift[shards]",
+    "rc6_tests/test_rc6_review_admission.py::test_resealed_broken_rebuilt_wheel_is_rejected",
+    "rc6_tests/test_rc6_review_admission.py::test_reservation_drift_is_not_the_same_workload[cpu_slots-2]",
+    "rc6_tests/test_rc6_review_admission.py::test_reservation_drift_is_not_the_same_workload[exclusive_group-foreign]",
+    "rc6_tests/test_rc6_review_admission.py::test_reservation_drift_is_not_the_same_workload[memory_mib-999]",
+    "rc6_tests/test_rc6_review_admission.py::test_unbound_helper_is_not_admitted",
+    "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[duplicate]",
+    "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[oversize]",
+    "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[symlink]",
+    "rc6_tests/test_rc6_review_admission.py::test_wheel_member_reader_rejects_unsafe_archive[traversal]"
+  ],
+  "ast2python": {
+    "added_nodeids": [
+      "tests/stage4/test_performance_measurement.py::test_latency_samples_are_untraced_and_memory_runs_real_pipeline",
+      "tests/stage4/test_performance_measurement.py::test_memory_pass_cleans_up_tracing_on_failure",
+      "tests/stage4/test_performance_measurement.py::test_performance_gate_does_not_disable_caller_memory_tracing"
+    ],
+    "baseline": {
+      "count": 2079,
+      "deselected": 0,
+      "sha256": "sha256:9456f941535eb0519e5d24dbb8c1721e785a4f7d313ae02898e81e9084b51a2c"
+    },
+    "count": 2082,
+    "deselected": 0,
+    "identity_mode": "reviewed_addition_to_hashed_baseline"
+  },
+  "baseline": {
+    "count": 11027,
+    "deselected": 0,
+    "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
+  },
+  "full_stage2_accepted": false,
+  "new_host_count": 11139,
+  "previous_host_count": 11112,
+  "removed_nodeids": [],
+  "schema_id": "openpine.reviewed_inventory_delta.v1",
+  "scope": "review blocker regressions only; collect-only, not execution acceptance"
+}

@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@vueuse/core": "^14.3.0",
-    "axios": "1.18.1",
+    "axios": "1.20.0",
     "lightweight-charts": "^4.2.3",
     "pinia": "^3.0.4",
     "vue": "^3.5.34",
@@ -24,18 +24,18 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
-    "@intlify/unplugin-vue-i18n": "^11.2.4",
+    "@tailwindcss/postcss": "4.3.3",
     "@playwright/test": "^1.62.1",
     "@types/node": "^24.12.3",
     "@vitejs/plugin-vue": "^6.0.6",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "@vue/tsconfig": "^0.9.1",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.15",
-    "tailwindcss": "^3.4.19",
+    "tailwindcss": "4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
-    "vitest": "^4.1.8",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.2.8"
   },
   "packageManager": "npm@11.16.0"

@@ -584,7 +584,7 @@ def test_unassigned_unverified_mismatch_is_visible_and_blocks_complete_group(tmp
 def test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred():
     from pathlib import Path
     from openpine.verification.conformance import load_corpus
-    from openpine.verification.evidence_index import _temporary_tonumber_gaps
+    from openpine.verification.evidence_index import _declared_unresolved_authority_gaps
 
     root = Path(__file__).resolve().parents[1]
     corpus = load_corpus(root / "verification/builtin-string-operations-v1/manifest.json")
@@ -599,16 +599,23 @@ def test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred():
         }
         details.append({"id": case_id, "status": "RUNTIME_MISMATCH", "authority": "UNVERIFIED",
                         "first_divergence": "events"})
-    assert _temporary_tonumber_gaps(root, corpus, details, observations, PINS, "full") == list(ids)
+    records = _declared_unresolved_authority_gaps(root, corpus, details, observations, PINS, "full")
+    assert [record["case_id"] for record in records] == list(ids)
     for case_id in ids:
         altered = deepcopy(observations)
-        altered[case_id]["source_identity"] = {**PINS, "pinelib": "z" * 40}
-        assert _temporary_tonumber_gaps(root, corpus, details, altered, PINS, "full") == []
-    assert _temporary_tonumber_gaps(root, corpus, details[:-1], observations, PINS, "full") == []
-    assert _temporary_tonumber_gaps(root, corpus, [*details, {"id": "other", "status": "RUNTIME_MISMATCH", "authority": "UNVERIFIED"}], observations, PINS, "full") == []
+        altered[case_id]["semantic_authority"]["independent_receipt_sha256"] = "0" * 64
+        assert _declared_unresolved_authority_gaps(root, corpus, details, altered, PINS, "full") == []
+        altered = deepcopy(observations)
+        altered[case_id]["source_identity"]["pinelib"] = "0" * 40
+        assert _declared_unresolved_authority_gaps(root, corpus, details, altered, PINS, "full") == []
+        altered = deepcopy(observations)
+        altered[case_id]["transcript_mode"] = "compact"
+        assert _declared_unresolved_authority_gaps(root, corpus, details, altered, PINS, "full") == []
+    assert _declared_unresolved_authority_gaps(root, corpus, details[:-1], observations, PINS, "full") == []
+    assert _declared_unresolved_authority_gaps(root, corpus, [*details, {"id": "other", "status": "RUNTIME_MISMATCH", "authority": "UNVERIFIED", "first_divergence": "events"}], observations, PINS, "full") == []
     altered = deepcopy(observations)
     altered[ids[0]]["semantic_authority"]["confirmed"] = True
-    assert _temporary_tonumber_gaps(root, corpus, details, altered, PINS, "full") == []
+    assert _declared_unresolved_authority_gaps(root, corpus, details, altered, PINS, "full") == []
 
 
 def test_provisional_numeric_group_never_counts_as_semantic_pass(tmp_path, monkeypatch):
@@ -639,12 +646,16 @@ def test_provisional_numeric_group_never_counts_as_semantic_pass(tmp_path, monke
                 surface, host / "manifest.json", observations,
                 corpus_hash=corpus["content_hash"], assignments=assignments,
             ))
-    monkeypatch.setattr(evidence_index, "_temporary_tonumber_gaps", lambda *args: ["uncertain"])
+    monkeypatch.setattr(
+        evidence_index,
+        "_declared_unresolved_authority_gaps",
+        lambda *args: [{"case_id": "uncertain", "requirement_id": "BUILTIN-03"}],
+    )
     report = index(fixture)
     assert report["denominator"] == 1 and report["required_group_paths"] == 10
     assert report["passed_group_paths"] == 0 and report["deferred_group_paths"] == 10
     assert all(g["status"] == "TEMPORARY_UNVERIFIED" and g["deferred_cases"] == ["uncertain"] for g in report["groups"])
-    assert report["provisional_gate_ok"] and not report["ok"]
+    assert report["diagnostic_provisional_ok"] and not report["ok"]
     assert report["full_builtin_expected_accepted"] is report["full_stage2_accepted"] is False
 
     # A different unresolved failure cannot be hidden behind the three-case exception.
@@ -669,7 +680,7 @@ def test_provisional_numeric_group_never_counts_as_semantic_pass(tmp_path, monke
                 corpus_hash=corpus["content_hash"], assignments=assignments,
             ))
     report = index(fixture)
-    assert not report["provisional_gate_ok"] and report["deferred_group_paths"] == 0
+    assert not report["diagnostic_provisional_ok"] and report["deferred_group_paths"] == 0
     assert all(group["status"] == "FAILED" for group in report["groups"])
 
 
@@ -683,7 +694,7 @@ def test_provisional_cli_exit_does_not_forge_full_acceptance(tmp_path, monkeypat
     write_json(host / "surface-lock.json", lock)
     write_json(host / "docs/RC6_LIFECYCLE_SOURCES.json", PINS)
     report = index(fixture)
-    report = reseal({**report, "ok": False, "provisional_gate_ok": True,
+    report = reseal({**report, "ok": False, "diagnostic_provisional_ok": True,
                      "deferred_group_paths": 10, "full_stage2_accepted": False})
     monkeypatch.setattr(builtins, "build_builtin_surface", lambda: surface)
     monkeypatch.setattr(evidence_index, "build_evidence_index", lambda *a, **k: report)
@@ -691,19 +702,25 @@ def test_provisional_cli_exit_does_not_forge_full_acceptance(tmp_path, monkeypat
     args = ["builtin-index", "--host-root", str(host), "--evidence", str(evidence),
             "--surface-lock", str(host / "surface-lock.json"), "--plan", str(host / "plan.json"),
             "--expected-plan-hash", plan["content_hash"], "--output", str(output)]
-    assert main(args) == 0
+    assert main(args) == 1
     assert read_json(output)["ok"] is False
-    failed = reseal({**report, "provisional_gate_ok": False})
+    assert main([*args, "--diagnostic-provisional"]) == 0
+    failed = reseal({**report, "diagnostic_provisional_ok": False})
     monkeypatch.setattr(evidence_index, "build_evidence_index", lambda *a, **k: failed)
     assert main(args) == 1
+    assert main([*args, "--diagnostic-provisional"]) == 1
+    assert read_json(output)["ok"] is False
 
     monkeypatch.setattr(stage2_remaining, "build_stage2_remaining", lambda *a: report)
     args = ["stage2-remaining", "--host-root", str(host),
             "--builtin-index", str(output), "--output", str(tmp_path / "remaining.json")]
-    assert main(args) == 0
+    assert main(args) == 1
     assert read_json(tmp_path / "remaining.json")["full_stage2_accepted"] is False
+    assert main([*args, "--diagnostic-provisional"]) == 0
     monkeypatch.setattr(stage2_remaining, "build_stage2_remaining", lambda *a: failed)
     assert main(args) == 1
+    assert main([*args, "--diagnostic-provisional"]) == 1
+    assert read_json(tmp_path / "remaining.json")["full_stage2_accepted"] is False
 
 
 def test_stage2_remainder_keeps_provisional_cases_open(tmp_path):
@@ -721,11 +738,11 @@ def test_stage2_remainder_keeps_provisional_cases_open(tmp_path):
     report = reseal({**report, "groups": groups, "plan_hash": plan_lock["plan_hash"],
                      "lock_hash": surface_lock["content_hash"], "source_pins": pins,
                      "ok": False, "all_declared_runs_passed": False,
-                     "provisional_gate_ok": True, "passed_group_paths": 0,
+                     "diagnostic_provisional_ok": True, "passed_group_paths": 0,
                      "deferred_group_paths": len(groups),
-                     "temporary_unverified_cases": groups[0]["deferred_cases"]})
+                     "unresolved_authority_cases": [{"case_id": case_id, "requirement_id": "BUILTIN-03"} for case_id in groups[0]["deferred_cases"]]})
     remaining = build_stage2_remaining(root, report)
-    assert remaining["provisional_gate_ok"] is True
+    assert remaining["diagnostic_provisional_ok"] is True
     assert remaining["builtin_index_replay_passed"] is remaining["ok"] is False
-    assert remaining["temporary_unverified_cases"] == groups[0]["deferred_cases"]
+    assert [row["case_id"] for row in remaining["unresolved_authority_cases"]] == groups[0]["deferred_cases"]
     assert remaining["full_stage2_accepted"] is remaining["tradingview_verified"] is False

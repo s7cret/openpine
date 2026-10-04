@@ -199,7 +199,19 @@ class Commands:
         environment = clean_environment({n: str(p) for n, p in (roots or {}).items()}, self.work / 'private')
         result = run_logged(argv, cwd=cwd, output=log, env=environment, timeout=timeout)
         if not result['ok']:
-            raise RuntimeError('command failed; raw receipt: ' + str(log / 'command.json'))
+            # Keep the immutable full logs and expose bounded diagnostics in the
+            # hosted job log even when failure precedes owner output creation.
+            tails = []
+            for name in ('stdout.log', 'stderr.log'):
+                with (log / name).open('rb') as stream:
+                    stream.seek(0, 2)
+                    stream.seek(max(0, stream.tell() - 8192))
+                    tails.append(name + ':\n' + stream.read().decode('utf-8', errors='replace'))
+            raise RuntimeError(
+                'command failed; raw receipt: ' + str(log / 'command.json')
+                + f"; status={result['status']}; returncode={result['returncode']}\n"
+                + '\n'.join(tails)
+            )
         return (log / 'stdout.log').read_text(encoding='utf-8')
 
 def prepare(host: Path, work: Path, python_label: str) -> dict:
@@ -324,6 +336,7 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
     command.run([executable, '-m', 'pip', 'check'], cwd=work)
     smoke = command.run([executable, '-c', 'import importlib,json,pathlib,sys; names=' + repr([name.replace('-', '_') for name in ('openpine', 'openpine-contracts', 'pine2ast', 'ast2python', 'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer')]) + '; origins={name:str(pathlib.Path(importlib.import_module(name).__file__).resolve()) for name in names}; assert all(pathlib.Path(value).is_relative_to(pathlib.Path(sys.prefix).resolve()) for value in origins.values()), origins; print(json.dumps(origins))'], cwd=work)
     write_once_json(bundle / 'installed-origins.json', json.loads(smoke))
+    command.run([executable, '-c', 'import json; from openpine.verification.execution_preflight import catalog_source_preflight; r=catalog_source_preflight(); print(json.dumps(r)); raise SystemExit(0 if r["ok"] else 1)'], cwd=work)
     command.run([executable, '-c', 'import json; from openpine.verification.execution_preflight import optimizer_process_preflight; r=optimizer_process_preflight(); print(json.dumps(r)); raise SystemExit(0 if r["ok"] else 1)'], cwd=work, roots=roots)
     observed = json.loads(command.run([executable, '-c', 'import json; from openpine.verification.execution_identity import environment_snapshot; print(json.dumps(environment_snapshot()))'], cwd=work, roots=roots))
     locked = '\n'.join((n + '==' + v for n, v in observed['distributions'].items())) + '\n'
@@ -364,12 +377,36 @@ def restore(bundle: Path, work: Path, *, expected_source_hash: str | None=None, 
     write_once_json(work / 'restored.json', {'candidate_hash': report['source']['content_hash'], 'roots': {n: str(p) for n, p in roots.items()}, 'executable': str(executable), 'environment': observed, 'source_commits': source_commits})
     return (report, roots, executable)
 
-def make_ci_plan(collection_files: list[Path], roots: dict[str, Path], output: Path, source_commits: dict[str, str]) -> dict:
+def make_owner_locations(reports: dict, *, stack_root: Path, attempt: Path, package_attempt: Path,
+                         npm: Path, node: Path, chromium: Path) -> dict:
+    """Locate existing verified preparations; do not create an acceptance receipt."""
+    if set(reports) != {'py311', 'py312', 'py313'}:
+        raise ValueError('all three owner preparation reports required')
+    first = reports['py313']
+    for report in reports.values():
+        roots = {n: Path(p) for n, p in report['roots'].items()}
+        if (report['candidate_hash'] != first['candidate_hash'] or
+                report['source_commits'] != first['source_commits'] or
+                source_snapshot(roots)['content_hash'] != first['candidate_hash']):
+            raise ValueError('owner preparations belong to different candidates')
+    host = Path(first['roots']['openpine'])
+    locations = {'host': str(host), 'stack': str(stack_root),
+                 'helpers': str(host / 'scripts/rc6_stabilization'),
+                 'attempt': str(attempt), 'package_attempt': str(package_attempt),
+                 'runner': first['executable'], 'uv': str(Path(first['executable']).parent / 'uv'),
+                 'npm': str(npm), 'node': str(node), 'chromium': str(chromium)}
+    locations.update({f'python{label[2:]}': report['executable'] for label, report in reports.items()})
+    return locations
+
+
+def make_ci_plan(collection_files: list[Path], roots: dict[str, Path], output: Path, source_commits: dict[str, str], *, owner_locations: dict | None = None) -> dict:
     from openpine.verification.execution_collections import join_collections
     from openpine.verification.execution_plan import make_plan, validate_plan
     collected = join_collections([read_json(p) for p in collection_files], roots)
     policy = read_json(roots['openpine'] / 'verification/execution-policy.json')
-    plan = make_plan(profile='stage-full', policy=policy, roots=roots, source=collected['source'], inventories=collected['inventories'], environments=collected['environments'], shard_count=4, coverage=True)
+    from openpine.verification.execution_owner_launch import freeze_owner_launch
+    owner_launch = freeze_owner_launch(policy, owner_locations) if owner_locations is not None else None
+    plan = make_plan(profile='stage-full', policy=policy, roots=roots, source=collected['source'], inventories=collected['inventories'], environments=collected['environments'], shard_count=4, coverage=True, owner_launch=owner_launch)
     plan = seal({**{key: value for key, value in plan.items() if key != 'content_hash'}, 'source_commits': source_commits})
     validate_plan(plan)
     write_once_json(output, plan)
@@ -417,7 +454,7 @@ def finalize_foundation(plan: dict, roots: dict[str, Path], fragments: list[Path
             raise ValueError('CI task run changed')
         if descriptor['coverage_sha256'] != hash_file(fragment / 'coverage-owner/receipt.json'):
             raise ValueError('CI task coverage changed')
-        verify_task_coverage(plan, fragment, task_id, fragment / 'coverage-owner', run_id=run_id)
+        verify_task_coverage(plan, fragment, task_id, fragment / 'coverage-owner', run_id=run_id, source_roots=roots)
         target = output / 'owner-coverage' / task_id
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(fragment / 'coverage-owner', target, ignore=shutil.ignore_patterns('private'))
@@ -454,8 +491,118 @@ def finalize_foundation(plan: dict, roots: dict[str, Path], fragments: list[Path
                     raise ValueError('conflicting frozen-corpus observations')
             else:
                 shutil.copy2(origin, target)
-    result = run_stage_gate(roots['openpine'], roots['openpine'].parent, evidence)
+    result = run_stage_gate(roots['openpine'], roots, evidence)
     return result
+
+def finalize_stabilization(plan: dict, host: Path, foundations: list[Path], output: Path,
+                           run_id: str, *, binding: dict | None = None) -> dict:
+    """Join real native locators, then invoke the existing current CLI owner.
+
+    Native artifacts do not qualify packages, frontend or performance. Absent
+    owners remain absent; only stage_gate can decide acceptance. Historical
+    command receipts and execution bindings are copied byte-for-byte.
+    """
+    import argparse
+    from openpine.verification.execution_binding import checked_locations
+    from openpine.verification.execution_campaign import aggregate_campaign
+    from openpine.verification.execution_cli import add_commands, run_command
+    from openpine.verification.execution_identity import ensure_external_output
+    from openpine.verification.execution_plan import validate_plan
+
+    validate_plan(plan)
+    roots, _ = checked_locations(plan, binding)
+    ensure_external_output(output, {name: Path(path) for name, path in roots.items()})
+    if Path(roots['openpine']).resolve() != host.resolve():
+        raise ValueError('common owner host differs from checked candidate')
+    if not foundations:
+        raise ValueError('common owner requires real native campaign primaries')
+    output.mkdir(parents=True, exist_ok=False)
+    evidence = output / 'evidence'
+    evidence.mkdir()
+
+    def copy_primary(source: Path, destination: Path) -> None:
+        if any(path.is_symlink() for path in (source, *source.parents)) or any(
+            path.is_symlink() for path in source.rglob('*')
+        ):
+            raise ValueError('detached/symlink native owner primary')
+        for path in sorted(source.rglob('*')):
+            if not path.is_file() or 'private' in path.relative_to(source).parts:
+                continue
+            target = destination / path.relative_to(source)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                if target.read_bytes() != path.read_bytes():
+                    raise ValueError('conflicting native owner primary')
+            else:
+                shutil.copy2(path, target)
+
+    aggregate_hash = None
+    environments, coverage = {}, {}
+    for foundation in foundations:
+        # Reject detached artifacts before a filesystem copy can hide them.
+        if any(path.is_symlink() for path in (foundation, *foundation.parents)) or any(
+            path.is_symlink() for path in foundation.rglob('*')
+        ):
+            raise ValueError('detached/symlink native owner primary')
+        run = read_json(foundation / 'merged/run.json')
+        if (run.get('plan_hash') != plan['content_hash'] or run.get('run_id') != run_id
+                or run.get('candidate_hash') != plan['source']['content_hash']):
+            raise ValueError('native primary is historical/stale or foreign')
+        aggregate = aggregate_campaign(plan, foundation / 'merged',
+                                       expected_plan_hash=plan['content_hash'], expected_run_id=run_id)
+        if aggregate_hash is None:
+            aggregate_hash = aggregate['content_hash']
+            copy_primary(foundation / 'merged', evidence / 'merged')
+        elif aggregate_hash != aggregate['content_hash']:
+            raise ValueError('foundation owners refer to different common campaigns')
+        for environment in plan['environments']:
+            source = foundation / 'suites' / environment
+            if (source / 'stage1.json').is_file():
+                relative = 'suites/' + environment
+                copy_primary(source, evidence / relative)
+                environments[environment] = relative
+        for task in plan['tasks']:
+            source = foundation / 'owner-coverage' / task['id']
+            if (source / 'receipt.json').is_file():
+                relative = 'owner-coverage/' + task['id']
+                copy_primary(source, evidence / relative)
+                coverage[task['id']] = relative
+    gates = {'branch-reconciliation': {}, 'protected-workers': {}}
+    if environments:
+        gates['foundation'] = {'environments': environments}
+    if coverage:
+        gates['coverage'] = {'tasks': coverage}
+    write_once_json(evidence / 'stabilization-inputs.json', {
+        'schema_id': 'openpine.rc6_stabilization_inputs.v1', 'plan_hash': plan['content_hash'],
+        'candidate_hash': plan['source']['content_hash'], 'run_id': run_id,
+        'campaign': 'merged', 'gates': gates,
+    })
+    plan_path = output / 'plan.json'
+    write_once_json(plan_path, plan)
+    common = ['--host-root', str(host), '--plan', str(plan_path), '--expected-plan-hash',
+              plan['content_hash'], '--evidence', str(evidence), '--run-id', run_id]
+    if binding is not None:
+        write_once_json(output / 'binding.json', binding)
+        common += ['--binding', str(output / 'binding.json')]
+    parser = argparse.ArgumentParser()
+    add_commands(parser.add_subparsers(dest='command', required=True))
+    invocations, exits = [], []
+    for command, filename, view in (
+        ('test-stabilization', 'current.json', 'current'),
+        ('test-current', 'replayed-current.json', 'current'),
+        ('test-current', 'summary.json', 'summary'),
+        ('test-current', 'remainder.json', 'remainder'),
+    ):
+        argv = [command, *common, '--output', str(output / filename), '--view', view]
+        if command == 'test-current':
+            argv += ['--saved-current', str(output / 'current.json')]
+        invocations.append(argv)
+        # Exit 1 is a recorded nonaccepted verdict, not a command success.
+        # Reader/infrastructure exceptions propagate without a fake receipt.
+        exits.append(run_command(parser.parse_args(argv)))
+    write_once_json(output / 'invocations.json', {'argv': invocations, 'exits': exits})
+    return read_json(output / 'current.json')
+
 
 def add_ci_commands(commands):
     ci = commands.add_parser('test-ci', help='Prepare, restore and coordinate existing verification owners')
@@ -468,6 +615,10 @@ def add_ci_commands(commands):
     planner.add_argument('--bundle', type=Path, action='append', required=True)
     planner.add_argument('--work', type=Path, required=True)
     planner.add_argument('--output', type=Path, required=True)
+    planner.add_argument('--owner-locations', type=Path)
+    owner_environment = sub.add_parser('owner-environment')
+    owner_environment.add_argument('--bundle', type=Path, required=True)
+    owner_environment.add_argument('--work', type=Path, required=True)
     for name in ('restore', 'task', 'foundation'):
         item = sub.add_parser(name)
         item.add_argument('--bundle', type=Path, required=True)
@@ -480,6 +631,12 @@ def add_ci_commands(commands):
             item.add_argument('--task', required=True)
         if name == 'foundation':
             item.add_argument('--fragment', type=Path, action='append', required=True)
+    common = sub.add_parser('stabilization')
+    common.add_argument('--restored', type=Path, required=True)
+    common.add_argument('--plan', type=Path, required=True)
+    common.add_argument('--foundation', type=Path, action='append', required=True)
+    common.add_argument('--output', type=Path, required=True)
+    common.add_argument('--run-id', required=True)
     inner = sub.add_parser('execute')
     inner.add_argument('--restored', type=Path, required=True)
     inner.add_argument('--plan', type=Path, required=True)
@@ -490,6 +647,9 @@ def add_ci_commands(commands):
 
 def run_ci_command(args):
     from openpine.verification.execution_plan import validate_plan
+    if args.ci_action == 'owner-environment':
+        restore(args.bundle.resolve(), args.work.resolve())
+        return {'scope': 'owner-environment-preparation', 'restored': str(args.work / 'restored.json'), 'full_stage_accepted': False}
     if args.ci_action == 'prepare':
         return prepare(args.host_root.resolve(), args.work.resolve(), args.python_version)
     if args.ci_action == 'plan':
@@ -498,18 +658,25 @@ def run_ci_command(args):
         if any((row['source'] != reports[0]['source'] for row in reports)):
             raise ValueError('prepared interpreter lanes have different source candidates')
         roots = unpack_source_archive(args.bundle[0] / 'sources.tar.gz', args.work / 'stack', reports[0]['source'])
-        plan = make_ci_plan([path / 'collection.json' for path in args.bundle], roots, args.output, source_commits)
+        owner_locations = read_json(args.owner_locations) if args.owner_locations else None
+        plan = make_ci_plan([path / 'collection.json' for path in args.bundle], roots, args.output, source_commits, owner_locations=owner_locations)
         matrix = {'include': [{'task': task['id'], 'python': '.'.join(plan['environments'][task['environment']]['identity']['python'].split('.')[:2])} for task in plan['tasks']]}
         write_once_json(args.output.with_name('matrix.json'), matrix)
         return plan
     plan = validate_plan(read_json(args.plan))
     if 'source_commits' not in plan:
         raise ValueError('CI plan must bind exact producer commits')
-    if args.ci_action == 'execute':
+    if args.ci_action in {'execute', 'stabilization'}:
         observed = read_json(args.restored)
         roots = {name: Path(path) for name, path in observed['roots'].items()}
         if source_snapshot(roots) != plan['source'] or observed['environment'] != environment_snapshot() or observed.get('source_commits') != plan['source_commits']:
             raise ValueError('restored interpreter, source or producer commits changed before execution')
+        if args.ci_action == 'stabilization':
+            from openpine.verification.execution_binding import make_binding
+            environment = 'py' + ''.join(map(str, sys.version_info[:2]))
+            binding = make_binding(plan, roots, {environment: sys.executable})
+            return finalize_stabilization(plan, roots['openpine'], args.foundation,
+                                          args.output.resolve(), args.run_id, binding=binding)
         if args.task:
             return run_ci_task(plan, args.plan.resolve(), roots, args.task, args.output.resolve(), args.run_id)
         if not args.fragment:

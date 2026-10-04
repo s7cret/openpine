@@ -10,6 +10,11 @@ name: RC6 test-platform self-checks
     - verification/platform-inventory.json
     - .github/workflows/rc6-test-platform.yml
     - rc6_tests/test_rc6_execution_*.py
+    - rc6_tests/test_rc6_owner_*.py
+    - rc6_tests/test_rc6_private_retention.py
+    - rc6_tests/stabilization_fixture.py
+    - rc6_tests/fixtures/**
+    - scripts/rc6_stabilization/**
     - verification/execution-policy.json
     - verification/ci-bootstrap-requirements.txt
     - verification/ci-runtime-requirements.txt
@@ -39,7 +44,7 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
     - name: Install the verifier test environment
-      run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
+      run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt -r verification/ci-runtime-requirements.txt"
     - name: Install exact owner contracts used by prerequisite tests
       shell: bash
       run: |-
@@ -50,20 +55,27 @@ jobs:
         root=pathlib.Path(os.environ['RUNNER_TEMP'])/'platform-owners'
         root.mkdir()
         paths=[]
-        for name in ('openpine-contracts','optimizer'):
+        for name in ('openpine-contracts','pine2ast','pinelib','marketdata-provider','backtest_engine','ast2python','optimizer'):
          path=root/name
          subprocess.run(['git','clone','--quiet','https://github.com/s7cret/'+name+'.git',str(path)],check=True)
          subprocess.run(['git','-C',str(path),'checkout','--detach',pins[name]],check=True)
          assert subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip()==pins[name]
          paths.append(str(path))
+        # Runtime dependencies are already installed from the complete hashed lock.
         subprocess.run([sys.executable,'-m','pip','install','--no-build-isolation','--no-deps',*paths],check=True)
         PYOWNER
+    - name: Check the installed prerequisite dependency closure
+      shell: bash
+      run: |
+        mkdir -p "$RUNNER_TEMP/platform-evidence"
+        python -c "from openpine.verification.stage_gate import run_stabilization_gate; print('owner import closure verified')" > "$RUNNER_TEMP/platform-evidence/owner-imports.txt" 2>&1
+        python -m pip check > "$RUNNER_TEMP/platform-evidence/pip-check.txt" 2>&1
     - name: Execute the complete locked platform self-test inventory
       env:
         PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
       run: |
         mkdir -p "$RUNNER_TEMP/platform-evidence"
-        python -m pytest -q rc6_tests/test_rc6_execution_platform.py rc6_tests/test_rc6_execution_fragments.py rc6_tests/test_rc6_execution_coordination.py rc6_tests/test_rc6_execution_ci.py \
+        python -m pytest -q rc6_tests/test_rc6_execution_platform.py rc6_tests/test_rc6_execution_fragments.py rc6_tests/test_rc6_execution_fragment_duration.py rc6_tests/test_rc6_execution_coordination.py rc6_tests/test_rc6_execution_ci.py rc6_tests/test_rc6_owner_portability.py rc6_tests/test_rc6_owner_producer_launch.py rc6_tests/test_rc6_execution_disk.py rc6_tests/test_rc6_execution_disk_storage.py rc6_tests/test_rc6_execution_disk_fragments.py rc6_tests/test_rc6_private_retention.py \
           -p openpine.verification.pytest_gate \
           --verification-suite=execution-platform \
           --verification-lock=verification/platform-inventory.json \

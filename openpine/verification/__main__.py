@@ -32,10 +32,12 @@ def main(argv=None) -> int:
     index.add_argument("--plan", type=Path, required=True)
     index.add_argument("--expected-plan-hash", required=True)
     index.add_argument("--output", type=Path, required=True)
+    index.add_argument("--diagnostic-provisional", action="store_true")
     remaining = commands.add_parser("stage2-remaining")
     remaining.add_argument("--host-root", type=Path, required=True)
     remaining.add_argument("--builtin-index", type=Path, required=True)
     remaining.add_argument("--output", type=Path, required=True)
+    remaining.add_argument("--diagnostic-provisional", action="store_true")
     stage21_catalog = commands.add_parser("stage2-1-catalog")
     stage21_catalog.add_argument("--authority", type=Path, required=True)
     stage21_catalog.add_argument("--output", type=Path, required=True)
@@ -68,7 +70,22 @@ def main(argv=None) -> int:
             build_source_lock,
             build_version_exact_catalog,
         )
+        from openpine.verification.execution_identity import ensure_external_outputs
 
+        roots = {
+            name: args.stack_root / name
+            for name in (
+                "openpine-contracts",
+                "pine2ast",
+                "ast2python",
+                "pinelib",
+                "backtest_engine",
+                "marketdata-provider",
+                "optimizer",
+                "openpine",
+            )
+        }
+        ensure_external_outputs((args.catalog_output, args.output), roots)
         matrix = build_version_exact_catalog(read_json(args.authority))
         write_json(args.catalog_output, matrix)
         report = build_source_lock(args.stack_root, matrix)
@@ -124,11 +141,12 @@ def main(argv=None) -> int:
             args.corpus, read_json(args.observations), expected_corpus_hash=args.expected_hash
         )
     write_json(args.output, report)
-    # A narrowly reviewed temporary authority gap may let this verification
-    # command finish, but its sealed report must still say semantic ok=False.
+    # Strict commands report semantic failure. Diagnostic provisional reporting
+    # is explicit and never changes the sealed semantic result.
     provisional = (
-        args.command in {"builtin-index", "stage2-remaining"}
-        and report.get("provisional_gate_ok") is True
+        getattr(args, "diagnostic_provisional", False)
+        and args.command in {"builtin-index", "stage2-remaining"}
+        and report.get("diagnostic_provisional_ok") is True
         and report.get("ok") is False
         and report.get("full_stage2_accepted") is False
         and report.get("tradingview_verified") is False

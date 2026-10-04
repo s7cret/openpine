@@ -1,6 +1,7 @@
 """Exercise verification collection and preflight with real interpreters and pytest."""
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -99,14 +100,13 @@ def test_real_collected_plan_cannot_accept_stale_policy_or_source(tmp_path: Path
     args.output = tmp_path / "collection.json"
     collection = execution_cli.collect_inventories(args)
     assert collection["ok"] is True
-    args.collection = args.output
-    args.output = tmp_path / "plan.json"
-    args.command = "test-plan"
-    args.profile = "component"
-    args.changed = []
-    args.shards = 1
-    args.durations = None
-    args.coverage = True
+    parser = argparse.ArgumentParser()
+    execution_cli.add_commands(parser.add_subparsers(dest="command", required=True))
+    args = parser.parse_args([
+        "test-plan", "--collection", str(args.output), "--policy", str(args.policy),
+        "--profile", "component", "--component", "optimizer", "--shards", "1",
+        "--coverage", "--output", str(tmp_path / "plan.json"),
+    ])
     assert execution_cli.run_command(args) == 0
     plan = json.loads(args.output.read_text())
     assert plan["tasks"][0]["nodeids"] == ["tests/test_owner.py::test_independent_sum"]
@@ -132,14 +132,13 @@ def test_cli_rejects_invalid_binding_and_shard_without_launching_campaign(tmp_pa
     args, _ = _components(tmp_path)
     args.output = tmp_path / "collection.json"
     assert execution_cli.collect_inventories(args)["ok"] is True
-    args.collection = args.output
-    args.output = tmp_path / "plan.json"
-    args.command = "test-plan"
-    args.profile = "component"
-    args.changed = []
-    args.shards = 1
-    args.durations = None
-    args.coverage = True
+    parser = argparse.ArgumentParser()
+    execution_cli.add_commands(parser.add_subparsers(dest="command", required=True))
+    args = parser.parse_args([
+        "test-plan", "--collection", str(args.output), "--policy", str(args.policy),
+        "--profile", "component", "--component", "optimizer", "--shards", "1",
+        "--coverage", "--output", str(tmp_path / "plan.json"),
+    ])
     assert execution_cli.run_command(args) == 0
     args.plan = args.output
     args.expected_plan_hash = json.loads(args.plan.read_text())["content_hash"]

@@ -6,6 +6,7 @@ import ast
 import hashlib
 from collections import Counter
 from pathlib import Path
+from collections.abc import Mapping
 
 from openpine.verification.identity import digest, seal
 
@@ -53,13 +54,22 @@ SYMBOL_OWNERS = {
 }
 
 
-def check_architecture(stack: Path, *, host_root: Path | None = None) -> dict:
+def check_architecture(stack: Path | Mapping[str, Path], *, host_root: Path | None = None) -> dict:
+    # Legacy stack directories remain supported for historical Stage 1 callers.
+    # An explicit map is complete authority: never fill missing keys from siblings.
+    if isinstance(stack, Mapping):
+        if set(stack) != set(COMPONENTS):
+            raise ValueError('architecture requires all eight explicit component roots')
+        roots = {name: Path(path) for name, path in stack.items()}
+        if host_root is not None and roots['openpine'].resolve() != host_root.resolve():
+            raise ValueError('architecture host differs from explicit component mapping')
+    else:
+        roots = {name: host_root if name == 'openpine' and host_root is not None else stack / name
+                 for name in COMPONENTS}
     owners = {spec[0]: name for name, spec in COMPONENTS.items()}
     issues, edges, inventory = [], Counter(), {}
     for component, (package, allowed, responsibility) in COMPONENTS.items():
-        component_root = (
-            host_root if component == "openpine" and host_root is not None else stack / component
-        )
+        component_root = roots[component]
         root = component_root / package
         if not root.is_dir():
             issues.append({"code": "MISSING_COMPONENT", "component": component})

@@ -28,11 +28,11 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     # Stable response shape
     assert set(payload.keys()) == {"modules", "runtime", "stack_lock", "stack_conforms"}
     assert isinstance(payload["modules"], list)
-    assert len(payload["modules"]) == 7
+    assert len(payload["modules"]) == 8
     assert payload["stack_lock"]["schema"] == "openpine.stack-lock.v1"
-    assert payload["stack_lock"]["release"] == "4.0.2"
+    assert payload["stack_lock"]["release"] == "5.0.0rc6"
     assert len(payload["stack_lock"]["sha256"]) == 64
-    assert len(payload["stack_lock"]["components"]) == 7
+    assert len(payload["stack_lock"]["components"]) == 8
 
     names = [m["name"] for m in payload["modules"]]
     assert names == [
@@ -43,6 +43,7 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
         "marketdata_provider",
         "backtest_engine",
         "optimizer",
+        "openpine_contracts",
     ]
 
     # Every entry has the full schema, even when not installed
@@ -68,9 +69,9 @@ def test_version_manifest_returns_tracked_modules_and_runtime() -> None:
     assert openpine["version"] == "5.0.0rc6"
     assert openpine["distribution_version"] == "5.0.0rc6"
     assert openpine["module_version"] == "5.0.0rc6"
-    assert openpine["conforms_to_lock"] is False
-    assert openpine["identity_conforms"] is False
-    assert payload["stack_conforms"] is False
+    assert openpine["conforms_to_lock"] is True
+    assert openpine["identity_conforms"] is True
+    assert payload["stack_conforms"] is True
     assert openpine["path"] is not None
     assert openpine["path"].endswith("/openpine/__init__.py")
     assert openpine["summary"] is not None

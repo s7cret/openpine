@@ -15,11 +15,33 @@ PLAN_SCHEMA = 'openpine.test_execution_plan.v1'
 PROFILES = ('smoke', 'affected', 'component', 'integration', 'stage-full', 'release-full')
 HASH = re.compile('sha256:[0-9a-f]{64}\\Z')
 
+def validate_disk_free_guard(guard: object) -> dict:
+    if (not isinstance(guard, dict) or set(guard) != {'minimum_free_bytes'}
+            or type(guard['minimum_free_bytes']) is not int
+            or guard['minimum_free_bytes'] <= 0):
+        raise ValueError('invalid disk free guard: positive strict integer minimum_free_bytes required')
+    return dict(guard)
+
+
 def _nodes(values: Sequence[str]) -> list[str]:
     if not isinstance(values, (list, tuple)) or not values:
         raise ValueError('empty inventory')
     result = list(values)
-    if any((not isinstance(n, str) or '::' not in n or n.startswith(('-', '/', '@')) or ('\n' in n) or ('\r' in n) or ('\x00' in n) or ('\\' in n.split('::', 1)[0]) or ('..' in n.split('::', 1)[0].split('/')) for n in result)) or len(set(result)) != len(result):
+    for node in result:
+        if not isinstance(node, str):
+            raise ValueError('invalid node ID')
+        file, separator, identity = node.partition('::')
+        # Only the file selector has path syntax. Parameter identities are
+        # opaque collection bytes, never glob expressions or CLI arguments.
+        if (
+            not separator or not identity
+            or file.startswith(('-', '/', '@'))
+            or re.fullmatch(r'[\w./-]+\.py', file) is None
+            or any(part in {'', '.', '..'} for part in file.split('/'))
+            or any(ord(char) < 32 or ord(char) == 127 for char in node)
+        ):
+            raise ValueError('invalid node ID')
+    if len(set(result)) != len(result):
         raise ValueError('invalid or duplicate node ID')
     return sorted(result)
 
@@ -56,13 +78,16 @@ def select_components(policy: dict, profile: str, requested: Sequence[str], chan
         affected.add(owner)
     if not affected:
         raise ValueError('affected selection needs changes or owners')
+    # Dependencies remain preparation requirements, but their full suites are
+    # not implied by a consumer's inclusion. Test obligations flow upstream to
+    # consumers/boundary owners only; make_plan records the dependency closure
+    # separately as preparation_components.
     while True:
         expanded = affected | {n for n, d in dependencies.items() if d & affected}
-        expanded |= set().union(*(dependencies[n] for n in expanded))
         if expanded == affected:
             break
         affected = expanded
-    reasons.append('transitive owner/consumer/prerequisite closure (no unvalidated pruning)')
+    reasons.append('transitive owner/consumer boundary closure; prerequisites prepared separately')
     return (sorted(affected), reasons)
 
 def assign_shards(nodes: Sequence[str], count: int, durations: Mapping[str, float] | None=None) -> list[dict]:
@@ -85,10 +110,41 @@ def assign_shards(nodes: Sequence[str], count: int, durations: Mapping[str, floa
         shard['nodeids'].sort()
     return bins
 
-def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: dict, inventories: dict, environments: dict, requested: Sequence[str]=(), changes: Sequence[str]=(), shard_count: int=1, durations: dict | None=None, coverage: bool=False) -> dict:
+def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: dict, inventories: dict, environments: dict, requested: Sequence[str]=(), changes: Sequence[str]=(), shard_count: int=1, durations: dict | None=None, coverage: bool=False, owner_launch: dict | None=None) -> dict:
     from openpine.verification.pytest_gate import validate_inventory
+    if policy.get('schema_id') == 'openpine.execution_policy.v2':
+        from openpine.verification.execution_owner_launch import resolve_owner_policy
+        if owner_launch is None:
+            raise ValueError('portable owner policy requires frozen launch locations')
+        resolve_owner_policy(policy, owner_launch)
+        environment_slots = policy.get('owner_environment_slots', {})
+        if not isinstance(environment_slots, dict):
+            raise ValueError('invalid owner environment slots')
+        for slot, environment in environment_slots.items():
+            if slot not in owner_launch['executables'] or environment not in environments or owner_launch['executables'][slot] != environments[environment]['identity']['executable_sha256']:
+                raise ValueError('owner interpreter differs from independently collected environment')
+    elif owner_launch is not None:
+        raise ValueError('owner launch requires explicit portable policy schema')
+    guard = validate_disk_free_guard(policy['disk_free_guard']) if 'disk_free_guard' in policy else None
     verify(source, SOURCE_SCHEMA)
     selected, reasons = select_components(policy, profile, requested, changes)
+    dependencies = {
+        name: set(settings.get('dependencies', []))
+        for name, settings in policy['components'].items()
+    }
+    selected_set = set(selected)
+    preparation_components = set()
+    pending = list(selected)
+    seen = set()
+    while pending:
+        component = pending.pop()
+        if component in seen:
+            continue
+        seen.add(component)
+        for prerequisite in dependencies[component]:
+            pending.append(prerequisite)
+            if prerequisite not in selected_set:
+                preparation_components.add(prerequisite)
     if set(roots) != set(source['components']) or not set(selected).issubset(roots):
         raise ValueError('source roots differ from candidate')
     if not environments:
@@ -104,6 +160,9 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
     tasks = []
     for name in selected:
         settings = policy['components'][name]
+        retention = settings.get('private_retention', 'preserve')
+        if retention not in ('preserve', 'delete-on-success'):
+            raise ValueError('invalid private retention')
         required = settings.get('pythons', ['3.11', '3.13'])
         seen_versions = set()
         for env_id, env in sorted(environments.items()):
@@ -122,11 +181,16 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
                 raise ValueError('stale collection source/environment: ' + key)
             full_hash = digest(nodes)
             if profile == 'smoke':
-                from fnmatch import fnmatchcase
-                patterns = settings.get('smoke', [])
-                nodes = [n for n in nodes if any((fnmatchcase(n, p) for p in patterns))]
-                if not nodes:
-                    raise ValueError('smoke selectors matched no required test: ' + name)
+                selectors = settings.get('smoke', [])
+                if not isinstance(selectors, list) or not selectors:
+                    raise ValueError('smoke selectors must be explicit node IDs: ' + name)
+                try:
+                    smoke_nodes = _nodes(selectors)
+                except ValueError as exc:
+                    raise ValueError('smoke selectors must be explicit node IDs: ' + name) from exc
+                if not set(smoke_nodes).issubset(nodes):
+                    raise ValueError('smoke selector is not a required node ID: ' + name)
+                nodes = smoke_nodes
             markers = inv.get('node_markers', {node: [] for node in inv['nodeids']})
             if set(markers) != set(inv['nodeids']) or any((not isinstance(m, list) or any((not isinstance(v, str) for v in m)) for m in markers.values())):
                 raise ValueError('missing or malformed collection marker evidence')
@@ -142,21 +206,36 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
                         shard['coverage'] = instrumented
                         shards.append(shard)
             tasks.append({'id': key, 'component': name, 'environment': env_id, 'nodeids': nodes, 'nodeids_hash': digest(nodes), 'full_inventory_hash': full_hash, 'reviewed_lock_hash': digest(inv['reviewed_lock']), 'deselected': inv.get('deselected', 0), 'plugins': list(settings.get('plugins', [])), 'timeout_seconds': settings.get('timeout_seconds', 1800), 'cpu_slots': settings.get('cpu_slots', 1), 'memory_mib': settings.get('memory_mib', 256), 'coverage': coverage, 'coverage_package': name.replace('-', '_'), 'node_markers': {n: markers[n] for n in nodes}, 'untraced_markers': excluded_markers, 'exclusive_group': settings.get('exclusive_group'), 'variant': 'functional', 'execution_path': 'pytest', 'mode': 'source', 'shards': shards})
+            tasks[-1]['private_retention'] = retention
         if profile in {'stage-full', 'release-full'} and (not set(required).issubset(seen_versions)):
             raise ValueError('mandatory interpreter missing for ' + name + ': ' + ','.join(sorted(set(required) - seen_versions)))
     gates = list(policy.get('required_gates', {}).get(profile, []))
     if profile in {'stage-full', 'release-full'} and (not gates):
         raise ValueError('full profile must declare non-pytest acceptance gates')
-    plan = seal({'schema_id': PLAN_SCHEMA, 'profile': profile, 'policy_hash': digest(policy), 'source': source, 'roots': {k: str(Path(v).resolve()) for k, v in sorted(roots.items())}, 'environments': environments, 'selection_reasons': reasons, 'tasks': tasks, 'required_gates': gates, 'full_acceptance_requires_owner_gates': True})
+    plan = seal({'schema_id': PLAN_SCHEMA, 'profile': profile, 'policy_hash': digest(policy), 'source': source, 'roots': {k: str(Path(v).resolve()) for k, v in sorted(roots.items())}, 'environments': environments, 'selection_reasons': reasons, 'preparation_components': sorted(preparation_components), 'tasks': tasks, 'required_gates': gates, 'full_acceptance_requires_owner_gates': True})
+    if guard is not None:
+        plan = seal({**{k: v for k, v in plan.items() if k != 'content_hash'}, 'disk_free_guard': guard})
+    if owner_launch is not None:
+        plan = seal({**{k: v for k, v in plan.items() if k != 'content_hash'}, 'owner_launch': owner_launch})
     validate_plan(plan)
     return plan
 
 def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
     verify(plan, PLAN_SCHEMA)
+    if 'disk_free_guard' in plan:
+        validate_disk_free_guard(plan['disk_free_guard'])
     if expected_hash is not None and plan['content_hash'] != expected_hash:
         raise ValueError('execution plan identity mismatch')
     if plan.get('profile') not in PROFILES or not HASH.fullmatch(plan.get('policy_hash', '')):
         raise ValueError('invalid plan policy/profile')
+    if 'owner_launch' in plan:
+        from openpine.verification.execution_owner_launch import SCHEMA, LEGACY_SCHEMA
+        schema = plan['owner_launch'].get('schema_id')
+        if schema not in {SCHEMA, LEGACY_SCHEMA}:
+            raise ValueError('unknown owner launch schema')
+        verify(plan['owner_launch'], schema)
+        if plan['owner_launch'].get('policy_hash') != plan['policy_hash']:
+            raise ValueError('owner launch policy differs from frozen plan')
     verify(plan['source'], SOURCE_SCHEMA)
     if 'source_commits' in plan:
         commits = plan['source_commits']
@@ -167,6 +246,13 @@ def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
             raise ValueError('plan producer commits do not match source components')
     if set(plan['roots']) != set(plan['source']['components']) or any((not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', n) for n in plan['roots'])) or any((not Path(p).is_absolute() for p in plan['roots'].values())):
         raise ValueError('plan root mismatch')
+    preparation_components = plan.get('preparation_components')
+    if (
+        not isinstance(preparation_components, list)
+        or preparation_components != sorted(set(preparation_components))
+        or not set(preparation_components).issubset(plan['roots'])
+    ):
+        raise ValueError('invalid preparation component set')
     for name, env in plan['environments'].items():
         if not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', name) or not Path(env['executable']).is_absolute():
             raise ValueError('invalid environment identity')
@@ -177,6 +263,8 @@ def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
         raise ValueError('empty execution plan')
     for task in plan['tasks']:
         ids.append(task['id'])
+        if task.get('private_retention', 'preserve') not in ('preserve', 'delete-on-success'):
+            raise ValueError('invalid private retention')
         if task['component'] not in plan['roots'] or task['environment'] not in plan['environments'] or task['id'] != task['component'] + '@' + task['environment']:
             raise ValueError('task identity mismatch')
         if task.get('variant') != 'functional' or task.get('execution_path') != 'pytest' or task.get('mode') != 'source':

@@ -22,6 +22,17 @@ COLLECTION_SCHEMA = 'openpine.test_collection_set.v1'
 def add_commands(commands):
     from openpine.verification.execution_ci import add_ci_commands
     add_ci_commands(commands)
+    for name in ('test-stabilization', 'test-current'):
+        current = commands.add_parser(name, help='Re-read all raw RC6 owner evidence; Stage 2 remains separate')
+        current.add_argument('--host-root', type=Path, required=True)
+        current.add_argument('--plan', type=Path, required=True)
+        current.add_argument('--expected-plan-hash', required=True)
+        current.add_argument('--evidence', type=Path, required=True)
+        current.add_argument('--run-id', required=True)
+        current.add_argument('--output', type=Path, required=True)
+        current.add_argument('--saved-current', type=Path)
+        current.add_argument('--binding', type=Path, help='Checked replay source/interpreter locators; never rewrites execution provenance')
+        current.add_argument('--view', choices=('current', 'progress', 'remainder', 'summary'), default='current')
     preflight = commands.add_parser('test-preflight', help='Read-only executable environment preflight')
     collect = commands.add_parser('test-collect', help='Collect and verify frozen inventories; never execution PASS')
     for command in (preflight, collect):
@@ -42,6 +53,7 @@ def add_commands(commands):
     planner = commands.add_parser('test-plan', help='Plan source-bound test shards from reviewed collections')
     planner.add_argument('--collection', type=Path, required=True)
     planner.add_argument('--policy', type=Path, required=True)
+    planner.add_argument('--owner-locations', type=Path, help='Explicit typed owner locations frozen before execution')
     planner.add_argument('--profile', choices=PROFILES, required=True)
     planner.add_argument('--component', action='append', default=[])
     planner.add_argument('--changed', action='append', default=[], metavar='COMPONENT/PATH')
@@ -54,6 +66,7 @@ def add_commands(commands):
     runner.add_argument('--expected-plan-hash', required=True)
     runner.add_argument('--output', type=Path, required=True)
     runner.add_argument('--jobs', type=int, default=1)
+    runner.add_argument('--max-parallel-shards', type=int)
     runner.add_argument('--run-id')
     runner.add_argument('--binding', type=Path)
     runner.add_argument('--task', action='append', default=[])
@@ -268,6 +281,22 @@ def collect_inventories(args):
     return report
 
 def run_command(args):
+    if args.command in {'test-stabilization', 'test-current'}:
+        from openpine.verification.stage_gate import current_views, run_stabilization_gate
+        plan = read_json(args.plan)
+        from openpine.verification.execution_binding import checked_locations
+        binding = read_json(args.binding) if args.binding else None
+        roots, _ = checked_locations(plan, binding)
+        ensure_external_output(args.output, {n: Path(p) for n, p in roots.items()})
+        report = run_stabilization_gate(args.host_root, plan, args.evidence,
+                                        expected_plan_hash=args.expected_plan_hash, run_id=args.run_id,
+                                        binding=binding)
+        if args.saved_current is not None and read_json(args.saved_current) != report:
+            raise ValueError('saved current verdict differs from fresh raw-evidence replay')
+        view = report if args.view == 'current' else current_views(report)[args.view]
+        write_once_json(args.output, view)
+        print(json.dumps(current_views(report)['summary'], indent=2))
+        return 0 if report['ok'] else 1
     if args.command in {'test-run', 'test-aggregate', 'test-export-suites'}:
         from openpine.verification.execution_campaign import aggregate_campaign, export_suite_receipts, run_campaign
     if args.command == 'test-ci':
@@ -313,7 +342,9 @@ def run_command(args):
         ensure_external_output(args.output, roots)
         if source_snapshot(roots)['content_hash'] != collection['source']['content_hash']:
             raise ValueError('source changed after collection')
-        report = make_plan(profile=args.profile, policy=policy, roots=roots, source=collection['source'], inventories=collection['inventories'], environments=collection['environments'], requested=args.component, changes=args.changed, shard_count=args.shards, durations=read_json(args.durations) if args.durations else None, coverage=args.coverage)
+        from openpine.verification.execution_owner_launch import freeze_owner_launch
+        owner_launch = freeze_owner_launch(policy, read_json(args.owner_locations)) if args.owner_locations else None
+        report = make_plan(profile=args.profile, policy=policy, roots=roots, source=collection['source'], inventories=collection['inventories'], environments=collection['environments'], requested=args.component, changes=args.changed, shard_count=args.shards, durations=read_json(args.durations) if args.durations else None, coverage=args.coverage, owner_launch=owner_launch)
         write_once_json(args.output, report)
     elif args.command == 'test-run':
         from openpine.verification.execution_plan import validate_plan
@@ -330,7 +361,7 @@ def run_command(args):
                     raise ValueError('shard needs TASK/SHARD')
                 keys.append((task, shard))
         binding = read_json(args.binding) if args.binding else None
-        run = run_campaign(plan, args.plan, args.output, jobs=args.jobs, run_id=args.run_id, shard_keys=keys, binding=binding, memory_mib=args.memory_mib)
+        run = run_campaign(plan, args.plan, args.output, jobs=args.jobs, max_parallel_shards=args.max_parallel_shards, run_id=args.run_id, shard_keys=keys, binding=binding, memory_mib=args.memory_mib)
         report = aggregate_campaign(plan, args.output, expected_plan_hash=args.expected_plan_hash, expected_run_id=run['run_id'], expected_shards=keys)
         write_once_json(args.output / 'aggregate.json', report)
     elif args.command == 'test-export-suites':

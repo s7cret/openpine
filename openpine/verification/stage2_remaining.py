@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
-from openpine.verification.evidence_index import TEMPORARY_TONUMBER
 from openpine.verification.identity import read_json, seal, verify
 
 
@@ -42,14 +41,14 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
         for key in ("pine2ast", "ast2python", "pinelib")
     ):
         raise ValueError("builtin index belongs to a different source revision")
-    provisional = (
-        builtin_index.get("provisional_gate_ok") is True
+    diagnostic_provisional = (
+        builtin_index.get("diagnostic_provisional_ok") is True
         and builtin_index["ok"] is False
         and builtin_index["all_declared_runs_passed"] is False
         and builtin_index["full_builtin_expected_accepted"] is False
         and builtin_index["full_stage2_accepted"] is False
         and builtin_index["tradingview_verified"] is False
-        and builtin_index["temporary_unverified_cases"] == sorted(TEMPORARY_TONUMBER)
+        and bool(builtin_index["unresolved_authority_cases"])
         and builtin_index["required_group_paths"] == len(builtin_index["groups"])
         and builtin_index["passed_group_paths"] == sum(group["status"] == "PASS" for group in builtin_index["groups"])
         and builtin_index["deferred_group_paths"] == sum(group["status"] == "TEMPORARY_UNVERIFIED" for group in builtin_index["groups"])
@@ -77,6 +76,9 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
     return seal(
         {
             "schema_id": "openpine.stage2_remaining_report.v1",
+            "canonical_current_contract": "verification/stage2-current-acceptance.json",
+            "current_reader": "python -m openpine.verification test-current --view remainder",
+            "historical_execution_counts_admitted": False,
             "matrix_hash": matrix["content_hash"],
             "builtin_index_hash": builtin_index["content_hash"],
             "source_pins": builtin_index["source_pins"],
@@ -97,8 +99,8 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
             "work_item_count": len(matrix["items"]),
             "count_policy": matrix["count_policy"],
             "builtin_index_replay_passed": builtin_index["ok"],
-            "provisional_gate_ok": provisional,
-            "temporary_unverified_cases": builtin_index.get("temporary_unverified_cases", []),
+            "diagnostic_provisional_ok": diagnostic_provisional,
+            "unresolved_authority_cases": builtin_index.get("unresolved_authority_cases", []),
             "deferred_group_paths": builtin_index.get("deferred_group_paths", 0),
             "ok": builtin_index["ok"],
             "installed_callable_denominator": builtin_index["denominator"],

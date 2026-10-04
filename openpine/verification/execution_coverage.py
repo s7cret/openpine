@@ -20,7 +20,9 @@ def combine_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *,
     if not task.get('coverage') or task['nodeids_hash'] != task['full_inventory_hash']:
         raise ValueError('coverage requires an instrumented full component, not a subset')
     keys = [(task_id, s['id']) for s in task['shards']]
-    report = aggregate_campaign(plan, root, expected_plan_hash=plan['content_hash'], expected_run_id=run_id, expected_shards=keys)
+    run_selection = read_json(root / 'run.json').get('selection')
+    projected = keys if run_selection == [list(key) for key in sorted(keys)] else None
+    report = aggregate_campaign(plan, root, expected_plan_hash=plan['content_hash'], expected_run_id=run_id, expected_shards=projected)
     if not report['pytest_scope_passed']:
         raise ValueError('coverage cannot accept unsuccessful/incomplete test execution')
     roots, _ = locations(plan, binding)
@@ -48,7 +50,7 @@ def combine_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *,
     write_once_json(output / 'receipt.json', result)
     return result
 
-def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, run_id: str) -> dict:
+def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, run_id: str, source_roots: dict | None = None) -> dict:
     """Re-read the existing coverage owner's command/data receipts, not a PASS flag."""
     from openpine.verification.execution_identity import hash_file, read_artifact
     tasks = [t for t in plan['tasks'] if t['id'] == task_id]
@@ -56,7 +58,9 @@ def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, 
         raise ValueError('unknown or uninstrumented coverage task')
     task = tasks[0]
     keys = [(task_id, s['id']) for s in task['shards']]
-    aggregation = aggregate_campaign(plan, root, expected_plan_hash=plan['content_hash'], expected_run_id=run_id, expected_shards=keys)
+    run_selection = read_json(root / 'run.json').get('selection')
+    projected = keys if run_selection == [list(key) for key in sorted(keys)] else None
+    aggregation = aggregate_campaign(plan, root, expected_plan_hash=plan['content_hash'], expected_run_id=run_id, expected_shards=projected)
     receipt = read_json(output / 'receipt.json')
     verify(receipt, 'openpine.component_coverage.v1')
     config_hash = plan['source']['components'][task['component']]['files']['pyproject.toml']['sha256']
@@ -78,4 +82,76 @@ def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, 
     data = read_artifact(output, receipt['json'])
     if not isinstance(data, dict) or not isinstance(data.get('files'), dict) or (not data['files']) or (not isinstance(data.get('totals'), dict)):
         raise ValueError('missing or malformed coverage observations')
+    # Recompute observations from raw combined coverage data on the frozen
+    # owner config. A resealed percent_covered/PASS label is not evidence.
+    import json
+    import tempfile
+    import coverage
+    # The planner and executor can be on distinct hosts. Raw coverage paths
+    # belong to the campaign's immutable execution binding, not planner roots.
+    run = read_json(root / 'run.json')
+    execution_binding = read_artifact(root, run['binding']) if run.get('binding') else None
+    execution_roots, _ = locations(plan, execution_binding)
+    historical_root = Path(execution_roots[task['component']])
+    component_root = Path((source_roots or plan['roots'])[task['component']])
+    if source_roots and source_snapshot({n: Path(p) for n, p in source_roots.items()}) != plan['source']:
+        raise ValueError('coverage replay source differs from frozen candidate')
+    config = component_root / 'pyproject.toml'
+    if hash_file(config) != config_hash:
+        raise ValueError('coverage owner config is stale')
+    raw_data = evidence_path(output, '.coverage')
+    # Rebuild the union from the campaign's hash-checked shard databases, so
+    # changing the combined DB and resealing its JSON still cannot pass.
+    run = read_json(root / 'run.json')
+    from contextlib import ExitStack
+    with ExitStack() as cleanup:
+        # Disk-backed scratch releases coverage.py's attached shard database
+        # after each update; a persistent no_disk connection cannot be reused
+        # by coverage 7.13's ATTACH-based multi-shard merger.
+        union_scratch = cleanup.enter_context(tempfile.TemporaryDirectory(prefix='openpine-coverage-union-'))
+        union = coverage.CoverageData(basename=str(Path(union_scratch) / '.coverage'))
+        cleanup.callback(union.close, force=True)
+        for attempt in run['attempts']:
+            if attempt['task'] == task_id and 'coverage' in attempt['artifacts']:
+                shard_data = coverage.CoverageData(basename=str(evidence_path(root, attempt['artifacts']['coverage']['path'])))
+                try:
+                    shard_data.read()
+                    union.update(shard_data)
+                finally:
+                    shard_data.close()
+        combined = coverage.CoverageData(basename=str(raw_data))
+        cleanup.callback(combined.close)
+        combined.read()
+        if union.measured_files() != combined.measured_files() or union.has_arcs() != combined.has_arcs():
+            raise ValueError('combined coverage database differs from executed shard union')
+        for filename in union.measured_files():
+            left = union.arcs(filename) if union.has_arcs() else union.lines(filename)
+            right = combined.arcs(filename) if combined.has_arcs() else combined.lines(filename)
+            if set(left or []) != set(right or []):
+                raise ValueError('combined coverage observations differ from executed shards')
+        def relocate(filename):
+            path = Path(filename)
+            if path.is_absolute() and path.is_relative_to(historical_root):
+                return str(component_root / path.relative_to(historical_root))
+            return filename
+        # Preserve both raw databases. Remap only the reader's in-memory view.
+        verifier = coverage.Coverage(data_file=None, config_file=str(config))
+        verifier.get_data().update(combined, map_path=relocate)
+        cleanup.callback(verifier.get_data().close, force=True)
+        with tempfile.TemporaryDirectory(prefix='openpine-coverage-reader-') as scratch:
+            destination = Path(scratch) / 'observations.json'
+            verifier.json_report(outfile=str(destination))
+            rebuilt = json.loads(destination.read_text())
+    if rebuilt['totals'] != data['totals']:
+        raise ValueError('coverage totals differ from raw measured data')
+    keys = ('summary', 'executed_lines', 'missing_lines', 'executed_branches', 'missing_branches')
+    def meaningful(files, base):
+        return {str((base / name).resolve()): {k: row[k] for k in keys if k in row} for name, row in files.items()}
+    if meaningful(rebuilt['files'], Path.cwd()) != meaningful({relocate(str(historical_root / name)): row for name, row in data['files'].items()}, component_root):
+        raise ValueError('coverage file/branch observations differ from raw data')
+    from coverage.results import should_fail_under
+    if should_fail_under(rebuilt['totals']['percent_covered'], verifier.config.fail_under, verifier.config.precision):
+        raise ValueError('unchanged owner coverage threshold failed')
+    if verifier.config.branch and not rebuilt['meta']['branch_coverage']:
+        raise ValueError('mandatory branch coverage was not measured')
     return receipt
