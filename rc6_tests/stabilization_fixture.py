@@ -166,6 +166,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
     }
     entries = {"branch-reconciliation": {}, "protected-workers": {}}
     version = ".".join(environment_snapshot()["python"].split(".")[:2])
+    environment_name = 'py' + version.replace('.', '') if owner_namespaces else 'py'
     # Actually build and install all eight minimal distributions in a new venv.
     wheelhouse = evidence / "wheelhouse"
     wheelhouse.mkdir()
@@ -183,7 +184,8 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
         "TMPDIR": str(scratch),
     }
 
-    def command(role, argv, *, cwd=base, expected_stdout=None, binding=None, artifacts=None):
+    def command(role, argv, *, cwd=None, expected_stdout=None, binding=None, artifacts=None):
+        cwd = cwd or (evidence if owner_namespaces else base)
         folder = evidence / f"command-{len(commands)}"
         actual = run_logged(argv, cwd=cwd, output=folder, env=clean, timeout=180, inputs=harness_inputs, binding=binding, artifacts=artifacts)
         if not actual["ok"]:
@@ -237,7 +239,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
     specs["packages"] = {version: {}}
     for kind in ("normal", "rebuilt"):
         start = len(commands)
-        installed = base / ("installed-" + kind)
+        installed = (evidence if owner_namespaces else base) / ("installed-" + kind)
         command(
             "install", [sys.executable, "-I", "-m", "venv", "--without-pip", str(installed)]
         )
@@ -386,7 +388,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
     env = environment_snapshot()
     inventories = {
         name
-        + "@py": {
+        + "@" + environment_name: {
             "nodeids": nodes,
             "reviewed_lock": lock,
             "deselected": 0,
@@ -401,7 +403,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
         roots=roots,
         source=source,
         inventories=inventories,
-        environments={"py": {"identity": env, "executable": sys.executable}},
+        environments={environment_name: {"identity": env, "executable": sys.executable}},
         shard_count=1,
         coverage=True,
         owner_launch=launch,
@@ -431,7 +433,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
     timing_plan = make_plan(
         profile="stage-full", policy=policy, roots=roots, source=source,
         inventories=inventories,
-        environments={"py": {"identity": env, "executable": sys.executable}},
+        environments={environment_name: {"identity": env, "executable": sys.executable}},
         shard_count=1, coverage=False, owner_launch=launch,
     )
     timing_plan["source_commits"] = dict(plan["source_commits"])
@@ -470,13 +472,13 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
         expected_plan_hash=plan["content_hash"],
         expected_run_id="fixture-0",
     )
-    folder = exported / "py"
+    folder = exported / environment_name
     put(
         folder / "source-pins.json", read_json(host / "docs/RC6_LIFECYCLE_SOURCES.json")
     )
     put(folder / "observations/arithmetic.json", observation)
     run_stage_gate(host, stack, folder)
-    entries["foundation"] = {"environments": {"py": "foundation/py"}}
+    entries["foundation"] = {"environments": {environment_name: "foundation/" + environment_name}}
     coverage_entries = {}
     for task in plan["tasks"]:
         destination = evidence / "coverage" / task["id"]

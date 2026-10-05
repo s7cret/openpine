@@ -441,7 +441,7 @@
         "verification/stage2-audit-inventory-review.json",
         "verification/stage2-source-lock.json"
       ],
-      "sha256": "sha256:afb070615fb29acf9bb694cd51d705013cbc76628d18527b1fb9aba91560b3f2"
+      "sha256": "sha256:76e6307abdd86ef9a297fe0b1bc22ebc4c2a0829bdd11ec7c3a659d601f93a3e"
     },
     "coverage": {},
     "foundation": {
@@ -10013,7 +10013,7 @@
           "jobs": 4,
           "max_parallel_shards": 4,
           "max_shards_per_task": 4,
-          "memory_limit_bytes": 2147483648
+          "memory_limit_bytes": 4294967296
         },
         "before": {
           "address_space_limit_bytes": 3221225472,
@@ -10022,13 +10022,13 @@
           "jobs": 4,
           "max_parallel_shards": 1,
           "max_shards_per_task": 1,
-          "memory_limit_bytes": 2147483648
+          "memory_limit_bytes": 4294967296
         }
       },
       "organizations": {
         "after": "up to four bounded pytest shards within one component at a time",
         "before": "one pytest process at a time, one shard per component/interpreter; original optimizer CPU reservation retained",
-        "resource_policy": "same CPUQuota400%, 2048MiB MemoryMax, 3072MiB address-space limit, 1800000kHz CPU cap; no cross-component workers",
+        "resource_policy": "same CPUQuota400%, 4096MiB MemoryMax, 3072MiB per-process address-space limit, 1800000kHz CPU cap; no cross-component workers",
         "scope_policy": "both organizations use every mandatory exact candidate node/interpreter; untraced and no skip/xfail/denominator reduction"
       },
       "reference_profile": {

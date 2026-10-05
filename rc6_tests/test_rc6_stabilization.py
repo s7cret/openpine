@@ -79,7 +79,7 @@ def replay(fixture):
     )
 
 
-def test_ci_common_owner_invokes_current_and_keeps_missing_owners_negative(full_fixture, tmp_path):
+def test_ci_common_owner_invokes_current_and_keeps_missing_owners_negative(full_fixture, tmp_path, monkeypatch):
     import shutil
     from openpine.verification import execution_ci as ci
 
@@ -94,7 +94,25 @@ def test_ci_common_owner_invokes_current_and_keeps_missing_owners_negative(full_
     shutil.copytree(native, second)
     frozen = {path: path.read_bytes() for path in native.rglob('*') if path.is_file()}
     output = tmp_path / 'common'
+    from openpine.verification import stage_gate
+    original_gate = stage_gate.run_stabilization_gate
+    owner_results = []
+
+    def counted_gate(*args, **kwargs):
+        fresh = original_gate(*args, **kwargs)
+        owner_results.append(fresh)
+        return fresh
+
+    monkeypatch.setattr(stage_gate, 'run_stabilization_gate', counted_gate)
     result = ci.finalize_stabilization(plan, host, [native, second], output, packet['run_id'])
+    assert len(owner_results) == 2
+    assert owner_results[0] is not owner_results[1]
+    assert owner_results == [result, result]
+    views = stage_gate.current_views(owner_results[1])
+    for view in ('summary', 'remainder'):
+        assert read_json(output / (view + '.json')) == views[view]
+    assert (output / 'current.json').read_bytes() == (output / 'replayed-current.json').read_bytes()
+    assert result['full_release_accepted'] is False
     assert {path: path.read_bytes() for path in frozen} == frozen
     saved = read_json(output / 'current.json')
     assert result == saved and not result['ok']
@@ -109,7 +127,52 @@ def test_ci_common_owner_invokes_current_and_keeps_missing_owners_negative(full_
         assert saved['stabilization']['gates'][gate]['status'] == 'passed'
     assert saved['stage2']['status'] == 'in_progress'
     assert saved['full_stage2_accepted'] is False
-    assert read_json(output / 'invocations.json')['exits'] == [1, 1, 1, 1]
+    provenance = read_json(output / 'invocations.json')
+    assert provenance['exits'] == [1, 1]
+    assert [argv[0] for argv in provenance['argv']] == ['test-stabilization', 'test-current']
+    assert provenance['projections'] == [
+        {'operation': 'current_views', 'source': 'replayed-current.json',
+         'source_content_hash': saved['content_hash'], 'view': view, 'output': view + '.json'}
+        for view in ('summary', 'remainder')
+    ]
+
+
+@pytest.mark.parametrize('mutation', ['fresh-result', 'saved-current', 'raw-evidence'])
+def test_ci_common_fresh_replay_fails_closed(full_fixture, tmp_path, monkeypatch, mutation):
+    import shutil
+    from openpine.verification import execution_ci as ci, stage_gate
+
+    host, plan, evidence, packet = full_fixture
+    native = tmp_path / 'native'
+    shutil.copytree(evidence / packet['campaign'], native / 'merged')
+    for env, relative in packet['gates']['foundation']['environments'].items():
+        shutil.copytree(evidence / relative, native / 'suites' / env)
+    output = tmp_path / 'common'
+    original_gate = stage_gate.run_stabilization_gate
+    calls = []
+
+    def adversarial_gate(*args, **kwargs):
+        calls.append(args)
+        if len(calls) == 2 and mutation == 'raw-evidence':
+            (output / 'evidence/merged/run.json').write_text('{}')
+        fresh = original_gate(*args, **kwargs)
+        if len(calls) == 2 and mutation == 'fresh-result':
+            # Keep the real freshly evaluated verdict, but disagree on identity.
+            fresh = reseal({**fresh, 'run_id': 'foreign-replay'})
+        if len(calls) == 2 and mutation == 'saved-current':
+            saved = read_json(output / 'current.json')
+            (output / 'current.json').write_text(json.dumps(reseal({**saved, 'run_id': 'forged-saved'})))
+        return fresh
+
+    monkeypatch.setattr(stage_gate, 'run_stabilization_gate', adversarial_gate)
+    match = None if mutation == 'raw-evidence' else 'saved current verdict differs from fresh raw-evidence replay'
+    with pytest.raises(ValueError, match=match):
+        ci.finalize_stabilization(plan, host, [native], output, packet['run_id'])
+    assert len(calls) == 2
+    assert (output / 'current.json').is_file()
+    assert not read_json(output / 'current.json')['ok']
+    for name in ('replayed-current.json', 'summary.json', 'remainder.json', 'invocations.json'):
+        assert not (output / name).exists()
 
 
 @pytest.mark.parametrize('mutation', ['stale-run', 'detached', 'missing-foundation'])
@@ -135,6 +198,86 @@ def test_ci_common_owner_rejects_foreign_or_missing_primaries(full_fixture, tmp_
         assert not result['ok']
         assert result['stabilization']['gates']['foundation']['status'] == 'not_run'
         assert result['stabilization']['gates']['coverage']['status'] == 'not_run'
+
+
+@pytest.fixture(scope="module")
+def task_fragment_coverage(full_fixture, tmp_path_factory):
+    """Real task producers and merger, with the unchanged full eight-owner plan."""
+    import shutil
+    from openpine.verification.execution_ci import run_ci_task
+    from openpine.verification.execution_fragments import merge_fragments
+
+    host, plan, evidence, packet = full_fixture
+    output = tmp_path_factory.mktemp("task-fragment-coverage")
+    roots = {name: output / 'execution-sources' / name for name in plan['roots']}
+    for name, root in roots.items():
+        shutil.copytree(plan['roots'][name], root, ignore=shutil.ignore_patterns('__pycache__'))
+    fragments = []
+    changed = copy.deepcopy(packet)
+    changed['campaign'] = 'merged'
+    changed['gates'] = {'coverage': {'tasks': {}}}
+    for index, task in enumerate(plan['tasks']):
+        fragment = output / f'task-{index}'
+        result = run_ci_task(plan, evidence / 'plan.json', roots, task['id'],
+                             fragment, packet['run_id'])
+        assert result['pytest_scope_passed'] and result['coverage_scope_passed']
+        fragments.append(fragment)
+        relative = 'coverage/' + task['id']
+        shutil.copytree(fragment / 'coverage-owner', output / relative)
+        changed['gates']['coverage']['tasks'][task['id']] = relative
+    merged = merge_fragments(plan, fragments, output / 'merged',
+                            expected_plan_hash=plan['content_hash'],
+                            expected_run_id=packet['run_id'])
+    assert merged['pytest_scope_passed']
+    (output / 'stabilization-inputs.json').write_text(json.dumps(changed))
+    return host, plan, output, changed
+
+
+def test_common_coverage_accepts_exact_task_fragment_with_whole_membership(task_fragment_coverage):
+    host, plan, evidence, packet = task_fragment_coverage
+    frozen = {p: p.read_bytes() for p in evidence.rglob('*') if p.is_file()}
+    plan_before = copy.deepcopy(plan)
+    whole = read_json(evidence / 'merged/aggregate.json')['content_hash']
+    receipts = [read_json(evidence / relative / 'receipt.json')
+                for relative in packet['gates']['coverage']['tasks'].values()]
+    assert len({task['component'] for task in plan['tasks']}) == 8
+    assert all(receipt['pytest_aggregate_hash'] != whole for receipt in receipts)
+    current = replay(task_fragment_coverage)
+    assert current['stabilization']['gates']['coverage']['status'] == 'passed', current
+    assert not current['ok'] and not current['full_release_accepted']
+    assert not current['full_stage2_accepted']
+    assert plan == plan_before
+    assert {p: p.read_bytes() for p in frozen} == frozen
+
+
+@pytest.mark.parametrize('mutation', ['wrong-task', 'foreign-fragment', 'tampered-aggregate', 'missing-provenance'])
+def test_common_task_fragment_coverage_fails_closed(task_fragment_coverage, tmp_path, mutation):
+    import shutil
+    host, plan, original, packet = task_fragment_coverage
+    evidence = tmp_path / 'evidence'
+    shutil.copytree(original, evidence)
+    first, second = plan['tasks'][:2]
+    receipt_path = evidence / packet['gates']['coverage']['tasks'][first['id']] / 'receipt.json'
+    receipt = read_json(receipt_path)
+    if mutation == 'wrong-task':
+        receipt['task'] = second['id']
+    elif mutation == 'tampered-aggregate':
+        receipt['pytest_aggregate_hash'] = 'sha256:' + '0' * 64
+    elif mutation == 'foreign-fragment':
+        other = read_json(evidence / packet['gates']['coverage']['tasks'][second['id']] / 'receipt.json')
+        receipt['pytest_aggregate_hash'] = other['pytest_aggregate_hash']
+    else:
+        run_path = evidence / 'merged/run.json'
+        run = read_json(run_path)
+        run.pop('merged_fragments')
+        run_path.write_text(json.dumps(reseal(run)))
+    if mutation != 'missing-provenance':
+        receipt_path.write_text(json.dumps(reseal(receipt)))
+    frozen = {p: p.read_bytes() for p in evidence.rglob('*') if p.is_file()}
+    current = replay((host, plan, evidence, packet))
+    assert current['stabilization']['gates']['coverage']['status'] == 'blocked', current
+    assert not current['ok'] and not current['full_stage2_accepted']
+    assert {p: p.read_bytes() for p in frozen} == frozen
 
 
 def test_current_cli_exposes_checked_replay_binding():
@@ -617,7 +760,8 @@ def test_common_reader_accepts_frozen_namespaces_and_checked_archive(tmp_path):
     host, plan, evidence, packet = build_fixture(original, portable=True, owner_namespaces=True)
     expected = replay((host, plan, evidence, packet))
     assert expected['ok'] and not expected['full_stage2_accepted']
-    primaries = {p.relative_to(evidence).as_posix(): p.read_bytes() for p in evidence.rglob('*') if p.is_file()}
+    # Transport inventory contains installed regular files, not executable aliases.
+    primaries = {p.relative_to(evidence).as_posix(): p.read_bytes() for p in evidence.rglob('*') if p.is_file() and not p.is_symlink()}
     composed = copy.deepcopy(packet)
     prefix = evidence.relative_to(original).as_posix() + '/'
     composed['campaign'] = prefix + packet['campaign']
@@ -632,7 +776,7 @@ def test_common_reader_accepts_frozen_namespaces_and_checked_archive(tmp_path):
     (original/'stabilization-inputs.json').write_text(json.dumps(composed))
     kwargs = {'expected_plan_hash': plan['content_hash'], 'run_id': packet['run_id']}
     assert run_stabilization_gate(host, plan, original, **kwargs) == expected
-    assert {p.relative_to(evidence).as_posix(): p.read_bytes() for p in evidence.rglob('*') if p.is_file()} == primaries
+    assert {p.relative_to(evidence).as_posix(): p.read_bytes() for p in evidence.rglob('*') if p.is_file() and not p.is_symlink()} == primaries
 
     archive = tmp_path/'archive'
     shutil.copytree(original, archive, ignore=lambda directory, names: [n for n in names if (Path(directory)/n).is_symlink()])

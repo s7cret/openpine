@@ -63,6 +63,29 @@ def verify_task_coverage(plan: dict, root: Path, task_id: str, output: Path, *, 
     aggregation = aggregate_campaign(plan, root, expected_plan_hash=plan['content_hash'], expected_run_id=run_id, expected_shards=projected)
     receipt = read_json(output / 'receipt.json')
     verify(receipt, 'openpine.component_coverage.v1')
+    if aggregation['pytest_scope_passed'] and receipt.get('pytest_aggregate_hash') != aggregation['content_hash']:
+        # A task producer sealed its exact fragment, not the later whole union.
+        # The whole aggregation above independently validates every transferred
+        # raw fragment and its exact equality to the merged attempts. Locate only
+        # that authenticated, complete task assignment; never project/reseal rows
+        # or trust a stored aggregate.json/PASS flag as execution authority.
+        from openpine.verification.execution_fragments import fragment_selection
+        run = read_json(root / 'run.json')
+        matches = []
+        for entry in run.get('merged_fragments', []):
+            raw = read_artifact(root, entry['run'])
+            if set(fragment_selection(plan, raw)) == set(keys):
+                fragment_root = evidence_path(root, entry['run']['path']).parent
+                fragment_report = aggregate_campaign(
+                    plan, fragment_root, expected_plan_hash=plan['content_hash'],
+                    expected_run_id=run_id, expected_shards=keys,
+                )
+                matches.append((fragment_root, fragment_report))
+        if len(matches) != 1:
+            raise ValueError('coverage requires exact task raw fragment provenance')
+        # All downstream binding and raw coverage reads use the very execution
+        # accepted by the receipt, including its historical source-root binding.
+        root, aggregation = matches[0]
     config_hash = plan['source']['components'][task['component']]['files']['pyproject.toml']['sha256']
     if not aggregation['pytest_scope_passed'] or receipt.get('ok') is not True or receipt.get('source_unchanged') is not True or (receipt.get('task') != task_id) or (receipt.get('candidate_hash') != plan['source']['content_hash']) or (receipt.get('plan_hash') != plan['content_hash']) or (receipt.get('run_id') != run_id) or (receipt.get('pytest_aggregate_hash') != aggregation['content_hash']) or (receipt.get('owner_config_sha256') != config_hash):
         raise ValueError('coverage receipt does not accept this exact component execution')
