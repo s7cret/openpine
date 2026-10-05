@@ -169,13 +169,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11258, baseline 11027 retained. Exact collection validates the unchanged baseline and additive node set.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11455, baseline 11027 retained. Exact collection validates the unchanged baseline and additive node set.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:cf287f31f82c6b3ed6ef3b9b15034c98d8f478a81b2733642bfc38273bada40b",
+          "sha256": "sha256:00bf027b9c2dfee28109deb4639ad407ae4728fc93edaf4ac0d8dada024c6862",
           "nodes": []
         }
       ]
@@ -1641,7 +1641,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:2c583a49427bc7210a151581d2497a9a6435c0e04e31ffb2bce1dcc11926f753",
+          "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
@@ -1692,7 +1692,7 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:2c583a49427bc7210a151581d2497a9a6435c0e04e31ffb2bce1dcc11926f753",
+          "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",

@@ -645,6 +645,15 @@ jobs:
       with:
         pattern: rc6-checks-*-${{ github.run_id }}
         path: ${{ runner.temp }}/foundations
+    # UI upload strips frontend/: restore it beneath the frozen attempt slot.
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-ui-${{ github.run_id }}
+        path: ${{ runner.temp }}/exact-owner/frontend
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: rc6-packages-${{ github.run_id }}
+        path: ${{ runner.temp }}/package-owner
     - name: Restore exact installed tools
       run: |-
         python -m openpine.verification test-ci restore --bundle "${{ runner.temp }}/prepared" --work "${{ runner.temp }}/restored" --plan "${{ runner.temp }}/plan/plan.json"
@@ -662,9 +671,8 @@ jobs:
         set -euo pipefail
         ARGS=()
         for FOUNDATION in "$RUNNER_TEMP"/foundations/*; do ARGS+=(--foundation "$FOUNDATION"); done
-        # No frontend/package/performance primaries exist in this native graph.
-        # Their packet entries stay missing; nonaccepted owner exits stay red.
-        "$EXACT_PYTHON" -m openpine.verification test-ci stabilization --restored "$RUNNER_TEMP/restored/restored.json" --plan "$RUNNER_TEMP/plan/plan.json" "${ARGS[@]}" --run-id "rc6-${{ github.run_id }}-${{ github.run_attempt }}" --output "$RUNNER_TEMP/common"
+        # Explicit same-run owners; performance remains absent and unaccepted.
+        "$EXACT_PYTHON" -m openpine.verification test-ci stabilization --restored "$RUNNER_TEMP/restored/restored.json" --plan "$RUNNER_TEMP/plan/plan.json" "${ARGS[@]}" --frontend "$RUNNER_TEMP/exact-owner" --packages "$RUNNER_TEMP/package-owner" --run-id "rc6-${{ github.run_id }}-${{ github.run_attempt }}" --output "$RUNNER_TEMP/common"
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
       with:

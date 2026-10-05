@@ -494,8 +494,64 @@ def finalize_foundation(plan: dict, roots: dict[str, Path], fragments: list[Path
     result = run_stage_gate(roots['openpine'], roots, evidence)
     return result
 
+def project_package_commands(root: Path, supplied: list, expected: list,
+                             version: str, frozen_root: str) -> list:
+    """Authenticate the exact frozen sequence; retain only locator descriptors.
+
+    The producer also exports one interpreter-version operation per lane. It is
+    not a mandatory role and cannot replace any frozen command. Authenticate it
+    independently, without granting authority to the producer policy template.
+    """
+    import re
+    from openpine.verification.execution_identity import evidence_path, read_artifact
+    from openpine.verification.stabilization_evidence import verify_command
+
+    if not expected or not isinstance(supplied, list):
+        raise ValueError('missing frozen package command sequence')
+    projected, cursor, extra = [], 0, False
+    for descriptor in supplied:
+        receipt = read_artifact(root, descriptor)
+        folder = evidence_path(root, descriptor['path']).parent
+        if cursor < len(expected) and (receipt.get('argv'), receipt.get('cwd')) == (
+            expected[cursor]['argv'], expected[cursor]['cwd']
+        ):
+            verify_command(folder, expected[cursor],
+                           expected_stdout=expected[cursor].get('expected_stdout'))
+            projected.append(descriptor)
+            cursor += 1
+            continue
+        # Exactly one auxiliary version operation before the mandatory install.
+        if extra or cursor >= len(expected) or expected[cursor].get('role') != 'install':
+            raise ValueError('unexpected package command outside frozen sequence')
+        relative = Path(descriptor['path'])
+        if not re.fullmatch(r'\d{3}-version-' + re.escape(version) + r'-(wheel|rebuilt_wheel)', relative.parent.name):
+            raise ValueError('unreviewed auxiliary package command')
+        if relative.parts[0] != 'logs' or len(relative.parts) != 3 or relative.name != 'command.json':
+            raise ValueError('unsafe auxiliary package locator')
+        probe = next((c for c in expected if c.get('role') == 'probe'), None)
+        if probe is None or len(probe['argv']) < 4:
+            raise ValueError('version receipt has no frozen installed interpreter')
+        auxiliary = {
+            'argv': [*probe['argv'][:2], str(Path(frozen_root) / relative.parent / 'resources.json'),
+                     probe['argv'][3], '-c',
+                     f"import sys; assert '.'.join(map(str,sys.version_info[:2])) == {version!r}; print(sys.version); print(sys.executable)"],
+            'cwd': expected[cursor]['cwd'],
+            # The retained auxiliary is not selected by frozen command_specs,
+            # so the real producer captures harness inputs, not owner-tool slots.
+            # Mandatory commands still require their complete frozen tool capture.
+            'inputs': {n: value for n, value in expected[cursor].get('inputs', {}).items()
+                       if not n.startswith('owner-tool:')},
+        }
+        verify_command(folder, auxiliary)
+        extra = True
+    if cursor != len(expected):
+        raise ValueError('missing mandatory frozen package command')
+    return projected
+
+
 def finalize_stabilization(plan: dict, host: Path, foundations: list[Path], output: Path,
-                           run_id: str, *, binding: dict | None = None) -> dict:
+                           run_id: str, *, binding: dict | None = None,
+                           frontend: Path | None = None, packages: Path | None = None) -> dict:
     """Join real native locators, then invoke the existing current CLI owner.
 
     Native artifacts do not qualify packages, frontend or performance. Absent
@@ -511,7 +567,10 @@ def finalize_stabilization(plan: dict, host: Path, foundations: list[Path], outp
 
     validate_plan(plan)
     roots, _ = checked_locations(plan, binding)
-    ensure_external_output(output, {name: Path(path) for name, path in roots.items()})
+    ensure_external_output(output, {**{name: Path(path) for name, path in roots.items()},
+                                    **{name: path for name, path in
+                                       (('frontend-input', frontend), ('package-input', packages))
+                                       if path is not None}})
     if Path(roots['openpine']).resolve() != host.resolve():
         raise ValueError('common owner host differs from checked candidate')
     if not foundations:
@@ -572,6 +631,83 @@ def finalize_stabilization(plan: dict, host: Path, foundations: list[Path], outp
         gates['foundation'] = {'environments': environments}
     if coverage:
         gates['coverage'] = {'tasks': coverage}
+    if frontend is not None or packages is not None:
+        import copy
+        from openpine.verification.execution_binding import make_binding, validate_binding
+        from openpine.verification.execution_identity import read_artifact
+        from openpine.verification.execution_owner_launch import resolve_owner_policy
+        from openpine.verification.identity import digest, seal, verify
+
+        policy = read_json(host / 'verification/execution-policy.json')
+        if digest(policy) != plan['policy_hash']:
+            raise ValueError('owner composition policy differs from frozen plan')
+        if policy.get('schema_id') == 'openpine.execution_policy.v2':
+            policy = resolve_owner_policy(policy, plan['owner_launch'])
+        specs = policy['stabilization']
+        if binding is None:
+            binding = make_binding(plan, {n: Path(p) for n, p in roots.items()},
+                                   {n: e['executable'] for n, e in plan['environments'].items()})
+        binding = copy.deepcopy(binding)
+        binding.pop('content_hash', None)
+        mappings = binding.setdefault('owner_paths', {})
+        copied = {}
+        for gate, source, slot in (('frontend', frontend, 'attempt'),
+                                   ('packages', packages, 'package_attempt')):
+            if source is None:
+                continue
+            if not source.is_dir() or '..' in source.parts:
+                raise ValueError('missing/unsafe explicit owner input')
+            frozen = plan.get('owner_launch', {}).get('paths', {}).get(slot)
+            if not frozen:
+                raise ValueError('owner composition requires frozen launch path: ' + slot)
+            # Avoid copying the same frozen namespace twice; reject conflicting inputs.
+            if frozen in copied:
+                previous, relative = copied[frozen]
+                if previous.resolve() != source.resolve():
+                    raise ValueError('conflicting inputs for frozen owner namespace')
+            else:
+                relative = 'owners/' + gate
+                copy_primary(source, evidence / relative)
+                copied[frozen] = source, relative
+            owner_root = evidence / relative
+            # Replace only this declared slot, not arbitrary caller descriptor paths.
+            if any(Path(frozen) != Path(old) and (
+                Path(frozen).is_relative_to(Path(old)) or Path(old).is_relative_to(Path(frozen))
+            ) for old in mappings):
+                raise ValueError('overlapping owner composition mapping')
+            mappings[frozen] = str(owner_root.absolute())
+            if gate == 'frontend':
+                entry = read_json(owner_root / 'frontend/entry.json')
+                if (entry.get('binding', {}).get('plan_hash') != plan['content_hash']
+                        or entry.get('binding', {}).get('candidate_hash') != plan['source']['content_hash']):
+                    raise ValueError('frontend input is historical/stale or foreign')
+            else:
+                receipt = read_json(owner_root / 'receipt.json')
+                verify(receipt, 'openpine.installed_package_receipt.v1')
+                if (receipt.get('owner') != gate or receipt.get('development') is not False
+                        or receipt.get('plan_hash') != plan['content_hash']
+                        or receipt.get('source_hash') != plan['source']['content_hash']
+                        or receipt.get('run_id') != run_id):
+                    raise ValueError('package input is historical/stale or foreign')
+                if read_artifact(owner_root, receipt['source']) != plan['source']:
+                    raise ValueError('package source primary differs from frozen candidate')
+                original = read_artifact(owner_root, receipt['stage_inputs'])
+                entry = copy.deepcopy(original['gates']['packages'])
+                if set(entry) != set(specs['packages']):
+                    raise ValueError('missing mandatory package interpreter lanes')
+                for version, lanes in entry.items():
+                    if set(lanes) != set(specs['packages'][version]):
+                        raise ValueError('missing mandatory package installation lanes')
+                    for kind, lane in lanes.items():
+                        expected = copy.deepcopy(specs['packages'][version][kind]['commands'])
+                        for command in expected:
+                            command['inputs'] = {**command.get('inputs', {}),
+                                                 **specs['package_harness_inputs']}
+                        lane['commands'] = project_package_commands(
+                            owner_root, lane['commands'], expected, version, frozen)
+            gates[gate] = {**entry, 'evidence_subroot': relative}
+        binding = seal(binding)
+        validate_binding(plan, binding)
     write_once_json(evidence / 'stabilization-inputs.json', {
         'schema_id': 'openpine.rc6_stabilization_inputs.v1', 'plan_hash': plan['content_hash'],
         'candidate_hash': plan['source']['content_hash'], 'run_id': run_id,
@@ -590,8 +726,6 @@ def finalize_stabilization(plan: dict, host: Path, foundations: list[Path], outp
     for command, filename, view in (
         ('test-stabilization', 'current.json', 'current'),
         ('test-current', 'replayed-current.json', 'current'),
-        ('test-current', 'summary.json', 'summary'),
-        ('test-current', 'remainder.json', 'remainder'),
     ):
         argv = [command, *common, '--output', str(output / filename), '--view', view]
         if command == 'test-current':
@@ -600,7 +734,19 @@ def finalize_stabilization(plan: dict, host: Path, foundations: list[Path], outp
         # Exit 1 is a recorded nonaccepted verdict, not a command success.
         # Reader/infrastructure exceptions propagate without a fake receipt.
         exits.append(run_command(parser.parse_args(argv)))
-    write_once_json(output / 'invocations.json', {'argv': invocations, 'exits': exits})
+    # test-current has independently replayed raw evidence and required strict
+    # equality with current.json. Presentation must not run the owners again.
+    from openpine.verification.stage_gate import current_views
+    replayed = read_json(output / 'replayed-current.json')
+    views = current_views(replayed)
+    projections = []
+    for view in ('summary', 'remainder'):
+        write_once_json(output / (view + '.json'), views[view])
+        projections.append({'operation': 'current_views', 'source': 'replayed-current.json',
+                            'source_content_hash': replayed['content_hash'],
+                            'view': view, 'output': view + '.json'})
+    write_once_json(output / 'invocations.json', {'argv': invocations, 'exits': exits,
+                                                'projections': projections})
     return read_json(output / 'current.json')
 
 
@@ -637,6 +783,8 @@ def add_ci_commands(commands):
     common.add_argument('--foundation', type=Path, action='append', required=True)
     common.add_argument('--output', type=Path, required=True)
     common.add_argument('--run-id', required=True)
+    common.add_argument('--frontend', type=Path, help='Restored frozen attempt root (frontend/ beneath it)')
+    common.add_argument('--packages', type=Path, help='Restored frozen package_attempt root')
     inner = sub.add_parser('execute')
     inner.add_argument('--restored', type=Path, required=True)
     inner.add_argument('--plan', type=Path, required=True)
@@ -676,7 +824,8 @@ def run_ci_command(args):
             environment = 'py' + ''.join(map(str, sys.version_info[:2]))
             binding = make_binding(plan, roots, {environment: sys.executable})
             return finalize_stabilization(plan, roots['openpine'], args.foundation,
-                                          args.output.resolve(), args.run_id, binding=binding)
+                                          args.output.resolve(), args.run_id, binding=binding,
+                                          frontend=args.frontend, packages=args.packages)
         if args.task:
             return run_ci_task(plan, args.plan.resolve(), roots, args.task, args.output.resolve(), args.run_id)
         if not args.fragment:
