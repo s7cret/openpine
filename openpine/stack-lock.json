@@ -36,7 +36,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "b953e803d618a9784b117f8047ca709791aaca79",
+      "commit": "f16577743cb9f7803e1eef5a690e8f2c7be26398",
       "contracts": {
         "runtime": "1.4"
       },
