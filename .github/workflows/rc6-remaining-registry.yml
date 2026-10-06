@@ -25,7 +25,6 @@ jobs:
       PYTHONDONTWRITEBYTECODE: '1'
       OMP_NUM_THREADS: '1'
       OPENBLAS_NUM_THREADS: '1'
-      PINE_STACK_ROOT: ${{ runner.temp }}/registry-owners
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -70,6 +69,8 @@ jobs:
           python -m ruff format --check openpine/verification/review_ledger.py rc6_tests/test_rc6_review_ledger.py rc6_tests/test_rc6_stage2_remaining.py
           python -m mypy --follow-imports=skip openpine/verification/review_ledger.py
       - name: Execute accounting, policy, foundation and stabilization regressions
+        env:
+          PINE_STACK_ROOT: ${{ runner.temp }}/registry-owners
         run: |
           mkdir -p "$RUNNER_TEMP/registry-evidence"
           selectors=(rc6_tests/test_rc6_review_ledger.py rc6_tests/test_rc6_stage2_remaining.py rc6_tests/test_rc6_python_support.py rc6_tests/test_rc6_stage1_foundation.py rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt)
