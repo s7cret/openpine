@@ -57,7 +57,7 @@ def freeze_fixture_environment(roots, folder, inputs):
     return json.loads((folder / "command" / "stdout.log").read_text())
 
 
-def build_fixture(base, *, portable=False, owner_namespaces=False):
+def build_fixture(base, *, portable=False, owner_namespaces=False, product=False):
     stack, evidence = base / "stack", base / "evidence"
     evidence.mkdir()
     roots = {name: stack / name for name in COMPONENTS}
@@ -384,6 +384,22 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
         "required_gates": {"stage-full": list(STABILIZATION_GATES)},
         "stabilization": specs,
     }
+    product_entries = {}
+    if product:
+        from openpine.verification.stage_gate import product_requirements
+        from openpine.verification.review_ledger import PYTHON_SUPPORT, SOURCE_SHA256
+        domains = {}
+        for gate, ids in product_requirements().items():
+            # Real miniature command with independently authored expected4.
+            # This is verifier self-check evidence, never production qualification.
+            command_spec = {"argv": [sys.executable, "-I", "-c",
+                "import json; print(json.dumps({'value':2+2}))"], "cwd": str(base),
+                "inputs": dict(harness_inputs), "expected_stdout": {"value": 4}}
+            domains[gate] = {"requirements": ids, "obligations": {
+                requirement: {"nodes": {"openpine": nodes}, "commands": [command_spec]}
+                for requirement in ids}}
+        policy["product_acceptance"] = {"schema_id": "openpine.product_domain_policy.v1",
+            "source_spec_sha256": SOURCE_SHA256, "python_support": PYTHON_SUPPORT, "domains": domains}
     launch = None
     if portable:
         from openpine.verification.execution_owner_launch import freeze_owner_launch
@@ -538,4 +554,17 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
         "gates": entries,
     }
     put(evidence / "stabilization-inputs.json", packet)
+    if product:
+        for gate, domain in policy["product_acceptance"]["domains"].items():
+            command_spec = next(iter(domain["obligations"].values()))["commands"][0]
+            folder = evidence / ("product-" + gate)
+            actual = run_logged(command_spec["argv"], cwd=base, output=folder, env=clean,
+                inputs=command_spec["inputs"], binding={"plan_hash": plan["content_hash"],
+                "candidate_hash": source["content_hash"], "run_id": "fixture-0"}, timeout=60)
+            assert actual["ok"], actual
+            product_entries[gate] = {requirement: [descriptor(evidence, folder / "command.json")]
+                                    for requirement in domain["requirements"]}
+        put(evidence / "product-inputs.json", {"schema_id": "openpine.product_inputs.v1",
+            "plan_hash": plan["content_hash"], "candidate_hash": source["content_hash"],
+            "policy_hash": plan["policy_hash"], "run_id": "fixture-0", "domains": product_entries})
     return host, plan, evidence, packet

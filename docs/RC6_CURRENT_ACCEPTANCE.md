@@ -150,3 +150,56 @@ The fixture's independently authored arithmetic expectations, zero coverage
 minimum and near-zero timing target apply **only to that synthetic fixture**.
 They do not change production policies, certify Pine semantics, demonstrate 2x
 product speedup or accept the current RC6 candidate.
+
+## Explicit product current scope
+
+`test-current --scope product` invokes `stage_gate.run_product_gate`, extending
+the same current owner. The default remains the existing stabilization scope.
+The product contract is `openpine.product_current_acceptance.v1`; its progress,
+remainder, summary, API, documentation and release views share one freshly
+replayed current identity. The API view is a library/CLI projection. A public
+HTTP endpoint remains an integration obligation.
+
+The source-frozen `product_acceptance` policy names fourteen mandatory domains:
+candidate integrity, static/build quality, functional matrix, language,
+independent oracle, data/request, lifecycle/resume, broker, optimizer, frontend,
+packages, performance, fault/sandbox and delivery. Its fixed governance map
+covers all sixty-eight source requirements. Requirements governed by multiple
+domains require every domain to pass. The original P0 accounting and its
+historical false acceptance flags are preserved inside the embedded
+stabilization contract; current qualification is computed separately.
+
+Each domain declares reviewed requirement obligations, complete native case
+memberships and exact commands with captured inputs. Non-static commands also
+require a non-null independently specified semantic output. The owner reopens
+the same existing campaign, native phases and JUnit, then each command receipt,
+logs and captured inputs. Every command must carry the exact plan, candidate
+and run binding. A `product-inputs.json` packet locates these descriptors; it
+cannot supply a verdict or expected output.
+
+Pending native obligations are reconstructed from source-bound manifests.
+Every task's deselection count must equal its named pending obligation count;
+removing an optional manifest descriptor cannot hide required live cases. The
+five provider live cases remain mandatory and unexecuted. They block product
+functional/data qualification and full acceptance.
+
+All fourteen full-product obligation specifications in the production policy
+are currently null. Missing specifications or inputs remain `not_run`, failed
+raw evidence becomes `blocked`, and their exact governed requirements remain
+in the remainder. The real miniature eight-distribution fixture exercises the
+positive verifier path and each negative boundary; it qualifies this mechanism
+only. Actual complete product specifications and a positive full-product
+campaign remain open. The earlier 6011-case language/owner integration is
+separate bounded evidence.
+
+```sh
+python -m openpine.verification test-current --scope product \
+  --host-root "$HOST" --plan "$PLAN" --expected-plan-hash "$PLAN_HASH" \
+  --evidence "$EVIDENCE" --run-id "$RUN_ID" --view release \
+  --output "$EVIDENCE/product-release-view.json"
+```
+
+The command returns success only when all fourteen domains and the existing
+stabilization owner pass on that exact candidate. Rendering a saved sealed
+current with `current_views` performs consistency checks; admission always
+requires the fresh raw replay above.

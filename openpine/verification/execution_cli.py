@@ -32,7 +32,11 @@ def add_commands(commands):
         current.add_argument('--output', type=Path, required=True)
         current.add_argument('--saved-current', type=Path)
         current.add_argument('--binding', type=Path, help='Checked replay source/interpreter locators; never rewrites execution provenance')
-        current.add_argument('--view', choices=('current', 'progress', 'remainder', 'summary'), default='current')
+        views = ('current', 'progress', 'remainder', 'summary')
+        if name == 'test-current':
+            current.add_argument('--scope', choices=('stabilization', 'product'), default='stabilization')
+            views += ('api', 'documentation', 'release')
+        current.add_argument('--view', choices=views, default='current')
     preflight = commands.add_parser('test-preflight', help='Read-only executable environment preflight')
     collect = commands.add_parser('test-collect', help='Collect and verify frozen inventories; never execution PASS')
     for command in (preflight, collect):
@@ -287,13 +291,17 @@ def collect_inventories(args):
 
 def run_command(args):
     if args.command in {'test-stabilization', 'test-current'}:
-        from openpine.verification.stage_gate import current_views, run_stabilization_gate
+        from openpine.verification.stage_gate import current_views, run_product_gate, run_stabilization_gate
         plan = read_json(args.plan)
         from openpine.verification.execution_binding import checked_locations
         binding = read_json(args.binding) if args.binding else None
         roots, _ = checked_locations(plan, binding)
         ensure_external_output(args.output, {n: Path(p) for n, p in roots.items()})
-        report = run_stabilization_gate(args.host_root, plan, args.evidence,
+        product = getattr(args, 'scope', 'stabilization') == 'product'
+        if not product and args.view in {'api', 'documentation', 'release'}:
+            raise ValueError('product readers require --scope product')
+        owner = run_product_gate if product else run_stabilization_gate
+        report = owner(args.host_root, plan, args.evidence,
                                         expected_plan_hash=args.expected_plan_hash, run_id=args.run_id,
                                         binding=binding)
         if args.saved_current is not None and read_json(args.saved_current) != report:
