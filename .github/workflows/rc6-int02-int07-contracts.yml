@@ -1,0 +1,160 @@
+# Bounded contracts only; complete Stage 2 and release acceptance remain false.
+name: RC6 INT02 INT07 CLI contracts
+'on':
+  pull_request:
+    branches:
+    - implementation/int01-stack-reconciliation-20261006
+permissions:
+  contents: read
+concurrency:
+  group: rc6-int02-int07-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+        fetch-depth: 0
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      with:
+        python-version: 3.13.5
+    - name: Bind exact host checkout and interpreter
+      env:
+        EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+        git rev-parse HEAD HEAD^{tree}
+        python -c "import sys; assert sys.version_info[:3] == (3,13,5); assert sys._is_gil_enabled(); print(sys.version)"
+    - name: Install hashed build and verification dependencies
+      run: |
+        python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt -r verification/ci-runtime-requirements.txt
+    - name: Prepare clean eight-wheel candidate and complete native inventories
+      run: python -m openpine.verification test-ci prepare --host-root "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP/int02-int07-work" --python-version 3.13
+    - name: Verify installed package origins, ABI and required live inventory
+      run: |
+        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
+        mkdir -p "$RUNNER_TEMP/int02-int07-evidence"
+        "$PY" -I scripts/rc6_stabilization/probe.py api --output "$RUNNER_TEMP/int02-int07-evidence/api.json"
+        "$PY" - <<'PYREQUIRED'
+        import json, os, pathlib
+        from openpine.verification.required_inventory import pending_required_inventories
+        work=pathlib.Path(os.environ['RUNNER_TEMP'])/'int02-int07-work'
+        collection=json.loads((work/'bundle/collection.json').read_text())
+        roots={k:pathlib.Path(v) for k,v in collection['roots'].items()}
+        policy=json.loads((roots['openpine']/'verification/execution-policy.json').read_text())
+        pending=pending_required_inventories(policy,roots,collection['source'],collection['inventories'],list(roots))
+        assert pending['marketdata-provider']['full_count']==902
+        assert len(pending['marketdata-provider']['nodeids'])==5
+        assert pending['marketdata-provider']['execution_pass'] is False
+        bundle=json.loads((work/'bundle/bundle.json').read_text())
+        commits={'openpine':bundle['host_commit'],**bundle['source_pins']}
+        (pathlib.Path(os.environ['RUNNER_TEMP'])/'int02-int07-evidence/commits.json').write_text(json.dumps(commits))
+        print(json.dumps({'pending_required_inventories':pending,'release_authorized':False},sort_keys=True))
+        PYREQUIRED
+        "$PY" -I scripts/rc6_stabilization/probe.py runtime --commits "$RUNNER_TEMP/int02-int07-evidence/commits.json" --output "$RUNNER_TEMP/int02-int07-evidence/runtime.json"
+        "$PY" -I scripts/rc6_stabilization/probe.py library --commits "$RUNNER_TEMP/int02-int07-evidence/commits.json" --output "$RUNNER_TEMP/int02-int07-evidence/library.json"
+    - name: Prepare installed-package test runner
+      run: |
+        cat > "$RUNNER_TEMP/int02-int07-installed-tests.py" <<'PYTEST'
+        import importlib, json, pathlib, sys
+        import pytest
+        assert sys.flags.isolated
+        prefixes=('openpine','openpine_contracts','pine2ast','ast2python','pinelib','backtest_engine','marketdata_provider','optimizer')
+        prefix=pathlib.Path(sys.prefix).resolve()
+        for name in prefixes:
+            module=importlib.import_module(name)
+            assert pathlib.Path(module.__file__).resolve().is_relative_to(prefix)
+        output=pathlib.Path(sys.argv[1])
+        sys.path.append(str(pathlib.Path.cwd()))
+        result=pytest.main(['--import-mode=importlib',*sys.argv[2:]])
+        origins={name:str(pathlib.Path(module.__file__).resolve()) for name,module in sys.modules.items() if any(name==p or name.startswith(p+'.') for p in prefixes) and getattr(module,'__file__',None)}
+        assert all(pathlib.Path(path).is_relative_to(prefix) for path in origins.values()), origins
+        output.write_text(json.dumps({'pytest_returncode':int(result),'installed_module_origins':origins},sort_keys=True))
+        raise SystemExit(result)
+        PYTEST
+    - name: Enable the real protected worker environment
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install --no-install-recommends -y apparmor-profiles apparmor-utils bubblewrap
+        sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+        sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+        if ! getent passwd openpine-worker >/dev/null; then
+          sudo useradd --system --no-create-home --shell /usr/sbin/nologin openpine-worker
+        fi
+        sudo -n -u openpine-worker -- /usr/bin/id -u
+        /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+    - name: Execute strict and diagnostic CLI contracts and existing process owners
+      env:
+        PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
+      run: |
+        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
+        "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/host-origins.json" -q rc6_tests/test_rc6_evidence_index.py rc6_tests/test_rc6_stage2_remaining.py rc6_tests/test_rc6_owner_producer_launch.py rc6_tests/test_rc6_execution_ci.py rc6_tests/test_rc6_reconciliation_inventory.py rc6_tests/test_rc6_required_inventory.py -p openpine.verification.pytest_gate --verification-suite=int02-int07-host --verification-output="$RUNNER_TEMP/int02-int07-evidence/host.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/host.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/pytest-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/cache"
+    - name: Execute existing real protected-worker integration in both protocols
+      env:
+        PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
+      run: |
+        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
+        "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/worker-origins.json" -q rc6_tests/test_rc6_numeric_search_integration.py::test_real_protected_worker_searches_native_array -p openpine.verification.pytest_gate --verification-suite=int02-int07-protected-worker --verification-output="$RUNNER_TEMP/int02-int07-evidence/worker.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/worker.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/worker-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/cache"
+    - name: Native quality checks
+      env:
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: |
+        export PATH="$RUNNER_TEMP/int02-int07-work/venv/bin:$PATH"
+        bash scripts/rc6_native_quality.sh
+        python -m ruff check scripts/rc6_stabilization rc6_tests/test_rc6_execution_ci.py
+        python -m ruff format --check scripts/rc6_stabilization
+        python -m mypy --explicit-package-bases --follow-imports=silent scripts/rc6_stabilization openpine/verification/execution_process.py openpine/verification/evidence_index.py openpine/verification/conformance.py openpine/verification/stage2_remaining.py openpine/verification/__main__.py
+    - name: Retain bounded public primary receipts in job logs
+      if: always()
+      run: |
+        python - <<'PYLOG'
+        import hashlib, os, pathlib, shutil, tarfile
+        root=pathlib.Path(os.environ['RUNNER_TEMP'])/'int02-int07-evidence'
+        cases=[]
+        for number, folder in enumerate(sorted((root/'pytest-private').glob('*/cli'))):
+            if folder.parent.is_symlink():
+                continue
+            if not folder.parent.name.startswith(('test_builtin_expected_real_cli','test_real_remaining_cli','test_real_diagnostic_cli','test_real_saved_index_cli')):
+                continue
+            cases.append(folder.parent)
+            for item in folder.iterdir():
+                if item.is_file():
+                    shutil.copyfile(item, root/f'cli-{number:03d}-{item.name}')
+            for item in folder.parent.glob('*.json'):
+                shutil.copyfile(item, root/f'cli-{number:03d}-case-{item.name}')
+        for path in sorted([*root.glob('*.json'),*root.glob('*.xml'),*root.glob('cli-*.log')]):
+            data=path.read_bytes()
+            assert len(data)<5*1024*1024
+            print('PRIMARY',path.name,hashlib.sha256(data).hexdigest(),len(data))
+            if len(data)<256*1024:
+                print(data.decode())
+            else:
+                print('PRIMARY_ARTIFACT',path.name,'verbatim bytes in uploaded artifact')
+        archive=root/'cli-primary-inputs.tar.gz'
+        with tarfile.open(archive,'w:gz') as stream:
+            for case in cases:
+                stream.add(case,arcname=case.name)
+        data=archive.read_bytes()
+        print('PRIMARY_BINARY',archive.name,hashlib.sha256(data).hexdigest(),len(data),'cases',len(cases))
+        PYLOG
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-int02-int07-primaries-${{ github.run_id }}
+        path: |
+          ${{ runner.temp }}/int02-int07-evidence/*.json
+          ${{ runner.temp }}/int02-int07-evidence/*.xml
+          ${{ runner.temp }}/int02-int07-evidence/cli-*.log
+          ${{ runner.temp }}/int02-int07-evidence/cli-primary-inputs.tar.gz
+        if-no-files-found: error
+        retention-days: 7

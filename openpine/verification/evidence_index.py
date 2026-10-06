@@ -11,10 +11,10 @@ from collections import Counter, defaultdict
 import hashlib
 from pathlib import Path, PurePosixPath
 import re
-from typing import Any
+from typing import Any, cast
 
 from openpine.verification.builtins import builtin_evidence_report
-from openpine.verification.conformance import load_corpus
+from openpine.verification.conformance import load_corpus, validate_saved_case_result
 from openpine.verification.identity import digest, read_json, seal, verify
 
 KEY_FIELDS = ("pine_version", "symbol_id", "overload_id", "call_form")
@@ -117,8 +117,12 @@ def _under(root: Path, relative: str) -> Path:
 
 
 def _declared_unresolved_authority_gaps(
-    host_root: Path, corpus: dict, mismatches: list[dict], observations: dict,
-    source_pins: dict[str, str], variant: str,
+    host_root: Path,
+    corpus: dict,
+    mismatches: list[dict],
+    observations: dict,
+    source_pins: dict[str, str],
+    variant: str,
 ) -> list[dict]:
     """Validate declared unresolved authority without assigning language behavior.
 
@@ -138,11 +142,17 @@ def _declared_unresolved_authority_gaps(
     declared: dict[str, dict] = {}
     for row in registry["rows"]:
         if not isinstance(row, dict) or set(row) != {
-            "requirement_id", "case_id", "authority_status", "provenance"
+            "requirement_id",
+            "case_id",
+            "authority_status",
+            "provenance",
         }:
             raise ValueError("malformed unresolved authority record")
         requirement, case_id, status, provenance = (
-            row["requirement_id"], row["case_id"], row["authority_status"], row["provenance"]
+            row["requirement_id"],
+            row["case_id"],
+            row["authority_status"],
+            row["provenance"],
         )
         if (
             not isinstance(requirement, str)
@@ -158,7 +168,10 @@ def _declared_unresolved_authority_gaps(
             or case_id not in cases
         ):
             raise ValueError("invalid unresolved authority record")
-        if hashlib.sha256(_under(host_root, provenance["path"]).read_bytes()).hexdigest() != provenance["sha256"]:
+        if (
+            hashlib.sha256(_under(host_root, provenance["path"]).read_bytes()).hexdigest()
+            != provenance["sha256"]
+        ):
             raise ValueError("unresolved authority provenance hash mismatch")
         declared[case_id] = row
     mismatched = {
@@ -217,7 +230,24 @@ def _groups(plan: dict) -> list[dict]:
             raise ValueError("all five execution paths must remain in the plan")
         if group["variants"] not in (["legacy"], ["full", "compact"]):
             raise ValueError("unknown or reduced transcript variants")
-    return body["groups"]
+    return cast(list[dict], body["groups"])
+
+
+def _row_evidence_summary(evidence: list[dict]) -> dict:
+    passed_paths = sorted({item["path"] for item in evidence if item["status"] == "PASS"})
+    problems = any(item["status"] != "PASS" for item in evidence)
+    covered = set(passed_paths) >= set(EXECUTION_PATHS) and not problems
+    return {
+        "evidence_status": "FAILED"
+        if problems
+        else "EXAMPLES_ALL_PATHS"
+        if covered
+        else "PARTIAL_EXAMPLES"
+        if evidence
+        else "NO_EXAMPLES",
+        "passing_paths": passed_paths,
+        "unique_cases": len({(item["corpus_hash"], item["case_id"]) for item in evidence}),
+    }
 
 
 def build_evidence_index(
@@ -297,7 +327,7 @@ def build_evidence_index(
                 any_valid = False
                 failures = []
                 unassigned_details = {}
-                deferred_cases = set()
+                deferred_cases: set[str] = set()
                 deferred_authority = []
                 for root in roots:
                     folder = _under(root, suffix)
@@ -371,13 +401,18 @@ def build_evidence_index(
                     trace_ok = rebuilt["trace_comparison"]["ok"]
                     deferred = (
                         _declared_unresolved_authority_gaps(
-                            host_root, corpus, unassigned_mismatches, values["observations"],
-                            source_pins, variant,
+                            host_root,
+                            corpus,
+                            unassigned_mismatches,
+                            values["observations"],
+                            source_pins,
+                            variant,
                         )
                         if assignment_ok
                         and len(unassigned_nonpass) == len(unassigned_mismatches)
                         and rebuilt["execution_evidence"]["all_assigned_passed"]
-                        and rebuilt == report else []
+                        and rebuilt == report
+                        else []
                     )
                     if unassigned_mismatches and not deferred:
                         failures.append("UNVERIFIED_EXPECTATION_MISMATCH")
@@ -472,9 +507,6 @@ def build_evidence_index(
     output_rows = []
     for key, row in sorted(rows.items()):
         evidence = evidence_by_key[key]
-        passed_paths = sorted({item["path"] for item in evidence if item["status"] == "PASS"})
-        problems = [item for item in evidence if item["status"] != "PASS"]
-        covered = set(passed_paths) >= set(EXECUTION_PATHS) and not problems
         output_rows.append(
             {
                 **{
@@ -488,15 +520,7 @@ def build_evidence_index(
                         "qualifier_contract",
                     )
                 },
-                "evidence_status": "FAILED"
-                if problems
-                else "EXAMPLES_ALL_PATHS"
-                if covered
-                else "PARTIAL_EXAMPLES"
-                if evidence
-                else "NO_EXAMPLES",
-                "passing_paths": passed_paths,
-                "unique_cases": len({(item["corpus_hash"], item["case_id"]) for item in evidence}),
+                **_row_evidence_summary(evidence),
                 "evidence": evidence,
                 "contract_fully_verified": False,
             }
@@ -518,7 +542,9 @@ def build_evidence_index(
             "input_sets": sorted({digest(item): item for item in run_inputs}.values(), key=digest),
             "required_group_paths": len(group_results),
             "passed_group_paths": sum(row["status"] == "PASS" for row in group_results),
-            "deferred_group_paths": sum(row["status"] == "TEMPORARY_UNVERIFIED" for row in group_results),
+            "deferred_group_paths": sum(
+                row["status"] == "TEMPORARY_UNVERIFIED" for row in group_results
+            ),
             "unresolved_authority_cases": sorted(
                 {
                     digest(row): row
@@ -527,7 +553,8 @@ def build_evidence_index(
                 }.values(),
                 key=digest,
             ),
-            "diagnostic_provisional_ok": denominator["ok"] and bool(group_results)
+            "diagnostic_provisional_ok": denominator["ok"]
+            and bool(group_results)
             and all(row["status"] in {"PASS", "TEMPORARY_UNVERIFIED"} for row in group_results),
             "all_declared_runs_passed": bool(group_results)
             and all(row["status"] == "PASS" for row in group_results),
@@ -544,3 +571,260 @@ def build_evidence_index(
             "tradingview_verified": False,
         }
     )
+
+
+def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked: dict) -> dict:
+    """Check a saved bounded index against its frozen scope and authority inputs.
+
+    This checks the existing index projection, not full language acceptance.
+    A top-level label cannot override failed groups or authenticate a gap.
+    """
+    verify(index, "openpine.builtin_evidence_index.v1")
+    groups = _groups(plan)
+    if index["plan_hash"] != plan["content_hash"] or index["lock_hash"] != locked["content_hash"]:
+        raise ValueError("saved index differs from frozen plan/surface")
+    lock = verify(locked, "openpine.callable_denominator.v1")
+    frozen = {key_of(row): row["contract_hash"] for row in lock["rows"]}
+    rows = index["rows"]
+    actual = {key_of(row): row["contract_hash"] for row in rows}
+    if (
+        not frozen
+        or len(frozen) != len(lock["rows"])
+        or len(actual) != len(rows)
+        or actual != frozen
+    ):
+        raise ValueError("saved callable inventory differs from its frozen denominator")
+    if index["denominator"] != len(rows) or index["direct_signatures"] != sum(
+        r["status"] == "RUNTIME_DIRECT" for r in rows
+    ):
+        raise ValueError("saved callable counts contradict rows")
+    if index["counts"] != dict(Counter(r["evidence_status"] for r in rows)):
+        raise ValueError("saved evidence counts contradict rows")
+    evidence_units = {}
+    for row in rows:
+        evidence = row["evidence"]
+        if not isinstance(evidence, list) or row["contract_fully_verified"] is not False:
+            raise ValueError("invalid saved row evidence or whole-contract claim")
+        for item in evidence:
+            if set(item) != {
+                "corpus_hash",
+                "case_id",
+                "variant",
+                "path",
+                "status",
+                "observed_statuses",
+                "oracles",
+                "trace_hashes",
+                "observation_scope",
+            }:
+                raise ValueError("malformed saved assignment evidence")
+            statuses = item["observed_statuses"]
+            hashes = item["trace_hashes"]
+            if (
+                not isinstance(statuses, list)
+                or not statuses
+                or any(not isinstance(s, str) or not s for s in statuses)
+                or statuses != sorted(set(statuses))
+                or not isinstance(hashes, list)
+                or not hashes
+                or any(
+                    not isinstance(h, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", h) is None
+                    for h in hashes
+                )
+                or hashes != sorted(set(hashes))
+            ):
+                raise ValueError("saved assignment has missing or invalid outcome/trace evidence")
+            status = (
+                "PASS" if statuses == ["PASS"] else "CONFLICT" if "PASS" in statuses else "FAILED"
+            )
+            if item["status"] != status:
+                raise ValueError("saved assignment status contradicts observed outcomes")
+            unit = (
+                key_of(row),
+                item["corpus_hash"],
+                item["case_id"],
+                item["variant"],
+                item["path"],
+            )
+            if unit in evidence_units:
+                raise ValueError("duplicate saved assignment evidence")
+            evidence_units[unit] = item
+        if any(row[name] != value for name, value in _row_evidence_summary(evidence).items()):
+            raise ValueError("saved row summary contradicts its evidence")
+    if index["direct_with_examples_all_paths"] != sum(
+        r["status"] == "RUNTIME_DIRECT" and r["evidence_status"] == "EXAMPLES_ALL_PATHS"
+        for r in rows
+    ):
+        raise ValueError("saved direct coverage count contradicts row evidence")
+    expected = {(g["id"], v, p): g for g in groups for v in g["variants"] for p in g["paths"]}
+    observed = {(g["group"], g["variant"], g["path"]): g for g in index["groups"]}
+    if not observed or len(observed) != len(index["groups"]) or observed.keys() != expected.keys():
+        raise ValueError("saved index lost or changed required group paths")
+    if index["required_group_paths"] != len(expected):
+        raise ValueError("saved required group count contradicts frozen plan")
+    deferred = {}
+    declared_units = set()
+    for key, group in observed.items():
+        declaration = expected[key]
+        corpus = load_corpus(_under(host_root, declaration["corpus"]))
+        assignment = read_json(_under(host_root, declaration["assignment_lock"]))
+        body = verify(assignment, "openpine.builtin_assignment_lock.v1")
+        if (
+            corpus["content_hash"] != declaration["corpus_hash"]
+            or assignment["content_hash"] != declaration["assignment_hash"]
+            or body["corpus_hash"] != corpus["content_hash"]
+        ):
+            raise ValueError("saved group corpus/assignments changed")
+        case_rows = {c["id"]: c for c in corpus["cases"]}
+        cases = set(case_rows)
+        assignments = body["assignments"]
+        assigned = {r["case_id"] for r in assignments}
+        if (
+            not assigned
+            or len({digest(r) for r in assignments}) != len(assignments)
+            or not assigned <= cases
+            or group["corpus_cases"] != len(cases)
+            or group["assigned_cases"] != len(assigned)
+            or group["unassigned_cases"] != sorted(cases - assigned)
+        ):
+            raise ValueError("saved group lost corpus/assignment obligations")
+        if group["status"] not in {"PASS", "TEMPORARY_UNVERIFIED", "FAILED", "NOT_RUN"}:
+            raise ValueError("unknown saved group status")
+        accepted = group["status"] in {"PASS", "TEMPORARY_UNVERIFIED"}
+        for assignment_row in assignments:
+            if set(assignment_row) != {*KEY_FIELDS, "case_id", "contract_hash"}:
+                raise ValueError("invalid frozen assignment fields")
+            callable_key = key_of(assignment_row)
+            case = case_rows[assignment_row["case_id"]]
+            if (
+                callable_key not in frozen
+                or assignment_row["contract_hash"] != frozen[callable_key]
+                or case["pine_version"] != callable_key[0]
+            ):
+                raise ValueError("frozen assignment no longer matches corpus/surface")
+            unit = (callable_key, corpus["content_hash"], case["id"], key[1], key[2])
+            declared_units.add(unit)
+            item = evidence_units.get(unit)
+            if accepted and (item is None or item["status"] != "PASS"):
+                raise ValueError(
+                    "accepted saved group lacks passing evidence for every frozen assignment"
+                )
+            if item is not None:
+                corpus_path = _under(host_root, declaration["corpus"])
+                settings = read_json(_under(corpus_path.parent, case["settings"]["path"]))
+                scope = {
+                    "scope": settings.get("scope", "bounded_example_not_whole_contract"),
+                    "observed_from_bar": settings.get("observed_from_bar", 0),
+                }
+                if (
+                    item["oracles"] != [case["oracle"]["kind"]]
+                    or item["observation_scope"] != scope
+                ):
+                    raise ValueError("saved assignment differs from frozen oracle/settings")
+        outcomes = group["unassigned_outcomes"]
+        unassigned = cases - assigned
+        if (
+            not isinstance(outcomes, list)
+            or len({digest(r) for r in outcomes}) != len(outcomes)
+            or any(r["id"] not in unassigned for r in outcomes)
+            or (accepted and {r["id"] for r in outcomes} != unassigned)
+        ):
+            raise ValueError("saved group lost or changed unassigned corpus outcomes")
+        for outcome in outcomes:
+            if (
+                set(outcome) != {"id", "pine_version", "status", "first_divergence", "authority"}
+                or not isinstance(outcome["authority"], str)
+                or not outcome["authority"]
+            ):
+                raise ValueError("saved unassigned outcome fields mismatch")
+            validate_saved_case_result(
+                {name: value for name, value in outcome.items() if name != "authority"},
+                case_rows[outcome["id"]],
+                corpus["profile"],
+            )
+        nonpass = [r for r in outcomes if r["status"] != "PASS"]
+        if group["status"] == "PASS" and (nonpass or group["reasons"]):
+            raise ValueError("saved PASS group retains failed or unresolved outcomes")
+        pending = group["deferred_cases"]
+        authority = group["unresolved_authority"]
+        if group["status"] != "TEMPORARY_UNVERIFIED":
+            if pending or authority:
+                raise ValueError("authority gap attached to a non-deferred group")
+            continue
+        if (
+            group["reasons"]
+            or not pending
+            or len(set(pending)) != len(pending)
+            or not set(pending) <= cases - assigned
+            or set(pending) != {r["id"] for r in nonpass}
+            or any(
+                r["status"] != "RUNTIME_MISMATCH"
+                or r.get("authority") != "UNVERIFIED"
+                or r.get("first_divergence") is None
+                for r in nonpass
+            )
+        ):
+            raise ValueError("invalid deferred corpus scope")
+        registry = verify(
+            read_json(_under(host_root, "verification/unresolved-authority.json")),
+            "openpine.unresolved_authority_registry.v1",
+        )
+        declared = {r["case_id"]: r for r in registry["rows"]}
+        if len(declared) != len(registry["rows"]) or not set(pending) <= declared.keys():
+            raise ValueError("saved gap is not declared in the authority registry")
+        if {r["case_id"] for r in authority} != set(pending) or len(authority) != len(pending):
+            raise ValueError("saved gap provenance inventory changed")
+        details = {r["id"]: r for r in nonpass}
+        for row in authority:
+            if row != declared[row["case_id"]] or row["authority_status"] != "UNVERIFIED":
+                raise ValueError("saved authority record differs from registry")
+            proof = row["provenance"]
+            if (
+                set(proof) != {"path", "sha256"}
+                or hashlib.sha256(_under(host_root, proof["path"]).read_bytes()).hexdigest()
+                != proof["sha256"]
+            ):
+                raise ValueError("saved authority provenance changed")
+            detail = details.get(row["case_id"], {})
+            if (
+                detail.get("status") != "RUNTIME_MISMATCH"
+                or detail.get("authority") != "UNVERIFIED"
+                or detail.get("first_divergence") is None
+            ):
+                raise ValueError("saved gap does not explain its actual unresolved mismatch")
+            deferred[digest(row)] = row
+    if not evidence_units.keys() <= declared_units:
+        raise ValueError("saved row evidence is outside the frozen assignment scope")
+    unresolved = sorted(deferred.values(), key=digest)
+    if index["unresolved_authority_cases"] != unresolved:
+        raise ValueError("saved aggregate authority inventory contradicts groups")
+    passed = sum(g["status"] == "PASS" and not g["reasons"] for g in observed.values())
+    provisional = sum(g["status"] == "TEMPORARY_UNVERIFIED" for g in observed.values())
+    if index["passed_group_paths"] != passed or index["deferred_group_paths"] != provisional:
+        raise ValueError("saved group counts contradict outcomes")
+    review = index["denominator_review"]
+    denominator_ok = (
+        review["ok"] is True
+        and review["locked_count"] == len(frozen)
+        and review["current_count"] == len(rows)
+        and not review["added"]
+        and not review["removed"]
+        and not review["contract_changed"]
+        and review["catalog_identities_changed"] is False
+        and review["denominator_kind_changed"] is False
+    )
+    strict = denominator_ok and passed == len(expected)
+    diagnostic = (
+        denominator_ok
+        and bool(unresolved)
+        and passed + provisional == len(expected)
+        and index["ok"] is False
+        and index["all_declared_runs_passed"] is False
+        and index["full_builtin_expected_accepted"] is False
+        and index["full_stage2_accepted"] is False
+        and index["tradingview_verified"] is False
+    )
+    return {
+        "ok": index["ok"] is True and index["all_declared_runs_passed"] is True and strict,
+        "diagnostic_provisional_ok": index["diagnostic_provisional_ok"] is True and diagnostic,
+    }

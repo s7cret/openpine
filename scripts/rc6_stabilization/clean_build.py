@@ -4,6 +4,7 @@
 Build attempts are retained outside the checkout. Ignored build/lib, egg-info,
 and old wheels are never inputs and are never deleted by this owner.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -77,9 +78,13 @@ def source_package_tree(source: Path) -> dict:
 def _compare(expected: dict[str, str], actual: dict[str, str], label: str) -> None:
     missing = sorted(expected.keys() - actual.keys())
     extra = sorted(actual.keys() - expected.keys())
-    changed = sorted(name for name in expected.keys() & actual.keys() if expected[name] != actual[name])
+    changed = sorted(
+        name for name in expected.keys() & actual.keys() if expected[name] != actual[name]
+    )
     if missing or extra or changed:
-        raise ValueError(f"{label} package tree mismatch: missing={missing}, extra={extra}, changed={changed}")
+        raise ValueError(
+            f"{label} package tree mismatch: missing={missing}, extra={extra}, changed={changed}"
+        )
 
 
 def verify_wheel_tree(source: Path, wheel: Path, *, expected: dict | None = None) -> dict:
@@ -101,7 +106,7 @@ def verify_wheel_tree(source: Path, wheel: Path, *, expected: dict | None = None
                 continue
             if not name.startswith(module + "/"):
                 raise ValueError("wheel contains an unexpected runtime payload: " + name)
-            payload[name[len(module) + 1:]] = _hash(archive.read(name))
+            payload[name[len(module) + 1 :]] = _hash(archive.read(name))
     _compare(expected["files"], payload, "wheel")
     return expected
 
@@ -145,7 +150,9 @@ def stage_git_source(source: Path, attempt: Path) -> Path:
         raise ValueError("clean source build requires a clean Git checkout")
     attempt.mkdir(parents=True, exist_ok=False)
     archive_path = attempt / "source.tar"
-    subprocess.check_call([git, "-C", str(source), "archive", "--format=tar", "--output=" + str(archive_path), head])  # noqa: S603
+    subprocess.check_call(  # noqa: S603 -- exact committed archive and Git executable
+        [git, "-C", str(source), "archive", "--format=tar", "--output=" + str(archive_path), head]
+    )
     destination = attempt / "source"
     destination.mkdir()
     with tarfile.open(archive_path) as archive:
@@ -167,17 +174,24 @@ def stage_git_source(source: Path, attempt: Path) -> Path:
             with content, target.open("xb") as output:
                 shutil.copyfileobj(content, output)
             target.chmod(0o755 if member.mode & 0o111 else 0o644)
-    if query("rev-parse", "HEAD") != head or query("status", "--porcelain", "--untracked-files=all"):
+    if query("rev-parse", "HEAD") != head or query(
+        "status", "--porcelain", "--untracked-files=all"
+    ):
         raise ValueError("checkout changed during clean source staging")
-    _write_new(attempt / "source.json", {
-        "source_commit": head,
-        "archive_sha256": _hash(archive_path.read_bytes()),
-        "package_tree": source_package_tree(destination),
-    })
+    _write_new(
+        attempt / "source.json",
+        {
+            "source_commit": head,
+            "archive_sha256": _hash(archive_path.read_bytes()),
+            "package_tree": source_package_tree(destination),
+        },
+    )
     return destination
 
 
-def build_wheel(source: Path, outdir: Path, *, no_isolation: bool = False, attempt: Path | None = None) -> dict:
+def build_wheel(
+    source: Path, outdir: Path, *, no_isolation: bool = False, attempt: Path | None = None
+) -> dict:
     """Use a new tracked-source build attempt and reject any package drift."""
     source = source.resolve(strict=True)
     outdir = outdir.absolute()

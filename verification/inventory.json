@@ -22,8 +22,6 @@
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "backtest_engine": {
-    "count": 1241,
-    "deselected": 0,
     "added_nodeids": [
       "tests/unit/test_json_checkpoint_admission.py::test_json_export_rejects_nonfinite_mutated_broker_equity[-inf]",
       "tests/unit/test_json_checkpoint_admission.py::test_json_export_rejects_nonfinite_mutated_broker_equity[inf]",
@@ -53,6 +51,8 @@
       "deselected": 0,
       "sha256": "sha256:3c1f6fb4eafb76548e2e0efee4a780544329c6b066dfc0c6012177e045b3be30"
     },
+    "count": 1241,
+    "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "marketdata-provider": {
@@ -389,6 +389,12 @@
       "rc6_tests/test_rc6_evidence_archive.py::test_unsafe_scope_preserves_all_inputs[source]",
       "rc6_tests/test_rc6_evidence_archive.py::test_unsafe_scope_preserves_all_inputs[symlink-file]",
       "rc6_tests/test_rc6_evidence_archive.py::test_unsafe_scope_preserves_all_inputs[symlink-root]",
+      "rc6_tests/test_rc6_evidence_index.py::test_builtin_expected_real_cli_requires_semantic_success[binding-1]",
+      "rc6_tests/test_rc6_evidence_index.py::test_builtin_expected_real_cli_requires_semantic_success[malformed-1]",
+      "rc6_tests/test_rc6_evidence_index.py::test_builtin_expected_real_cli_requires_semantic_success[missing-1]",
+      "rc6_tests/test_rc6_evidence_index.py::test_builtin_expected_real_cli_requires_semantic_success[pass-0]",
+      "rc6_tests/test_rc6_evidence_index.py::test_builtin_expected_real_cli_requires_semantic_success[trace-1]",
+      "rc6_tests/test_rc6_evidence_index.py::test_builtin_expected_real_cli_requires_semantic_success[unassigned-1]",
       "rc6_tests/test_rc6_evidence_index.py::test_only_three_pinned_v5_numeric_authority_gaps_can_be_deferred",
       "rc6_tests/test_rc6_evidence_index.py::test_provisional_cli_exit_does_not_forge_full_acceptance",
       "rc6_tests/test_rc6_evidence_index.py::test_provisional_numeric_group_never_counts_as_semantic_pass",
@@ -926,6 +932,56 @@
       "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[required-parameters]",
       "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_removed_parameter_metadata_cannot_remain_green[type-parameters]",
       "rc6_tests/test_rc6_stage2_audit_gate_mutations.py::test_wrong_overload_identity_is_unverified",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_compile_divergence_cannot_be_runtime_authority_debt[1]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_compile_divergence_cannot_be_runtime_authority_debt[False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-compile-type]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-compile]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-fourth]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-missing-proof]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-provenance]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-registry]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-runtime]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[False-valid]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-compile-type]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-compile]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-fourth]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-missing-proof]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-provenance]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-registry]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-runtime]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_diagnostic_cli_requires_exact_declared_authority[True-valid]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[empty-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[empty-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[failed-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[failed-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[missing-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[missing-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[missing-provenance-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[missing-provenance-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[unknown-gap-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[unknown-gap-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[failed-assigned-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[failed-assigned-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-assigned-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-assigned-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-unassigned-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-unassigned-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-divergence-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-divergence-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-extra-field-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-extra-field-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-missing-field-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-missing-field-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-scalar-divergence-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-scalar-divergence-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-type-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-type-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[pass-labels-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[pass-labels-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[row-credit-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[row-credit-True]",
       "rc6_tests/test_rc6_stage2_remaining.py::test_remaining_reader_cannot_bypass_deleted_binding",
       "rc6_tests/test_rc6_stage2_remaining.py::test_resealed_matrix_and_lock_cannot_rewrite_original_items[owner]",
       "rc6_tests/test_rc6_stage2_remaining.py::test_resealed_matrix_and_lock_cannot_rewrite_original_items[promoted-status]",
@@ -944,7 +1000,7 @@
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11623,
+    "count": 11679,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "nodeid_aliases": {
@@ -963,6 +1019,12 @@
         "    assert True",
         "]"
       ],
+      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[skip]": [
+        "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest",
+        "def test_value():",
+        "    pytest.skip(\"synthetic verifier negative case\")",
+        "]"
+      ],
       "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[teardown-error]": [
         "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest",
         "@pytest.fixture(autouse=True)",
@@ -971,12 +1033,6 @@
         "    raise ValueError(\"teardown\")",
         "def test_value():",
         "    assert True",
-        "]"
-      ],
-      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[skip]": [
-        "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest",
-        "def test_value():",
-        "    pytest.skip(\"synthetic verifier negative case\")",
         "]"
       ]
     }
@@ -1209,8 +1265,6 @@
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "pinelib": {
-    "count": 5198,
-    "deselected": 0,
     "added_nodeids": [
       "tests/test_committed_reference_closure.py::test_new_runtime_rejects_resealed_committed_edge_before_publication[5]",
       "tests/test_committed_reference_closure.py::test_new_runtime_rejects_resealed_committed_edge_before_publication[6]",
@@ -1244,6 +1298,8 @@
       "deselected": 0,
       "sha256": "sha256:4b216d1a399cae2b4beebafcc09ee7a87c7f4f828fd883312b6388cffe8e0379"
     },
+    "count": 5198,
+    "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   }
 }

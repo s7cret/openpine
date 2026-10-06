@@ -7,6 +7,7 @@ from pathlib import Path
 
 from openpine.verification.identity import read_json, seal, verify
 from openpine.verification.review_ledger import read_review_ledger
+from openpine.verification.evidence_index import checked_saved_index_verdict
 
 
 def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
@@ -43,18 +44,18 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
         for key in ("pine2ast", "ast2python", "pinelib")
     ):
         raise ValueError("builtin index belongs to a different source revision")
-    diagnostic_provisional = (
-        builtin_index.get("diagnostic_provisional_ok") is True
-        and builtin_index["ok"] is False
-        and builtin_index["all_declared_runs_passed"] is False
-        and builtin_index["full_builtin_expected_accepted"] is False
-        and builtin_index["full_stage2_accepted"] is False
-        and builtin_index["tradingview_verified"] is False
-        and bool(builtin_index["unresolved_authority_cases"])
-        and builtin_index["required_group_paths"] == len(builtin_index["groups"])
-        and builtin_index["passed_group_paths"] == sum(group["status"] == "PASS" for group in builtin_index["groups"])
-        and builtin_index["deferred_group_paths"] == sum(group["status"] == "TEMPORARY_UNVERIFIED" for group in builtin_index["groups"])
-        and all(group["status"] in {"PASS", "TEMPORARY_UNVERIFIED"} for group in builtin_index["groups"])
+    requirements = {row["id"] for row in remaining_binding["unclosed_requirements"]}
+    requirements.update(row["id"] for row in matrix["items"])
+    if any(
+        row.get("requirement_id") not in requirements
+        for row in builtin_index.get("unresolved_authority_cases", [])
+    ):
+        raise ValueError("saved authority gap names an unknown requirement")
+    verdict = checked_saved_index_verdict(
+        builtin_index,
+        root,
+        read_json(root / "verification/stage2-evidence-plan.json"),
+        surface_lock,
     )
     covered, conditional, missing = [], [], []
     for row in builtin_index["rows"]:
@@ -101,11 +102,13 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
             "work_item_count": len(matrix["items"]),
             "remaining_spec_binding": remaining_binding,
             "count_policy": matrix["count_policy"],
-            "builtin_index_replay_passed": builtin_index["ok"],
-            "diagnostic_provisional_ok": diagnostic_provisional,
+            "builtin_index_replay_passed": verdict["ok"],
+            "builtin_index_projection_verified": True,
+            "builtin_index_raw_observations_replayed": False,
+            "diagnostic_provisional_ok": verdict["diagnostic_provisional_ok"],
             "unresolved_authority_cases": builtin_index.get("unresolved_authority_cases", []),
             "deferred_group_paths": builtin_index.get("deferred_group_paths", 0),
-            "ok": builtin_index["ok"],
+            "ok": verdict["ok"],
             "installed_callable_denominator": builtin_index["denominator"],
             "direct_signatures": builtin_index["direct_signatures"],
             "direct_with_bounded_examples_all_paths": len(covered),

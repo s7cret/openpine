@@ -67,8 +67,12 @@ def historical_unavailable_rows(repo: CatalogRepository) -> list[dict]:
                 **{
                     key: row[key]
                     for key in (
-                        "pine_version", "symbol_id", "overload_id", "call_form",
-                        "contract", "contract_hash",
+                        "pine_version",
+                        "symbol_id",
+                        "overload_id",
+                        "call_form",
+                        "contract",
+                        "contract_hash",
                     )
                 },
                 "spellings": [symbol.removeprefix("pine:function:")],
@@ -76,7 +80,10 @@ def historical_unavailable_rows(repo: CatalogRepository) -> list[dict]:
                 "status": "UNAVAILABLE",
                 "reasons": ["HISTORICAL_CATALOG_UNAVAILABLE"],
                 "target_binding": None,
-                "qualifier_contract": {"status": "UNVERIFIED", "reasons": ["HISTORICAL_CATALOG_UNAVAILABLE"]},
+                "qualifier_contract": {
+                    "status": "UNVERIFIED",
+                    "reasons": ["HISTORICAL_CATALOG_UNAVAILABLE"],
+                },
                 "oracle": "missing",
             }
         )
@@ -116,7 +123,6 @@ def binding_reasons(binding, version: int, *, source_parameters=None) -> list[st
     return sorted(set(reasons))
 
 
-
 def qualifier_binding_evidence(binding, version: int, source_parameters) -> dict:
     """Qualifier-domain evidence, not whole-type compatibility or a runtime oracle.
 
@@ -126,9 +132,13 @@ def qualifier_binding_evidence(binding, version: int, source_parameters) -> dict
     """
     if not isinstance(binding, TargetCallBinding):
         return {"status": "UNVERIFIED", "reasons": ["COMPILER_BINDING_MISSING"]}
-    reasons = list(audit_pinelib_qualifier_binding(
-        binding, source_parameters, pine_version=version,
-    ))
+    reasons = list(
+        audit_pinelib_qualifier_binding(
+            binding,
+            source_parameters,
+            pine_version=version,
+        )
+    )
     if not reasons:
         status = "COMPATIBLE"
     elif all(code.endswith("UNVERIFIED") for code in reasons):
@@ -136,6 +146,7 @@ def qualifier_binding_evidence(binding, version: int, source_parameters) -> dict
     else:
         status = "INCOMPATIBLE"
     return {"status": status, "reasons": reasons}
+
 
 def build_builtin_surface(*, target=None) -> dict:
     """Enumerate every installed producer signature, without symbol-only fallbacks."""
@@ -214,7 +225,9 @@ def build_builtin_surface(*, target=None) -> dict:
                         "reasons": reasons,
                         "target_binding": binding.to_dict() if binding else None,
                         "qualifier_contract": qualifier_binding_evidence(
-                            binding, version, contract["parameters"],
+                            binding,
+                            version,
+                            contract["parameters"],
                         ),
                         "oracle": "missing",
                     }
@@ -232,7 +245,9 @@ def build_builtin_surface(*, target=None) -> dict:
             "denominator_kind": "installed_plus_sealed_historical_unavailable_signatures",
             "rows": values,
             "counts": dict(Counter(row["status"] for row in values)),
-            "qualifier_counts": dict(Counter(row["qualifier_contract"]["status"] for row in values)),
+            "qualifier_counts": dict(
+                Counter(row["qualifier_contract"]["status"] for row in values)
+            ),
             "qualifier_evidence_scope": "domain_inclusion_not_full_types_defaults_or_numerical_semantics",
             "full_catalog_verified": False,
             "tradingview_verified": False,
@@ -336,6 +351,7 @@ def builtin_evidence_report(
                 "failed": len(examples) - passed,
                 "all_assigned_passed": bool(examples) and passed == len(examples),
             },
+            "ok": report["ok"] is True and bool(examples) and passed == len(examples),
             "rows": rows,
             "denominator": len(rows),
             "signatures_with_passing_examples": covered,

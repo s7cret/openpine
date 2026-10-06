@@ -512,8 +512,8 @@ jobs:
         path: ${{ runner.temp }}/evidence/
         if-no-files-found: error
         retention-days: 7
-  strict-language:
-    name: RC6 strict-language (${{ matrix.python }})
+  language-provisional:
+    name: RC6 language-provisional (${{ matrix.python }})
     needs:
     - prepare
     - plan
@@ -557,7 +557,7 @@ jobs:
          f.write('EXACT_HOST='+r['roots']['openpine']+'\n')
          f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
         PYROOT
-    - name: Strict language verdict with accepted UNVERIFIED RC6 debt (not acceptance)
+    - name: Diagnostic provisional language verdict; unresolved RC6 debt stays open
       shell: bash
       run: |-
         set -euo pipefail
@@ -583,7 +583,7 @@ jobs:
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
       with:
-        name: rc6-strict-language-${{ matrix.python }}-${{ github.run_id }}
+        name: rc6-language-provisional-${{ matrix.python }}-${{ github.run_id }}
         path: ${{ runner.temp }}/evidence/
         if-no-files-found: error
         retention-days: 7

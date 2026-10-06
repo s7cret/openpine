@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import cast
 
 from openpine.verification.identity import read_json, write_json
 
@@ -56,10 +57,11 @@ def main(argv=None) -> int:
     stage.add_argument("--stack-root", type=Path, required=True)
     stage.add_argument("--evidence", type=Path, required=True)
     from openpine.verification.execution_cli import add_commands, run_command
+
     add_commands(commands)
     args = parser.parse_args(argv)
     if args.command.startswith("test-"):
-        return run_command(args)
+        return cast(int, run_command(args))
     if args.command == "stage1":
         from openpine.verification.stage_gate import run_stage_gate
 
@@ -151,7 +153,10 @@ def main(argv=None) -> int:
         and report.get("full_stage2_accepted") is False
         and report.get("tradingview_verified") is False
     )
-    return 0 if report.get("ok", True) or provisional else 1
+    # Inspection commands have no semantic verdict; strict commands must
+    # supply an explicit successful owner result.
+    inspection = args.command in {"capabilities", "builtin-surface", "stage2-1-lock"}
+    return 0 if inspection or report.get("ok") is True or provisional else 1
 
 
 if __name__ == "__main__":
