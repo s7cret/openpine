@@ -7981,51 +7981,96 @@
           {
             "component": "openpine",
             "path": "docs/RC6_REVIEW_36.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "44a91eb52558a7359e61e72428e169893cb22f74",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/stage2-remaining-matrix.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "be275de398ba34ba0d4322b686e3c3ec1626b08a",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/stage_gate.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "209274dda6d5a7790d9224231d19b53c38d530da",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/review_ledger.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "103e012ee96e72462b6906ebf279bd9e0415a162",
+            "git_object": {
+              "oid": "6e674bbc5512d0527e80ab0312e0bf6f41aefeb4",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_review_ledger.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "84406a23dd9c432f1ee52525acbe545a7e0f214a",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_stage2_remaining.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "b6dd8097317f25c44f3e6dd34732a8b1331e1983",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_review_admission.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "1d43e7ca02667373257313c3a510881dc11d2d3d",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/stage2-current-acceptance.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d73b0515a70fa8a45452d78b199782ec0a93644e",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/stages.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "87b1bab8532b4162ac551b44d8fdd61dae4572f1",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8034,34 +8079,64 @@
           {
             "component": "openpine",
             "path": "docs/RC6_LIFECYCLE_SOURCES.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e3e6b36a39a04baf09335bb7723b7b7715eb2628",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/rc6-branch-reconciliation-register.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "f6ba25c3a84b2139fb4bc7328ae9acd0f05b8cd7",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_ci.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e21960503d5cb79c81b58c634bc818b15d3e77e7",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_reconciliation_inventory.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "557ac17d2524ba173844614eb8757b031b22d770",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_clean_build.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "9ecd69e9b628d6ebb76f0237df2653d6b3798a15",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_python_support.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d556c892ae5bcd63b2061e2473b7863642a0c545",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
@@ -8082,41 +8157,76 @@
           {
             "component": "openpine",
             "path": "verification/execution-policy.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "95424fecf77658b6faa79880cc3c9b13660f22c7",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_preflight.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "0e09251fab65e22ca5ab8a034e2b9c6bffdb2a9b",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": ".github/workflows/rc6-preparation.yml",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d356061c549b4316b354788ccaa68f8e2e7e8961",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_python_support.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d556c892ae5bcd63b2061e2473b7863642a0c545",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_execution_ci.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a62dbc9b566c3b7a6780832a0c087d0744c924c3",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_worker_admission.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a2db55cbf64e11f8a37563b157b9cacb8272d773",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/platform-inventory.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d01d8523e538e668111efcf059e20dd1e8aca7d6",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8125,46 +8235,86 @@
           {
             "component": "openpine",
             "path": "openpine/verification/stage_gate.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "209274dda6d5a7790d9224231d19b53c38d530da",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_campaign.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a98ebffa02937375409244f3156a5317b854044e",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_owner_launch.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "04e629a038d95010578583465f56031b9f928459",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/execution-policy.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "95424fecf77658b6faa79880cc3c9b13660f22c7",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_owner_composition.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "66840e86b311477642d4ba834deecf3f553768d1",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_owner_producer_launch.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "c7f84fbea1ffa2cbd80fea3c9046d6214c673962",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_execution_fragments.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "6421efad4d6d1280ed1cc09bf4da18a3374a3207",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/stage2-current-acceptance.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d73b0515a70fa8a45452d78b199782ec0a93644e",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8173,41 +8323,76 @@
           {
             "component": "openpine",
             "path": "openpine/verification/execution_binding.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "c234dd518795f0b72f8205253aa1145a47761f16",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_evidence.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3b07ce85430a69e6591c9e3a80b01914208aa2ff",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_resources.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e5e2288485f44c1f2d6daee24207b43b48822990",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_owner_portability.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "2f8f8caa01f9094de274efd6893a636c82f40474",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_private_retention.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "99b4be26d230b3e2da43e83215d82765b7d21e68",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_execution_disk_storage.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3ebb40d25ae719bf839181c963a0762462aa483d",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/execution-policy.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "95424fecf77658b6faa79880cc3c9b13660f22c7",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8216,31 +8401,56 @@
           {
             "component": "openpine",
             "path": "openpine/verification/execution_plan.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "87f1a0ece87e08f6b6f775cb041c8289d72617eb",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/execution-policy.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "95424fecf77658b6faa79880cc3c9b13660f22c7",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_execution_platform.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "84b2fb0125f08ba4de2424f3b9757f63c90929fd",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_execution_coordination.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "4af727966bb6f9091fa58e3284fd1daa55c78dae",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/platform-inventory.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d01d8523e538e668111efcf059e20dd1e8aca7d6",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8249,31 +8459,56 @@
           {
             "component": "openpine",
             "path": "openpine/verification/execution_performance.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "73abb594b0d78fcce8396c3387741d784a568f8d",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_resources.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e5e2288485f44c1f2d6daee24207b43b48822990",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_performance_scope.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3a737841e66149ccbae232c7e8d55ec0e550d171",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_performance_policy_4gib.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "984d5f0c5a97466aaeb9229933a22645e7b5e141",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/execution-policy.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "95424fecf77658b6faa79880cc3c9b13660f22c7",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8282,46 +8517,86 @@
           {
             "component": "openpine",
             "path": "openpine/verification/stage2_remaining.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "102c2676e14b449668e2a11b5f1ffb0466d40c60",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": ".github/workflows/rc6-native.yml",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d722f228d55e0f57c1f1153e43040e4826ed60cd",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/stage_gate.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "209274dda6d5a7790d9224231d19b53c38d530da",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_stage2_audit_gate_mutations.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3318425bd177819eae51fde8cc94bc15e53b0a7c",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_stage2_language.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8874edd127321eb94ffdead6cce375afc0c53d0c",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "tests/test_stage_gate_actual_review_failclosed.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "f3a5fc2dea71a234105d1cc9223ccf4c1fa40810",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/stage2-current-acceptance.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d73b0515a70fa8a45452d78b199782ec0a93644e",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/unresolved-authority.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "398e856d18d551a9b4244d5adee585e2293f0c10",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8330,46 +8605,86 @@
           {
             "component": "pine2ast",
             "path": "pine2ast/catalog",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "502e482f8de47314d7b68979f02617d043118bd6",
+              "type": "tree"
+            }
           },
           {
             "component": "pine2ast",
             "path": "pine2ast/hardening/stage2_10_language_publication.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "ca7738cef17605680883da2e80857b1f0cc13ffe",
+              "type": "blob"
+            }
           },
           {
             "component": "ast2python",
             "path": "ast2python/target_data",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "3042dc65c7e70f3616e510ef0a6e6d3a7ee78b1b",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/stage2_catalog.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "f253f075e0c6917a66a20a05a960ec3873e319d9",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "pine2ast",
             "path": "tests/stage3/test_catalog_static_completeness.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "b16392d81ff2d55b838b1d46b55ee999529c7261",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_stage21_catalog.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "2e83fec7f4647a112def3bba5db0707ced052288",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/stage2-callable-lock.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8da419cd99583285cea29d534f4b101d5fdd2958",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/stage2-1-authority.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "c82f78a8fa8136808b9ff67c9eb6367e0088b343",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8378,51 +8693,96 @@
           {
             "component": "pine2ast",
             "path": "pine2ast/catalog",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "502e482f8de47314d7b68979f02617d043118bd6",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/input",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "698abf5ea64676c6959616cc0bec663e2ba3ba7d",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/runtime/effective_config.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "2ed48203592753d93316e00ced841cb2a99ec981",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "pine2ast",
             "path": "tests/test_stage21_input_contract_closure.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "dcbc9778f5f3719417dc9da460f95eceb6f6ee33",
+              "type": "blob"
+            }
           },
           {
             "component": "ast2python",
             "path": "tests/test_stage21_input_contract_closure.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "f32c514212771ec030d25829dab09e2a295f4a60",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_stage21_input_contract_closure.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "bdcece3b5db5ae9f12429a95a42ed45b9a988e48",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_inputs.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d0c5a13a95483e9b10c916007d4ff539d54cd444",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_optimizer_inputs.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8cd8fc7110b115eac9e5c2298fd6d74a4bb78974",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/frontend-input-implicit-independent-review.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "da3342f213ee5c64445ad620fa0ecf9a01d5b220",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8431,41 +8791,76 @@
           {
             "component": "pine2ast",
             "path": "pine2ast/catalog",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "502e482f8de47314d7b68979f02617d043118bd6",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/abi",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "0fac473db4ec35e01192a30324c385a9a9fecaae",
+              "type": "tree"
+            }
           },
           {
             "component": "ast2python",
             "path": "ast2python/emission",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "f479084f153c7eab4a63669cad28687726e007d1",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "pine2ast",
             "path": "tests/stage2/test_stage2_cat04_binary_search_authority.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "eec2da68992f0e4a0bac66aad61ac6fa80bcfea4",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_stage2_cat04_binary_search_expected.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "2bc489d7f45bfccfa3014b28832e997016352c3e",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_reference_type_identity.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "f755f1d34ccc965e345d1fb42ef44cd6cda5450d",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/array-search-independent-source-review.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8cd6fd44cfc92ba20129bc4cddf403d1d0a54b86",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8474,61 +8869,116 @@
           {
             "component": "pine2ast",
             "path": "pine2ast/libraries/import_version_matrix.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "6cbc3cb0d06a8e64a49c7dabe5c382261c72243f",
+              "type": "blob"
+            }
           },
           {
             "component": "pine2ast",
             "path": "pine2ast/libraries",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "ed791e47d54dd80e0d919ea2ed43f564c992fd3f",
+              "type": "tree"
+            }
           },
           {
             "component": "ast2python",
             "path": "ast2python/artifacts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "ee8ed2f5b4e0e43cb27e55717409b29a84f0c05c",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/runtime",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "fda50afce09e6b3f83defd2dba25732cfa949cc5",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "pine2ast",
             "path": "tests/stage2/test_stage2_import_version_matrix.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "2252cb539306db513947c70a33a95a82480b8b0c",
+              "type": "blob"
+            }
           },
           {
             "component": "pine2ast",
             "path": "tests/test_locked_library_linking.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "4e1da5828bd1f4804bdc53781aa19b21666d3fa7",
+              "type": "blob"
+            }
           },
           {
             "component": "pine2ast",
             "path": "tests/test_typed_library_linking.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "56b4fe9a0c141d1ad8ad2adb418ab31c10e14955",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_library_imports.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a2e2b43f82da41b08d7fa703171819f49db2ab77",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_consumer_library_api.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "03739426342e092601c4eaed8a9a9a14c2f34fa7",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_STAGE2_LIBRARY_METHODS.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3be0a10342544dc73eef155e4f9d73492ad7ee30",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "docs/RC6_STAGE2_CONSUMER_LIBRARIES.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a3795386700476c39f104911474bd027e35791ed",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8537,41 +8987,76 @@
           {
             "component": "pine2ast",
             "path": "pine2ast/policy",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+            "git_object": {
+              "oid": "0d5f01cfe76273ddd079ada7abd86ec3c6e55575",
+              "type": "tree"
+            }
           },
           {
             "component": "ast2python",
             "path": "ast2python/emission",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "f479084f153c7eab4a63669cad28687726e007d1",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/runtime",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "fda50afce09e6b3f83defd2dba25732cfa949cc5",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "pinelib",
             "path": "tests/test_stage2_origin_div_opcodes.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "5b6ff747a6dfb97f94fe26e089336d327589af8d",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_stage2_origin_range_opcodes.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "99957856e7638f7215319ba68d7523fd0bb10fad",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_mixed_callable_families.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "89a5f60a1ff62a57d3899f0150570854b9f87370",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/semantic-wave-inventory-independent-review.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "090b1a18bbfb57ce81c9b1281ec270d763b3b63e",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8580,56 +9065,106 @@
           {
             "component": "pinelib",
             "path": "pinelib/runtime",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "fda50afce09e6b3f83defd2dba25732cfa949cc5",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/reference",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "d6cbb83a2dd446f16ef58a34c0204b4628b051d2",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/state/checkpoint.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "a919d0a3db5b97b8f1d5c53c54158d9af720dca0",
+              "type": "blob"
+            }
           },
           {
             "component": "ast2python",
             "path": "ast2python/artifacts/nominal_registry.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "60503a0c843b55a36db830e95e28cea2978a81d3",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "pinelib",
             "path": "tests/test_language_scopes_once.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "c0136c755ce5b492bf9b5135b2799015754cbbb8",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_once_fill_recalculation.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "e9ac9013687220d88129593a19182185447b355b",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_stage24_reference_lifecycle.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "ab1fcb71188d1ca038cf69e705bbfd99ee9a0c9e",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_lifecycle.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a43b91fe00239106bcc9ff1dd503f90ec88ef25a",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/language-state-inventory-review.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "ad0fd8702edf0124292be6b645a5a2eff556f6bf",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/stage2-remaining-matrix.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "be275de398ba34ba0d4322b686e3c3ec1626b08a",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8638,46 +9173,86 @@
           {
             "component": "pinelib",
             "path": "pinelib/reference",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "d6cbb83a2dd446f16ef58a34c0204b4628b051d2",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/state",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "64ab852d79841ec4e1f78bc6761df53f77cea7c8",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/runtime",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "fda50afce09e6b3f83defd2dba25732cfa949cc5",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "pinelib",
             "path": "tests/test_reference_candidate_regressions.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "051f8f70b796befa087805f206f177636889d343",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_compiled_reference_storage.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "33589441258f8ace47ec356cfb0d86abb5871214",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_storage_decoder_degeneracies.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "2136a51e03591d58718a0661eff97c1d8ef8364d",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_checkpoint_na_roundtrip.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "0e389d113d1611947a1d6d46591e0af25d3c985c",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/language-state-execution-review.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "b49fc79d541f01d2e9735fe61d84e3a1aef8741a",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8686,56 +9261,116 @@
           {
             "component": "pinelib",
             "path": "pinelib/ta",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "d28ad7c17135270f87a366d39839b2ecd32a9afc",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
-            "path": "pinelib/math",
-            "scope": "seed_reference_only"
+            "path": "pinelib/abi/math.py",
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "13b2cfc6cd7d979a6b4f4683332f155ce5916fd2",
+              "type": "blob"
+            }
+          },
+          {
+            "component": "pinelib",
+            "path": "pinelib/builtins/math.py",
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "9748aaa0ad859206c84454d8e516f2c7ade9fecf",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/builtins.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a822f3d1a12e6306b670b1706f597b7d8d162104",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/stage2_remaining.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "102c2676e14b449668e2a11b5f1ffb0466d40c60",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "pinelib",
             "path": "tests/test_builtin_stateful_oracles.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "8950bc264824fccac5f9128833ec14380f0fcf60",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_builtin_expected.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "0f8055123a571a174e9f033491ad5f5c164e74ec",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_builtin_capabilities.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "230591a04a20302fd563112a2b3c8ebf1bcb8b66",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/stage2-evidence-plan.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d716fef0b6316118a89a632762a7ed94a5b48814",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/builtin-assignment-locks",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e27f5d6129d9022c8a0a9bcd01f2057f99ce4ccf",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/stage2-callable-lock.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8da419cd99583285cea29d534f4b101d5fdd2958",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8744,46 +9379,96 @@
           {
             "component": "pinelib",
             "path": "pinelib/ta",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "d28ad7c17135270f87a366d39839b2ecd32a9afc",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
-            "path": "pinelib/string",
-            "scope": "seed_reference_only"
+            "path": "pinelib/abi/string.py",
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "efcec3389f511346011b91c27404a0133c8333e4",
+              "type": "blob"
+            }
+          },
+          {
+            "component": "pinelib",
+            "path": "pinelib/builtins/string.py",
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "b50bb51f5cdcc3fa0896a39f81c2e19d11da9192",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "pinelib",
             "path": "tests/test_tsi_state_lifecycle.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "cf1314141500f3966b8eb783758eeab9351a4cd1",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_ema_state_lifecycle.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "74df730260b68c09453b92819332c01fb48508bf",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_builtin_expected.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "0f8055123a571a174e9f033491ad5f5c164e74ec",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/unresolved-authority.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "398e856d18d551a9b4244d5adee585e2293f0c10",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/stage2-remaining-matrix.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "be275de398ba34ba0d4322b686e3c3ec1626b08a",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/builtin-numeric-closure-v1/lock.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "381c6317a131f5f055b69f6ba010fb7dcddca2bc",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8792,51 +9477,96 @@
           {
             "component": "openpine",
             "path": "openpine/runtime/request_requirements.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "2201a280b18a6507033b364aa5148de5029df96d",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/runtime/request_data.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "dbe8acb0816444a3b7e51de38e7245042a0ead7c",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/runtime/request_transport.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "b5c3e1471e786e1c53b04e3114f7744e7b1e166e",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/request",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "940fe71ddd85c35e8c483feceb02546e9b68bfe9",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_request_preflight.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "583b6c33ad29ce6d9999639c08ee5ea0b5bada81",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_nested_integration.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e851170b6a5059fe5e439bc1874f6ea1d16793e6",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_compiled_nested_requests.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "10b6d547b7d9b3b92ac12e107ef08fb7febca79a",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_stage4_request_engine.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "2fd0d121e60c9c53a880d7ab095dd1d43d276f32",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_REQUESTS_CHECKPOINT_PUBLICATION.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "41f671efd80e907754afff6873eb973be4d127e0",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8845,46 +9575,86 @@
           {
             "component": "pinelib",
             "path": "pinelib/request/alignment.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "292c43b68069eccd298bbfa68286d50a4795f6cf",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/time/calendar.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "caec739fc070418c436a68075d6f66e05276347e",
+              "type": "blob"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "marketdata_provider/timeframes",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "d5880b08365c1a508086171bb2660b20db0c79f7",
+              "type": "tree"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "marketdata_provider/canonical",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "f6cadb4ccee835593618fe4a30551ccfb4fd647c",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_request_causality.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "54ad229bf7a29810e97a3c880d3755f1711faa76",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_compiled_requests.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "17772c83883e5e35385b761e60d47c5a51fc708a",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "tests/test_stage4_request_engine.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "2fd0d121e60c9c53a880d7ab095dd1d43d276f32",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/stages.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "87b1bab8532b4162ac551b44d8fdd61dae4572f1",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8893,46 +9663,86 @@
           {
             "component": "marketdata-provider",
             "path": "marketdata_provider/canonical",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "f6cadb4ccee835593618fe4a30551ccfb4fd647c",
+              "type": "tree"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "marketdata_provider/cache/local.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "ff96391271d5ce62f61565d3429932f61fd70160",
+              "type": "blob"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "marketdata_provider/streaming",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "9c4ecd7a10d8f8c4f0c6b88fa138d7a05300f9f3",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/runtime/request_data.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "dbe8acb0816444a3b7e51de38e7245042a0ead7c",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_marketdata_boundary.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "48cf070ccf290d29b0327c04ad9727e17aa4ddae",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_chart_metadata.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "874adda60a17c35dfa0fe6552923612de5197367",
+              "type": "blob"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "tests/test_stage_c_storage_streaming.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "3615abcd315688d9f0599198188b95d9432adfe3",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_DATA_UI_BLOCK.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d2e6d253ccab05018f49e063479a209389e16d29",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8941,36 +9751,66 @@
           {
             "component": "marketdata-provider",
             "path": "marketdata_provider/providers/offline.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "f56cc30793ecba9d87bc6fd1718b29ea7a998538",
+              "type": "blob"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "marketdata_provider/store",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "53b5bc4c12bd713c86ef18f0269aca3dbcba7ba6",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "marketdata-provider",
             "path": "tests/test_offline_strict.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "0bc77f620ed1ed21f4091bac4fd22018184f66aa",
+              "type": "blob"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "tests/test_offline_boundary_regressions.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "80babb0b1cd0e33d2a1e5730c4dccdd269610673",
+              "type": "blob"
+            }
           },
           {
             "component": "marketdata-provider",
             "path": "tests/test_offline_cli.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+            "git_object": {
+              "oid": "beda9f2dad99b5cdff67a6f0f842c1b653986241",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_DATA_UI_PUBLICATION_RECEIPT.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "6f6069cd1d5e4f2330f1f3875dee074cc987bb66",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -8979,51 +9819,96 @@
           {
             "component": "backtest_engine",
             "path": "backtest_engine/core/state_snapshot.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "3677fac11099b347940ca326ba998070100fcfce",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/state/checkpoint.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "a919d0a3db5b97b8f1d5c53c54158d9af720dca0",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/runtime/generated_checkpoint.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "b989111c50bd35620cea500a097765aadacc93f6",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine-contracts",
             "path": "openpine_contracts/schemas",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "db1745756516b47466756c9c5d38fbbb95595a3b",
+            "git_object": {
+              "oid": "2bed01a1bac4a0d2d052db362b3043f21d94bfab",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "backtest_engine",
             "path": "tests/unit/test_stage16_realtime_execution_checkpoint.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "2c4db4510cc90a89f471a12a42d55189c5ff2cb8",
+              "type": "blob"
+            }
           },
           {
             "component": "backtest_engine",
             "path": "tests/unit/test_exit_checkpoint_edges.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "63c8c779e293a8124802e7869974d0749e9d4cf6",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_checkpoint_receipts.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "c5acf3cff8623d139b21a81f251f47136b64df97",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_generated_checkpoint.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "06a509d3635d4eec6b38cc39cf95a9fc3bd2de0a",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/host-checkpoint-control-source-review.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "0c55622b0f62d221017022b54b43e808c9fa81c3",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9032,41 +9917,76 @@
           {
             "component": "openpine",
             "path": "openpine/runtime/worker_capabilities.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3777b37a5c93e0d086ca9d4c00ea451c9d947e2d",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/workers",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "f7c0454f86c4940b7e15ff3d56a2665109669030",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/runtime/generated_checkpoint.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "b989111c50bd35620cea500a097765aadacc93f6",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_worker_capabilities.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3cc7a4e61ce4f4bfa4f77aed6a35fc0933b662bb",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_checkpoint_control.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "ed8a01a001166bcdf685acbd1a5ec1d2b490d5f7",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_worker_admission.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a2db55cbf64e11f8a37563b157b9cacb8272d773",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": ".github/workflows/rc6-preparation.yml",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d356061c549b4316b354788ccaa68f8e2e7e8961",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9075,41 +9995,76 @@
           {
             "component": "openpine",
             "path": "openpine/runtime/bulk_result.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "bcea8fa7b9c200f5ffa963251bc236325f85f9e0",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/jobs",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "33df4a47eb0adcec6e33a4d683a6021f75e689a1",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/export",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "4f1e2c3b879648b62a032c8cda9cf51a67e096b5",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_bulk_result_validation.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d884bbcbe1168f00d66cab809ffafd0450387555",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_bulk_result_codec.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "1e7c363742c437e1eb0fe6455a1500d5ed84c841",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_progress.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "bdc4a6fb29110260cba886c5a1c8340f713170e6",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_CLEANUP_EXECUTION_BLOCK.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "bbe24e9bb537b400b4d87f9d2e701287f4ce68c0",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9118,56 +10073,106 @@
           {
             "component": "backtest_engine",
             "path": "backtest_engine/core",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "1820524618d4fb91d76e066fc110a02dc96c5d4f",
+              "type": "tree"
+            }
           },
           {
             "component": "backtest_engine",
             "path": "backtest_engine/broker",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "0153037803113f4076dde9fe9695c9c17df57426",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/runtime/strategy_host.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "02049ea55fb0c2b7fb8dcf45060faa13ae708941",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_strategy_surface.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "1a23d161d3107fa623f770267a9ef1e5316a5bb1",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_entry_risk.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "7623ba959c762356e1016956df0125662ed1fd6c",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_price_entry_exits.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "141c3f038b076b259a62c1e3d9d666c8943797cc",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_exit_price_pairs.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "34871c95d75fa9365695bacbee655873b17c12a8",
+              "type": "blob"
+            }
           },
           {
             "component": "backtest_engine",
             "path": "tests/unit/test_stage12_oca_margin.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "85b83e4783fae7e079e6ae138a5dc409c3a4195f",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_PRICE_ENTRY_EXITS_BLOCK.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "5965485d6ff65acd4438dd8e6e6269dab01362f2",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "docs/RC6_ENTRY_RISK.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "b9de6d629b7e1ab814c2db28775819fa3361b93a",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9176,41 +10181,76 @@
           {
             "component": "pinelib",
             "path": "pinelib/state",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "64ab852d79841ec4e1f78bc6761df53f77cea7c8",
+              "type": "tree"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/runtime",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "fda50afce09e6b3f83defd2dba25732cfa949cc5",
+              "type": "tree"
+            }
           },
           {
             "component": "backtest_engine",
             "path": "backtest_engine/performance",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "cd5f1956f44485e487b138f8ca35c8cbeb81f541",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_resources.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e5e2288485f44c1f2d6daee24207b43b48822990",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_performance_scope.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3a737841e66149ccbae232c7e8d55ec0e550d171",
+              "type": "blob"
+            }
           },
           {
             "component": "ast2python",
             "path": "tests/stage4/test_performance_measurement.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "4c9414bf109d7d4ebb763e458657c37a36578a4e",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_CLEANUP_EXECUTION_BLOCK.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "bbe24e9bb537b400b4d87f9d2e701287f4ce68c0",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9219,36 +10259,66 @@
           {
             "component": "openpine",
             "path": "openpine/compile",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "cb3da507ff07dc168b7608a87ff10e6ac5e91bb0",
+              "type": "tree"
+            }
           },
           {
             "component": "ast2python",
             "path": "ast2python/artifacts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+            "git_object": {
+              "oid": "ee8ed2f5b4e0e43cb27e55717409b29a84f0c05c",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/artifacts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "c2705b81a0f048fd784f2302d2729a99abf02fe4",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_library_imports.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a2e2b43f82da41b08d7fa703171819f49db2ab77",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_consumer_library_project.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "51bb5ee27797507a1c2f1ed0e08a82a1f2466f70",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_STAGE2_LOCKED_IMPORTS.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "fde8863c286e21863bb366638b77034838b8ea60",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9257,66 +10327,126 @@
           {
             "component": "optimizer",
             "path": "optimizer/core/runner_response.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "77fdd910dc6f913177cafb359def8207ebf17699",
+              "type": "blob"
+            }
           },
           {
             "component": "optimizer",
             "path": "optimizer/runners",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "0c4347e1f4fa8a602e9faaba04030ffb19482164",
+              "type": "tree"
+            }
           },
           {
             "component": "optimizer",
             "path": "optimizer/results/ranking.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+              "type": "blob"
+            }
           },
           {
             "component": "optimizer",
             "path": "optimizer/storage/checkpoint.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "5c34ac6d85efb9d46162246ad3986558ac20afc3",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/optimizer",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "775af71aebcd8db4ed0070a216379b9bd3e7a1ab",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "optimizer",
             "path": "tests/unit/test_tz_runner_contract.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "f8ed579a9dc0548db80d959e9765827b83535a9d",
+              "type": "blob"
+            }
           },
           {
             "component": "optimizer",
             "path": "tests/unit/test_runner_input_contract.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "711be1b7947f0683892bbd959652c44124884cbb",
+              "type": "blob"
+            }
           },
           {
             "component": "optimizer",
             "path": "tests/unit/test_runner_identity_edges.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "7ae1f4558913ecdfe7c9ddf81b6594366dad417b",
+              "type": "blob"
+            }
           },
           {
             "component": "optimizer",
             "path": "tests/unit/test_trial_key_v2.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "623e2639581d23242109dd47e20f14f799fa7b88",
+            "git_object": {
+              "oid": "6b63fecf63a2c88ab38032d4fa56edd33ed77b32",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_optimizer_requests.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d56d08fff295793be3b9b21936867ce6e7c8cf72",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_optimizer_inputs.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8cd8fc7110b115eac9e5c2298fd6d74a4bb78974",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "verification/stages.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "87b1bab8532b4162ac551b44d8fdd61dae4572f1",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9325,46 +10455,86 @@
           {
             "component": "openpine",
             "path": "openpine-ui/package.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "24d2ccf625dcc2e6c561b9eff203d7e7430be7cc",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine-ui/src",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "35cb08583628d1f0e1b98439fdfdeb1ae4d911bc",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine-ui/e2e/app.spec.ts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8f10f06648a0dd963790fa30cd605da226f7692a",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/gateway",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "da292ed30e52906d1d3fc1663649f3691972b7d7",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "openpine-ui/e2e/app.spec.ts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8f10f06648a0dd963790fa30cd605da226f7692a",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine-ui/playwright.config.ts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "975536250792d29ccc880a2034b113bc86cead32",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_DATA_UI_PUBLICATION_RECEIPT.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "6f6069cd1d5e4f2330f1f3875dee074cc987bb66",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/execution-policy.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "95424fecf77658b6faa79880cc3c9b13660f22c7",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9373,46 +10543,86 @@
           {
             "component": "pinelib",
             "path": "pinelib/events/visual.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "bafae628fa20a0f51934b9030a500957a6618812",
+              "type": "blob"
+            }
           },
           {
             "component": "pinelib",
             "path": "pinelib/events/alert.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+            "git_object": {
+              "oid": "4ebe675246f051aa1fc2ce8316d4e8dd79bb0404",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/export",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "4f1e2c3b879648b62a032c8cda9cf51a67e096b5",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/notifications",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "918a9208015257318e7a1928cd60cef58ddc8dfa",
+              "type": "tree"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine-ui/src",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "35cb08583628d1f0e1b98439fdfdeb1ae4d911bc",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_bulk_result_validation.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d884bbcbe1168f00d66cab809ffafd0450387555",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine-ui/e2e/app.spec.ts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8f10f06648a0dd963790fa30cd605da226f7692a",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/ARCHITECTURE.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "c049e5eefd072b31636394780c52eb1b49f316f0",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9421,41 +10631,76 @@
           {
             "component": "openpine",
             "path": "openpine/verification/conformance.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "62d6b549b8935ce0bde79cf371e5c9f63855dda3",
+              "type": "blob"
+            }
           },
           {
             "component": "backtest_engine",
             "path": "backtest_engine/results/tv_stream_compare.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+            "git_object": {
+              "oid": "e72570b1b8b762e44016f4797db64af17ca5768c",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine-ui/src",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "35cb08583628d1f0e1b98439fdfdeb1ae4d911bc",
+              "type": "tree"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "tests/test_phase2_parity_evidence.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e2264071156da8800c650d6fea95ba44b9d88722",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine-ui/e2e/app.spec.ts",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "8f10f06648a0dd963790fa30cd605da226f7692a",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_DATA_UI_PUBLICATION_RECEIPT.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "6f6069cd1d5e4f2330f1f3875dee074cc987bb66",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/corpus-lock.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "22bc2749e11ce03d2ead580e202f42954b4245ae",
+              "type": "blob"
+            }
           }
         ]
       },
@@ -9464,34 +10709,64 @@
           {
             "component": "openpine",
             "path": "openpine/verification/installed_probe.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "418925b493e1c352634e839bb1eed313019e0afd",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_ci.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e21960503d5cb79c81b58c634bc818b15d3e77e7",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/distribution.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "995b9eb98f6a2e07ae6a72ab0c068b8eb02a9cb3",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_clean_build.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "9ecd69e9b628d6ebb76f0237df2653d6b3798a15",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_execution_ci.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "a62dbc9b566c3b7a6780832a0c087d0744c924c3",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_python_support.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d556c892ae5bcd63b2061e2473b7863642a0c545",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
@@ -9512,51 +10787,96 @@
           {
             "component": "openpine",
             "path": "openpine/distribution.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "995b9eb98f6a2e07ae6a72ab0c068b8eb02a9cb3",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/storage/migrations.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "cc3059da274fe5f142e2d3555aefa9f48fa83324",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/execution_evidence.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "3b07ce85430a69e6591c9e3a80b01914208aa2ff",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "openpine/verification/stage_gate.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "209274dda6d5a7790d9224231d19b53c38d530da",
+              "type": "blob"
+            }
           }
         ],
         "tests": [
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_evidence_archive.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d0389c54a8d7aa2b36fdd3fe80cd149819525432",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "rc6_tests/test_rc6_public_evidence.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "e03c7db2bbd076f4a9cb30b2838e6750fe0749e8",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "tests/test_backend_cov90_cli_doctor_telegram.py",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "894558bdd728c5a91c6782d83db446a7baa8f91f",
+              "type": "blob"
+            }
           }
         ],
         "evidence": [
           {
             "component": "openpine",
             "path": "docs/RC6_CLEANUP.md",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "deae5d9dc6bc3b6cc6dff310a048d1967ce6561a",
+              "type": "blob"
+            }
           },
           {
             "component": "openpine",
             "path": "verification/stage2-current-acceptance.json",
-            "scope": "seed_reference_only"
+            "scope": "seed_reference_only",
+            "source_revision": "2d3311c6e7d499a3f28597798e7841830113eabc",
+            "git_object": {
+              "oid": "d73b0515a70fa8a45452d78b199782ec0a93644e",
+              "type": "blob"
+            }
           }
         ]
       }
@@ -9658,6 +10978,6 @@
     "registry_complete": true,
     "full_stage2_accepted": false,
     "full_release_accepted": false,
-    "contract_hash": "sha256:3812132aa81565fca17f860d51c7645996b0ac649b01b09ea2b143ed1dd239ce"
+    "contract_hash": "sha256:e3c0cb346c4142c2dda1ce58802a36432bf30e6b6b1f8d68af74844f456afeb8"
   }
 }

@@ -2,6 +2,7 @@
 
 import json
 import copy
+import os
 from pathlib import Path
 import re
 
@@ -12,6 +13,7 @@ from openpine.verification.review_ledger import (
     SOURCE_PATH,
     normative_contract,
     read_review_ledger,
+    validate_reference_paths,
     validate_review_ledger,
 )
 
@@ -201,3 +203,127 @@ def test_source_bytes_are_checked_by_the_production_reader(tmp_path):
     (tmp_path / SOURCE_PATH).write_bytes((ROOT / SOURCE_PATH).read_bytes() + b"\nchanged\n")
     with pytest.raises(ValueError, match="source bytes"):
         read_review_ledger(tmp_path)
+
+
+def pinned_reference_roots():
+    stack = Path(os.environ.get("PINE_STACK_ROOT", ROOT.parent))
+    return {
+        name: ROOT if name == "openpine" else stack / name
+        for name in LEDGER["remaining_spec_binding"]["historical_baseline"]["source_pins"]
+    }
+
+
+def test_every_repository_reference_exists_at_its_exact_pinned_revision():
+    report = read_review_ledger(ROOT, reference_roots=pinned_reference_roots())
+    assert report["registry_complete"] is True
+
+
+@pytest.mark.parametrize("mutation", ["missing-path", "foreign-object", "missing-root"])
+def test_pinned_reference_replay_rejects_missing_or_foreign_paths(mutation):
+    binding = copy.deepcopy(LEDGER["remaining_spec_binding"])
+    roots = pinned_reference_roots()
+    ref = binding["reference_catalog"]["oracle"]["code"][1]
+    assert ref["component"] == "pinelib"
+    if mutation == "missing-path":
+        ref["path"] = "pinelib/math"
+    elif mutation == "foreign-object":
+        ref["git_object"]["oid"] = "0" * 40
+    else:
+        del roots["pinelib"]
+    with pytest.raises(ValueError, match="pinned reference|repository"):
+        validate_reference_paths(binding, roots)
+
+
+def saved_current_projection():
+    from openpine.verification.identity import seal
+    from openpine.verification.stage_gate import CURRENT_SCHEMA, STABILIZATION_GATES
+
+    return seal(
+        {
+            "schema_id": CURRENT_SCHEMA,
+            "candidate_hash": "sha256:" + "1" * 64,
+            "plan_hash": "sha256:" + "2" * 64,
+            "inventory_hash": "sha256:" + "3" * 64,
+            "run_id": "projection-unit-fixture",
+            "stage2": {
+                "status": "in_progress",
+                "full_stage2_accepted": False,
+                "criteria": [],
+                "remaining": [],
+                "remaining_spec_binding": validate_review_ledger(LEDGER),
+            },
+            "stabilization": {
+                "accepted": True,
+                "status": "accepted",
+                "gates": {name: {"status": "passed"} for name in STABILIZATION_GATES},
+            },
+            "ok": True,
+            "full_stage2_accepted": False,
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "missing",
+        "null",
+        "zero-denominator",
+        "no-unclosed",
+        "false-stage2",
+        "false-release",
+        "foreign-contract",
+        "duplicate-ID",
+        "owner",
+        "done",
+        "false-status-counts",
+    ],
+)
+def test_resealed_saved_current_rejects_missing_or_forged_remaining_projection(mutation):
+    from openpine.verification.identity import seal
+    from openpine.verification.stage_gate import current_views
+
+    current = saved_current_projection()
+    assert current_views(current)["remainder"]["remaining_spec_binding"]["requirement_count"] == 68
+    current.pop("content_hash")
+    stage2 = current["stage2"]
+    projection = stage2["remaining_spec_binding"]
+    if mutation == "missing":
+        del stage2["remaining_spec_binding"]
+    elif mutation == "null":
+        stage2["remaining_spec_binding"] = None
+    elif mutation == "zero-denominator":
+        projection["requirement_count"] = 0
+    elif mutation == "no-unclosed":
+        projection["unclosed_requirements"] = []
+    elif mutation in {"false-stage2", "false-release"}:
+        projection[
+            "full_stage2_accepted" if mutation == "false-stage2" else "full_release_accepted"
+        ] = True
+    elif mutation == "foreign-contract":
+        projection["contract_hash"] = "sha256:" + "0" * 64
+    elif mutation == "duplicate-ID":
+        projection["unclosed_requirements"][-1] = copy.deepcopy(
+            projection["unclosed_requirements"][0]
+        )
+    elif mutation == "owner":
+        projection["unclosed_requirements"][0]["owner"] = "other"
+    elif mutation == "done":
+        projection["unclosed_requirements"][0]["status"] = "done"
+    else:
+        projection["status_counts"] = {"done": 68}
+    with pytest.raises(ValueError):
+        current_views(seal(current))
+
+
+def test_legacy_saved_current_requires_explicit_opt_in_and_has_no_remaining_acceptance():
+    from openpine.verification.identity import seal
+    from openpine.verification.stage_gate import current_views
+
+    current = saved_current_projection()
+    current.pop("content_hash")
+    del current["stage2"]["remaining_spec_binding"]
+    views = current_views(seal(current), allow_legacy=True)
+    assert views["remainder"]["remaining_spec_scope"] == "legacy_without_remaining_spec"
+    assert views["remainder"]["remaining_spec_binding"] is None
+    assert views["remainder"]["full_stage2_accepted"] is False

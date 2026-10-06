@@ -10,7 +10,9 @@ from openpine.verification.capabilities import build_capability_graph
 from openpine.verification.conformance import compare_corpus, load_corpus
 from openpine.verification.identity import read_json, seal, verify, write_json
 from openpine.verification.pytest_gate import validate_inventory
-from openpine.verification.review_ledger import read_review_ledger, validate_review_ledger
+from openpine.verification.review_ledger import (
+    read_review_ledger, validate_remaining_projection, validate_review_ledger,
+)
 
 
 def validate_stages(plan: dict, ledger: dict) -> None:
@@ -423,7 +425,7 @@ def run_stabilization_gate(
     )
 
 
-def current_views(current: dict) -> dict:
+def current_views(current: dict, *, allow_legacy: bool = False) -> dict:
     """One validated current contract feeds progress, remainder and reporting."""
     from openpine.verification.identity import verify
 
@@ -450,6 +452,12 @@ def current_views(current: dict) -> dict:
         key: current[key]
         for key in ("candidate_hash", "plan_hash", "inventory_hash", "run_id")
     }
+    remaining_binding = stage2.get("remaining_spec_binding")
+    if remaining_binding is None:
+        if not allow_legacy:
+            raise ValueError("missing remaining specification projection")
+    else:
+        validate_remaining_projection(remaining_binding)
     return {
         "progress": {
             **common,
@@ -460,7 +468,10 @@ def current_views(current: dict) -> dict:
             **common,
             "criteria": stage2["criteria"],
             "items": stage2["remaining"],
-            "remaining_spec_binding": stage2.get("remaining_spec_binding"),
+            "remaining_spec_binding": remaining_binding,
+            "remaining_spec_scope": (
+                "legacy_without_remaining_spec" if remaining_binding is None else "source_bound_accounting"
+            ),
             "full_stage2_accepted": False,
         },
         "summary": {

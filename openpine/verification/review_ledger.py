@@ -5,13 +5,16 @@ from __future__ import annotations
 from collections import Counter
 import hashlib
 from pathlib import Path, PurePosixPath
+import shutil
+import subprocess
 
 from openpine.verification.identity import digest, read_json, verify
 
 SOURCE_PATH = "docs/OPENPINE_5_0_REMAINING_SPEC_2026-10-06.md"
 SOURCE_SHA256 = "3f09ed3901f8ecf1262ffa983c6eaf52a51ceaf2087abe98db2093d45d9ca622"
 HISTORICAL_LEDGER_HASH = "sha256:240e7415ac0fa50b127acaa3c901c725395fdb1e16bde0d78a1c674872e3b705"
-CONTRACT_HASH = "sha256:3812132aa81565fca17f860d51c7645996b0ac649b01b09ea2b143ed1dd239ce"
+CONTRACT_HASH = "sha256:e3c0cb346c4142c2dda1ce58802a36432bf30e6b6b1f8d68af74844f456afeb8"
+REQUIREMENT_OWNER_HASH = "sha256:30a114906fad9907813560ac7cc34c9b0e893c1c35951ffa3fa8ada90e1fc0df"
 MATRIX_HASH = "sha256:a1a244d0013982314c8dcf3312453922a5743a2a02df2b079d9dc7237fdf148e"
 REPOS = frozenset(
     {
@@ -249,6 +252,23 @@ def validate_review_ledger(ledger: dict, matrix: dict | None = None) -> dict:
                 if "component" in reference:
                     _require(reference["component"] in REPOS, "unknown reference repository")
                     _path(reference["path"])
+                    revision = reference.get("source_revision", "")
+                    proof = reference.get("git_object", {})
+                    _require(
+                        isinstance(revision, str)
+                        and len(revision) == 40
+                        and all(c in "0123456789abcdef" for c in revision),
+                        "repository reference needs its exact source revision",
+                    )
+                    _require(
+                        isinstance(proof, dict)
+                        and set(proof) == {"oid", "type"}
+                        and proof["type"] in {"blob", "tree"}
+                        and isinstance(proof["oid"], str)
+                        and len(proof["oid"]) == 40
+                        and all(c in "0123456789abcdef" for c in proof["oid"]),
+                        "repository reference needs a pinned-tree object proof",
+                    )
                 else:
                     _path(reference["historical_preparation_path"])
     mappings = binding["op_mapping"]
@@ -298,7 +318,12 @@ def validate_review_ledger(ledger: dict, matrix: dict | None = None) -> dict:
     }
 
 
-def read_review_ledger(root: Path, matrix: dict | None = None) -> dict:
+def read_review_ledger(
+    root: Path,
+    matrix: dict | None = None,
+    *,
+    reference_roots: dict[str, Path] | None = None,
+) -> dict:
     ledger = read_json(root / "docs/RC6_REVIEW_36.json")
     result = validate_review_ledger(ledger, matrix)
     source = (root / SOURCE_PATH).read_bytes()
@@ -306,4 +331,115 @@ def read_review_ledger(root: Path, matrix: dict | None = None) -> dict:
         hashlib.sha256(source).hexdigest() == SOURCE_SHA256,
         "remaining source bytes differ from the imported specification",
     )
+    if reference_roots is not None:
+        validate_reference_paths(ledger["remaining_spec_binding"], reference_roots)
     return result
+
+
+def validate_reference_paths(binding: dict, roots: dict[str, Path]) -> None:
+    """Reopen each seed at its recorded Git revision; directories are valid seeds."""
+    git = shutil.which("git")
+    _require(git is not None, "Git is required to replay pinned reference paths")
+    references: dict[str, list[dict]] = {}
+    for bundle in binding["reference_catalog"].values():
+        for entries in bundle.values():
+            for reference in entries:
+                if "component" in reference:
+                    references.setdefault(reference["component"], []).append(reference)
+    _require(set(references).issubset(roots), "missing repository for pinned reference replay")
+    for component, entries in references.items():
+        for reference in entries:
+            _path(reference["path"])
+        queries = [f"{row['source_revision']}:{row['path']}" for row in entries]
+        process = subprocess.run(  # noqa: S603 -- validated Git queries, shell=False
+            [
+                str(git),
+                "-C",
+                str(roots[component]),
+                "cat-file",
+                "--batch-check=%(objecttype) %(objectname)",
+            ],
+            input="\n".join(queries) + "\n",
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        _require(process.returncode == 0, "cannot open pinned reference repository: " + component)
+        actual = process.stdout.splitlines()
+        expected = [f"{row['git_object']['type']} {row['git_object']['oid']}" for row in entries]
+        _require(actual == expected, "missing or mismatched pinned reference path: " + component)
+
+
+def validate_remaining_projection(projection: dict) -> None:
+    """Check a saved accounting projection; never admit raw product evidence here."""
+    _require(isinstance(projection, dict), "missing remaining specification projection")
+    _require(
+        set(projection)
+        == {
+            "source_sha256",
+            "contract_hash",
+            "requirement_count",
+            "op_count",
+            "stage2_item_count",
+            "registry_complete",
+            "status_counts",
+            "unclosed_requirements",
+            "full_stage2_accepted",
+            "full_release_accepted",
+        },
+        "incomplete remaining specification projection",
+    )
+    _require(
+        projection["source_sha256"] == SOURCE_SHA256
+        and projection["contract_hash"] == CONTRACT_HASH,
+        "saved remaining projection belongs to a different source contract",
+    )
+    _require(
+        all(
+            type(projection[key]) is int and projection[key] == count
+            for key, count in (
+                ("requirement_count", 68),
+                ("op_count", 36),
+                ("stage2_item_count", 16),
+            )
+        ),
+        "saved remaining projection denominator changed",
+    )
+    _require(
+        projection["registry_complete"] is True
+        and projection["full_stage2_accepted"] is False
+        and projection["full_release_accepted"] is False,
+        "saved accounting projection cannot promote product acceptance",
+    )
+    rows = projection["unclosed_requirements"]
+    _require(
+        isinstance(rows, list) and len(rows) == 68,
+        "saved remaining projection lost unclosed requirements",
+    )
+    _require(
+        all(
+            isinstance(row, dict)
+            and set(row)
+            == {
+                "id",
+                "owner",
+                "status",
+                "remaining_reason",
+            }
+            and row["status"] in {"partial", "toqualify", "toimplement", "blocked"}
+            and isinstance(row["remaining_reason"], str)
+            and bool(row["remaining_reason"].strip())
+            for row in rows
+        ),
+        "saved remaining records changed or claim closure",
+    )
+    _require(
+        digest([{key: row[key] for key in ("id", "owner")} for row in rows])
+        == REQUIREMENT_OWNER_HASH,
+        "saved remaining IDs or owners changed",
+    )
+    _require(
+        projection["status_counts"] == dict(Counter(row["status"] for row in rows)),
+        "saved remaining status counts contradict requirements",
+    )

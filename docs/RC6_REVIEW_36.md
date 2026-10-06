@@ -67,6 +67,14 @@ receipts are pending. Seed paths and registry completeness do not establish prod
 acceptance. All 16 Stage 2 items and owners remain unchanged; full Stage 2 and full
 release acceptance remain false. Historical accepted OP-36 retains its original scope.
 
+Repository seed references carry exact source revisions and Git object identities.
+`read_review_ledger(..., reference_roots=...)` replays their existence against those
+pinned Git trees; accounting tests execute that replay for every repository reference.
+The math/string seeds identify both PineLib ABI adapters and builtin implementations.
+Saved-current projections require the complete validated 68-record accounting view.
+Historical pre-binding projections can be displayed only with explicit
+`current_views(..., allow_legacy=True)` and retain a visible legacy scope marker.
+
 | Requirement | Owner | Д/И/К | Status | OP mapping | Stage 2 items |
 |---|---|---|---|---|---|
 | INT-01 | `openpine` | И+К | partial | OP-01, OP-09, OP-35, OP-36 | — |
