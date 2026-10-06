@@ -2,12 +2,97 @@
 
 from __future__ import annotations
 import os
+import select
 import signal
 import subprocess
 import sys
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol, cast
+
+
+_FAMILY_LIVE_LIMIT = 4096
+_FAMILY_LEDGER_LIMIT = 16384
+_FAMILY_OVERFLOW_LIMIT = 4096
+_FAMILY_UNVERIFIED_LIMIT = 64
+
+
+class _OwnedHandle:
+    """A retained kernel process identity; integer PIDs are only receipt labels."""
+
+    def __init__(self, pid: int, create_time: float, name: str, fd: int) -> None:
+        self.pid, self.create_time, self.name, self.fd = pid, create_time, name, fd
+
+    def alive(self) -> bool:
+        return self.fd >= 0 and not select.select([self.fd], [], [], 0)[0]
+
+    def send_signal(self, signum: int) -> None:
+        if self.fd < 0:
+            raise ProcessLookupError('closed owned process handle')
+        signal.pidfd_send_signal(self.fd, signum, None, 0)
+
+    def close(self) -> None:
+        if self.fd >= 0:
+            os.close(self.fd)
+            self.fd = -1
+
+
+def _require_pidfd() -> None:
+    """Fail before launching work when stable kernel signalling is unavailable."""
+    if not sys.platform.startswith('linux') or not hasattr(os, 'pidfd_open') or not hasattr(signal, 'pidfd_send_signal'):
+        raise ValueError('complete process-family supervision requires Linux pidfd support')
+    try:
+        fd = os.pidfd_open(os.getpid(), 0)
+        try:
+            signal.pidfd_send_signal(fd, 0, None, 0)
+        finally:
+            os.close(fd)
+    except OSError as error:
+        raise OSError(error.errno, f'pidfd backend unavailable: {error}') from error
+
+
+class _FamilyPopen(subprocess.Popen):
+    """Retain the guardian's direct-child identity until its poll/wait completes."""
+
+    def __init__(self, argv: list[str], **kwargs) -> None:
+        self._family_fd = -1
+        self._family_fd_lock = threading.Lock()
+        super().__init__(argv, **kwargs)  # noqa: S603, S607 -- checked declared argv, no shell
+        try:
+            # This direct child has not been reaped or exposed to another caller.
+            self._family_fd = os.pidfd_open(self.pid, 0)
+        except OSError:
+            # Popen's direct unreaped child still owns its PID. Its ordinary
+            # terminate/wait path is safe here; no enumeration PID is involved.
+            super().terminate()
+            self.wait(timeout=3)
+            raise
+
+    def _close_family_fd(self) -> None:
+        with self._family_fd_lock:
+            if self._family_fd >= 0:
+                os.close(self._family_fd)
+                self._family_fd = -1
+
+    def poll(self) -> int | None:
+        result = super().poll()
+        if result is not None:
+            self._close_family_fd()
+        return result
+
+    def wait(self, timeout: float | None = None) -> int:
+        result = super().wait(timeout=timeout)
+        self._close_family_fd()
+        return result
+
+    def signal_family_guardian(self, signum: int) -> None:
+        with self._family_fd_lock:
+            if self._family_fd >= 0:
+                try:
+                    signal.pidfd_send_signal(self._family_fd, signum, None, 0)
+                except ProcessLookupError:
+                    pass  # The retained guardian already exited.
 
 
 class _OwnedProcess(Protocol):
@@ -50,8 +135,7 @@ def start_declared_process(
         raise ValueError("declared commands never use a shell")
     require_executable(Path(argv[0]).resolve(strict=True))
     if family_evidence is not None:
-        if not sys.platform.startswith("linux"):
-            raise ValueError("complete process-family supervision requires Linux subreaper support")
+        _require_pidfd()
         argv = [
             sys.executable,
             "-I",
@@ -62,29 +146,28 @@ def start_declared_process(
             str(family_evidence),
             *argv,
         ]
+        return _FamilyPopen(argv, **kwargs)
     return subprocess.Popen(argv, **kwargs)  # noqa: S603, S607 -- declared argv, shell=False; exit status is checked
 
 
 def _supervise_family(argv: list[str], parent_pid: int, evidence: Path) -> int:
-    """Own adopted descendants, including new sessions, after controller death.
+    """Own descendants through live lineage and stable kernel handles.
 
     This process is a per-command Linux subreaper, never a host-wide reaper.
-    Signal targets must retain their observed PID/create-time identity. No
-    preexec_fn is used in the threaded coordinator, and neighbours are never signalled.
+    Enumeration and receipt identities confer no signalling authority. Every
+    newly discovered task needs a pidfd and a live ancestry chain to this owner.
     """
     import ctypes
     import json
     import time
     from importlib import import_module
 
-    # Structural interface for the already locked runtime dependency; no
-    # optional third-party stub install or type-check suppression is required.
+    _require_pidfd()
     psutil = cast(_FamilyObserver, import_module('psutil'))
-
     libc = ctypes.CDLL(None, use_errno=True)
     # PR_SET_CHILD_SUBREAPER and PR_SET_PDEATHSIG are unprivileged Linux APIs.
     if libc.prctl(36, 1, 0, 0, 0) != 0 or libc.prctl(1, signal.SIGTERM, 0, 0, 0) != 0:
-        raise OSError(ctypes.get_errno(), "cannot establish owned process-family supervisor")
+        raise OSError(ctypes.get_errno(), 'cannot establish owned process-family supervisor')
     stopped = 0
 
     def stop(signum, frame):
@@ -94,14 +177,23 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path) -> int:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     owner = psutil.Process()
+    owner_pid = os.getpid()
     observed: dict[tuple[int, float], dict[str, Any]] = {}
+    handles: dict[int, _OwnedHandle] = {}
+    overflow: dict[int, _OwnedHandle] = {}
+    unverified: dict[tuple[int, float], dict[str, Any]] = {}
+    omitted_overflow_observations = 0
+    pressure_started = False
     sent: list[dict[str, Any]] = []
+    sent_keys: set[tuple[int, float, int]] = set()
     errors: list[str] = []
     child = None
+    absent = (psutil.NoSuchProcess, FileNotFoundError, ProcessLookupError)
 
     def record_error(error):
-        if len(errors) < 8:
-            errors.append(f"{type(error).__name__}: {error}")
+        message = f'{type(error).__name__}: {error}'[:512]
+        if len(errors) < 8 and message not in errors:
+            errors.append(message)
 
     boot_time = next(
         int(line.split()[1]) for line in Path('/proc/stat').read_text().splitlines()
@@ -109,221 +201,270 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path) -> int:
     )
     clock_ticks = os.sysconf('SC_CLK_TCK')
 
-    class ProcProcess:
-        """Kernel identity fallback for this supervisor's owned descendants."""
+    def stat(pid: int) -> tuple[str, str, int, int]:
+        # comm may contain parentheses and arbitrary non-UTF8 bytes.
+        raw = (Path('/proc') / str(pid) / 'stat').read_bytes()
+        end = raw.rfind(b')')
+        fields = raw[end + 2:].split()
+        return os.fsdecode(raw[raw.find(b'(') + 1:end]), fields[0].decode('ascii'), int(fields[1]), int(fields[19])
 
-        def __init__(self, pid: int) -> None:
-            self.pid = pid
+    def fd_pid(fd: int) -> int:
+        # A dead pidfd reports Pid:-1, even after its integer label is recycled.
+        return next(int(line.split()[1]) for line in (Path('/proc/self/fdinfo') / str(fd)).read_text().splitlines() if line.startswith('Pid:'))
 
-        def stat(self) -> tuple[str, list[str]]:
-            text = (Path('/proc') / str(self.pid) / 'stat').read_bytes()
-            end = text.rfind(b')')
-            fields = [field.decode('ascii') for field in text[end + 2:].split()]
-            return os.fsdecode(text[text.find(b'(') + 1:end]), fields
-
-        def create_time(self) -> float:
-            return boot_time + int(self.stat()[1][19]) / clock_ticks
-
-        def name(self) -> str:
-            return self.stat()[0]
-
-        def status(self) -> str:
-            state = self.stat()[1][0]
-            return psutil.STATUS_ZOMBIE if state == 'Z' else psutil.STATUS_DEAD if state == 'X' else state
-
-        def send_signal(self, signum: int) -> None:
-            os.kill(self.pid, signum)
-
-    absent = (psutil.NoSuchProcess, FileNotFoundError, ProcessLookupError)
-
-    def kernel_fallback():
-        # Retain known identities as well as newly adopted direct children.
-        pids = {pid for pid, _ in observed}
+    def capture_owned(pid: int, *, command: bool = False) -> _OwnedHandle | None:
+        if pid in {owner_pid, parent_pid} or pid <= 1:
+            record_error(RuntimeError('enumeration included a non-owned controller or supervisor'))
+            return None
+        # Hold every ancestor pidfd until all edges have been rechecked. A live
+        # parent cannot be replaced under its child's stable real-parent link.
+        chain: list[tuple[int, int, tuple[str, str, int, int]]] = []
+        retained = False
         try:
-            for name in os.listdir('/proc'):
-                if not name.isdecimal():
-                    continue
+            cursor = pid
+            while cursor != owner_pid:
+                if cursor <= 1 or cursor == parent_pid or any(p == cursor for p, _, _ in chain):
+                    record_error(RuntimeError('enumerated process lacks live owned lineage'))
+                    return None
+                if len(chain) >= _FAMILY_LIVE_LIMIT:
+                    record_error(RuntimeError('owned process-family lineage budget exceeded'))
+                    return None
+                fd = os.pidfd_open(cursor, 0)
                 try:
-                    process = ProcProcess(int(name))
-                    if int(process.stat()[1][1]) == os.getpid():
-                        pids.add(process.pid)
-                except absent:
-                    continue
-                except OSError as error:
-                    record_error(error)
+                    row = stat(cursor)
+                except (OSError, ValueError):
+                    os.close(fd)
+                    raise
+                chain.append((cursor, fd, row))
+                # A just-launched direct child may already be a zombie. Popen
+                # has not reaped it, so its direct-child identity is still owned.
+                if fd_pid(fd) != cursor or (select.select([fd], [], [], 0)[0] and not (command and cursor == pid and row[2] == owner_pid)):
+                    return None
+                cursor = row[2]
+            for cursor, fd, row in chain:
+                current = stat(cursor)
+                if current[2:] != row[2:] or fd_pid(fd) != cursor:
+                    return None
+                if select.select([fd], [], [], 0)[0] and not (command and cursor == pid and current[2] == owner_pid):
+                    return None
+            _, fd, row = chain[0]
+            handle = _OwnedHandle(pid, boot_time + row[3] / clock_ticks, row[0], fd)
+            retained = True
+            return handle
+        except absent:
+            return None
+        except (psutil.AccessDenied, OSError, ValueError) as error:
+            record_error(error)
+            return None
+        finally:
+            for index, (_, fd, _) in enumerate(chain):
+                if not retained or index != 0:
+                    os.close(fd)
+
+    def diagnose(process: _OwnedHandle) -> None:
+        # These are diagnostics, never authority to signal an integer PID.
+        try:
+            metadata = psutil.Process(process.pid)
+            metadata.create_time()
+            metadata.name()
+            metadata.status()
+        except absent:
+            pass
+        except (psutil.AccessDenied, OSError) as error:
+            record_error(error)
+
+    def pressure_cleanup(handle: _OwnedHandle) -> None:
+        # Once the receipt budget is exhausted, new verified-owned tasks still
+        # receive stable-handle cleanup. Failure is explicit; no accepted receipt
+        # can pretend the bounded ledger is a complete successful observation.
+        nonlocal pressure_started, omitted_overflow_observations
+        if not pressure_started:
+            pressure_started = True
+            send(list(handles.values()), signal.SIGTERM)
+        try:
+            handle.send_signal(signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         except OSError as error:
             record_error(error)
-        descendants: list[_OwnedProcess] = []
-        for pid in pids:
-            process = ProcProcess(pid)
+        finally:
+            # One global cleanup deadline covers the whole family. Retain live
+            # overflow pidfds, including denied signals, rather than waiting a
+            # separate half-second per discovered task or hiding survivors.
+            if not handle.alive():
+                handle.close()
+            elif len(overflow) < _FAMILY_OVERFLOW_LIMIT:
+                overflow[handle.pid] = handle
+            else:
+                key = (handle.pid, handle.create_time)
+                if key in unverified or len(unverified) < _FAMILY_UNVERIFIED_LIMIT:
+                    unverified[key] = {'pid': handle.pid, 'create_time': handle.create_time,
+                                       'status': 'pidfd-exit-unverified'}
+                else:
+                    omitted_overflow_observations += 1
+                handle.close()
+
+    def admit(pid: int, *, command: bool = False) -> None:
+        existing = handles.get(pid) or overflow.get(pid)
+        if existing is not None:
+            if existing.alive():
+                return
+            existing.close()
+            handles.pop(pid, None)
+            overflow.pop(pid, None)
+        handle = capture_owned(pid, command=command)
+        if handle is None:
+            return
+        key = (handle.pid, handle.create_time)
+        if key in observed:
+            record_error(RuntimeError('reused process receipt identity cannot be admitted'))
+            pressure_cleanup(handle)
+            return
+        if len(observed) >= _FAMILY_LEDGER_LIMIT or len(handles) >= _FAMILY_LIVE_LIMIT:
+            record_error(RuntimeError('owned process-family cumulative ledger budget exceeded' if len(observed) >= _FAMILY_LEDGER_LIMIT else 'owned process-family live handle budget exceeded'))
+            pressure_cleanup(handle)
+            return
+        observed[key] = {'pid': pid, 'create_time': handle.create_time, 'name': handle.name}
+        handles[pid] = handle
+        diagnose(handle)
+
+    def observe() -> list[_OwnedHandle]:
+        # Reconcile retained stable identities on EVERY path, even a successful
+        # empty psutil traversal after an intermediate ancestor exits.
+        for pool in (handles, overflow):
+            for pid, handle in list(pool.items()):
+                if not handle.alive():
+                    if child is None or pid != child.pid:
+                        try:
+                            os.waitpid(pid, os.WNOHANG)
+                        except ChildProcessError:
+                            pass  # Descendant's live parent has already reaped it.
+                    handle.close()
+                    del pool[pid]
+        try:
+            descendants = owner.children(recursive=True)
+            if len(descendants) > _FAMILY_LIVE_LIMIT:
+                record_error(RuntimeError('owned process-family enumeration budget exceeded'))
+            for process in descendants:
+                admit(process.pid)
+        except (psutil.AccessDenied, OSError, RuntimeError) as error:
+            record_error(error)
+        # Streaming kernel enumeration catches newly adopted direct children
+        # without an unbounded fallback PID set or a reliance on old membership.
+        try:
+            with os.scandir('/proc') as entries:
+                for entry in entries:
+                    if not entry.name.isdecimal():
+                        continue
+                    pid = int(entry.name)
+                    try:
+                        if stat(pid)[2] == owner_pid:
+                            admit(pid)
+                    except absent:
+                        continue
+                    except (OSError, ValueError) as error:
+                        record_error(error)
+        except OSError as error:
+            record_error(error)
+        active = []
+        for handle in (*handles.values(), *overflow.values()):
+            if handle.alive():
+                diagnose(handle)
+                active.append(handle)
+        return active
+
+    def send(processes: list[_OwnedHandle], signum: int) -> None:
+        for handle in processes:
+            key = (handle.pid, handle.create_time, int(signum))
+            if key in sent_keys:
+                continue
             try:
-                key = (pid, process.create_time())
-                if key not in observed and int(process.stat()[1][1]) != os.getpid():
-                    continue
-                observed.setdefault(key, {'pid': pid, 'create_time': key[1], 'name': process.name()})
-                descendants.append(process)
-            except absent:
+                handle.send_signal(signum)
+                if key[:2] in observed:
+                    sent_keys.add(key)
+                    sent.append({'pid': handle.pid, 'create_time': handle.create_time, 'signal': signum})
+            except ProcessLookupError:
                 continue
             except OSError as error:
                 record_error(error)
-                # Keep the unresolved observed identity for the survivor receipt.
-                if any(known_pid == pid for known_pid, _ in observed):
-                    descendants.append(process)
-        return descendants
-
-    def observe():
-        try:
-            descendants = owner.children(recursive=True)
-            if len(descendants) > 4096:
-                raise RuntimeError("owned process-family observation budget exceeded")
-            for process in descendants:
-                try:
-                    key = (process.pid, process.create_time())
-                    observed.setdefault(
-                        key, {"pid": process.pid, "create_time": key[1], "name": process.name()}
-                    )
-                except absent:
-                    continue
-            return descendants
-        except (psutil.AccessDenied, OSError, RuntimeError) as error:
-            record_error(error)
-            return kernel_fallback()
-
-    def active():
-        result = []
-        for process in observe():
-            try:
-                if process.status() not in {psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD}:
-                    result.append(process)
-            except absent:
-                continue
-            except (psutil.AccessDenied, OSError) as error:
-                record_error(error)
-                fallback = ProcProcess(process.pid)
-                try:
-                    if (fallback.pid, fallback.create_time()) in observed and fallback.status() not in {psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD}:
-                        result.append(fallback)
-                except absent:
-                    continue
-                except OSError as caught:
-                    record_error(caught)
-                    result.append(fallback)
-        return result
-
-    def send(processes, signum):
-        for process in processes:
-            try:
-                key = (process.pid, process.create_time())
-                if key in observed and process.pid != os.getpid():
-                    process.send_signal(signum)
-                    sent.append({"pid": process.pid, "create_time": key[1], "signal": signum})
-            except absent:
-                continue
-            except (psutil.AccessDenied, OSError) as error:
-                record_error(error)
-                fallback = ProcProcess(process.pid)
-                try:
-                    key = (fallback.pid, fallback.create_time())
-                    if key in observed and fallback.pid not in {os.getpid(), parent_pid}:
-                        fallback.send_signal(signum)
-                        sent.append({'pid': fallback.pid, 'create_time': key[1], 'signal': signum})
-                except absent:
-                    continue
-                except OSError as caught:
-                    record_error(caught)
 
     def reap():
         if child is not None:
             child.poll()
-        for pid, _ in observed:
+        # waitpid only targets direct owned children. PID reuse cannot cause it
+        # to reap or signal an unrelated process.
+        for pid in (*handles, *overflow):
             if child is not None and pid == child.pid:
                 continue
             try:
                 os.waitpid(pid, os.WNOHANG)
             except ChildProcessError:
-                pass  # Still parented by a live owned descendant, or already reaped.
+                pass
 
-    reason = "controller-disappeared-before-launch"
+    reason = 'controller-disappeared-before-launch'
     returncode = None
     if os.getppid() == parent_pid and not stopped:
         try:
-            child = subprocess.Popen(argv)  # noqa: S603, S607 -- original declared argv, inherited streams, no shell
+            child = subprocess.Popen(argv)  # noqa: S603, S607 -- declared argv, inherited streams, no shell
         except OSError as error:
             reason = 'launch-error'
             record_error(error)
     if child is not None:
+        admit(child.pid, command=True)
         observe()
         while child.poll() is None and not stopped and os.getppid() == parent_pid and not errors:
             observe()
-            time.sleep(0.02)
+            time.sleep(.02)
         returncode = child.poll()
-        reason = (
-            "cancelled"
-            if stopped
-            else "controller-crashed"
-            if os.getppid() != parent_pid
-            else "observation-error"
-            if errors
-            else "command-exited"
-        )
-        if reason == "command-exited":
+        reason = ('cancelled' if stopped else 'controller-crashed' if os.getppid() != parent_pid
+                  else 'observation-error' if errors else 'command-exited')
+        if reason == 'command-exited':
             deadline = time.monotonic() + 2.0
-            while active() and time.monotonic() < deadline and not stopped:
+            while observe() and time.monotonic() < deadline and not stopped and not errors:
                 reap()
-                time.sleep(0.02)
-            if active():
-                reason = "orphan-descendants"
-    send(active(), signal.SIGTERM)
-    deadline = time.monotonic() + 0.5
-    while active() and time.monotonic() < deadline:
+                time.sleep(.02)
+            if observe():
+                reason = 'orphan-descendants'
+    send(observe(), signal.SIGTERM)
+    deadline = time.monotonic() + .5
+    while observe() and time.monotonic() < deadline:
         reap()
-        time.sleep(0.02)
-    deadline = time.monotonic() + 0.5
-    while active() and time.monotonic() < deadline:
-        send(active(), signal.SIGKILL)
+        time.sleep(.02)
+    deadline = time.monotonic() + .5
+    while observe() and time.monotonic() < deadline:
+        send(observe(), signal.SIGKILL)
         reap()
-        time.sleep(0.02)
+        time.sleep(.02)
     reap()
-    survivors = []
-    for process in active():
-        try:
-            survivors.append(
-                {
-                    "pid": process.pid,
-                    "create_time": process.create_time(),
-                    "status": process.status(),
-                }
-            )
-        except absent:
-            continue
-        except (psutil.AccessDenied, OSError) as error:
-            record_error(error)
-            survivors.append({'pid': process.pid, 'status': 'observation-unavailable'})
+    survivors = [{'pid': handle.pid, 'create_time': handle.create_time, 'status': 'pidfd-live'} for handle in observe()]
+    survivors.extend(unverified.values())
+    if omitted_overflow_observations:
+        message = f'overflow survivor inventory incomplete: {omitted_overflow_observations} additional unverified observations'
+        if len(errors) == 8:
+            errors[-1] = message
+        else:
+            errors.append(message)
     body = {
-        "argv": argv,
-        "cwd": os.getcwd(),
-        "supervisor_pid": os.getpid(),
-        "controller_pid": parent_pid,
-        "command_pid": child.pid if child is not None else None,
-        "reason": reason,
-        "command_returncode": returncode,
-        "observed_family": list(observed.values()),
-        "cleanup_signals": sent,
-        "surviving_processes": survivors,
-        "observation_errors": errors,
-        "cleanup_verified": not survivors and not errors,
+        'argv': argv, 'cwd': os.getcwd(), 'supervisor_pid': owner_pid, 'controller_pid': parent_pid,
+        'command_pid': child.pid if child is not None else None, 'reason': reason,
+        'command_returncode': returncode, 'observed_family': list(observed.values()),
+        'cleanup_signals': sent, 'surviving_processes': survivors, 'observation_errors': errors,
+        'cleanup_verified': not survivors and not errors,
     }
-    partial = evidence.with_suffix(evidence.suffix + ".partial")
-    with partial.open("x") as stream:
+    for handle in (*handles.values(), *overflow.values()):
+        handle.close()
+    partial = evidence.with_suffix(evidence.suffix + '.partial')
+    with partial.open('x') as stream:
         json.dump(body, stream, sort_keys=True)
-        stream.write("\n")
+        stream.write('\n')
         stream.flush()
         os.fsync(stream.fileno())
     os.link(partial, evidence)
     partial.unlink()
-    if reason == "command-exited" and not survivors and not errors and returncode is not None:
+    if reason == 'command-exited' and not survivors and not errors and returncode is not None:
         return returncode if returncode >= 0 else 128 - returncode
     return 70
+
 
 
 def validate_process_family(
@@ -358,7 +499,9 @@ def validate_process_family(
         or family["observation_errors"] != []
         or not isinstance(family["observed_family"], list)
         or not family["observed_family"]
+        or len(family["observed_family"]) > _FAMILY_LEDGER_LIMIT
         or not isinstance(family["cleanup_signals"], list)
+        or len(family["cleanup_signals"]) > 2 * len(family["observed_family"])
         or any(
             type(family[n]) is not int or family[n] <= 0
             for n in ("supervisor_pid", "controller_pid", "command_pid")
@@ -395,6 +538,7 @@ def validate_process_family(
         p for p, _ in identities
     }:
         raise ValueError("missing or duplicate command process-family observation")
+    signal_keys = set()
     for row in family['cleanup_signals']:
         if (
             not isinstance(row, dict)
@@ -406,6 +550,10 @@ def validate_process_family(
             or row['signal'] not in {signal.SIGTERM, signal.SIGKILL}
         ):
             raise ValueError('invalid process-family cleanup signal identity')
+        key = (row['pid'], row['create_time'], row['signal'])
+        if key in signal_keys:
+            raise ValueError('duplicate process-family cleanup signal identity')
+        signal_keys.add(key)
     return family
 
 
@@ -422,6 +570,14 @@ def process_family_launch_error(path: Path) -> str | None:
 
 
 def _stop_group(process: subprocess.Popen, grace: float=2.0) -> None:
+    if isinstance(process, _FamilyPopen):
+        process.signal_family_guardian(signal.SIGTERM)
+        try:
+            process.wait(timeout=grace)
+        except subprocess.TimeoutExpired:
+            process.signal_family_guardian(signal.SIGKILL)
+            process.wait(timeout=grace)
+        return
     if os.name == 'posix':
         try:
             os.killpg(process.pid, signal.SIGTERM)

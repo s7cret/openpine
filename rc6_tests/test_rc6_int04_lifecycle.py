@@ -246,6 +246,9 @@ run_logged([sys.executable,'-B','-c',sys.argv[1],sys.argv[2],sys.argv[3],'timeou
         "signal-list-wrong-type",
         "overlapping-role-pids",
         "observed-controller",
+        "over-budget-family",
+        "duplicate-signal",
+        "over-budget-signals",
     ],
 )
 def test_real_command_replay_rejects_resealed_family_evidence_mutations(tmp_path, mutation):
@@ -282,6 +285,13 @@ def test_real_command_replay_rejects_resealed_family_evidence_mutations(tmp_path
             )
         elif mutation == "signal-list-wrong-type":
             family["cleanup_signals"] = {}
+        elif mutation == "over-budget-family":
+            from openpine.verification.execution_process import _FAMILY_LEDGER_LIMIT
+
+            family["observed_family"].extend(
+                {"pid": 100000000 + index, "create_time": 1.0, "name": "forged history"}
+                for index in range(_FAMILY_LEDGER_LIMIT)
+            )
         else:
             root = next(p for p in family["observed_family"] if p["pid"] == family["command_pid"])
             row = {"pid": root["pid"], "create_time": root["create_time"], "signal": signal.SIGTERM}
@@ -296,6 +306,12 @@ def test_real_command_replay_rejects_resealed_family_evidence_mutations(tmp_path
             elif mutation == "signal-malformed-row":
                 row["extra"] = "unbound"
             family["cleanup_signals"] = [row]
+            if mutation == "duplicate-signal":
+                family["cleanup_signals"] *= 2
+            elif mutation == "over-budget-signals":
+                from openpine.verification.execution_process import _FAMILY_LEDGER_LIMIT
+
+                family["cleanup_signals"] *= 2 * _FAMILY_LEDGER_LIMIT + 1
         family_path.write_text(json.dumps(family))
         receipt["files"]["process-family.json"] = hash_file(family_path)
     receipt.pop("content_hash")
@@ -567,3 +583,324 @@ def test_value(tmp_path):
     assert not aggregate_campaign(
         plan, output, expected_plan_hash=plan["content_hash"], expected_run_id=run["run_id"]
     )["ok"]
+
+
+def test_recycled_enumeration_slot_never_admits_actual_unrelated_process(tmp_path):
+    """A stale children-map slot resolves to a newer live non-descendant."""
+    child = tmp_path / 'owned-child.json'
+    neighbour_path = tmp_path / 'neighbour.json'
+    family_path = tmp_path / 'process-family.json'
+    parent = """import subprocess,sys,time
+from pathlib import Path
+subprocess.Popen([sys.executable,'-B','-c',sys.argv[1],sys.argv[2]],start_new_session=True)
+while not Path(sys.argv[2]).exists() or not Path(sys.argv[3]).exists():time.sleep(.01)
+time.sleep(.1)
+"""
+    code = """import os,sys,psutil,json
+from pathlib import Path
+from openpine.verification.execution_process import _supervise_family
+original=psutil.Process.children
+def recycled(self,*args,**kwargs):
+    children=original(self,*args,**kwargs)
+    path=Path(sys.argv[4])
+    if path.exists():children.append(psutil.Process(json.loads(path.read_text())['pid']))
+    return children
+psutil.Process.children=recycled
+raise SystemExit(_supervise_family([sys.executable,'-B','-c',sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]],os.getppid(),Path(sys.argv[5])))
+"""
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    controller = None
+    neighbour = None
+    witness = None
+    try:
+        with (tmp_path / 'probe.log').open('wb') as log:
+            controller = subprocess.Popen(  # noqa: S603 -- deterministic stale-map probe, owned test paths
+                [sys.executable, '-B', '-c', code, parent, CHILD, str(child), str(neighbour_path), str(family_path)],
+                env=env, stdout=log, stderr=subprocess.STDOUT,
+            )
+            deadline = time.monotonic() + 5
+            while not child.exists() and time.monotonic() < deadline and controller.poll() is None:
+                time.sleep(.01)
+            assert child.exists()
+            witness = json.loads(child.read_text())
+            # Created after the supervisor: models psutil's newer-than-owner filter.
+            neighbour = subprocess.Popen(  # noqa: S603 -- exclusively test-owned newer unrelated process
+                [sys.executable, '-B', '-c', 'import time;time.sleep(30)'], start_new_session=True,
+            )
+            neighbour_path.write_text(json.dumps({'pid': neighbour.pid}))
+            controller.wait(timeout=10)
+        report = json.loads(family_path.read_text())
+        assert neighbour.poll() is None, 'recycled enumeration slot signalled an unrelated process'
+        assert neighbour.pid not in {p['pid'] for p in report['observed_family']}
+        assert neighbour.pid not in {p['pid'] for p in report['cleanup_signals']}
+        assert not live(witness['pid'])
+        resources_closed(witness)
+    finally:
+        if controller is not None:
+            if controller.poll() is None:
+                controller.kill()
+            controller.wait(timeout=3)
+        if witness is None and child.is_file():
+            witness = json.loads(child.read_text())
+        if witness is not None:
+            dispose_test_child(witness['pid'])
+        if neighbour is not None:
+            if neighbour.poll() is None:
+                neighbour.kill()
+            neighbour.wait(timeout=3)
+
+
+def test_successful_final_traversal_omission_reconciles_retained_live_family(tmp_path):
+    child = tmp_path / 'child.json'
+    observed = tmp_path / 'observed'
+    exited = tmp_path / 'ancestor-exiting'
+    family_path = tmp_path / 'process-family.json'
+    parent = """import subprocess,sys,time
+from pathlib import Path
+subprocess.Popen([sys.executable,'-B','-c',sys.argv[1],sys.argv[2]],start_new_session=True)
+while not Path(sys.argv[3]).exists():time.sleep(.01)
+Path(sys.argv[4]).write_bytes(b'ancestor exits during traversal')
+"""
+    code = """import os,sys,psutil,json
+from pathlib import Path
+from openpine.verification.execution_process import _supervise_family
+original=psutil.Process.children
+def omitted(self,*args,**kwargs):
+    rows=original(self,*args,**kwargs)
+    witness=Path(sys.argv[3])
+    if witness.exists() and any(p.pid==json.loads(witness.read_text())['pid'] for p in rows):
+        Path(sys.argv[4]).write_bytes(b'actually enumerated before ancestor exit')
+    return [] if Path(sys.argv[5]).exists() else rows
+psutil.Process.children=omitted
+raise SystemExit(_supervise_family([sys.executable,'-B','-c',sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5]],os.getppid(),Path(sys.argv[6])))
+"""
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    with (tmp_path / 'probe.log').open('wb') as log:
+        result = subprocess.run(  # noqa: S603 -- actual ancestor exit and deterministic successful omission
+            [sys.executable, '-B', '-c', code, parent, CHILD, str(child), str(observed), str(exited), str(family_path)],
+            env=env, stdout=log, stderr=subprocess.STDOUT, timeout=10,
+        )
+    witness = json.loads(child.read_text())
+    try:
+        assert observed.is_file() and exited.is_file()
+        assert not live(witness['pid']), 'successful traversal omitted a retained live detached child'
+        resources_closed(witness)
+        report = json.loads(family_path.read_text())
+        assert witness['pid'] in {p['pid'] for p in report['observed_family']}
+        assert report['surviving_processes'] == [] and report['cleanup_verified'] is True
+        assert result.returncode == 70 and report['reason'] == 'orphan-descendants'
+    finally:
+        dispose_test_child(witness['pid'])
+
+
+def test_stable_owned_handle_signal_ignores_recycled_integer_routing(tmp_path, monkeypatch):
+    """Real pidfd signal target stays fixed across the modelled check/signal window."""
+    from openpine.verification.execution_process import _OwnedHandle
+
+    processes = []
+    handle = None
+    try:
+        for _ in range(2):
+            processes.append(subprocess.Popen(  # noqa: S603 -- two exclusively owned real kernel targets
+                [sys.executable, '-B', '-c', 'import time;time.sleep(30)'],
+            ))
+        first, neighbour = processes
+        fd = os.pidfd_open(first.pid, 0)
+        handle = _OwnedHandle(first.pid, psutil.Process(first.pid).create_time(), 'python', fd)
+        before = (handle.pid, handle.create_time)
+        routed = []
+        original_kill = os.kill
+
+        def recycled_kill(pid, signum):
+            routed.append(pid)
+            original_kill(neighbour.pid, signum)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(os, 'kill', recycled_kill)
+            assert before == (first.pid, handle.create_time)
+            handle.send_signal(signal.SIGTERM)
+        first.wait(timeout=3)
+        assert first.returncode == -signal.SIGTERM
+        assert neighbour.poll() is None and routed == []
+        with pytest.raises(ProcessLookupError):
+            handle.send_signal(signal.SIGTERM)
+        assert neighbour.poll() is None
+    finally:
+        if handle is not None:
+            handle.close()
+        for process in processes:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=3)
+
+
+def test_unavailable_pidfd_backend_fails_before_any_child_launch(tmp_path, monkeypatch):
+    import errno
+
+    marker = tmp_path / 'child-launched'
+
+    def unavailable(*args, **kwargs):
+        raise OSError(errno.ENOSYS, 'pidfd backend unavailable')
+
+    monkeypatch.setattr(os, 'pidfd_open', unavailable)
+    output = tmp_path / 'command'
+    report = run_logged(
+        [sys.executable, '-B', '-c', 'from pathlib import Path;import sys;Path(sys.argv[1]).touch()', str(marker)],
+        cwd=tmp_path, output=output, env=dict(os.environ),
+    )
+    assert report['status'] == 'infrastructure_error' and report['ok'] is False
+    assert 'pidfd' in report['error']
+    assert not marker.exists() and not (output / 'process-family.json').exists()
+    assert (output / 'command.json').is_file()
+
+
+def test_cumulative_family_budget_fails_and_closes_resources_under_sequential_churn(tmp_path):
+    """Actual sequential children exceed a small injected ledger, not the live limit."""
+    child = tmp_path / 'child.json'
+    family = tmp_path / 'process-family.json'
+    neighbour = tmp_path / 'neighbour-checkpoint'
+    neighbour.write_bytes(b'preserve unrelated evidence')
+    parent = """import subprocess,sys,time
+from pathlib import Path
+subprocess.Popen([sys.executable,'-B','-c',sys.argv[1],sys.argv[2]],start_new_session=True)
+while not Path(sys.argv[2]).exists():time.sleep(.01)
+for index in range(20):
+    subprocess.run([sys.executable,'-B','-c','import time;time.sleep(.08)'],check=True)
+"""
+    code = """import os,sys
+from pathlib import Path
+from openpine.verification import execution_process as module
+module._FAMILY_LEDGER_LIMIT=8
+raise SystemExit(module._supervise_family([sys.executable,'-B','-c',sys.argv[1],sys.argv[2],sys.argv[3]],os.getppid(),Path(sys.argv[4])))
+"""
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    witness = None
+    try:
+        with (tmp_path / 'probe.log').open('wb') as log:
+            result = subprocess.run(  # noqa: S603 -- exclusively owned sequential budget-pressure probe
+                [sys.executable, '-B', '-c', code, parent, CHILD, str(child), str(family)],
+                env=env, stdout=log, stderr=subprocess.STDOUT, timeout=15,
+            )
+        witness = json.loads(child.read_text())
+        report = json.loads(family.read_text())
+        assert result.returncode == 70 and report['cleanup_verified'] is False
+        assert any('cumulative' in error for error in report['observation_errors'])
+        assert len(report['observed_family']) <= 8
+        assert len(report['cleanup_signals']) <= 16 and family.stat().st_size < 32 * 1024
+        assert report['surviving_processes'] == [] and not live(witness['pid'])
+        resources_closed(witness)
+        assert neighbour.read_bytes() == b'preserve unrelated evidence'
+    finally:
+        if witness is None and child.is_file():
+            witness = json.loads(child.read_text())
+        if witness is not None:
+            dispose_test_child(witness['pid'])
+
+
+def test_overflow_signal_denial_retains_actual_survivors_without_per_child_wait(tmp_path):
+    """Real held resources survive a denied syscall and must remain in the receipt."""
+    family = tmp_path / 'process-family.json'
+    held = CHILD.replace('import fcntl,json,os,socket,sys,time', 'import fcntl,json,os,socket,sys,time,signal\nsignal.signal(signal.SIGTERM,signal.SIG_IGN)')
+    parent = """import subprocess,sys,time
+from pathlib import Path
+for index in range(6):
+    subprocess.Popen([sys.executable,'-B','-c',sys.argv[1],sys.argv[2]+'/'+str(index)+'.json'],start_new_session=True)
+while len(list(Path(sys.argv[2]).glob('*.json')))<6:time.sleep(.01)
+time.sleep(60)
+"""
+    code = """import os,sys,signal
+from pathlib import Path
+from openpine.verification import execution_process as module
+module._FAMILY_LEDGER_LIMIT=2
+module._FAMILY_OVERFLOW_LIMIT=2
+original=module._OwnedHandle.send_signal
+def denied(self,signum):
+    if signum==signal.SIGKILL:raise PermissionError('actual overflow pidfd signal denied')
+    return original(self,signum)
+module._OwnedHandle.send_signal=denied
+# Allow all six real resource holders to start before injecting budget pressure.
+original_children=__import__('psutil').Process.children
+def ready(self,*args,**kwargs):
+    rows=original_children(self,*args,**kwargs)
+    import time
+    while len(list(Path(sys.argv[3]).glob('*.json')))<6:time.sleep(.01)
+    return rows
+__import__('psutil').Process.children=ready
+raise SystemExit(module._supervise_family([sys.executable,'-B','-c',sys.argv[1],sys.argv[2],sys.argv[3]],os.getppid(),Path(sys.argv[4])))
+"""
+    resources = tmp_path / 'resources'
+    resources.mkdir()
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    started = time.monotonic()
+    witnesses = []
+    try:
+        with (tmp_path / 'probe.log').open('wb') as log:
+            result = subprocess.run(  # noqa: S603 -- owned signal-denial probe with real six-process fanout
+                [sys.executable, '-B', '-c', code, parent, held, str(resources), str(family)],
+                env=env, stdout=log, stderr=subprocess.STDOUT, timeout=10,
+            )
+        witnesses = [json.loads(p.read_text()) for p in resources.glob('*.json')]
+        assert len(witnesses) == 6 and all(live(w['pid']) for w in witnesses)
+        report = json.loads(family.read_text())
+        assert result.returncode == 70 and report['cleanup_verified'] is False
+        assert {w['pid'] for w in witnesses}.issubset({p['pid'] for p in report['surviving_processes']})
+        assert report['observation_errors'] and len(report['observed_family']) <= 2
+        assert time.monotonic() - started < 4, 'overflow fanout added independent per-child waits'
+    finally:
+        if not witnesses:
+            witnesses = [json.loads(p.read_text()) for p in resources.glob('*.json')]
+        for witness in witnesses:
+            dispose_test_child(witness['pid'])
+            resources_closed(witness)
+
+
+def test_guardian_cancellation_never_routes_recycled_process_group_to_neighbour(tmp_path, monkeypatch):
+    from openpine.verification.execution_process import _stop_group, start_declared_process
+
+    family = tmp_path / 'process-family.json'
+    ready = tmp_path / 'declared-child-ready'
+    neighbour = subprocess.Popen(  # noqa: S603 -- exclusively owned unrelated group routing witness
+        [sys.executable, '-B', '-c', 'import time;time.sleep(30)'], start_new_session=True,
+    )
+    guardian = None
+    routed = []
+    try:
+        guardian = start_declared_process(
+            [sys.executable, '-B', '-c',
+             'import sys,time;from pathlib import Path;Path(sys.argv[1]).touch();time.sleep(30)', str(ready)],
+            family_evidence=family, start_new_session=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        # Let the real guardian establish ownership and start the declared child.
+        deadline = time.monotonic() + 5
+        while not ready.is_file() and guardian.poll() is None and time.monotonic() < deadline:
+            time.sleep(.01)
+        assert ready.is_file()
+        original_killpg = os.killpg
+
+        def recycled_group(pgid, signum):
+            routed.append((pgid, signum))
+            original_killpg(neighbour.pid, signum)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(os, 'killpg', recycled_group)
+            _stop_group(guardian)
+            # Repeat after wait() reaps the guardian: its old PGID has no authority.
+            _stop_group(guardian)
+        assert guardian.poll() is not None
+        assert neighbour.poll() is None and routed == []
+        report = json.loads(family.read_text())
+        assert report['cleanup_verified'] is True and report['surviving_processes'] == []
+    finally:
+        (tmp_path / 'routing-probe.json').write_text(json.dumps(
+            {'modelled_group_routing': routed, 'neighbour_returncode_before_disposal': neighbour.poll(),
+             'guardian_returncode_before_disposal': guardian.poll() if guardian is not None else None,
+             'forced_kernel_pgid_reuse': False}
+        ))
+        if guardian is not None:
+            if guardian.poll() is None:
+                _stop_group(guardian)
+            guardian.wait(timeout=3)
+        if neighbour.poll() is None:
+            neighbour.kill()
+        neighbour.wait(timeout=3)

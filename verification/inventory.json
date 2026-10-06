@@ -1201,14 +1201,24 @@
       "tests/test_stack_lock.py::test_rc6_runtime_lock_matches_all_eight_source_and_installed_modules",
       "tests/test_verification_campaign_cli_failclosed_new.py::test_completed_pytest_group_gets_bounded_quiescence_not_a_false_orphan",
       "tests/test_verification_campaign_cli_failclosed_new.py::test_zombie_only_process_group_is_quiescent_without_live_members",
-      "tests/test_verification_plan_gate_failclosed_new.py::test_generated_ui_typescript_buildinfo_does_not_change_source_identity"
+      "tests/test_verification_plan_gate_failclosed_new.py::test_generated_ui_typescript_buildinfo_does_not_change_source_identity",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_cumulative_family_budget_fails_and_closes_resources_under_sequential_churn",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_recycled_enumeration_slot_never_admits_actual_unrelated_process",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_stable_owned_handle_signal_ignores_recycled_integer_routing",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_successful_final_traversal_omission_reconciles_retained_live_family",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_unavailable_pidfd_backend_fails_before_any_child_launch",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_overflow_signal_denial_retains_actual_survivors_without_per_child_wait",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_real_command_replay_rejects_resealed_family_evidence_mutations[duplicate-signal]",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_real_command_replay_rejects_resealed_family_evidence_mutations[over-budget-family]",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_real_command_replay_rejects_resealed_family_evidence_mutations[over-budget-signals]",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_guardian_cancellation_never_routes_recycled_process_group_to_neighbour"
     ],
     "baseline": {
       "count": 11027,
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11887,
+    "count": 11897,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "nodeid_aliases": {
