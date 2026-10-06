@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-DEFAULT_TIMEZONE = "UTC+03:00"
+DEFAULT_TIMEZONE = "UTC+04:00"
 DEFAULT_TIMEZONE_LABEL = "MSK"
 _ENV_TIMEZONE = "OPENPINE_TIMEZONE"
 _UTC_OFFSET_RE = re.compile(
