@@ -19,11 +19,26 @@ def validate_inventory(nodeids: list[str], expected: dict, deselected: int) -> N
     if expected.get('identity_mode') == 'reviewed_addition_to_hashed_baseline':
         added = expected.get('added_nodeids')
         baseline = expected.get('baseline')
-        if not isinstance(added, list) or not added or any((not isinstance(node, str) or not node for node in added)) or (len(set(added)) != len(added)) or (not isinstance(baseline, dict)) or (baseline.get('identity_mode') is not None) or (not set(added).issubset(nodeids)) or (expected.get('count') != len(nodeids)) or (expected.get('count') != baseline.get('count', -1) + len(added)) or (expected.get('deselected', 0) != deselected):
+        if not isinstance(added, list) or not added or any((not isinstance(node, str) or not node for node in added)) or (len(set(added)) != len(added)) or (not isinstance(baseline, dict)) or (baseline.get('identity_mode') is not None) or ('nodeid_aliases' in baseline) or (not set(added).issubset(nodeids)) or (expected.get('count') != len(nodeids)) or (expected.get('count') != baseline.get('count', -1) + len(added)) or (expected.get('deselected', 0) != deselected):
             raise ValueError('invalid or incomplete reviewed additive inventory')
         original_nodes = [node for node in nodeids if node not in set(added)]
+        aliases = expected.get('nodeid_aliases', {})
+        # Reviewed display-ID changes retain the exact historical denominator and
+        # hash. Every current ID must map once to an absent historical ID of the
+        # same parametrized test; receipt nodeids and phase obligations stay real.
+        if (not isinstance(aliases, dict)
+                or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
+                       or '[' not in k or '[' not in v or not k.endswith(']') or not v.endswith(']')
+                       or k.rsplit('[', 1)[0] != v.rsplit('[', 1)[0] for k, v in aliases.items())
+                or len(set(aliases.values())) != len(aliases)
+                or not set(aliases).issubset(original_nodes)
+                or set(aliases.values()).intersection(nodeids)):
+            raise ValueError('invalid or incomplete reviewed test ID aliases')
+        original_nodes = [aliases.get(node, node) for node in original_nodes]
         validate_inventory(original_nodes, baseline, deselected)
         return
+    if 'nodeid_aliases' in expected:
+        raise ValueError('test ID aliases require an explicit reviewed additive inventory')
     if expected.get('count') != len(nodeids) or expected.get('sha256') != collection_hash(nodeids) or expected.get('deselected', 0) != deselected:
         raise ValueError('test inventory changed; explicit review/rebaseline required')
 

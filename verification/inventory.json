@@ -545,20 +545,40 @@
       "rc6_tests/test_rc6_public_evidence.py::test_public_evidence_rejects_unapproved_contents[url-credentials]",
       "rc6_tests/test_rc6_public_evidence.py::test_public_evidence_reports_remain_safe[collection]",
       "rc6_tests/test_rc6_public_evidence.py::test_public_evidence_reports_remain_safe[execution]",
+      "rc6_tests/test_rc6_public_evidence.py::test_public_evidence_reports_remain_safe[platform-collection]",
       "rc6_tests/test_rc6_public_evidence.py::test_public_upload_budget_includes_all_files_and_zip_reserve",
       "rc6_tests/test_rc6_public_evidence.py::test_public_upload_budget_rejects_incomplete_or_unsafe_payload[audit-failed]",
       "rc6_tests/test_rc6_public_evidence.py::test_public_upload_budget_rejects_incomplete_or_unsafe_payload[extra]",
       "rc6_tests/test_rc6_public_evidence.py::test_public_upload_budget_rejects_incomplete_or_unsafe_payload[missing]",
-      "rc6_tests/test_rc6_public_evidence.py::test_public_upload_budget_rejects_incomplete_or_unsafe_payload[symlink]"
+      "rc6_tests/test_rc6_public_evidence.py::test_public_upload_budget_rejects_incomplete_or_unsafe_payload[symlink]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_preserve_historical_inventory_and_real_phase_obligations",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[alias-addition]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[cross-test]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[cycle]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[duplicate-historical]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[historical-present]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[missing-alias]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[nested-baseline]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[non-string]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[not-map]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[unknown-current]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[unreviewed-mode]",
+      "rc6_tests/test_rc6_public_evidence.py::test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations[wrong-historical]"
     ],
     "baseline": {
       "count": 11027,
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11532,
+    "count": 11546,
     "deselected": 0,
-    "identity_mode": "reviewed_addition_to_hashed_baseline"
+    "identity_mode": "reviewed_addition_to_hashed_baseline",
+    "nodeid_aliases": {
+      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[process-exit]": "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import os\\ndef test_value():\\n    os._exit(9)\\n]",
+      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[setup-error]": "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    raise ValueError(\"setup\")\\ndef test_value():\\n    assert True\\n]",
+      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[teardown-error]": "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    yield\\n    raise ValueError(\"teardown\")\\ndef test_value():\\n    assert True\\n]",
+      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[skip]": "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\ndef test_value():\\n    pytest.skip(\"synthetic verifier negative case\")\\n]"
+    }
   },
   "openpine-contracts": {
     "count": 557,

@@ -367,7 +367,7 @@ def test_aggregate_rejects_mutated_real_evidence(valid_campaign, tmp_path, mutat
     result = aggregate_campaign(plan, root, expected_plan_hash=plan['content_hash'], expected_run_id=run['run_id'])
     assert result['ok'] is False and result['errors']
 
-@pytest.mark.parametrize('body', ['import pytest\n@pytest.fixture(autouse=True)\ndef fail():\n    raise ValueError("setup")\ndef test_value():\n    assert True\n', 'import pytest\n@pytest.fixture(autouse=True)\ndef fail():\n    yield\n    raise ValueError("teardown")\ndef test_value():\n    assert True\n', 'import pytest\ndef test_value():\n    pytest.skip("synthetic verifier negative case")\n', 'import os\ndef test_value():\n    os._exit(9)\n'])
+@pytest.mark.parametrize('body', ['import pytest\n@pytest.fixture(autouse=True)\ndef fail():\n    raise ValueError("setup")\ndef test_value():\n    assert True\n', 'import pytest\n@pytest.fixture(autouse=True)\ndef fail():\n    yield\n    raise ValueError("teardown")\ndef test_value():\n    assert True\n', 'import pytest\ndef test_value():\n    pytest.skip("synthetic verifier negative case")\n', 'import os\ndef test_value():\n    os._exit(9)\n'], ids=['setup-error', 'teardown-error', 'skip', 'process-exit'])
 def test_real_unsuccessful_shards_never_pass(tmp_path, body):
     plan, path = tiny_plan(tmp_path, bodies={'test_bad.py': body}, shards=1)
     run = run_campaign(plan, path, tmp_path / 'evidence', run_id='negative')

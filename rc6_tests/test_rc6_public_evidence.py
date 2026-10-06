@@ -57,18 +57,21 @@ def test_public_evidence_rejects_symlink_and_budget(tmp_path):
         owner().audit(tmp_path, candidate='a' * 40, run_id='test-run', max_bytes=16)
 
 
-@pytest.mark.parametrize('mode', ['execution', 'collection'])
+@pytest.mark.parametrize('mode', ['execution', 'collection', 'platform-collection'])
 def test_public_evidence_reports_remain_safe(tmp_path, mode):
     """Scan actual pytest reports so negative fixture bytes cannot leak via IDs."""
     report_root = tmp_path / 'reports'
     logs = report_root / 'commands/0001'
     logs.mkdir(parents=True)
     host = Path(__file__).resolve().parents[1]
+    selector = ('rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass'
+                if mode == 'platform-collection' else
+                'rc6_tests/test_rc6_public_evidence.py::test_public_evidence_rejects_unapproved_contents')
     argv = [sys.executable, '-m', 'pytest', '--noconftest', '-o', 'addopts=', '-q',
-            'rc6_tests/test_rc6_public_evidence.py::test_public_evidence_rejects_unapproved_contents',
+            selector,
             '-p', 'openpine.verification.pytest_gate',
             '--verification-output=' + str(report_root / 'collection.json')]
-    if mode == 'collection':
+    if mode != 'execution':
         argv.append('--collect-only')
     else:
         argv.append('--junitxml=' + str(report_root / 'junit.xml'))
@@ -130,3 +133,61 @@ def test_public_upload_budget_rejects_incomplete_or_unsafe_payload(tmp_path, mut
         audit.write_text(json.dumps({'ok': False}))
     with pytest.raises(ValueError):
         owner().check_upload_payload(archive, audit, max_bytes=2 * 1024 * 1024)
+
+
+def aliased_inventory():
+    from openpine.verification.pytest_gate import collection_hash
+    historic = ['test.py::test_body[old-one]', 'test.py::test_body[old-two]']
+    current = ['test.py::test_body[new-one]', 'test.py::test_body[new-two]', 'test.py::test_added']
+    expected = {'identity_mode': 'reviewed_addition_to_hashed_baseline',
+                'count': 3, 'deselected': 0, 'added_nodeids': [current[-1]],
+                'baseline': {'count': 2, 'deselected': 0, 'sha256': collection_hash(historic)},
+                'nodeid_aliases': dict(zip(current[:2], historic, strict=True))}
+    return current, expected
+
+
+def test_reviewed_neutral_ids_preserve_historical_inventory_and_real_phase_obligations():
+    from openpine.verification.pytest_gate import validate_inventory, validate_phase_reports
+    current, expected = aliased_inventory()
+    before = json.dumps(expected, sort_keys=True)
+    validate_inventory(current, expected, 0)
+    assert json.dumps(expected, sort_keys=True) == before
+    assert validate_phase_reports(current, {})  # Renaming never satisfies execution.
+
+
+@pytest.mark.parametrize('mutation', [
+    'not-map', 'non-string', 'unknown-current', 'duplicate-historical',
+    'historical-present', 'cross-test', 'cycle', 'alias-addition', 'missing-alias',
+    'wrong-historical', 'nested-baseline', 'unreviewed-mode',
+])
+def test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations(mutation):
+    from openpine.verification.pytest_gate import validate_inventory
+    current, expected = aliased_inventory()
+    aliases = expected['nodeid_aliases']
+    if mutation == 'not-map':
+        expected['nodeid_aliases'] = []
+    elif mutation == 'non-string':
+        aliases[current[0]] = None
+    elif mutation == 'unknown-current':
+        aliases['test.py::test_body[unknown]'] = aliases.pop(current[0])
+    elif mutation == 'duplicate-historical':
+        aliases[current[1]] = aliases[current[0]]
+    elif mutation == 'historical-present':
+        current[0] = aliases[current[0]]
+    elif mutation == 'cross-test':
+        aliases[current[0]] = 'other.py::test_body[old-one]'
+    elif mutation == 'cycle':
+        aliases[current[0]] = current[1]
+        aliases[current[1]] = current[0]
+    elif mutation == 'alias-addition':
+        aliases[current[-1]] = 'test.py::test_added[old]'
+    elif mutation == 'missing-alias':
+        aliases.pop(current[0])
+    elif mutation == 'wrong-historical':
+        aliases[current[0]] = 'test.py::test_body[other]'
+    elif mutation == 'nested-baseline':
+        expected['baseline']['nodeid_aliases'] = {}
+    else:
+        expected.pop('identity_mode')
+    with pytest.raises(ValueError):
+        validate_inventory(current, expected, 0)

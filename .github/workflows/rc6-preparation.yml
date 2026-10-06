@@ -106,7 +106,7 @@ jobs:
         report={'commit':os.environ['GITHUB_SHA'],'run_id':'rc6-preparation-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'],'scope':'bounded preparation baseline','full_product_qualified':False}
         (raw/'summary.json').write_text(json.dumps(report,indent=2))
         (raw/'transport-scope.json').write_text(json.dumps({'scope':'preparation primary logs, collection receipts, JUnit and byte identities','excluded':'source archives, wheel build inputs, virtualenvs, caches, private temporary trees; these are not published','full_product_qualified':False},indent=2))
-        subprocess.run(['python',str(pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'scripts/rc6_public_evidence.py'),'--root',str(raw),'--candidate',report['commit'],'--run-id',report['run_id'],'--max-bytes',str(128*1024**2),'--output',str(root/'public-evidence-audit.json')],check=True)
+        subprocess.run(['python','-m','scripts.rc6_public_evidence','--root',str(raw),'--candidate',report['commit'],'--run-id',report['run_id'],'--max-bytes',str(128*1024**2),'--output',str(root/'public-evidence-audit.json')],check=True)
         args=['python','-m','openpine.verification.execution_evidence','archive','--evidence',str(raw),'--output',str(root/'preparation-archive'),'--source-root',os.environ['GITHUB_WORKSPACE'],'--candidate',report['commit'],'--run-id',report['run_id'],'--retention-days',os.environ['RETENTION_DAYS'],'--max-bytes',str(128*1024**2)]
         for source in (work/'stack').glob('*'):
           if source.is_dir():args.extend(['--source-root',str(source)])
