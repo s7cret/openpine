@@ -406,3 +406,83 @@ def test_real_diagnostic_cli_requires_exact_declared_authority(tmp_path, fault, 
         )
         assert report["diagnostic_provisional_ok"] is (fault == "valid")
         assert len(report["unresolved_authority_cases"]) == 3
+
+
+@pytest.mark.parametrize("diagnostic", [False, True])
+@pytest.mark.parametrize(
+    "fault",
+    ["pass-labels", "missing-unassigned", "missing-assigned", "failed-assigned", "row-credit"],
+)
+def test_real_saved_index_cli_rejects_relabelled_or_missing_evidence(tmp_path, fault, diagnostic):
+    from collections import Counter
+    import os
+    import sys
+    from openpine.verification.execution_process import run_logged
+
+    index = (
+        provisional_fixture(tmp_path)
+        if fault in {"pass-labels", "missing-unassigned"}
+        else fixture(tmp_path)
+    )
+    for group in index["groups"]:
+        group.update(status="PASS", reasons=[], deferred_cases=[], unresolved_authority=[])
+        if fault == "missing-unassigned":
+            group["unassigned_outcomes"] = []
+    index.update(
+        ok=True,
+        all_declared_runs_passed=True,
+        diagnostic_provisional_ok=False,
+        passed_group_paths=len(index["groups"]),
+        deferred_group_paths=0,
+        unresolved_authority_cases=[],
+    )
+    assigned = next(row for row in index["rows"] if row["evidence"])
+    if fault == "missing-assigned":
+        assigned.update(
+            evidence=[], evidence_status="NO_EXAMPLES", passing_paths=[], unique_cases=0
+        )
+    elif fault == "failed-assigned":
+        for item in assigned["evidence"]:
+            item.update(status="FAILED", observed_statuses=["RUNTIME_MISMATCH"])
+        assigned.update(evidence_status="FAILED", passing_paths=[])
+    elif fault == "row-credit":
+        untested = next(row for row in index["rows"] if not row["evidence"])
+        assert untested["pine_version"] == 5 and untested["evidence_status"] == "NO_EXAMPLES"
+        untested["evidence_status"] = "EXAMPLES_ALL_PATHS"
+    # Keep the forged aggregate counters internally consistent, so the
+    # regression requires validation of the retained evidence itself.
+    index["counts"] = dict(Counter(row["evidence_status"] for row in index["rows"]))
+    index["direct_with_examples_all_paths"] = sum(
+        row["status"] == "RUNTIME_DIRECT" and row["evidence_status"] == "EXAMPLES_ALL_PATHS"
+        for row in index["rows"]
+    )
+    inputs, output = tmp_path / "index.json", tmp_path / "result.json"
+    write_json(inputs, reseal(index))
+    before = inputs.read_bytes()
+    argv = [
+        sys.executable,
+        *(["-I"] if sys.flags.isolated else []),
+        "-B",
+        "-m",
+        "openpine.verification",
+        "stage2-remaining",
+        "--host-root",
+        str(tmp_path),
+        "--builtin-index",
+        str(inputs),
+        "--output",
+        str(output),
+    ]
+    if diagnostic:
+        argv.append("--diagnostic-provisional")
+    result = run_logged(argv, cwd=ROOT, output=tmp_path / "cli", env=dict(os.environ), timeout=60)
+    assert result["returncode"] == 1
+    assert inputs.read_bytes() == before
+    if output.exists():
+        report = read_json(output)
+        assert (
+            report["ok"]
+            is report["full_stage2_accepted"]
+            is report["tradingview_verified"]
+            is False
+        )

@@ -22,8 +22,6 @@
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "backtest_engine": {
-    "count": 1241,
-    "deselected": 0,
     "added_nodeids": [
       "tests/unit/test_json_checkpoint_admission.py::test_json_export_rejects_nonfinite_mutated_broker_equity[-inf]",
       "tests/unit/test_json_checkpoint_admission.py::test_json_export_rejects_nonfinite_mutated_broker_equity[inf]",
@@ -53,6 +51,8 @@
       "deselected": 0,
       "sha256": "sha256:3c1f6fb4eafb76548e2e0efee4a780544329c6b066dfc0c6012177e045b3be30"
     },
+    "count": 1241,
+    "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "marketdata-provider": {
@@ -965,14 +965,24 @@
       "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[missing-provenance-False]",
       "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[missing-provenance-True]",
       "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[unknown-gap-False]",
-      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[unknown-gap-True]"
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_remaining_cli_rejects_failed_missing_and_forged_evidence[unknown-gap-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[failed-assigned-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[failed-assigned-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-assigned-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-assigned-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-unassigned-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[missing-unassigned-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[pass-labels-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[pass-labels-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[row-credit-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[row-credit-True]"
     ],
     "baseline": {
       "count": 11027,
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11651,
+    "count": 11661,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "nodeid_aliases": {
@@ -991,6 +1001,12 @@
         "    assert True",
         "]"
       ],
+      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[skip]": [
+        "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest",
+        "def test_value():",
+        "    pytest.skip(\"synthetic verifier negative case\")",
+        "]"
+      ],
       "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[teardown-error]": [
         "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest",
         "@pytest.fixture(autouse=True)",
@@ -999,12 +1015,6 @@
         "    raise ValueError(\"teardown\")",
         "def test_value():",
         "    assert True",
-        "]"
-      ],
-      "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[skip]": [
-        "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest",
-        "def test_value():",
-        "    pytest.skip(\"synthetic verifier negative case\")",
         "]"
       ]
     }
@@ -1237,8 +1247,6 @@
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   },
   "pinelib": {
-    "count": 5198,
-    "deselected": 0,
     "added_nodeids": [
       "tests/test_committed_reference_closure.py::test_new_runtime_rejects_resealed_committed_edge_before_publication[5]",
       "tests/test_committed_reference_closure.py::test_new_runtime_rejects_resealed_committed_edge_before_publication[6]",
@@ -1272,6 +1280,8 @@
       "deselected": 0,
       "sha256": "sha256:4b216d1a399cae2b4beebafcc09ee7a87c7f4f828fd883312b6388cffe8e0379"
     },
+    "count": 5198,
+    "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline"
   }
 }

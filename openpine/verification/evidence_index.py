@@ -233,6 +233,23 @@ def _groups(plan: dict) -> list[dict]:
     return cast(list[dict], body["groups"])
 
 
+def _row_evidence_summary(evidence: list[dict]) -> dict:
+    passed_paths = sorted({item["path"] for item in evidence if item["status"] == "PASS"})
+    problems = any(item["status"] != "PASS" for item in evidence)
+    covered = set(passed_paths) >= set(EXECUTION_PATHS) and not problems
+    return {
+        "evidence_status": "FAILED"
+        if problems
+        else "EXAMPLES_ALL_PATHS"
+        if covered
+        else "PARTIAL_EXAMPLES"
+        if evidence
+        else "NO_EXAMPLES",
+        "passing_paths": passed_paths,
+        "unique_cases": len({(item["corpus_hash"], item["case_id"]) for item in evidence}),
+    }
+
+
 def build_evidence_index(
     surface: dict,
     locked: dict,
@@ -490,9 +507,6 @@ def build_evidence_index(
     output_rows = []
     for key, row in sorted(rows.items()):
         evidence = evidence_by_key[key]
-        passed_paths = sorted({item["path"] for item in evidence if item["status"] == "PASS"})
-        problems = [item for item in evidence if item["status"] != "PASS"]
-        covered = set(passed_paths) >= set(EXECUTION_PATHS) and not problems
         output_rows.append(
             {
                 **{
@@ -506,15 +520,7 @@ def build_evidence_index(
                         "qualifier_contract",
                     )
                 },
-                "evidence_status": "FAILED"
-                if problems
-                else "EXAMPLES_ALL_PATHS"
-                if covered
-                else "PARTIAL_EXAMPLES"
-                if evidence
-                else "NO_EXAMPLES",
-                "passing_paths": passed_paths,
-                "unique_cases": len({(item["corpus_hash"], item["case_id"]) for item in evidence}),
+                **_row_evidence_summary(evidence),
                 "evidence": evidence,
                 "contract_fully_verified": False,
             }
@@ -594,6 +600,62 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
         raise ValueError("saved callable counts contradict rows")
     if index["counts"] != dict(Counter(r["evidence_status"] for r in rows)):
         raise ValueError("saved evidence counts contradict rows")
+    evidence_units = {}
+    for row in rows:
+        evidence = row["evidence"]
+        if not isinstance(evidence, list) or row["contract_fully_verified"] is not False:
+            raise ValueError("invalid saved row evidence or whole-contract claim")
+        for item in evidence:
+            if set(item) != {
+                "corpus_hash",
+                "case_id",
+                "variant",
+                "path",
+                "status",
+                "observed_statuses",
+                "oracles",
+                "trace_hashes",
+                "observation_scope",
+            }:
+                raise ValueError("malformed saved assignment evidence")
+            statuses = item["observed_statuses"]
+            hashes = item["trace_hashes"]
+            if (
+                not isinstance(statuses, list)
+                or not statuses
+                or any(not isinstance(s, str) or not s for s in statuses)
+                or statuses != sorted(set(statuses))
+                or not isinstance(hashes, list)
+                or not hashes
+                or any(
+                    not isinstance(h, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", h) is None
+                    for h in hashes
+                )
+                or hashes != sorted(set(hashes))
+            ):
+                raise ValueError("saved assignment has missing or invalid outcome/trace evidence")
+            status = (
+                "PASS" if statuses == ["PASS"] else "CONFLICT" if "PASS" in statuses else "FAILED"
+            )
+            if item["status"] != status:
+                raise ValueError("saved assignment status contradicts observed outcomes")
+            unit = (
+                key_of(row),
+                item["corpus_hash"],
+                item["case_id"],
+                item["variant"],
+                item["path"],
+            )
+            if unit in evidence_units:
+                raise ValueError("duplicate saved assignment evidence")
+            evidence_units[unit] = item
+        if any(row[name] != value for name, value in _row_evidence_summary(evidence).items()):
+            raise ValueError("saved row summary contradicts its evidence")
+    if index["direct_with_examples_all_paths"] != sum(
+        r["status"] == "RUNTIME_DIRECT" and r["evidence_status"] == "EXAMPLES_ALL_PATHS"
+        for r in rows
+    ):
+        raise ValueError("saved direct coverage count contradicts row evidence")
     expected = {(g["id"], v, p): g for g in groups for v in g["variants"] for p in g["paths"]}
     observed = {(g["group"], g["variant"], g["path"]): g for g in index["groups"]}
     if not observed or len(observed) != len(index["groups"]) or observed.keys() != expected.keys():
@@ -601,6 +663,7 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
     if index["required_group_paths"] != len(expected):
         raise ValueError("saved required group count contradicts frozen plan")
     deferred = {}
+    declared_units = set()
     for key, group in observed.items():
         declaration = expected[key]
         corpus = load_corpus(_under(host_root, declaration["corpus"]))
@@ -612,10 +675,13 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
             or body["corpus_hash"] != corpus["content_hash"]
         ):
             raise ValueError("saved group corpus/assignments changed")
-        cases = {c["id"] for c in corpus["cases"]}
-        assigned = {r["case_id"] for r in body["assignments"]}
+        case_rows = {c["id"]: c for c in corpus["cases"]}
+        cases = set(case_rows)
+        assignments = body["assignments"]
+        assigned = {r["case_id"] for r in assignments}
         if (
             not assigned
+            or len({digest(r) for r in assignments}) != len(assignments)
             or not assigned <= cases
             or group["corpus_cases"] != len(cases)
             or group["assigned_cases"] != len(assigned)
@@ -624,6 +690,49 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
             raise ValueError("saved group lost corpus/assignment obligations")
         if group["status"] not in {"PASS", "TEMPORARY_UNVERIFIED", "FAILED", "NOT_RUN"}:
             raise ValueError("unknown saved group status")
+        accepted = group["status"] in {"PASS", "TEMPORARY_UNVERIFIED"}
+        for assignment_row in assignments:
+            if set(assignment_row) != {*KEY_FIELDS, "case_id", "contract_hash"}:
+                raise ValueError("invalid frozen assignment fields")
+            callable_key = key_of(assignment_row)
+            case = case_rows[assignment_row["case_id"]]
+            if (
+                callable_key not in frozen
+                or assignment_row["contract_hash"] != frozen[callable_key]
+                or case["pine_version"] != callable_key[0]
+            ):
+                raise ValueError("frozen assignment no longer matches corpus/surface")
+            unit = (callable_key, corpus["content_hash"], case["id"], key[1], key[2])
+            declared_units.add(unit)
+            item = evidence_units.get(unit)
+            if accepted and (item is None or item["status"] != "PASS"):
+                raise ValueError(
+                    "accepted saved group lacks passing evidence for every frozen assignment"
+                )
+            if item is not None:
+                corpus_path = _under(host_root, declaration["corpus"])
+                settings = read_json(_under(corpus_path.parent, case["settings"]["path"]))
+                scope = {
+                    "scope": settings.get("scope", "bounded_example_not_whole_contract"),
+                    "observed_from_bar": settings.get("observed_from_bar", 0),
+                }
+                if (
+                    item["oracles"] != [case["oracle"]["kind"]]
+                    or item["observation_scope"] != scope
+                ):
+                    raise ValueError("saved assignment differs from frozen oracle/settings")
+        outcomes = group["unassigned_outcomes"]
+        unassigned = cases - assigned
+        if (
+            not isinstance(outcomes, list)
+            or len({digest(r) for r in outcomes}) != len(outcomes)
+            or any(r["id"] not in unassigned for r in outcomes)
+            or (accepted and {r["id"] for r in outcomes} != unassigned)
+        ):
+            raise ValueError("saved group lost or changed unassigned corpus outcomes")
+        nonpass = [r for r in outcomes if r["status"] != "PASS"]
+        if group["status"] == "PASS" and (nonpass or group["reasons"]):
+            raise ValueError("saved PASS group retains failed or unresolved outcomes")
         pending = group["deferred_cases"]
         authority = group["unresolved_authority"]
         if group["status"] != "TEMPORARY_UNVERIFIED":
@@ -635,6 +744,13 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
             or not pending
             or len(set(pending)) != len(pending)
             or not set(pending) <= cases - assigned
+            or set(pending) != {r["id"] for r in nonpass}
+            or any(
+                r["status"] != "RUNTIME_MISMATCH"
+                or r.get("authority") != "UNVERIFIED"
+                or r.get("first_divergence") is None
+                for r in nonpass
+            )
         ):
             raise ValueError("invalid deferred corpus scope")
         registry = verify(
@@ -646,7 +762,7 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
             raise ValueError("saved gap is not declared in the authority registry")
         if {r["case_id"] for r in authority} != set(pending) or len(authority) != len(pending):
             raise ValueError("saved gap provenance inventory changed")
-        details = {r["id"]: r for r in group["unassigned_outcomes"]}
+        details = {r["id"]: r for r in nonpass}
         for row in authority:
             if row != declared[row["case_id"]] or row["authority_status"] != "UNVERIFIED":
                 raise ValueError("saved authority record differs from registry")
@@ -665,6 +781,8 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
             ):
                 raise ValueError("saved gap does not explain its actual unresolved mismatch")
             deferred[digest(row)] = row
+    if not evidence_units.keys() <= declared_units:
+        raise ValueError("saved row evidence is outside the frozen assignment scope")
     unresolved = sorted(deferred.values(), key=digest)
     if index["unresolved_authority_cases"] != unresolved:
         raise ValueError("saved aggregate authority inventory contradicts groups")

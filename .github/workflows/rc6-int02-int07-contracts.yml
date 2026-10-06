@@ -124,7 +124,7 @@ jobs:
         for number, folder in enumerate(sorted((root/'pytest-private').glob('*/cli'))):
             if folder.parent.is_symlink():
                 continue
-            if not folder.parent.name.startswith(('test_builtin_expected_real_cli','test_real_remaining_cli','test_real_diagnostic_cli')):
+            if not folder.parent.name.startswith(('test_builtin_expected_real_cli','test_real_remaining_cli','test_real_diagnostic_cli','test_real_saved_index_cli')):
                 continue
             cases.append(folder.parent)
             for item in folder.iterdir():
@@ -136,7 +136,10 @@ jobs:
             data=path.read_bytes()
             assert len(data)<5*1024*1024
             print('PRIMARY',path.name,hashlib.sha256(data).hexdigest(),len(data))
-            print(data.decode())
+            if len(data)<256*1024:
+                print(data.decode())
+            else:
+                print('PRIMARY_ARTIFACT',path.name,'verbatim bytes in uploaded artifact')
         archive=root/'cli-primary-inputs.tar.gz'
         with tarfile.open(archive,'w:gz') as stream:
             for case in cases:
