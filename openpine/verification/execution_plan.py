@@ -213,7 +213,11 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
     gates = list(policy.get('required_gates', {}).get(profile, []))
     if profile in {'stage-full', 'release-full'} and (not gates):
         raise ValueError('full profile must declare non-pytest acceptance gates')
+    from openpine.verification.required_inventory import pending_required_inventories
+    pending = pending_required_inventories(policy, roots, source, inventories, selected)
     plan = seal({'schema_id': PLAN_SCHEMA, 'profile': profile, 'policy_hash': digest(policy), 'source': source, 'roots': {k: str(Path(v).resolve()) for k, v in sorted(roots.items())}, 'environments': environments, 'selection_reasons': reasons, 'preparation_components': sorted(preparation_components), 'tasks': tasks, 'required_gates': gates, 'full_acceptance_requires_owner_gates': True})
+    if pending:
+        plan = seal({**{k: v for k, v in plan.items() if k != 'content_hash'}, 'pending_required_inventories': pending})
     if guard is not None:
         plan = seal({**{k: v for k, v in plan.items() if k != 'content_hash'}, 'disk_free_guard': guard})
     if owner_launch is not None:

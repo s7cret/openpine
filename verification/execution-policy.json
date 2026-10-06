@@ -74,7 +74,12 @@
       "smoke": [
         "tests/test_smoke.py::test_runtime_contract_version"
       ],
-      "timeout_seconds": 3600
+      "timeout_seconds": 3600,
+      "required_inventory": {
+        "owner": "openpine",
+        "path": "verification/marketdata-full-required-inventory.json",
+        "sha256": "sha256:0adf0a5377dddd57d1ae3217a15c53885fa2ed0ab1fd56bf594ab38a77c7a73a"
+      }
     },
     "openpine": {
       "cpu_slots": 1,
@@ -429,7 +434,7 @@
         "verification/stage2-audit-inventory-review.json",
         "verification/stage2-source-lock.json"
       ],
-      "sha256": "sha256:9c532316936306b1f88e7ef0326cc445fcb56ef6095fd4dc08efd572a6ea350e"
+      "sha256": "sha256:aeda3e748d6db6e570cc0aa4449fdb4c74d47b4fbf79d330cf703c01485f61b7"
     },
     "coverage": {},
     "foundation": {

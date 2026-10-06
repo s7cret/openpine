@@ -178,13 +178,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11547, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11623, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:0741481c31dc38039f4ffd06d0c2c0917dafff7b1ecaae7b67b2202f4ab12f77",
+          "sha256": "sha256:027d2f30a3c2e94ca27b013bea14409a2e94ada4c7e04610d8917453ab24ee10",
           "nodes": []
         }
       ],
@@ -196,7 +196,17 @@
           "nodes": []
         }
       ],
-      "preparation_previous_reason": "PR count 9723; current reviewed-addition inventory count 11455, baseline 11027 retained. Exact collection validates the unchanged baseline and additive node set."
+      "preparation_previous_reason": "PR count 9723; current reviewed-addition inventory count 11455, baseline 11027 retained. Exact collection validates the unchanged baseline and additive node set.",
+      "int01_mapping_note": "Current INT01 source bytes; prior mapping and original decision retained.",
+      "int01_previous_mappings": [
+        {
+          "component": "openpine",
+          "nodes": [],
+          "path": "verification/inventory.json",
+          "sha256": "sha256:0741481c31dc38039f4ffd06d0c2c0917dafff7b1ecaae7b67b2202f4ab12f77"
+        }
+      ],
+      "int01_previous_reason": "PR count 9723; current reviewed-addition inventory count 11547, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
     },
     {
       "id": "verification/stage2-callable-lock.json",
@@ -1707,13 +1717,13 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:d453f90f4936817d545b570aa01785883e3b946419a4b53f0521923f458554af",
+          "sha256": "sha256:0f433829d183326b6e73aadc18ef4e709972e538a43e80c60ed6faf0d75228ba",
           "nodes": []
         },
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209",
+          "sha256": "sha256:1bf80729cd2900431b800fbe483d6261aa530e81222324ad4fb2796685d5b53b",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
@@ -1747,6 +1757,52 @@
             "rc6_tests/test_rc6_stabilization.py::test_tampered_installed_resource_is_rejected_against_frozen_wheel"
           ]
         }
+      ],
+      "int01_mapping_note": "Current INT01 source bytes; prior mapping and original decision retained.",
+      "int01_previous_mappings": [
+        {
+          "component": "openpine",
+          "nodes": [],
+          "path": "openpine/verification/stage_gate.py",
+          "sha256": "sha256:d453f90f4936817d545b570aa01785883e3b946419a4b53f0521923f458554af"
+        },
+        {
+          "component": "openpine",
+          "nodes": [
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[failed]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[missing-log]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[resealed-output]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[stdout]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[branch-reconciliation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[protected-workers]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_false_full_stage2_flag_and_cli_reader_agreement",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[candidate_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[plan_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[run_id]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_real_command_raw_result",
+            "rc6_tests/test_rc6_stabilization.py::test_resealed_campaign_and_execution_command_interpreter_rejected",
+            "rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt",
+            "rc6_tests/test_rc6_stabilization.py::test_stale_source_and_resealed_plan_cannot_change_expected_identity",
+            "rc6_tests/test_rc6_stabilization.py::test_tampered_installed_resource_is_rejected_against_frozen_wheel"
+          ],
+          "path": "rc6_tests/test_rc6_stabilization.py",
+          "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209"
+        }
       ]
     },
     {
@@ -1758,13 +1814,13 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:d453f90f4936817d545b570aa01785883e3b946419a4b53f0521923f458554af",
+          "sha256": "sha256:0f433829d183326b6e73aadc18ef4e709972e538a43e80c60ed6faf0d75228ba",
           "nodes": []
         },
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_stabilization.py",
-          "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209",
+          "sha256": "sha256:1bf80729cd2900431b800fbe483d6261aa530e81222324ad4fb2796685d5b53b",
           "nodes": [
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
             "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
@@ -1797,6 +1853,52 @@
             "rc6_tests/test_rc6_stabilization.py::test_stale_source_and_resealed_plan_cannot_change_expected_identity",
             "rc6_tests/test_rc6_stabilization.py::test_tampered_installed_resource_is_rejected_against_frozen_wheel"
           ]
+        }
+      ],
+      "int01_mapping_note": "Current INT01 source bytes; prior mapping and original decision retained.",
+      "int01_previous_mappings": [
+        {
+          "component": "openpine",
+          "nodes": [],
+          "path": "openpine/verification/stage_gate.py",
+          "sha256": "sha256:d453f90f4936817d545b570aa01785883e3b946419a4b53f0521923f458554af"
+        },
+        {
+          "component": "openpine",
+          "nodes": [
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[failed]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[missing-log]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[resealed-output]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[stdout]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[branch-reconciliation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[protected-workers]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_false_full_stage2_flag_and_cli_reader_agreement",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[candidate_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[plan_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[run_id]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_real_command_raw_result",
+            "rc6_tests/test_rc6_stabilization.py::test_resealed_campaign_and_execution_command_interpreter_rejected",
+            "rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt",
+            "rc6_tests/test_rc6_stabilization.py::test_stale_source_and_resealed_plan_cannot_change_expected_identity",
+            "rc6_tests/test_rc6_stabilization.py::test_tampered_installed_resource_is_rejected_against_frozen_wheel"
+          ],
+          "path": "rc6_tests/test_rc6_stabilization.py",
+          "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209"
         }
       ]
     },

@@ -11,26 +11,26 @@
     },
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
-      "ref": "preparation/rc6-cpython313-20261006",
-      "sha": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+      "ref": "implementation/int01-offline-precision-20261006",
+      "sha": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
       "version": "5.0.0rc6"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
-      "ref": "preparation/rc6-cpython313-20261006",
-      "sha": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+      "ref": "implementation/int01-reference-closure-20261006",
+      "sha": "6493311b5eec8cc3caf61d44fae3d4b5203e14b4",
       "version": "5.0.0rc6"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
-      "ref": "preparation/rc6-cpython313-20261006",
-      "sha": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+      "ref": "implementation/int01-oca-json-20261006",
+      "sha": "d9210fbb6a72689e76da918c2eba422b22f439f6",
       "version": "5.0.0rc6"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
-      "ref": "preparation/rc6-cpython313-20261006",
-      "sha": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+      "ref": "implementation/int01-numeric-inputs-20261006",
+      "sha": "eb249402e67199b07e9880fadc14e03fb1651edc",
       "version": "5.0.0rc6"
     },
     "ast2python": {
@@ -47,8 +47,7 @@
     },
     "openpine": {
       "repo": "s7cret/openpine",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "93898bf818b4745f4188de8d2d3580cdd920f383",
+      "ref": "implementation/int01-stack-reconciliation-20261006",
       "version": "5.0.0rc6"
     }
   },
