@@ -296,11 +296,17 @@ def test_lang08_emitted_confirmed_deferred_transient_baseline_and_publication(tm
         clone = executor(artifact, source, version, compact)
         clone.session.restore(saved)
         assert clone.session.checkpoint().to_dict() == saved
+        published_values = []
         for current in (host, clone):
             tx = begin(current, 2, True)
             current.generated_class(tx).run()
+            published_window = generated_graph(tx, shape)[2]
             tx.commit()
             current.session.finalize_bar(0)
+            observed = array_get(current.session.references, published_window, 0)
+            assert observed == 8
+            published_values.append(observed)
+        observed_published_value = published_values[0]
         final = host.session.checkpoint().to_dict()
         assert clone.session.checkpoint().to_dict() == final
     else:
@@ -323,8 +329,11 @@ def test_lang08_emitted_confirmed_deferred_transient_baseline_and_publication(tm
         with pytest.raises(PineRuntimeError, match="active|provisional"):
             host.session.checkpoint()
         host.session.finalize_bar(0)
+        observed_published_value = array_get(host.session.references, first[2], 0)
+        assert observed_published_value == 8
         final = host.session.checkpoint().to_dict()
         executor(artifact, source, version, compact).session.restore(final)
     save_case(tmp_path, artifact, source, library, commits, {"final_checkpoint": final},
         {"transition": transition, "pine_version": version, "imported": imported,
-         "shape": shape, "compact": compact, "observed_published_value": 8})
+         "shape": shape, "compact": compact,
+         "observed_published_value": observed_published_value})
