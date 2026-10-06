@@ -25,31 +25,54 @@ def fixture(root):
         target = root / path
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / path, target)
+    from copy import deepcopy
+    import hashlib
+    from rc6_tests.test_rc6_evidence_index import setup
+    from openpine.verification.builtins import builtin_evidence_report
+    from openpine.verification.evidence_index import build_evidence_index, make_surface_lock
+
     pins = read_json(root / "docs/RC6_LIFECYCLE_SOURCES.json")
-    base = {
-        "pine_version": 6,
-        "symbol_id": "pine:function:ta.tsi",
-        "overload_id": "pine:function:ta.tsi#canonical",
-        "call_form": "NAMESPACE_FUNCTION",
-        "status": "RUNTIME_DIRECT",
-        "evidence_status": "EXAMPLES_ALL_PATHS",
-        "qualifier_contract": {"status": "COMPATIBLE"},
-        "evidence": [{"observation_scope": {"observed_from_bar": 12}}],
-    }
-    report = {
-        "schema_id": "openpine.builtin_evidence_index.v1",
-        "plan_hash": read_json(root / "verification/stage2-evidence-plan-lock.json")["plan_hash"],
-        "lock_hash": read_json(root / "verification/stage2-callable-lock.json")["content_hash"],
-        "source_pins": {key: pins[key] for key in ("pine2ast", "ast2python", "pinelib")},
-        "rows": [
-            base,
-            {**base, "pine_version": 5, "evidence_status": "NO_EXAMPLES", "evidence": []},
-        ],
-        "ok": True,
-        "denominator": 2,
-        "direct_signatures": 2,
-    }
-    return seal(report)
+    host, evidence, surface, _, plan = setup(root / "producer")
+    second = {**deepcopy(surface["rows"][0]), "pine_version": 5}
+    surface = reseal({**surface, "rows": [*surface["rows"], second]})
+    write_json(host / "settings.json", {"observed_from_bar": 12})
+    settings_hash = hashlib.sha256((host / "settings.json").read_bytes()).hexdigest()
+    corpus = read_json(host / "manifest.json")
+    corpus["cases"][0]["settings"]["sha256"] = settings_hash
+    corpus = reseal(corpus)
+    write_json(host / "manifest.json", corpus)
+    assignments = read_json(host / "assignments-lock.json")
+    assignments = reseal({**assignments, "corpus_hash": corpus["content_hash"]})
+    write_json(host / "assignments-lock.json", assignments)
+    plan["groups"][0].update(
+        corpus="producer/host/manifest.json",
+        corpus_hash=corpus["content_hash"],
+        assignment_lock="producer/host/assignments-lock.json",
+        assignment_hash=assignments["content_hash"],
+    )
+    plan = reseal(plan)
+    lock = make_surface_lock(surface)
+    for folder in (evidence / "reports").glob("*/*"):
+        observed = read_json(folder / "observations.json")
+        observed["min"].update(source_identity=pins, settings_sha256=settings_hash)
+        write_json(folder / "observations.json", observed)
+        report = builtin_evidence_report(
+            surface,
+            host / "manifest.json",
+            observed,
+            corpus_hash=corpus["content_hash"],
+            assignments=read_json(folder / "assignments.json"),
+        )
+        write_json(folder / "report.json", report)
+    write_json(root / "verification/stage2-evidence-plan.json", plan)
+    write_json(
+        root / "verification/stage2-evidence-plan-lock.json",
+        {"plan_hash": plan["content_hash"], "expected_group_paths": 10, "group_count": 1},
+    )
+    write_json(root / "verification/stage2-callable-lock.json", lock)
+    return build_evidence_index(
+        surface, lock, plan, host_root=root, evidence_roots=[evidence], source_pins=pins
+    )
 
 
 def reseal(report):
@@ -157,3 +180,229 @@ def test_remaining_reader_cannot_bypass_deleted_binding(tmp_path):
     write_json(file, ledger)
     with pytest.raises(ValueError, match="missing remaining"):
         build_stage2_remaining(tmp_path, index)
+
+
+@pytest.mark.parametrize("diagnostic", [False, True])
+@pytest.mark.parametrize(
+    "fault", ["failed", "missing", "empty", "unknown-gap", "missing-provenance"]
+)
+def test_real_remaining_cli_rejects_failed_missing_and_forged_evidence(tmp_path, fault, diagnostic):
+    import os
+    from openpine.verification.execution_process import run_logged
+    import sys
+
+    index = fixture(tmp_path)
+    index.update(
+        full_builtin_expected_accepted=False, full_stage2_accepted=False, tradingview_verified=False
+    )
+    if fault in {"failed", "missing"}:
+        index["groups"][0].update(
+            status="FAILED" if fault == "failed" else "NOT_RUN",
+            reasons=["OBSERVATION_FAILED"] if fault == "failed" else [],
+        )
+        index.update(ok=True, all_declared_runs_passed=False, passed_group_paths=9)
+    else:
+        index.update(
+            ok=False,
+            all_declared_runs_passed=False,
+            diagnostic_provisional_ok=True,
+            passed_group_paths=0,
+            deferred_group_paths=len(index["groups"]),
+        )
+        for group in index["groups"]:
+            group.update(status="TEMPORARY_UNVERIFIED", deferred_cases=["not-in-corpus"])
+        index["unresolved_authority_cases"] = [
+            {
+                "case_id": "not-in-corpus",
+                "requirement_id": "BOGUS",
+                "authority_status": "UNVERIFIED",
+                "provenance": {"path": "missing-file.json", "sha256": "0" * 64},
+            }
+        ]
+        if fault == "empty":
+            index.update(groups=[], required_group_paths=0, deferred_group_paths=0)
+    inputs = tmp_path / "index.json"
+    write_json(inputs, reseal(index))
+    before = inputs.read_bytes()
+    output = tmp_path / "result.json"
+    argv = [
+        sys.executable,
+        *(["-I"] if sys.flags.isolated else []),
+        "-B",
+        "-m",
+        "openpine.verification",
+        "stage2-remaining",
+        "--host-root",
+        str(tmp_path),
+        "--builtin-index",
+        str(inputs),
+        "--output",
+        str(output),
+    ]
+    if diagnostic:
+        argv.append("--diagnostic-provisional")
+    result = run_logged(argv, cwd=ROOT, output=tmp_path / "cli", env=dict(os.environ), timeout=60)
+    assert result["returncode"] != 0
+    assert inputs.read_bytes() == before
+    if output.exists():
+        report = read_json(output)
+        assert report["ok"] is report["diagnostic_provisional_ok"] is False
+        assert report["full_stage2_accepted"] is report["tradingview_verified"] is False
+
+
+def provisional_fixture(root):
+    from copy import deepcopy
+    import hashlib
+    from openpine.verification.builtins import builtin_evidence_report
+    from openpine.verification.evidence_index import build_evidence_index
+    from openpine.verification.identity import digest
+
+    report = fixture(root)
+    host, evidence = root / "producer/host", root / "producer/run"
+    corpus = read_json(host / "manifest.json")
+    case_ids = ["unresolved-one", "unresolved-two", "unresolved-three"]
+    corpus["cases"].extend({**deepcopy(corpus["cases"][0]), "id": name} for name in case_ids)
+    corpus = reseal(corpus)
+    write_json(host / "manifest.json", corpus)
+    assignments = reseal(
+        {**read_json(host / "assignments-lock.json"), "corpus_hash": corpus["content_hash"]}
+    )
+    write_json(host / "assignments-lock.json", assignments)
+    plan = read_json(root / "verification/stage2-evidence-plan.json")
+    plan["groups"][0].update(
+        corpus_hash=corpus["content_hash"], assignment_hash=assignments["content_hash"]
+    )
+    plan = reseal(plan)
+    write_json(root / "verification/stage2-evidence-plan.json", plan)
+    write_json(
+        root / "verification/stage2-evidence-plan-lock.json",
+        {"plan_hash": plan["content_hash"], "expected_group_paths": 10, "group_count": 1},
+    )
+    proof = root / "verification/fixture-authority.json"
+    write_json(proof, {"status": "UNVERIFIED", "scope": "independent synthetic policy fixture"})
+    proof_hash = hashlib.sha256(proof.read_bytes()).hexdigest()
+    declared = [
+        {
+            "case_id": name,
+            "requirement_id": "BUILTIN-03",
+            "authority_status": "UNVERIFIED",
+            "provenance": {"path": "verification/fixture-authority.json", "sha256": proof_hash},
+        }
+        for name in case_ids
+    ]
+    write_json(
+        root / "verification/unresolved-authority.json",
+        seal(
+            {
+                "schema_id": "openpine.unresolved_authority_registry.v1",
+                "policy": "diagnostic only",
+                "rows": declared,
+            }
+        ),
+    )
+    # Reconstruct the tiny surface from its producer rows and reviewed lock.
+    lock = read_json(root / "verification/stage2-callable-lock.json")
+    from rc6_tests.test_rc6_evidence_index import setup
+
+    _, _, original, _, _ = setup(root / "surface-input")
+    surface = reseal(
+        {
+            **original,
+            "rows": [original["rows"][0], {**deepcopy(original["rows"][0]), "pine_version": 5}],
+        }
+    )
+    assert report["surface_hash"] == surface["content_hash"]
+    pins = read_json(root / "docs/RC6_LIFECYCLE_SOURCES.json")
+    for folder in (evidence / "reports").glob("*/*"):
+        observed = read_json(folder / "observations.json")
+        for name in case_ids:
+            observed[name] = {
+                **deepcopy(observed["min"]),
+                "events": [{"bar": 0, "value": 999}],
+                "semantic_authority": {
+                    "classification": "UNVERIFIED",
+                    "confirmed": False,
+                    "independent_receipt_sha256": proof_hash,
+                },
+            }
+        write_json(folder / "observations.json", observed)
+        write_json(
+            folder / "report.json",
+            builtin_evidence_report(
+                surface,
+                host / "manifest.json",
+                observed,
+                corpus_hash=corpus["content_hash"],
+                assignments=read_json(folder / "assignments.json"),
+            ),
+        )
+    result = build_evidence_index(
+        surface, lock, plan, host_root=root, evidence_roots=[evidence], source_pins=pins
+    )
+    assert result["diagnostic_provisional_ok"] and not result["ok"]
+    assert len(result["unresolved_authority_cases"]) == 3
+    assert {digest(r) for r in result["unresolved_authority_cases"]} == {
+        digest(r) for r in declared
+    }
+    return result
+
+
+@pytest.mark.parametrize(
+    "fault", ["valid", "registry", "provenance", "missing-proof", "fourth", "runtime"]
+)
+@pytest.mark.parametrize("diagnostic", [False, True])
+def test_real_diagnostic_cli_requires_exact_declared_authority(tmp_path, fault, diagnostic):
+    import os
+    from openpine.verification.execution_process import run_logged
+    import sys
+
+    index = provisional_fixture(tmp_path)
+    if fault == "registry":
+        index["unresolved_authority_cases"][0]["requirement_id"] = "BOGUS"
+    elif fault == "provenance":
+        index["unresolved_authority_cases"][0]["provenance"]["sha256"] = "0" * 64
+    elif fault == "missing-proof":
+        (tmp_path / "verification/fixture-authority.json").unlink()
+    elif fault == "fourth":
+        for group in index["groups"]:
+            group["deferred_cases"].append("undeclared-fourth")
+    elif fault == "runtime":
+        index["groups"][0].update(
+            status="FAILED",
+            reasons=["OBSERVATION_FAILED"],
+            deferred_cases=[],
+            unresolved_authority=[],
+        )
+        index["deferred_group_paths"] -= 1
+    inputs, output = tmp_path / "index.json", tmp_path / "result.json"
+    write_json(inputs, reseal(index))
+    before = inputs.read_bytes()
+    argv = [
+        sys.executable,
+        *(["-I"] if sys.flags.isolated else []),
+        "-B",
+        "-m",
+        "openpine.verification",
+        "stage2-remaining",
+        "--host-root",
+        str(tmp_path),
+        "--builtin-index",
+        str(inputs),
+        "--output",
+        str(output),
+    ]
+    if diagnostic:
+        argv.append("--diagnostic-provisional")
+    result = run_logged(argv, cwd=ROOT, output=tmp_path / "cli", env=dict(os.environ), timeout=60)
+    assert result["returncode"] == (0 if fault == "valid" and diagnostic else 1)
+    assert inputs.read_bytes() == before
+    if output.exists():
+        report = read_json(output)
+        assert (
+            report["ok"]
+            is report["full_stage2_accepted"]
+            is report["tradingview_verified"]
+            is False
+        )
+        assert report["diagnostic_provisional_ok"] is (fault == "valid")
+        assert len(report["unresolved_authority_cases"]) == 3

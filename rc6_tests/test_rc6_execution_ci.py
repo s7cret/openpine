@@ -229,7 +229,8 @@ def test_logged_declared_tool_alias_drift_fails_closed(tmp_path, tool, mutation)
     if mutation == 'same-bytes-target':
         foreign.write_bytes(frozen_bytes)
     if mutation in {'before', 'same-bytes-target'}:
-        alias.unlink(); alias.symlink_to(foreign)
+        alias.unlink()
+        alias.symlink_to(foreign)
     elif mutation == 'target-bytes':
         target.write_bytes(foreign.read_bytes())
     env = {**os.environ, 'PATH': str(tmp_path) + os.pathsep + os.environ.get('PATH', ''),
@@ -266,7 +267,8 @@ def test_logged_auxiliary_selection_must_match_declared_alias(tmp_path, tool):
     foreign = tmp_path / 'foreign-tool'
     target.write_text('#!' + sys.executable + '\nprint("FROZEN")\n')
     foreign.write_text('#!' + sys.executable + '\nprint("FOREIGN EXECUTED")\n')
-    target.chmod(0o755); foreign.chmod(0o755)
+    target.chmod(0o755)
+    foreign.chmod(0o755)
     alias = tmp_path / 'declared-alias'
     alias.symlink_to(target)
     (tmp_path / 'node').symlink_to(foreign)
@@ -416,12 +418,12 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert task_upload['if'] == 'always()'
     assert jobs['aggregate']['if'] == 'always()'
     assert set(jobs['aggregate']['needs']) == {'prepare', 'plan', 'component', 'quality', 'verify', 'frontend', 'packages'}
-    assert set(jobs) == set(jobs['aggregate']['needs']) | {'aggregate', 'language-diagnostic', 'strict-language', 'stabilization'}
+    assert set(jobs) == set(jobs['aggregate']['needs']) | {'aggregate', 'language-diagnostic', 'language-provisional', 'stabilization'}
     assert jobs['stabilization']['if'] == 'always()'
     assert set(jobs['stabilization']['needs']) == {'prepare', 'plan', 'verify', 'frontend', 'packages'}
     common_runs = '\n'.join(step.get('run', '') for step in jobs['stabilization']['steps'])
     assert 'test-ci stabilization' in common_runs
-    assert 'strict-language' not in jobs['stabilization']['needs']
+    assert 'language-provisional' not in jobs['stabilization']['needs']
     assert 'language-diagnostic' not in jobs['stabilization']['needs']
     assert any(step.get('if') == 'always()' and 'upload-artifact@' in step.get('uses', '')
                for step in jobs['stabilization']['steps'])
@@ -474,13 +476,13 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert command_upload['if'] == 'always()'
     assert command_upload['with']['path'] == '${{ runner.temp }}/restored/execute-log/commands/'
     assert command_upload['with']['if-no-files-found'] == 'error'
-    for job in ('quality', 'verify', 'language-diagnostic', 'strict-language', 'stabilization'):
+    for job in ('quality', 'verify', 'language-diagnostic', 'language-provisional', 'stabilization'):
         runs = '\n'.join(step.get('run', '') for step in jobs[job]['steps'])
         assert "f.write('PYTHONPATH='+r['roots']['openpine']+'\\n')" in runs
         assert 'os.pathsep.join(r[\'roots\'].values())' not in runs
     assert not any('bash scripts/rc6_builtin_remainder.sh' in step.get('run', '') for step in verify_steps)
     assert any('bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional' in step.get('run', '') for step in jobs['language-diagnostic']['steps'])
-    assert any('bash scripts/rc6_builtin_remainder.sh' in step.get('run', '') for step in jobs['strict-language']['steps'])
+    assert any('bash scripts/rc6_builtin_remainder.sh' in step.get('run', '') for step in jobs['language-provisional']['steps'])
     remainder = (HOST / 'scripts/rc6_builtin_remainder.sh').read_text()
     assert 'builtin-index' in remainder and 'stage2-remaining' in remainder
     assert 'test "$INDEX_STATUS" -eq 0' in remainder
@@ -529,25 +531,25 @@ def test_remainder_script_keeps_modes_and_raw_exits(tmp_path, diagnostic, owner_
 
 def test_language_jobs_are_named_separate_and_do_not_block_native_foundation():
     jobs = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())['jobs']
-    assert 'language-diagnostic' in jobs and 'strict-language' in jobs
-    assert 'strict-language' not in jobs['verify']['needs']
-    assert 'strict-language' not in jobs['aggregate']['needs']
+    assert 'language-diagnostic' in jobs and 'language-provisional' in jobs
+    assert 'language-provisional' not in jobs['verify']['needs']
+    assert 'language-provisional' not in jobs['aggregate']['needs']
     assert 'verify' in jobs['language-diagnostic']['needs']
-    assert 'verify' in jobs['strict-language']['needs']
+    assert 'verify' in jobs['language-provisional']['needs']
     diagnostic = '\n'.join(step.get('run', '') for step in jobs['language-diagnostic']['steps'])
-    strict = '\n'.join(step.get('run', '') for step in jobs['strict-language']['steps'])
+    strict = '\n'.join(step.get('run', '') for step in jobs['language-provisional']['steps'])
     assert 'bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional' in diagnostic
     assert 'bash scripts/rc6_builtin_remainder.sh' in strict
     # RC6 admits only registry-bound UNVERIFIED debt for CI completion. The
     # same owners still emit their strict negative semantic verdict unchanged.
     assert 'bash scripts/rc6_builtin_remainder.sh --diagnostic-provisional' in strict
-    assert jobs['strict-language']['name'] == 'RC6 strict-language (${{ matrix.python }})'
+    assert jobs['language-provisional']['name'] == 'RC6 language-provisional (${{ matrix.python }})'
     assert 'negative debt remains failure' not in strict
-    for job in ('language-diagnostic', 'strict-language'):
+    for job in ('language-diagnostic', 'language-provisional'):
         assert jobs[job].get('continue-on-error', False) is False
         assert all(step.get('continue-on-error', False) is False for step in jobs[job]['steps'])
         assert '|| true' not in '\n'.join(step.get('run', '') for step in jobs[job]['steps'])
-    for job in ('language-diagnostic', 'strict-language'):
+    for job in ('language-diagnostic', 'language-provisional'):
         assert any(step.get('if') == 'always()' and 'upload-artifact@' in step.get('uses', '') for step in jobs[job]['steps'])
 
 
@@ -555,12 +557,12 @@ def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound
     pins = read_json(HOST / 'docs/RC6_LIFECYCLE_SOURCES.json')
     assert pins == {
         'ast2python': '9080ed559e5cd9acbfe1400f284314d2af3f9193',
-        'backtest_engine': 'a393ac733a1d918e792ab07d3c43a56306c54b77',
-        'marketdata-provider': '6ad408144ffcacfc3d0b3b4ac4d635949f6602e6',
+        'backtest_engine': 'd9210fbb6a72689e76da918c2eba422b22f439f6',
+        'marketdata-provider': 'da6c25c55289cea4cbb9329997c165abc1b2af5e',
         'openpine-contracts': 'db1745756516b47466756c9c5d38fbbb95595a3b',
         'optimizer': '623e2639581d23242109dd47e20f14f799fa7b88',
-        'pine2ast': '87eb7f6880ec51ba19bf614e1e060c4195d6ada9',
-        'pinelib': 'f66c67f90a7f3428fe68267d41de9ae31202f775',
+        'pine2ast': 'eb249402e67199b07e9880fadc14e03fb1651edc',
+        'pinelib': '6493311b5eec8cc3caf61d44fae3d4b5203e14b4',
     }
     review = read_json(HOST / 'verification/source-pin-reconciliation-review.json')
     # This review is the retained historical snapshot, not a receipt for the

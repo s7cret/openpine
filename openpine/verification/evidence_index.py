@@ -11,7 +11,7 @@ from collections import Counter, defaultdict
 import hashlib
 from pathlib import Path, PurePosixPath
 import re
-from typing import Any
+from typing import Any, cast
 
 from openpine.verification.builtins import builtin_evidence_report
 from openpine.verification.conformance import load_corpus
@@ -117,8 +117,12 @@ def _under(root: Path, relative: str) -> Path:
 
 
 def _declared_unresolved_authority_gaps(
-    host_root: Path, corpus: dict, mismatches: list[dict], observations: dict,
-    source_pins: dict[str, str], variant: str,
+    host_root: Path,
+    corpus: dict,
+    mismatches: list[dict],
+    observations: dict,
+    source_pins: dict[str, str],
+    variant: str,
 ) -> list[dict]:
     """Validate declared unresolved authority without assigning language behavior.
 
@@ -138,11 +142,17 @@ def _declared_unresolved_authority_gaps(
     declared: dict[str, dict] = {}
     for row in registry["rows"]:
         if not isinstance(row, dict) or set(row) != {
-            "requirement_id", "case_id", "authority_status", "provenance"
+            "requirement_id",
+            "case_id",
+            "authority_status",
+            "provenance",
         }:
             raise ValueError("malformed unresolved authority record")
         requirement, case_id, status, provenance = (
-            row["requirement_id"], row["case_id"], row["authority_status"], row["provenance"]
+            row["requirement_id"],
+            row["case_id"],
+            row["authority_status"],
+            row["provenance"],
         )
         if (
             not isinstance(requirement, str)
@@ -158,7 +168,10 @@ def _declared_unresolved_authority_gaps(
             or case_id not in cases
         ):
             raise ValueError("invalid unresolved authority record")
-        if hashlib.sha256(_under(host_root, provenance["path"]).read_bytes()).hexdigest() != provenance["sha256"]:
+        if (
+            hashlib.sha256(_under(host_root, provenance["path"]).read_bytes()).hexdigest()
+            != provenance["sha256"]
+        ):
             raise ValueError("unresolved authority provenance hash mismatch")
         declared[case_id] = row
     mismatched = {
@@ -217,7 +230,7 @@ def _groups(plan: dict) -> list[dict]:
             raise ValueError("all five execution paths must remain in the plan")
         if group["variants"] not in (["legacy"], ["full", "compact"]):
             raise ValueError("unknown or reduced transcript variants")
-    return body["groups"]
+    return cast(list[dict], body["groups"])
 
 
 def build_evidence_index(
@@ -297,7 +310,7 @@ def build_evidence_index(
                 any_valid = False
                 failures = []
                 unassigned_details = {}
-                deferred_cases = set()
+                deferred_cases: set[str] = set()
                 deferred_authority = []
                 for root in roots:
                     folder = _under(root, suffix)
@@ -371,13 +384,18 @@ def build_evidence_index(
                     trace_ok = rebuilt["trace_comparison"]["ok"]
                     deferred = (
                         _declared_unresolved_authority_gaps(
-                            host_root, corpus, unassigned_mismatches, values["observations"],
-                            source_pins, variant,
+                            host_root,
+                            corpus,
+                            unassigned_mismatches,
+                            values["observations"],
+                            source_pins,
+                            variant,
                         )
                         if assignment_ok
                         and len(unassigned_nonpass) == len(unassigned_mismatches)
                         and rebuilt["execution_evidence"]["all_assigned_passed"]
-                        and rebuilt == report else []
+                        and rebuilt == report
+                        else []
                     )
                     if unassigned_mismatches and not deferred:
                         failures.append("UNVERIFIED_EXPECTATION_MISMATCH")
@@ -518,7 +536,9 @@ def build_evidence_index(
             "input_sets": sorted({digest(item): item for item in run_inputs}.values(), key=digest),
             "required_group_paths": len(group_results),
             "passed_group_paths": sum(row["status"] == "PASS" for row in group_results),
-            "deferred_group_paths": sum(row["status"] == "TEMPORARY_UNVERIFIED" for row in group_results),
+            "deferred_group_paths": sum(
+                row["status"] == "TEMPORARY_UNVERIFIED" for row in group_results
+            ),
             "unresolved_authority_cases": sorted(
                 {
                     digest(row): row
@@ -527,7 +547,8 @@ def build_evidence_index(
                 }.values(),
                 key=digest,
             ),
-            "diagnostic_provisional_ok": denominator["ok"] and bool(group_results)
+            "diagnostic_provisional_ok": denominator["ok"]
+            and bool(group_results)
             and all(row["status"] in {"PASS", "TEMPORARY_UNVERIFIED"} for row in group_results),
             "all_declared_runs_passed": bool(group_results)
             and all(row["status"] == "PASS" for row in group_results),
@@ -544,3 +565,136 @@ def build_evidence_index(
             "tradingview_verified": False,
         }
     )
+
+
+def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked: dict) -> dict:
+    """Check a saved bounded index against its frozen scope and authority inputs.
+
+    This checks the existing index projection, not full language acceptance.
+    A top-level label cannot override failed groups or authenticate a gap.
+    """
+    verify(index, "openpine.builtin_evidence_index.v1")
+    groups = _groups(plan)
+    if index["plan_hash"] != plan["content_hash"] or index["lock_hash"] != locked["content_hash"]:
+        raise ValueError("saved index differs from frozen plan/surface")
+    lock = verify(locked, "openpine.callable_denominator.v1")
+    frozen = {key_of(row): row["contract_hash"] for row in lock["rows"]}
+    rows = index["rows"]
+    actual = {key_of(row): row["contract_hash"] for row in rows}
+    if (
+        not frozen
+        or len(frozen) != len(lock["rows"])
+        or len(actual) != len(rows)
+        or actual != frozen
+    ):
+        raise ValueError("saved callable inventory differs from its frozen denominator")
+    if index["denominator"] != len(rows) or index["direct_signatures"] != sum(
+        r["status"] == "RUNTIME_DIRECT" for r in rows
+    ):
+        raise ValueError("saved callable counts contradict rows")
+    if index["counts"] != dict(Counter(r["evidence_status"] for r in rows)):
+        raise ValueError("saved evidence counts contradict rows")
+    expected = {(g["id"], v, p): g for g in groups for v in g["variants"] for p in g["paths"]}
+    observed = {(g["group"], g["variant"], g["path"]): g for g in index["groups"]}
+    if not observed or len(observed) != len(index["groups"]) or observed.keys() != expected.keys():
+        raise ValueError("saved index lost or changed required group paths")
+    if index["required_group_paths"] != len(expected):
+        raise ValueError("saved required group count contradicts frozen plan")
+    deferred = {}
+    for key, group in observed.items():
+        declaration = expected[key]
+        corpus = load_corpus(_under(host_root, declaration["corpus"]))
+        assignment = read_json(_under(host_root, declaration["assignment_lock"]))
+        body = verify(assignment, "openpine.builtin_assignment_lock.v1")
+        if (
+            corpus["content_hash"] != declaration["corpus_hash"]
+            or assignment["content_hash"] != declaration["assignment_hash"]
+            or body["corpus_hash"] != corpus["content_hash"]
+        ):
+            raise ValueError("saved group corpus/assignments changed")
+        cases = {c["id"] for c in corpus["cases"]}
+        assigned = {r["case_id"] for r in body["assignments"]}
+        if (
+            not assigned
+            or not assigned <= cases
+            or group["corpus_cases"] != len(cases)
+            or group["assigned_cases"] != len(assigned)
+            or group["unassigned_cases"] != sorted(cases - assigned)
+        ):
+            raise ValueError("saved group lost corpus/assignment obligations")
+        if group["status"] not in {"PASS", "TEMPORARY_UNVERIFIED", "FAILED", "NOT_RUN"}:
+            raise ValueError("unknown saved group status")
+        pending = group["deferred_cases"]
+        authority = group["unresolved_authority"]
+        if group["status"] != "TEMPORARY_UNVERIFIED":
+            if pending or authority:
+                raise ValueError("authority gap attached to a non-deferred group")
+            continue
+        if (
+            group["reasons"]
+            or not pending
+            or len(set(pending)) != len(pending)
+            or not set(pending) <= cases - assigned
+        ):
+            raise ValueError("invalid deferred corpus scope")
+        registry = verify(
+            read_json(_under(host_root, "verification/unresolved-authority.json")),
+            "openpine.unresolved_authority_registry.v1",
+        )
+        declared = {r["case_id"]: r for r in registry["rows"]}
+        if len(declared) != len(registry["rows"]) or not set(pending) <= declared.keys():
+            raise ValueError("saved gap is not declared in the authority registry")
+        if {r["case_id"] for r in authority} != set(pending) or len(authority) != len(pending):
+            raise ValueError("saved gap provenance inventory changed")
+        details = {r["id"]: r for r in group["unassigned_outcomes"]}
+        for row in authority:
+            if row != declared[row["case_id"]] or row["authority_status"] != "UNVERIFIED":
+                raise ValueError("saved authority record differs from registry")
+            proof = row["provenance"]
+            if (
+                set(proof) != {"path", "sha256"}
+                or hashlib.sha256(_under(host_root, proof["path"]).read_bytes()).hexdigest()
+                != proof["sha256"]
+            ):
+                raise ValueError("saved authority provenance changed")
+            detail = details.get(row["case_id"], {})
+            if (
+                detail.get("status") != "RUNTIME_MISMATCH"
+                or detail.get("authority") != "UNVERIFIED"
+                or detail.get("first_divergence") is None
+            ):
+                raise ValueError("saved gap does not explain its actual unresolved mismatch")
+            deferred[digest(row)] = row
+    unresolved = sorted(deferred.values(), key=digest)
+    if index["unresolved_authority_cases"] != unresolved:
+        raise ValueError("saved aggregate authority inventory contradicts groups")
+    passed = sum(g["status"] == "PASS" and not g["reasons"] for g in observed.values())
+    provisional = sum(g["status"] == "TEMPORARY_UNVERIFIED" for g in observed.values())
+    if index["passed_group_paths"] != passed or index["deferred_group_paths"] != provisional:
+        raise ValueError("saved group counts contradict outcomes")
+    review = index["denominator_review"]
+    denominator_ok = (
+        review["ok"] is True
+        and review["locked_count"] == len(frozen)
+        and review["current_count"] == len(rows)
+        and not review["added"]
+        and not review["removed"]
+        and not review["contract_changed"]
+        and review["catalog_identities_changed"] is False
+        and review["denominator_kind_changed"] is False
+    )
+    strict = denominator_ok and passed == len(expected)
+    diagnostic = (
+        denominator_ok
+        and bool(unresolved)
+        and passed + provisional == len(expected)
+        and index["ok"] is False
+        and index["all_declared_runs_passed"] is False
+        and index["full_builtin_expected_accepted"] is False
+        and index["full_stage2_accepted"] is False
+        and index["tradingview_verified"] is False
+    )
+    return {
+        "ok": index["ok"] is True and index["all_declared_runs_passed"] is True and strict,
+        "diagnostic_provisional_ok": index["diagnostic_provisional_ok"] is True and diagnostic,
+    }
