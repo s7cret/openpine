@@ -238,6 +238,7 @@ def saved_current_projection():
     from openpine.verification.identity import seal
     from openpine.verification.stage_gate import CURRENT_SCHEMA, STABILIZATION_GATES
 
+    matrix = read_json(ROOT / "verification/stage2-remaining-matrix.json")
     return seal(
         {
             "schema_id": CURRENT_SCHEMA,
@@ -248,8 +249,9 @@ def saved_current_projection():
             "stage2": {
                 "status": "in_progress",
                 "full_stage2_accepted": False,
-                "criteria": [],
-                "remaining": [],
+                "matrix_hash": matrix["content_hash"],
+                "criteria": matrix["criteria"],
+                "remaining": matrix["items"],
                 "remaining_spec_binding": validate_review_ledger(LEDGER),
             },
             "stabilization": {
@@ -259,6 +261,7 @@ def saved_current_projection():
             },
             "ok": True,
             "full_stage2_accepted": False,
+            "full_release_accepted": False,
         }
     )
 
@@ -277,6 +280,11 @@ def saved_current_projection():
         "owner",
         "done",
         "false-status-counts",
+        "top-release",
+        "criteria-loss",
+        "items-loss",
+        "item-owner",
+        "matrix-hash",
     ],
 )
 def test_resealed_saved_current_rejects_missing_or_forged_remaining_projection(mutation):
@@ -310,8 +318,18 @@ def test_resealed_saved_current_rejects_missing_or_forged_remaining_projection(m
         projection["unclosed_requirements"][0]["owner"] = "other"
     elif mutation == "done":
         projection["unclosed_requirements"][0]["status"] = "done"
-    else:
+    elif mutation == "false-status-counts":
         projection["status_counts"] = {"done": 68}
+    elif mutation == "top-release":
+        current["full_release_accepted"] = True
+    elif mutation == "criteria-loss":
+        stage2["criteria"].pop()
+    elif mutation == "items-loss":
+        stage2["remaining"].pop()
+    elif mutation == "item-owner":
+        stage2["remaining"][0]["owner"] = "other"
+    else:
+        stage2["matrix_hash"] = "sha256:" + "0" * 64
     with pytest.raises(ValueError):
         current_views(seal(current))
 

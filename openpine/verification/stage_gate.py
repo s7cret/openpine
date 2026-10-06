@@ -12,6 +12,7 @@ from openpine.verification.identity import read_json, seal, verify, write_json
 from openpine.verification.pytest_gate import validate_inventory
 from openpine.verification.review_ledger import (
     read_review_ledger, validate_remaining_projection, validate_review_ledger,
+    validate_stage2_projection,
 )
 
 
@@ -435,6 +436,7 @@ def current_views(current: dict, *, allow_legacy: bool = False) -> dict:
         stage2["status"] != "in_progress"
         or stage2["full_stage2_accepted"] is not False
         or current["full_stage2_accepted"] is not False
+        or current.get("full_release_accepted") is not False
     ):
         raise ValueError("stabilization is not full Stage 2 acceptance")
     accepted = all(
@@ -453,6 +455,7 @@ def current_views(current: dict, *, allow_legacy: bool = False) -> dict:
         for key in ("candidate_hash", "plan_hash", "inventory_hash", "run_id")
     }
     remaining_binding = stage2.get("remaining_spec_binding")
+    validate_stage2_projection(stage2)
     if remaining_binding is None:
         if not allow_legacy:
             raise ValueError("missing remaining specification projection")

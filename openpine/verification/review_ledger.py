@@ -15,6 +15,7 @@ SOURCE_SHA256 = "3f09ed3901f8ecf1262ffa983c6eaf52a51ceaf2087abe98db2093d45d9ca62
 HISTORICAL_LEDGER_HASH = "sha256:240e7415ac0fa50b127acaa3c901c725395fdb1e16bde0d78a1c674872e3b705"
 CONTRACT_HASH = "sha256:e3c0cb346c4142c2dda1ce58802a36432bf30e6b6b1f8d68af74844f456afeb8"
 REQUIREMENT_OWNER_HASH = "sha256:30a114906fad9907813560ac7cc34c9b0e893c1c35951ffa3fa8ada90e1fc0df"
+MATRIX_PROJECTION_HASH = "sha256:7851f5321f70249a99e1232d8b933d2bacad59b0b1a4faa803dd04b097384e1f"
 MATRIX_HASH = "sha256:a1a244d0013982314c8dcf3312453922a5743a2a02df2b079d9dc7237fdf148e"
 REPOS = frozenset(
     {
@@ -442,4 +443,14 @@ def validate_remaining_projection(projection: dict) -> None:
     _require(
         projection["status_counts"] == dict(Counter(row["status"] for row in rows)),
         "saved remaining status counts contradict requirements",
+    )
+
+
+def validate_stage2_projection(stage2: dict) -> None:
+    """Keep the original four criteria and sixteen complete item records in saved views."""
+    _require(
+        stage2.get("matrix_hash") == MATRIX_HASH
+        and digest({key: stage2.get(key) for key in ("criteria", "remaining")})
+        == MATRIX_PROJECTION_HASH,
+        "saved Stage 2 projection changed original criteria, items or owners",
     )
