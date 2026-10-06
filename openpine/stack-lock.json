@@ -7,11 +7,11 @@
       "name": "openpine",
       "package": "openpine",
       "repository": "s7cret/openpine",
-      "tree_sha256": "441593f01d692e8c9ac676934ea85d646c7062a98e51ebbcf64e4b95058b62dc",
+      "tree_sha256": "b6ac7e6427f427680e90c4e5d13fa38b81c770f65b7559d3f49a0ff74d8be697",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "6dfd47badff5ef5b038dfd48a9fb3d8e762b1836",
+      "commit": "1bc8ddb72ae6a30b209b5491622dd386b3ade7f5",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "frontend": "openpine.frontend.v1",
@@ -20,11 +20,11 @@
       "name": "pine2ast",
       "package": "pine2ast",
       "repository": "s7cret/pine2ast",
-      "tree_sha256": "1d19dbb854957ac02eaff20be0c78e21846526550217d32db14a4a4b879ffe03",
+      "tree_sha256": "fa797a9d46cdc6eae5f8d71318deed2706a264fe177d6fdac793456e42d9a343",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "17ad5f4b6f9c59cb549f4eb08a2c926561985f16",
+      "commit": "6b3eaf26d090719f9ebbc8b05326ae041c56b28c",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "runtime": "1.4"
@@ -32,18 +32,18 @@
       "name": "ast2python",
       "package": "ast2python",
       "repository": "s7cret/ast2python",
-      "tree_sha256": "1ff93827582b313146fa204ffd90d24370dc0170def59ae4ac027c865688dd6b",
+      "tree_sha256": "274180a0060f525f9a7fa4bce113fb3e977d7c18392c3b7e0060351f950aad1d",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "fcfdab59767103cbc6903c0fa251d895d58b1568",
+      "commit": "840d70ee87c35101fab64c8c4a32d00ebed78d1b",
       "contracts": {
         "runtime": "1.4"
       },
       "name": "pinelib",
       "package": "pinelib",
       "repository": "s7cret/pinelib",
-      "tree_sha256": "70fbf4ab86fe1fd1d02a55fe1cd31839292f5feefb867bd776db5b7e69e7c627",
+      "tree_sha256": "8d91ae79df52a9cefd9812bbf4f0d6b9dbbf3a291a473b6c6df539f6a5f03ac7",
       "version": "5.0.0rc6"
     },
     {

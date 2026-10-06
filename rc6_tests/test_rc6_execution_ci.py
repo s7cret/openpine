@@ -554,13 +554,13 @@ def test_language_jobs_are_named_separate_and_do_not_block_native_foundation():
 def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound_evidence():
     pins = read_json(HOST / 'docs/RC6_LIFECYCLE_SOURCES.json')
     assert pins == {
-        'ast2python': '17ad5f4b6f9c59cb549f4eb08a2c926561985f16',
+        'ast2python': '6b3eaf26d090719f9ebbc8b05326ae041c56b28c',
         'backtest_engine': '8eba0eb7350d5eab1529dbaff96f7bf9ada82572',
         'marketdata-provider': 'b453a2b05bc825884270c81500aa879fc543a208',
         'openpine-contracts': '7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34',
         'optimizer': '762f97e306467f505fc4ade22acaf40577214e24',
-        'pine2ast': '6dfd47badff5ef5b038dfd48a9fb3d8e762b1836',
-        'pinelib': 'fcfdab59767103cbc6903c0fa251d895d58b1568',
+        'pine2ast': '1bc8ddb72ae6a30b209b5491622dd386b3ade7f5',
+        'pinelib': '840d70ee87c35101fab64c8c4a32d00ebed78d1b',
     }
     review = read_json(HOST / 'verification/source-pin-reconciliation-review.json')
     # This review is the retained historical snapshot, not a receipt for the
@@ -570,6 +570,7 @@ def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound
         'ast2python': 'ce2e6eed49be541543654ebc0439d545c3084f30',
         'pine2ast': 'ddb164a8819d889150378a303b0d3255cf0b5102',
         'marketdata-provider': '4610c93b904d7e70fe6cbfe2914a07f29935933e',
+        'pinelib': 'fcfdab59767103cbc6903c0fa251d895d58b1568',
     }
     assert review['requires_fresh_sibling_collection_and_evidence'] is True
     assert review['derived_inventory_review']['stage2_gate']['action'].startswith('retained strict')
