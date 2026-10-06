@@ -92,12 +92,6 @@ jobs:
         PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
         cd "$RUNNER_TEMP/int02-int07-work/stack/pinelib"
         "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/pinelib-origins.json" -q tests -p openpine.verification.pytest_gate --verification-suite=pinelib --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-output="$RUNNER_TEMP/int02-int07-evidence/pinelib.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/pinelib.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/pinelib-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/pinelib-cache"
-    - name: Execute emitted inline imported and host callback integration
-      env:
-        PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
-      run: |
-        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
-        "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/language-origins.json" -q rc6_tests/test_rc6_varip_graph_integration.py rc6_tests/test_rc6_intrabar_collections.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_control.py rc6_tests/test_rc6_nominal_registry.py rc6_tests/test_rc6_library_imports.py rc6_tests/test_rc6_library_methods.py rc6_tests/test_rc6_library_method_identity.py rc6_tests/test_rc6_nominal_types.py::test_udt_field_varip_keeps_ordinary_field_rollback rc6_tests/test_rc6_nominal_types.py::test_nominal_checkpoint_resume_retains_reference_enum_and_callsite_identity -p openpine.verification.pytest_gate --verification-suite=lang08-installed --verification-lock=verification/lang08-installed-inventory.json --verification-output="$RUNNER_TEMP/int02-int07-evidence/language.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/language.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/language-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/language-cache"
     - name: Enable the real protected worker environment
       run: |
         sudo apt-get update -qq
@@ -109,6 +103,12 @@ jobs:
         fi
         sudo -n -u openpine-worker -- /usr/bin/id -u
         /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+    - name: Execute emitted inline imported and host callback integration
+      env:
+        PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
+      run: |
+        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
+        "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/language-origins.json" -q rc6_tests/test_rc6_varip_graph_integration.py rc6_tests/test_rc6_intrabar_collections.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_control.py rc6_tests/test_rc6_nominal_registry.py rc6_tests/test_rc6_library_imports.py rc6_tests/test_rc6_library_methods.py rc6_tests/test_rc6_library_method_identity.py rc6_tests/test_rc6_nominal_types.py::test_udt_field_varip_keeps_ordinary_field_rollback rc6_tests/test_rc6_nominal_types.py::test_nominal_checkpoint_resume_retains_reference_enum_and_callsite_identity -p openpine.verification.pytest_gate --verification-suite=lang08-installed --verification-lock=verification/lang08-installed-inventory.json --verification-output="$RUNNER_TEMP/int02-int07-evidence/language.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/language.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/language-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/language-cache"
     - name: Execute strict and diagnostic CLI contracts and existing process owners
       env:
         PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
