@@ -17,6 +17,9 @@ from typing import Any, Mapping
 from openpine.verification.identity import canonical, read_json, seal
 SOURCE_SCHEMA = 'openpine.execution_sources.v1'
 ENV_SCHEMA = 'openpine.execution_environment.v1'
+TRANSPORT_ENV_KEYS = frozenset({'HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy',
+                              'NO_PROXY', 'no_proxy', 'SSL_CERT_FILE', 'REQUESTS_CA_BUNDLE',
+                              'CURL_CA_BUNDLE', 'GIT_SSL_CAINFO'})
 ROOT_OUTPUT_DIRS = frozenset({'.git', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.marketdata-cache', '.venv', 'venv', 'build', 'dist'})
 NESTED_OUTPUT_DIRS = frozenset({'__pycache__', 'node_modules'})
 
@@ -167,13 +170,53 @@ def read_artifact(root: Path, descriptor: Mapping[str, str]) -> Any:
         raise ValueError(f"evidence checksum mismatch: {descriptor['path']}")
     return read_json(path)
 
-def clean_environment(roots: dict[str, str], private: Path, *, build_commit: str | None=None) -> dict[str, str]:
+def _configured_transport_environment() -> dict[str, str]:
+    """Forward configured proxy/CA files without credentials or TLS bypasses."""
+    from urllib.parse import urlsplit
+    result = {}
+    for name in sorted(TRANSPORT_ENV_KEYS):
+        value = os.environ.get(name)
+        if not value:
+            continue
+        try:
+            if any(ord(c) < 32 or ord(c) == 127 for c in value):
+                raise ValueError
+            if name.lower() in {'http_proxy', 'https_proxy'}:
+                endpoint = urlsplit(value)
+                if (endpoint.scheme not in {'http', 'https'} or not endpoint.hostname
+                        or endpoint.username is not None or endpoint.password is not None
+                        or '%' in endpoint.netloc or endpoint.query or endpoint.fragment
+                        or endpoint.path not in {'', '/'}):
+                    raise ValueError
+                port = endpoint.port  # Parser errors can disclose the value.
+                if port == 0:
+                    raise ValueError
+            elif name.lower() == 'no_proxy':
+                if '@' in value or '://' in value:
+                    raise ValueError
+            else:
+                path = Path(value)
+                if not path.is_absolute() or not path.is_file() or not os.access(path, os.R_OK):
+                    raise ValueError
+        except (ValueError, OSError):
+            # URL/filename parser diagnostics can contain credential values.
+            raise ValueError('invalid configured transport setting: ' + name) from None
+        result[name] = value
+    return result
+
+
+def clean_environment(roots: dict[str, str], private: Path, *, build_commit: str | None=None,
+                      inherit_transport: bool=False) -> dict[str, str]:
+    if type(inherit_transport) is not bool:
+        raise ValueError('transport opt-in must be a boolean')
     if build_commit is not None and (not isinstance(build_commit, str) or re.fullmatch('[0-9a-f]{40}', build_commit) is None):
         raise ValueError('invalid exact build commit')
     private.mkdir(parents=True, exist_ok=True)
     for name in ('home', 'tmp', 'cache'):
         (private / name).mkdir(exist_ok=True)
     result = {key: value for key, value in os.environ.items() if key in {'PATH', 'SYSTEMROOT', 'WINDIR', 'LANG', 'LC_ALL', 'TZ'}}
+    if inherit_transport:
+        result.update(_configured_transport_environment())
     result['OPENPINE_SOURCE_ROOTS'] = __import__('json').dumps(roots, sort_keys=True)
     result.update(PYTHONPATH=os.pathsep.join((roots[name] for name in sorted(roots))), PYTEST_DISABLE_PLUGIN_AUTOLOAD='1', PYTHONHASHSEED='0', HOME=str(private / 'home'), TMPDIR=str(private / 'tmp'), XDG_CACHE_HOME=str(private / 'cache'), OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1')
     if build_commit is not None:
