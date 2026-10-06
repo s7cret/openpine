@@ -258,6 +258,173 @@
       "uv"
     ]
   },
+  "product_acceptance": {
+    "domains": {
+      "broker": {
+        "obligations": null,
+        "requirements": [
+          "BROKER-01",
+          "BROKER-02",
+          "BROKER-03",
+          "BROKER-04",
+          "BROKER-05",
+          "BROKER-06",
+          "BROKER-07",
+          "BROKER-08"
+        ]
+      },
+      "candidate-integrity": {
+        "obligations": null,
+        "requirements": [
+          "INT-01",
+          "REL-01",
+          "REL-02",
+          "REL-08"
+        ]
+      },
+      "data-request": {
+        "obligations": null,
+        "requirements": [
+          "DATA-01",
+          "DATA-02",
+          "DATA-03",
+          "DATA-04",
+          "DATA-05",
+          "DATA-06",
+          "DATA-07",
+          "DATA-08"
+        ]
+      },
+      "delivery": {
+        "obligations": null,
+        "requirements": [
+          "INT-07",
+          "INT-08",
+          "REL-04",
+          "REL-05",
+          "REL-06",
+          "REL-07",
+          "REL-08"
+        ]
+      },
+      "fault-sandbox": {
+        "obligations": null,
+        "requirements": [
+          "INT-04",
+          "RUN-05",
+          "RUN-06",
+          "RUN-07",
+          "RUN-08"
+        ]
+      },
+      "frontend": {
+        "obligations": null,
+        "requirements": [
+          "UI-01",
+          "UI-02",
+          "UI-03",
+          "UI-04",
+          "UI-05",
+          "UI-06",
+          "UI-07"
+        ]
+      },
+      "functional-matrix": {
+        "obligations": null,
+        "requirements": [
+          "INT-03",
+          "INT-05",
+          "LANG-11",
+          "REL-01"
+        ]
+      },
+      "independent-oracle": {
+        "obligations": null,
+        "requirements": [
+          "LANG-09",
+          "LANG-10",
+          "LANG-11",
+          "LANG-12"
+        ]
+      },
+      "language": {
+        "obligations": null,
+        "requirements": [
+          "LANG-01",
+          "LANG-02",
+          "LANG-03",
+          "LANG-04",
+          "LANG-05",
+          "LANG-06",
+          "LANG-07",
+          "LANG-08",
+          "LANG-10",
+          "LANG-11",
+          "LANG-12"
+        ]
+      },
+      "lifecycle-resume": {
+        "obligations": null,
+        "requirements": [
+          "RUN-01",
+          "RUN-02",
+          "RUN-03",
+          "RUN-04",
+          "RUN-05",
+          "RUN-06",
+          "RUN-07",
+          "RUN-08"
+        ]
+      },
+      "optimizer": {
+        "obligations": null,
+        "requirements": [
+          "OPT-01",
+          "OPT-02",
+          "OPT-03",
+          "OPT-04",
+          "OPT-05"
+        ]
+      },
+      "packages": {
+        "obligations": null,
+        "requirements": [
+          "REL-01",
+          "REL-02",
+          "REL-03"
+        ]
+      },
+      "performance": {
+        "obligations": null,
+        "requirements": [
+          "INT-06",
+          "PERF-01",
+          "PERF-02",
+          "PERF-03",
+          "PERF-04"
+        ]
+      },
+      "static-build-quality": {
+        "obligations": null,
+        "requirements": [
+          "INT-02",
+          "REL-01"
+        ]
+      }
+    },
+    "python_support": {
+      "amendment": "Approved ordinary CPython 3.13 GIL policy supersedes older multi-minor claims in the source; Pine 1-6 unchanged.",
+      "free_threaded_supported": false,
+      "gil_enabled": true,
+      "implementation": "CPython",
+      "mandatory_minors": [
+        "3.13"
+      ],
+      "requires_python": ">=3.13,<3.14"
+    },
+    "schema_id": "openpine.product_domain_policy.v1",
+    "source_spec_sha256": "3f09ed3901f8ecf1262ffa983c6eaf52a51ceaf2087abe98db2093d45d9ca622"
+  },
   "python_support": {
     "free_threaded": false,
     "gil_enabled": true,
@@ -434,7 +601,7 @@
         "verification/stage2-audit-inventory-review.json",
         "verification/stage2-source-lock.json"
       ],
-      "sha256": "sha256:7b248bc0bd7c220e56d61bf2fb86c18e737b3942a6f5947bd810cc72be9e88d4"
+      "sha256": "sha256:8b939b926cfd4253af847b32545590ba4a27d67e6f84e767c6b750c7ee142e9a"
     },
     "coverage": {},
     "foundation": {

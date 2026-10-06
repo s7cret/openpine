@@ -430,6 +430,8 @@ def current_views(current: dict, *, allow_legacy: bool = False) -> dict:
     """One validated current contract feeds progress, remainder and reporting."""
     from openpine.verification.identity import verify
 
+    if current.get("schema_id") == PRODUCT_CURRENT_SCHEMA:
+        return _product_current_views(current)
     verify(current, CURRENT_SCHEMA)
     stage2 = current["stage2"]
     if (
@@ -483,4 +485,239 @@ def current_views(current: dict, *, allow_legacy: bool = False) -> dict:
             "stage2_status": stage2["status"],
             "full_stage2_accepted": False,
         },
+    }
+
+
+PRODUCT_CURRENT_SCHEMA = "openpine.product_current_acceptance.v1"
+PRODUCT_GATES = (
+    "candidate-integrity", "static-build-quality", "functional-matrix",
+    "language", "independent-oracle", "data-request", "lifecycle-resume",
+    "broker", "optimizer", "frontend", "packages", "performance",
+    "fault-sandbox", "delivery",
+)
+
+
+def product_requirements() -> dict[str, list[str]]:
+    """Frozen §10.2 governance; every one of the 68 source IDs remains required."""
+    def group(prefix: str, count: int) -> list[str]:
+        return [f"{prefix}-{n:02}" for n in range(1, count + 1)]
+
+    return {
+        "candidate-integrity": ["INT-01", "REL-01", "REL-02", "REL-08"],
+        "static-build-quality": ["INT-02", "REL-01"],
+        "functional-matrix": ["INT-03", "INT-05", "LANG-11", "REL-01"],
+        "language": group("LANG", 8) + ["LANG-10", "LANG-11", "LANG-12"],
+        "independent-oracle": ["LANG-09", "LANG-10", "LANG-11", "LANG-12"],
+        "data-request": group("DATA", 8),
+        "lifecycle-resume": group("RUN", 8),
+        "broker": group("BROKER", 8),
+        "optimizer": group("OPT", 5),
+        "frontend": group("UI", 7),
+        "packages": ["REL-01", "REL-02", "REL-03"],
+        "performance": ["INT-06", *group("PERF", 4)],
+        "fault-sandbox": ["INT-04", "RUN-05", "RUN-06", "RUN-07", "RUN-08"],
+        "delivery": ["INT-07", "INT-08", *group("REL", 8)[3:]],
+    }
+
+
+def _validate_product_policy(policy: dict, requirement_ids: set[str]) -> None:
+    from openpine.verification.review_ledger import PYTHON_SUPPORT, SOURCE_SHA256
+    from openpine.verification.execution_plan import _nodes
+
+    required = product_requirements()
+    if (
+        not isinstance(policy, dict)
+        or set(policy) != {"schema_id", "source_spec_sha256", "python_support", "domains"}
+        or policy["schema_id"] != "openpine.product_domain_policy.v1"
+        or policy["source_spec_sha256"] != SOURCE_SHA256
+        or policy["python_support"] != PYTHON_SUPPORT
+        or set(policy["domains"]) != set(PRODUCT_GATES)
+        or set().union(*(set(ids) for ids in required.values())) != requirement_ids
+    ):
+        raise ValueError("product policy lost a required domain/source obligation")
+    for gate, ids in required.items():
+        row = policy["domains"][gate]
+        if not isinstance(row, dict) or set(row) != {"requirements", "obligations"} or row["requirements"] != ids:
+            raise ValueError("product domain requirement governance changed: " + gate)
+        obligations = row["obligations"]
+        if obligations is None:
+            continue  # Unspecified full-scope owner remains not_run.
+        if not isinstance(obligations, dict) or set(obligations) != set(ids):
+            raise ValueError("missing substantive requirement obligations: " + gate)
+        for requirement, spec in obligations.items():
+            if not isinstance(spec, dict) or set(spec) != {"nodes", "commands"} or not spec["nodes"] or not spec["commands"]:
+                raise ValueError("empty product requirement obligation: " + requirement)
+            for component, nodes in spec["nodes"].items():
+                if component not in COMPONENTS:
+                    raise ValueError("unknown product requirement owner")
+                _nodes(nodes)
+            for command in spec["commands"]:
+                if (
+                    not isinstance(command, dict)
+                    or not command.get("inputs")
+                    or (gate != "static-build-quality" and command.get("expected_stdout") is None)
+                ):
+                    raise ValueError("product command needs frozen inputs and independent expected")
+
+
+def _product_projection(stabilization: dict, gates: dict) -> tuple[list[dict], bool]:
+    mapping = product_requirements()
+    rows = stabilization["stage2"]["remaining_spec_binding"]["unclosed_requirements"]
+    projected = []
+    for row in rows:
+        required = [gate for gate, ids in mapping.items() if row["id"] in ids]
+        passed = bool(required) and all(gates[g]["status"] == "passed" for g in required)
+        projected.append({**row, "required_domains": required,
+                          "status": "qualified" if passed else "unclosed",
+                          "remaining_reason": "" if passed else row["remaining_reason"]})
+    accepted = stabilization["ok"] and all(gates[g]["status"] == "passed" for g in PRODUCT_GATES)
+    accepted = accepted and not any(row["status"] != "qualified" for row in projected)
+    return projected, accepted
+
+
+def _checked_product_pending(plan: dict, policy: dict, locations: dict) -> dict:
+    from openpine.verification.required_inventory import pending_required_inventories
+
+    inventories = {task["component"] + "@" + task["environment"]:
+                   {"nodeids": task["nodeids"], "deselected": task["deselected"]}
+                   for task in plan["tasks"]}
+    pending = pending_required_inventories(policy, {n:Path(p) for n,p in locations.items()},
+        plan["source"], inventories, list(COMPONENTS))
+    if plan.get("pending_required_inventories", {}) != pending:
+        raise ValueError("saved external inventory differs from reviewed source obligations")
+    for task in plan["tasks"]:
+        count = task["deselected"]
+        covered = len(pending.get(task["component"], {}).get("nodeids", []))
+        if type(count) is not int or count != covered:
+            raise ValueError("unaccounted mandatory deselected cases: " + task["component"])
+    return pending
+
+
+def run_product_gate(
+    host: Path, plan: dict, evidence: Path, *, expected_plan_hash: str, run_id: str,
+    binding: dict | None = None,
+) -> dict:
+    """Extend this same owner with all product domains; reopen native primaries.
+
+    Source-reviewed obligations identify full owner cases and independently
+    expected commands. Locator packets carry no status/expected authority.
+    Until the full specifications/primaries exist, domains remain visibly open.
+    """
+    from openpine.verification import stabilization_evidence as raw
+    from openpine.verification.execution_identity import evidence_path
+    from openpine.verification.identity import digest
+    from openpine.verification.execution_owner_launch import resolve_owner_policy
+    from openpine.verification.execution_binding import checked_locations
+
+    base = run_stabilization_gate(host, plan, evidence, expected_plan_hash=expected_plan_hash,
+                                  run_id=run_id, binding=binding)
+    policy = read_json(host / "verification/execution-policy.json")
+    if policy.get("schema_id") == "openpine.execution_policy.v2":
+        policy = resolve_owner_policy(policy, plan["owner_launch"])
+    locations, _ = checked_locations(plan, binding)
+    pending = _checked_product_pending(plan, policy, locations)
+    specification = policy.get("product_acceptance")
+    requirement_ids = {row["id"] for row in base["stage2"]["remaining_spec_binding"]["unclosed_requirements"]}
+    if specification is not None:
+        _validate_product_policy(specification, requirement_ids)
+    path = evidence_path(evidence, "product-inputs.json", must_exist=False)
+    packet = read_json(path) if path.is_file() else None
+    if packet is not None and (
+        set(packet) != {"schema_id", "plan_hash", "candidate_hash", "policy_hash", "run_id", "domains"}
+        or packet["schema_id"] != "openpine.product_inputs.v1"
+        or packet["plan_hash"] != plan["content_hash"]
+        or packet["candidate_hash"] != plan["source"]["content_hash"]
+        or packet["policy_hash"] != plan["policy_hash"]
+        or packet["run_id"] != run_id
+        or not isinstance(packet["domains"], dict)
+        or set(packet["domains"]) - set(PRODUCT_GATES)
+    ):
+        raise ValueError("product locator packet is stale/foreign or carries authority")
+    gates = {}
+    for gate in PRODUCT_GATES:
+        spec = specification["domains"][gate]["obligations"] if specification else None
+        entry = packet["domains"].get(gate) if packet else None
+        if spec is None or entry is None:
+            gates[gate] = {"status": "not_run", "errors": ["missing reviewed full-scope obligations or raw owner inputs"]}
+            continue
+        try:
+            if not base["ok"]:
+                raise ValueError("required stabilization owners have not all passed")
+            if gate in {"functional-matrix", "data-request"} and pending:
+                raise ValueError("mandatory external provider cases remain NOT_EXECUTED")
+            if not isinstance(entry, dict) or set(entry) != set(spec):
+                raise ValueError("missing/extra product requirement primary inputs")
+            results = {}
+            for requirement, obligation in spec.items():
+                for component, nodes in obligation["nodes"].items():
+                    tasks = [task for task in plan["tasks"] if task["component"] == component]
+                    if not tasks or any(not set(nodes).issubset(task["nodeids"]) for task in tasks):
+                        raise ValueError("missing full requirement case/interpreter: " + requirement)
+                results[requirement] = raw.command_set(evidence, entry[requirement], obligation["commands"])
+                for receipt in results[requirement]:
+                    if receipt.get("binding") != {"plan_hash": plan["content_hash"],
+                            "candidate_hash": plan["source"]["content_hash"], "run_id": run_id}:
+                        raise ValueError("copied/stale product command execution binding")
+            gates[gate] = {"status": "passed", "raw_result_hash": digest(results), "errors": []}
+        except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
+            gates[gate] = {"status": "blocked", "errors": [str(error)]}
+    requirements, accepted = _product_projection(base, gates)
+    return seal({
+        "schema_id": PRODUCT_CURRENT_SCHEMA, "scope": "full_product_required_domains",
+        **{key: base[key] for key in ("candidate_hash", "source_commits", "plan_hash", "policy_hash", "inventory_hash", "run_id")},
+        "stabilization_current": base,
+        "product": {"status": "accepted" if accepted else "blocked", "accepted": accepted,
+                    "domain_policy_hash": digest(specification), "gates": gates,
+                    "pending_required_inventories": pending,
+                    "requirements": requirements, "requirement_count": len(requirements)},
+        "ok": accepted, "full_stage2_accepted": accepted, "full_release_accepted": accepted,
+    })
+
+
+def _product_current_views(current: dict) -> dict:
+    from openpine.verification.identity import digest
+
+    verify(current, PRODUCT_CURRENT_SCHEMA)
+    base = current["stabilization_current"]
+    current_views(base)  # Preserve all historical accounting and seven-gate checks.
+    for key in ("candidate_hash", "source_commits", "plan_hash", "policy_hash", "inventory_hash", "run_id"):
+        if current[key] != base[key]:
+            raise ValueError("product projection differs from the checked exact candidate")
+    product = current["product"]
+    gates = product["gates"]
+    if set(gates) != set(PRODUCT_GATES):
+        raise ValueError("product projection lost a mandatory domain")
+    for row in gates.values():
+        if row.get("status") not in {"passed", "not_run", "blocked"} or not isinstance(row.get("errors"), list):
+            raise ValueError("invalid product domain status/errors")
+        if row["status"] == "passed":
+            if row["errors"] or re.fullmatch(r"sha256:[0-9a-f]{64}", row.get("raw_result_hash", "")) is None:
+                raise ValueError("passed product domain has no checked primary identity")
+        elif not row["errors"]:
+            raise ValueError("unclosed product domain needs a concrete reason")
+    requirements, accepted = _product_projection(base, gates)
+    if (
+        product["requirements"] != requirements or product["requirement_count"] != 68
+        or product["accepted"] is not accepted or current["ok"] is not accepted
+        or current["full_stage2_accepted"] is not accepted or current["full_release_accepted"] is not accepted
+        or (accepted and product.get("pending_required_inventories"))
+        or product["status"] != ("accepted" if accepted else "blocked")
+    ):
+        raise ValueError("product verdict contradicts mandatory domains/requirements")
+    common = {key: current[key] for key in ("candidate_hash", "plan_hash", "inventory_hash", "run_id")}
+    common.update({"current_hash": current["content_hash"], "full_stage2_accepted": accepted,
+                   "full_release_accepted": accepted})
+    summary = {**common, "status": product["status"], "stabilization_status": base["stabilization"]["status"],
+               "required_domains": len(PRODUCT_GATES), "passed_domains": sum(r["status"] == "passed" for r in gates.values()),
+               "unclosed_requirements": sum(r["status"] != "qualified" for r in requirements)}
+    return {
+        "progress": {**common, "status": product["status"], "domains": gates},
+        "remainder": {**common, "items": [r for r in requirements if r["status"] != "qualified"],
+                      "pending_required_inventories": product.get("pending_required_inventories", {}),
+                      "stage2_items": base["stage2"]["remaining"], "criteria": base["stage2"]["criteria"],
+                      "remaining_spec_binding": base["stage2"]["remaining_spec_binding"]},
+        "summary": summary, "api": {**summary, "domains": gates},
+        "documentation": summary,
+        "release": {**summary, "source_commits": current["source_commits"],
+                    "domain_policy_hash": product["domain_policy_hash"], "requirements_hash": digest(requirements)},
     }

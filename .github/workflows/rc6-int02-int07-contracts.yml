@@ -1,10 +1,11 @@
 # Bounded contracts only; complete Stage 2 and release acceptance remain false.
-name: RC6 LANG08 installed owner integration
+name: RC6 installed owner and product current contracts
 'on':
   pull_request:
     branches:
     - implementation/int01-stack-reconciliation-20261006
     - implementation/int02-int07-cli-contracts-20261006
+    - implementation/lang08-owner-integration-20261006
 permissions:
   contents: read
 concurrency:
@@ -14,7 +15,7 @@ jobs:
   candidate:
     if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
       PYTHONDONTWRITEBYTECODE: '1'
@@ -121,6 +122,12 @@ jobs:
       run: |
         PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
         "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/worker-origins.json" -q rc6_tests/test_rc6_numeric_search_integration.py::test_real_protected_worker_searches_native_array -p openpine.verification.pytest_gate --verification-suite=int02-int07-protected-worker --verification-output="$RUNNER_TEMP/int02-int07-evidence/worker.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/worker.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/worker-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/cache"
+    - name: Execute installed product-current contracts and existing current-owner regression
+      env:
+        PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
+      run: |
+        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
+        "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/int08-origins.json" -q rc6_tests/test_rc6_product_current.py rc6_tests/test_rc6_stabilization.py rc6_tests/test_rc6_stabilization_environment.py rc6_tests/test_rc6_review_ledger.py -p openpine.verification.pytest_gate --verification-suite=int08-current-owner-regression --verification-lock=verification/int08-current-contract-inventory.json --verification-output="$RUNNER_TEMP/int02-int07-evidence/int08.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/int08.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/int08-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/int08-cache"
     - name: Native quality checks
       env:
         RUNNER_TEMP: ${{ runner.temp }}
@@ -129,6 +136,8 @@ jobs:
         bash scripts/rc6_native_quality.sh
         python -m ruff check scripts/rc6_stabilization rc6_tests/test_rc6_execution_ci.py
         python -m ruff check rc6_tests/test_rc6_varip_graph_integration.py
+        python -m ruff check openpine/verification/stage_gate.py openpine/verification/execution_cli.py rc6_tests/stabilization_fixture.py rc6_tests/test_rc6_product_current.py
+        python -m ruff format --check rc6_tests/test_rc6_product_current.py
         python -m ruff format --check scripts/rc6_stabilization
         python -m mypy --explicit-package-bases --follow-imports=silent scripts/rc6_stabilization openpine/verification/execution_process.py openpine/verification/evidence_index.py openpine/verification/conformance.py openpine/verification/stage2_remaining.py openpine/verification/__main__.py
     - name: Retain bounded public primary receipts in job logs
@@ -163,7 +172,7 @@ jobs:
                 stream.add(case,arcname=case.name)
         data=archive.read_bytes()
         print('PRIMARY_BINARY',archive.name,hashlib.sha256(data).hexdigest(),len(data),'cases',len(cases))
-        for name in ('language','pinelib'):
+        for name in ('language','pinelib','int08'):
             path=root/(name+'-primary-inputs.tar.gz')
             with tarfile.open(path,'w:gz') as stream:
                 directory=root/(name+'-private')
@@ -194,5 +203,12 @@ jobs:
           ${{ runner.temp }}/int02-int07-evidence/language-primary-inputs.tar.gz
           ${{ runner.temp }}/int02-int07-evidence/pinelib-primary-inputs.tar.gz
           ${{ runner.temp }}/int02-int07-evidence/candidate-project-wheels.tar.gz
+        if-no-files-found: error
+        retention-days: 7
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-int08-primary-inputs-${{ github.run_id }}
+        path: ${{ runner.temp }}/int02-int07-evidence/int08-primary-inputs.tar.gz
         if-no-files-found: error
         retention-days: 7

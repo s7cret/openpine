@@ -186,13 +186,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11855, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11998, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT08 adds143 verifier contract cases without product acceptance credit.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:6be79ecc1d21eaa52ad773156f2828c335a07f6f5171dd4aa3bfba26a563512f",
+          "sha256": "sha256:f546d470794985f54c4e7622c79a1cae3c018400e639116aa8a213c7eb3cfd66",
           "nodes": []
         }
       ],
@@ -259,7 +259,26 @@
           "nodes": []
         }
       ],
-      "lang08_previous_reason": "PR count 9723; current reviewed-addition inventory count 11679, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
+      "lang08_previous_reason": "PR count 9723; current reviewed-addition inventory count 11679, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "int08_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "verification/inventory.json",
+          "sha256": "sha256:6be79ecc1d21eaa52ad773156f2828c335a07f6f5171dd4aa3bfba26a563512f",
+          "nodes": []
+        }
+      ],
+      "int08_mapping_note": "Same owner extended with explicit fourteen-domain product projection; production full obligations remain null. Original decisions and prior mappings preserved.",
+      "int08_cli_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "verification/inventory.json",
+          "sha256": "sha256:8635e0f0fab0e31f162b925741d2a7613bfc827ef3fa964bf48540c5cf802b1d",
+          "nodes": []
+        }
+      ],
+      "int08_cli_previous_reason": "PR count 9723; current reviewed-addition inventory count 11995, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT08 adds140 verifier contract cases without product acceptance credit.",
+      "int08_cli_mapping_note": "Three real subprocess CLI regressions added; original decisions and previous mappings preserved."
     },
     {
       "id": "verification/stage2-callable-lock.json",
@@ -1770,7 +1789,7 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:0f433829d183326b6e73aadc18ef4e709972e538a43e80c60ed6faf0d75228ba",
+          "sha256": "sha256:d990d529331f7b443a76bcc413ea8862f9475a538ab40e4dd06c2a99a538953c",
           "nodes": []
         },
         {
@@ -1856,7 +1875,53 @@
           "path": "rc6_tests/test_rc6_stabilization.py",
           "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209"
         }
-      ]
+      ],
+      "int08_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "openpine/verification/stage_gate.py",
+          "sha256": "sha256:0f433829d183326b6e73aadc18ef4e709972e538a43e80c60ed6faf0d75228ba",
+          "nodes": []
+        },
+        {
+          "component": "openpine",
+          "path": "rc6_tests/test_rc6_stabilization.py",
+          "sha256": "sha256:1bf80729cd2900431b800fbe483d6261aa530e81222324ad4fb2796685d5b53b",
+          "nodes": [
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[failed]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[missing-log]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[resealed-output]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[stdout]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[branch-reconciliation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[protected-workers]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_false_full_stage2_flag_and_cli_reader_agreement",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[candidate_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[plan_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[run_id]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_real_command_raw_result",
+            "rc6_tests/test_rc6_stabilization.py::test_resealed_campaign_and_execution_command_interpreter_rejected",
+            "rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt",
+            "rc6_tests/test_rc6_stabilization.py::test_stale_source_and_resealed_plan_cannot_change_expected_identity",
+            "rc6_tests/test_rc6_stabilization.py::test_tampered_installed_resource_is_rejected_against_frozen_wheel"
+          ]
+        }
+      ],
+      "int08_mapping_note": "Same owner extended with explicit fourteen-domain product projection; production full obligations remain null. Original decisions and prior mappings preserved."
     },
     {
       "id": "verification/stage2-progress.json",
@@ -1867,7 +1932,7 @@
         {
           "component": "openpine",
           "path": "openpine/verification/stage_gate.py",
-          "sha256": "sha256:0f433829d183326b6e73aadc18ef4e709972e538a43e80c60ed6faf0d75228ba",
+          "sha256": "sha256:d990d529331f7b443a76bcc413ea8862f9475a538ab40e4dd06c2a99a538953c",
           "nodes": []
         },
         {
@@ -1953,7 +2018,53 @@
           "path": "rc6_tests/test_rc6_stabilization.py",
           "sha256": "sha256:f64c70838c89adbe2f82733ce4734d08d5482b11e06824f260ca777257489209"
         }
-      ]
+      ],
+      "int08_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "openpine/verification/stage_gate.py",
+          "sha256": "sha256:0f433829d183326b6e73aadc18ef4e709972e538a43e80c60ed6faf0d75228ba",
+          "nodes": []
+        },
+        {
+          "component": "openpine",
+          "path": "rc6_tests/test_rc6_stabilization.py",
+          "sha256": "sha256:1bf80729cd2900431b800fbe483d6261aa530e81222324ad4fb2796685d5b53b",
+          "nodes": [
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[argv]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[cwd]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[failed]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[missing-log]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[resealed-output]",
+            "rc6_tests/test_rc6_stabilization.py::test_command_tampering_cannot_be_resealed[stdout]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[branch-reconciliation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[protected-workers]",
+            "rc6_tests/test_rc6_stabilization.py::test_each_missing_owner_is_not_run_not_accepted[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_false_full_stage2_flag_and_cli_reader_agreement",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[candidate_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[plan_hash]",
+            "rc6_tests/test_rc6_stabilization.py::test_foreign_historical_packet_rejected[run_id]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[frontend]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_joint_resealing_does_not_replace_raw_owner_evidence[test-performance]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[coverage]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[foundation]",
+            "rc6_tests/test_rc6_stabilization.py::test_missing_owner_interpreter_cannot_be_accepted[packages]",
+            "rc6_tests/test_rc6_stabilization.py::test_real_command_raw_result",
+            "rc6_tests/test_rc6_stabilization.py::test_resealed_campaign_and_execution_command_interpreter_rejected",
+            "rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt",
+            "rc6_tests/test_rc6_stabilization.py::test_stale_source_and_resealed_plan_cannot_change_expected_identity",
+            "rc6_tests/test_rc6_stabilization.py::test_tampered_installed_resource_is_rejected_against_frozen_wheel"
+          ]
+        }
+      ],
+      "int08_mapping_note": "Same owner extended with explicit fourteen-domain product projection; production full obligations remain null. Original decisions and prior mappings preserved."
     },
     {
       "id": "docs/RC6_STAGE2_10_PUBLICATION.md",
