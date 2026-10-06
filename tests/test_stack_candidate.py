@@ -8,19 +8,17 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.6.template.json"
-HISTORICAL = (
-    ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
-)
+HISTORICAL = ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
 EXPECTED_SHAS = {
-    "openpine-contracts": "904e8f660834a10d3382cd1b2ed7380c24b73072",
-    "marketdata-provider": "2fdbbcb3fa2b5e35fc98938c9b7c260c2b36935b",
-    "pinelib": "456ddff14cbf7309c5db9cadbdb798c2a7a9951c",
-    "backtest_engine": "84bb2d415aa7e279f7c7be1bcd7e5efe08f9fbe2",
-    "pine2ast": "892fee8c2b0443e702918248f2d2642c877723e7",
-    "ast2python": "2655b31a826d43b9df5a88c25186a69377eb09e2",
-    "optimizer": "5a62efc672a08e05f7443d3b678fa2595249935a",
-    "openpine": "93898bf818b4745f4188de8d2d3580cdd920f383",
+    "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+    "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+    "pinelib": "6493311b5eec8cc3caf61d44fae3d4b5203e14b4",
+    "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+    "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+    "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+    "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
 }
+TEST_HOST_SHA = "a" * 40
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED = {
     "openpine-contracts",
@@ -62,10 +60,18 @@ def test_candidate_template_pins_eight_repos_and_is_not_active() -> None:
     assert payload["not_a_release"] is True
     components = payload["components"]
     assert set(components) == REQUIRED
-    assert {name: row["sha"] for name, row in components.items()} == EXPECTED_SHAS
+    assert {
+        name: row["sha"] for name, row in components.items() if name != "openpine"
+    } == EXPECTED_SHAS
+    assert "sha" not in components["openpine"]
+    assert (
+        components["openpine"]["ref"]
+        == "implementation/int01-stack-reconciliation-20261006"
+    )
     for name, row in components.items():
         assert row["version"] == "5.0.0rc6"
-        assert SHA40.fullmatch(row["sha"]), name
+        if name != "openpine":
+            assert SHA40.fullmatch(row["sha"]), name
     assert _resolver().resolve_candidate(ROOT) is None
     historical = json.loads(HISTORICAL.read_text(encoding="utf-8"))
     assert historical["components"]["openpine"]["sha"] == "THIS_CHECKOUT"
@@ -84,7 +90,7 @@ def test_stack_ci_separates_feature_candidate_from_production_release() -> None:
     assert "materialize_stack_candidate.py" in workflow
     assert "finalize_stack_candidate.py" in workflow
     assert "install_candidate_wheelhouse.py" in workflow
-    assert "--openpine-sha \"$GITHUB_SHA\"" in workflow
+    assert '--openpine-sha "$GITHUB_SHA"' in workflow
     assert '--root "$RUNNER_TEMP/openpine-candidate"' in workflow
     assert "build_candidate_wheelhouse.py" in workflow
     assert " -e " not in workflow
@@ -98,18 +104,19 @@ def test_stack_ci_separates_feature_candidate_from_production_release() -> None:
 
 
 def test_backend_ci_uses_the_same_candidate_resolver_and_checkouts() -> None:
-    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
-        encoding="utf-8"
-    )
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
     assert "resolve_stack_candidate.py" in workflow
     assert "materialize_stack_candidate.py" in workflow
     assert "finalize_stack_candidate.py" in workflow
     assert "install_candidate_wheelhouse.py" in workflow
-    assert "--openpine-sha \"$GITHUB_SHA\"" in workflow
+    assert '--openpine-sha "$GITHUB_SHA"' in workflow
     assert '--root "$RUNNER_TEMP/openpine-candidate"' in workflow
     assert "build_candidate_wheelhouse.py" in workflow
-    assert 'rm -f "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}"' in workflow
+    assert (
+        'rm -f "$RUNNER_TEMP/openpine-candidate/${{ steps.stack.outputs.candidate_path }}"'
+        in workflow
+    )
     assert " -e " not in workflow
     for component in REQUIRED:
         assert f"--checkout {component}=" in workflow
@@ -126,9 +133,7 @@ def test_candidate_workflows_bind_the_rc6_template_and_component_shas(
     assert "stack-candidate-5.0.0-rc.6.template.json" in workflow
     assert "stack-candidate-5.0.0-rc.4.template.json" not in workflow
     expected_literals = (
-        sha
-        for component, sha in EXPECTED_SHAS.items()
-        if component != "openpine"
+        sha for component, sha in EXPECTED_SHAS.items() if component != "openpine"
     )
     if workflow_name == "stack-ci.yml":
         expected_literals = (
@@ -162,8 +167,9 @@ def test_backend_release_gate_separates_candidate_from_production_lock() -> None
     release_gate = (ROOT / "scripts" / "release_gate.sh").read_text(encoding="utf-8")
 
     assert "OPENPINE_CANDIDATE_MANIFEST" in release_gate
-    assert '--root "$candidate_root" --require-stage wheel-bound' in release_gate.replace(
-        "\\\n", ""
+    assert (
+        '--root "$candidate_root" --require-stage wheel-bound'
+        in release_gate.replace("\\\n", "")
     )
     assert "materialized candidate manifest required" in release_gate
     assert "stack-candidate-5.0.0-rc.2.json" not in release_gate
@@ -174,9 +180,7 @@ def test_backend_release_gate_separates_candidate_from_production_lock() -> None
 
 
 def test_backend_ci_installs_required_sandbox_runtime() -> None:
-    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
-        encoding="utf-8"
-    )
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
     assert "Install Bubblewrap sandbox runtime" in workflow
     assert (
@@ -248,7 +252,7 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
     materializer = _materializer()
     payload = materializer.materialize_candidate(
         json.loads(TEMPLATE.read_text(encoding="utf-8")),
-        openpine_sha=EXPECTED_SHAS["openpine"],
+        openpine_sha=TEST_HOST_SHA,
         created_at_utc="2026-08-20T21:00:00Z",
         provenance={"builder": "test", "run_id": "1"},
     )
@@ -260,7 +264,7 @@ def test_candidate_resolver_emits_manifest_identity(tmp_path: Path) -> None:
     assert outputs["candidate_path"] == manifest.name
     assert outputs["pine2ast_repo"] == "s7cret/pine2ast"
     assert outputs["pine2ast_sha"] == EXPECTED_SHAS["pine2ast"]
-    assert outputs["openpine_sha"] == EXPECTED_SHAS["openpine"]
+    assert outputs["openpine_sha"] == TEST_HOST_SHA
 
 
 def test_candidate_resolver_rejects_github_output_injection(tmp_path: Path) -> None:
@@ -269,7 +273,7 @@ def test_candidate_resolver_rejects_github_output_injection(tmp_path: Path) -> N
     manifest = tmp_path / "stack-candidate-evil.json"
     payload = materializer.materialize_candidate(
         json.loads(TEMPLATE.read_text(encoding="utf-8")),
-        openpine_sha=EXPECTED_SHAS["openpine"],
+        openpine_sha=TEST_HOST_SHA,
         created_at_utc="2026-08-20T21:00:00Z",
         provenance={"builder": "test", "run_id": "1"},
     )
@@ -282,8 +286,8 @@ def test_candidate_resolver_rejects_github_output_injection(tmp_path: Path) -> N
 
 
 def test_openapi_drift_job_compares_generated_client() -> None:
-    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
-        encoding="utf-8"
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert (
+        "generate_openapi_ts.py .contract/openapi.json .contract/openapi.ts" in workflow
     )
-    assert "generate_openapi_ts.py .contract/openapi.json .contract/openapi.ts" in workflow
     assert "src/api/generated/openapi.ts" in workflow

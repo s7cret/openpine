@@ -7,11 +7,11 @@
       "name": "openpine",
       "package": "openpine",
       "repository": "s7cret/openpine",
-      "tree_sha256": "043217299be57660985747a8de52030c4fdf6d0280879b4c01164fe1caadda28",
+      "tree_sha256": "fcee0b4953d34ce2b6331dc7b40e71884f033589e407dd3e20d34f197a6a49ec",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+      "commit": "eb249402e67199b07e9880fadc14e03fb1651edc",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "frontend": "openpine.frontend.v1",
@@ -20,7 +20,7 @@
       "name": "pine2ast",
       "package": "pine2ast",
       "repository": "s7cret/pine2ast",
-      "tree_sha256": "b4683771a9167d2371c01f8eae261ccc1f5bc332ed640b30897415bf5114cbf8",
+      "tree_sha256": "8e603c7686ba0605ecfc181d7921d147fdc361f4a2be5d84081fea4a9c5051d2",
       "version": "5.0.0rc6"
     },
     {
@@ -36,29 +36,29 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "f66c67f90a7f3428fe68267d41de9ae31202f775",
+      "commit": "6493311b5eec8cc3caf61d44fae3d4b5203e14b4",
       "contracts": {
         "runtime": "1.4"
       },
       "name": "pinelib",
       "package": "pinelib",
       "repository": "s7cret/pinelib",
-      "tree_sha256": "8d91ae79df52a9cefd9812bbf4f0d6b9dbbf3a291a473b6c6df539f6a5f03ac7",
+      "tree_sha256": "f6cfa46779944e063cf0f614e2bbdc2827ef13eed35ecee3d81ca2d27f92502f",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+      "commit": "d9210fbb6a72689e76da918c2eba422b22f439f6",
       "contracts": {
         "tick_replay": "deterministic-explicit-v1"
       },
       "name": "backtest_engine",
       "package": "backtest-engine",
       "repository": "s7cret/backtest_engine",
-      "tree_sha256": "ae1877b13f2864c2713f5cb76cb6bfeb68b4fc46c2eab164f70f956a48b8b129",
+      "tree_sha256": "442b1f4919ff7b84075d962e4daa844c69e182d09ae135ddb95b9d9801989c7f",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+      "commit": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
       "contracts": {
         "runtime": "1.4",
         "segment_manifest": "stage-d-csv-2"
@@ -66,7 +66,7 @@
       "name": "marketdata_provider",
       "package": "marketdata-provider",
       "repository": "s7cret/marketdata-provider",
-      "tree_sha256": "d88bdaab73aa5cc9c2efddb3ccde682f522ed24b71b7b495f827a8b34e276120",
+      "tree_sha256": "ed3e6eab0b5151e1ff281d6141986945ee5057ca5d5b87cfa5e92e673b778e75",
       "version": "5.0.0rc6"
     },
     {

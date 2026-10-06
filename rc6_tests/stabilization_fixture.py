@@ -14,8 +14,8 @@ from openpine.verification.execution_campaign import (
     export_suite_receipts,
     run_campaign,
 )
-from openpine.verification.execution_coverage import combine_task_coverage
 from openpine.verification.execution_identity import (
+    clean_environment,
     environment_snapshot,
     hash_file,
     source_snapshot,
@@ -33,6 +33,28 @@ HOST = Path(__file__).resolve().parents[1]
 def put(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value) if not isinstance(value, str) else value)
+
+
+def freeze_fixture_environment(roots, folder, inputs):
+    """Observe the complete environment in the actual child source scope."""
+    environment = clean_environment(
+        {name: str(path) for name, path in roots.items()}, folder / "private"
+    )
+    code = (
+        "import json; from openpine.verification.execution_identity import "
+        "environment_snapshot; print(json.dumps(environment_snapshot()))"
+    )
+    result = run_logged(
+        [sys.executable, "-B", "-c", code],
+        cwd=roots["openpine"],
+        output=folder / "command",
+        env=environment,
+        inputs=inputs,
+        timeout=60,
+    )
+    if not result["ok"]:
+        raise AssertionError("fixture environment probe failed: " + str(folder))
+    return json.loads((folder / "command" / "stdout.log").read_text())
 
 
 def build_fixture(base, *, portable=False, owner_namespaces=False):
@@ -386,7 +408,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
             if path.exists():
                 shutil.rmtree(path)
     source = source_snapshot(roots)
-    env = environment_snapshot()
+    env = freeze_fixture_environment(roots, evidence / "environment-probe", harness_inputs)
     inventories = {
         name
         + "@" + environment_name: {
@@ -480,14 +502,32 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
     put(folder / "observations/arithmetic.json", observation)
     run_stage_gate(host, stack, folder)
     entries["foundation"] = {"environments": {environment_name: "foundation/" + environment_name}}
-    coverage_entries = {}
-    for task in plan["tasks"]:
-        destination = evidence / "coverage" / task["id"]
-        result = combine_task_coverage(
-            plan, evidence / "run-0", task["id"], destination, run_id="fixture-0"
-        )
-        assert result["ok"], result
-        coverage_entries[task["id"]] = destination.relative_to(evidence).as_posix()
+    # The coverage owner must observe the same complete launch scope as pytest.
+    coverage_code = (
+        "import json; from pathlib import Path; "
+        "from openpine.verification.execution_coverage import combine_task_coverage; "
+        "from openpine.verification.identity import read_json; "
+        f"evidence=Path({str(evidence)!r}); plan=read_json(Path({str(path)!r})); "
+        "results={t['id']:combine_task_coverage(plan,evidence/'run-0',t['id'],"
+        "evidence/'coverage'/t['id'],run_id='fixture-0') for t in plan['tasks']}; "
+        "assert all(r['ok'] for r in results.values()),results; "
+        "print(json.dumps(results))"
+    )
+    coverage_owner = run_logged(
+        [sys.executable, "-B", "-c", coverage_code],
+        cwd=host,
+        output=evidence / "coverage-owner",
+        env=clean_environment(
+            {n: str(r) for n, r in roots.items()}, evidence / "coverage-private"
+        ),
+        inputs={
+            **harness_inputs,
+            "plan": {"path": str(path), "sha256": hash_file(path)},
+        },
+        timeout=180,
+    )
+    assert coverage_owner["ok"], coverage_owner
+    coverage_entries = {t["id"]: "coverage/" + t["id"] for t in plan["tasks"]}
     entries["coverage"] = {"tasks": coverage_entries}
     packet = {
         "schema_id": "openpine.rc6_stabilization_inputs.v1",
