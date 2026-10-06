@@ -17,8 +17,8 @@
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
-      "ref": "implementation/int01-reference-closure-20261006",
-      "sha": "6493311b5eec8cc3caf61d44fae3d4b5203e14b4",
+      "ref": "implementation/p2-varip-extension-lifecycle-20261006",
+      "sha": "9b42036aa83a880911caf0048a4f65c3580d9847",
       "version": "5.0.0rc6"
     },
     "backtest_engine": {
@@ -47,7 +47,7 @@
     },
     "openpine": {
       "repo": "s7cret/openpine",
-      "ref": "implementation/int02-int07-cli-contracts-20261006",
+      "ref": "implementation/lang08-owner-integration-20261006",
       "version": "5.0.0rc6"
     }
   },
