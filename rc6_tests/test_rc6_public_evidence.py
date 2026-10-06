@@ -142,7 +142,7 @@ def aliased_inventory():
     expected = {'identity_mode': 'reviewed_addition_to_hashed_baseline',
                 'count': 3, 'deselected': 0, 'added_nodeids': [current[-1]],
                 'baseline': {'count': 2, 'deselected': 0, 'sha256': collection_hash(historic)},
-                'nodeid_aliases': dict(zip(current[:2], historic, strict=True))}
+                'nodeid_aliases': {node: [old] for node, old in zip(current[:2], historic, strict=True)}}
     return current, expected
 
 
@@ -173,21 +173,35 @@ def test_reviewed_neutral_ids_reject_changed_or_incomplete_obligations(mutation)
     elif mutation == 'duplicate-historical':
         aliases[current[1]] = aliases[current[0]]
     elif mutation == 'historical-present':
-        current[0] = aliases[current[0]]
+        current[0] = aliases[current[0]][0]
     elif mutation == 'cross-test':
-        aliases[current[0]] = 'other.py::test_body[old-one]'
+        aliases[current[0]] = ['other.py::test_body[old-one]']
     elif mutation == 'cycle':
-        aliases[current[0]] = current[1]
-        aliases[current[1]] = current[0]
+        aliases[current[0]] = [current[1]]
+        aliases[current[1]] = [current[0]]
     elif mutation == 'alias-addition':
-        aliases[current[-1]] = 'test.py::test_added[old]'
+        aliases[current[-1]] = ['test.py::test_added[old]']
     elif mutation == 'missing-alias':
         aliases.pop(current[0])
     elif mutation == 'wrong-historical':
-        aliases[current[0]] = 'test.py::test_body[other]'
+        aliases[current[0]] = ['test.py::test_body[other]']
     elif mutation == 'nested-baseline':
         expected['baseline']['nodeid_aliases'] = {}
     else:
         expected.pop('identity_mode')
     with pytest.raises(ValueError):
         validate_inventory(current, expected, 0)
+
+
+def test_public_collection_includes_reviewed_legacy_id_lines_without_rewriting_primary(tmp_path):
+    host = Path(__file__).resolve().parents[1]
+    lock = json.loads((host / 'verification/inventory.json').read_text())['openpine']
+    assert len(lock['nodeid_aliases']) == 4
+    assert all(isinstance(lines, list) for lines in lock['nodeid_aliases'].values())
+    primary = tmp_path / 'collection.json'
+    content = json.dumps({'inventories': {'openpine@py313': {'reviewed_lock': lock}}}).encode()
+    primary.write_bytes(content)
+    report = owner().audit(tmp_path, candidate='a' * 40, run_id='reviewed-lock-regression',
+                           max_bytes=1024 * 1024)
+    assert report['ok'], report['errors']
+    assert primary.read_bytes() == content

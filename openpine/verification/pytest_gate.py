@@ -23,18 +23,26 @@ def validate_inventory(nodeids: list[str], expected: dict, deselected: int) -> N
             raise ValueError('invalid or incomplete reviewed additive inventory')
         original_nodes = [node for node in nodeids if node not in set(added)]
         aliases = expected.get('nodeid_aliases', {})
+        if (not isinstance(aliases, dict)
+                or any(not isinstance(k, str) or not k or not isinstance(lines, list) or not lines
+                       or any(not isinstance(line, str) for line in lines)
+                       for k, lines in aliases.items())):
+            raise ValueError('invalid reviewed test ID line aliases')
+        # Structured lines avoid exporting escaped fixture-code IDs as one
+        # misleading email-shaped string. Reconstruct the exact historical pytest
+        # display ID for hash validation; public primaries are never rewritten.
+        historical = {node: '\\n'.join(lines) for node, lines in aliases.items()}
         # Reviewed display-ID changes retain the exact historical denominator and
         # hash. Every current ID must map once to an absent historical ID of the
         # same parametrized test; receipt nodeids and phase obligations stay real.
-        if (not isinstance(aliases, dict)
-                or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
+        if (any(not v
                        or '[' not in k or '[' not in v or not k.endswith(']') or not v.endswith(']')
-                       or k.rsplit('[', 1)[0] != v.rsplit('[', 1)[0] for k, v in aliases.items())
-                or len(set(aliases.values())) != len(aliases)
+                       or k.rsplit('[', 1)[0] != v.rsplit('[', 1)[0] for k, v in historical.items())
+                or len(set(historical.values())) != len(aliases)
                 or not set(aliases).issubset(original_nodes)
-                or set(aliases.values()).intersection(nodeids)):
+                or set(historical.values()).intersection(nodeids)):
             raise ValueError('invalid or incomplete reviewed test ID aliases')
-        original_nodes = [aliases.get(node, node) for node in original_nodes]
+        original_nodes = [historical.get(node, node) for node in original_nodes]
         validate_inventory(original_nodes, baseline, deselected)
         return
     if 'nodeid_aliases' in expected:

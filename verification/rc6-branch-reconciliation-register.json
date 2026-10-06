@@ -29,10 +29,19 @@
         {
           "component": "openpine",
           "path": "openpine/verification/pytest_gate.py",
+          "sha256": "sha256:2bc43cdb3aa23b2b130e8c8b8646964e255b7f23cc0892124237b59f18cd3745",
+          "nodes": []
+        }
+      ],
+      "preparation_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "openpine/verification/pytest_gate.py",
           "sha256": "sha256:a93144af80e8c7e02c551a23ccc68b36363bdd4d30e3af04d19fce983ba10727",
           "nodes": []
         }
-      ]
+      ],
+      "preparation_mapping_note": "Current preparation bytes: ordinary CPython 3.13 GIL support and reviewed neutral pytest display IDs; existing decision and previous exact mapping retained."
     },
     {
       "id": "rc6_tests/test_rc6_inputs.py",
@@ -169,16 +178,25 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11455, baseline 11027 retained. Exact collection validates the unchanged baseline and additive node set.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11547, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
+        {
+          "component": "openpine",
+          "path": "verification/inventory.json",
+          "sha256": "sha256:0741481c31dc38039f4ffd06d0c2c0917dafff7b1ecaae7b67b2202f4ab12f77",
+          "nodes": []
+        }
+      ],
+      "preparation_previous_mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
           "sha256": "sha256:00bf027b9c2dfee28109deb4639ad407ae4728fc93edaf4ac0d8dada024c6862",
           "nodes": []
         }
-      ]
+      ],
+      "preparation_previous_reason": "PR count 9723; current reviewed-addition inventory count 11455, baseline 11027 retained. Exact collection validates the unchanged baseline and additive node set."
     },
     {
       "id": "verification/stage2-callable-lock.json",
@@ -231,6 +249,36 @@
         {
           "component": "openpine",
           "path": "rc6_tests/test_rc6_execution_platform.py",
+          "sha256": "sha256:5e0b53fbc613c5651ff031efe1100de7ee6d867fea7c4586c5a66397d241dd11",
+          "nodes": [
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[collect-only]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[duplicate-shard]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[empty-xml]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[missing-shard]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[missing-teardown]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[nonzero-exit]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[stdout-tamper]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[wrong-env]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[wrong-run]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[xml-tamper]",
+            "rc6_tests/test_rc6_execution_platform.py::test_changed_source_rejects_campaign_before_execution",
+            "rc6_tests/test_rc6_execution_platform.py::test_full_profile_does_not_drop_missing_python",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<!DOCTYPE a><testsuites/>]",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<broken]",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<testsuites/>]",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import os\\ndef test_value():\\n    os._exit(9)\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    raise ValueError(\"setup\")\\ndef test_value():\\n    assert True\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    yield\\n    raise ValueError(\"teardown\")\\ndef test_value():\\n    assert True\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\ndef test_value():\\n    pytest.skip(\"synthetic verifier negative case\")\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_snapshot_includes_tests_expected_and_verification_but_not_generated_cache"
+          ]
+        }
+      ],
+      "preparation_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "rc6_tests/test_rc6_execution_platform.py",
           "sha256": "sha256:e56545b5b098fe0212a314b4bbbd1ab32f4cace1969c985a81a9910738a18258",
           "nodes": [
             "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[collect-only]",
@@ -256,7 +304,8 @@
             "rc6_tests/test_rc6_execution_platform.py::test_snapshot_includes_tests_expected_and_verification_but_not_generated_cache"
           ]
         }
-      ]
+      ],
+      "preparation_mapping_note": "Current preparation bytes: ordinary CPython 3.13 GIL support and reviewed neutral pytest display IDs; existing decision and previous exact mapping retained."
     },
     {
       "id": "stage2-continuation/continuation-work/completion-checks/test_version_invariance.py",
@@ -492,7 +541,7 @@
         {
           "component": "pine2ast",
           "path": "tests/stage2/test_stage210_audit_guards.py",
-          "sha256": "sha256:1dce31c9735a5fe1d1c38041f019d50096db9d7964778744b803cc55229ddcb5",
+          "sha256": "sha256:3515b0a31ca5f417c0167a0420c5c192df4c0763fb91e8dae73eaf8cf8819148",
           "nodes": [
             "tests/stage2/test_stage210_audit_guards.py::test_complete_identity_observation_does_not_claim_full_stage",
             "tests/stage2/test_stage210_audit_guards.py::test_declared_receipt_hash_is_not_a_substitute_for_a_file",
@@ -529,7 +578,30 @@
             "tests/test_stage210_publication.py::test_stage210_unpublished_runtime_abi_change_stops_publication"
           ]
         }
-      ]
+      ],
+      "preparation_previous_mappings": [
+        {
+          "component": "pine2ast",
+          "path": "tests/stage2/test_stage210_audit_guards.py",
+          "sha256": "sha256:1dce31c9735a5fe1d1c38041f019d50096db9d7964778744b803cc55229ddcb5",
+          "nodes": [
+            "tests/stage2/test_stage210_audit_guards.py::test_complete_identity_observation_does_not_claim_full_stage",
+            "tests/stage2/test_stage210_audit_guards.py::test_declared_receipt_hash_is_not_a_substitute_for_a_file",
+            "tests/stage2/test_stage210_audit_guards.py::test_full_flag_with_unresolved_residuals_is_rejected[residuals0]",
+            "tests/stage2/test_stage210_audit_guards.py::test_full_flag_with_unresolved_residuals_is_rejected[residuals1]",
+            "tests/stage2/test_stage210_audit_guards.py::test_full_flag_with_unresolved_residuals_is_rejected[residuals2]",
+            "tests/stage2/test_stage210_audit_guards.py::test_missing_component_is_rejected[ast2python]",
+            "tests/stage2/test_stage210_audit_guards.py::test_missing_component_is_rejected[pinelib]",
+            "tests/stage2/test_stage210_audit_guards.py::test_missing_identity_is_rejected[compiler_target_hash]",
+            "tests/stage2/test_stage210_audit_guards.py::test_missing_identity_is_rejected[compiler_target_name]",
+            "tests/stage2/test_stage210_audit_guards.py::test_missing_identity_is_rejected[compiler_target_version]",
+            "tests/stage2/test_stage210_audit_guards.py::test_missing_identity_is_rejected[runtime_target_file_hash]",
+            "tests/stage2/test_stage210_audit_guards.py::test_partial_observation_is_not_coordinated_publication",
+            "tests/stage2/test_stage210_audit_guards.py::test_truthy_acceptance_flags_without_receipts_are_rejected"
+          ]
+        }
+      ],
+      "preparation_mapping_note": "Current preparation bytes: ordinary CPython 3.13 GIL support and reviewed neutral pytest display IDs; existing decision and previous exact mapping retained."
     },
     {
       "id": "verification/stage2-2-version-matrix.json",

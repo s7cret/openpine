@@ -88,7 +88,7 @@ jobs:
       env:
         PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
       run: |
-        "$RUNNER_TEMP/preparation-work/venv/bin/python" -m pytest --noconftest -q rc6_tests/test_rc6_python_support.py rc6_tests/test_rc6_clean_build.py rc6_tests/test_rc6_evidence_archive.py rc6_tests/test_rc6_public_evidence.py rc6_tests/test_rc6_private_retention.py rc6_tests/test_rc6_execution_ci.py 'rc6_tests/test_rc6_chart_metadata.py::test_real_worker_hourly_metadata[interactive]' --junitxml="$RUNNER_TEMP/preparation-raw/junit.xml"
+        "$RUNNER_TEMP/preparation-work/venv/bin/python" -m pytest --noconftest -q rc6_tests/test_rc6_python_support.py rc6_tests/test_rc6_clean_build.py rc6_tests/test_rc6_evidence_archive.py rc6_tests/test_rc6_public_evidence.py rc6_tests/test_rc6_private_retention.py rc6_tests/test_rc6_execution_ci.py rc6_tests/test_rc6_reconciliation_inventory.py 'rc6_tests/test_rc6_chart_metadata.py::test_real_worker_hourly_metadata[interactive]' --junitxml="$RUNNER_TEMP/preparation-raw/junit.xml"
     - name: Seal available raw evidence and report exact outcome
       id: evidence
       if: always()
