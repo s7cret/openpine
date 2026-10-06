@@ -203,3 +203,9 @@ The command returns success only when all fourteen domains and the existing
 stabilization owner pass on that exact candidate. Rendering a saved sealed
 current with `current_views` performs consistency checks; admission always
 requires the fresh raw replay above.
+
+The CLI regression invokes the actual module entry point in subprocesses and
+retains source/installed origin probes, argv, captured inputs, exitcodes and both
+logs. An internally consistent forged saved acceptance is rejected by fresh
+replay; a populated locator packet keeps all actual null production-domain
+specifications `not_run`. These are miniature verifier self-checks.

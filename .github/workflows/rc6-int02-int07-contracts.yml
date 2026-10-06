@@ -15,7 +15,7 @@ jobs:
   candidate:
     if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
       PYTHONDONTWRITEBYTECODE: '1'
@@ -202,7 +202,13 @@ jobs:
           ${{ runner.temp }}/int02-int07-evidence/cli-primary-inputs.tar.gz
           ${{ runner.temp }}/int02-int07-evidence/language-primary-inputs.tar.gz
           ${{ runner.temp }}/int02-int07-evidence/pinelib-primary-inputs.tar.gz
-          ${{ runner.temp }}/int02-int07-evidence/int08-primary-inputs.tar.gz
           ${{ runner.temp }}/int02-int07-evidence/candidate-project-wheels.tar.gz
+        if-no-files-found: error
+        retention-days: 7
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      if: always()
+      with:
+        name: rc6-int08-primary-inputs-${{ github.run_id }}
+        path: ${{ runner.temp }}/int02-int07-evidence/int08-primary-inputs.tar.gz
         if-no-files-found: error
         retention-days: 7

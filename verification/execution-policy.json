@@ -601,7 +601,7 @@
         "verification/stage2-audit-inventory-review.json",
         "verification/stage2-source-lock.json"
       ],
-      "sha256": "sha256:557ad8a584a2edb17a74d3e5aabe84673ba73aabde77fa7f70d33275934e4d85"
+      "sha256": "sha256:8b939b926cfd4253af847b32545590ba4a27d67e6f84e767c6b750c7ee142e9a"
     },
     "coverage": {},
     "foundation": {

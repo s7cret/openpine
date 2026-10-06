@@ -186,13 +186,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11995, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT08 adds140 verifier contract cases without product acceptance credit.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11998, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT08 adds143 verifier contract cases without product acceptance credit.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:8635e0f0fab0e31f162b925741d2a7613bfc827ef3fa964bf48540c5cf802b1d",
+          "sha256": "sha256:f546d470794985f54c4e7622c79a1cae3c018400e639116aa8a213c7eb3cfd66",
           "nodes": []
         }
       ],
@@ -268,7 +268,17 @@
           "nodes": []
         }
       ],
-      "int08_mapping_note": "Same owner extended with explicit fourteen-domain product projection; production full obligations remain null. Original decisions and prior mappings preserved."
+      "int08_mapping_note": "Same owner extended with explicit fourteen-domain product projection; production full obligations remain null. Original decisions and prior mappings preserved.",
+      "int08_cli_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "verification/inventory.json",
+          "sha256": "sha256:8635e0f0fab0e31f162b925741d2a7613bfc827ef3fa964bf48540c5cf802b1d",
+          "nodes": []
+        }
+      ],
+      "int08_cli_previous_reason": "PR count 9723; current reviewed-addition inventory count 11995, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT08 adds140 verifier contract cases without product acceptance credit.",
+      "int08_cli_mapping_note": "Three real subprocess CLI regressions added; original decisions and previous mappings preserved."
     },
     {
       "id": "verification/stage2-callable-lock.json",

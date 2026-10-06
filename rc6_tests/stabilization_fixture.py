@@ -57,7 +57,8 @@ def freeze_fixture_environment(roots, folder, inputs):
     return json.loads((folder / "command" / "stdout.log").read_text())
 
 
-def build_fixture(base, *, portable=False, owner_namespaces=False, product=False):
+def build_fixture(base, *, portable=False, owner_namespaces=False, product=False,
+                  product_unconfigured=False):
     stack, evidence = base / "stack", base / "evidence"
     evidence.mkdir()
     roots = {name: stack / name for name in COMPONENTS}
@@ -400,6 +401,11 @@ def build_fixture(base, *, portable=False, owner_namespaces=False, product=False
                 for requirement in ids}}
         policy["product_acceptance"] = {"schema_id": "openpine.product_domain_policy.v1",
             "source_spec_sha256": SOURCE_SHA256, "python_support": PYTHON_SUPPORT, "domains": domains}
+        if product_unconfigured:
+            # Freeze the actual production domain block before source/plan and
+            # real campaign execution. Populated locators still carry no authority.
+            policy["product_acceptance"] = read_json(
+                HOST / "verification/execution-policy.json")["product_acceptance"]
     launch = None
     if portable:
         from openpine.verification.execution_owner_launch import freeze_owner_launch
@@ -555,7 +561,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False, product=False
     }
     put(evidence / "stabilization-inputs.json", packet)
     if product:
-        for gate, domain in policy["product_acceptance"]["domains"].items():
+        for gate, domain in domains.items():
             command_spec = next(iter(domain["obligations"].values()))["commands"][0]
             folder = evidence / ("product-" + gate)
             actual = run_logged(command_spec["argv"], cwd=base, output=folder, env=clean,

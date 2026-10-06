@@ -812,6 +812,9 @@
       "rc6_tests/test_rc6_product_current.py::test_product_packet_stale_identity_rejected_before_verdict[run_id]",
       "rc6_tests/test_rc6_product_current.py::test_production_policy_keeps_all_full_scope_domains_unexecuted",
       "rc6_tests/test_rc6_product_current.py::test_real_miniature_commands_and_all_existing_raw_owners_reach_positive_verifier_path",
+      "rc6_tests/test_rc6_product_current.py::test_real_null_product_cli_rejects_internally_consistent_forged_acceptance",
+      "rc6_tests/test_rc6_product_current.py::test_real_product_cli_populated_packet_keeps_actual_null_production_specs_not_run",
+      "rc6_tests/test_rc6_product_current.py::test_real_product_cli_rejects_resealed_foreign_saved_current",
       "rc6_tests/test_rc6_public_evidence.py::test_public_collection_includes_reviewed_legacy_id_lines_without_rewriting_primary",
       "rc6_tests/test_rc6_public_evidence.py::test_public_evidence_accepts_allowlisted_technical_bytes",
       "rc6_tests/test_rc6_public_evidence.py::test_public_evidence_rejects_symlink_and_budget",
@@ -1316,7 +1319,7 @@
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11995,
+    "count": 11998,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "nodeid_aliases": {

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 import json
+import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -307,3 +309,149 @@ def test_current_cli_preserves_stabilization_and_adds_explicit_product_readers()
         ["test-current", *required, "--scope", "product", "--view", "release"]
     )
     assert product.scope == "product" and product.view == "release"
+
+
+@pytest.fixture(scope="module")
+def null_product_fixture(tmp_path_factory):
+    from rc6_tests.stabilization_fixture import build_fixture
+
+    return build_fixture(
+        tmp_path_factory.mktemp("real-null-production-product-verifier"),
+        product=True,
+        product_unconfigured=True,
+    )
+
+
+def real_product_cli(fixture, folder, *, saved=None):
+    """Run the real entry point; retain origins, argv, logs and actual exitcode."""
+    from openpine.verification import execution_cli, stage_gate
+    from openpine.verification.execution_identity import hash_file
+    from openpine.verification.execution_process import run_logged
+
+    host, plan, evidence, packet = fixture
+    installed = Path(execution_cli.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+    flags = ["-I", "-B"] if installed else ["-B"]
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    if installed:
+        env.pop("PYTHONPATH", None)
+    else:
+        env["PYTHONPATH"] = str(HOST)
+    folder.mkdir()
+    inputs = {
+        name: {"path": str(path), "sha256": hash_file(path)}
+        for name, path in {
+            "entrypoint": Path(execution_cli.__file__).with_name("__main__.py"),
+            "cli": Path(execution_cli.__file__),
+            "owner": Path(stage_gate.__file__),
+            "plan": evidence / "plan.json",
+            "production-policy": HOST / "verification/execution-policy.json",
+        }.items()
+    }
+    probe = run_logged(
+        [
+            sys.executable,
+            *flags,
+            "-c",
+            "import json,sys; from openpine.verification "
+            "import execution_cli,stage_gate; print(json.dumps({'cli':execution_cli.__file__,"
+            "'owner':stage_gate.__file__,'python':sys.version,'gil':sys._is_gil_enabled()}))",
+        ],
+        cwd=folder,
+        output=folder / "origins",
+        env=env,
+        inputs=inputs,
+        timeout=60,
+    )
+    assert probe["ok"], (folder / "origins/stderr.log").read_text()
+    observed = read_json(folder / "origins/stdout.log")
+    assert Path(observed["cli"]).resolve() == Path(execution_cli.__file__).resolve()
+    assert Path(observed["owner"]).resolve() == Path(stage_gate.__file__).resolve()
+    assert observed["python"].startswith("3.13.") and observed["gil"] is True
+    output = folder / "current.json"
+    argv = [
+        sys.executable,
+        *flags,
+        "-m",
+        "openpine.verification",
+        "test-current",
+        "--scope",
+        "product",
+        "--host-root",
+        str(host),
+        "--plan",
+        str(evidence / "plan.json"),
+        "--expected-plan-hash",
+        plan["content_hash"],
+        "--evidence",
+        str(evidence),
+        "--run-id",
+        packet["run_id"],
+        "--output",
+        str(output),
+    ]
+    if saved is not None:
+        inputs["saved-current"] = {"path": str(saved), "sha256": hash_file(saved)}
+        argv += ["--saved-current", str(saved)]
+    report = run_logged(
+        argv, cwd=folder, output=folder / "command", env=env, inputs=inputs, timeout=120
+    )
+    return report, output, (folder / "command/stderr.log").read_text()
+
+
+def test_real_product_cli_rejects_resealed_foreign_saved_current(product_fixture, tmp_path):
+    baseline, output, stderr = real_product_cli(product_fixture, tmp_path / "baseline")
+    assert baseline["returncode"] == 0 and baseline["ok"] and not stderr
+    current = read_json(output)
+    assert current["full_release_accepted"] is True
+    forged = reseal({**current, "run_id": "copied-prior-run"})
+    path = tmp_path / "foreign-saved-current.json"
+    write_json(path, forged)
+    rejected, output, stderr = real_product_cli(product_fixture, tmp_path / "foreign", saved=path)
+    assert rejected["returncode"] == 1 and not rejected["ok"]
+    assert "saved current verdict differs from fresh raw-evidence replay" in stderr
+    assert not output.exists()
+
+
+def test_real_product_cli_populated_packet_keeps_actual_null_production_specs_not_run(
+    null_product_fixture,
+    tmp_path,
+):
+    host, _, evidence, _ = null_product_fixture
+    production = read_json(HOST / "verification/execution-policy.json")["product_acceptance"]
+    assert (
+        read_json(host / "verification/execution-policy.json")["product_acceptance"] == production
+    )
+    assert all(row["obligations"] is None for row in production["domains"].values())
+    assert set(read_json(evidence / "product-inputs.json")["domains"]) == set(PRODUCT_GATES)
+    baseline, output, stderr = real_product_cli(null_product_fixture, tmp_path / "null-specs")
+    assert baseline["returncode"] == 1 and not baseline["ok"] and not stderr
+    current = read_json(output)
+    assert current["stabilization_current"]["ok"] is True
+    assert current["full_release_accepted"] is False
+    assert all(row["status"] == "not_run" for row in current["product"]["gates"].values())
+    assert current_views(current)["summary"]["unclosed_requirements"] == 68
+
+
+def test_real_null_product_cli_rejects_internally_consistent_forged_acceptance(
+    null_product_fixture,
+    tmp_path,
+):
+    baseline, output, stderr = real_product_cli(null_product_fixture, tmp_path / "baseline")
+    assert baseline["returncode"] == 1 and not baseline["ok"] and not stderr
+    changed = read_json(output)
+    changed.update(ok=True, full_stage2_accepted=True, full_release_accepted=True)
+    changed["product"].update(status="accepted", accepted=True)
+    for row in changed["product"]["gates"].values():
+        row.update(status="passed", errors=[], raw_result_hash="sha256:" + "f" * 64)
+    for row in changed["product"]["requirements"]:
+        row.update(status="qualified", remaining_reason="")
+    forged = reseal(changed)
+    assert current_views(forged)["summary"]["full_release_accepted"] is True
+    path = tmp_path / "forged-accepted-current.json"
+    write_json(path, forged)
+    rejected, output, stderr = real_product_cli(
+        null_product_fixture, tmp_path / "forged", saved=path
+    )
+    assert rejected["returncode"] == 1 and not rejected["ok"]
+    assert "saved current verdict differs from fresh raw-evidence replay" in stderr
+    assert not output.exists()
