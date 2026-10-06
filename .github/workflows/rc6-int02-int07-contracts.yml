@@ -1,9 +1,10 @@
 # Bounded contracts only; complete Stage 2 and release acceptance remain false.
-name: RC6 INT02 INT07 CLI contracts
+name: RC6 LANG08 installed owner integration
 'on':
   pull_request:
     branches:
     - implementation/int01-stack-reconciliation-20261006
+    - implementation/int02-int07-cli-contracts-20261006
 permissions:
   contents: read
 concurrency:
@@ -59,6 +60,8 @@ jobs:
         bundle=json.loads((work/'bundle/bundle.json').read_text())
         commits={'openpine':bundle['host_commit'],**bundle['source_pins']}
         (pathlib.Path(os.environ['RUNNER_TEMP'])/'int02-int07-evidence/commits.json').write_text(json.dumps(commits))
+        for path in (work/'bundle').glob('*.json'):
+            (pathlib.Path(os.environ['RUNNER_TEMP'])/'int02-int07-evidence'/('candidate-'+path.name)).write_bytes(path.read_bytes())
         print(json.dumps({'pending_required_inventories':pending,'release_authorized':False},sort_keys=True))
         PYREQUIRED
         "$PY" -I scripts/rc6_stabilization/probe.py runtime --commits "$RUNNER_TEMP/int02-int07-evidence/commits.json" --output "$RUNNER_TEMP/int02-int07-evidence/runtime.json"
@@ -82,6 +85,13 @@ jobs:
         output.write_text(json.dumps({'pytest_returncode':int(result),'installed_module_origins':origins},sort_keys=True))
         raise SystemExit(result)
         PYTEST
+    - name: Execute complete installed PineLib inventory including publication
+      env:
+        PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
+      run: |
+        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
+        cd "$RUNNER_TEMP/int02-int07-work/stack/pinelib"
+        "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/pinelib-origins.json" -q tests -p openpine.verification.pytest_gate --verification-suite=pinelib --verification-lock="$GITHUB_WORKSPACE/verification/inventory.json" --verification-output="$RUNNER_TEMP/int02-int07-evidence/pinelib.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/pinelib.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/pinelib-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/pinelib-cache"
     - name: Enable the real protected worker environment
       run: |
         sudo apt-get update -qq
@@ -93,6 +103,12 @@ jobs:
         fi
         sudo -n -u openpine-worker -- /usr/bin/id -u
         /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+    - name: Execute emitted inline imported and host callback integration
+      env:
+        PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
+      run: |
+        PY="$RUNNER_TEMP/int02-int07-work/venv/bin/python"
+        "$PY" -I "$RUNNER_TEMP/int02-int07-installed-tests.py" "$RUNNER_TEMP/int02-int07-evidence/language-origins.json" -q rc6_tests/test_rc6_varip_graph_integration.py rc6_tests/test_rc6_intrabar_collections.py rc6_tests/test_rc6_generated_checkpoint.py rc6_tests/test_rc6_checkpoint_control.py rc6_tests/test_rc6_nominal_registry.py rc6_tests/test_rc6_library_imports.py rc6_tests/test_rc6_library_methods.py rc6_tests/test_rc6_library_method_identity.py rc6_tests/test_rc6_nominal_types.py::test_udt_field_varip_keeps_ordinary_field_rollback rc6_tests/test_rc6_nominal_types.py::test_nominal_checkpoint_resume_retains_reference_enum_and_callsite_identity -p openpine.verification.pytest_gate --verification-suite=lang08-installed --verification-lock=verification/lang08-installed-inventory.json --verification-output="$RUNNER_TEMP/int02-int07-evidence/language.json" --junitxml="$RUNNER_TEMP/int02-int07-evidence/language.xml" --basetemp="$RUNNER_TEMP/int02-int07-evidence/language-private" -o cache_dir="$RUNNER_TEMP/int02-int07-evidence/language-cache"
     - name: Execute strict and diagnostic CLI contracts and existing process owners
       env:
         PINE_STACK_ROOT: ${{ runner.temp }}/int02-int07-work/stack
@@ -112,6 +128,7 @@ jobs:
         export PATH="$RUNNER_TEMP/int02-int07-work/venv/bin:$PATH"
         bash scripts/rc6_native_quality.sh
         python -m ruff check scripts/rc6_stabilization rc6_tests/test_rc6_execution_ci.py
+        python -m ruff check rc6_tests/test_rc6_varip_graph_integration.py
         python -m ruff format --check scripts/rc6_stabilization
         python -m mypy --explicit-package-bases --follow-imports=silent scripts/rc6_stabilization openpine/verification/execution_process.py openpine/verification/evidence_index.py openpine/verification/conformance.py openpine/verification/stage2_remaining.py openpine/verification/__main__.py
     - name: Retain bounded public primary receipts in job logs
@@ -134,7 +151,7 @@ jobs:
                 shutil.copyfile(item, root/f'cli-{number:03d}-case-{item.name}')
         for path in sorted([*root.glob('*.json'),*root.glob('*.xml'),*root.glob('cli-*.log')]):
             data=path.read_bytes()
-            assert len(data)<5*1024*1024
+            assert len(data)<32*1024*1024
             print('PRIMARY',path.name,hashlib.sha256(data).hexdigest(),len(data))
             if len(data)<256*1024:
                 print(data.decode())
@@ -146,6 +163,24 @@ jobs:
                 stream.add(case,arcname=case.name)
         data=archive.read_bytes()
         print('PRIMARY_BINARY',archive.name,hashlib.sha256(data).hexdigest(),len(data),'cases',len(cases))
+        for name in ('language','pinelib'):
+            path=root/(name+'-primary-inputs.tar.gz')
+            with tarfile.open(path,'w:gz') as stream:
+                directory=root/(name+'-private')
+                if directory.exists():
+                    stream.add(directory,arcname=name+'-private')
+            data=path.read_bytes()
+            print('PRIMARY_BINARY',path.name,hashlib.sha256(data).hexdigest(),len(data))
+        work=pathlib.Path(os.environ['RUNNER_TEMP'])/'int02-int07-work'
+        names=('openpine','openpine_contracts','pine2ast','ast2python','pinelib','backtest_engine','marketdata_provider','optimizer')
+        wheels=sorted(path for path in (work/'bundle/wheelhouse').glob('*.whl') if path.name.split('-')[0] in names)
+        assert len(wheels)==8
+        path=root/'candidate-project-wheels.tar.gz'
+        with tarfile.open(path,'w:gz') as stream:
+            for wheel in wheels:
+                stream.add(wheel,arcname=wheel.name)
+        data=path.read_bytes()
+        print('PRIMARY_BINARY',path.name,hashlib.sha256(data).hexdigest(),len(data),'wheels',len(wheels))
         PYLOG
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
@@ -156,5 +191,8 @@ jobs:
           ${{ runner.temp }}/int02-int07-evidence/*.xml
           ${{ runner.temp }}/int02-int07-evidence/cli-*.log
           ${{ runner.temp }}/int02-int07-evidence/cli-primary-inputs.tar.gz
+          ${{ runner.temp }}/int02-int07-evidence/language-primary-inputs.tar.gz
+          ${{ runner.temp }}/int02-int07-evidence/pinelib-primary-inputs.tar.gz
+          ${{ runner.temp }}/int02-int07-evidence/candidate-project-wheels.tar.gz
         if-no-files-found: error
         retention-days: 7

@@ -562,8 +562,12 @@ def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound
         'openpine-contracts': 'db1745756516b47466756c9c5d38fbbb95595a3b',
         'optimizer': '623e2639581d23242109dd47e20f14f799fa7b88',
         'pine2ast': 'eb249402e67199b07e9880fadc14e03fb1651edc',
-        'pinelib': '6493311b5eec8cc3caf61d44fae3d4b5203e14b4',
+        'pinelib': 'b953e803d618a9784b117f8047ca709791aaca79',
     }
+    template = read_json(HOST / 'candidates/stack-candidate-5.0.0-rc.6.template.json')
+    lock = read_json(HOST / 'openpine/stack-lock.json')
+    assert template['components']['pinelib']['sha'] == pins['pinelib']
+    assert next(row['commit'] for row in lock['components'] if row['name'] == 'pinelib') == pins['pinelib']
     review = read_json(HOST / 'verification/source-pin-reconciliation-review.json')
     # This review is the retained historical snapshot, not a receipt for the
     # newly published marketdata-provider API commit.
