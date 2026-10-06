@@ -12,6 +12,7 @@ import re
 from typing import Any
 
 from openpine.verification.execution_identity import hash_file
+from openpine.verification.execution_process import require_executable
 from openpine.verification.identity import digest, seal, verify
 
 SCHEMA = 'openpine.owner_launch.v2'
@@ -80,6 +81,7 @@ def freeze_owner_launch(policy: dict, paths: dict) -> dict:
             resolved = path.resolve(strict=True)
             if not resolved.is_file():
                 raise ValueError('owner executable is not a regular file')
+            require_executable(resolved)
             executables[name] = hash_file(resolved)
             targets[name] = str(resolved)
     _resolve(policy, paths)
@@ -120,6 +122,8 @@ def resolve_owner_policy(policy: dict, launch: dict, *, check_live: bool = False
             if not re.fullmatch(r'sha256:[0-9a-f]{64}', launch['executables'][name]):
                 raise ValueError('invalid owner executable identity')
             live = check_live and (live_executables is None or name in live_executables)
+            if live:
+                require_executable(path.resolve(strict=True))
             if live and hash_file(path.resolve(strict=True)) != launch['executables'][name]:
                 raise ValueError('owner executable drift')
             if schema == SCHEMA:

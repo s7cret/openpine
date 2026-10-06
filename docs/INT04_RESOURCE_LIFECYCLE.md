@@ -1,0 +1,13 @@
+# INT04 process and evidence resource lifecycle
+
+Each logged verification command and campaign shard now runs under a dedicated Linux subreaper. It owns its descendants, including detached sessions, and cleans them after timeout, cancellation, controller death or root exit. Cleanup uses observed PID/create-time identities; process families and concurrently running neighbours remain separate. Normal root exit permits a bounded two-second descendant grace period before TERM/KILL cleanup. An orphan family fails the command even when cleanup succeeds.
+
+The supervisor retains raw process-family evidence with declared argv/cwd, controller/supervisor/command PIDs, observed identities, cleanup signals, remaining processes and observation errors. Command and campaign admission requires this primary evidence, exact launch identity, successful cleanup and no observation errors. Rehashing or resealing a malformed family does not permit acceptance. Historical execution bindings still replay without requiring their original filesystem locations.
+
+Live owner tools and bound interpreters must remain executable regular files. Removing executable bits is rejected even when file bytes retain their hash. Inner exec syscall failures retain the previous infrastructure-error classification and failed command/shard evidence.
+
+Observation denial uses kernel stat identities for already observed or directly adopted children. Kernel process names are parsed as bytes and decoded with filesystem surrogate handling. Observation failures remain failures even when cleanup removes the family. No security policy, service, user or global process-management configuration changes are introduced.
+
+Five original failure probes and the subsequent review failures are preserved outside the sources. The final bounded targeted set passed 37 cases/111 phases, including 32 new owner cases, actual sockets/flocks, concurrent campaign crash/cancellation, allocation-driven memory cancellation, physical disk-floor refusal, metadata/status denial with an unrelated non-UTF8-name neighbour, real inner exec failures, and resealed evidence mutations. Source hashes remained stable during execution. The host inventory adds those 32 cases to 11855, yielding 11887; its 11027 baseline and four reviewed display aliases remain unchanged.
+
+These are source boundary results. Exact installed candidate, mandatory native/full campaigns and protected systemd-worker fault qualification remain pending. The heavy execution slot is reserved for INT05; this branch does not alter its frozen integration candidate.
