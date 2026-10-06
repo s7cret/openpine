@@ -8,10 +8,28 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from openpine.verification.execution_campaign import aggregate_campaign
+from openpine.verification.execution_campaign import aggregate_campaign, compiler_commit_environment
 from openpine.verification.execution_identity import write_once_json
 from openpine.verification.execution_plan import validate_plan
 from openpine.verification.identity import digest, read_json
+
+
+def instrumentation_contract(task):
+    """Compare instrumentation per obligation, independent of shard grouping."""
+    excluded = task.get('untraced_markers', [])
+    if (not isinstance(excluded, list) or any(not isinstance(v, str) for v in excluded)
+            or len(set(excluded)) != len(excluded)):
+        raise ValueError('invalid comparison instrumentation marker contract')
+    traced = task.get('coverage', False)
+    return {
+        'coverage': traced,
+        'coverage_package': task.get('coverage_package', task['component'].replace('-', '_')),
+        'untraced_markers': sorted(excluded),
+        'node_markers': task.get('node_markers'),
+        'plugins': task.get('plugins', []),
+        'node_coverage': {node: shard.get('coverage', traced)
+                          for shard in task['shards'] for node in shard['nodeids']},
+    }
 
 
 def check_pair(policy, affected, full, *, affected_evidence, full_evidence,
@@ -22,9 +40,13 @@ def check_pair(policy, affected, full, *, affected_evidence, full_evidence,
         raise ValueError('comparison requires affected and full plans')
     if affected['policy_hash'] != digest(policy) or full['policy_hash'] != digest(policy):
         raise ValueError('comparison policy differs from independently frozen policy')
-    for field in ('source', 'environments'):
-        if affected[field] != full[field]:
+    for field in ('source', 'environments', 'source_commits'):
+        if affected.get(field) != full.get(field):
             raise ValueError('comparison inputs differ: ' + field)
+    if any(t['component'] == 'openpine' for t in full['tasks']):
+        # The existing runner injects these producer identities into compiler
+        # execution. Planning-only output without attestation is not executable.
+        compiler_commit_environment(full.get('source_commits', {}))
     for plan in (affected, full):
         if plan['required_gates'] != policy.get('required_gates', {}).get(plan['profile'], []):
             raise ValueError('comparison dropped owner gates')
@@ -38,8 +60,10 @@ def check_pair(policy, affected, full, *, affected_evidence, full_evidence,
         reference = full_tasks.get(task['id'])
         if reference is None or any(task[field] != reference[field] for field in (
                 'nodeids', 'nodeids_hash', 'full_inventory_hash', 'reviewed_lock_hash',
-                'deselected', 'variant', 'execution_path', 'mode', 'coverage', 'node_markers')):
+                'deselected', 'variant', 'execution_path', 'mode')):
             raise ValueError('affected obligations differ from full comparison')
+        if instrumentation_contract(task) != instrumentation_contract(reference):
+            raise ValueError('comparison instrumentation differs: ' + task['id'])
     scoped = aggregate_campaign(affected, Path(affected_evidence),
         expected_plan_hash=affected_hash, expected_run_id=affected_run)
     complete = aggregate_campaign(full, Path(full_evidence),

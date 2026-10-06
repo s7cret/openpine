@@ -104,7 +104,7 @@ def test_missing_changed_file_conservatively_selects_full_inventory(tmp_path):
 
 
 @pytest.mark.parametrize('profile', ['component', 'affected', 'integration', 'stage-full', 'release-full'])
-def test_complete_suite_hash_cannot_be_shrunk_and_resealed(tmp_path, profile):
+def test_original_full_inventory_hash_rejects_shrunk_obligations(tmp_path, profile):
     plan, _ = tiny_plan(tmp_path, profile='stage-full' if profile in {'stage-full', 'release-full'} else 'component')
     plan['profile'] = profile
     task = plan['tasks'][0]
@@ -115,6 +115,23 @@ def test_complete_suite_hash_cannot_be_shrunk_and_resealed(tmp_path, profile):
     task['shards'][0]['nodeids'] = task['nodeids']
     with pytest.raises(ValueError, match='full inventory'):
         validate_plan(reseal(plan))
+
+
+def test_coordinated_rehash_requires_the_independently_frozen_plan_anchor(tmp_path):
+    plan, _ = tiny_plan(tmp_path)
+    expected = plan['content_hash']
+    task = plan['tasks'][0]
+    task['nodeids'] = task['nodeids'][:1]
+    task['nodeids_hash'] = task['full_inventory_hash'] = digest(task['nodeids'])
+    task['reviewed_lock_hash'] = digest(lock(task['nodeids']))
+    task['node_markers'] = {n: [] for n in task['nodeids']}
+    task['shards'] = [task['shards'][0]]
+    task['shards'][0]['nodeids'] = task['nodeids']
+    forged = reseal(plan)
+    # Structural self-consistency is not independent inventory authenticity.
+    assert validate_plan(forged) == forged
+    with pytest.raises(ValueError, match='identity mismatch'):
+        validate_plan(forged, expected_hash=expected)
 
 
 def test_preparation_cannot_also_be_a_test_obligation(tmp_path):
