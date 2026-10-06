@@ -122,7 +122,7 @@ def select_components(policy: dict, profile: str, requested: Sequence[str], chan
     # consumers/boundary owners only; make_plan records the dependency closure
     # separately as preparation_components.
     while True:
-        expanded = affected | {n for n, d in dependencies.items() if d & affected}
+        expanded = affected
         if expanded == affected:
             break
         affected = expanded
