@@ -68,18 +68,18 @@
       "pythons": [
         "3.13"
       ],
+      "required_inventory": {
+        "owner": "openpine",
+        "path": "verification/marketdata-full-required-inventory.json",
+        "sha256": "sha256:0adf0a5377dddd57d1ae3217a15c53885fa2ed0ab1fd56bf594ab38a77c7a73a"
+      },
       "selectors": [
         "tests"
       ],
       "smoke": [
         "tests/test_smoke.py::test_runtime_contract_version"
       ],
-      "timeout_seconds": 3600,
-      "required_inventory": {
-        "owner": "openpine",
-        "path": "verification/marketdata-full-required-inventory.json",
-        "sha256": "sha256:0adf0a5377dddd57d1ae3217a15c53885fa2ed0ab1fd56bf594ab38a77c7a73a"
-      }
+      "timeout_seconds": 3600
     },
     "openpine": {
       "cpu_slots": 1,
@@ -434,7 +434,7 @@
         "verification/stage2-audit-inventory-review.json",
         "verification/stage2-source-lock.json"
       ],
-      "sha256": "sha256:aeda3e748d6db6e570cc0aa4449fdb4c74d47b4fbf79d330cf703c01485f61b7"
+      "sha256": "sha256:bdb776de22d4953dbc85ae10aa2c05bd780986fc010be4c53d30634c93145198"
     },
     "coverage": {},
     "foundation": {
@@ -778,49 +778,49 @@
           "owner_locator": "helpers",
           "relative": "clean_build.py"
         },
-        "sha256": "sha256:42a8483c22bf1b2096e1551bc19d9869f984abd42bf2d4fb3de0cfa824383156"
+        "sha256": "sha256:4fc2ea3252543f54307d6e3aea1fcc657c27c7dd4f99a30471e1cca7a231ccab"
       },
       "frontend_exact.py": {
         "path": {
           "owner_locator": "helpers",
           "relative": "frontend_exact.py"
         },
-        "sha256": "sha256:ff9db6060422c1c0303cb49b491a97a3eebdecd9c34e5a8f5c96527772b7f3cf"
+        "sha256": "sha256:4ad55f8db03e03611eaba716335f1020980b7bf5a811c3131ddbfbd087230283"
       },
       "harness.py": {
         "path": {
           "owner_locator": "helpers",
           "relative": "harness.py"
         },
-        "sha256": "sha256:ff288bb3cb6d4328e9b3775713a5d3f8ad52ac181bd47cbbeb004ba7bb426d68"
+        "sha256": "sha256:d00a10945d27ff0532df2c719d557a5ad48d4c9b63cc797729a4f750ede581c6"
       },
       "measure.py": {
         "path": {
           "owner_locator": "helpers",
           "relative": "measure.py"
         },
-        "sha256": "sha256:0778465dcac1b01420f2f8608c08f9e9a96d8f9f4936373ace86d44de1cc953c"
+        "sha256": "sha256:cfc147b945757e850d58b4925c53700a955b9ce861c62004a186d72352858fbb"
       },
       "probe.py": {
         "path": {
           "owner_locator": "helpers",
           "relative": "probe.py"
         },
-        "sha256": "sha256:26058ad3962f25a5ac111decb2667d8ad48c312f796aa6032e56e1ad4dccf003"
+        "sha256": "sha256:57f70038d9149e432fb80dd43608e550920484df97739d6ca58f1f7294b0ef5c"
       },
       "shadow_check.py": {
         "path": {
           "owner_locator": "helpers",
           "relative": "shadow_check.py"
         },
-        "sha256": "sha256:59d03273c76f9ea9fde3889f210b2524f5119b78c90d05adf2f1a5a549571fc4"
+        "sha256": "sha256:f056400f5ccb8411822c2fd42c126ae836e37513fb4f26eacf590918f62f72f7"
       },
       "verify_transport.py": {
         "path": {
           "owner_locator": "helpers",
           "relative": "verify_transport.py"
         },
-        "sha256": "sha256:42c66be15c995cd9b3b2897a1dba001d984e5047f4bbcac3e54ffa44992adcfb"
+        "sha256": "sha256:c95f977c6e5ace149854c7b930cc1461323ca4ba83225428c7d55536c3fdd1c9"
       }
     },
     "packages": {

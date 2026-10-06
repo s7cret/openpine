@@ -47,7 +47,7 @@
     },
     "openpine": {
       "repo": "s7cret/openpine",
-      "ref": "implementation/int01-stack-reconciliation-20261006",
+      "ref": "implementation/int02-int07-cli-contracts-20261006",
       "version": "5.0.0rc6"
     }
   },

@@ -15,6 +15,14 @@
         {
           "component": "openpine",
           "path": "openpine/verification/__main__.py",
+          "sha256": "sha256:8ada165382abda3eb01f67a10128905fa19b5a5f5cbf6661db214b5ade429013",
+          "nodes": []
+        }
+      ],
+      "int07_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "openpine/verification/__main__.py",
           "sha256": "sha256:ae3b7aa312dfb50df5b25707a5daa7e50546afd7900359a3330d44765035db68",
           "nodes": []
         }
@@ -178,13 +186,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11623, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11651, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:027d2f30a3c2e94ca27b013bea14409a2e94ada4c7e04610d8917453ab24ee10",
+          "sha256": "sha256:bc7a6a2e5b0a3b7210e5c9f3292386592ae27594fbac427bca6465e7848eb0d0",
           "nodes": []
         }
       ],
@@ -206,7 +214,16 @@
           "sha256": "sha256:0741481c31dc38039f4ffd06d0c2c0917dafff7b1ecaae7b67b2202f4ab12f77"
         }
       ],
-      "int01_previous_reason": "PR count 9723; current reviewed-addition inventory count 11547, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
+      "int01_previous_reason": "PR count 9723; current reviewed-addition inventory count 11547, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "int07_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "verification/inventory.json",
+          "sha256": "sha256:027d2f30a3c2e94ca27b013bea14409a2e94ada4c7e04610d8917453ab24ee10",
+          "nodes": []
+        }
+      ],
+      "int07_previous_reason": "PR count 9723; current reviewed-addition inventory count 11623, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
     },
     {
       "id": "verification/stage2-callable-lock.json",
