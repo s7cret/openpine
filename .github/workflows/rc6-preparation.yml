@@ -11,11 +11,11 @@ name: RC6 preparation baseline
         required: true
         default: true
       artifact_budget_bytes:
-        description: 'Confirmed free artifact allowance or approved storage budget; 0 keeps evidence in job logs'
+        description: 'Approved complete upload ceiling; 0 prevents the baseline run'
         required: true
-        default: '0'
+        default: '134217728'
       retention_days:
-        description: 'Explicit evidence retention, 1 through 7 days'
+        description: 'Approved evidence retention: exactly 1 day'
         required: true
         default: '1'
 permissions:
@@ -25,14 +25,15 @@ concurrency:
   cancel-in-progress: false
 jobs:
   baseline:
-    if: ${{ inputs.public_evidence_approved && inputs.artifact_budget_bytes != '0' }}
+    # Preparation branch pushes are approved within the recorded cumulative $0.10 budget.
+    if: ${{ github.event_name == 'push' || (inputs.public_evidence_approved && inputs.artifact_budget_bytes != '0') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       OMP_NUM_THREADS: '1'
       OPENBLAS_NUM_THREADS: '1'
       NUMEXPR_NUM_THREADS: '1'
-      ARTIFACT_BUDGET: ${{ inputs.artifact_budget_bytes || '0' }}
+      ARTIFACT_BUDGET: ${{ inputs.artifact_budget_bytes || '134217728' }}
       RETENTION_DAYS: ${{ inputs.retention_days || '1' }}
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -56,8 +57,8 @@ jobs:
         assert sys.version_info[:3] == (3,13,5)
         assert platform.freedesktop_os_release()['VERSION_ID']=='24.04'
         assert shutil.disk_usage(root).free >= 8*1024**3
-        assert 0 <= int(os.environ['ARTIFACT_BUDGET']) <= 128*1024**2
-        assert 1 <= int(os.environ['RETENTION_DAYS']) <= 7
+        assert 0 < int(os.environ['ARTIFACT_BUDGET']) <= 128*1024**2
+        assert int(os.environ['RETENTION_DAYS']) == 1
         report={'environment':identity,'cpu_count':os.cpu_count(),'disk':dict(zip(('total','used','free'),shutil.disk_usage(root))), 'artifact_budget_bytes':int(os.environ['ARTIFACT_BUDGET']), 'scope':'preparation, not full product qualification'}
         (root/'preparation-raw/runner.json').write_text(json.dumps(report,indent=2))
         print(json.dumps(report))
@@ -117,8 +118,11 @@ jobs:
           f.write('manifest_hash='+manifest['content_hash']+'\n')
           f.write('archive_hash='+manifest['archive']['sha256']+'\n')
           f.write('archive_bytes='+str(manifest['archive']['size'])+'\n')
-        with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:f.write('Preparation evidence manifest: `'+manifest['content_hash']+'`\n\n'+json.dumps(report)+'\n\nArtifact upload is disabled unless an explicit storage budget is supplied.\n')
-        if int(os.environ['ARTIFACT_BUDGET']):assert (root/'preparation-archive/evidence.tar.gz').stat().st_size <= int(os.environ['ARTIFACT_BUDGET'])
+        with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:f.write('Preparation evidence manifest: `'+manifest['content_hash']+'`\n\n'+json.dumps(report)+'\n\nPublic evidence: complete upload capped at 128 MiB, retention 1 day, recorded cumulative storage budget $0.10.\n')
+        if int(os.environ['ARTIFACT_BUDGET']):
+          from scripts.rc6_public_evidence import check_upload_payload
+          payload=check_upload_payload(root/'preparation-archive',root/'public-evidence-audit.json',max_bytes=int(os.environ['ARTIFACT_BUDGET']))
+          print('Complete public upload budget:',json.dumps(payload))
         print('Public byte audit:', (root/'public-evidence-audit.json').read_text())
         PY
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

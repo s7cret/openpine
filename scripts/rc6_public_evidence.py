@@ -35,6 +35,41 @@ SENSITIVE = {
     'personal-email': re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'),
 }
 
+ZIP_RESERVE_BYTES = 1024 * 1024
+ZIP_ENTRY_RESERVE_BYTES = 1024
+
+
+def check_upload_payload(archive_root: Path, audit_report: Path, *, max_bytes: int) -> dict:
+    """Bound every uploaded byte plus a conservative ZIP framing reserve.
+
+    Three fixed regular files are uploaded with compression-level 0. Reserve
+    1 MiB plus 1 KiB per entry for ZIP headers, names and deflate framing.
+    A size failure preserves all required primaries and stops publication.
+    """
+    archive_root, audit_report = archive_root.absolute(), audit_report.absolute()
+    if type(max_bytes) is not int or max_bytes <= 0:
+        raise ValueError('positive strict integer upload budget required')
+    if (not archive_root.is_dir() or any(p.is_symlink() for p in (archive_root, *archive_root.parents))
+            or any(p.is_symlink() for p in (audit_report, *audit_report.parents))):
+        raise ValueError('unsafe public upload path')
+    expected = {'evidence.tar.gz', 'manifest.json'}
+    if {p.relative_to(archive_root).as_posix() for p in archive_root.rglob('*')} != expected:
+        raise ValueError('public archive upload scope differs from required files')
+    paths = [archive_root / name for name in sorted(expected)] + [audit_report]
+    if not all(path.is_file() and not path.is_symlink() for path in paths):
+        raise ValueError('missing or unsafe required upload file')
+    if json.loads(audit_report.read_text())['ok'] is not True:
+        raise ValueError('public content audit did not pass')
+    files = {('preparation-archive/' + path.name if path.parent == archive_root else path.name):
+             {'size': path.stat().st_size, 'sha256': hash_file(path)} for path in paths}
+    payload_bytes = sum(row['size'] for row in files.values())
+    zip_reserve = ZIP_RESERVE_BYTES + ZIP_ENTRY_RESERVE_BYTES * len(files)
+    upper_bound = payload_bytes + zip_reserve
+    if upper_bound > max_bytes:
+        raise ValueError('complete required upload payload plus ZIP reserve exceeds byte ceiling')
+    return {'files': files, 'payload_bytes': payload_bytes, 'zip_reserve_bytes': zip_reserve,
+            'upload_upper_bound_bytes': upper_bound, 'max_upload_bytes': max_bytes}
+
 
 def audit(root: Path, *, candidate: str, run_id: str, max_bytes: int) -> dict:
     root = root.absolute()

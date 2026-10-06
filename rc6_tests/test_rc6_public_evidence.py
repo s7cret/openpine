@@ -1,6 +1,11 @@
 """Public transport rejects unexpected or sensitive bytes without editing them."""
 import importlib.util
+import json
+import os
 from pathlib import Path
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -21,6 +26,10 @@ def owner():
     ('junit.xml', b'-----BEGIN PRIVATE KEY-----'),
     ('junit.xml', b'ghp_' + b'a' * 30),
     ('junit.xml', b'api_key=123456789abcdef'),
+], ids=[
+    'database-file', 'source-archive', 'unknown-file', 'non-text',
+    'personal-email', 'url-credentials', 'private-key', 'access-token',
+    'credential-value',
 ])
 def test_public_evidence_rejects_unapproved_contents(tmp_path, path, content):
     primary = tmp_path / path
@@ -46,3 +55,78 @@ def test_public_evidence_rejects_symlink_and_budget(tmp_path):
     assert not owner().audit(tmp_path, candidate='a' * 40, run_id='test-run', max_bytes=1024)['ok']
     with pytest.raises(ValueError, match='byte ceiling'):
         owner().audit(tmp_path, candidate='a' * 40, run_id='test-run', max_bytes=16)
+
+
+@pytest.mark.parametrize('mode', ['execution', 'collection'])
+def test_public_evidence_reports_remain_safe(tmp_path, mode):
+    """Scan actual pytest reports so negative fixture bytes cannot leak via IDs."""
+    report_root = tmp_path / 'reports'
+    logs = report_root / 'commands/0001'
+    logs.mkdir(parents=True)
+    host = Path(__file__).resolve().parents[1]
+    argv = [sys.executable, '-m', 'pytest', '--noconftest', '-o', 'addopts=', '-q',
+            'rc6_tests/test_rc6_public_evidence.py::test_public_evidence_rejects_unapproved_contents',
+            '-p', 'openpine.verification.pytest_gate',
+            '--verification-output=' + str(report_root / 'collection.json')]
+    if mode == 'collection':
+        argv.append('--collect-only')
+    else:
+        argv.append('--junitxml=' + str(report_root / 'junit.xml'))
+    with (logs / 'stdout.log').open('wb') as stdout, (logs / 'stderr.log').open('wb') as stderr:
+        result = subprocess.run(  # noqa: S603 -- exact interpreter and declared test selector
+            argv, cwd=host, stdout=stdout, stderr=stderr,
+            env=dict(os.environ, PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'), timeout=30,
+        )
+    assert result.returncode == 0
+    if mode == 'execution':
+        suite = next(ET.parse(report_root / 'junit.xml').getroot().iter('testsuite'))
+        assert int(suite.attrib['tests']) == 9
+        assert int(suite.attrib['failures']) == int(suite.attrib['errors']) == 0
+    report = owner().audit(report_root, candidate='a' * 40, run_id='report-regression',
+                           max_bytes=1024 * 1024)
+    assert report['ok'], report['errors']
+    assert report['original_primaries_changed'] is False
+
+
+def upload_files(tmp_path):
+    archive = tmp_path / 'archive'
+    archive.mkdir()
+    (archive / 'evidence.tar.gz').write_bytes(b'x' * 128)
+    (archive / 'manifest.json').write_text('{}')
+    audit = tmp_path / 'public-evidence-audit.json'
+    audit.write_text(json.dumps({'ok': True}))
+    return archive, audit
+
+
+def test_public_upload_budget_includes_all_files_and_zip_reserve(tmp_path):
+    archive, audit = upload_files(tmp_path)
+    required = [archive / 'evidence.tar.gz', archive / 'manifest.json', audit]
+    before = {str(p): p.read_bytes() for p in required}
+    payload = sum(len(content) for content in before.values())
+    boundary = payload + 1024 * 1024 + 3 * 1024
+    report = owner().check_upload_payload(archive, audit, max_bytes=boundary)
+    assert report['payload_bytes'] == payload
+    assert report['upload_upper_bound_bytes'] == boundary
+    assert len(report['files']) == 3
+    with pytest.raises(ValueError, match='complete required upload payload'):
+        owner().check_upload_payload(archive, audit, max_bytes=boundary - 1)
+    # A tar-only cap must also fail; no primary file is dropped to fit the budget.
+    with pytest.raises(ValueError, match='complete required upload payload'):
+        owner().check_upload_payload(archive, audit, max_bytes=128)
+    assert {str(p): p.read_bytes() for p in required} == before
+
+
+@pytest.mark.parametrize('mutation', ['missing', 'extra', 'symlink', 'audit-failed'])
+def test_public_upload_budget_rejects_incomplete_or_unsafe_payload(tmp_path, mutation):
+    archive, audit = upload_files(tmp_path)
+    if mutation == 'missing':
+        (archive / 'manifest.json').unlink()
+    elif mutation == 'extra':
+        (archive / 'unexpected.txt').write_text('unapproved')
+    elif mutation == 'symlink':
+        (archive / 'manifest.json').unlink()
+        (archive / 'manifest.json').symlink_to(audit)
+    else:
+        audit.write_text(json.dumps({'ok': False}))
+    with pytest.raises(ValueError):
+        owner().check_upload_payload(archive, audit, max_bytes=2 * 1024 * 1024)
