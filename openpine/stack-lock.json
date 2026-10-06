@@ -36,14 +36,14 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "b953e803d618a9784b117f8047ca709791aaca79",
+      "commit": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5",
       "contracts": {
         "runtime": "1.4"
       },
       "name": "pinelib",
       "package": "pinelib",
       "repository": "s7cret/pinelib",
-      "tree_sha256": "8592d553de836479a03ee713a2dbf4ee13138165bc9632654bfd8fe5830aba62",
+      "tree_sha256": "8a4e7d490e6a64c74c28baa7ee9f4e56fc76a8fc4d8ca437b3a5c1ce95213195",
       "version": "5.0.0rc6"
     },
     {
