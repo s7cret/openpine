@@ -29,7 +29,8 @@
     "backtest_engine": {
       "cpu_slots": 1,
       "dependencies": [
-        "openpine-contracts"
+        "openpine-contracts",
+        "pinelib"
       ],
       "extras": [
         "dev"
