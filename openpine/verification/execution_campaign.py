@@ -46,7 +46,10 @@ def descriptor(root: Path, path: Path) -> dict[str, str]:
     evidence_path(root, relative)
     return {'path': relative, 'sha256': hash_file(path)}
 
-def validate_junit(path: Path, nodeids: list[str]) -> dict:
+def validate_junit(path: Path, nodeids: list[str], *, failed_nodeids: set[str] | None = None) -> dict:
+    failures = failed_nodeids or set()
+    if not failures.issubset(nodeids):
+        raise ValueError('JUnit failure identity is outside the frozen inventory')
     data = path.read_bytes()
     if not data or len(data) > 32 * 1024 * 1024 or b'<!DOCTYPE' in data.upper() or (b'<!ENTITY' in data.upper()):
         raise ValueError('empty/oversized/DTD JUnit is not admitted')
@@ -63,15 +66,19 @@ def validate_junit(path: Path, nodeids: list[str]) -> dict:
         if len(values) != 1 or not values[0]:
             raise ValueError('missing/duplicate JUnit node identity')
         actual.append(values[0])
-        if any((case.find(tag) is not None for tag in ('failure', 'error', 'skipped'))):
+        if (case.find('error') is not None or case.find('skipped') is not None
+                or len(case.findall('failure')) != int(values[0] in failures)):
             raise ValueError('JUnit contains unsuccessful required test')
     if not actual or len(set(actual)) != len(actual) or sorted(actual) != sorted(nodeids):
         raise ValueError('JUnit test inventory is incomplete/duplicate/unexpected')
+    if len(list(root.iter('failure'))) != len(failures):
+        raise ValueError('JUnit failure inventory differs from admitted call failures')
     for suite in root.iter('testsuite'):
         if suite.get('tests') != str(len(list(suite.iter('testcase')))):
             raise ValueError('JUnit summary test count mismatch')
         for key in ('failures', 'errors', 'skipped'):
-            if suite.get(key) != '0':
+            expected = len(list(suite.iter('failure'))) if key == 'failures' else 0
+            if suite.get(key) != str(expected):
                 raise ValueError('JUnit has a missing/nonzero failure/error/skip count')
     return {'tests': len(actual), 'nodeids_hash': collection_hash(actual)}
 
@@ -109,7 +116,30 @@ def _remaining_group_members(pgid: int) -> list[dict[str, object]]:
     return sorted(members, key=lambda row: row['pid'])
 
 
-def _validate_primary_artifacts(plan: dict, evidence_root: Path, task: dict, shard: dict, attempt: dict, expected_binding: str | None) -> dict:
+def _call_failures(nodeids: list[str], reports: dict) -> set[str]:
+    """Admit only complete ordinary phases with genuine call failures."""
+    import math
+    if not isinstance(reports, dict) or set(reports) != set(nodeids):
+        raise ValueError('missing or unexpected semantic failure phase inventory')
+    failed = set()
+    for node in nodeids:
+        rows = reports[node]
+        if (not isinstance(rows, list) or len(rows) != 3
+                or any(not isinstance(row, dict) for row in rows)
+                or [row.get('when') for row in rows] != ['setup', 'call', 'teardown']
+                or any(row.get('xfail') is not False for row in rows)
+                or rows[0].get('outcome') != 'passed' or rows[2].get('outcome') != 'passed'
+                or rows[1].get('outcome') not in {'passed', 'failed'}):
+            raise ValueError('incomplete/setup/teardown/skip/xfail semantic phases: ' + node)
+        if any(type(row.get('duration')) not in (int, float)
+               or not math.isfinite(row['duration']) or row['duration'] < 0 for row in rows):
+            raise ValueError('invalid semantic phase duration: ' + node)
+        if rows[1]['outcome'] == 'failed':
+            failed.add(node)
+    return failed
+
+
+def _validate_primary_artifacts(plan: dict, evidence_root: Path, task: dict, shard: dict, attempt: dict, expected_binding: str | None, *, allow_failed_calls: bool = False) -> dict:
     """Use the aggregate's primary checks before any opt-in fixture disposal."""
     expected_source = plan['source']['content_hash']
     expected_run_id = attempt['run_id']
@@ -130,15 +160,18 @@ def _validate_primary_artifacts(plan: dict, evidence_root: Path, task: dict, sha
         raise ValueError('phase binding identity mismatch')
     if any((phases.get(k) != v for k, v in binding.items())):
         raise ValueError('source/environment/task/path/attempt identity mismatch')
-    if phases.get('ok') is not True or phases.get('collect_only') is not False or phases.get('exitstatus') != 0 or (phases.get('errors') != []) or (phases.get('deselected') != 0) or (phases.get('nodeids') != shard['nodeids']) or (type(phases.get('count')) is not int) or (phases['count'] != len(shard['nodeids'])) or (phases.get('sha256') != collection_hash(shard['nodeids'])):
-        raise ValueError('unsuccessful/incomplete phase receipt')
+    failures = _call_failures(shard['nodeids'], phases.get('reports')) if allow_failed_calls else set()
     phase_errors = validate_phase_reports(shard['nodeids'], phases['reports'])
-    if phase_errors:
+    if allow_failed_calls and not failures:
+        raise ValueError('failed attempt has no genuine call failure')
+    if phases.get('ok') is not (not failures) or phases.get('collect_only') is not False or type(phases.get('exitstatus')) is not int or phases['exitstatus'] != int(bool(failures)) or phases.get('errors') != phase_errors or (phases.get('deselected') != 0) or (phases.get('nodeids') != shard['nodeids']) or (type(phases.get('count')) is not int) or (phases['count'] != len(shard['nodeids'])) or (phases.get('sha256') != collection_hash(shard['nodeids'])):
+        raise ValueError('unsuccessful/incomplete phase receipt')
+    if phase_errors and not allow_failed_calls:
         raise ValueError('; '.join(phase_errors))
     junit_path = evidence_path(evidence_root, artifacts['junit']['path'])
     if hash_file(junit_path) != artifacts['junit']['sha256']:
         raise ValueError('JUnit checksum mismatch')
-    validate_junit(junit_path, shard['nodeids'])
+    validate_junit(junit_path, shard['nodeids'], failed_nodeids=failures)
     for artifact_name in ('stdout', 'selectors'):
         path = evidence_path(evidence_root, artifacts[artifact_name]['path'])
         if hash_file(path) != artifacts[artifact_name]['sha256']:
@@ -147,6 +180,33 @@ def _validate_primary_artifacts(plan: dict, evidence_root: Path, task: dict, sha
     if selector_path.read_text(encoding='utf-8').splitlines() != shard['nodeids']:
         raise ValueError('selector contents differ from frozen assignment')
     return phases
+
+
+def admit_failed_call_attempt(plan: dict, evidence_root: Path, task: dict, shard: dict, attempt: dict, *, expected_run_id: str, binding: dict | None = None) -> dict:
+    """Authenticate a red primary without granting pytest or owner acceptance."""
+    if (attempt.get('status') != 'failed' or type(attempt.get('returncode')) is not int
+            or attempt['returncode'] != 1 or attempt.get('error') is not None
+            or attempt.get('run_id') != expected_run_id or attempt.get('attempt_id') != 'a001'):
+        raise ValueError('crashed/cancelled/infrastructure/retried attempt is not semantic failure')
+    expected_binding = binding['content_hash'] if binding else None
+    if attempt.get('binding_hash') != expected_binding:
+        raise ValueError('failed attempt binding differs from campaign binding')
+    roots, executables = locations(plan, binding)
+    argv = attempt.get('argv')
+    required = ['--verification-plan-hash=' + plan['content_hash'],
+                '--verification-suite=' + task['component'], '--verification-task=' + task['id'],
+                '--verification-shard=' + shard['id'], '--verification-run-id=' + expected_run_id,
+                '--verification-attempt-id=a001']
+    if (attempt.get('cwd') != roots[task['component']] or not isinstance(argv, list) or not argv
+            or argv[0] != executables[task['environment']]
+            or argv.count('openpine.verification.pytest_gate') != 1
+            or any(argv.count(value) != 1 for value in required)):
+        raise ValueError('failed execution command differs from the frozen owner invocation')
+    path = evidence_path(evidence_root, f"{task['id']}/{shard['id']}/a001/execution.json")
+    if read_json(path) != attempt:
+        raise ValueError('failed execution receipt differs from campaign summary')
+    return _validate_primary_artifacts(plan, evidence_root, task, shard, attempt,
+                                       expected_binding, allow_failed_calls=True)
 
 
 def _clear_owned_private(output: Path, folder: Path, artifacts: dict) -> None:
