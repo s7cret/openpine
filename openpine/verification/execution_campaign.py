@@ -182,7 +182,47 @@ def _validate_primary_artifacts(plan: dict, evidence_root: Path, task: dict, sha
     return phases
 
 
-def admit_failed_call_attempt(plan: dict, evidence_root: Path, task: dict, shard: dict, attempt: dict, *, expected_run_id: str, binding: dict | None = None) -> dict:
+def shard_argv(plan: dict, plan_path: Path, output: Path, task: dict, shard: dict, run_id: str, *, binding: dict | None = None) -> list[str]:
+    """The existing launcher command, shared with strict archived admission."""
+    roots, executables = locations(plan, binding)
+    folder = output / task['id'] / shard['id'] / 'a001'
+    argv = [executables[task['environment']], '-m']
+    if shard.get('coverage', task.get('coverage', False)):
+        argv += ['coverage', 'run', '--data-file=' + str(folder / '.coverage'), '--rcfile=' + str(Path(roots[task['component']]) / 'pyproject.toml'), '--source=' + task['coverage_package'], '-m']
+    argv += ['pytest', '-q', '--durations=30', '-p', 'openpine.verification.pytest_gate']
+    for plugin in task['plugins']:
+        argv.extend(['-p', plugin])
+    argv.extend(['--verification-plan=' + str(plan_path), '--verification-plan-hash=' + plan['content_hash'], '--verification-suite=' + task['component'], '--verification-task=' + task['id'], '--verification-shard=' + shard['id'], '--verification-run-id=' + run_id, '--verification-attempt-id=a001', '--verification-output=' + str(folder / 'phases.json'), '--junitxml=' + str(folder / 'junit.xml'), '--basetemp=' + str(folder / 'private' / 'pytest'), '@' + str(folder / 'nodeids.args')])
+    if binding is not None:
+        argv.append('--verification-binding=' + str(output / 'binding.json'))
+    return argv
+
+
+def validate_shard_invocation(plan: dict, task: dict, shard: dict, attempt: dict, *, expected_run_id: str, expected_plan_path: Path, expected_output_root: Path, binding: dict | None = None) -> None:
+    """Compare against external launch locators, never infer them from raw argv."""
+    for path in (expected_plan_path, expected_output_root):
+        if not isinstance(path, Path) or not path.is_absolute() or '..' in path.parts:
+            raise ValueError('independently frozen absolute launch locations required')
+    if (attempt.get('attempt_id') != 'a001' or attempt.get('error') is not None
+            or attempt.get('run_id') != expected_run_id or attempt.get('task') != task['id']
+            or attempt.get('shard') != shard['id']):
+        raise ValueError('retried/infrastructure/wrong-identity attempt is not admitted')
+    roots, _ = locations(plan, binding)
+    if (attempt.get('cwd') != roots[task['component']]
+            or attempt.get('argv') != shard_argv(plan, expected_plan_path, expected_output_root,
+                                               task, shard, expected_run_id, binding=binding)):
+        raise ValueError('execution argv differs from the exact frozen owner invocation')
+    filenames = {'phases': 'phases.json', 'junit': 'junit.xml', 'stdout': 'stdout.log',
+                 'selectors': 'nodeids.args'}
+    if shard.get('coverage', task.get('coverage', False)):
+        filenames['coverage'] = '.coverage'
+    relative = task['id'] + '/' + shard['id'] + '/a001/'
+    if any(attempt.get('artifacts', {}).get(name, {}).get('path') != relative + filename
+           for name, filename in filenames.items()):
+        raise ValueError('primary artifact path differs from the frozen owner invocation')
+
+
+def admit_failed_call_attempt(plan: dict, evidence_root: Path, task: dict, shard: dict, attempt: dict, *, expected_run_id: str, expected_plan_path: Path, expected_output_root: Path, binding: dict | None = None) -> dict:
     """Authenticate a red primary without granting pytest or owner acceptance."""
     if (attempt.get('status') != 'failed' or type(attempt.get('returncode')) is not int
             or attempt['returncode'] != 1 or attempt.get('error') is not None
@@ -191,17 +231,9 @@ def admit_failed_call_attempt(plan: dict, evidence_root: Path, task: dict, shard
     expected_binding = binding['content_hash'] if binding else None
     if attempt.get('binding_hash') != expected_binding:
         raise ValueError('failed attempt binding differs from campaign binding')
-    roots, executables = locations(plan, binding)
-    argv = attempt.get('argv')
-    required = ['--verification-plan-hash=' + plan['content_hash'],
-                '--verification-suite=' + task['component'], '--verification-task=' + task['id'],
-                '--verification-shard=' + shard['id'], '--verification-run-id=' + expected_run_id,
-                '--verification-attempt-id=a001']
-    if (attempt.get('cwd') != roots[task['component']] or not isinstance(argv, list) or not argv
-            or argv[0] != executables[task['environment']]
-            or argv.count('openpine.verification.pytest_gate') != 1
-            or any(argv.count(value) != 1 for value in required)):
-        raise ValueError('failed execution command differs from the frozen owner invocation')
+    validate_shard_invocation(plan, task, shard, attempt, expected_run_id=expected_run_id,
+                              expected_plan_path=expected_plan_path,
+                              expected_output_root=expected_output_root, binding=binding)
     path = evidence_path(evidence_root, f"{task['id']}/{shard['id']}/a001/execution.json")
     if read_json(path) != attempt:
         raise ValueError('failed execution receipt differs from campaign summary')
@@ -241,16 +273,7 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
     env['OPENPINE_STAGE1_EVIDENCE'] = str(folder / 'owner-evidence')
     selectors = folder / 'nodeids.args'
     selectors.write_text('\n'.join(shard['nodeids']) + '\n', encoding='utf-8')
-    executable = executables[task['environment']]
-    argv = [executable, '-m']
-    if shard.get('coverage', task.get('coverage', False)):
-        argv += ['coverage', 'run', '--data-file=' + str(folder / '.coverage'), '--rcfile=' + str(Path(execution_roots[task['component']]) / 'pyproject.toml'), '--source=' + task['coverage_package'], '-m']
-    argv += ['pytest', '-q', '--durations=30', '-p', 'openpine.verification.pytest_gate']
-    for plugin in task['plugins']:
-        argv.extend(['-p', plugin])
-    argv.extend(['--verification-plan=' + str(plan_path), '--verification-plan-hash=' + plan['content_hash'], '--verification-suite=' + task['component'], '--verification-task=' + task['id'], '--verification-shard=' + shard['id'], '--verification-run-id=' + run_id, '--verification-attempt-id=' + attempt, '--verification-output=' + str(folder / 'phases.json'), '--junitxml=' + str(folder / 'junit.xml'), '--basetemp=' + str(folder / 'private' / 'pytest'), '@' + str(selectors)])
-    if binding is not None:
-        argv.append('--verification-binding=' + str(output / 'binding.json'))
+    argv = shard_argv(plan, plan_path, output, task, shard, run_id, binding=binding)
     started, tick = (utc_now(), time.perf_counter())
     status, returncode, error = ('not_run', None, None)
     process = None

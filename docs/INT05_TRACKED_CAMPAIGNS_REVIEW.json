@@ -1,0 +1,2579 @@
+{
+  "campaigns": [
+    {
+      "actual_changed_selectors": [],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:3767bf37cd24f3c4e0cb684c01fdb92e9001a8eb86f6d37a3df9cdfedc9e1fb5",
+      "id": "control-full",
+      "jobs": 2,
+      "kind": "control-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/control-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/control/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/control/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-control-full-001",
+      "scenario": null,
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "0bbcfc08206efa8325a6148390fe228785247e5d",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:830541234baf59bf79b5ce968d3c76380e81da5485d87904e9802485e4c8f447",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/openpine/stack-lock.json",
+        "openpine/openpine/timezones.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:a65f4f0874c90e386f7d03607db2aa9148821f4f5e0a5fb05c065a5e45ea8563",
+      "id": "narrow-local-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/narrow-local-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/narrow-local/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/narrow-local/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-narrow-local-full-001",
+      "scenario": "narrow-local",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "c010f0a3e2ac119fe5a8315ded100b5c92493658",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:58a3515e5ecc149e9f7b9db12dea80ad0b839dfef48e06b1863225eb7a9768ba",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/openpine/stack-lock.json",
+        "openpine/openpine/timezones.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:ba16d76e268b2802339797941630cf868eff93f7a832cd02660d8af60b950a5d",
+      "id": "narrow-local-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/narrow-local-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/narrow-local/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/narrow-local/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-narrow-local-affected-001",
+      "scenario": "narrow-local",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "c010f0a3e2ac119fe5a8315ded100b5c92493658",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:58a3515e5ecc149e9f7b9db12dea80ad0b839dfef48e06b1863225eb7a9768ba",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "marketdata-provider/marketdata_provider/core/bar.py",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:cb38ed884a10cab585de561e338cb3428e509e8908ed72d7802dc36e65a0845a",
+      "id": "consumer-boundary-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/consumer-boundary-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-boundary/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-boundary/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-consumer-boundary-full-001",
+      "scenario": "consumer-boundary",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "9b7421321f4133b4aa53e014768b0509344b82a5",
+        "openpine": "709b0e7c4f70c353297c094ba32e89998ae5544e",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:5f2a4426ff056e303f40dd7b04a087c52ae1c7d7cd474922e58d602d9f0ad5fa",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "marketdata-provider/marketdata_provider/core/bar.py",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:0c118362803fa030c1eb114e097bec11ec583d0721f8695ef46db99ccc1f923d",
+      "id": "consumer-boundary-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/consumer-boundary-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-boundary/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-boundary/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-consumer-boundary-affected-001",
+      "scenario": "consumer-boundary",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "9b7421321f4133b4aa53e014768b0509344b82a5",
+        "openpine": "709b0e7c4f70c353297c094ba32e89998ae5544e",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:5f2a4426ff056e303f40dd7b04a087c52ae1c7d7cd474922e58d602d9f0ad5fa",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/core/values.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:31d7bd42411c7789f3caa5d046be23063eae0ef27598d4f9989170096cf66cf4",
+      "id": "consumer-runtime-boundary-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/consumer-runtime-boundary-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-runtime-boundary/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-runtime-boundary/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-consumer-runtime-boundary-full-001",
+      "scenario": "consumer-runtime-boundary",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "7c126d2f0f68d733488591497624f9e88df42fea",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "source_hash": "sha256:298f6a6e8905fda12e89a6868094d86c4479969a05a0c22e4ce1fad0b848fb5e",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/core/values.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:1bb91fd13d892f12656351d313b4ff782338201f18b0fe89963bcd627401f0aa",
+      "id": "consumer-runtime-boundary-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/consumer-runtime-boundary-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-runtime-boundary/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-runtime-boundary/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-consumer-runtime-boundary-affected-001",
+      "scenario": "consumer-runtime-boundary",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "7c126d2f0f68d733488591497624f9e88df42fea",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "source_hash": "sha256:298f6a6e8905fda12e89a6868094d86c4479969a05a0c22e4ce1fad0b848fb5e",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/tests/fixtures/ema_first_source_v1_checkpoints.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:c6f139cc409d96332ea96f79c689dc796e7ca1cec219ca0fa08d60a33a0306b3",
+      "id": "shared-fixture-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/shared-fixture-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/shared-fixture/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/shared-fixture/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-shared-fixture-full-001",
+      "scenario": "shared-fixture",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "f60e0c242086ce1d6a81b0bfb27036d00a8698e6",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "f16577743cb9f7803e1eef5a690e8f2c7be26398"
+      },
+      "source_hash": "sha256:a4844bc98f538e0461607630fedd51f2b22bab4a33e118b6e0a1b2c6802c7519",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/tests/fixtures/ema_first_source_v1_checkpoints.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:998ff8cb99e6757582bb9801f78189ebe605e88d32095f2c3760b539bae5a3ec",
+      "id": "shared-fixture-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/shared-fixture-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/shared-fixture/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/shared-fixture/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-shared-fixture-affected-001",
+      "scenario": "shared-fixture",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "f60e0c242086ce1d6a81b0bfb27036d00a8698e6",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "f16577743cb9f7803e1eef5a690e8f2c7be26398"
+      },
+      "source_hash": "sha256:a4844bc98f538e0461607630fedd51f2b22bab4a33e118b6e0a1b2c6802c7519",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine-contracts/openpine_contracts/schemas/openpine.execution_event.v1.json",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:ea5da0d7950902f2c1dc77c4e0a3e583324c287b65f40aee0ac710a06ff0f790",
+      "id": "schema-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/schema-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/schema/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/schema/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-schema-full-001",
+      "scenario": "schema",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "564b99fa601aa52acce5c7d84e20ebf10e11670f",
+        "openpine-contracts": "2c5946bc74b5f480402ef697a8b48560f6451e2b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:25a425972e6872f2e9d8de890b7edbfd24bb2cfab8e77bb6006f68f850693690",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine-contracts/openpine_contracts/schemas/openpine.execution_event.v1.json",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:b4e9b0b01838f28fdf3ed8de2faa231d3c7c9df536d0bf5c87bd8592e17266fa",
+      "id": "schema-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/schema-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/schema/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/schema/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-schema-affected-001",
+      "scenario": "schema",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "564b99fa601aa52acce5c7d84e20ebf10e11670f",
+        "openpine-contracts": "2c5946bc74b5f480402ef697a8b48560f6451e2b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:25a425972e6872f2e9d8de890b7edbfd24bb2cfab8e77bb6006f68f850693690",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/abi/target_manifest.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:93e9612229ffc2f64589999d30abaee016f3fc77b0f6570b37320d206d784821",
+      "id": "catalog-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/catalog-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/catalog/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/catalog/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-catalog-full-001",
+      "scenario": "catalog",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "b451beadf942591434bbd95c68e43f7d323cfc7b",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "0e7d4da0d8d4601f1bfa4345cd281a08970f1dab"
+      },
+      "source_hash": "sha256:874350c92f866fcaeaed29ee98c5a25061527c57b3aa245073ff78b043f04bbe",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/abi/target_manifest.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:db204adea266307775ba754aee92805d19ee58a4612afb002da8647b322d8d63",
+      "id": "catalog-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/catalog-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/catalog/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/catalog/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-catalog-affected-001",
+      "scenario": "catalog",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "b451beadf942591434bbd95c68e43f7d323cfc7b",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "0e7d4da0d8d4601f1bfa4345cd281a08970f1dab"
+      },
+      "source_hash": "sha256:874350c92f866fcaeaed29ee98c5a25061527c57b3aa245073ff78b043f04bbe",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/abi/runtime_values.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:3538c8b021f93b79710dca84ec8c5bf869d2b41cf466acbda8b16eeddea06d21",
+      "id": "abi-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/abi-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/abi/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/abi/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-abi-full-001",
+      "scenario": "abi",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "46a34d409f86db0428cadb64b2c7394f57a2361a",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "1f4e8c21d4502366b2a4a8cbd2f8ef935995ff36"
+      },
+      "source_hash": "sha256:c3d134512adfba6704d632e60efaa7a489a141b4abc46b0fea622980bc2f74cc",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/abi/runtime_values.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:84af8e5aaab8d7cff478ba8dbe98d82e05048c1e988dca9f141dbfe8de8d0c57",
+      "id": "abi-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/abi-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/abi/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/abi/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-abi-affected-001",
+      "scenario": "abi",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "46a34d409f86db0428cadb64b2c7394f57a2361a",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "1f4e8c21d4502366b2a4a8cbd2f8ef935995ff36"
+      },
+      "source_hash": "sha256:c3d134512adfba6704d632e60efaa7a489a141b4abc46b0fea622980bc2f74cc",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/state/checkpoint.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:252c5658a9d6e69bf3ab45a05ea5ae9c752b8943168dd9b8bd369d46cb2702a1",
+      "id": "runtime-state-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/runtime-state-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/runtime-state/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/runtime-state/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-runtime-state-full-001",
+      "scenario": "runtime-state",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "e3b19f333a8129057f5437a3e1d4464c852c7285",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "322cac983bc14548483e13d74aeeb3a70d78aac3"
+      },
+      "source_hash": "sha256:c40f23026d393d24fb95533cbb3a23aba032b2dda025f57e1d31d3be1d6deed7",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/state/checkpoint.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:fabfa7786861be58b09168bb606e5b5b92fd3d4023b2a85fa9b30bbce8cb2235",
+      "id": "runtime-state-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/runtime-state-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/runtime-state/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/runtime-state/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-runtime-state-affected-001",
+      "scenario": "runtime-state",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "e3b19f333a8129057f5437a3e1d4464c852c7285",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "322cac983bc14548483e13d74aeeb3a70d78aac3"
+      },
+      "source_hash": "sha256:c40f23026d393d24fb95533cbb3a23aba032b2dda025f57e1d31d3be1d6deed7",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "ast2python/ast2python/artifacts/generated.py",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:45b8341bf89a6f9acdea591a7b75203bbb70c716340c44b39d242b099e7c3dfd",
+      "id": "generator-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/generator-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/generator/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/generator/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-generator-full-001",
+      "scenario": "generator",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "3014fdcc4013b14b1beb4efd9625a35d81d5bf8f",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "6d0a7f2a7fb5bfabee73031278575c732ae728d1",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:3ebe195042350b034f0f924cf03aa87e966714a2d84420ace9a35acd6c9c97ce",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "ast2python/ast2python/artifacts/generated.py",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:ca697db1aeb0e13a9a3709b916c50c72657458c190529067d1b8dd7895479d84",
+      "id": "generator-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/generator-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/generator/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/generator/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-generator-affected-001",
+      "scenario": "generator",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "3014fdcc4013b14b1beb4efd9625a35d81d5bf8f",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "6d0a7f2a7fb5bfabee73031278575c732ae728d1",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:3ebe195042350b034f0f924cf03aa87e966714a2d84420ace9a35acd6c9c97ce",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/openpine/stack-lock.json",
+        "openpine/openpine/verification/execution_plan.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:961899603ac0d2f7af8ae80da2b876de6a8353986f5dbe9b2fcd1832cea4f45e",
+      "id": "selection-logic-full",
+      "jobs": 2,
+      "kind": "mutant-full",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/selection-logic-full",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/selection-logic/full.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/selection-logic/full.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-selection-logic-full-001",
+      "scenario": "selection-logic",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "658d66b22b02470024c6d4246d78cf03f03b5fa7",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:a41242efa00bbe81751932a7e8cfe52c3a80a39d240093fe5fac984460e994d1",
+      "source_mode_only": false
+    },
+    {
+      "actual_changed_selectors": [
+        "openpine/openpine/stack-lock.json",
+        "openpine/openpine/verification/execution_plan.py"
+      ],
+      "environment_hashes": {
+        "py313": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2"
+      },
+      "execution_status": "NOT_RUN",
+      "expected_plan_hash": "sha256:8262b4811a6dc8b21dc29a06c5f30863349c7b8a9595d402f51a8b5d4f6f188a",
+      "id": "selection-logic-affected",
+      "jobs": 2,
+      "kind": "mutant-affected",
+      "launch_output_root": "/workspace/int05/evidence/tracked-campaign-manifests-001/executions/selection-logic-affected",
+      "launch_plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/selection-logic/affected.json",
+      "max_parallel_shards": 1,
+      "memory_mib": 6144,
+      "minimum_free_bytes": 21474836480,
+      "plan_path": "/workspace/int05/evidence/tracked-campaign-manifests-001/selection-logic/affected.json",
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_and_acceptance_pending": true,
+      "preparation_components": [],
+      "required_count": 26190,
+      "required_gates": [],
+      "requires_parent_reader_routing_design_review": true,
+      "retries": 0,
+      "run_id": "int05-tracked-selection-logic-affected-001",
+      "scenario": "selection-logic",
+      "selected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "658d66b22b02470024c6d4246d78cf03f03b5fa7",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:a41242efa00bbe81751932a7e8cfe52c3a80a39d240093fe5fac984460e994d1",
+      "source_mode_only": false
+    }
+  ],
+  "candidate_route_decision": "coherent tracked pins; every actual final diff selects full; external route is separate functional fault injection only",
+  "content_hash": "sha256:a0e8d67246371cbd71597279e5814ba0b24a0af428daf879032f348befa1aa69",
+  "control_commit": "0bbcfc08206efa8325a6148390fe228785247e5d",
+  "current_integration_candidate_only": true,
+  "disk_available_bytes": 26935103488,
+  "first_full_calibration_then_budget_checkpoint_required": true,
+  "full_acceptance": false,
+  "full_build_started": false,
+  "heavy_started": false,
+  "hosted_ci_requested": false,
+  "kind": "21 actual committed tracked-pin campaign manifests; no executions",
+  "minimum_free_bytes": 21474836480,
+  "new_integration_commit_invalidates_all_anchors": true,
+  "original_manifest_content_hash": "sha256:b803d03af8148ad5b615786ea33cb8247fe0f72cf49d3ef22427318a2b29835a",
+  "original_manifest_file_sha256": "sha256:004230e096dc8b8b5fae88ef76c744302ac6ed16b27275a9a599d8986604fbf1",
+  "producer_cases": [
+    {
+      "changed_selectors": [
+        "openpine/openpine/stack-lock.json",
+        "openpine/openpine/timezones.py"
+      ],
+      "collection_hash": "sha256:676c26a09b4decce5896cfdeca8ae96e15ff71b9e929517cf4891c6332ff4417",
+      "collection_wall_seconds": 28.922191892999763,
+      "disk_available_bytes": 28509491200,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/narrow-local",
+      "full_execution": false,
+      "id": "narrow-local",
+      "inputs_hash": "sha256:e522bc5f9b47bd732a3d31d20eade520049b01d1d385aa56be974f6a8f44726a",
+      "oracle_node": "tests/test_timezone_settings.py::test_timezone_resolution_supports_msk_offsets_utc_and_iana",
+      "oracle_owner": "openpine",
+      "planning_scope": {
+        "affected_hash": "sha256:ba16d76e268b2802339797941630cf868eff93f7a832cd02660d8af60b950a5d",
+        "count": 26190,
+        "full_hash": "sha256:a65f4f0874c90e386f7d03607db2aa9148821f4f5e0a5fb05c065a5e45ea8563",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-narrow-local-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "c010f0a3e2ac119fe5a8315ded100b5c92493658"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "c010f0a3e2ac119fe5a8315ded100b5c92493658",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:58a3515e5ecc149e9f7b9db12dea80ad0b839dfef48e06b1863225eb7a9768ba",
+      "total_freeze_wall_seconds": 32.96943828199983
+    },
+    {
+      "changed_selectors": [
+        "marketdata-provider/marketdata_provider/core/bar.py",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "collection_hash": "sha256:f2dc960408893f29798b28470e753d6a143c257bb27bc63fd36c102e914c1c61",
+      "collection_wall_seconds": 28.121980537000127,
+      "disk_available_bytes": 28336955392,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-boundary",
+      "full_execution": false,
+      "id": "consumer-boundary",
+      "inputs_hash": "sha256:cae8727545cb2e2c7a5756b3eb758af7a7d18006c481217a29d19482e9301c1d",
+      "oracle_node": "tests/test_smoke.py::test_runtime_contract_version",
+      "oracle_owner": "marketdata-provider",
+      "planning_scope": {
+        "affected_hash": "sha256:0c118362803fa030c1eb114e097bec11ec583d0721f8695ef46db99ccc1f923d",
+        "count": 26190,
+        "full_hash": "sha256:cb38ed884a10cab585de561e338cb3428e509e8908ed72d7802dc36e65a0845a",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "marketdata-provider": {
+          "branch": "implementation/int05-negative-consumer-boundary-20261006",
+          "repository": "s7cret/marketdata-provider",
+          "sha": "9b7421321f4133b4aa53e014768b0509344b82a5"
+        },
+        "openpine": {
+          "branch": "implementation/int05-negative-consumer-boundary-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "709b0e7c4f70c353297c094ba32e89998ae5544e"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "9b7421321f4133b4aa53e014768b0509344b82a5",
+        "openpine": "709b0e7c4f70c353297c094ba32e89998ae5544e",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:5f2a4426ff056e303f40dd7b04a087c52ae1c7d7cd474922e58d602d9f0ad5fa",
+      "total_freeze_wall_seconds": 42.08115240400002
+    },
+    {
+      "changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/core/values.py"
+      ],
+      "collection_hash": "sha256:1532af58e470dd8899bb458b3df8de9b358fcc07fc1499d0c38168c376e284ea",
+      "collection_wall_seconds": 27.241930768000202,
+      "disk_available_bytes": 28161404928,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-runtime-boundary",
+      "full_execution": false,
+      "id": "consumer-runtime-boundary",
+      "inputs_hash": "sha256:463c8fbe13a4b13f8d23797c2caa01c7859631dbce104e9e1d85411f9f43c3ef",
+      "oracle_node": "tests/unit/test_broker_guard_edges.py::test_projection_uses_total_trade_counts_and_signed_position[FLAT-0.0]",
+      "oracle_owner": "backtest_engine",
+      "planning_scope": {
+        "affected_hash": "sha256:1bb91fd13d892f12656351d313b4ff782338201f18b0fe89963bcd627401f0aa",
+        "count": 26190,
+        "full_hash": "sha256:31d7bd42411c7789f3caa5d046be23063eae0ef27598d4f9989170096cf66cf4",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-routing-proof-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "7c126d2f0f68d733488591497624f9e88df42fea"
+        },
+        "pinelib": {
+          "branch": "implementation/int05-negative-proof-na-20261006",
+          "repository": "s7cret/pinelib",
+          "sha": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "7c126d2f0f68d733488591497624f9e88df42fea",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "source_hash": "sha256:298f6a6e8905fda12e89a6868094d86c4479969a05a0c22e4ce1fad0b848fb5e",
+      "total_freeze_wall_seconds": 37.097620475999975
+    },
+    {
+      "changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/tests/fixtures/ema_first_source_v1_checkpoints.json"
+      ],
+      "collection_hash": "sha256:9c01efc1cc25c38e9b90451ccb9e72dfb0a5670065ff9985900e59c45987bd43",
+      "collection_wall_seconds": 27.15911309600051,
+      "disk_available_bytes": 27985391616,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/shared-fixture",
+      "full_execution": false,
+      "id": "shared-fixture",
+      "inputs_hash": "sha256:837286aa69c32096a47383678595423bd193c7d9a0e76360fa29f57cde5667f7",
+      "oracle_node": "tests/test_ema_first_source.py::test_genuine_legacy_checkpoint_boundary[native-ema-1-False]",
+      "oracle_owner": "pinelib",
+      "planning_scope": {
+        "affected_hash": "sha256:998ff8cb99e6757582bb9801f78189ebe605e88d32095f2c3760b539bae5a3ec",
+        "count": 26190,
+        "full_hash": "sha256:c6f139cc409d96332ea96f79c689dc796e7ca1cec219ca0fa08d60a33a0306b3",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-shared-fixture-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "f60e0c242086ce1d6a81b0bfb27036d00a8698e6"
+        },
+        "pinelib": {
+          "branch": "implementation/int05-negative-shared-fixture-20261006",
+          "repository": "s7cret/pinelib",
+          "sha": "f16577743cb9f7803e1eef5a690e8f2c7be26398"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "f60e0c242086ce1d6a81b0bfb27036d00a8698e6",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "f16577743cb9f7803e1eef5a690e8f2c7be26398"
+      },
+      "source_hash": "sha256:a4844bc98f538e0461607630fedd51f2b22bab4a33e118b6e0a1b2c6802c7519",
+      "total_freeze_wall_seconds": 40.44102798499989
+    },
+    {
+      "changed_selectors": [
+        "openpine-contracts/openpine_contracts/schemas/openpine.execution_event.v1.json",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "collection_hash": "sha256:7badc1b96fd1dcc13a4b9afdd3d115f9191b0d4eaaa70c5aa51219dd3085743d",
+      "collection_wall_seconds": 26.749410288000036,
+      "disk_available_bytes": 27813183488,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/schema",
+      "full_execution": false,
+      "id": "schema",
+      "inputs_hash": "sha256:f232f33d4e85748e2e20b266294f770657f0f56281a38e7cae698c2de202dabe",
+      "oracle_node": "tests/test_execution_event.py::test_callback_descriptor_roundtrips_and_has_distinct_last_flags",
+      "oracle_owner": "openpine-contracts",
+      "planning_scope": {
+        "affected_hash": "sha256:b4e9b0b01838f28fdf3ed8de2faa231d3c7c9df536d0bf5c87bd8592e17266fa",
+        "count": 26190,
+        "full_hash": "sha256:ea5da0d7950902f2c1dc77c4e0a3e583324c287b65f40aee0ac710a06ff0f790",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-schema-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "564b99fa601aa52acce5c7d84e20ebf10e11670f"
+        },
+        "openpine-contracts": {
+          "branch": "implementation/int05-negative-schema-20261006",
+          "repository": "s7cret/openpine-contracts",
+          "sha": "2c5946bc74b5f480402ef697a8b48560f6451e2b"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "564b99fa601aa52acce5c7d84e20ebf10e11670f",
+        "openpine-contracts": "2c5946bc74b5f480402ef697a8b48560f6451e2b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:25a425972e6872f2e9d8de890b7edbfd24bb2cfab8e77bb6006f68f850693690",
+      "total_freeze_wall_seconds": 39.79674681600045
+    },
+    {
+      "changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/abi/target_manifest.json"
+      ],
+      "collection_hash": "sha256:c1b5d0c1642f6c807f7afe3bcb9fefab76b0bc783308b12b10ef9a4acbc95334",
+      "collection_wall_seconds": 27.749387523000223,
+      "disk_available_bytes": 27634814976,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/catalog",
+      "full_execution": false,
+      "id": "catalog",
+      "inputs_hash": "sha256:e44cc34a79dc706ebe323ec972db51613e4a26f1835fb31c7a1ed2a47a5ec16b",
+      "oracle_node": "tests/test_entry_risk_qualifier_manifest.py::test_checked_in_manifest_reproduces_exactly",
+      "oracle_owner": "pinelib",
+      "planning_scope": {
+        "affected_hash": "sha256:db204adea266307775ba754aee92805d19ee58a4612afb002da8647b322d8d63",
+        "count": 26190,
+        "full_hash": "sha256:93e9612229ffc2f64589999d30abaee016f3fc77b0f6570b37320d206d784821",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-catalog-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "b451beadf942591434bbd95c68e43f7d323cfc7b"
+        },
+        "pinelib": {
+          "branch": "implementation/int05-negative-catalog-20261006",
+          "repository": "s7cret/pinelib",
+          "sha": "0e7d4da0d8d4601f1bfa4345cd281a08970f1dab"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "b451beadf942591434bbd95c68e43f7d323cfc7b",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "0e7d4da0d8d4601f1bfa4345cd281a08970f1dab"
+      },
+      "source_hash": "sha256:874350c92f866fcaeaed29ee98c5a25061527c57b3aa245073ff78b043f04bbe",
+      "total_freeze_wall_seconds": 40.62888665599985
+    },
+    {
+      "changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/abi/runtime_values.py"
+      ],
+      "collection_hash": "sha256:9465f73ff4dd5d5b65f458887b40c678d4399acb647638f32aae3add26137407",
+      "collection_wall_seconds": 26.15632160699988,
+      "disk_available_bytes": 27458871296,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/abi",
+      "full_execution": false,
+      "id": "abi",
+      "inputs_hash": "sha256:416bd97b1eff5d381c152ebfac46d01aa0f4541ce99169796d584e71651aa408",
+      "oracle_node": "tests/test_abi_surface_invariants.py::test_runtime_value_abi_exposes_injected_bar_context_and_metadata_exactly",
+      "oracle_owner": "pinelib",
+      "planning_scope": {
+        "affected_hash": "sha256:84af8e5aaab8d7cff478ba8dbe98d82e05048c1e988dca9f141dbfe8de8d0c57",
+        "count": 26190,
+        "full_hash": "sha256:3538c8b021f93b79710dca84ec8c5bf869d2b41cf466acbda8b16eeddea06d21",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-abi-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "46a34d409f86db0428cadb64b2c7394f57a2361a"
+        },
+        "pinelib": {
+          "branch": "implementation/int05-negative-abi-20261006",
+          "repository": "s7cret/pinelib",
+          "sha": "1f4e8c21d4502366b2a4a8cbd2f8ef935995ff36"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "46a34d409f86db0428cadb64b2c7394f57a2361a",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "1f4e8c21d4502366b2a4a8cbd2f8ef935995ff36"
+      },
+      "source_hash": "sha256:c3d134512adfba6704d632e60efaa7a489a141b4abc46b0fea622980bc2f74cc",
+      "total_freeze_wall_seconds": 39.93234721799945
+    },
+    {
+      "changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/state/checkpoint.py"
+      ],
+      "collection_hash": "sha256:45612f3c8061222d08edc5dde58046b001f1e082cb82005a9697ad630ff936fb",
+      "collection_wall_seconds": 27.89858461699987,
+      "disk_available_bytes": 27282915328,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/runtime-state",
+      "full_execution": false,
+      "id": "runtime-state",
+      "inputs_hash": "sha256:5c8b37cae63fd32788bc70eb3750dedc3882c0e2cb5ec4d33fddf56cc2702564",
+      "oracle_node": "tests/test_checkpoint_na_roundtrip.py::test_na_series_is_decoded_once_and_roundtrips[True]",
+      "oracle_owner": "pinelib",
+      "planning_scope": {
+        "affected_hash": "sha256:fabfa7786861be58b09168bb606e5b5b92fd3d4023b2a85fa9b30bbce8cb2235",
+        "count": 26190,
+        "full_hash": "sha256:252c5658a9d6e69bf3ab45a05ea5ae9c752b8943168dd9b8bd369d46cb2702a1",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-runtime-state-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "e3b19f333a8129057f5437a3e1d4464c852c7285"
+        },
+        "pinelib": {
+          "branch": "implementation/int05-negative-runtime-state-20261006",
+          "repository": "s7cret/pinelib",
+          "sha": "322cac983bc14548483e13d74aeeb3a70d78aac3"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "e3b19f333a8129057f5437a3e1d4464c852c7285",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "322cac983bc14548483e13d74aeeb3a70d78aac3"
+      },
+      "source_hash": "sha256:c40f23026d393d24fb95533cbb3a23aba032b2dda025f57e1d31d3be1d6deed7",
+      "total_freeze_wall_seconds": 41.22685324299982
+    },
+    {
+      "changed_selectors": [
+        "ast2python/ast2python/artifacts/generated.py",
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json"
+      ],
+      "collection_hash": "sha256:bacb280de307f0ce7d76308d9b082e88c5f0591d8532cad99f32d3f032184f79",
+      "collection_wall_seconds": 27.43248006900012,
+      "disk_available_bytes": 27106967552,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/generator",
+      "full_execution": false,
+      "id": "generator",
+      "inputs_hash": "sha256:007e3a7a1ce09a013b862b9cb9276170f8d2446038ee94099038d88ca8c6292c",
+      "oracle_node": "tests/stage4/test_core_defensive.py::test_artifact_commit_and_optional_verification_branches",
+      "oracle_owner": "ast2python",
+      "planning_scope": {
+        "affected_hash": "sha256:ca697db1aeb0e13a9a3709b916c50c72657458c190529067d1b8dd7895479d84",
+        "count": 26190,
+        "full_hash": "sha256:45b8341bf89a6f9acdea591a7b75203bbb70c716340c44b39d242b099e7c3dfd",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "ast2python": {
+          "branch": "implementation/int05-negative-generator-20261006",
+          "repository": "s7cret/ast2python",
+          "sha": "3014fdcc4013b14b1beb4efd9625a35d81d5bf8f"
+        },
+        "openpine": {
+          "branch": "implementation/int05-negative-generator-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "6d0a7f2a7fb5bfabee73031278575c732ae728d1"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "3014fdcc4013b14b1beb4efd9625a35d81d5bf8f",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "6d0a7f2a7fb5bfabee73031278575c732ae728d1",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:3ebe195042350b034f0f924cf03aa87e966714a2d84420ace9a35acd6c9c97ce",
+      "total_freeze_wall_seconds": 39.79432389199974
+    },
+    {
+      "changed_selectors": [
+        "openpine/openpine/stack-lock.json",
+        "openpine/openpine/verification/execution_plan.py"
+      ],
+      "collection_hash": "sha256:c7681df808987e68b6279ae59ea07672c4bd83b3871cdbe726ce90f775823a64",
+      "collection_wall_seconds": 27.531559625000227,
+      "disk_available_bytes": 26935132160,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "external_source_mode_qualified": false,
+      "folder": "/workspace/int05/evidence/tracked-campaign-manifests-001/selection-logic",
+      "full_execution": false,
+      "id": "selection-logic",
+      "inputs_hash": "sha256:b859c0749e6356f5573a07b47721797a272c6dc0b2a54dd93abd3d11625aeb1e",
+      "oracle_node": "rc6_tests/test_rc6_execution_platform.py::test_affected_graph_escalation_and_cycle_rejection",
+      "oracle_owner": "openpine",
+      "planning_scope": {
+        "affected_hash": "sha256:8262b4811a6dc8b21dc29a06c5f30863349c7b8a9595d402f51a8b5d4f6f188a",
+        "count": 26190,
+        "full_hash": "sha256:961899603ac0d2f7af8ae80da2b876de6a8353986f5dbe9b2fcd1832cea4f45e",
+        "owners": [
+          "ast2python",
+          "backtest_engine",
+          "marketdata-provider",
+          "openpine",
+          "openpine-contracts",
+          "optimizer",
+          "pine2ast",
+          "pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "remote_mutant_refs": {
+        "openpine": {
+          "branch": "implementation/int05-negative-selection-logic-20261006",
+          "repository": "s7cret/openpine",
+          "sha": "658d66b22b02470024c6d4246d78cf03f03b5fa7"
+        }
+      },
+      "retries": 0,
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "658d66b22b02470024c6d4246d78cf03f03b5fa7",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:a41242efa00bbe81751932a7e8cfe52c3a80a39d240093fe5fac984460e994d1",
+      "total_freeze_wall_seconds": 36.59942196100019
+    }
+  ],
+  "reader_fix_pending_review": true,
+  "reviewed_reader_commit": "85a4cd95e8ce9f4d3e4b50f7be1dfc1ec1a1f750",
+  "safe_to_execute_without_parent_review": false,
+  "saved_at_utc": "2026-10-06T22:39:36.360952+00:00",
+  "scope": "21 actual committed tracked-pin full/affected plans for exact integration 0bbc; planning/preparation inputs, no campaign executions or acceptance",
+  "source_diff_readback": [
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "openpine/stack-lock.json",
+          "openpine/timezones.py"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": []
+      },
+      "file_pre_post_hashes": {
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:ff9b678e9d351c82d4660893b3c193ec9dcaea854bae87529494eb9fbd82d58f",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        },
+        "openpine/openpine/timezones.py": {
+          "after_sha256": "sha256:f5f02bc6c56353e3b3e2c2561a97a8c3da42c32431e853b6dd5b55c638a4bcb9",
+          "before_sha256": "sha256:842a37d5af3b8d24b4fd24083ed6e6a1e19d9f0680f6d8817b995506c77867f1"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/narrow-local/git-provenance/openpine.bundle",
+          "sha256": "sha256:2b40af8ad7b2805e3b6a51c0c58b493321ca1a1b6ede333b377d8a5db6874ddf"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pinelib.bundle",
+          "sha256": "sha256:078597cf8c42fc9ecc23d74096dc118eac3c90fff7ba46cdfc0810615ffdc781"
+        }
+      },
+      "id": "narrow-local",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:1c4f27c5e834d78f802a3b8004da49aaa68efd7dcba513cc792297f9a61fab0d",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "c010f0a3e2ac119fe5a8315ded100b5c92493658",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:58a3515e5ecc149e9f7b9db12dea80ad0b839dfef48e06b1863225eb7a9768ba",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [
+          "marketdata_provider/core/bar.py"
+        ],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": []
+      },
+      "file_pre_post_hashes": {
+        "marketdata-provider/marketdata_provider/core/bar.py": {
+          "after_sha256": "sha256:53a8cc79fb0a0552b5d321dc97c72d1252c89c2ed91be3f6774936edeb5df548",
+          "before_sha256": "sha256:72a15d398955245e5b7a2b9d0c10e27d90326d31d6943825a454f645ef7deb4f"
+        },
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:a447b29c5da5b422812fe3d4f5380a6ddd10fc487dccb5fa433a586c5a691992",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:4cc9d3fb88d6607e9611aac8af14a779ddb8d186a743e6546e1147ce6f3f1c9d",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-boundary/git-provenance/marketdata-provider.bundle",
+          "sha256": "sha256:0fda5f91f208d703f105f6311cc2646d32d651c928c9e55f31e6daea4fcdad4b"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-boundary/git-provenance/openpine.bundle",
+          "sha256": "sha256:07f8f4c282c6bccdafb20b02858055ef2ad833febe4509feaddb9ab5ab8efdfc"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pinelib.bundle",
+          "sha256": "sha256:078597cf8c42fc9ecc23d74096dc118eac3c90fff7ba46cdfc0810615ffdc781"
+        }
+      },
+      "id": "consumer-boundary",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:bbe1334fe53ccb0d871de2e6579edeaca61b0c918a636c720c12d210a7b26425",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "9b7421321f4133b4aa53e014768b0509344b82a5",
+        "openpine": "709b0e7c4f70c353297c094ba32e89998ae5544e",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:5f2a4426ff056e303f40dd7b04a087c52ae1c7d7cd474922e58d602d9f0ad5fa",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": [
+          "pinelib/core/values.py"
+        ]
+      },
+      "file_pre_post_hashes": {
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:e6b9be729ca63af67dc20341966d82c9ac9bc3140e62a13e453630d87dc183ff",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:779c49b6ff50cb77318bbff645cb4ea387aa89c2d4deebec6292a508a29c59ac",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        },
+        "pinelib/pinelib/core/values.py": {
+          "after_sha256": "sha256:8370530553a1e3529bd0c451765e29f456c66175ceacc4d9fe41b2207a41f70a",
+          "before_sha256": "sha256:03d9a23b87887af4175b18bd4ee450354aa76bc7ed438c458125a92014e6bffd"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-runtime-boundary/git-provenance/openpine.bundle",
+          "sha256": "sha256:fb4364c90d6f02e92beb7035a5c59dcc9e1a5677951a69627c6155461ab13f47"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/consumer-runtime-boundary/git-provenance/pinelib.bundle",
+          "sha256": "sha256:e12a1c25add45f1c18ffce52e05e8de983cd93d935c22cbd48b7ba9c14fb7050"
+        }
+      },
+      "id": "consumer-runtime-boundary",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:f692e83eea15b68c08be5cb0295df556a760368892e6c885851a3fcf5ff45745",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "7c126d2f0f68d733488591497624f9e88df42fea",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "source_hash": "sha256:298f6a6e8905fda12e89a6868094d86c4479969a05a0c22e4ce1fad0b848fb5e",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": [
+          "tests/fixtures/ema_first_source_v1_checkpoints.json"
+        ]
+      },
+      "file_pre_post_hashes": {
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:2ea1ca1ac6214eab6136be60e739ce8f07ee8d81dfe1acd4590f78c7e27b1fe3",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:47e652e0d6ad697a99cc1cc84fbd3ec34889fa562f9e09b3a5b63f937c6530d8",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        },
+        "pinelib/tests/fixtures/ema_first_source_v1_checkpoints.json": {
+          "after_sha256": "sha256:e0c1eeafe6dff84a6bfcfbae17cffc078ee1104a02422a2bb69bf5e37fc99e27",
+          "before_sha256": "sha256:426bf5a175165458d9021a5b8be69eae6d1283fa14e99c308a369e962f4b8903"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/shared-fixture/git-provenance/openpine.bundle",
+          "sha256": "sha256:1ed62611c4a186bd8d9d7c698744dde7fff1df6e657830f52f67d42606ab86d9"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/shared-fixture/git-provenance/pinelib.bundle",
+          "sha256": "sha256:625e198663ee8eebf26d366b0954ec9ac34d0bd9cf933de9b403ec03897134df"
+        }
+      },
+      "id": "shared-fixture",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:b20c51d8d94a2a932e86d0c88653d7f3f61b6e6861e738ece8374f73415100a1",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "f60e0c242086ce1d6a81b0bfb27036d00a8698e6",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "f16577743cb9f7803e1eef5a690e8f2c7be26398"
+      },
+      "source_hash": "sha256:a4844bc98f538e0461607630fedd51f2b22bab4a33e118b6e0a1b2c6802c7519",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [
+          "openpine_contracts/schemas/openpine.execution_event.v1.json"
+        ],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": []
+      },
+      "file_pre_post_hashes": {
+        "openpine-contracts/openpine_contracts/schemas/openpine.execution_event.v1.json": {
+          "after_sha256": "sha256:1f110bad8a5c6455d96fa95bfdccd364d2dace012eeb860fb9cf2113b695ac24",
+          "before_sha256": "sha256:7f8a019fc340ef03aa089250af62d642335cde8e9c542725d3cbd5e7de6dc944"
+        },
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:af524b6f1fe24ede3c2c14cea57aa9e4d0a35bdbc7d0d514ff8c6cc35cfb6b6c",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:0123b3ed4c4d353179846db8c1bf976ed8eebde8c63fdd79c168e38a0a682f29",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/schema/git-provenance/openpine.bundle",
+          "sha256": "sha256:4ce578608f9ae824afd13336e482c53a41ce6e105c642ebdc611ab50971f0133"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/schema/git-provenance/openpine-contracts.bundle",
+          "sha256": "sha256:694dafdb4009e148eab7c4a624974a73278ef380bc136ce17d556e3b3afebcd2"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pinelib.bundle",
+          "sha256": "sha256:078597cf8c42fc9ecc23d74096dc118eac3c90fff7ba46cdfc0810615ffdc781"
+        }
+      },
+      "id": "schema",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:c534affc87258b2e22e221748caa882bb4dbb110a64cd523aca599ee95c4af24",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "564b99fa601aa52acce5c7d84e20ebf10e11670f",
+        "openpine-contracts": "2c5946bc74b5f480402ef697a8b48560f6451e2b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:25a425972e6872f2e9d8de890b7edbfd24bb2cfab8e77bb6006f68f850693690",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": [
+          "pinelib/abi/target_manifest.json"
+        ]
+      },
+      "file_pre_post_hashes": {
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:2957cf7d1178489c697bf5132f0910140620a32a399acf4b27b3403b5caa1f01",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:0544863fdcc04f3de600edebbacc097ae348f68446e1940b75005f2b3d9aae01",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        },
+        "pinelib/pinelib/abi/target_manifest.json": {
+          "after_sha256": "sha256:f8b3d292935e999ffa1e331fd515ecbcc980a9bbed1f7463ab9a57114ab42d6e",
+          "before_sha256": "sha256:8e4d5b35dc363099d391a1e9a51ff72a4a361703f873f55db5c3c6a62e2983ef"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/catalog/git-provenance/openpine.bundle",
+          "sha256": "sha256:2da6acde8cebac6e690efcb2637518d144ab106b85c9806eab23ca6c2075bff9"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/catalog/git-provenance/pinelib.bundle",
+          "sha256": "sha256:1606fe9e0ff8d9a156f08e9965d37d7d9270fe460d5e2df0b124ec988d6479d8"
+        }
+      },
+      "id": "catalog",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:8616131eb2a9ac95f09ccb9c8284fd8b43a5749e37703d6a1293c2385102b9c0",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "b451beadf942591434bbd95c68e43f7d323cfc7b",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "0e7d4da0d8d4601f1bfa4345cd281a08970f1dab"
+      },
+      "source_hash": "sha256:874350c92f866fcaeaed29ee98c5a25061527c57b3aa245073ff78b043f04bbe",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": [
+          "pinelib/abi/runtime_values.py"
+        ]
+      },
+      "file_pre_post_hashes": {
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:1ecdfdac929e3055cc07f7c064a4be82df200d34771c46271d30fd526886e6cb",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:56d4f488f12336646e9d985142dad254f15297228c651789b243e4312b18278a",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        },
+        "pinelib/pinelib/abi/runtime_values.py": {
+          "after_sha256": "sha256:3b87f3535d03a7e0793b8c3845dd1ed5f5876e957816153969dc7d099426b853",
+          "before_sha256": "sha256:295d7fa230dbad949a7e204cad0482f19e1ba37a697c137930cbca3f38d6721b"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/abi/git-provenance/openpine.bundle",
+          "sha256": "sha256:7160a4de774f16c150db817e7bb4c28a78a776f804e3f52cc02358c44b0a39bb"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/abi/git-provenance/pinelib.bundle",
+          "sha256": "sha256:540cd651de52f6715176e6cd96614bcbc301bc97207bea6cdd3a42ad60bbb51a"
+        }
+      },
+      "id": "abi",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:2dd792eaa8cef04bd7fc454d4133538d2f6722311834f4be46c1a0ee528be65e",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "46a34d409f86db0428cadb64b2c7394f57a2361a",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "1f4e8c21d4502366b2a4a8cbd2f8ef935995ff36"
+      },
+      "source_hash": "sha256:c3d134512adfba6704d632e60efaa7a489a141b4abc46b0fea622980bc2f74cc",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": [
+          "pinelib/state/checkpoint.py"
+        ]
+      },
+      "file_pre_post_hashes": {
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:f7c522302c45e3bd9987482a4749afe913d293ff893c3bc884cea0e89638b889",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:116944905dea42bdf0b671b50d3acf57661c8028a4ee3232e5a6d412831122ad",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        },
+        "pinelib/pinelib/state/checkpoint.py": {
+          "after_sha256": "sha256:189238e59918aad716ca153f66fa4855da356a77a2b1d25e847a2749d0edb7d6",
+          "before_sha256": "sha256:e91ff11995bf058183a0615c910800d030c4d72883fd10553ee43a1ba8b1e640"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/runtime-state/git-provenance/openpine.bundle",
+          "sha256": "sha256:1b58e1c572512b6d4aee21de88a133e4cd3d2e9c02e2a7cfce2cf911d0fb2485"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/runtime-state/git-provenance/pinelib.bundle",
+          "sha256": "sha256:b551e1cce06eb965c5ca4bd1edaa59241f2c5d38484d8441b8852ceeb7de35a2"
+        }
+      },
+      "id": "runtime-state",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:75683927d11df4dad7eaedfcbcdb0ea4b5c6e8ab06e5772da67bffe938dceb76",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "e3b19f333a8129057f5437a3e1d4464c852c7285",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "322cac983bc14548483e13d74aeeb3a70d78aac3"
+      },
+      "source_hash": "sha256:c40f23026d393d24fb95533cbb3a23aba032b2dda025f57e1d31d3be1d6deed7",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [
+          "ast2python/artifacts/generated.py"
+        ],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": []
+      },
+      "file_pre_post_hashes": {
+        "ast2python/ast2python/artifacts/generated.py": {
+          "after_sha256": "sha256:59ecfadb85ce31ee2f39d69f2a967fdcc489fa5d3bca8ec1e121bcd98f6921ce",
+          "before_sha256": "sha256:96cba8106d7fe9291e2ebe1faeecb1c10b57bc1d82d03bf0a4925cc2964cd7a0"
+        },
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json": {
+          "after_sha256": "sha256:ebfeef380975b4c2be12888b6a89816e046f44b25323a826cc4706551ee46cc9",
+          "before_sha256": "sha256:bb3c8b784dfb3f6a91898720ee7eb80c8ca0d8beaf2e12646177f08525ba464a"
+        },
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:32fc26db641d2ccf3cede4d73b940a3791b081db93c11bf852d79771f5a7b25f",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/generator/git-provenance/ast2python.bundle",
+          "sha256": "sha256:d6a8aa69664771bbcbd7ef11bc4a8aff26a75acbb0668dff0b4942fd121ab944"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/generator/git-provenance/openpine.bundle",
+          "sha256": "sha256:51c4e46ea5dc0edbe1398569515f8c817a6a97a94e8f11292c6f9f2a2a3361f6"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pinelib.bundle",
+          "sha256": "sha256:078597cf8c42fc9ecc23d74096dc118eac3c90fff7ba46cdfc0810615ffdc781"
+        }
+      },
+      "id": "generator",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:50cbdff73e85e5bb01039d07987e0c09c2b0619536dbd83ac192e5a4db2dc159",
+      "source_commits": {
+        "ast2python": "3014fdcc4013b14b1beb4efd9625a35d81d5bf8f",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "6d0a7f2a7fb5bfabee73031278575c732ae728d1",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:3ebe195042350b034f0f924cf03aa87e966714a2d84420ace9a35acd6c9c97ce",
+      "whole_source_diff_equals_git_selectors": true
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "openpine/stack-lock.json",
+          "openpine/verification/execution_plan.py"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": []
+      },
+      "file_pre_post_hashes": {
+        "openpine/openpine/stack-lock.json": {
+          "after_sha256": "sha256:7f86d4787b8b4e011f968d1de1051980216aeac33f2727a9e24ceeb73eb7ca93",
+          "before_sha256": "sha256:0b5b5e742d3204a0ddcadbad4dbb797b0f636a49b9ffd3eb23b5a1f9f624c934"
+        },
+        "openpine/openpine/verification/execution_plan.py": {
+          "after_sha256": "sha256:8d0101853e6e82a35aa9cd175ccb6400c1ff682d70a501f5e084da3d73784164",
+          "before_sha256": "sha256:9f1875bb276f2703cb31a12ff3a161b20e119f6f571880a963469d883ba1b3cc"
+        }
+      },
+      "git_bundles": {
+        "ast2python": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/ast2python.bundle",
+          "sha256": "sha256:fb93f1f95062df09737e52d3783628a1db42ac9dcd7077dbd41635f11c7b2348"
+        },
+        "backtest_engine": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/backtest_engine.bundle",
+          "sha256": "sha256:fd2b5d50d664708f519b09c60be33b604da55f25f518187538f74b0516ab0181"
+        },
+        "marketdata-provider": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/marketdata-provider.bundle",
+          "sha256": "sha256:6288263be3bf81f2653d657147be47ba94050eeee84723eb37b8e97975df197c"
+        },
+        "openpine": {
+          "path": "/workspace/int05/evidence/tracked-campaign-manifests-001/selection-logic/git-provenance/openpine.bundle",
+          "sha256": "sha256:4920abc8e8d4c61aea2919cb3901e42ae10299de07e34d7898083534fc4e1cb5"
+        },
+        "openpine-contracts": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/openpine-contracts.bundle",
+          "sha256": "sha256:7a391540b634c92531f28bdf92ab5de3af336ebe515372dec9529b6a6435473e"
+        },
+        "optimizer": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/optimizer.bundle",
+          "sha256": "sha256:aa350d77595d84bd2c79eb716e26d6ee4688272833d38c363ed9a974db593de8"
+        },
+        "pine2ast": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pine2ast.bundle",
+          "sha256": "sha256:ff012c600575c5339ec3c50c833f487c90d8b2d4fc0ca774c6f25860a72d999c"
+        },
+        "pinelib": {
+          "path": "/workspace/int05/evidence/candidate-0bbcfc0/real-patches/git/pinelib.bundle",
+          "sha256": "sha256:078597cf8c42fc9ecc23d74096dc118eac3c90fff7ba46cdfc0810615ffdc781"
+        }
+      },
+      "id": "selection-logic",
+      "mandatory_selftest_in_both_plans": true,
+      "original_fault_input_matches": true,
+      "source_archive_sha256": "sha256:7d59d1ea4df81edbfb9e91f5d4e447bb462711981e713ac8a8fb8d1256d197a4",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "658d66b22b02470024c6d4246d78cf03f03b5fa7",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+      },
+      "source_hash": "sha256:a41242efa00bbe81751932a7e8cfe52c3a80a39d240093fe5fac984460e994d1",
+      "whole_source_diff_equals_git_selectors": true
+    }
+  ],
+  "total_campaigns": 21,
+  "total_executed_obligations_if_run": 549990,
+  "wall_seconds": 391.95894837300057
+}

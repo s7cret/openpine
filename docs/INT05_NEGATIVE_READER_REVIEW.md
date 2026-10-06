@@ -45,11 +45,47 @@ oracle to fail in F and every full failure to appear in A. The complete green
 control inventory/instrumentation and all full owner gates must be retained.
 Mutant bytes cannot carry the baseline producer SHA.
 
-The final bounded regression passed **183 tests in 22.896 seconds**, including
+The follow-up review found that matching selected flags did not authenticate the
+actual plugin/coverage invocation, and that green attempts could hide `a002` or
+an infrastructure diagnostic. These were reproduced on `85a4cd95`: fifteen
+coherently resealed negative cases failed while the actual instrumented positive
+case passed. The existing runner's command construction is now extracted once
+into `shard_argv`; both launch and strict readback use that same owner helper.
+Every control/full/affected attempt is checked before either status branch:
+`a001`, no infrastructure error, exact ordered plugins, coverage launcher,
+rcfile/source/data-file arguments, plan/selector/phase/JUnit/private/binding paths,
+interpreter, cwd and verification identities. Primary artifact locations also
+match the owner assignment exactly. The caller must supply independently frozen
+original launch plan/output paths for all three runs, even when raw evidence has
+been archived to a different directory. They are never inferred from untrusted
+argv. The CLI requires `--{control,full,affected}-launch-plan` and
+`--{control,full,affected}-launch-output`; campaign manifests record these paths.
+
+All 39 reader contracts passed after this fix, including the instrumented
+positive case. The three previously retained actual product routing/control
+primaries also passed the stronger exact-invocation readback without rerunning
+the product oracle or rewriting evidence.
+
+Before the follow-up, the bounded regression passed **183 tests in 22.896 seconds**, including
 23 negative-reader contracts and the existing execution-owner/planner/comparator
 regressions; one ten-campaign performance self-test was explicitly deselected.
 Ruff and diff validation passed. The 23 reader tests are outside the frozen
 76-node integration owner inventory and were executed separately for this review.
+
+The previously excluded
+`test_ten_real_small_campaigns_prove_comparator_positive_path` is mandatory:
+it remains an unmarked node in the frozen 11,998-node host inventory and is
+explicitly selected by the existing test-platform workflow. The earlier bounded
+review deliberately left its ten tiny verifier campaigns out of that targeted
+run to limit pre-review work; this was not a policy, full-denominator or mandatory
+obligation exception. Its deterministic assertions check five actual distinct
+samples on each side, unchanged workload/resource identities, duplicate-sample
+rejection and resource-profile rejection; they do not assert a noisy speedup.
+The requested isolated rerun passed 1 test in 4.689 seconds, with all ten raw
+campaigns retained. It supplies comparator contract evidence, not a stack
+performance qualification. The final follow-up bounded regression includes this
+test with no exclusion: **200 tests PASS in 31.139 seconds**, including all 39
+reader cases, zero skipped/deselected tests, with Ruff and diff checks passing.
 
 `SENSITIVITY_CONFIRMED` is a negative audit result. Both mutant pytest campaigns
 remain failed; it never grants stage, release or pytest acceptance. The existing
@@ -94,10 +130,11 @@ identity came from its Git HEAD.
 This source-mode proof is not `test-ci prepare`, a wheelhouse preparation, or a
 coherent release-lock acceptance claim: its declared release PineLib SHA/tree
 are still B and differ from the actual imported mutant. Any preparation/product
-failure must remain visible and block the applicable acceptance. The parent
-must review whether this source-mode negative experiment is an admissible
-functional qualification route. Until then it cannot justify a narrowed real
-candidate campaign or measured speed claim.
+failure must remain visible and block the applicable acceptance. The parent's
+review restricts this route to separate functional fault injection with its
+actual producer tuple. It cannot establish release-lock coherence, narrowed
+real-candidate qualification, or a real-candidate speed claim. Candidate
+qualification uses the coherent tracked-pin route and honest full escalation.
 
 For both routes, a stock one-node smoke probe produced setup PASS, CALL FAIL,
 teardown PASS. The exact B control produced three PASS phases. The new raw owner
@@ -117,12 +154,37 @@ extra green A campaigns are included. Every M must be recollected, attested and
 externally anchored after its complete routed diff is known. Scope and workload
 must be recomputed from that final diff, including pin/lock/metadata updates.
 
-If source-mode routing is accepted and all ten final diffs retain the proven
-one-file scopes, the planning workload would be 517,583 obligations. If all ten
-tracked routes expand to full, it would be 549,990. Only the single real PineLib
-routing case above is frozen now; these conditional totals are not executed
-qualification or a final ten-candidate workload. The measured first B full run
+All 21 manifests are now frozen against actual tracked-pin Git producer tuples
+on exact integration B `0bbcfc08206efa8325a6148390fe228785247e5d`:
+one B full plus ten actual mutant full/affected pairs. Every actual final diff
+includes the routed stack lock and expands A to all eight owners. Each plan
+retains 26,190 obligations, including the mandatory performance self-test;
+the actual planned total is **549,990**. Each F/A pair has separate plan hashes,
+run IDs and original launch/output paths. All 21 executions remain `NOT_RUN`.
+The checked manifest content hash is
+`sha256:b803d03af8148ad5b615786ea33cb8247fe0f72cf49d3ef22427318a2b29835a`.
+
+`INT05_TRACKED_CAMPAIGNS_REVIEW.json` carries the actual producer revisions,
+remote proof refs, complete routed selectors, collection/policy/environment and
+plan identities, source archive/provenance hashes, per-file pre/post hashes,
+resource controls, named independent oracles and execution locators. Every
+whole-source byte/mode diff was independently compared with the Git selector
+set; no metadata update is hidden. All ten fault files match the earlier frozen
+fault input exactly. All ten collect-only runs retain the unchanged normative
+inventories. The existing structural/committed-ref owner validators pass; full
+wheelhouse preparation/build, execution and all acceptance gates remain pending.
+This freezes source-mode stock plans for coherent tracked producers, not a
+`test-ci prepare` success claim. The exact execution/preparation environment must
+still be verified; drift requires new anchors. A new integration commit also
+invalidates every source, collection and plan anchor: the reader review delta
+is not silently substituted for this B.
+
+Freezing the ten routes took 391.959 seconds after one input-path helper retry;
+the first helper's archive/commit/failed log were retained and reused unchanged.
+There were no candidate test/campaign retries. The measured first B full run
 must replace time/storage forecasts before scheduling the remaining twenty.
+The old 517,583 one-file source-mode estimate is excluded from real-candidate
+qualification and speed claims under the parent's route decision.
 
 All future execution plans and the actual bounded probes have a stronger frozen
 `disk_free_guard.minimum_free_bytes = 21474836480` (20 GiB). Native owner plans

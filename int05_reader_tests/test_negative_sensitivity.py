@@ -17,7 +17,7 @@ from openpine.verification.identity import canonical, read_json, seal
 from rc6_tests.test_rc6_execution_platform import lock, tiny_plan
 
 
-def actual_pair(folder, *, omitted=False, two_red=False, affected_only=False):
+def actual_pair(folder, *, omitted=False, two_red=False, affected_only=False, instrumented=False):
     folder.mkdir()
     seed, _ = tiny_plan(folder, shards=1)
     roots = {n: Path(p) for n, p in seed["roots"].items()}
@@ -34,6 +34,21 @@ def actual_pair(folder, *, omitted=False, two_red=False, affected_only=False):
         "components": {"tiny": {}, "other": {}},
         "required_gates": {"stage-full": ["foundation"]},
     }
+    if instrumented:
+        policy["components"]["tiny"]["plugins"] = ["pytest_cov.plugin", "pytest_asyncio.plugin"]
+        for owner in ("tiny", "other"):
+            root = roots[owner]
+            (root / owner).mkdir()
+            (root / owner / "__init__.py").write_text("value = 1\n")
+            (root / "pyproject.toml").write_text(
+                '[tool.coverage.run]\nsource = ["' + owner + '"]\n'
+            )
+        (roots["tiny"] / "test_b.py").write_text(
+            "import tiny\ndef test_value():\n    assert tiny.value == 1\n"
+        )
+        (roots["other"] / "test_other.py").write_text(
+            "import other\ndef test_value():\n    assert other.value == 1\n"
+        )
     nodes = {"tiny": seed["tasks"][0]["nodeids"], "other": ["test_other.py::test_value"]}
 
     def execute(profile, label):
@@ -57,6 +72,7 @@ def actual_pair(folder, *, omitted=False, two_red=False, affected_only=False):
             inventories=inventories,
             changes=["tiny/test_a.py"] if profile == "affected" else [],
             shard_count=1,
+            coverage=instrumented,
         )
         path = folder / (label + ".json")
         write_once_json(path, plan)
@@ -84,6 +100,12 @@ def actual_pair(folder, *, omitted=False, two_red=False, affected_only=False):
         "affected_hash": affected["content_hash"],
         "control_run": "control",
         "full_run": "full",
+        "control_launch_plan": folder / "control.json",
+        "control_launch_output": control_evidence,
+        "full_launch_plan": folder / "full.json",
+        "full_launch_output": full_evidence,
+        "affected_launch_plan": folder / "affected.json",
+        "affected_launch_output": affected_evidence,
         "affected_run": "affected",
         "expected_owners": ["tiny"],
         "oracle_owner": "other" if omitted else "tiny",
@@ -292,3 +314,91 @@ def test_independent_pair_contract_drift_is_inconclusive(red_pair, kind):
     data["affected"] = seal({k: v for k, v in data["affected"].items() if k != "content_hash"})
     data["affected_hash"] = data["affected"]["content_hash"]
     assert assess(data)["verdict"] == "INCONCLUSIVE"
+
+
+@pytest.fixture(scope="module")
+def launch_pair(tmp_path_factory):
+    return actual_pair(tmp_path_factory.mktemp("negative-launch") / "candidate", instrumented=True)
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "plugin-order",
+        "extra-plugin",
+        "coverage-rcfile",
+        "coverage-source",
+        "coverage-off",
+        "plan-path",
+        "selectors",
+        "phase-output",
+        "junit-output",
+        "basetemp",
+        "extra-binding",
+    ],
+)
+def test_resealed_launch_drift_is_inconclusive(launch_pair, tmp_path, kind):
+    data = mutable_evidence(launch_pair, tmp_path)
+
+    def change(value):
+        argv = value["argv"]
+        if kind == "plugin-order":
+            first, second = argv.index("pytest_cov.plugin"), argv.index("pytest_asyncio.plugin")
+            argv[first], argv[second] = argv[second], argv[first]
+        elif kind == "extra-plugin":
+            argv.extend(["-p", "unreviewed_plugin"])
+        elif kind == "coverage-off":
+            argv[:] = [argv[0], "-m", *argv[argv.index("pytest") :]]
+        else:
+            prefix = {
+                "coverage-rcfile": "--rcfile=",
+                "coverage-source": "--source=",
+                "plan-path": "--verification-plan=",
+                "selectors": "@",
+                "phase-output": "--verification-output=",
+                "junit-output": "--junitxml=",
+                "basetemp": "--basetemp=",
+                "extra-binding": "--verification-binding=",
+            }[kind]
+            if kind == "extra-binding":
+                argv.append(prefix + "/unreviewed/binding.json")
+            else:
+                index = next(i for i, arg in enumerate(argv) if arg.startswith(prefix))
+                argv[index] = prefix + "/unreviewed/launch-input"
+
+    alter(data, change)
+    result = assess(data)
+    assert result["verdict"] == "INCONCLUSIVE", result
+
+
+@pytest.mark.parametrize("side", ["control", "full"])
+@pytest.mark.parametrize("kind", ["green-retry", "green-infrastructure"])
+def test_resealed_green_attempt_cannot_hide_retry_or_infrastructure(red_pair, tmp_path, side, kind):
+    data = mutable_evidence(red_pair, tmp_path, side=side)
+    evidence = data[side + "_evidence"]
+    run = read_json(evidence / "run.json")
+    attempt = next(a for a in run["attempts"] if a["status"] == "completed")
+    if kind == "green-retry":
+        attempt["attempt_id"] = "a002"
+        argv = attempt["argv"]
+        argv[argv.index("--verification-attempt-id=a001")] = "--verification-attempt-id=a002"
+        path = evidence / attempt["artifacts"]["phases"]["path"]
+        phase = read_json(path)
+        phase["attempt_id"] = "a002"
+        path.write_bytes(canonical(seal({k: v for k, v in phase.items() if k != "content_hash"})))
+        attempt["artifacts"]["phases"]["sha256"] = hash_file(path)
+    else:
+        attempt["error"] = "hidden infrastructure diagnostic"
+    path = evidence / f"{attempt['task']}/{attempt['shard']}/{attempt['attempt_id']}/execution.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(canonical(attempt))
+    (evidence / "run.json").write_bytes(
+        canonical(seal({k: v for k, v in run.items() if k != "content_hash"}))
+    )
+    result = assess(data)
+    assert result["verdict"] == "INCONCLUSIVE", result
+
+
+def test_actual_instrumented_red_pair_is_admitted(launch_pair):
+    result = assess(launch_pair)
+    assert result["verdict"] == "SENSITIVITY_CONFIRMED", result
