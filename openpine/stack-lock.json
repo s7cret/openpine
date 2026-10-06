@@ -79,14 +79,14 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "db1745756516b47466756c9c5d38fbbb95595a3b",
+      "commit": "2c5946bc74b5f480402ef697a8b48560f6451e2b",
       "contracts": {
         "generated_artifact": "openpine.generated_artifact.v3"
       },
       "name": "openpine_contracts",
       "package": "openpine-contracts",
       "repository": "s7cret/openpine-contracts",
-      "tree_sha256": "940d21749bc4d6f70e8c78a7924b9f3401f062132d1efab36d652ecee58385c0",
+      "tree_sha256": "b258606b705db77d0f122a1abe0813262a1c01ea900725c1409d0f6d4a2fbb16",
       "version": "5.0.0rc6"
     }
   ],
