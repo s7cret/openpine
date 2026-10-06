@@ -27,9 +27,12 @@ def obligation(task, node):
     return (task["id"], node, task["variant"], task["execution_path"], task["mode"])
 
 
-def read_calls(plan, evidence, *, expected_hash, run_id):
+def read_calls(plan, evidence, *, expected_hash, run_id, launch_plan, launch_output):
     """Delegate raw admission; explain every standard aggregate error exactly."""
-    from openpine.verification.execution_campaign import admit_failed_call_attempt
+    from openpine.verification.execution_campaign import (
+        admit_failed_call_attempt,
+        validate_shard_invocation,
+    )
 
     validate_plan(plan, expected_hash=expected_hash)
     report = aggregate_campaign(
@@ -50,12 +53,30 @@ def read_calls(plan, evidence, *, expected_hash, run_id):
     for attempt in run["attempts"]:
         key = (attempt["task"], attempt["shard"])
         task, shard = expected[key]
+        validate_shard_invocation(
+            plan,
+            task,
+            shard,
+            attempt,
+            expected_run_id=run_id,
+            expected_plan_path=Path(launch_plan),
+            expected_output_root=Path(launch_output),
+            binding=binding,
+        )
         if attempt.get("status") == "completed" and attempt.get("returncode") == 0:
             # The standard aggregator authenticates every green shard, including
             # its source/environment bindings, all phases, markers and JUnit.
             continue
         phases = admit_failed_call_attempt(
-            plan, evidence, task, shard, attempt, expected_run_id=run_id, binding=binding
+            plan,
+            evidence,
+            task,
+            shard,
+            attempt,
+            expected_run_id=run_id,
+            expected_plan_path=Path(launch_plan),
+            expected_output_root=Path(launch_output),
+            binding=binding,
         )
         failures.update(
             obligation(task, node)
@@ -96,6 +117,12 @@ def _compare(
     control_run,
     affected_run,
     full_run,
+    control_launch_plan,
+    control_launch_output,
+    affected_launch_plan,
+    affected_launch_output,
+    full_launch_plan,
+    full_launch_output,
     expected_owners,
     oracle_owner,
     oracle_node,
@@ -176,19 +203,35 @@ def _compare(
     }
     if not expected_oracles:
         raise ValueError("independent oracle is outside the full reviewed inventory")
-    control_report = aggregate_campaign(
+    control_report, control_failures = read_calls(
         control,
         Path(control_evidence),
-        expected_plan_hash=control_hash,
-        expected_run_id=control_run,
+        expected_hash=control_hash,
+        run_id=control_run,
+        launch_plan=control_launch_plan,
+        launch_output=control_launch_output,
     )
-    if not control_report["pytest_scope_passed"] or control_report["is_fragment"]:
+    if (
+        control_failures
+        or not control_report["pytest_scope_passed"]
+        or control_report["is_fragment"]
+    ):
         raise ValueError("complete control execution is not green")
     full_report, full_failures = read_calls(
-        full, Path(full_evidence), expected_hash=full_hash, run_id=full_run
+        full,
+        Path(full_evidence),
+        expected_hash=full_hash,
+        run_id=full_run,
+        launch_plan=full_launch_plan,
+        launch_output=full_launch_output,
     )
     affected_report, affected_failures = read_calls(
-        affected, Path(affected_evidence), expected_hash=affected_hash, run_id=affected_run
+        affected,
+        Path(affected_evidence),
+        expected_hash=affected_hash,
+        run_id=affected_run,
+        launch_plan=affected_launch_plan,
+        launch_output=affected_launch_output,
     )
     missing = full_failures - affected_failures
     extra = affected_failures - full_failures
@@ -246,6 +289,8 @@ def main():
         parser.add_argument("--" + side + "-evidence", type=Path, required=True)
         parser.add_argument("--" + side + "-hash", required=True)
         parser.add_argument("--" + side + "-run", required=True)
+        parser.add_argument("--" + side + "-launch-plan", type=Path, required=True)
+        parser.add_argument("--" + side + "-launch-output", type=Path, required=True)
     parser.add_argument("--expected-owner", action="append", required=True)
     parser.add_argument("--oracle-owner", required=True)
     parser.add_argument("--oracle-node", required=True)
