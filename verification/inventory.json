@@ -1211,14 +1211,17 @@
       "rc6_tests/test_rc6_int04_lifecycle.py::test_real_command_replay_rejects_resealed_family_evidence_mutations[duplicate-signal]",
       "rc6_tests/test_rc6_int04_lifecycle.py::test_real_command_replay_rejects_resealed_family_evidence_mutations[over-budget-family]",
       "rc6_tests/test_rc6_int04_lifecycle.py::test_real_command_replay_rejects_resealed_family_evidence_mutations[over-budget-signals]",
-      "rc6_tests/test_rc6_int04_lifecycle.py::test_guardian_cancellation_never_routes_recycled_process_group_to_neighbour"
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_guardian_cancellation_never_routes_recycled_process_group_to_neighbour",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_late_guardian_pidfd_failure_reaps_stopped_guardian_without_command_launch",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_sigint_during_guardian_handoff_retains_cancelled_evidence_and_closes_family",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_sigint_during_gate_close_retains_cancelled_evidence_and_closes_family"
     ],
     "baseline": {
       "count": 11027,
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11897,
+    "count": 11900,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "nodeid_aliases": {

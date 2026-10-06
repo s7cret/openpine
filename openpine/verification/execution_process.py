@@ -58,16 +58,57 @@ class _FamilyPopen(subprocess.Popen):
     def __init__(self, argv: list[str], **kwargs) -> None:
         self._family_fd = -1
         self._family_fd_lock = threading.Lock()
-        super().__init__(argv, **kwargs)  # noqa: S603, S607 -- checked declared argv, no shell
+        gate_read, gate_write = os.pipe()
+        admitted = False
         try:
-            # This direct child has not been reaped or exposed to another caller.
-            self._family_fd = os.pidfd_open(self.pid, 0)
-        except OSError:
-            # Popen's direct unreaped child still owns its PID. Its ordinary
-            # terminate/wait path is safe here; no enumeration PID is involved.
-            super().terminate()
-            self.wait(timeout=3)
-            raise
+            argv = [*argv[:7], str(gate_read), *argv[7:]]
+            passed = tuple(kwargs.pop('pass_fds', ())) + (gate_read,)
+            super().__init__(argv, pass_fds=passed, **kwargs)  # noqa: S603, S607 -- checked guardian argv, no shell
+            os.close(gate_read)
+            gate_read = -1
+            try:
+                # This direct child has not been reaped or exposed to a caller.
+                self._family_fd = os.pidfd_open(self.pid, 0)
+                # The guardian cannot launch the declared command until stable
+                # parent-side ownership has succeeded.
+                os.write(gate_write, b'1')
+                # Include the final I/O in the same handoff cancellation scope.
+                # Clear the descriptor before close: Linux has already released
+                # it if a signal interrupts the Python return from that syscall.
+                closing_gate, gate_write = gate_write, -1
+                os.close(closing_gate)
+                admitted = True
+            except (OSError, KeyboardInterrupt) as error:
+                error_number = error.errno if isinstance(error, OSError) else None
+                if gate_write >= 0:
+                    failed_gate, gate_write = gate_write, -1
+                    os.close(failed_gate)
+                try:
+                    for signum in (signal.SIGTERM, signal.SIGKILL):
+                        if self._family_fd >= 0:
+                            self.signal_family_guardian(signum)
+                        else:
+                            # Only this private, direct unreaped child: it cannot
+                            # recycle its PID before this constructor reaps it.
+                            super().send_signal(signum)
+                        try:
+                            self.wait(timeout=3)
+                            break
+                        except subprocess.TimeoutExpired:
+                            if signum == signal.SIGKILL:
+                                raise
+                except (OSError, subprocess.TimeoutExpired) as cleanup_error:
+                    raise OSError(error_number, f'guardian handoff failed; guardian {self.pid} cleanup unverified: {cleanup_error}') from error
+                if isinstance(error, KeyboardInterrupt):
+                    raise
+                raise OSError(error_number, f'guardian pidfd acquisition failed; launch gate refused; guardian {self.pid} reaped with returncode {self.returncode}: {error}') from error
+        finally:
+            if gate_read >= 0:
+                os.close(gate_read)
+            if gate_write >= 0:
+                os.close(gate_write)
+            if not admitted:
+                self._close_family_fd()
 
     def _close_family_fd(self) -> None:
         with self._family_fd_lock:
@@ -150,7 +191,7 @@ def start_declared_process(
     return subprocess.Popen(argv, **kwargs)  # noqa: S603, S607 -- declared argv, shell=False; exit status is checked
 
 
-def _supervise_family(argv: list[str], parent_pid: int, evidence: Path) -> int:
+def _supervise_family(argv: list[str], parent_pid: int, evidence: Path, *, launch_gate: int | None = None) -> int:
     """Own descendants through live lineage and stable kernel handles.
 
     This process is a per-command Linux subreaper, never a host-wide reaper.
@@ -403,7 +444,16 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path) -> int:
 
     reason = 'controller-disappeared-before-launch'
     returncode = None
-    if os.getppid() == parent_pid and not stopped:
+    launch_allowed = launch_gate is None
+    if launch_gate is not None:
+        try:
+            launch_allowed = os.read(launch_gate, 1) == b'1'
+        finally:
+            os.close(launch_gate)
+        if not launch_allowed:
+            reason = 'launch-gate-refused'
+            record_error(RuntimeError('guardian launch gate was not admitted'))
+    if launch_allowed and os.getppid() == parent_pid and not stopped:
         try:
             child = subprocess.Popen(argv)  # noqa: S603, S607 -- declared argv, inherited streams, no shell
         except OSError as error:
@@ -677,6 +727,8 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
                     status = 'cancelled'
                     _stop_group(process)
                     returncode = process.poll()
+    except KeyboardInterrupt:
+        status = 'cancelled'
     except (OSError, ValueError, RuntimeError) as caught:
         status, error = ('infrastructure_error', str(caught))
     finally:
@@ -712,6 +764,6 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 5 or sys.argv[1] != "--supervise-family":
+    if len(sys.argv) < 6 or sys.argv[1] != "--supervise-family":
         raise SystemExit("internal declared process-family launch expected")
-    raise SystemExit(_supervise_family(sys.argv[4:], int(sys.argv[2]), Path(sys.argv[3])))
+    raise SystemExit(_supervise_family(sys.argv[5:], int(sys.argv[2]), Path(sys.argv[3]), launch_gate=int(sys.argv[4])))

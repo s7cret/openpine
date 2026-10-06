@@ -904,3 +904,149 @@ def test_guardian_cancellation_never_routes_recycled_process_group_to_neighbour(
         if neighbour.poll() is None:
             neighbour.kill()
         neighbour.wait(timeout=3)
+
+
+def test_late_guardian_pidfd_failure_reaps_stopped_guardian_without_command_launch(tmp_path, monkeypatch):
+    import errno
+
+    marker = tmp_path / 'command-launched'
+    original_open = os.pidfd_open
+    captured = []
+
+    def late_failure(pid, flags=0):
+        if pid == os.getpid():
+            return original_open(pid, flags)
+        # Retain an independent stable test witness; inject the production
+        # acquisition failure only after the real guardian exists and is stopped.
+        fd = original_open(pid, flags)
+        captured.append((pid, fd))
+        signal.pidfd_send_signal(fd, signal.SIGSTOP, None, 0)
+        deadline = time.monotonic() + 3
+        while psutil.Process(pid).status() != psutil.STATUS_STOPPED and time.monotonic() < deadline:
+            time.sleep(.01)
+        raise OSError(errno.EMFILE, 'injected late guardian pidfd acquisition failure')
+
+    output = tmp_path / 'command'
+    started = time.monotonic()
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(os, 'pidfd_open', late_failure)
+            report = run_logged(
+                [sys.executable, '-B', '-c',
+                 'import sys;from pathlib import Path;Path(sys.argv[1]).touch()', str(marker)],
+                cwd=tmp_path, output=output, env=dict(os.environ),
+            )
+        assert report['status'] == 'infrastructure_error' and report['ok'] is False
+        assert 'pidfd' in report['error'] and captured
+        assert not marker.exists()
+        assert all(not live(pid) for pid, _ in captured)
+        assert (output / 'command.json').is_file()
+        assert time.monotonic() - started < 7, 'late acquisition failure was not bounded'
+    finally:
+        (tmp_path / 'late-failure-probe.json').write_text(json.dumps(
+            {'guardian_states_before_disposal': [{'pid': pid, 'live': live(pid)} for pid, _ in captured],
+             'declared_command_launched': marker.exists(), 'injected_post_spawn_error': 'EMFILE'}
+        ))
+        for pid, fd in captured:
+            try:
+                signal.pidfd_send_signal(fd, signal.SIGKILL, None, 0)
+            except ProcessLookupError:
+                pass  # The tested constructor already reaped this owned guardian.
+            os.close(fd)
+            try:
+                os.waitpid(pid, 0)
+            except ChildProcessError:
+                pass  # Reaped by the production constructor.
+
+
+def test_actual_sigint_during_guardian_handoff_retains_cancelled_evidence_and_closes_family(tmp_path, monkeypatch):
+    _guardian_handoff_sigint_probe(tmp_path, monkeypatch, 'write')
+
+
+def test_actual_sigint_during_gate_close_retains_cancelled_evidence_and_closes_family(tmp_path, monkeypatch):
+    _guardian_handoff_sigint_probe(tmp_path, monkeypatch, 'close')
+
+
+def _guardian_handoff_sigint_probe(tmp_path, monkeypatch, boundary):
+    child = tmp_path / 'child.json'
+    output = tmp_path / 'command'
+    original_open, original_write, original_close = os.pidfd_open, os.write, os.close
+    captured = []
+    interrupted = False
+    gate_write_fd = None
+
+    def witness_open(pid, flags=0):
+        fd = original_open(pid, flags)
+        if pid != os.getpid():
+            captured.append((pid, os.dup(fd)))
+        return fd
+
+    def interrupt_when_ready():
+        nonlocal interrupted
+        if not interrupted:
+            interrupted = True
+            deadline = time.monotonic() + 5
+            while not child.exists() and time.monotonic() < deadline:
+                time.sleep(.01)
+            assert child.exists(), 'actual declared child did not hold its resources'
+            signal.raise_signal(signal.SIGINT)
+
+    def interrupt_handoff(fd, payload):
+        nonlocal gate_write_fd
+        result = original_write(fd, payload)
+        if payload == b'1':
+            gate_write_fd = fd
+            if boundary == 'write':
+                interrupt_when_ready()
+        return result
+
+    def interrupt_close(fd):
+        result = original_close(fd)
+        if boundary == 'close' and fd == gate_write_fd:
+            interrupt_when_ready()
+        return result
+
+    witness = None
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(os, 'pidfd_open', witness_open)
+            patch.setattr(os, 'write', interrupt_handoff)
+            patch.setattr(os, 'close', interrupt_close)
+            try:
+                report = run_logged(
+                    [sys.executable, '-B', '-c', PARENT, CHILD, str(child), 'timeout'],
+                    cwd=tmp_path, output=output, env=dict(os.environ), timeout=10,
+                )
+            except KeyboardInterrupt:
+                pytest.fail('guardian handoff SIGINT escaped without cancellation evidence')
+        witness = json.loads(child.read_text())
+        assert interrupted and report['status'] == 'cancelled' and report['ok'] is False
+        assert (output / 'command.json').is_file()
+        family = json.loads((output / 'process-family.json').read_text())
+        assert family['cleanup_verified'] is True and family['surviving_processes'] == []
+        assert not live(witness['pid'])
+        resources_closed(witness)
+    finally:
+        if witness is None and child.is_file():
+            witness = json.loads(child.read_text())
+        (tmp_path / 'handoff-probe.json').write_text(json.dumps(
+            {'actual_SIGINT': interrupted, 'boundary': boundary, 'cancelled_receipt_exists_before_disposal': (output / 'command.json').is_file(),
+             'owned_child_live_before_disposal': live(witness['pid']) if witness else None}
+        ))
+        for pid, fd in captured:
+            try:
+                signal.pidfd_send_signal(fd, signal.SIGTERM, None, 0)
+            except ProcessLookupError:
+                pass  # Production already reaped the cancelled guardian.
+            deadline = time.monotonic() + 3
+            while live(pid) and time.monotonic() < deadline:
+                time.sleep(.01)
+            if live(pid):
+                signal.pidfd_send_signal(fd, signal.SIGKILL, None, 0)
+            os.close(fd)
+            try:
+                os.waitpid(pid, 0)
+            except ChildProcessError:
+                pass  # Reaped by production.
+        if witness is not None:
+            dispose_test_child(witness['pid'])
