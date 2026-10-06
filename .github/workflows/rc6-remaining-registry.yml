@@ -1,0 +1,84 @@
+# P0 accounting and reader regressions; no full product acceptance.
+name: RC6 remaining requirement registry
+'on':
+  pull_request:
+    branches: ['preparation/rc6-cpython313-20261006']
+    paths:
+      - docs/RC6_REVIEW_36.*
+      - docs/OPENPINE_5_0_REMAINING_SPEC_2026-10-06.md
+      - openpine/verification/**
+      - rc6_tests/**
+      - .github/workflows/rc6-remaining-registry.yml
+permissions:
+  contents: read
+concurrency:
+  group: rc6-remaining-registry-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  registry:
+    # Standard public runner; no paid runner or artifact-storage route.
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.13.5'
+      - name: Bind actual checkout and interpreter
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          git rev-parse HEAD HEAD^{tree}
+          python -c "import sys; assert sys.version_info[:3] == (3,13,5); assert sys._is_gil_enabled(); print(sys.version)"
+      - name: Install the locked verifier environment and exact dependency owners
+        shell: bash
+        run: |
+          python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt -r verification/ci-runtime-requirements.txt
+          python - <<'PYOWNER'
+          import json, os, pathlib, subprocess, sys
+          pins = json.loads(pathlib.Path('docs/RC6_LIFECYCLE_SOURCES.json').read_text())
+          owner_root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'registry-owners'
+          owner_root.mkdir()
+          paths = []
+          for name, sha in pins.items():
+              path = owner_root / name
+              subprocess.run(['git', 'clone', '--quiet', 'https://github.com/s7cret/' + name + '.git', str(path)], check=True)
+              subprocess.run(['git', '-C', str(path), 'checkout', '--detach', sha], check=True)
+              assert subprocess.check_output(['git', '-C', str(path), 'rev-parse', 'HEAD'], text=True).strip() == sha
+              print(name, sha, subprocess.check_output(['git', '-C', str(path), 'rev-parse', 'HEAD^{tree}'], text=True).strip())
+              paths.append(str(path))
+          subprocess.run([sys.executable, '-m', 'pip', 'install', '--no-build-isolation', '--no-deps', *paths], check=True)
+          PYOWNER
+          python -m pip check
+      - name: Native quality and registry type/format checks
+        run: |
+          bash scripts/rc6_native_quality.sh
+          python -m ruff check rc6_tests/stabilization_fixture.py
+          python -m ruff format --check openpine/verification/review_ledger.py rc6_tests/test_rc6_review_ledger.py rc6_tests/test_rc6_stage2_remaining.py
+          python -m mypy --follow-imports=skip openpine/verification/review_ledger.py
+      - name: Execute accounting, policy, foundation and stabilization regressions
+        run: |
+          mkdir -p "$RUNNER_TEMP/registry-evidence"
+          python -B -m pytest -q rc6_tests/test_rc6_review_ledger.py rc6_tests/test_rc6_stage2_remaining.py rc6_tests/test_rc6_python_support.py rc6_tests/test_rc6_stage1_foundation.py rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt --junitxml="$RUNNER_TEMP/registry-evidence/junit.xml"
+      - name: Retain bounded public JUnit primaries in job logs
+        if: always()
+        run: |
+          python - <<'PYLOG'
+          import hashlib, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'registry-evidence'
+          for path in sorted(root.glob('*.xml')):
+              data = path.read_bytes()
+              assert len(data) < 1024 * 1024
+              print('PRIMARY', path.name, hashlib.sha256(data).hexdigest(), len(data))
+              print(data.decode())
+          PYLOG
