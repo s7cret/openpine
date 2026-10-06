@@ -14,6 +14,15 @@ from openpine.verification.execution_identity import ENV_SCHEMA, SOURCE_SCHEMA, 
 PLAN_SCHEMA = 'openpine.test_execution_plan.v1'
 PROFILES = ('smoke', 'affected', 'component', 'integration', 'stage-full', 'release-full')
 HASH = re.compile('sha256:[0-9a-f]{64}\\Z')
+# A policy may broaden this safety boundary, but cannot make shared semantic
+# inputs or the selector itself into a narrow-owner change.
+SHARED_PATHS = ('*schema*', '*catalog*', '*abi*', '*state*', '*fixture*',
+                '*conftest*', '*pyproject.toml', '*lock*', 'verification/*',
+                'openpine/verification/*', '*generat*')
+# The shipped Backtest Engine imports PineLib in strategy_capabilities and
+# delegated_strategy_intents. This observed boundary is required even when an
+# older execution policy omits it. The source-bound plan records the closure.
+BOUNDARY_DEPENDENCIES = {'backtest_engine': ('pinelib',)}
 
 def validate_disk_free_guard(guard: object) -> dict:
     if (not isinstance(guard, dict) or set(guard) != {'minimum_free_bytes'}
@@ -45,13 +54,22 @@ def _nodes(values: Sequence[str]) -> list[str]:
         raise ValueError('invalid or duplicate node ID')
     return sorted(result)
 
-def select_components(policy: dict, profile: str, requested: Sequence[str], changes: Sequence[str]=()) -> tuple[list[str], list[str]]:
-    if profile not in PROFILES:
-        raise ValueError('unknown test profile')
-    components = policy['components']
-    if not components or any((not isinstance(n, str) or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', n) for n in components)) or any((n not in components for n in requested)):
+def _dependencies(policy: dict) -> dict[str, set[str]]:
+    components = policy.get('components')
+    if not isinstance(components, dict) or not components or any((not isinstance(n, str) or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9_.-]*', n) for n in components)):
         raise ValueError('unknown component')
-    dependencies = {n: set(v.get('dependencies', [])) for n, v in components.items()}
+    dependencies = {}
+    for name, settings in components.items():
+        if not isinstance(settings, dict):
+            raise ValueError('invalid component policy')
+        values = settings.get('dependencies', [])
+        if (not isinstance(values, list) or any(not isinstance(n, str) for n in values)
+                or len(set(values)) != len(values)):
+            raise ValueError('invalid dependency graph')
+        dependencies[name] = set(values)
+    for consumer, prerequisites in BOUNDARY_DEPENDENCIES.items():
+        if consumer in components:
+            dependencies[consumer].update(n for n in prerequisites if n in components)
     if any((not deps.issubset(components) or name in deps for name, deps in dependencies.items())):
         raise ValueError('invalid dependency graph')
     pending = {n: set(d) for n, d in dependencies.items()}
@@ -60,6 +78,18 @@ def select_components(policy: dict, profile: str, requested: Sequence[str], chan
         if not ready:
             raise ValueError('cyclic dependency graph')
         pending = {n: d - ready for n, d in pending.items() if n not in ready}
+    return dependencies
+
+
+def select_components(policy: dict, profile: str, requested: Sequence[str], changes: Sequence[str]=()) -> tuple[list[str], list[str]]:
+    if profile not in PROFILES:
+        raise ValueError('unknown test profile')
+    if not isinstance(requested, (list, tuple)) or not isinstance(changes, (list, tuple)):
+        raise ValueError('selectors must be explicit sequences')
+    dependencies = _dependencies(policy)
+    components = policy['components']
+    if any(not isinstance(n, str) or n not in components for n in requested):
+        raise ValueError('unknown component')
     if profile in {'stage-full', 'release-full', 'integration'}:
         return (sorted(components), ['full component boundary coverage'])
     if profile != 'affected':
@@ -67,13 +97,22 @@ def select_components(policy: dict, profile: str, requested: Sequence[str], chan
             raise ValueError('profile needs an explicit component')
         return (sorted(set(requested)), ['explicit scoped selection'])
     from fnmatch import fnmatchcase
+    critical_paths = policy.get('critical_paths', [])
+    if (not isinstance(critical_paths, list)
+            or any(not isinstance(p, str) or not p for p in critical_paths)):
+        raise ValueError('invalid critical path selectors')
     affected = set(requested)
     reasons = []
     for change in changes:
-        owner, separator, relative = change.partition('/')
-        if not separator or owner not in components or '..' in relative.split('/'):
+        if not isinstance(change, str):
             return (sorted(components), ['unknown change escalates to full inventory'])
-        if any((fnmatchcase(relative, pattern) for pattern in policy.get('critical_paths', []))):
+        owner, separator, relative = change.partition('/')
+        if (not separator or owner not in components
+                or any(p in {'', '.', '..'} for p in relative.split('/'))
+                or '\\' in relative or ':' in relative
+                or any(ord(c) < 32 or ord(c) == 127 for c in change)):
+            return (sorted(components), ['unknown change escalates to full inventory'])
+        if any((fnmatchcase(relative, pattern) for pattern in (*SHARED_PATHS, *critical_paths))):
             return (sorted(components), ['shared contract/fixture change escalates: ' + change])
         affected.add(owner)
     if not affected:
@@ -128,10 +167,17 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
     guard = validate_disk_free_guard(policy['disk_free_guard']) if 'disk_free_guard' in policy else None
     verify(source, SOURCE_SCHEMA)
     selected, reasons = select_components(policy, profile, requested, changes)
-    dependencies = {
-        name: set(settings.get('dependencies', []))
-        for name, settings in policy['components'].items()
-    }
+    if profile == 'affected':
+        for change in changes:
+            # Deleted/new/unrecorded paths cannot prove a safe narrower scope.
+            # A deleted path is absent from the candidate's immutable manifest.
+            if isinstance(change, str):
+                owner, _, relative = change.partition('/')
+                if relative not in source['components'].get(owner, {}).get('files', {}):
+                    selected = sorted(policy['components'])
+                    reasons = ['missing changed selector escalates to full inventory: ' + change]
+                    break
+    dependencies = _dependencies(policy)
     selected_set = set(selected)
     preparation_components = set()
     pending = list(selected)
@@ -145,7 +191,7 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
             pending.append(prerequisite)
             if prerequisite not in selected_set:
                 preparation_components.add(prerequisite)
-    if set(roots) != set(source['components']) or not set(selected).issubset(roots):
+    if set(roots) != set(source['components']) or not set(policy['components']).issubset(roots):
         raise ValueError('source roots differ from candidate')
     if not environments:
         raise ValueError('no execution environments')
@@ -165,12 +211,15 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
         if retention not in ('preserve', 'delete-on-success'):
             raise ValueError('invalid private retention')
         required = settings.get('pythons', ['3.13'])
+        if (not isinstance(required, list) or not required
+                or any(not isinstance(v, str) or re.fullmatch(r'3\.[0-9]+', v) is None for v in required)
+                or len(set(required)) != len(required)):
+            raise ValueError('invalid component interpreter selectors: ' + name)
         seen_versions = set()
         for env_id, env in sorted(environments.items()):
             minor = '.'.join(env['identity']['python'].split('.')[:2])
             if minor not in required:
-                if profile in {'stage-full', 'release-full'}:
-                    continue
+                continue
             seen_versions.add(minor)
             key = name + '@' + env_id
             if key not in inventories:
@@ -210,6 +259,8 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
             tasks[-1]['private_retention'] = retention
         if profile in {'stage-full', 'release-full'} and (not set(required).issubset(seen_versions)):
             raise ValueError('mandatory interpreter missing for ' + name + ': ' + ','.join(sorted(set(required) - seen_versions)))
+        if not seen_versions:
+            raise ValueError('compatible interpreter missing for ' + name)
     gates = list(policy.get('required_gates', {}).get(profile, []))
     if profile in {'stage-full', 'release-full'} and (not gates):
         raise ValueError('full profile must declare non-pytest acceptance gates')
@@ -277,6 +328,14 @@ def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
         nodes = _nodes(task['nodeids'])
         if nodes != task['nodeids'] or digest(nodes) != task['nodeids_hash']:
             raise ValueError('task inventory hash/order mismatch')
+        if (not HASH.fullmatch(task.get('full_inventory_hash', ''))
+                or not HASH.fullmatch(task.get('reviewed_lock_hash', ''))
+                or (plan['profile'] != 'smoke' and digest(nodes) != task['full_inventory_hash'])):
+            raise ValueError('task differs from full inventory obligations')
+        if type(task.get('deselected')) is not int or task['deselected'] < 0:
+            raise ValueError('invalid task deselection count')
+        if task['component'] in preparation_components:
+            raise ValueError('preparation component is also a test obligation')
         assigned, shard_ids = ([], [])
         for shard in task['shards']:
             if not re.fullmatch('s[0-9]{3}', shard['id']):
