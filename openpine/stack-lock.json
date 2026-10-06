@@ -24,7 +24,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+      "commit": "3014fdcc4013b14b1beb4efd9625a35d81d5bf8f",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "runtime": "1.4"
@@ -32,7 +32,7 @@
       "name": "ast2python",
       "package": "ast2python",
       "repository": "s7cret/ast2python",
-      "tree_sha256": "2677d37176c3426e83230a48ea3d36b633c3200fc33e393c5976a5fde48c20fc",
+      "tree_sha256": "2ad90df08eadcb70315b16c4fba228f7eccdaab85b3dd80f74c974f6cee5773a",
       "version": "5.0.0rc6"
     },
     {
