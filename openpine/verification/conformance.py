@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openpine.verification.identity import read_json, seal, verify
 
@@ -107,7 +107,7 @@ def load_corpus(path: Path) -> dict:
                 or not isinstance(expected["events"], list)
             ):
                 raise ValueError("expected trace shape is invalid")
-    return manifest
+    return cast(dict, manifest)
 
 
 def first_difference(expected: Any, actual: Any, tolerance: dict, path: str = "$") -> dict | None:
@@ -146,6 +146,79 @@ def first_difference(expected: Any, actual: Any, tolerance: dict, path: str = "$
             return {"path": path + ".length", "expected": len(expected), "actual": len(actual)}
         return None
     return None if expected == actual else {"path": path, "expected": expected, "actual": actual}
+
+
+def validate_saved_case_result(result: dict, case: dict, profile: str) -> None:
+    """Validate a saved comparison projection against its frozen case.
+
+    This checks outcome identity and internal consistency, not raw replay.
+    """
+    if not isinstance(result, dict) or set(result) != {
+        "id",
+        "pine_version",
+        "status",
+        "first_divergence",
+    }:
+        raise ValueError("saved case result fields mismatch")
+    if (
+        result["id"] != case["id"]
+        or type(result["pine_version"]) is not int
+        or result["pine_version"] != case["pine_version"]
+    ):
+        raise ValueError("saved case result differs from frozen case/version")
+    mismatches = {"COMPILE_MISMATCH", "RUNTIME_MISMATCH", "BROKER_MISMATCH", "VISUAL_MISMATCH"}
+    status = result["status"]
+    if status not in mismatches | {
+        "PASS",
+        "ORACLE_MISSING",
+        "ORACLE_NOT_EXTERNAL",
+        "NOT_RUN",
+        "EXECUTION_NOT_COMPLETED",
+        "SOURCE_MISMATCH",
+        "DATA_MISMATCH",
+        "CONFIG_MISMATCH",
+    }:
+        raise ValueError("unknown saved case outcome")
+    missing = case["expected"] is None or case["oracle"]["kind"] == "missing"
+    foreign = profile == "tradingview" and case["oracle"]["kind"] != "tradingview_export"
+    if (missing and status != "ORACLE_MISSING") or (
+        not missing and foreign and status != "ORACLE_NOT_EXTERNAL"
+    ):
+        raise ValueError("saved outcome contradicts frozen oracle applicability")
+    difference = result["first_divergence"]
+    if status not in mismatches:
+        if difference is not None:
+            raise ValueError("saved non-divergent outcome retains a divergence")
+        return
+    if status not in {"COMPILE_MISMATCH", case["layer"].upper() + "_MISMATCH"}:
+        raise ValueError("saved mismatch differs from frozen comparison layer")
+    if (
+        not isinstance(difference, dict)
+        or not isinstance(difference.get("path"), str)
+        or not difference["path"].startswith("$")
+    ):
+        raise ValueError("saved mismatch has malformed divergence")
+    fields = set(difference) - {"path", "location"}
+    if fields == {"expected", "actual"}:
+        if (
+            first_difference(difference["expected"], difference["actual"], case["tolerance"])
+            is None
+        ):
+            raise ValueError("saved divergence contains equivalent values")
+    elif fields == {"expected_present", "actual_present"}:
+        if (
+            type(difference["expected_present"]) is not bool
+            or type(difference["actual_present"]) is not bool
+            or difference["expected_present"] == difference["actual_present"]
+        ):
+            raise ValueError("saved divergence has contradictory presence flags")
+    else:
+        raise ValueError("saved divergence fields mismatch")
+    if "location" in difference and (
+        not isinstance(difference["location"], dict)
+        or not set(difference["location"]) <= {"bar", "phase", "source_span"}
+    ):
+        raise ValueError("saved divergence location fields mismatch")
 
 
 def compare_corpus(path: Path, observations: dict, *, expected_corpus_hash: str) -> dict:

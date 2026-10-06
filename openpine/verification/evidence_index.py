@@ -14,7 +14,7 @@ import re
 from typing import Any, cast
 
 from openpine.verification.builtins import builtin_evidence_report
-from openpine.verification.conformance import load_corpus
+from openpine.verification.conformance import load_corpus, validate_saved_case_result
 from openpine.verification.identity import digest, read_json, seal, verify
 
 KEY_FIELDS = ("pine_version", "symbol_id", "overload_id", "call_form")
@@ -730,6 +730,18 @@ def checked_saved_index_verdict(index: dict, host_root: Path, plan: dict, locked
             or (accepted and {r["id"] for r in outcomes} != unassigned)
         ):
             raise ValueError("saved group lost or changed unassigned corpus outcomes")
+        for outcome in outcomes:
+            if (
+                set(outcome) != {"id", "pine_version", "status", "first_divergence", "authority"}
+                or not isinstance(outcome["authority"], str)
+                or not outcome["authority"]
+            ):
+                raise ValueError("saved unassigned outcome fields mismatch")
+            validate_saved_case_result(
+                {name: value for name, value in outcome.items() if name != "authority"},
+                case_rows[outcome["id"]],
+                corpus["profile"],
+            )
         nonpass = [r for r in outcomes if r["status"] != "PASS"]
         if group["status"] == "PASS" and (nonpass or group["reasons"]):
             raise ValueError("saved PASS group retains failed or unresolved outcomes")

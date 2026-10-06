@@ -186,13 +186,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11661, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11673, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:3756f68178dcceede945fb71f3dd23119b8b1e318ca210eba107a36d1f60b9b0",
+          "sha256": "sha256:a6cb252db7eb56fc43e398acfbd5a918bc1aace10c49242a0a06cda4f03d1601",
           "nodes": []
         }
       ],
@@ -232,7 +232,16 @@
           "nodes": []
         }
       ],
-      "int07_review_previous_reason": "PR count 9723; current reviewed-addition inventory count 11651, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
+      "int07_review_previous_reason": "PR count 9723; current reviewed-addition inventory count 11651, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "int07_p2_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "verification/inventory.json",
+          "sha256": "sha256:3756f68178dcceede945fb71f3dd23119b8b1e318ca210eba107a36d1f60b9b0",
+          "nodes": []
+        }
+      ],
+      "int07_p2_previous_reason": "PR count 9723; current reviewed-addition inventory count 11661, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
     },
     {
       "id": "verification/stage2-callable-lock.json",

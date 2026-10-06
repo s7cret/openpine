@@ -975,14 +975,26 @@
       "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[pass-labels-False]",
       "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[pass-labels-True]",
       "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[row-credit-False]",
-      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[row-credit-True]"
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[row-credit-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-divergence-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-divergence-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-extra-field-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-extra-field-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-missing-field-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-missing-field-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-scalar-divergence-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-scalar-divergence-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-True]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-type-False]",
+      "rc6_tests/test_rc6_stage2_remaining.py::test_real_saved_index_cli_rejects_relabelled_or_missing_evidence[outcome-version-type-True]"
     ],
     "baseline": {
       "count": 11027,
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11661,
+    "count": 11673,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "nodeid_aliases": {

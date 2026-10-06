@@ -411,7 +411,19 @@ def test_real_diagnostic_cli_requires_exact_declared_authority(tmp_path, fault, 
 @pytest.mark.parametrize("diagnostic", [False, True])
 @pytest.mark.parametrize(
     "fault",
-    ["pass-labels", "missing-unassigned", "missing-assigned", "failed-assigned", "row-credit"],
+    [
+        "pass-labels",
+        "missing-unassigned",
+        "missing-assigned",
+        "failed-assigned",
+        "row-credit",
+        "outcome-divergence",
+        "outcome-version",
+        "outcome-version-type",
+        "outcome-missing-field",
+        "outcome-extra-field",
+        "outcome-scalar-divergence",
+    ],
 )
 def test_real_saved_index_cli_rejects_relabelled_or_missing_evidence(tmp_path, fault, diagnostic):
     from collections import Counter
@@ -421,13 +433,28 @@ def test_real_saved_index_cli_rejects_relabelled_or_missing_evidence(tmp_path, f
 
     index = (
         provisional_fixture(tmp_path)
-        if fault in {"pass-labels", "missing-unassigned"}
+        if fault in {"pass-labels", "missing-unassigned"} or fault.startswith("outcome-")
         else fixture(tmp_path)
     )
     for group in index["groups"]:
         group.update(status="PASS", reasons=[], deferred_cases=[], unresolved_authority=[])
         if fault == "missing-unassigned":
             group["unassigned_outcomes"] = []
+        if fault.startswith("outcome-"):
+            for outcome in group["unassigned_outcomes"]:
+                outcome["status"] = "PASS"
+                if fault != "outcome-divergence":
+                    outcome["first_divergence"] = None
+                if fault == "outcome-version":
+                    outcome["pine_version"] = 5
+                elif fault == "outcome-version-type":
+                    outcome["pine_version"] = 6.0
+                elif fault == "outcome-missing-field":
+                    outcome.pop("first_divergence")
+                elif fault == "outcome-extra-field":
+                    outcome["schema_id"] = "foreign-outcome"
+                elif fault == "outcome-scalar-divergence":
+                    outcome["first_divergence"] = "retained mismatch"
     index.update(
         ok=True,
         all_declared_runs_passed=True,

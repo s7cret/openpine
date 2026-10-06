@@ -113,7 +113,7 @@ jobs:
         bash scripts/rc6_native_quality.sh
         python -m ruff check scripts/rc6_stabilization rc6_tests/test_rc6_execution_ci.py
         python -m ruff format --check scripts/rc6_stabilization
-        python -m mypy --explicit-package-bases --follow-imports=silent scripts/rc6_stabilization openpine/verification/execution_process.py openpine/verification/evidence_index.py openpine/verification/stage2_remaining.py openpine/verification/__main__.py
+        python -m mypy --explicit-package-bases --follow-imports=silent scripts/rc6_stabilization openpine/verification/execution_process.py openpine/verification/evidence_index.py openpine/verification/conformance.py openpine/verification/stage2_remaining.py openpine/verification/__main__.py
     - name: Retain bounded public primary receipts in job logs
       if: always()
       run: |
