@@ -102,6 +102,52 @@ def test_materializer_rejects_placeholder_or_dirty_identity() -> None:
         )
 
 
+def test_template_injects_only_the_external_host_commit(tmp_path: Path) -> None:
+    materializer = _load_script("materialize_stack_candidate.py")
+    resolver = _load_script("resolve_stack_candidate.py")
+    template = _template()
+    del template["components"]["openpine"]["sha"]
+    before = json.dumps(template, sort_keys=True)
+
+    payload = materializer.materialize_candidate(
+        template,
+        openpine_sha=SHA,
+        created_at_utc="2026-08-20T21:00:00Z",
+        provenance={"builder": "test", "run_id": "external-host"},
+    )
+    assert json.dumps(template, sort_keys=True) == before
+    assert payload["components"]["openpine"]["sha"] == SHA
+    assert payload["components"]["pinelib"]["sha"] == "b" * 40
+    path = tmp_path / "stack-candidate-external-host.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert resolver.load_candidate(path) == payload
+
+
+def test_external_host_commit_rejects_missing_sibling_identity() -> None:
+    materializer = _load_script("materialize_stack_candidate.py")
+    template = _template()
+    del template["components"]["openpine"]["sha"]
+    del template["components"]["pinelib"]["sha"]
+    with pytest.raises(materializer.CandidateMaterializationError, match="pinelib sha"):
+        materializer.materialize_candidate(
+            template,
+            openpine_sha=SHA,
+            created_at_utc="2026-08-20T21:00:00Z",
+            provenance={"builder": "test", "run_id": "missing-sibling"},
+        )
+
+
+def test_external_host_commit_rejects_conflicting_template_identity() -> None:
+    materializer = _load_script("materialize_stack_candidate.py")
+    with pytest.raises(materializer.CandidateMaterializationError, match="must match"):
+        materializer.materialize_candidate(
+            _template(),
+            openpine_sha="c" * 40,
+            created_at_utc="2026-08-20T21:00:00Z",
+            provenance={"builder": "test", "run_id": "foreign-host"},
+        )
+
+
 def test_template_is_not_discovered_as_an_active_candidate(tmp_path: Path) -> None:
     resolver = _load_script("resolve_stack_candidate.py")
     template_dir = tmp_path / "candidates"
