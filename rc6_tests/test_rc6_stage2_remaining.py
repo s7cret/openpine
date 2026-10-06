@@ -348,7 +348,7 @@ def provisional_fixture(root):
 
 
 @pytest.mark.parametrize(
-    "fault", ["valid", "registry", "provenance", "missing-proof", "fourth", "runtime"]
+    "fault", ["valid", "registry", "provenance", "missing-proof", "fourth", "runtime", "compile", "compile-type"]
 )
 @pytest.mark.parametrize("diagnostic", [False, True])
 def test_real_diagnostic_cli_requires_exact_declared_authority(tmp_path, fault, diagnostic):
@@ -374,6 +374,14 @@ def test_real_diagnostic_cli_requires_exact_declared_authority(tmp_path, fault, 
             unresolved_authority=[],
         )
         index["deferred_group_paths"] -= 1
+    elif fault in {"compile", "compile-type"}:
+        outcome = index["groups"][0]["unassigned_outcomes"][0]
+        assert outcome["status"] == "RUNTIME_MISMATCH"
+        assert outcome["authority"] == "UNVERIFIED"
+        outcome["first_divergence"] = {
+            "path": "$.compile", "expected": True,
+            "actual": False if fault == "compile" else 1,
+        }
     inputs, output = tmp_path / "index.json", tmp_path / "result.json"
     write_json(inputs, reseal(index))
     before = inputs.read_bytes()
@@ -406,6 +414,31 @@ def test_real_diagnostic_cli_requires_exact_declared_authority(tmp_path, fault, 
         )
         assert report["diagnostic_provisional_ok"] is (fault == "valid")
         assert len(report["unresolved_authority_cases"]) == 3
+
+
+@pytest.mark.parametrize("actual_compile", [False, 1])
+def test_compile_divergence_cannot_be_runtime_authority_debt(tmp_path, actual_compile):
+    from copy import deepcopy
+    from openpine.verification.conformance import (
+        compare_corpus, load_corpus, validate_saved_case_result,
+    )
+
+    fixture(tmp_path)
+    manifest = tmp_path / "producer/host/manifest.json"
+    corpus = load_corpus(manifest)
+    case = corpus["cases"][0]
+    observed = read_json(next((tmp_path / "producer/run/reports").glob("*/*/observations.json")))
+    observed[case["id"]]["compile"] = actual_compile
+    result = compare_corpus(manifest, observed, expected_corpus_hash=corpus["content_hash"])
+    outcome = result["results"][0]
+    assert outcome["status"] == "COMPILE_MISMATCH"
+    assert outcome["first_divergence"] == {
+        "path": "$.compile", "expected": True, "actual": actual_compile,
+    }
+    validate_saved_case_result(outcome, case, corpus["profile"])
+    forged = {**deepcopy(outcome), "status": "RUNTIME_MISMATCH"}
+    with pytest.raises(ValueError, match="category"):
+        validate_saved_case_result(forged, case, corpus["profile"])
 
 
 @pytest.mark.parametrize("diagnostic", [False, True])

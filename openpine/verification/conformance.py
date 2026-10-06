@@ -198,6 +198,27 @@ def validate_saved_case_result(result: dict, case: dict, profile: str) -> None:
         or not difference["path"].startswith("$")
     ):
         raise ValueError("saved mismatch has malformed divergence")
+    path = difference["path"]
+    if path == "$.compile":
+        category = "COMPILE_MISMATCH"
+        if (
+            set(difference) != {"path", "expected", "actual"}
+            or type(difference["expected"]) is not bool
+        ):
+            raise ValueError("saved compile divergence has invalid value types/fields")
+    elif path in {"$.events", "$.events.length"} or path.startswith("$.events["):
+        category = case["layer"].upper() + "_MISMATCH"
+        if path == "$.events" and not isinstance(difference.get("expected"), list):
+            raise ValueError("saved events divergence has invalid expected type")
+        if path == "$.events.length" and any(
+            type(difference.get(key)) is not int or difference[key] < 0
+            for key in ("expected", "actual")
+        ):
+            raise ValueError("saved length divergence has invalid value types")
+    else:
+        raise ValueError("saved mismatch has invalid comparison path")
+    if status != category:
+        raise ValueError("saved mismatch category contradicts divergence path")
     fields = set(difference) - {"path", "location"}
     if fields == {"expected", "actual"}:
         if (
@@ -269,7 +290,7 @@ def compare_corpus(path: Path, observations: dict, *, expected_corpus_hash: str)
                 if difference is not None:
                     result["status"] = (
                         "COMPILE_MISMATCH"
-                        if expected["compile"] != observed.get("compile")
+                        if difference["path"] == "$.compile"
                         else case["layer"].upper() + "_MISMATCH"
                     )
                     result["first_divergence"] = difference
