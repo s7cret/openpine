@@ -59,6 +59,7 @@ jobs:
               paths.append(str(path))
           subprocess.run([sys.executable, '-m', 'pip', 'install', '--no-build-isolation', '--no-deps', *paths], check=True)
           PYOWNER
+          python -m pip install --no-build-isolation --no-deps -e .
           python -m pip check
       - name: Native quality and registry type/format checks
         run: |
@@ -69,14 +70,23 @@ jobs:
       - name: Execute accounting, policy, foundation and stabilization regressions
         run: |
           mkdir -p "$RUNNER_TEMP/registry-evidence"
-          python -B -m pytest -q rc6_tests/test_rc6_review_ledger.py rc6_tests/test_rc6_stage2_remaining.py rc6_tests/test_rc6_python_support.py rc6_tests/test_rc6_stage1_foundation.py rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt --junitxml="$RUNNER_TEMP/registry-evidence/junit.xml"
+          selectors=(rc6_tests/test_rc6_review_ledger.py rc6_tests/test_rc6_stage2_remaining.py rc6_tests/test_rc6_python_support.py rc6_tests/test_rc6_stage1_foundation.py rc6_tests/test_rc6_stabilization.py::test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt)
+          python -B -m pytest --collect-only -q "${selectors[@]}" -p openpine.verification.pytest_gate --verification-suite=p0-registry --verification-output="$RUNNER_TEMP/registry-evidence/collection.json"
+          python - <<'PYLOCK'
+          import json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'registry-evidence'
+          collection = json.loads((root / 'collection.json').read_text())
+          assert not collection['errors'] and collection['count'] > 0
+          (root / 'lock.json').write_text(json.dumps({'p0-registry': {k: collection[k] for k in ('count', 'sha256', 'deselected')}}))
+          PYLOCK
+          python -B -m pytest -q "${selectors[@]}" -p openpine.verification.pytest_gate --verification-suite=p0-registry --verification-lock="$RUNNER_TEMP/registry-evidence/lock.json" --verification-output="$RUNNER_TEMP/registry-evidence/inventory.json" --junitxml="$RUNNER_TEMP/registry-evidence/junit.xml"
       - name: Retain bounded public JUnit primaries in job logs
         if: always()
         run: |
           python - <<'PYLOG'
           import hashlib, os, pathlib
           root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'registry-evidence'
-          for path in sorted(root.glob('*.xml')):
+          for path in sorted([*root.glob('*.xml'), *root.glob('*.json')]):
               data = path.read_bytes()
               assert len(data) < 1024 * 1024
               print('PRIMARY', path.name, hashlib.sha256(data).hexdigest(), len(data))
