@@ -2,6 +2,7 @@
 """FIX06 external orchestration; source/environment owners remain authoritative."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,14 @@ import zipfile
 
 BASE = Path(__file__).resolve().parent
 NAMES = ('openpine', 'openpine-contracts', 'pine2ast', 'ast2python', 'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer')
+
+def clean_build_owner():
+    spec = importlib.util.spec_from_file_location('clean_build', BASE/'clean_build.py')
+    if spec is None or spec.loader is None:
+        raise ValueError('clean package owner unavailable')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 def validate_attempt_output(output, roots):
     """Admit a new external attempt without authorizing source/helper writes."""
@@ -122,7 +131,9 @@ def copy_sources(runner, roots, snap, git_roots):
 
 def artifacts(runner, copies, builder):
     rows = {}
+    owner = clean_build_owner()
     for name in NAMES:
+        package_tree = owner.source_package_tree(Path(copies[name]))
         dist = runner.output/'artifacts'/name
         dist.mkdir(parents=True)
         runner.require('build-wheel-'+name, [builder, '-I', '-m', 'build', '--no-isolation', '--wheel', '--outdir', dist, copies[name]])
@@ -145,6 +156,8 @@ def artifacts(runner, copies, builder):
         runner.require('sdist-rebuild-'+name, [builder, '-I', '-m', 'build', '--no-isolation', '--wheel', '--outdir', rebuilt, extracted[0]])
         rebuilt_wheel = list(rebuilt.glob('*.whl'))
         assert len(rebuilt_wheel) == 1
+        assert owner.verify_wheel_tree(Path(copies[name]), wheels[0], expected=package_tree) == package_tree
+        assert owner.verify_wheel_tree(Path(copies[name]), rebuilt_wheel[0], expected=package_tree) == package_tree
         with zipfile.ZipFile(wheels[0]) as wheel, zipfile.ZipFile(rebuilt_wheel[0]) as other:
             # Dist-info provenance can differ after tar extraction. Runtime/resource payload must match.
             payload = {n: hashlib.sha256(wheel.read(n)).hexdigest() for n in wheel.namelist() if not '.dist-info/' in n and not n.endswith('/')}
@@ -152,7 +165,7 @@ def artifacts(runner, copies, builder):
             assert payload == rebuilt_payload, ('sdist payload differs', name)
             if name == 'openpine':
                 assert 'openpine/verification/rc6_catalog_source_pin.json' in payload
-        rows[name] = {'wheel': {'path': str(wheels[0].relative_to(runner.output)), 'sha256': sha(wheels[0])}, 'sdist': {'path': str(sdist.relative_to(runner.output)), 'sha256': sha(sdist)}, 'rebuilt_wheel': {'path': str(rebuilt_wheel[0].relative_to(runner.output)), 'sha256': sha(rebuilt_wheel[0])}, 'payload_identical': True, 'payload_hashes': payload}
+        rows[name] = {'wheel': {'path': str(wheels[0].relative_to(runner.output)), 'sha256': sha(wheels[0])}, 'sdist': {'path': str(sdist.relative_to(runner.output)), 'sha256': sha(sdist)}, 'rebuilt_wheel': {'path': str(rebuilt_wheel[0].relative_to(runner.output)), 'sha256': sha(rebuilt_wheel[0])}, 'payload_identical': True, 'payload_hashes': payload, 'package_tree': package_tree}
     write(runner.output/'artifacts.json', rows)
     return rows
 
@@ -163,11 +176,14 @@ def installed(runner, interpreters, rows):
             venv = runner.output/('venv-'+version+'-'+kind)
             runner.require('venv-'+version+'-'+kind, ['uv', 'venv', '--python', base_python, venv])
             python = venv/'bin'/'python'
-            runner.require('version-'+version+'-'+kind, [python, '-c', f"import sys; assert '.'.join(map(str,sys.version_info[:2])) == {version!r}; print(sys.version); print(sys.executable)"])
+            runner.require('version-'+version+'-'+kind, [python, '-c', f"import platform,sys,sysconfig; assert '.'.join(map(str,sys.version_info[:2])) == {version!r}; assert platform.python_implementation() == 'CPython'; assert not sysconfig.get_config_var('Py_GIL_DISABLED'); assert sys._is_gil_enabled(); print(sys.version); print(sys.executable)"])
+            locks = runner.output/'build-copies/openpine/verification'
+            runner.require('locked-install-'+version+'-'+kind, ['uv', 'pip', 'install', '--python', python, '--require-hashes', '--only-binary=:all:', '--no-deps', '-r', locks/'ci-bootstrap-requirements.txt', '-r', locks/'ci-runtime-requirements.txt'])
             wheels = [runner.output/rows[n][kind]['path'] for n in NAMES]
-            runner.require('install-'+version+'-'+kind, ['uv', 'pip', 'install', '--python', python, '--reinstall', *wheels, 'httpx'])
+            runner.require('install-'+version+'-'+kind, ['uv', 'pip', 'install', '--python', python, '--reinstall', '--no-deps', '--no-index', *wheels])
             runner.require('pip-check-'+version+'-'+kind, ['uv', 'pip', 'check', '--python', python])
             scope = version+'-'+kind
+            runner.require(scope+'-tree-check', [python, '-I', '-B', BASE/'clean_build.py', 'check-installed', '--expected', runner.output/'artifacts.json'])
             result_dir = runner.output/'observations'/scope
             result_dir.mkdir(parents=True)
             for mode in ('origins', 'compile', 'runtime', 'library', 'api', 'positive', 'missing', 'tampered'):
@@ -225,7 +241,7 @@ def export_stage(runner, observations, artifacts, interpreters):
         entries[version], policies[version] = {}, {}
         for kind, artifact_kind in (('normal', 'wheel'), ('rebuilt', 'rebuilt_wheel')):
             scope = version + '-' + artifact_kind
-            selected = [c for c in runner.commands if c['id'].startswith(('build-', 'sdist-rebuild-', scope+'-')) or c['id'] in {'install-'+scope, 'pip-check-'+scope, 'version-'+scope}]
+            selected = [c for c in runner.commands if c['id'].startswith(('build-', 'sdist-rebuild-', scope+'-')) or c['id'] in {'locked-install-'+scope, 'install-'+scope, 'pip-check-'+scope, 'version-'+scope}]
             entries[version][kind] = {'commands': [c['command'] for c in selected], 'probe': next(c['log'] for c in selected if c['id'] == scope+'-shadow-isolated'), 'artifacts': {n: {'wheel': artifacts[n][artifact_kind], 'sdist': artifacts[n]['sdist']} for n in NAMES}}
             policies[version][kind] = {'python': version, 'commands': [command_specification(c) for c in selected], 'resources': {'openpine': ['openpine/verification/rc6_catalog_source_pin.json']}}
     path = runner.output/'stage-packages-inputs.json'
@@ -242,7 +258,7 @@ def main():
     p.add_argument('--roots', type=Path, required=True, help='JSON root map or execution plan containing roots')
     p.add_argument('--git-roots', type=Path)
     p.add_argument('--binding', type=Path, help='Checked execution source/interpreter mapping')
-    p.add_argument('--interpreters', type=Path, required=True, help='JSON map 3.11/3.12/3.13 -> executable')
+    p.add_argument('--interpreters', type=Path, required=True, help='JSON map 3.13 -> ordinary CPython executable')
     p.add_argument('--builder', required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--frozen-source', type=Path, help='Required exact owner source snapshot for qualified run')
@@ -264,7 +280,7 @@ def main():
     assert args.development or (args.frozen_source and plan_hash and args.run_id != 'development'), 'qualified run requires parent frozen candidate, exact plan, and campaign ID'
     assert not args.reuse_artifacts or args.development
     interpreters = json.loads(args.interpreters.read_text())
-    assert set(interpreters) == {'3.11','3.12','3.13'}
+    assert set(interpreters) == {'3.13'}
     # Bootstrap existing owners in orchestration ONLY. Installed subprocesses never inherit this sys.path.
     sys.path.insert(0, roots['openpine'])
     reviewed = json.loads((Path(roots['openpine'])/'verification/execution-policy.json').read_text())
@@ -272,12 +288,18 @@ def main():
         from openpine.verification.execution_owner_launch import resolve_producer_policy
         reviewed = resolve_producer_policy(plan, reviewed, attempt=output, helpers=BASE, attempt_slot='package_attempt', owner='packages')
     frozen_policy = reviewed['stabilization']
+    if args.development:
+        # Development still captures the independently frozen helper bytes.
+        for name, declaration in frozen_policy['package_harness_inputs'].items():
+            if isinstance(declaration['path'], dict):
+                assert declaration['path'] == {'owner_locator': 'helpers', 'relative': name}
+                declaration['path'] = str(BASE / name)
     output.mkdir(parents=True)
     commands = [c for lanes in frozen_policy['packages'].values() for installation in lanes.values() for c in installation['commands']]
     uv = plan.get('owner_launch', {}).get('paths', {}).get('uv') if not args.development else None
     runner = Runner(output, frozen_policy['package_harness_inputs'], command_specs=commands, uv=uv)
     write(output/'commands.json', [])
-    report = {'schema_id':'openpine.installed_package_receipt.v1', 'owner':'packages', 'scope':'FIX06_installed_wheel_and_sdist', 'development':args.development, 'status':'blocked', 'ok':False, 'full_stage2_accepted':False, 'roots':roots, 'plan_hash':plan_hash, 'run_id':args.run_id, 'harness_sha256':sha(__file__), 'probe_sha256':sha(BASE/'probe.py'), 'helper_hashes':{p.name:sha(p) for p in (BASE/'measure.py',BASE/'shadow_check.py')}}
+    report = {'schema_id':'openpine.installed_package_receipt.v1', 'owner':'packages', 'scope':'FIX06_installed_wheel_and_sdist', 'development':args.development, 'status':'blocked', 'ok':False, 'full_stage2_accepted':False, 'roots':roots, 'plan_hash':plan_hash, 'run_id':args.run_id, 'harness_sha256':sha(__file__), 'probe_sha256':sha(BASE/'probe.py'), 'helper_hashes':{p.name:sha(p) for p in (BASE/'measure.py',BASE/'shadow_check.py',BASE/'clean_build.py')}}
     try:
         before = snapshot(runner, roots, args.builder, 'source-before')
         report['source_hash'] = before['content_hash']
@@ -303,6 +325,7 @@ def main():
                 for src in wheels+sdists:
                     shutil.copy2(src, dist/src.name)
                 rows[name] = {kind:{'path':str((dist/src.name).relative_to(output)), 'sha256':sha(dist/src.name)} for kind,src in [('wheel',wheels[0]),('sdist',sdists[0]),('rebuilt_wheel',wheels[0])]}
+                rows[name]['package_tree'] = clean_build_owner().verify_wheel_tree(Path(copies[name]), wheels[0])
             write(output/'artifacts.json', rows)
             report['artifact_source']='STALE_REUSED_DEVELOPMENT_NOT_BUILD_PROOF'
         else:

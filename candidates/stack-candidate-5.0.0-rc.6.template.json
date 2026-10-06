@@ -5,44 +5,44 @@
   "components": {
     "openpine-contracts": {
       "repo": "s7cret/openpine-contracts",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "904e8f660834a10d3382cd1b2ed7380c24b73072",
+      "ref": "preparation/rc6-cpython313-20261006",
+      "sha": "db1745756516b47466756c9c5d38fbbb95595a3b",
       "version": "5.0.0rc6"
     },
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "2fdbbcb3fa2b5e35fc98938c9b7c260c2b36935b",
+      "ref": "preparation/rc6-cpython313-20261006",
+      "sha": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
       "version": "5.0.0rc6"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "456ddff14cbf7309c5db9cadbdb798c2a7a9951c",
+      "ref": "preparation/rc6-cpython313-20261006",
+      "sha": "f66c67f90a7f3428fe68267d41de9ae31202f775",
       "version": "5.0.0rc6"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "84bb2d415aa7e279f7c7be1bcd7e5efe08f9fbe2",
+      "ref": "preparation/rc6-cpython313-20261006",
+      "sha": "a393ac733a1d918e792ab07d3c43a56306c54b77",
       "version": "5.0.0rc6"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "892fee8c2b0443e702918248f2d2642c877723e7",
+      "ref": "preparation/rc6-cpython313-20261006",
+      "sha": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
       "version": "5.0.0rc6"
     },
     "ast2python": {
       "repo": "s7cret/ast2python",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "2655b31a826d43b9df5a88c25186a69377eb09e2",
+      "ref": "preparation/rc6-cpython313-20261006",
+      "sha": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
       "version": "5.0.0rc6"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
-      "ref": "release/5.0.0rc6-local-candidate",
-      "sha": "5a62efc672a08e05f7443d3b678fa2595249935a",
+      "ref": "preparation/rc6-cpython313-20261006",
+      "sha": "623e2639581d23242109dd47e20f14f799fa7b88",
       "version": "5.0.0rc6"
     },
     "openpine": {

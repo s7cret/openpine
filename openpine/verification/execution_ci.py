@@ -38,7 +38,7 @@ def attest_ci_source_commits(reports: list[dict]) -> dict[str, str]:
 
 def retain_builtin_owner_evidence(merged: Path, suites: Path, evidence: Path, version: str, declared_pins: Path) -> None:
     """Carry the foundation owner's exact source receipt into the builtin join."""
-    if version not in {'py311', 'py313'}:
+    if version not in {'py313'}:
         raise ValueError('unsupported builtin owner interpreter')
     pins = read_json(suites / version / 'source-pins.json')
     if pins != read_json(declared_pins):
@@ -216,6 +216,8 @@ class Commands:
 
 def prepare(host: Path, work: Path, python_label: str) -> dict:
     import re
+    from openpine.verification.execution_identity import validate_python_support
+    validate_python_support(read_json(host / 'verification/execution-policy.json'), environment_snapshot())
     if '.'.join(map(str, sys.version_info[:2])) != python_label:
         raise ValueError('actual interpreter differs from requested matrix lane')
     work.mkdir(parents=True, exist_ok=False)
@@ -300,6 +302,14 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
     projects = work / 'build-sources'
     projects.mkdir()
     project_wheels = []
+    import importlib.util
+    helper = host / 'scripts/rc6_stabilization/clean_build.py'
+    helper_spec = importlib.util.spec_from_file_location('clean_build', helper)
+    if helper_spec is None or helper_spec.loader is None:
+        raise ValueError('clean package owner unavailable')
+    package_owner = importlib.util.module_from_spec(helper_spec)
+    helper_spec.loader.exec_module(package_owner)
+    package_trees = {}
     for name, root in roots.items():
         destination = projects / name
         destination.mkdir()
@@ -307,7 +317,13 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
             file = destination / relative
             file.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / relative, file)
+        expected_tree = package_owner.source_package_tree(destination)
         command.run([executable, '-m', 'build', '--no-isolation', '--outdir', str(wheels), str(destination)], cwd=work)
+        produced = list(wheels.glob(name.replace('-', '_') + '-*.whl'))
+        if len(produced) != 1:
+            raise ValueError('one exact component wheel required: ' + name)
+        package_trees[name] = {'package_tree': package_owner.verify_wheel_tree(destination, produced[0], expected=expected_tree)}
+    write_once_json(bundle / 'package-trees.json', package_trees)
     for path in wheels.glob('*.whl'):
         name = path.name.split('-')[0]
         owner = next((component for component in COMPONENTS if component.replace('-', '_') == name))
@@ -334,6 +350,8 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
         cwd=work,
     )
     command.run([executable, '-m', 'pip', 'check'], cwd=work)
+    tree_check = command.run([executable, '-I', '-B', str(helper), 'check-installed', '--expected', str(bundle / 'package-trees.json')], cwd=work)
+    write_once_json(bundle / 'installed-package-trees.json', json.loads(tree_check))
     smoke = command.run([executable, '-c', 'import importlib,json,pathlib,sys; names=' + repr([name.replace('-', '_') for name in ('openpine', 'openpine-contracts', 'pine2ast', 'ast2python', 'pinelib', 'backtest_engine', 'marketdata-provider', 'optimizer')]) + '; origins={name:str(pathlib.Path(importlib.import_module(name).__file__).resolve()) for name in names}; assert all(pathlib.Path(value).is_relative_to(pathlib.Path(sys.prefix).resolve()) for value in origins.values()), origins; print(json.dumps(origins))'], cwd=work)
     write_once_json(bundle / 'installed-origins.json', json.loads(smoke))
     command.run([executable, '-c', 'import json; from openpine.verification.execution_preflight import catalog_source_preflight; r=catalog_source_preflight(); print(json.dumps(r)); raise SystemExit(0 if r["ok"] else 1)'], cwd=work)
@@ -344,7 +362,7 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
     command.run([executable, '-m', 'pip', 'download', '--require-hashes', '--no-deps', '--only-binary=:all:', '--dest', str(wheels), '-r', str(tools_lock), '-r', str(runtime_lock)], cwd=work)
     argv = [executable, '-m', 'openpine.verification', 'test-collect', '--host-root', str(roots['openpine']), '--stack-root', str(stack), '--python', 'py' + python_label.replace('.', '') + '=' + executable, '--output', str(bundle / 'collection.json'), '--collection-timeout', '600']
     for name in COMPONENTS:
-        if name != 'openpine' or python_label in {'3.11', '3.13'}:
+        if name != 'openpine' or python_label in {'3.13'}:
             argv += ['--component', name]
     command.run(argv, cwd=work, roots=roots)
     for private in (bundle / 'collection.evidence').rglob('private'):
@@ -380,8 +398,8 @@ def restore(bundle: Path, work: Path, *, expected_source_hash: str | None=None, 
 def make_owner_locations(reports: dict, *, stack_root: Path, attempt: Path, package_attempt: Path,
                          npm: Path, node: Path, chromium: Path) -> dict:
     """Locate existing verified preparations; do not create an acceptance receipt."""
-    if set(reports) != {'py311', 'py312', 'py313'}:
-        raise ValueError('all three owner preparation reports required')
+    if set(reports) != {'py313'}:
+        raise ValueError('ordinary CPython 3.13 owner preparation report required')
     first = reports['py313']
     for report in reports.values():
         roots = {n: Path(p) for n, p in report['roots'].items()}
@@ -468,8 +486,8 @@ def finalize_foundation(plan: dict, roots: dict[str, Path], fragments: list[Path
     exports = output / 'suites'
     export_suite_receipts(plan, combined, exports, expected_plan_hash=plan['content_hash'], expected_run_id=run_id)
     env_id = 'py' + ''.join(map(str, sys.version_info[:2]))
-    if env_id not in {'py311', 'py313'}:
-        raise ValueError('foundation requires actual 3.11 or 3.13')
+    if env_id not in {'py313'}:
+        raise ValueError('foundation requires actual ordinary CPython 3.13')
     expected = plan['environments'][env_id]['identity']
     if environment_snapshot() != expected:
         raise ValueError('foundation interpreter differs from its receipts')

@@ -13,13 +13,13 @@ concurrency:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PINE_STACK_ROOT: ${{ github.workspace }}/stack
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -171,7 +171,7 @@ jobs:
           if-no-files-found: error
 
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Independent of backend: a backend fail must not skip UI checks.
     defaults:
       run:
@@ -197,7 +197,7 @@ jobs:
 
   openapi-drift:
     needs: backend
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: openpine-ui
@@ -226,7 +226,7 @@ jobs:
           OPENPINE_OPENAPI_SCHEMA: .contract/openapi.json
 
   frontend-unit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: openpine-ui

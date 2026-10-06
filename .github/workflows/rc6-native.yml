@@ -19,11 +19,9 @@ jobs:
     timeout-minutes: 35
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 1
       matrix:
         python:
-        - '3.11'
-        - '3.12'
         - '3.13'
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -43,14 +41,14 @@ jobs:
         name: rc6-prepared-${{ matrix.python }}-${{ github.run_id }}
         path: ${{ runner.temp }}/prepare-work/bundle/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
       with:
         name: rc6-preparation-logs-${{ matrix.python }}-${{ github.run_id }}
         path: ${{ runner.temp }}/prepare-work/commands/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   plan:
     needs:
     - prepare
@@ -73,16 +71,6 @@ jobs:
         path: ${{ runner.temp }}/prepared-lanes
     - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
-        python-version: '3.11'
-    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
-    - run: python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.11-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env311"
-    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-      with:
-        python-version: '3.12'
-    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
-    - run: python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.12-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env312"
-    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-      with:
         python-version: '3.13'
     - run: python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.13-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env313"
     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -96,7 +84,7 @@ jobs:
         npm ci
         npx playwright install --with-deps chromium
     - id: freeze
-      name: Freeze one source-bound plan for all 23 component/interpreter tasks
+      name: Freeze one source-bound plan for all eight component/interpreter tasks
       shell: bash
       run: |-
         set -euo pipefail
@@ -107,7 +95,7 @@ jobs:
         from openpine.verification.execution_ci import make_owner_locations
         from openpine.verification.execution_identity import write_once_json
         root=pathlib.Path(os.environ['RUNNER_TEMP'])
-        reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py311','py312','py313')}
+        reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py313',)}
         node=shutil.which('node');npm=shutil.which('npm')
         assert node and npm
         browser=subprocess.check_output([node,'-p','require("@playwright/test").chromium.executablePath()'],cwd=pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'openpine-ui',text=True).strip()
@@ -118,7 +106,7 @@ jobs:
         python - <<'PYMATRIX'
         import json, os, pathlib
         value=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'plan/matrix.json').read_text())
-        assert len(value['include']) == 23
+        assert len(value['include']) == 8
         with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write('matrix='+json.dumps(value,separators=(',',':'))+'\n')
         PYMATRIX
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -127,7 +115,7 @@ jobs:
         name: rc6-plan-${{ github.run_id }}
         path: ${{ runner.temp }}/plan/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   component:
     needs:
     - plan
@@ -135,7 +123,7 @@ jobs:
     timeout-minutes: 75
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 2
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -177,14 +165,14 @@ jobs:
           !${{ runner.temp }}/fragment/**/private/**
         include-hidden-files: true
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
       with:
         name: rc6-command-task-${{ matrix.task }}-${{ github.run_id }}
         path: ${{ runner.temp }}/restored/execute-log/commands/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   quality:
     needs:
     - prepare
@@ -195,7 +183,6 @@ jobs:
       fail-fast: false
       matrix:
         python:
-        - '3.11'
         - '3.13'
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -238,7 +225,7 @@ jobs:
         name: rc6-quality-${{ matrix.python }}-${{ github.run_id }}
         path: ${{ runner.temp }}/evidence/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   verify:
     name: verify (${{ matrix.python }})
     if: always()
@@ -253,7 +240,6 @@ jobs:
       fail-fast: false
       matrix:
         python:
-        - '3.11'
         - '3.13'
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -300,14 +286,14 @@ jobs:
           !${{ runner.temp }}/foundation/**/private/**
         include-hidden-files: true
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
       with:
         name: rc6-command-foundation-${{ matrix.python }}-${{ github.run_id }}
         path: ${{ runner.temp }}/restored/execute-log/commands/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   frontend:
     needs:
     - prepare
@@ -369,7 +355,7 @@ jobs:
           !${{ runner.temp }}/exact-owner/frontend/**/private/**
         include-hidden-files: true
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   packages:
     needs:
     - prepare
@@ -390,16 +376,6 @@ jobs:
         path: ${{ runner.temp }}/plan
     - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
-        python-version: '3.11'
-    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
-    - run: python -m openpine.verification test-ci restore --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.11-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env311" --plan "$RUNNER_TEMP/plan/plan.json"
-    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-      with:
-        python-version: '3.12'
-    - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
-    - run: python -m openpine.verification test-ci restore --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.12-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env312" --plan "$RUNNER_TEMP/plan/plan.json"
-    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-      with:
         python-version: '3.13'
     - run: "python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt"
     - run: python -m openpine.verification test-ci restore --bundle "$RUNNER_TEMP/prepared-lanes/rc6-prepared-3.13-${{ github.run_id }}" --work "$RUNNER_TEMP/owner-env313" --plan "$RUNNER_TEMP/plan/plan.json"
@@ -410,7 +386,7 @@ jobs:
         from openpine.verification.execution_binding import make_binding
         from openpine.verification.execution_identity import write_once_json
         root=pathlib.Path(os.environ['RUNNER_TEMP']);plan=json.loads((root/'plan/plan.json').read_text())
-        reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py311','py312','py313')};r=reports['py313']
+        reports={label:json.loads((root/('owner-env'+label[2:])/'restored.json').read_text()) for label in ('py313',)};r=reports['py313']
         binding=make_binding(plan,{n:pathlib.Path(p) for n,p in r['roots'].items()},{label:row['executable'] for label,row in reports.items()})
         write_once_json(root/'package-binding.json',binding)
         write_once_json(root/'package-interpreters.json',{'.'.join(plan['environments'][label]['identity']['python'].split('.')[:2]):row['executable'] for label,row in reports.items()})
@@ -418,7 +394,7 @@ jobs:
         with open(os.environ['GITHUB_ENV'],'a') as f:
          f.write('EXACT_PYTHON='+r['executable']+'\n');f.write('EXACT_HOST='+r['roots']['openpine']+'\n');f.write('PYTHONPATH='+r['roots']['openpine']+'\n')
         PYPACKAGE
-    - name: Qualify normal and sdist-rebuilt complete stacks on 3.11, 3.12 and 3.13
+    - name: Qualify normal and sdist-rebuilt complete stacks on ordinary CPython 3.13
       run: '"$EXACT_PYTHON" "$EXACT_HOST/scripts/rc6_stabilization/harness.py" --roots "$RUNNER_TEMP/plan/plan.json" --binding "$RUNNER_TEMP/package-binding.json" --interpreters "$RUNNER_TEMP/package-interpreters.json" --builder "$EXACT_PYTHON" --output "$RUNNER_TEMP/package-owner" --frozen-source "$RUNNER_TEMP/package-source.json" --run-id "rc6-${{ github.run_id }}-${{ github.run_attempt }}"'
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       if: always()
@@ -429,7 +405,7 @@ jobs:
           !${{ runner.temp }}/package-owner/**/private/**
         include-hidden-files: true
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   aggregate:
     name: RC6 native graph (not stabilization or language acceptance)
     if: always()
@@ -463,7 +439,7 @@ jobs:
         name: rc6-job-results-${{ github.run_id }}
         path: job-results.json
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   language-diagnostic:
     name: RC6 language-diagnostic (${{ matrix.python }})
     needs:
@@ -476,7 +452,6 @@ jobs:
       fail-fast: false
       matrix:
         python:
-        - '3.11'
         - '3.13'
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -536,7 +511,7 @@ jobs:
         name: rc6-language-diagnostic-${{ matrix.python }}-${{ github.run_id }}
         path: ${{ runner.temp }}/evidence/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   strict-language:
     name: RC6 strict-language (${{ matrix.python }})
     needs:
@@ -549,7 +524,6 @@ jobs:
       fail-fast: false
       matrix:
         python:
-        - '3.11'
         - '3.13'
     steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -612,7 +586,7 @@ jobs:
         name: rc6-strict-language-${{ matrix.python }}-${{ github.run_id }}
         path: ${{ runner.temp }}/evidence/
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7
   stabilization:
     name: RC6 common stabilization (not language acceptance)
     if: always()
@@ -682,4 +656,4 @@ jobs:
           !${{ runner.temp }}/common/**/private/**
         include-hidden-files: true
         if-no-files-found: error
-        retention-days: 30
+        retention-days: 7

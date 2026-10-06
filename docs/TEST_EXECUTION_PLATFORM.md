@@ -13,8 +13,6 @@ extras. All evidence and plans must be outside the eight repository roots.
 ```bash
 python -m openpine.verification test-preflight \
   --host-root . --stack-root .. \
-  --python py311=/absolute/path/to/python3.11 \
-  --python py312=/absolute/path/to/python3.12 \
   --python py313=/absolute/path/to/python3.13 \
   --output ../evidence/preflight.json
 
@@ -43,9 +41,10 @@ python -m openpine.verification test-aggregate \
 
 A component profile means **the selected components on the supplied, observed
 interpreters**, not certification of every supported Python. `stage-full` and
-`release-full` require the whole configured interpreter matrix. Python 3.12
-library checks have not been removed. A renamed interpreter alias cannot satisfy
-a missing Python version.
+`release-full` require ordinary CPython 3.13 (`>=3.13,<3.14`) with the GIL enabled.
+The current support decision supersedes the earlier 3.11/3.12/3.13 matrix; historical
+receipts remain historical. Every functional, coverage and fault obligation remains
+required on 3.13. Aliases, PyPy and free-threaded builds cannot satisfy this policy.
 
 `test-preflight --level pytest` checks only the runner environment. Full preflight
 also reports declared dependencies, missing Python versions, the Node version
@@ -152,7 +151,7 @@ unverified contract dimensions and TradingView authority remain open.
 The coordinated CI adapter now prepares a source-bound eight-package bundle,
 restores it in component jobs, and joins raw fragment/coverage receipts into
 its existing foundation gate. The graph retains the mandatory builtin replay,
-protected-worker owner, frontend, and Python 3.11/3.12/3.13 lanes. Third-party
+protected-worker owner, frontend, and ordinary CPython 3.13/GIL lane. Third-party
 build and runtime wheels are selected from reviewed SHA-256 requirement locks;
 restore checks the bundle hashes and installs offline. These implementation and
 contract tests are **not** a completed hosted run or an accepted Stage 1.

@@ -389,13 +389,13 @@ def test_coverage_replay_unions_multiple_shards_without_mutating_primaries(tmp_p
 def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     workflow = yaml.safe_load((HOST / '.github/workflows/rc6-native.yml').read_text())
     jobs = workflow['jobs']
-    assert jobs['prepare']['strategy']['matrix']['python'] == ['3.11', '3.12', '3.13']
+    assert jobs['prepare']['strategy']['matrix']['python'] == ['3.13']
     prepare_checkout = next(step for step in jobs['prepare']['steps'] if step.get('uses', '').startswith('actions/checkout@'))
     assert prepare_checkout['with']['fetch-depth'] == 0
     from openpine.verification import execution_ci
     assert 'export_git_provenance' in inspect.getsource(execution_ci.prepare)
     assert 'restore_git_provenance' in inspect.getsource(execution_ci.restore)
-    assert jobs['verify']['strategy']['matrix']['python'] == ['3.11', '3.13']
+    assert jobs['verify']['strategy']['matrix']['python'] == ['3.13']
     assert jobs['frontend']['needs'] == ['prepare', 'plan']
     frontend_runs='\n'.join(step.get('run','') for step in jobs['frontend']['steps'])
     assert 'frontend_exact.py' in frontend_runs
@@ -486,7 +486,7 @@ def test_ci_graph_retains_all_interpreters_and_decouples_frontend():
     assert 'test "$INDEX_STATUS" -eq 0' in remainder
     assert 'test "$REMAINDER_STATUS" -eq 0' in remainder
     policy = read_json(HOST / 'verification/execution-policy.json')
-    assert sum((len(component['pythons']) for component in policy['components'].values())) == 23
+    assert sum((len(component['pythons']) for component in policy['components'].values())) == 8
     assert policy['untraced_markers'] == ['performance']
     assert len(policy['components']) == 8
     assert 'test-performance' in policy['required_gates']['stage-full']
@@ -554,20 +554,22 @@ def test_language_jobs_are_named_separate_and_do_not_block_native_foundation():
 def test_lifecycle_pins_use_current_release_heads_without_rewriting_source_bound_evidence():
     pins = read_json(HOST / 'docs/RC6_LIFECYCLE_SOURCES.json')
     assert pins == {
-        'ast2python': '6b3eaf26d090719f9ebbc8b05326ae041c56b28c',
-        'backtest_engine': '8eba0eb7350d5eab1529dbaff96f7bf9ada82572',
-        'marketdata-provider': 'b453a2b05bc825884270c81500aa879fc543a208',
-        'openpine-contracts': '7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34',
-        'optimizer': '762f97e306467f505fc4ade22acaf40577214e24',
-        'pine2ast': '1bc8ddb72ae6a30b209b5491622dd386b3ade7f5',
-        'pinelib': '840d70ee87c35101fab64c8c4a32d00ebed78d1b',
+        'ast2python': '9080ed559e5cd9acbfe1400f284314d2af3f9193',
+        'backtest_engine': 'a393ac733a1d918e792ab07d3c43a56306c54b77',
+        'marketdata-provider': '6ad408144ffcacfc3d0b3b4ac4d635949f6602e6',
+        'openpine-contracts': 'db1745756516b47466756c9c5d38fbbb95595a3b',
+        'optimizer': '623e2639581d23242109dd47e20f14f799fa7b88',
+        'pine2ast': '87eb7f6880ec51ba19bf614e1e060c4195d6ada9',
+        'pinelib': 'f66c67f90a7f3428fe68267d41de9ae31202f775',
     }
     review = read_json(HOST / 'verification/source-pin-reconciliation-review.json')
     # This review is the retained historical snapshot, not a receipt for the
     # newly published marketdata-provider API commit.
     assert review['release_heads'] == {
-        **pins,
         'ast2python': 'ce2e6eed49be541543654ebc0439d545c3084f30',
+        'backtest_engine': '8eba0eb7350d5eab1529dbaff96f7bf9ada82572',
+        'openpine-contracts': '7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34',
+        'optimizer': '762f97e306467f505fc4ade22acaf40577214e24',
         'pine2ast': 'ddb164a8819d889150378a303b0d3255cf0b5102',
         'marketdata-provider': '4610c93b904d7e70fe6cbfe2914a07f29935933e',
         'pinelib': 'fcfdab59767103cbc6903c0fa251d895d58b1568',
@@ -649,7 +651,7 @@ def test_native_verify_preserves_required_branch_protection_contexts():
         verify['name'].replace('${{ matrix.python }}', version)
         for version in verify['strategy']['matrix']['python']
     }
-    assert contexts == {'verify (3.11)', 'verify (3.13)'}
+    assert contexts == {'verify (3.13)'}
     assert jobs['frontend'].get('name', 'frontend') == 'frontend'
 
 

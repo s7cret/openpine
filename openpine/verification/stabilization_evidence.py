@@ -290,6 +290,21 @@ def verify_packages(plan: dict, root: Path, supplied: dict, policy: dict, *, rep
     return results
 
 
+def verify_package_source_inventory(source_files: dict, members: dict[str, bytes], module: str, *, kind: str) -> None:
+    """Extra, missing and changed runtime/resource files all reject replay."""
+    import hashlib
+    def runtime(name):
+        path = Path(name)
+        return name.startswith(module + '/') and '__pycache__' not in path.parts and path.suffix not in {'.pyc', '.pyo'}
+    expected = {name: row['sha256'] for name, row in source_files.items() if runtime(name)}
+    actual = {name: 'sha256:' + hashlib.sha256(data).hexdigest() for name, data in members.items() if runtime(name)}
+    missing = sorted(expected.keys() - actual.keys())
+    extra = sorted(actual.keys() - expected.keys())
+    changed = sorted(name for name in expected.keys() & actual.keys() if expected[name] != actual[name])
+    if not expected or missing or extra or changed:
+        raise ValueError(f'{kind} package source inventory differs from frozen candidate: missing={missing}, extra={extra}, changed={changed}')
+
+
 def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy: dict, *, replay_paths: dict | None = None, source_roots: dict | None = None) -> dict:
     """Require builds/install/API commands plus wheel-bound installed file origins."""
     commands = command_set(root, supplied["commands"], policy["commands"])
@@ -460,6 +475,20 @@ def _verify_package_installation(plan: dict, root: Path, supplied: dict, policy:
         ):
             raise ValueError("sdist build inputs differ from current candidate")
         module = Path(observed["origin"]).parent.name
+        verify_package_source_inventory(source_files, members, module, kind='wheel')
+        verify_package_source_inventory(source_files, source_members, module, kind='sdist')
+        # RECORD is not authoritative for files added after installation.
+        installed_members = {}
+        for path in origin.parent.rglob('*'):
+            if '__pycache__' in path.relative_to(origin.parent).parts or path.suffix in {'.pyc', '.pyo'}:
+                continue
+            if path.is_symlink():
+                raise ValueError('installed package contains a symlink')
+            if path.is_file():
+                installed_members[module + '/' + path.relative_to(origin.parent).as_posix()] = path.read_bytes()
+            elif not path.is_dir():
+                raise ValueError('installed package contains a nonregular file')
+        verify_package_source_inventory(source_files, installed_members, module, kind='installed')
         for name, meta in source_files.items():
             if name.startswith(module + "/") and name.endswith(".py"):
                 if name not in members or name not in source_members:

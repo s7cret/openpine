@@ -43,12 +43,12 @@ def check(root):
         walk(artifacts)
         required = {'source-before','copied-source','source-after'}
         required |= {'build-'+n for n in NAMES} | {'sdist-rebuild-'+n for n in NAMES}
-        for version in ('3.11','3.12','3.13'):
+        for version in ('3.13',):
             required |= {'venv-'+version,'version-'+version}
             for kind in ('wheel','rebuilt_wheel'):
                 scope = version+'-'+kind
                 required |= {'install-'+scope,'pip-check-'+scope}
-                required |= {scope+'-'+mode for mode in ('origins','runtime','library','api','positive','missing','tampered','cli','source-shadow','shadow-isolated')}
+                required |= {scope+'-'+mode for mode in ('origins','runtime','library','api','positive','missing','tampered','cli','source-shadow','shadow-isolated','tree-check')}
         assert set(ids) >= required, ('missing commands', sorted(required-set(ids)))
         assert json.loads((root/'source-before.json').read_text()) == json.loads((root/'source-after.json').read_text())
     failed = [c['id'] for c in commands if not c['ok']]

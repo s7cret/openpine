@@ -10,7 +10,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Mapping, Sequence
 from openpine.verification.identity import digest, seal, verify
-from openpine.verification.execution_identity import ENV_SCHEMA, SOURCE_SCHEMA
+from openpine.verification.execution_identity import ENV_SCHEMA, SOURCE_SCHEMA, validate_python_support
 PLAN_SCHEMA = 'openpine.test_execution_plan.v1'
 PROFILES = ('smoke', 'affected', 'component', 'integration', 'stage-full', 'release-full')
 HASH = re.compile('sha256:[0-9a-f]{64}\\Z')
@@ -153,6 +153,7 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
         if not re.fullmatch('[a-zA-Z0-9_.-]+', key):
             raise ValueError('invalid environment ID')
         verify(env['identity'], ENV_SCHEMA)
+        validate_python_support(policy, env['identity'])
         if not Path(env['executable']).is_absolute():
             raise ValueError('interpreter must be absolute')
     if type(coverage) is not bool:
@@ -163,7 +164,7 @@ def make_plan(*, profile: str, policy: dict, roots: Mapping[str, Path], source: 
         retention = settings.get('private_retention', 'preserve')
         if retention not in ('preserve', 'delete-on-success'):
             raise ValueError('invalid private retention')
-        required = settings.get('pythons', ['3.11', '3.13'])
+        required = settings.get('pythons', ['3.13'])
         seen_versions = set()
         for env_id, env in sorted(environments.items()):
             minor = '.'.join(env['identity']['python'].split('.')[:2])

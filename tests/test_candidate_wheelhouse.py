@@ -84,19 +84,32 @@ def test_build_wheel_uses_running_python(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     mod = _load()
+    repo = _repo(tmp_path, "openpine")
+    (repo / "pyproject.toml").write_text(
+        "[build-system]\nrequires=['setuptools>=77','wheel']\n"
+        "build-backend='setuptools.build_meta'\n"
+        "[project]\nname='openpine'\nversion='0.0.1'\n"
+        "[tool.setuptools.packages.find]\ninclude=['openpine*']\n",
+        encoding="utf-8",
+    )
+    (repo / "openpine").mkdir()
+    (repo / "openpine/__init__.py").write_text("answer = 42\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "build fixture")
     calls: list[list[str]] = []
-    monkeypatch.setattr(mod.subprocess, "check_call", lambda argv: calls.append(argv))
+    check_call = mod.subprocess.check_call
 
-    mod.build_wheel(tmp_path / "source", tmp_path / "wheelhouse")
+    def capture(argv):
+        calls.append(argv)
+        return check_call(argv)
 
-    assert calls == [
-        [
-            sys.executable,
-            "-m",
-            "build",
-            "--wheel",
-            "--outdir",
-            str(tmp_path / "wheelhouse"),
-            str(tmp_path / "source"),
-        ]
-    ]
+    monkeypatch.setattr(mod.subprocess, "check_call", capture)
+    output = tmp_path / "wheelhouse"
+    report = mod.build_wheel(repo, output, no_isolation=True)
+    builds = [argv for argv in calls if argv[0] == sys.executable]
+    assert len(builds) == 1
+    assert builds[0][:4] == [sys.executable, "-I", "-m", "build"]
+    assert Path(builds[0][-1]).is_relative_to(output / "build-attempts")
+    assert builds[0][-1] != str(repo)
+    assert report["package_tree"]["files"].keys() == {"__init__.py"}
+    assert (output / report["wheel"]).is_file()

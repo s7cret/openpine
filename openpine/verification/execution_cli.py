@@ -123,6 +123,11 @@ def probe_environment(roots, policy, components, level):
     from packaging.version import Version
     import importlib
     result = {'identity': environment_snapshot(), 'imports': {}, 'requirements': [], 'errors': []}
+    from openpine.verification.execution_identity import validate_python_support
+    try:
+        validate_python_support(policy, result['identity'])
+    except ValueError as error:
+        result['errors'].append(str(error))
     source_versions = {}
     for root in roots.values():
         metadata_path = Path(root) / 'pyproject.toml'

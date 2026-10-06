@@ -7,11 +7,11 @@
       "name": "openpine",
       "package": "openpine",
       "repository": "s7cret/openpine",
-      "tree_sha256": "b6ac7e6427f427680e90c4e5d13fa38b81c770f65b7559d3f49a0ff74d8be697",
+      "tree_sha256": "66cfa8f9a96ff7defe55ff42cacb866d2fced01a144b476c65b2d50a006cfb37",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "1bc8ddb72ae6a30b209b5491622dd386b3ade7f5",
+      "commit": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "frontend": "openpine.frontend.v1",
@@ -20,11 +20,11 @@
       "name": "pine2ast",
       "package": "pine2ast",
       "repository": "s7cret/pine2ast",
-      "tree_sha256": "fa797a9d46cdc6eae5f8d71318deed2706a264fe177d6fdac793456e42d9a343",
+      "tree_sha256": "b4683771a9167d2371c01f8eae261ccc1f5bc332ed640b30897415bf5114cbf8",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "6b3eaf26d090719f9ebbc8b05326ae041c56b28c",
+      "commit": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
       "contracts": {
         "ast": "pine.ast_contract.v1",
         "runtime": "1.4"
@@ -32,11 +32,11 @@
       "name": "ast2python",
       "package": "ast2python",
       "repository": "s7cret/ast2python",
-      "tree_sha256": "274180a0060f525f9a7fa4bce113fb3e977d7c18392c3b7e0060351f950aad1d",
+      "tree_sha256": "2677d37176c3426e83230a48ea3d36b633c3200fc33e393c5976a5fde48c20fc",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "840d70ee87c35101fab64c8c4a32d00ebed78d1b",
+      "commit": "f66c67f90a7f3428fe68267d41de9ae31202f775",
       "contracts": {
         "runtime": "1.4"
       },
@@ -47,7 +47,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "8eba0eb7350d5eab1529dbaff96f7bf9ada82572",
+      "commit": "a393ac733a1d918e792ab07d3c43a56306c54b77",
       "contracts": {
         "tick_replay": "deterministic-explicit-v1"
       },
@@ -58,7 +58,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "b453a2b05bc825884270c81500aa879fc543a208",
+      "commit": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
       "contracts": {
         "runtime": "1.4",
         "segment_manifest": "stage-d-csv-2"
@@ -70,7 +70,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "762f97e306467f505fc4ade22acaf40577214e24",
+      "commit": "623e2639581d23242109dd47e20f14f799fa7b88",
       "contracts": {},
       "name": "optimizer",
       "package": "optimizer",
@@ -79,7 +79,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34",
+      "commit": "db1745756516b47466756c9c5d38fbbb95595a3b",
       "contracts": {
         "generated_artifact": "openpine.generated_artifact.v3"
       },

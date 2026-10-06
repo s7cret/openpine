@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   stack-contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout OpenPine
         uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
           path: openpine
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       - name: Install candidate build tooling
         run: python -m pip install --upgrade build
       - name: Materialize immutable stack candidate

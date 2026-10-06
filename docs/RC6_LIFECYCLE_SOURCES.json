@@ -1,9 +1,9 @@
 {
-  "ast2python": "6b3eaf26d090719f9ebbc8b05326ae041c56b28c",
-  "backtest_engine": "8eba0eb7350d5eab1529dbaff96f7bf9ada82572",
-  "marketdata-provider": "b453a2b05bc825884270c81500aa879fc543a208",
-  "openpine-contracts": "7ad7de5ba9b3a7f0cfec0f0bc8d7a7f91e98df34",
-  "optimizer": "762f97e306467f505fc4ade22acaf40577214e24",
-  "pine2ast": "1bc8ddb72ae6a30b209b5491622dd386b3ade7f5",
-  "pinelib": "840d70ee87c35101fab64c8c4a32d00ebed78d1b"
+  "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+  "backtest_engine": "a393ac733a1d918e792ab07d3c43a56306c54b77",
+  "marketdata-provider": "6ad408144ffcacfc3d0b3b4ac4d635949f6602e6",
+  "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+  "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+  "pine2ast": "87eb7f6880ec51ba19bf614e1e060c4195d6ada9",
+  "pinelib": "f66c67f90a7f3428fe68267d41de9ae31202f775"
 }

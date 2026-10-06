@@ -9,7 +9,6 @@ import json
 import re
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 
@@ -82,18 +81,14 @@ def verify_checkouts(candidate: dict, checkouts: dict[str, Path]) -> dict[str, s
     return resolved
 
 
-def build_wheel(src: Path, outdir: Path) -> None:
-    subprocess.check_call(  # noqa: S603
-        [
-            sys.executable,
-            "-m",
-            "build",
-            "--wheel",
-            "--outdir",
-            str(outdir),
-            str(src),
-        ]
-    )
+def build_wheel(src: Path, outdir: Path, *, no_isolation: bool = False) -> dict:
+    helper = Path(__file__).parent / "rc6_stabilization" / "clean_build.py"
+    spec = importlib.util.spec_from_file_location("clean_build", helper)
+    if spec is None or spec.loader is None:
+        raise CandidateError("clean source build owner unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.build_wheel(src, outdir, no_isolation=no_isolation)
 
 
 def main() -> int:

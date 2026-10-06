@@ -11,6 +11,7 @@ import platform
 import re
 import stat
 import sys
+import sysconfig
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 from openpine.verification.identity import canonical, read_json, seal
@@ -85,7 +86,24 @@ def environment_snapshot() -> dict:
         if name in distributions and distributions[name] != version:
             raise ValueError(f'conflicting installed distribution: {name}')
         distributions[name] = version
-    return seal({'schema_id': ENV_SCHEMA, 'implementation': platform.python_implementation(), 'python': platform.python_version(), 'platform': platform.platform(), 'machine': platform.machine(), 'executable_sha256': hash_file(Path(sys.executable).resolve()), 'distributions': dict(sorted(distributions.items()))})
+    return seal({'schema_id': ENV_SCHEMA, 'implementation': platform.python_implementation(), 'python': platform.python_version(), 'platform': platform.platform(), 'machine': platform.machine(), 'executable_sha256': hash_file(Path(sys.executable).resolve()), 'distributions': dict(sorted(distributions.items())), 'gil_enabled': getattr(sys, '_is_gil_enabled', lambda: True)(), 'py_gil_disabled': bool(sysconfig.get_config_var('Py_GIL_DISABLED')), 'soabi': sysconfig.get_config_var('SOABI')})
+
+
+def validate_python_support(policy: dict, identity: dict) -> None:
+    """Check observed implementation and ABI against the declared support policy."""
+    support = policy.get('python_support')
+    if support is None:
+        return  # Generic owner fixtures can declare their own interpreter matrix.
+    expected = {'implementation': 'CPython', 'requires_python': '>=3.13,<3.14',
+                'minors': ['3.13'], 'gil_enabled': True, 'free_threaded': False}
+    if support != expected:
+        raise ValueError('invalid ordinary CPython 3.13 support policy')
+    if (identity.get('implementation') != 'CPython'
+            or '.'.join(identity.get('python', '').split('.')[:2]) != '3.13'
+            or identity.get('gil_enabled') is not True
+            or identity.get('py_gil_disabled') is not False
+            or not str(identity.get('soabi', '')).startswith('cpython-313-')):
+        raise ValueError('ordinary CPython 3.13 with enabled GIL and matching ABI required')
 
 def evidence_path(root: Path, relative: str, *, must_exist: bool=True) -> Path:
     """No absolute paths, Windows drive syntax, traversal or symlink ancestors."""

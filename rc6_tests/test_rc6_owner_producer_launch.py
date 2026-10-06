@@ -428,8 +428,8 @@ def test_ci_owner_locations_use_checked_reports_without_machine_defaults(tmp_pat
         (folder/'project.py').write_text('VALUE=7\n')
         roots[name]=str(folder)
     source=source_snapshot({n:Path(p) for n,p in roots.items()})
-    reports={label:{'candidate_hash':source['content_hash'],'roots':roots,'executable':sys.executable,'source_commits':{'openpine':'a'*40}} for label in ('py311','py312','py313')}
-    if foreign:reports['py312']={**reports['py312'],'candidate_hash':'sha256:'+'0'*64}
+    reports={label:{'candidate_hash':source['content_hash'],'roots':roots,'executable':sys.executable,'source_commits':{'openpine':'a'*40}} for label in ('py313',)}
+    if foreign:reports['py313']={**reports['py313'],'candidate_hash':'sha256:'+'0'*64}
     kwargs=dict(stack_root=tmp_path/'source',attempt=tmp_path/'frontend',package_attempt=tmp_path/'packages',npm=Path(sys.executable),node=Path(sys.executable),chromium=Path(sys.executable))
     if foreign:
         with pytest.raises(ValueError,match='candidate'):
@@ -438,7 +438,8 @@ def test_ci_owner_locations_use_checked_reports_without_machine_defaults(tmp_pat
         locations=make_owner_locations(reports,**kwargs)
         assert locations['host']==roots['openpine']
         assert locations['helpers']==str(Path(roots['openpine'])/'scripts/rc6_stabilization')
-        assert locations['python312']==sys.executable
+        assert locations['python313']==sys.executable
+        assert 'python311' not in locations and 'python312' not in locations
         assert locations['uv']==str(Path(sys.executable).parent/'uv')
         assert locations['package_attempt']==str(tmp_path/'packages')
         assert all(Path(v).is_relative_to(tmp_path) for k,v in locations.items() if k not in {'runner','python311','python312','python313','npm','node','chromium','uv'})
