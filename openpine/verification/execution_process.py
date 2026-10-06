@@ -1,6 +1,7 @@
 """Bounded subprocess cleanup shared by verification and CI preparation."""
 
 from __future__ import annotations
+import errno
 import os
 import select
 import signal
@@ -18,6 +19,19 @@ _FAMILY_OVERFLOW_LIMIT = 4096
 _FAMILY_UNVERIFIED_LIMIT = 64
 
 
+def _pidfd_alive(fd: int) -> bool:
+    """Poll stable identity without select's FD_SETSIZE descriptor ceiling."""
+    poller = select.poll()
+    poller.register(fd, select.POLLIN)
+    events = poller.poll(0)
+    for _, flags in events:
+        if flags & select.POLLNVAL:
+            raise OSError(errno.EBADF, 'owned process pidfd is invalid')
+        if flags & select.POLLERR:
+            raise OSError(errno.EIO, 'owned process pidfd observation failed')
+    return not events
+
+
 class _OwnedHandle:
     """A retained kernel process identity; integer PIDs are only receipt labels."""
 
@@ -25,7 +39,7 @@ class _OwnedHandle:
         self.pid, self.create_time, self.name, self.fd = pid, create_time, name, fd
 
     def alive(self) -> bool:
-        return self.fd >= 0 and not select.select([self.fd], [], [], 0)[0]
+        return self.fd >= 0 and _pidfd_alive(self.fd)
 
     def send_signal(self, signum: int) -> None:
         if self.fd < 0:
@@ -64,9 +78,11 @@ class _FamilyPopen(subprocess.Popen):
             argv = [*argv[:7], str(gate_read), *argv[7:]]
             passed = tuple(kwargs.pop('pass_fds', ())) + (gate_read,)
             super().__init__(argv, pass_fds=passed, **kwargs)  # noqa: S603, S607 -- checked guardian argv, no shell
-            os.close(gate_read)
-            gate_read = -1
             try:
+                # Include read-end close in post-spawn cleanup. Its descriptor
+                # has already been released if SIGINT interrupts syscall return.
+                closing_read, gate_read = gate_read, -1
+                os.close(closing_read)
                 # This direct child has not been reaped or exposed to a caller.
                 self._family_fd = os.pidfd_open(self.pid, 0)
                 # The guardian cannot launch the declared command until stable
@@ -279,14 +295,14 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path, *, launc
                 chain.append((cursor, fd, row))
                 # A just-launched direct child may already be a zombie. Popen
                 # has not reaped it, so its direct-child identity is still owned.
-                if fd_pid(fd) != cursor or (select.select([fd], [], [], 0)[0] and not (command and cursor == pid and row[2] == owner_pid)):
+                if fd_pid(fd) != cursor or (not _pidfd_alive(fd) and not (command and cursor == pid and row[2] == owner_pid)):
                     return None
                 cursor = row[2]
             for cursor, fd, row in chain:
                 current = stat(cursor)
                 if current[2:] != row[2:] or fd_pid(fd) != cursor:
                     return None
-                if select.select([fd], [], [], 0)[0] and not (command and cursor == pid and current[2] == owner_pid):
+                if not _pidfd_alive(fd) and not (command and cursor == pid and current[2] == owner_pid):
                     return None
             _, fd, row = chain[0]
             handle = _OwnedHandle(pid, boot_time + row[3] / clock_ticks, row[0], fd)

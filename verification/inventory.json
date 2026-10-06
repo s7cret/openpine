@@ -1214,14 +1214,18 @@
       "rc6_tests/test_rc6_int04_lifecycle.py::test_guardian_cancellation_never_routes_recycled_process_group_to_neighbour",
       "rc6_tests/test_rc6_int04_lifecycle.py::test_late_guardian_pidfd_failure_reaps_stopped_guardian_without_command_launch",
       "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_sigint_during_guardian_handoff_retains_cancelled_evidence_and_closes_family",
-      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_sigint_during_gate_close_retains_cancelled_evidence_and_closes_family"
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_sigint_during_gate_close_retains_cancelled_evidence_and_closes_family",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_high_pidfd_lineage_capture_closes_detached_resources",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_high_pidfd_liveness_and_signalling_preserve_neighbour",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_pass_fds_pressure_still_closes_detached_family",
+      "rc6_tests/test_rc6_int04_lifecycle.py::test_actual_sigint_after_gate_read_close_reaps_guardian_without_child_or_pipe_leak"
     ],
     "baseline": {
       "count": 11027,
       "deselected": 0,
       "sha256": "sha256:13aa883b450b42cb10c95a5e7141061eb464e4a9a549c7c63e215190fe3c2dcd"
     },
-    "count": 11900,
+    "count": 11904,
     "deselected": 0,
     "identity_mode": "reviewed_addition_to_hashed_baseline",
     "nodeid_aliases": {

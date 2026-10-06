@@ -186,14 +186,14 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11900, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT04 adds 45 actual process-family, executable-mode, resource-boundary and resealed-evidence regressions without changing prior decisions or the frozen baseline. Thirteen further regressions exercise stale enumeration admission, stable pidfd signalling, successful traversal omissions, unavailable pidfd refusal, bounded cumulative churn, actual overflow signal denial resealed ledger/signal budget violations and stable guardian cancellation with modelled process-group reuse and stopped-guardian late pidfd acquisition failure and actual SIGINT during gate write and final gate close.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11904, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT04 adds 49 actual process-family, executable-mode, resource-boundary and resealed-evidence regressions without changing prior decisions or the frozen baseline. Thirteen further regressions exercise stale enumeration admission, stable pidfd signalling, successful traversal omissions, unavailable pidfd refusal, bounded cumulative churn, actual overflow signal denial resealed ledger/signal budget violations and stable guardian cancellation with modelled process-group reuse and stopped-guardian late pidfd acquisition failure and actual SIGINT during gate write and final gate close. Four adjacent rereview regressions retain actual high-pidfd liveness, lineage acquisition, caller pass_fds cleanup and SIGINT immediately after read-end gate close; all preserve real resource or descriptor observations.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "nodes": [],
           "path": "verification/inventory.json",
-          "sha256": "sha256:d8e9f3949b69f0e152637b671d61d41a59f04b43644ee58c83661d16087fda79"
+          "sha256": "sha256:493495189854d3134558ea985ef2d3b342986e503576b111e0dfcb2c32826e8c"
         }
       ],
       "preparation_previous_mappings": [
@@ -285,7 +285,16 @@
           "path": "verification/inventory.json",
           "sha256": "sha256:90333fbbe3b5c9efcb3770298f638cdf89552027ec2b79c4394001d80505c3d4"
         }
-      ]
+      ],
+      "int04_adjacent_review_previous_mappings": [
+        {
+          "component": "openpine",
+          "nodes": [],
+          "path": "verification/inventory.json",
+          "sha256": "sha256:d8e9f3949b69f0e152637b671d61d41a59f04b43644ee58c83661d16087fda79"
+        }
+      ],
+      "int04_adjacent_review_previous_reason": "PR count 9723; current reviewed-addition inventory count 11900, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission. INT04 adds 45 actual process-family, executable-mode, resource-boundary and resealed-evidence regressions without changing prior decisions or the frozen baseline. Thirteen further regressions exercise stale enumeration admission, stable pidfd signalling, successful traversal omissions, unavailable pidfd refusal, bounded cumulative churn, actual overflow signal denial resealed ledger/signal budget violations and stable guardian cancellation with modelled process-group reuse and stopped-guardian late pidfd acquisition failure and actual SIGINT during gate write and final gate close."
     },
     {
       "id": "verification/stage2-callable-lock.json",

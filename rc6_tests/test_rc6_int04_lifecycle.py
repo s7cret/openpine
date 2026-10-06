@@ -754,6 +754,137 @@ def test_unavailable_pidfd_backend_fails_before_any_child_launch(tmp_path, monke
     assert (output / 'command.json').is_file()
 
 
+def test_actual_high_pidfd_liveness_and_signalling_preserve_neighbour(tmp_path):
+    """A real retained pidfd above FD_SETSIZE must track its original process."""
+    import fcntl
+
+    from openpine.verification.execution_process import _OwnedHandle
+
+    processes = []
+    handle = None
+    try:
+        for _ in range(2):
+            processes.append(subprocess.Popen(  # noqa: S603 -- two exclusively owned actual targets
+                [sys.executable, '-B', '-c', 'import time;time.sleep(30)'],
+            ))
+        first, neighbour = processes
+        low = os.pidfd_open(first.pid, 0)
+        try:
+            high = fcntl.fcntl(low, fcntl.F_DUPFD_CLOEXEC, 2048)
+        finally:
+            os.close(low)
+        handle = _OwnedHandle(first.pid, psutil.Process(first.pid).create_time(), 'python', high)
+        (tmp_path / 'high-fd-witness.json').write_text(json.dumps({'pid': first.pid, 'fd': high}))
+        assert high >= 2048 and handle.alive()
+        handle.send_signal(signal.SIGTERM)
+        first.wait(timeout=3)
+        assert first.returncode == -signal.SIGTERM and not handle.alive()
+        assert neighbour.poll() is None
+        handle.close()
+        assert not handle.alive()
+    finally:
+        if handle is not None:
+            handle.close()
+        for process in processes:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=3)
+
+
+def test_actual_high_pidfd_lineage_capture_closes_detached_resources(tmp_path):
+    """Duplication forces actual admission/cleanup through pidfds above 1024."""
+    child = tmp_path / 'child.json'
+    family = tmp_path / 'process-family.json'
+    fds = tmp_path / 'high-fd-witness.json'
+    code = """import fcntl,json,os,sys
+from pathlib import Path
+from openpine.verification.execution_process import _supervise_family
+original=os.pidfd_open
+issued=[]
+def high_open(pid,flags=0):
+    low=original(pid,flags)
+    try:high=fcntl.fcntl(low,fcntl.F_DUPFD_CLOEXEC,2048)
+    finally:os.close(low)
+    issued.append({'pid':pid,'fd':high})
+    Path(sys.argv[5]).write_text(json.dumps(issued))
+    return high
+os.pidfd_open=high_open
+raise SystemExit(_supervise_family([sys.executable,'-B','-c',sys.argv[1],sys.argv[2],sys.argv[3],'exit'],os.getppid(),Path(sys.argv[4])))
+"""
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    witness = None
+    try:
+        with (tmp_path / 'probe.log').open('wb') as log:
+            result = subprocess.run(  # noqa: S603 -- actual high-fd family in a private probe process
+                [sys.executable, '-B', '-c', code, PARENT, CHILD, str(child), str(family), str(fds)],
+                env=env, stdout=log, stderr=subprocess.STDOUT, timeout=10,
+            )
+        witness = json.loads(child.read_text())
+        report = json.loads(family.read_text())
+        issued = json.loads(fds.read_text())
+        assert all(row['fd'] >= 2048 for row in issued)
+        assert witness['pid'] in {row['pid'] for row in issued}
+        assert not live(witness['pid']), 'high pidfd prevented detached child cleanup'
+        resources_closed(witness)
+        assert report['cleanup_verified'] is True and not report['surviving_processes']
+        assert not report['observation_errors']
+        assert witness['pid'] in {row['pid'] for row in report['observed_family']}
+        assert result.returncode == 70 and report['reason'] == 'orphan-descendants'
+    finally:
+        if witness is None and child.is_file():
+            witness = json.loads(child.read_text())
+        if witness is not None:
+            dispose_test_child(witness['pid'])
+
+
+def test_actual_pass_fds_pressure_still_closes_detached_family(tmp_path):
+    """Caller-owned descriptors occupy low guardian slots without many tasks."""
+    child = tmp_path / 'child.json'
+    family = tmp_path / 'process-family.json'
+    fds = tmp_path / 'pass-fds-witness.json'
+    code = """import json,os,sys,time
+from pathlib import Path
+from openpine.verification.execution_process import start_declared_process
+reserved=[]
+try:
+    while not reserved or reserved[-1]<1056:reserved.append(os.open('/dev/null',os.O_RDONLY|os.O_CLOEXEC))
+    process=start_declared_process([sys.executable,'-B','-c',sys.argv[1],sys.argv[2],sys.argv[3],'exit'],family_evidence=Path(sys.argv[4]),pass_fds=tuple(reserved))
+    visible={int(entry.name) for entry in (Path('/proc')/str(process.pid)/'fd').iterdir()}
+    Path(sys.argv[5]).write_text(json.dumps({'first_reserved':reserved[0],'last_reserved':reserved[-1],'count':len(reserved),'guardian_has_all_reserved':set(reserved)<=visible}))
+    result=process.wait(timeout=10)
+    deadline=time.monotonic()+3
+    while not Path(sys.argv[3]).exists() and time.monotonic()<deadline:time.sleep(.01)
+    raise SystemExit(result)
+finally:
+    for fd in reserved:os.close(fd)
+"""
+    env = dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1]))
+    witness = None
+    try:
+        with (tmp_path / 'probe.log').open('wb') as log:
+            result = subprocess.run(  # noqa: S603 -- private coordinator and actual inherited test descriptors
+                [sys.executable, '-B', '-c', code, PARENT, CHILD, str(child), str(family), str(fds)],
+                env=env, stdout=log, stderr=subprocess.STDOUT, timeout=15,
+            )
+        witness = json.loads(child.read_text())
+        reservation = json.loads(fds.read_text())
+        assert reservation['first_reserved'] == 3 and reservation['last_reserved'] >= 1056
+        assert reservation['count'] == reservation['last_reserved'] - 2
+        assert reservation['guardian_has_all_reserved'] is True
+        report = json.loads(family.read_text())
+        assert not live(witness['pid']), 'inherited descriptors prevented actual family cleanup'
+        resources_closed(witness)
+        assert report['cleanup_verified'] is True and not report['surviving_processes']
+        assert not report['observation_errors']
+        assert witness['pid'] in {row['pid'] for row in report['observed_family']}
+        assert result.returncode == 70 and report['reason'] == 'orphan-descendants'
+    finally:
+        if witness is None and child.is_file():
+            witness = json.loads(child.read_text())
+        if witness is not None:
+            dispose_test_child(witness['pid'])
+
+
 def test_cumulative_family_budget_fails_and_closes_resources_under_sequential_churn(tmp_path):
     """Actual sequential children exceed a small injected ledger, not the live limit."""
     child = tmp_path / 'child.json'
@@ -965,6 +1096,88 @@ def test_actual_sigint_during_guardian_handoff_retains_cancelled_evidence_and_cl
 
 def test_actual_sigint_during_gate_close_retains_cancelled_evidence_and_closes_family(tmp_path, monkeypatch):
     _guardian_handoff_sigint_probe(tmp_path, monkeypatch, 'close')
+
+
+def test_actual_sigint_after_gate_read_close_reaps_guardian_without_child_or_pipe_leak(tmp_path, monkeypatch):
+    from openpine.verification.execution_process import _FamilyPopen
+
+    output = tmp_path / 'command'
+    marker = tmp_path / 'declared-child-launched'
+    original_init, original_close = subprocess.Popen.__init__, os.close
+    captured = {}
+    interrupted = False
+
+    def witness_init(process, argv, **kwargs):
+        original_init(process, argv, **kwargs)
+        if isinstance(process, _FamilyPopen):
+            read_fd = int(argv[7])
+            captured.update(process=process, read_fd=read_fd,
+                            pipe=f'pipe:[{os.fstat(read_fd).st_ino}]',
+                            pidfd=os.pidfd_open(process.pid, 0))
+            # Admit no command: wait for its real cleanup signal handler, so a
+            # refused-gate receipt is available even before the first gate read.
+            status = Path('/proc') / str(process.pid) / 'status'
+            def handler_ready():
+                mask = next(int(line.split()[1], 16) for line in status.read_text().splitlines() if line.startswith('SigCgt:'))
+                return bool(mask & (1 << (signal.SIGTERM - 1)))
+            deadline = time.monotonic() + 5
+            while not handler_ready() and time.monotonic() < deadline:
+                time.sleep(.01)
+            assert handler_ready()
+
+    def interrupt_close(fd):
+        nonlocal interrupted
+        result = original_close(fd)
+        if fd == captured.get('read_fd') and not interrupted:
+            interrupted = True
+            signal.raise_signal(signal.SIGINT)
+        return result
+
+    def gate_descriptors():
+        found = []
+        for entry in Path('/proc/self/fd').iterdir():
+            try:
+                if os.readlink(entry) == captured.get('pipe'):
+                    found.append(int(entry.name))
+            except FileNotFoundError:
+                pass  # Directory enumeration's own descriptor has closed.
+        return found
+
+    report = None
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(subprocess.Popen, '__init__', witness_init)
+            patch.setattr(os, 'close', interrupt_close)
+            report = run_logged(
+                [sys.executable, '-B', '-c', 'from pathlib import Path;import sys;Path(sys.argv[1]).touch()', str(marker)],
+                cwd=tmp_path, output=output, env=dict(os.environ), timeout=5,
+            )
+        assert interrupted and report['status'] == 'cancelled'
+        assert (output / 'command.json').is_file() and not marker.exists()
+        assert captured['process'].poll() is not None, 'guardian survived read-end handoff interruption'
+        assert gate_descriptors() == [], 'test-owned launch pipe leaked in the controller'
+        family = json.loads((output / 'process-family.json').read_text())
+        assert family['command_pid'] is None and family['cleanup_verified'] is False
+        assert family['reason'] == 'launch-gate-refused'
+        assert any('gate was not admitted' in error for error in family['observation_errors'])
+        assert not family['observed_family'] and not family['surviving_processes']
+    finally:
+        process = captured.get('process')
+        leaked = gate_descriptors() if captured else []
+        (tmp_path / 'read-end-close-probe.json').write_text(json.dumps({
+            'actual_SIGINT': interrupted,
+            'status_before_disposal': report['status'] if report else None,
+            'guardian_live_before_disposal': process.poll() is None if process else None,
+            'declared_child_launched': marker.exists(),
+            'test_owned_pipe_descriptors_before_disposal': leaked,
+        }))
+        for fd in leaked:
+            os.close(fd)  # Only this test's exact launch pipe, after failed evidence.
+        if process is not None:
+            if process.poll() is None:
+                signal.pidfd_send_signal(captured['pidfd'], signal.SIGKILL, None, 0)
+            process.wait(timeout=3)
+            os.close(captured['pidfd'])
 
 
 def _guardian_handoff_sigint_probe(tmp_path, monkeypatch, boundary):
