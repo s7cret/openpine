@@ -48,3 +48,100 @@
 Машинный реестр: `RC6_REVIEW_36.json`. Пути в нём — указатели на реализацию/тесты/отчёты, а не автоматическая сертификация. Остатки не заменяют нормативный текст исходного ТЗ. Все глобальные статусы сохранены: 29 partial, 6 unverified, 1 accepted.
 
 Новый блок: [entry-risk](RC6_ENTRY_RISK.md). Его CI и публикация фиксируются отдельным отчётом после проверки.
+
+
+## Remaining Spec binding — 2026-10-06
+
+The existing 36 OP records above retain their original source, statuses and evidence.
+The additive `remaining_spec_binding` in `RC6_REVIEW_36.json` records all 68 remaining
+requirements from [the complete source](OPENPINE_5_0_REMAINING_SPEC_2026-10-06.md),
+SHA-256 `3f09ed3901f8ecf1262ffa983c6eaf52a51ceaf2087abe98db2093d45d9ca622`.
+The approved support policy is ordinary CPython `>=3.13,<3.14`, with the GIL enabled;
+older multi-minor claims in this source are superseded by that policy. Pine versions
+1–6, domain scopes and all functional obligations remain required.
+
+The records preserve source lines, ordered Д/И/К, primary owners, consumer slices,
+OP links, existing Stage 2 links, implementation/test/basis seeds and historical
+input identities. Exact full-scope inventories, execution identities and raw
+receipts are pending. Seed paths and registry completeness do not establish product
+acceptance. All 16 Stage 2 items and owners remain unchanged; full Stage 2 and full
+release acceptance remain false. Historical accepted OP-36 retains its original scope.
+
+Repository seed references carry exact source revisions and Git object identities.
+`read_review_ledger(..., reference_roots=...)` replays their existence against those
+pinned Git trees; accounting tests execute that replay for every repository reference.
+The math/string seeds identify both PineLib ABI adapters and builtin implementations.
+Saved-current projections require the complete validated 68-record accounting view.
+Historical pre-binding projections can be displayed only with explicit
+`current_views(..., allow_legacy=True)` and retain a visible legacy scope marker.
+
+| Requirement | Owner | Д/И/К | Status | OP mapping | Stage 2 items |
+|---|---|---|---|---|---|
+| INT-01 | `openpine` | И+К | partial | OP-01, OP-09, OP-35, OP-36 | — |
+| INT-02 | `openpine.verification` | Д+К | partial | OP-12 | — |
+| INT-03 | `openpine.verification` | И+К | partial | OP-03, OP-12, OP-15, OP-35 | — |
+| INT-04 | `openpine.verification` | К+Д | partial | OP-33 | — |
+| INT-05 | `openpine.verification` | К+Д | toqualify | §10 only | — |
+| INT-06 | `openpine.verification` | Д+К | toqualify | §10 only | — |
+| INT-07 | `openpine.verification` | Д+К | partial | §10 only | — |
+| INT-08 | `openpine.verification` | Д+К | toimplement | OP-03, OP-12, OP-15 | — |
+| LANG-01 | `pine2ast` | Д+К | partial | OP-14, OP-15, OP-19 | CAT-01, CAT-02, CAT-03 |
+| LANG-02 | `pine2ast` | И+Д+К | partial | OP-02 | CAT-03 |
+| LANG-03 | `pine2ast` | И+Д+К | partial | OP-14, OP-18, OP-19 | CAT-04 |
+| LANG-04 | `pine2ast` | Д+К | partial | OP-14, OP-19 | CAT-01, CAT-02 |
+| LANG-05 | `pine2ast` | И+Д+К | partial | OP-17, OP-24, OP-31 | IMPORT-01, IMPORT-02, IMPORT-03, IMPORT-04 |
+| LANG-06 | `pinelib` | К+Д | partial | OP-16, OP-17, OP-24, OP-31 | IMPORT-02, STATE-01 |
+| LANG-07 | `pinelib` | К+Д | partial | OP-05, OP-13, OP-16, OP-17 | STATE-01, STATE-02 |
+| LANG-08 | `pinelib` | И+К | partial | OP-17 | STATE-01, STATE-02 |
+| LANG-09 | `pinelib` | Д+К | partial | OP-16, OP-18, OP-32 | BUILTIN-01, BUILTIN-02, BUILTIN-03 |
+| LANG-10 | `pinelib` | Д+К | blocked | OP-18, OP-32 | STATE-03, STATE-04 |
+| LANG-11 | `openpine.verification` | К+Д | toqualify | OP-18, OP-32 | BUILTIN-01, BUILTIN-04 |
+| LANG-12 | `openpine.verification` | И+Д+К | partial | OP-09, OP-14, OP-19, OP-31 | CAT-01, STATE-01, IMPORT-02, BUILTIN-04 |
+| DATA-01 | `openpine` | Д+К | toimplement | OP-08 | — |
+| DATA-02 | `pinelib` | Д+К | partial | OP-08, OP-15 | — |
+| DATA-03 | `pinelib` | Д+К | partial | OP-08, OP-22 | — |
+| DATA-04 | `marketdata-provider` | Д+К | partial | OP-04 | — |
+| DATA-05 | `marketdata-provider` | Д+К | partial | OP-09, OP-22 | — |
+| DATA-06 | `marketdata-provider` | И+Д+К | partial | OP-21 | — |
+| DATA-07 | `marketdata-provider` | Д+К | toimplement | OP-22 | — |
+| DATA-08 | `openpine` | К | toqualify | OP-04, OP-08, OP-21 | — |
+| RUN-01 | `openpine` | Д+К | partial | OP-05, OP-07, OP-13, OP-17 | — |
+| RUN-02 | `backtest_engine` | Д+И+К | toimplement | OP-10, OP-17 | — |
+| RUN-03 | `openpine-contracts` | Д+К | toimplement | OP-03, OP-04, OP-07, OP-10, OP-17 | — |
+| RUN-04 | `openpine` | Д+К | toimplement | OP-10, OP-17 | — |
+| RUN-05 | `openpine` | Д+К | partial | OP-10, OP-13, OP-17, OP-30 | — |
+| RUN-06 | `openpine` | Д+К | partial | OP-06, OP-25, OP-30 | — |
+| RUN-07 | `openpine.workers` | Д+К | partial | OP-25, OP-33 | — |
+| RUN-08 | `pinelib` | Д+К | toqualify | OP-11 | — |
+| BROKER-01 | `backtest_engine` | Д+К | partial | OP-07, OP-15, OP-20 | — |
+| BROKER-02 | `backtest_engine` | Д+К | toimplement | OP-05, OP-07, OP-20 | — |
+| BROKER-03 | `backtest_engine` | Д+К | partial | OP-02, OP-07, OP-20 | — |
+| BROKER-04 | `backtest_engine` | И+К | partial | OP-07, OP-20 | — |
+| BROKER-05 | `backtest_engine` | Д+К | partial | OP-07, OP-20 | — |
+| BROKER-06 | `backtest_engine` | Д+К | partial | OP-07, OP-20 | — |
+| BROKER-07 | `backtest_engine` | Д+К | partial | OP-05, OP-07, OP-20 | — |
+| BROKER-08 | `openpine.verification` | К | toqualify | OP-07, OP-20, OP-32 | — |
+| PERF-01 | `openpine.verification` | К+Д | toqualify | OP-11, OP-23 | — |
+| PERF-02 | `pinelib` | Д+К | toqualify | OP-11, OP-23 | — |
+| PERF-03 | `openpine.compile` | Д+К | toqualify | OP-24 | — |
+| PERF-04 | `openpine.verification` | К | toqualify | OP-23 | — |
+| OPT-01 | `optimizer` | Д+К | partial | OP-03, OP-26 | — |
+| OPT-02 | `optimizer` | Д+К | partial | OP-26, OP-33 | — |
+| OPT-03 | `optimizer` | Д+К | partial | OP-27 | — |
+| OPT-04 | `optimizer` | Д+К | partial | OP-27 | — |
+| OPT-05 | `optimizer` | Д+К | toqualify | OP-27 | — |
+| UI-01 | `openpine-ui` | Д+К | partial | OP-02, OP-25, OP-27, OP-29, OP-31 | — |
+| UI-02 | `openpine-ui` | Д+К | partial | OP-02, OP-25, OP-29, OP-31 | — |
+| UI-03 | `openpine-ui` | К+Д | toqualify | OP-28 | — |
+| UI-04 | `pinelib` | Д+К | partial | OP-06, OP-30 | — |
+| UI-05 | `openpine.notifications` | Д+К | partial | OP-30 | — |
+| UI-06 | `openpine.verification` | Д+К | partial | OP-06, OP-30, OP-32 | — |
+| UI-07 | `openpine-ui` | К+Д | toqualify | OP-29 | — |
+| REL-01 | `openpine.verification` | И+Д+К | partial | OP-01 | — |
+| REL-02 | `openpine.verification` | Д+К | partial | OP-01, OP-31, OP-34 | — |
+| REL-03 | `openpine.distribution` | Д+К | partial | OP-01, OP-03, OP-09, OP-34 | — |
+| REL-04 | `openpine.distribution` | Д+К | partial | OP-34 | — |
+| REL-05 | `openpine` | Д+К | toqualify | OP-10, OP-34, OP-35 | — |
+| REL-06 | `openpine.verification` | Д+К | toimplement | OP-01, OP-12, OP-35 | — |
+| REL-07 | `openpine.distribution` | И+К | partial | OP-01, OP-34, OP-36 | — |
+| REL-08 | `openpine.distribution` | К | toqualify | OP-01, OP-34, OP-36 | — |

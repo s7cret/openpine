@@ -67,6 +67,7 @@ def build_fixture(base, *, portable=False, owner_namespaces=False):
     for relative in (
         "verification/stages.json",
         "docs/RC6_REVIEW_36.json",
+        "docs/OPENPINE_5_0_REMAINING_SPEC_2026-10-06.md",
         "docs/RC6_LIFECYCLE_SOURCES.json",
         "verification/stage2-remaining-matrix.json",
         "verification/stage2-remaining-matrix-lock.json",

@@ -386,6 +386,10 @@ def test_seven_raw_owners_accept_real_minimal_execution_and_keep_language_debt(
     }
     assert {view["plan_hash"] for view in views.values()} == {current["plan_hash"]}
     assert views["remainder"]["items"]
+    binding = views["remainder"]["remaining_spec_binding"]
+    assert binding["requirement_count"] == 68
+    assert len(binding["unclosed_requirements"]) == 68
+    assert binding["full_stage2_accepted"] is binding["full_release_accepted"] is False
 
 
 @pytest.mark.parametrize(

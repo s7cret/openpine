@@ -10,9 +10,14 @@ from openpine.verification.capabilities import build_capability_graph
 from openpine.verification.conformance import compare_corpus, load_corpus
 from openpine.verification.identity import read_json, seal, verify, write_json
 from openpine.verification.pytest_gate import validate_inventory
+from openpine.verification.review_ledger import (
+    read_review_ledger, validate_remaining_projection, validate_review_ledger,
+    validate_stage2_projection,
+)
 
 
 def validate_stages(plan: dict, ledger: dict) -> None:
+    validate_review_ledger(ledger)
     if plan.get("schema_id") != "openpine.delivery_stages.v1":
         raise ValueError("invalid stage plan")
     if plan.get("source_spec_sha256") != ledger["source_spec_sha256"]:
@@ -65,6 +70,7 @@ def validate_capabilities(graph: dict, policy: dict) -> None:
 def run_stage_gate(
     host: Path, stack: Path | dict[str, Path], evidence: Path, *, persist: bool = True
 ) -> dict:
+    read_review_ledger(host)
     plan = read_json(host / "verification/stages.json")
     validate_stages(plan, read_json(host / "docs/RC6_REVIEW_36.json"))
     sources = read_json(host / "docs/RC6_LIFECYCLE_SOURCES.json")
@@ -378,6 +384,7 @@ def run_stabilization_gate(
     # of historical test counts. This gate has no full-language promotion path.
     matrix = read_json(host / "verification/stage2-remaining-matrix.json")
     verify(matrix, "openpine.stage2_remaining_matrix.v1")
+    remaining_binding = read_review_ledger(host, matrix)
     if (
         matrix["content_hash"]
         != read_json(host / "verification/stage2-remaining-matrix-lock.json")[
@@ -410,6 +417,7 @@ def run_stabilization_gate(
                 "matrix_hash": matrix["content_hash"],
                 "criteria": matrix["criteria"],
                 "remaining": matrix["items"],
+                "remaining_spec_binding": remaining_binding,
             },
             "ok": accepted,
             "full_stage2_accepted": False,
@@ -418,7 +426,7 @@ def run_stabilization_gate(
     )
 
 
-def current_views(current: dict) -> dict:
+def current_views(current: dict, *, allow_legacy: bool = False) -> dict:
     """One validated current contract feeds progress, remainder and reporting."""
     from openpine.verification.identity import verify
 
@@ -428,6 +436,7 @@ def current_views(current: dict) -> dict:
         stage2["status"] != "in_progress"
         or stage2["full_stage2_accepted"] is not False
         or current["full_stage2_accepted"] is not False
+        or current.get("full_release_accepted") is not False
     ):
         raise ValueError("stabilization is not full Stage 2 acceptance")
     accepted = all(
@@ -445,6 +454,13 @@ def current_views(current: dict) -> dict:
         key: current[key]
         for key in ("candidate_hash", "plan_hash", "inventory_hash", "run_id")
     }
+    remaining_binding = stage2.get("remaining_spec_binding")
+    validate_stage2_projection(stage2)
+    if remaining_binding is None:
+        if not allow_legacy:
+            raise ValueError("missing remaining specification projection")
+    else:
+        validate_remaining_projection(remaining_binding)
     return {
         "progress": {
             **common,
@@ -455,6 +471,10 @@ def current_views(current: dict) -> dict:
             **common,
             "criteria": stage2["criteria"],
             "items": stage2["remaining"],
+            "remaining_spec_binding": remaining_binding,
+            "remaining_spec_scope": (
+                "legacy_without_remaining_spec" if remaining_binding is None else "source_bound_accounting"
+            ),
             "full_stage2_accepted": False,
         },
         "summary": {

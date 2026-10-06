@@ -6,12 +6,14 @@ from collections import Counter
 from pathlib import Path
 
 from openpine.verification.identity import read_json, seal, verify
+from openpine.verification.review_ledger import read_review_ledger
 
 
 def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
     root = host_root.resolve(strict=True)
     matrix = read_json(root / "verification/stage2-remaining-matrix.json")
     verify(matrix, "openpine.stage2_remaining_matrix.v1")
+    remaining_binding = read_review_ledger(root, matrix)
     lock = read_json(root / "verification/stage2-remaining-matrix-lock.json")
     if matrix["content_hash"] != lock["content_hash"]:
         raise ValueError("remaining matrix changed without explicit review")
@@ -97,6 +99,7 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
             "items": matrix["items"],
             "item_status_counts": dict(Counter(row["status"] for row in matrix["items"])),
             "work_item_count": len(matrix["items"]),
+            "remaining_spec_binding": remaining_binding,
             "count_policy": matrix["count_policy"],
             "builtin_index_replay_passed": builtin_index["ok"],
             "diagnostic_provisional_ok": diagnostic_provisional,
