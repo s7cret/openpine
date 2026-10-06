@@ -1,0 +1,443 @@
+{
+  "candidate": "0bbcfc08206efa8325a6148390fe228785247e5d",
+  "complete_campaigns_executed": false,
+  "control_artifacts": {
+    "junit": {
+      "path": "backtest_engine@py313/s000/a001/junit.xml",
+      "sha256": "sha256:648146b684d0bfee74d9f5bed9603bd863c5f43e18611997d14d9285793c42fa"
+    },
+    "phases": {
+      "path": "backtest_engine@py313/s000/a001/phases.json",
+      "sha256": "sha256:463386a94d217d5f10fdad1fee0e18f5edecb990ad431dbb1830808e4d114537"
+    },
+    "selectors": {
+      "path": "backtest_engine@py313/s000/a001/nodeids.args",
+      "sha256": "sha256:1758d286683d86ee52acac9deb94e6599d8262d9b810f1fa46dd6ddd0dd8c66a"
+    },
+    "stdout": {
+      "path": "backtest_engine@py313/s000/a001/stdout.log",
+      "sha256": "sha256:096b737643347a793098d7dce8399188df575c9a633a7fedc4ee47918133e2ce"
+    }
+  },
+  "control_probe": {
+    "oracle": "tests/unit/test_broker_guard_edges.py::test_projection_uses_total_trade_counts_and_signed_position[FLAT-0.0]",
+    "phase_outcomes": [
+      [
+        "setup",
+        "passed"
+      ],
+      [
+        "call",
+        "passed"
+      ],
+      [
+        "teardown",
+        "passed"
+      ]
+    ],
+    "plan_hash": "sha256:fca911eca4a6251ef8352307d981333de38407484477656164dd7ea7c824a167",
+    "run_hash": "sha256:bd9a2911ea76ab943b3c48b244f86f75c66542275aab15e4935ba8a74bb337a6",
+    "run_id": "int05-routing-control-001",
+    "source_commits": {
+      "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+      "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+      "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+      "openpine": "0bbcfc08206efa8325a6148390fe228785247e5d",
+      "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+      "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+      "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+      "pinelib": "b953e803d618a9784b117f8047ca709791aaca79"
+    },
+    "source_hash": "sha256:830541234baf59bf79b5ce968d3c76380e81da5485d87904e9802485e4c8f447"
+  },
+  "control_source_hash": "sha256:830541234baf59bf79b5ce968d3c76380e81da5485d87904e9802485e4c8f447",
+  "control_wall_seconds": 1.3374194769994574,
+  "final_bounded_regression": {
+    "deselected": 1,
+    "errors": 0,
+    "excluded": "test_ten_real_small_campaigns_prove_comparator_positive_path",
+    "junit_sha256": "sha256:ac09d000cc82f32edb8b11ba514d5aba428ab5368e0f2fc4636358718e10dfce",
+    "log_sha256": "sha256:82482b52e11ca0f3e28ee92e286a78b081f628422f0026ab2cef161ff7303b54",
+    "passed": 183,
+    "skipped": 0,
+    "tests": 183,
+    "wall_seconds": 22.896
+  },
+  "full_acceptance": false,
+  "lock_preflight": {
+    "routes": [
+      {
+        "actual_pinelib_tree": "8a4e7d490e6a64c74c28baa7ee9f4e56fc76a8fc4d8ca437b3a5c1ce95213195",
+        "declared_pinelib_sha": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5",
+        "declared_pinelib_tree": "8a4e7d490e6a64c74c28baa7ee9f4e56fc76a8fc4d8ca437b3a5c1ce95213195",
+        "local_committed_ref_errors": [],
+        "route": "routing-proof",
+        "structural_errors": []
+      },
+      {
+        "actual_pinelib_tree": "8a4e7d490e6a64c74c28baa7ee9f4e56fc76a8fc4d8ca437b3a5c1ce95213195",
+        "declared_pinelib_sha": "b953e803d618a9784b117f8047ca709791aaca79",
+        "declared_pinelib_tree": "8592d553de836479a03ee713a2dbf4ee13138165bc9632654bfd8fe5830aba62",
+        "local_committed_ref_errors": [],
+        "route": "source-route-proof",
+        "structural_errors": []
+      }
+    ],
+    "scope": "existing local committed dependency validator and namespace tree comparison; no full preparation or remote gate"
+  },
+  "minimum_free_bytes": 21474836480,
+  "mutant_remote_refs": {
+    "s7cret/openpine": {
+      "branch": "implementation/int05-negative-routing-proof-20261006",
+      "sha": "7c126d2f0f68d733488591497624f9e88df42fea"
+    },
+    "s7cret/pinelib": {
+      "branch": "implementation/int05-negative-proof-na-20261006",
+      "sha": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+    }
+  },
+  "proof_helper_prelaunch_failure": "first helper omitted portable owner launch; no pytest attempt existed; first inputs/log preserved, corrected helper reused them without overwrite",
+  "proof_helper_prelaunch_retries": 1,
+  "reader_targeted": {
+    "junit_sha256": "sha256:660d64dcdb0a82b9d40433d35581c2586c39975bcbf1613e63d97092bb7af10b",
+    "log_sha256": "sha256:475bcfb56b286d857c4310602373e306e2cb722ad6df6053d0e1aff939c18220",
+    "passed": 23,
+    "tests": 23,
+    "wall_seconds": 6.991
+  },
+  "remaining": [
+    "parent reader/routing/design review",
+    "source-mode admissibility or tracked full-scope route decision",
+    "freeze all ten final producer tuples and routed diffs",
+    "first complete baseline calibration and durable budget checkpoint",
+    "twenty literal actual F/A mutant campaigns",
+    "provider live 5 and existing full acceptance owners",
+    "remaining 68 requirements"
+  ],
+  "routes": [
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [
+          "docs/RC6_LIFECYCLE_SOURCES.json",
+          "openpine/stack-lock.json"
+        ],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": [
+          "pinelib/core/values.py"
+        ]
+      },
+      "affected_count": 26190,
+      "affected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "marketdata-provider",
+        "openpine",
+        "openpine-contracts",
+        "optimizer",
+        "pine2ast",
+        "pinelib"
+      ],
+      "affected_plan_hash": "sha256:68822328d378ff1c339d85379b760af1c161a3bbfa751978af8aedf511614c81",
+      "all_changed_selectors": [
+        "openpine/docs/RC6_LIFECYCLE_SOURCES.json",
+        "openpine/openpine/stack-lock.json",
+        "pinelib/pinelib/core/values.py"
+      ],
+      "collection_hash": "sha256:620eedfd4cca27a5a947608501b80018218b85fd5a9fa34b2d862305b48ac87c",
+      "complete_campaigns_executed": false,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "full_acceptance": false,
+      "full_count": 26190,
+      "full_plan_hash": "sha256:08f3eba7ae04fbf32bcc32852839eb5a69899c6ca3ab8f7f8327f1ff970bd07a",
+      "git_bundles_sha256": {
+        "ast2python": "sha256:f1fcb4301a74f733afcd20e88cb68127784efc2af51009a6843dd947506d7170",
+        "backtest_engine": "sha256:347b4a5d7d470645b4524b9d4f6b562943cf8ffca71ab20469466b01e4594b67",
+        "marketdata-provider": "sha256:393086ae3c5054db470053ce01a415f936f417d6c979b9174cefd55347d32fc7",
+        "openpine": "sha256:954c1b3d8ee3751d5fc1e2b99794e605ad922f8d1fc74cb24889a2c4f6d19b54",
+        "openpine-contracts": "sha256:9e52e4abbc6855cdb54c4330206bdc1cad444d3bddef595a60bcc461673ab66b",
+        "optimizer": "sha256:8447dd78385381b17f5001762bdc20908489687bea24516bb0d44b54b60028a6",
+        "pine2ast": "sha256:da2684936b05eb9e32dab7a868369100cfd248840f5fddcaef432e5666d6aa34",
+        "pinelib": "sha256:e540bea730d67544b6b874bdc5c3d9d3a3953b55d998af1e4886e9c289eda1e8"
+      },
+      "kind": "actual committed source-mode routing probe; no test-ci prepare or wheelhouse claim",
+      "minimum_free_bytes": 21474836480,
+      "native_ci_plan_hash": "sha256:df5b1e949bfe09fd27ba1cbc92bbfff38d3b4aceb1f0fa904b784ecd8138acb5",
+      "observed_compiler_producers": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "observed_host_commit": "7c126d2f0f68d733488591497624f9e88df42fea",
+      "observed_import_origins": {
+        "ast2python": [
+          "/workspace/int05/routing-proof/ast2python/ast2python"
+        ],
+        "backtest_engine": [
+          "/workspace/int05/routing-proof/backtest_engine/backtest_engine"
+        ],
+        "marketdata-provider": [
+          "/workspace/int05/routing-proof/marketdata-provider/marketdata_provider"
+        ],
+        "openpine": [
+          "/workspace/int05/routing-proof/openpine/openpine"
+        ],
+        "openpine-contracts": [
+          "/workspace/int05/routing-proof/openpine-contracts/openpine_contracts"
+        ],
+        "optimizer": [
+          "/workspace/int05/routing-proof/optimizer/optimizer"
+        ],
+        "pine2ast": [
+          "/workspace/int05/routing-proof/pine2ast/pine2ast"
+        ],
+        "pinelib": [
+          "/workspace/int05/routing-proof/pinelib/pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_components": [],
+      "probe": {
+        "oracle": "tests/unit/test_broker_guard_edges.py::test_projection_uses_total_trade_counts_and_signed_position[FLAT-0.0]",
+        "phase_outcomes": [
+          [
+            "setup",
+            "passed"
+          ],
+          [
+            "call",
+            "failed"
+          ],
+          [
+            "teardown",
+            "passed"
+          ]
+        ],
+        "plan_hash": "sha256:4c318d5f0416992f152cead0df2f5788358641dea844ce3ee3ea19d5f040c520",
+        "run_hash": "sha256:1c278eb04e17b52d68393158ad25715a587d1eabfa8173fb47d01439aa442403",
+        "run_id": "int05-routing-tracked-001",
+        "source_commits": {
+          "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+          "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+          "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+          "openpine": "7c126d2f0f68d733488591497624f9e88df42fea",
+          "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+          "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+          "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+          "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+        },
+        "source_hash": "sha256:298f6a6e8905fda12e89a6868094d86c4479969a05a0c22e4ce1fad0b848fb5e"
+      },
+      "probe_artifacts": {
+        "junit": {
+          "path": "backtest_engine@py313/s000/a001/junit.xml",
+          "sha256": "sha256:04b97b70b3f8fe14579e2cf93aabdce0af4260068e25432cf77ddf91920306c8"
+        },
+        "phases": {
+          "path": "backtest_engine@py313/s000/a001/phases.json",
+          "sha256": "sha256:7ccf80edccd272e74e8689e7ca1c4756569aaca7560e989885337b2e30721005"
+        },
+        "selectors": {
+          "path": "backtest_engine@py313/s000/a001/nodeids.args",
+          "sha256": "sha256:1758d286683d86ee52acac9deb94e6599d8262d9b810f1fa46dd6ddd0dd8c66a"
+        },
+        "stdout": {
+          "path": "backtest_engine@py313/s000/a001/stdout.log",
+          "sha256": "sha256:4fe0e7892a28c5878fe196607655c80f483ad4e123560cb3da701cf6690f7afe"
+        }
+      },
+      "probe_minimum_observed_free_bytes": 29071097856,
+      "probe_wall_seconds": 1.3707824510001956,
+      "qualification": false,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "retries": 0,
+      "source_archive_sha256": "sha256:2ce5a6952424de7801b6c525800a6d83c2356ba33f2925548b8fa9b426493bb3",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "7c126d2f0f68d733488591497624f9e88df42fea",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "source_hash": "sha256:298f6a6e8905fda12e89a6868094d86c4479969a05a0c22e4ce1fad0b848fb5e",
+      "wall_seconds": 11.192763741999443
+    },
+    {
+      "actual_git_diff": {
+        "ast2python": [],
+        "backtest_engine": [],
+        "marketdata-provider": [],
+        "openpine": [],
+        "openpine-contracts": [],
+        "optimizer": [],
+        "pine2ast": [],
+        "pinelib": [
+          "pinelib/core/values.py"
+        ]
+      },
+      "affected_count": 20984,
+      "affected_owners": [
+        "ast2python",
+        "backtest_engine",
+        "openpine",
+        "optimizer",
+        "pinelib"
+      ],
+      "affected_plan_hash": "sha256:d2ba8f5abaa5e63e218d384b25afac4a307ff6269fd356c3526df1d7d99bda1b",
+      "all_changed_selectors": [
+        "pinelib/pinelib/core/values.py"
+      ],
+      "collection_hash": "sha256:757140bfaabd2355b90ff65a963c21207ff0265cfe798292154de9769db75d4b",
+      "complete_campaigns_executed": false,
+      "environment_hash": "sha256:37c1c421d6ffa09d5415dfd3c2f546ad0b42a743e7d5ac99e461f6af186fedb2",
+      "full_acceptance": false,
+      "full_count": 26190,
+      "full_plan_hash": "sha256:cf3008353fe7b09dc117c1c96e3588692b5bbf80fc5f7f9a0d9e7428fc10a73e",
+      "git_bundles_sha256": {
+        "ast2python": "sha256:39cf3da1823c5f61814482681d09f62d211e185f62791e08a5ac6940c207ad37",
+        "backtest_engine": "sha256:3ca73fdb6d6aab2e20bb3ac15a4ddd6970f77ecca40185b234551ba3f21772e0",
+        "marketdata-provider": "sha256:4447949eec8da4ed5872aab7c4f451914f5e3f34c24a061d5d6b8646343d4f73",
+        "openpine": "sha256:89d239e98e43501e598ec034bfe5805bd5b915eebed040616f8abbbd8abc3b5b",
+        "openpine-contracts": "sha256:3bd2de3b731e88ccb5ef23705d2d8da85b8dec2f19a7130a6a8e20c6f7552b05",
+        "optimizer": "sha256:d6138060a05a0076dbc749a81c5d6f591bc10808cb644aa63cbfff33f543c022",
+        "pine2ast": "sha256:f0023085dee779dcb3e115e82a7c9282028faba06e6017432cd23ede6f39182b",
+        "pinelib": "sha256:a2ef4fa50c57cf0b6e29bfbc0fe604670352f505665394ebb3435098fde40990"
+      },
+      "kind": "actual committed source-mode routing probe; no test-ci prepare or wheelhouse claim",
+      "minimum_free_bytes": 21474836480,
+      "native_ci_plan_hash": "sha256:add205d737aba4c0339ed1d97b452d99f70b31481675134da77b6f74d9ff8c07",
+      "observed_compiler_producers": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "observed_host_commit": "0bbcfc08206efa8325a6148390fe228785247e5d",
+      "observed_import_origins": {
+        "ast2python": [
+          "/workspace/int05/source-route-proof/ast2python/ast2python"
+        ],
+        "backtest_engine": [
+          "/workspace/int05/source-route-proof/backtest_engine/backtest_engine"
+        ],
+        "marketdata-provider": [
+          "/workspace/int05/source-route-proof/marketdata-provider/marketdata_provider"
+        ],
+        "openpine": [
+          "/workspace/int05/source-route-proof/openpine/openpine"
+        ],
+        "openpine-contracts": [
+          "/workspace/int05/source-route-proof/openpine-contracts/openpine_contracts"
+        ],
+        "optimizer": [
+          "/workspace/int05/source-route-proof/optimizer/optimizer"
+        ],
+        "pine2ast": [
+          "/workspace/int05/source-route-proof/pine2ast/pine2ast"
+        ],
+        "pinelib": [
+          "/workspace/int05/source-route-proof/pinelib/pinelib"
+        ]
+      },
+      "policy_hash": "sha256:5e73c95505fc9ab1829100b5183d5e745c869025c0ca1a661aaf39b822412b07",
+      "preparation_components": [
+        "marketdata-provider",
+        "openpine-contracts",
+        "pine2ast"
+      ],
+      "probe": {
+        "oracle": "tests/unit/test_broker_guard_edges.py::test_projection_uses_total_trade_counts_and_signed_position[FLAT-0.0]",
+        "phase_outcomes": [
+          [
+            "setup",
+            "passed"
+          ],
+          [
+            "call",
+            "failed"
+          ],
+          [
+            "teardown",
+            "passed"
+          ]
+        ],
+        "plan_hash": "sha256:b666da7b8adff41655380d5c43d23cd90204d55ae7e5e3570c74cbe3d32e85ae",
+        "run_hash": "sha256:50b9eac7508fc4690a15528d8626f14a99aa5d1c9b6d8361017c6789dba737c1",
+        "run_id": "int05-routing-external-001",
+        "source_commits": {
+          "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+          "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+          "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+          "openpine": "0bbcfc08206efa8325a6148390fe228785247e5d",
+          "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+          "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+          "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+          "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+        },
+        "source_hash": "sha256:4bef0df6fe324413370d77975d431fe696341eba6aebec1f90f859d0161de003"
+      },
+      "probe_artifacts": {
+        "junit": {
+          "path": "backtest_engine@py313/s000/a001/junit.xml",
+          "sha256": "sha256:59a49394d90bcd0f61c4cddcab8b328e640eb526d1f2d58f0fd6701676630bca"
+        },
+        "phases": {
+          "path": "backtest_engine@py313/s000/a001/phases.json",
+          "sha256": "sha256:ce133b5930888ee21d4d91994ee1ed3b359ca6177b9c2ee203954339234c983f"
+        },
+        "selectors": {
+          "path": "backtest_engine@py313/s000/a001/nodeids.args",
+          "sha256": "sha256:1758d286683d86ee52acac9deb94e6599d8262d9b810f1fa46dd6ddd0dd8c66a"
+        },
+        "stdout": {
+          "path": "backtest_engine@py313/s000/a001/stdout.log",
+          "sha256": "sha256:4fe0e7892a28c5878fe196607655c80f483ad4e123560cb3da701cf6690f7afe"
+        }
+      },
+      "probe_minimum_observed_free_bytes": 28973244416,
+      "probe_wall_seconds": 1.3965853510007946,
+      "qualification": false,
+      "required_gates": [
+        "branch-reconciliation",
+        "foundation",
+        "protected-workers",
+        "coverage",
+        "frontend",
+        "packages",
+        "test-performance"
+      ],
+      "retries": 0,
+      "source_archive_sha256": "sha256:a4ae89fb20259d8ec142ccdd19dcd09897addb7e17ed7dcb9ad8378a290261db",
+      "source_commits": {
+        "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
+        "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+        "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
+        "openpine": "0bbcfc08206efa8325a6148390fe228785247e5d",
+        "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+        "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+        "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
+        "pinelib": "d92b264d0a92c3c460a9068d0de1f4ed8c5320c5"
+      },
+      "source_hash": "sha256:4bef0df6fe324413370d77975d431fe696341eba6aebec1f90f859d0161de003",
+      "wall_seconds": 10.31523415599986
+    }
+  ],
+  "scope": "bounded actual producer routing and single named oracle; no complete full/affected qualification",
+  "test_execution_retries": 0
+}

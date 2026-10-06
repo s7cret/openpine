@@ -1,5 +1,11 @@
 # INT05: qualified profile boundaries, parent review checkpoint
 
+Historical initial-base evidence follows. For the current integration candidate,
+negative reader, actual producer routing and mandatory 20 GiB free-disk floor,
+use [INT05_NEGATIVE_READER_REVIEW.md](INT05_NEGATIVE_READER_REVIEW.md). Its execution
+design and budget supersede the forecasts below; no complete qualification has
+been executed.
+
 This bounded package starts at OpenPine commit
 `3fbd28568948340bb75def1db2f882d3d65ce72c`, tree
 `8a8f7086c435c85977fa817fbf542831741e4394`, and preserves all seven library
