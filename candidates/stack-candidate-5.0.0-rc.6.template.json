@@ -18,7 +18,7 @@
     "pinelib": {
       "repo": "s7cret/pinelib",
       "ref": "implementation/p2-varip-extension-lifecycle-20261006",
-      "sha": "9b42036aa83a880911caf0048a4f65c3580d9847",
+      "sha": "b953e803d618a9784b117f8047ca709791aaca79",
       "version": "5.0.0rc6"
     },
     "backtest_engine": {

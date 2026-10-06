@@ -21,7 +21,7 @@ from openpine.verification.execution_process import run_logged
 from pine2ast.libraries import LibraryStore
 from pinelib import CallbackFrame, RuntimeLanguageContext
 from pinelib.errors import PineRuntimeError
-from pinelib.reference.array import array_get, array_push, array_set, array_slice
+from pinelib.reference.array import array_get, array_pop, array_push, array_set, array_slice
 from pinelib.reference.heap import ReferenceHandle
 from pinelib.reference.udt import udt_get
 from pinelib.runtime.metadata import BarValues, InstrumentContext, TimeframeContext
@@ -268,3 +268,63 @@ def test_lang08_emitted_late_graph_mutation_rejects_callback_atomically(tmp_path
         {"before_checkpoint": before, "final_checkpoint": final},
         {"mutation": mutation, "error_code": error.value.code, "attempt_atomic": True,
          "pine_version": version, "imported": imported, "compact": compact, "deferred": deferred})
+
+
+@pytest.mark.parametrize("version", [5, 6])
+@pytest.mark.parametrize("imported", [False, True])
+@pytest.mark.parametrize("shape", ["array", "udt"])
+@pytest.mark.parametrize("compact", [False, True])
+@pytest.mark.parametrize("transition", ["callback_abort", "late_root_rejection", "working_shrink_rejection"])
+def test_lang08_emitted_confirmed_deferred_transient_baseline_and_publication(tmp_path, version, imported, shape, compact, transition):
+    artifact, source, library, commits = compile_graph(tmp_path, version, imported, shape, transient=True)
+    save_case(tmp_path, artifact, source, library, commits, {},
+        {"transition": transition, "expected_published_value": 8})
+    host = executor(artifact, source, version, compact)
+    tx = begin(host, 0, True)
+    host.generated_class(tx).run()
+    first = generated_graph(tx, shape)
+    tx.commit()
+    previous = host.session._state_json()
+    transcript = host.session.transcript.to_dict()
+    pending = host.session._pending_bar_frame
+    tx = begin(host, 1, True)
+    host.generated_class(tx).run()
+    root, backing, window = generated_graph(tx, shape)
+    if transition == "callback_abort":
+        tx.abort()
+        saved = json.loads(json.dumps(host.session.checkpoint().to_dict()))
+        clone = executor(artifact, source, version, compact)
+        clone.session.restore(saved)
+        assert clone.session.checkpoint().to_dict() == saved
+        for current in (host, clone):
+            tx = begin(current, 2, True)
+            current.generated_class(tx).run()
+            tx.commit()
+            current.session.finalize_bar(0)
+        final = host.session.checkpoint().to_dict()
+        assert clone.session.checkpoint().to_dict() == final
+    else:
+        if transition == "late_root_rejection":
+            value = tx.state("extension-root", owner="extension", schema_version="1",
+                             initial={"nested": []}, varip=True)
+            value["nested"].append(root)
+            finish = tx.abort
+        else:
+            array_pop(tx.references, backing)
+            finish = tx.commit
+        with pytest.raises(PineRuntimeError, match="bounds") as error:
+            finish()
+        assert error.value.code == "PL1611"
+        assert tx.closed and host.session._active is None
+        assert host.session._state_json() == previous
+        assert host.session.transcript.to_dict() == transcript
+        assert host.session._pending_bar_frame == pending
+        assert array_get(host.session.references, first[2], 0) == 8
+        with pytest.raises(PineRuntimeError, match="active|provisional"):
+            host.session.checkpoint()
+        host.session.finalize_bar(0)
+        final = host.session.checkpoint().to_dict()
+        executor(artifact, source, version, compact).session.restore(final)
+    save_case(tmp_path, artifact, source, library, commits, {"final_checkpoint": final},
+        {"transition": transition, "pine_version": version, "imported": imported,
+         "shape": shape, "compact": compact, "observed_published_value": 8})

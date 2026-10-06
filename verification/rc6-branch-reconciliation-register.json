@@ -186,13 +186,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11807, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5346 cases, including eight confirmed deferred ordinary-publication regressions.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11855, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5370 cases, including confirmed deferred publication, same-bar abort proofs and strict working projection admission.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:a4cae07b4ab5d62351f2ed376b586ebcae1ff737c90889e0562b4e4d398fc26f",
+          "sha256": "sha256:6be79ecc1d21eaa52ad773156f2828c335a07f6f5171dd4aa3bfba26a563512f",
           "nodes": []
         }
       ],
