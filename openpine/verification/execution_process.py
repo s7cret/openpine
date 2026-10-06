@@ -4,6 +4,17 @@ import os
 import signal
 import subprocess
 from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+
+def start_declared_process(argv: list[str], **kwargs) -> subprocess.Popen:
+    """Shared shell-free launch with an explicit executable and argv."""
+    if not argv or any(not isinstance(v, str) or "\x00" in v for v in argv) or not Path(argv[0]).is_absolute():
+        raise ValueError("need an absolute executable and declared argv")
+    if kwargs.get("shell"):
+        raise ValueError("declared commands never use a shell")
+    return subprocess.Popen(argv, **kwargs)  # noqa: S603, S607 -- declared argv, shell=False; exit status is checked
 
 def _stop_group(process: subprocess.Popen, grace: float=2.0) -> None:
     if os.name == 'posix':
@@ -41,7 +52,7 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
         raise ValueError('need absolute executable, argv and a positive timeout')
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
-    provenance = {}
+    provenance: dict[str, dict[str, Any]] = {}
     for index, (name, spec) in enumerate((inputs or {}).items()):
         source = Path(spec['path'])
         if source.is_symlink() or hash_file(source) != spec['sha256']:
@@ -89,7 +100,7 @@ def run_logged(argv: list[str], *, cwd, output, env: dict[str, str], timeout: in
         with (output / 'stdout.log').open('xb') as out, (output / 'stderr.log').open('xb') as err:
             with input_file.open('rb') if stdin is not None else open(os.devnull, 'rb') as inp:
                 check_tool_aliases()
-                process = subprocess.Popen(argv, cwd=cwd, env=env, stdin=inp, stdout=out, stderr=err, start_new_session=os.name == 'posix')  # noqa: S603, S607 -- declared argv, shell=False; exit status is checked
+                process = start_declared_process(argv, cwd=cwd, env=env, stdin=inp, stdout=out, stderr=err, start_new_session=os.name == 'posix')
                 try:
                     returncode = process.wait(timeout=timeout)
                     status = 'completed' if returncode == 0 else 'failed'
