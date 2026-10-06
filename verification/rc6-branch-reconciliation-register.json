@@ -186,13 +186,13 @@
     {
       "id": "verification/inventory.json",
       "decision": "superseded_with_mapping",
-      "reason": "PR count 9723; current reviewed-addition inventory count 11679, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "reason": "PR count 9723; current reviewed-addition inventory count 11807, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately. PineLib owner lifecycle and boundary additions preserve its 5172 hashed baseline and existing 26 additions, yielding 5346 cases, including eight confirmed deferred ordinary-publication regressions.",
       "previous_decision": "superseded_with_mapping",
       "mappings": [
         {
           "component": "openpine",
           "path": "verification/inventory.json",
-          "sha256": "sha256:5469dabc8d912da42f775d5d1b7e1b68b13820551fccb1e9ac85239b2db3252f",
+          "sha256": "sha256:a4cae07b4ab5d62351f2ed376b586ebcae1ff737c90889e0562b4e4d398fc26f",
           "nodes": []
         }
       ],
@@ -250,7 +250,16 @@
           "nodes": []
         }
       ],
-      "int07_compile_previous_reason": "PR count 9723; current reviewed-addition inventory count 11673, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
+      "int07_compile_previous_reason": "PR count 9723; current reviewed-addition inventory count 11673, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately.",
+      "lang08_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "verification/inventory.json",
+          "sha256": "sha256:5469dabc8d912da42f775d5d1b7e1b68b13820551fccb1e9ac85239b2db3252f",
+          "nodes": []
+        }
+      ],
+      "lang08_previous_reason": "PR count 9723; current reviewed-addition inventory count 11679, baseline 11027 retained. Exact collection validates the unchanged baseline, additive node set and four reviewed neutral display IDs. Historical mappings are preserved separately."
     },
     {
       "id": "verification/stage2-callable-lock.json",
