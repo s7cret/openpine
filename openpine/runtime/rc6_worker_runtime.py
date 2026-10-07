@@ -23,7 +23,7 @@ from backtest_engine.core.delegated_strategy_intents import (
 )
 from backtest_engine.core.intent_replay import IntentReplayIdentity
 from backtest_engine.core.strategy_capabilities import (
-    strategy_values_from_projection, strategy_values_from_state,
+    strategy_values_from_projection,
 )
 from marketdata_provider import to_pine_timeframe
 from openpine_contracts import (
@@ -682,10 +682,6 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     """Run the engine+generated loop inside the sandbox. Host sees no per-bar IPC."""
 
     from backtest_engine import BacktestCallbacks, BacktestEngine
-    from backtest_engine.core.intent_replay import (
-        admit_sealed_intent_tape,
-        apply_live_intents_for_bar,
-    )
 
     generated = request["generated_artifact"]
     context = request["execution_context"]
@@ -769,50 +765,9 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
     completed_bars = 0
     tape_events: list[dict[str, Any]] = []
 
-    class _BulkStrategy:
-        required_runtime_capabilities: tuple[str, ...] = ()
+    from openpine.runtime.generated_backtest import generated_strategy
 
-        def __init__(self, params: dict[str, Any], runtime: Any, ctx: Any) -> None:
-            del runtime
-            if params != dict(session.inputs.values):
-                raise ValueError("bulk broker parameters differ from applied Pine inputs")
-            self.ctx = ctx
-
-        def run_callback(self, bar: Any, event: ExecutionEvent) -> None:
-            bar_index = event.bar_index
-            values = BarValues(
-                open=float(bar.open),
-                high=float(bar.high),
-                low=float(bar.low),
-                close=float(bar.close),
-                volume=float(bar.volume or 0),
-                time=int(bar.time),
-                time_close=int(bar.time_close or bar.time),
-            )
-            execution = session.execute_callback(
-                values, event,
-                strategy_values=strategy_values_from_state(self.ctx.state, self.ctx.config),
-                open_entry_ids=tuple(trade.entry_id for trade in self.ctx.state._open_trades_ref),
-                broker_equity=self.ctx.state.equity,
-            )
-            batch = [dict(intent) for intent in execution.intents]
-            tape_events.extend(batch)
-            if not batch:
-                return
-            origin = int(batch[0]["sequence"])
-            current = admit_sealed_intent_tape(batch, sequence_origin=origin)
-            apply_live_intents_for_bar(
-                self.ctx,
-                current,
-                bar_index,
-                bar_open_time_utc_ms=int(bar.time),
-            )
-
-        def export_state(self) -> dict[str, Any]:
-            return session.export_state()
-
-        def restore_state(self, state: Any) -> None:
-            session.restore_state(state)
+    _BulkStrategy = generated_strategy(session, tape_events)
 
     from openpine.runtime.progress import ProgressReporter
     total = len(engine_bars)
