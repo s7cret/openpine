@@ -21,7 +21,7 @@ from openpine.verification.execution_plan import validate_plan
 from openpine.verification.execution_binding import locations, validate_binding
 from openpine.verification.identity import read_json, seal, verify
 from openpine.verification.pytest_gate import collection_hash, validate_phase_reports
-from openpine.verification.execution_process import _stop_group
+from openpine.verification.execution_process import _stop_group, process_family_launch_error, start_declared_process, validate_process_family
 from openpine.verification.execution_disk import INLINE_LIMIT, ObservationWriter, iter_observations
 RUN_SCHEMA = 'openpine.test_campaign_run.v1'
 AGGREGATE_SCHEMA = 'openpine.test_campaign_aggregate.v1'
@@ -114,9 +114,13 @@ def _validate_primary_artifacts(plan: dict, evidence_root: Path, task: dict, sha
     expected_source = plan['source']['content_hash']
     expected_run_id = attempt['run_id']
     artifacts = attempt['artifacts']
+    if 'process-family' not in artifacts:
+        raise ValueError('missing primary process-family evidence')
     for desc in artifacts.values():
         if hash_file(evidence_path(evidence_root, desc['path'])) != desc['sha256']:
             raise ValueError('attempt artifact checksum mismatch')
+    validate_process_family(evidence_path(evidence_root, artifacts['process-family']['path']),
+                            argv=attempt.get('argv'), cwd=attempt.get('cwd'))
     if shard.get('coverage', task.get('coverage', False)) and 'coverage' not in artifacts:
         raise ValueError('required coverage data is missing')
     phases = read_artifact(evidence_root, artifacts['phases'])
@@ -199,7 +203,7 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
             status = 'cancelled'
         else:
             with (folder / 'stdout.log').open('xb') as stream:
-                process = subprocess.Popen(argv, cwd=execution_roots[task['component']], env=env, stdout=stream, stderr=subprocess.STDOUT, start_new_session=os.name == 'posix')  # noqa: S603, S607 -- declared argv, shell=False; exit status is checked
+                process = start_declared_process(argv, family_evidence=folder / 'process-family.json', cwd=execution_roots[task['component']], env=env, stdout=stream, stderr=subprocess.STDOUT, start_new_session=os.name == 'posix')
                 while process.poll() is None:
                     if cancellation.is_set():
                         status = 'cancelled'
@@ -213,6 +217,9 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
                 returncode = process.poll()
                 if status not in {'timeout', 'cancelled'}:
                     status = 'completed' if returncode == 0 else 'failed'
+                    launch_error = process_family_launch_error(folder / 'process-family.json')
+                    if launch_error is not None:
+                        status, error = ('infrastructure_error', launch_error)
     except (OSError, ValueError) as caught:
         status, error = ('infrastructure_error', str(caught))
     finally:
@@ -225,7 +232,7 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
                 if status == 'completed':
                     status, error = ('failed', f'orphan child process after pytest exit; group members: {members[:16]!r}')
     artifacts = {}
-    for key, filename in (('phases', 'phases.json'), ('junit', 'junit.xml'), ('stdout', 'stdout.log'), ('selectors', 'nodeids.args'), ('coverage', '.coverage')):
+    for key, filename in (('phases', 'phases.json'), ('junit', 'junit.xml'), ('stdout', 'stdout.log'), ('selectors', 'nodeids.args'), ('coverage', '.coverage'), ('process-family', 'process-family.json')):
         path = folder / filename
         if path.is_file() and (not path.is_symlink()):
             artifacts[key] = descriptor(output, path)

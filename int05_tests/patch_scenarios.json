@@ -1,0 +1,93 @@
+[
+  {
+    "id": "narrow-local",
+    "owner": "openpine",
+    "path": "openpine/timezones.py",
+    "before": "DEFAULT_TIMEZONE = \"UTC+03:00\"",
+    "after": "DEFAULT_TIMEZONE = \"UTC+04:00\"",
+    "oracle": "tests/test_timezone_settings.py::test_timezone_resolution_supports_msk_offsets_utc_and_iana",
+    "expected_owners": ["openpine"]
+  },
+  {
+    "id": "consumer-boundary",
+    "owner": "marketdata-provider",
+    "path": "marketdata_provider/core/bar.py",
+    "before": "RUNTIME_CONTRACT_VERSION = \"1.4\"",
+    "after": "RUNTIME_CONTRACT_VERSION = \"INT05-negative\"",
+    "oracle": "tests/test_smoke.py::test_runtime_contract_version",
+    "expected_owners": ["marketdata-provider", "openpine", "optimizer"]
+  },
+  {
+    "id": "consumer-runtime-boundary",
+    "owner": "pinelib",
+    "oracle_owner": "backtest_engine",
+    "path": "pinelib/core/values.py",
+    "before": "return value is na",
+    "after": "return False",
+    "oracle": "tests/unit/test_broker_guard_edges.py::test_projection_uses_total_trade_counts_and_signed_position[FLAT-0.0]",
+    "expected_owners": ["ast2python", "backtest_engine", "openpine", "optimizer", "pinelib"]
+  },
+  {
+    "id": "shared-fixture",
+    "owner": "pinelib",
+    "path": "tests/fixtures/ema_first_source_v1_checkpoints.json",
+    "before": "\"sequence\": 3",
+    "after": "\"sequence\": -1",
+    "oracle": "tests/test_ema_first_source.py::test_genuine_legacy_checkpoint_boundary[native-ema-1-False]",
+    "expected_owners": "all"
+  },
+  {
+    "id": "schema",
+    "owner": "openpine-contracts",
+    "path": "openpine_contracts/schemas/openpine.execution_event.v1.json",
+    "before": "\"minimum\": 0",
+    "after": "\"minimum\": 1",
+    "oracle": "tests/test_execution_event.py::test_callback_descriptor_roundtrips_and_has_distinct_last_flags",
+    "expected_owners": "all"
+  },
+  {
+    "id": "catalog",
+    "owner": "pinelib",
+    "path": "pinelib/abi/target_manifest.json",
+    "before": "\"unknown\":0",
+    "after": "\"unknown\":1",
+    "oracle": "tests/test_entry_risk_qualifier_manifest.py::test_checked_in_manifest_reproduces_exactly",
+    "expected_owners": "all"
+  },
+  {
+    "id": "abi",
+    "owner": "pinelib",
+    "path": "pinelib/abi/runtime_values.py",
+    "before": "return tx.value_open",
+    "after": "return tx.value_close",
+    "oracle": "tests/test_abi_surface_invariants.py::test_runtime_value_abi_exposes_injected_bar_context_and_metadata_exactly",
+    "expected_owners": "all"
+  },
+  {
+    "id": "runtime-state",
+    "owner": "pinelib",
+    "path": "pinelib/state/checkpoint.py",
+    "before": "return dict(_NA_MARKER)",
+    "after": "return None",
+    "oracle": "tests/test_checkpoint_na_roundtrip.py::test_na_series_is_decoded_once_and_roundtrips[True]",
+    "expected_owners": "all"
+  },
+  {
+    "id": "generator",
+    "owner": "ast2python",
+    "path": "ast2python/artifacts/generated.py",
+    "before": "\"schema_version\": \"3.0.0\"",
+    "after": "\"schema_version\": \"INT05-negative\"",
+    "oracle": "tests/stage4/test_core_defensive.py::test_artifact_commit_and_optional_verification_branches",
+    "expected_owners": "all"
+  },
+  {
+    "id": "selection-logic",
+    "owner": "openpine",
+    "path": "openpine/verification/execution_plan.py",
+    "before": "expanded = affected | {n for n, d in dependencies.items() if d & affected}",
+    "after": "expanded = affected",
+    "oracle": "rc6_tests/test_rc6_execution_platform.py::test_affected_graph_escalation_and_cycle_rejection",
+    "expected_owners": "all"
+  }
+]

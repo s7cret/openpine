@@ -10,6 +10,7 @@ from typing import Mapping
 from openpine.verification.execution_identity import hash_file, source_snapshot
 from openpine.verification.execution_plan import validate_plan
 from openpine.verification.identity import seal, verify
+from openpine.verification.execution_process import require_executable
 BINDING_SCHEMA = 'openpine.execution_binding.v1'
 
 def validate_binding(plan: dict, binding: dict) -> dict:
@@ -63,6 +64,7 @@ def checked_locations(plan: dict, binding: dict | None = None) -> tuple[dict[str
         raise ValueError('candidate changed; current candidate is stale: relocated source is not the frozen candidate')
     for name, executable in interpreters.items():
         path = Path(executable).resolve(strict=True)
+        require_executable(path)
         if hash_file(path) != plan['environments'][name]['identity']['executable_sha256']:
             raise ValueError('bound interpreter differs from frozen executable: ' + name)
     return roots, interpreters

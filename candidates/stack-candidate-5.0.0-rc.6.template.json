@@ -5,49 +5,49 @@
   "components": {
     "openpine-contracts": {
       "repo": "s7cret/openpine-contracts",
-      "ref": "preparation/rc6-cpython313-20261006",
-      "sha": "db1745756516b47466756c9c5d38fbbb95595a3b",
+      "ref": "79e7f329baf3feb28459b03577e3f236bf411ee2",
+      "sha": "79e7f329baf3feb28459b03577e3f236bf411ee2",
       "version": "5.0.0rc6"
     },
     "marketdata-provider": {
       "repo": "s7cret/marketdata-provider",
-      "ref": "implementation/int01-offline-precision-20261006",
+      "ref": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
       "sha": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
       "version": "5.0.0rc6"
     },
     "pinelib": {
       "repo": "s7cret/pinelib",
-      "ref": "implementation/p2-varip-extension-lifecycle-20261006",
-      "sha": "b953e803d618a9784b117f8047ca709791aaca79",
+      "ref": "720e5c642328de955e78f9372b250fd0f1c63703",
+      "sha": "720e5c642328de955e78f9372b250fd0f1c63703",
       "version": "5.0.0rc6"
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
-      "ref": "implementation/int01-oca-json-20261006",
-      "sha": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+      "ref": "76570b32cd6fa78adbcacb7b5d6582f7a9bafa3f",
+      "sha": "76570b32cd6fa78adbcacb7b5d6582f7a9bafa3f",
       "version": "5.0.0rc6"
     },
     "pine2ast": {
       "repo": "s7cret/pine2ast",
-      "ref": "implementation/int01-numeric-inputs-20261006",
+      "ref": "eb249402e67199b07e9880fadc14e03fb1651edc",
       "sha": "eb249402e67199b07e9880fadc14e03fb1651edc",
       "version": "5.0.0rc6"
     },
     "ast2python": {
       "repo": "s7cret/ast2python",
-      "ref": "preparation/rc6-cpython313-20261006",
+      "ref": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
       "sha": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
       "version": "5.0.0rc6"
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
-      "ref": "preparation/rc6-cpython313-20261006",
+      "ref": "623e2639581d23242109dd47e20f14f799fa7b88",
       "sha": "623e2639581d23242109dd47e20f14f799fa7b88",
       "version": "5.0.0rc6"
     },
     "openpine": {
       "repo": "s7cret/openpine",
-      "ref": "implementation/int08-product-current-20261006",
+      "ref": "implementation/run04-hosted-int04-int05-qualification-20261007",
       "version": "5.0.0rc6"
     }
   },

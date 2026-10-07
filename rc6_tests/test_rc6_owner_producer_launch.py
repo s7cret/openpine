@@ -147,6 +147,7 @@ def test_producer_policy_is_checked_before_execution(tmp_path, mutation):
     helper.write_text('# synthetic unit fixture\n')
     tool = tmp_path / 'python'
     tool.write_bytes(Path(sys.executable).read_bytes())
+    tool.chmod(0o700)
     policy = locator_policy()
     policy['owner_locator_slots']['helpers'] = 'directory'
     policy['stabilization']['package_harness_inputs'] = {'harness.py': {'path': {'owner_locator': 'helpers', 'relative': 'harness.py'}, 'sha256': hash_file(helper)}}
@@ -276,6 +277,7 @@ def test_owner_tool_capture_preserves_resolved_target_on_replay(tmp_path):
     from openpine.verification.identity import seal
     tool=tmp_path/'real-python'
     tool.write_bytes(Path(sys.executable).read_bytes())
+    tool.chmod(0o700)
     link=tmp_path/'python'
     link.symlink_to(tool)
     policy=locator_policy()
@@ -340,6 +342,7 @@ def test_frontend_producer_checks_its_tools_without_unrelated_package_locations(
     policy['owner_locator_slots']['unrelated']='executable'
     unused=tmp_path/'unused-package-python'
     unused.write_bytes(Path(sys.executable).read_bytes())
+    unused.chmod(0o700)
     attempt=tmp_path/'attempt'
     launch=freeze_owner_launch(policy,{'attempt':str(attempt),'python':sys.executable,'unrelated':str(unused)})
     plan=seal({'schema_id':'openpine.test_execution_plan.v1','policy_hash':digest(policy),'owner_launch':launch})
@@ -386,6 +389,7 @@ def test_owner_interpreter_identity_matches_collected_environment(tmp_path, drif
     policy['owner_environment_slots']={'python':'py'}
     tool=tmp_path/'observed-python'
     tool.write_bytes(Path(sys.executable).read_bytes()+(b'drift' if drift else b''))
+    tool.chmod(0o700)
     launch=freeze_owner_launch(policy,{'attempt':str(tmp_path/'attempt'),'python':str(tool)})
     nodes=previous['tasks'][0]['nodeids']
     inventories={'tiny@py':{'nodeids':nodes,'reviewed_lock':lock(nodes),'deselected':0,'source_hash':previous['source']['content_hash'],'environment_hash':previous['environments']['py']['identity']['content_hash']}}

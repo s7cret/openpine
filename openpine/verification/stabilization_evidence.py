@@ -76,11 +76,13 @@ def verify_command(root: Path, expected: dict, *, expected_stdout=None) -> dict:
         if row.get("source") != spec or row.get("after_sha256") != spec["sha256"] or hash_file(evidence_path(root, row["captured"]["path"])) != spec["sha256"] or row["captured"]["sha256"] != spec["sha256"]:
             raise ValueError("command input provenance changed")
     files = receipt.get("files", {})
-    if not {"stdout.log", "stderr.log"}.issubset(files):
-        raise ValueError("both primary command logs are required")
+    if not {"stdout.log", "stderr.log", "process-family.json"}.issubset(files):
+        raise ValueError("both primary command logs and process-family evidence are required")
     for name, checksum in files.items():
         if hash_file(evidence_path(root, name)) != checksum:
             raise ValueError("command input/log checksum mismatch")
+    from openpine.verification.execution_process import validate_process_family
+    validate_process_family(evidence_path(root, 'process-family.json'), argv=receipt['argv'], cwd=receipt['cwd'])
     if expected_stdout is not None:
         actual = json.loads(evidence_path(root, "stdout.log").read_text())
         if actual != expected_stdout:
