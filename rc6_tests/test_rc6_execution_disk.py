@@ -130,13 +130,30 @@ def test_observation_unavailable_fails_closed_before_dispatch(tmp_path, monkeypa
 
 
 def test_floor_equality_uses_available_blocks_and_repeats(tmp_path, monkeypatch):
-    plan, path = planned(tmp_path, monkeypatch, {'minimum_free_bytes': 100})
-    calls = observe(monkeypatch, [100])
-    run = campaign.run_campaign(plan, path, tmp_path / 'run', run_id='disk-equal')
-    assert not run['errors'] and len(calls) >= 4
-    assert run['disk_free_guard']['samples'] == len(calls)
-    assert run['disk_free_guard']['minimum_observed_free_bytes'] == 100
-    assert aggregate(plan, tmp_path / 'run', run)['ok']
+    from openpine.verification.identity import read_json
+
+    policy = read_json(platform.HOST / 'verification/execution-policy.json')
+    guard = policy['disk_free_guard']
+    floor = guard['minimum_free_bytes']
+    assert type(floor) is int and floor == 3_000_000_000
+    for available in (floor - 1, floor, floor + 1):
+        case = tmp_path / str(available)
+        case.mkdir()
+        plan, path = planned(case, monkeypatch, guard)
+        calls = observe(monkeypatch, [available])
+        output = case / 'run'
+        run = campaign.run_campaign(plan, path, output, run_id='disk-' + str(available))
+        assert plan['disk_free_guard'] == guard
+        assert run['disk_free_guard']['minimum_free_bytes'] == floor
+        assert run['disk_free_guard']['samples'] == len(calls)
+        assert run['disk_free_guard']['minimum_observed_free_bytes'] == available
+        if available < floor:
+            assert not run['attempts'] and run['errors'] and len(calls) == 1
+            assert run['disk_free_guard']['tripped']
+        else:
+            assert run['attempts'] and not run['errors'] and len(calls) >= 4
+            assert not run['disk_free_guard']['tripped']
+        assert aggregate(plan, output, run)['ok'] is (available >= floor)
 
 
 @pytest.mark.parametrize('mutation', ['missing', 'floor', 'tripped', 'no-samples'])

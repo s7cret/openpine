@@ -5,6 +5,17 @@ run at a CI boundary. This is a transport/integrity check; an archive of a
 failed or blocked run remains failed or blocked. It never grants product,
 Stage 1, or release acceptance.
 
+The active `verification/execution-policy.json` reserves **3,000,000,000 bytes**
+of available space (3 GB decimal). New guarded campaign plans freeze this value
+and sample the evidence/output filesystem before work and during execution.
+Below the floor, or when observation fails, the existing owner refuses/cancels
+its work and preserves diagnostics. Equality is allowed. Local RUN04 probes
+use the same task floor; ordinary shell/editor work has no global disk guard.
+The previous 20 GB value was a parent task resource limit recorded in prepared
+INT04 inputs, separate from the policy's earlier 2 GiB minimum. The user replaced
+that task limit with 3 GB. Historical plans and receipts retain their original
+values. This disk limit does not grant storage sharing or qualification approval.
+
 Keep code, policies, baseline source pins and small reviewed manifests in Git.
 Keep full command logs, JUnit, coverage, owner receipts and archives in external
 run directories and CI artifacts. Previous attempts and original failures are

@@ -221,7 +221,7 @@
     "*generator*"
   ],
   "disk_free_guard": {
-    "minimum_free_bytes": 2147483648
+    "minimum_free_bytes": 3000000000
   },
   "node_major": 24,
   "owner_environment_slots": {
