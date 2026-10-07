@@ -63,3 +63,18 @@ driver does not implement `CHECKPOINT`/`RESTORE` recovery. RUN04 capability and
 supervisor changes require that complete job restore path first. Protected fault
 qualification also requires the existing storage/qualification authorization.
 Compiled immutable request snapshots retain their historical-only guard.
+
+`RC6InteractiveCallbacks.prepare_job_restore` admits the same portable job bytes
+without changing worker state. Its local token exposes native bytes and restored
+ack/callback/intent/commit cursors to the parent admission owner. After the parent
+finishes native config/data/broker admission, `activate_job_restore` validates the
+immutable bytes again, rejects foreign/changed/provisional receivers and replaces
+the existing Pine owner and worker protocol cursor without callback replay. Exact
+duplicate activation returns its prior result without resetting later worker
+progress. The complete committed protocol prefix is admitted through the shared
+host validator and then seeds the existing worker builder.
+
+This local owner operation is tested against actual compiled Pine and the causal
+native broker suffix. It does not enable the isolated wire path: bootstrap,
+trusted helper staging, physical worker handshake and generation/ACK transport
+still need their coordinated contract and INT04-dependent qualification.
