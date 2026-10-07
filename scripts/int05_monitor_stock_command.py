@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import resource
 import signal
+import subprocess
 import time
 
 from openpine.verification.execution_disk import ObservationWriter
@@ -46,6 +47,8 @@ def main():
     parser.add_argument('--cwd', type=Path, required=True)
     parser.add_argument('--minimum-free-bytes', type=int, default=20 * 1024**3)
     parser.add_argument('--soft-checkpoint-free-bytes', type=int)
+    parser.add_argument('--deadline-epoch', type=float)
+    parser.add_argument('--required-headroom-bytes', type=int, default=0)
     parser.add_argument('argv', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     argv = args.argv[1:] if args.argv[:1] == ['--'] else args.argv
@@ -57,6 +60,9 @@ def main():
     soft_checkpoint_written = False
     peak_rss = 0
     floor_cancelled = False
+    deadline_cancelled = False
+    growth_cancelled = False
+    launch_error = None
     process = None
     with (args.output / 'stdout.log').open('xb') as out, (args.output / 'stderr.log').open('xb') as err, (args.output / 'process-memory.jsonl').open('x') as memory:
         while True:
@@ -81,21 +87,27 @@ def main():
                 soft_checkpoint_written = True
             observations.append({'observed_at': now, 'free_bytes': free, 'error': None})
             # 64 MiB cancellation margin is additional to the parent operational floor.
-            if free < args.minimum_free_bytes + 64 * 1024**2:
-                floor_cancelled = True
+            floor_cancelled = free < args.minimum_free_bytes + 64 * 1024**2
+            deadline_cancelled = args.deadline_epoch is not None and time.time() >= args.deadline_epoch
+            growth_cancelled = (args.required_headroom_bytes > 0 and
+                                ((process is None and free < args.minimum_free_bytes + args.required_headroom_bytes)
+                                 or initial_free - free > args.required_headroom_bytes))
+            if floor_cancelled or deadline_cancelled or growth_cancelled:
                 if process is not None and process.poll() is None:
                     # Allow stock run_logged to preserve cancellation receipts and
                     # clean up its separately declared subprocess group first.
                     os.kill(process.pid, signal.SIGINT)
                     try:
-                        process.wait(timeout=5)
-                    except TimeoutError:
-                        _stop_group(process)
-                    except Exception:  # noqa: BLE001 -- supervision must terminate its declared group
+                        process.wait(timeout=30)
+                    except (OSError, subprocess.TimeoutExpired):
                         _stop_group(process)
                 break
             if process is None:
-                process = start_declared_process(argv, cwd=args.cwd, env=dict(os.environ), stdout=out, stderr=err, start_new_session=True)
+                try:
+                    process = start_declared_process(argv, cwd=args.cwd, env=dict(os.environ), stdout=out, stderr=err, start_new_session=True)
+                except (OSError, ValueError) as error:
+                    launch_error = error
+                    break
             observed = process_tree_memory(process.pid)
             peak_rss = max(peak_rss, observed['rss_bytes'])
             memory.write(json.dumps({'observed_at': now, **observed, 'free_bytes': free, 'growth_bytes_since_start': max(0, initial_free - free)}) + '\n')
@@ -108,6 +120,10 @@ def main():
     report = seal({'kind': 'resource costs of unchanged stock command; no test acceptance',
                    'argv': argv, 'cwd': str(args.cwd), 'wall_seconds': time.perf_counter() - tick,
                    'returncode': returncode, 'floor_cancelled': floor_cancelled,
+                   'deadline_cancelled': deadline_cancelled, 'deadline_epoch': args.deadline_epoch,
+                   'growth_cancelled': growth_cancelled,
+                   'required_headroom_bytes': args.required_headroom_bytes,
+                   'launch_error': type(launch_error).__name__ if launch_error is not None else None,
                    'minimum_free_bytes': minimum_free, 'required_floor_bytes': args.minimum_free_bytes,
                    'initial_free_bytes': initial_free,
                    'peak_growth_bytes_from_global_free': max(0, initial_free - minimum_free) if initial_free is not None else None,
@@ -122,7 +138,9 @@ def main():
                    'retries': 0, 'full_acceptance': False})
     write_once_json(args.output / 'measurement.json', report)
     print(json.dumps({k: report[k] for k in ('content_hash', 'wall_seconds', 'returncode', 'floor_cancelled', 'minimum_free_bytes', 'peak_sampled_tree_rss_bytes')}, indent=2), flush=True)
-    return 0 if returncode == 0 and not floor_cancelled else 1
+    if launch_error is not None:
+        raise launch_error
+    return 0 if returncode == 0 and not (floor_cancelled or deadline_cancelled or growth_cancelled) else 1
 
 
 if __name__ == '__main__':

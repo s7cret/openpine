@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+import time
 
 
 CANDIDATE = '4eee24fc458a2099f000211850f720ccfc6bfb2b'
@@ -31,8 +32,6 @@ COMMITS = {
     'optimizer': '623e2639581d23242109dd47e20f14f799fa7b88',
 }
 SOURCE_HASH = 'sha256:725720c3dfedf6818b1bb3ddb06657643ccf2853bcce5692833b6bd74b5cad8a'
-HARD_FLOOR = 18 * 1024**3
-SOFT_FLOOR = 20 * 1024**3
 
 
 def require_candidate(commits):
@@ -45,6 +44,7 @@ def preflight(root):
     root.mkdir(parents=True, exist_ok=False)
     pid = os.getpid()
     children = Path(f'/proc/{pid}/task/{pid}/children').read_text()
+    floor = json.loads((Path.cwd() / 'verification/execution-policy.json').read_text())['disk_free_guard']['minimum_free_bytes']
     facts = {
         'python': sys.version, 'executable': sys.executable,
         'ensurepip': importlib.util.find_spec('ensurepip') is not None,
@@ -54,6 +54,9 @@ def preflight(root):
         'systemd_pid1': Path('/proc/1/comm').read_text().strip(),
         'procfs_children_readable': isinstance(children, str),
         'cpu_count': os.cpu_count(), 'disk_free_bytes': shutil.disk_usage(root).free,
+        'hosted_policy_disk_floor_bytes': floor,
+        'work_deadline_epoch': float(os.environ['INT05_WORK_DEADLINE_EPOCH']),
+        'retention_deadline_epoch': float(os.environ['INT05_RETENTION_DEADLINE_EPOCH']),
         'candidate_commit': subprocess.check_output(  # noqa: S603 -- fixed read-only Git identity
             [shutil.which('git'), 'rev-parse', 'HEAD'], text=True).strip(),
         'workflow_commit': os.environ['INT05_WORKFLOW_SHA'],
@@ -67,10 +70,12 @@ def preflight(root):
             or facts['os_release']['VERSION_ID'] != '24.04'
             or facts['systemd_pid1'] != 'systemd' or (os.cpu_count() or 0) < 4
             or facts['candidate_commit'] != CANDIDATE
-            or facts['disk_free_bytes'] < SOFT_FLOOR
-            or not 0 < facts['artifact_ceiling_bytes'] <= 512 * 1024**2
+            or facts['disk_free_bytes'] < floor + 2 * 1024**3
+            or not 0 < facts['artifact_ceiling_bytes'] <= 128 * 1024**2
             or facts['retention_days'] != 1):
         raise ValueError('hosted control prerequisites or reviewed budget unavailable')
+    with open(os.environ['GITHUB_ENV'], 'a') as stream:
+        stream.write('INT05_DISK_FLOOR=' + str(floor) + '\n')
 
 
 def freeze(root):
@@ -104,8 +109,9 @@ def freeze(root):
     roots = {name: Path(path) for name, path in restored['roots'].items()}
     native = make_ci_plan([bundle / 'collection.json'], roots, raw / 'native-full.json',
                           commits, owner_locations=locations)
-    plan = seal({**{k: v for k, v in native.items() if k != 'content_hash'},
-                 'disk_free_guard': {'minimum_free_bytes': HARD_FLOOR}})
+    # Keep the exact product policy floor; the cloud coordination reserve is not
+    # a storage property of a standard Actions VM.
+    plan = native
     validate_plan(plan)
     write_once_json(raw / 'full.json', plan)
     binding = make_binding(plan, roots, {'py313': restored['executable']})
@@ -151,46 +157,97 @@ def control(root, run_id):
 
 def retain(root, run_id):
     from openpine.verification.execution_evidence import archive_evidence, verify_archive
-    from openpine.verification.execution_identity import write_once_json
+    from openpine.verification.execution_identity import hash_file, write_once_json
     from openpine.verification.identity import seal
     # Import the product's existing publication owner, never the workflow copy.
     from scripts.rc6_public_evidence import audit, check_upload_payload
     raw = root / 'raw'
     raw.mkdir(exist_ok=True)
-    for source, relative in ((root / 'runner.json', 'runner.json'),
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+        stream.write('public_ready=false\n')
+    inputs = ((root / 'runner.json', 'runner.json'),
                              (root / 'prepare/host.tar', 'committed-host.tar'),
                              (root / 'prepare/bundle', 'prepared-bundle'),
                              (root / 'prepare/commands', 'prepare-commands'),
                              (root / 'restored/commands', 'restore-commands'),
                              (root / 'restored/restored.json', 'restored.json'),
                              (root / 'prepare-resource', 'prepare-resource'),
-                             (root / 'restore-resource', 'restore-resource')):
-        if source.is_dir():
-            shutil.copytree(source, raw / relative)
-        elif source.is_file():
-            shutil.copy2(source, raw / relative)
-    write_once_json(raw / 'transport-scope.json', seal({
-        'candidate_commit': CANDIDATE, 'workflow_commit': os.environ['INT05_WORKFLOW_SHA'],
-        'original_primary_bytes_changed': False, 'required_inputs_omitted': False,
-        'includes': 'prepared source archive, all Git provenance bundles, wheelhouse, identities, collections, plans, phases, JUnit and failed command logs',
-        'excludes': 'reproducible installed venvs and caches; explicit private trees only',
-        'full_product_qualified': False,
-    }))
+                             (root / 'restore-resource', 'restore-resource'),
+                             (root / 'bootstrap-resource', 'bootstrap-resource'),
+                             (root / 'npm-resource', 'npm-resource'),
+                             (root / 'browser-resource', 'browser-resource'),
+                             (root / 'freeze-resource', 'freeze-resource'),
+                             (root / 'control-resource', 'control-resource'))
+    inventory = {}
+    for source, relative in ((raw, ''), *inputs):
+        files = sorted(source.rglob('*')) if source.is_dir() else [source] if source.is_file() else []
+        for path in files:
+            if path.is_symlink():
+                raise ValueError('retention input contains a symlink; originals retained')
+            if path.is_file():
+                name = (Path(relative) / path.relative_to(source)).as_posix() if source.is_dir() else relative
+                if name in inventory:
+                    raise ValueError('duplicate retention input; originals retained')
+                inventory[name] = {'source': str(path), 'size': path.stat().st_size, 'sha256': hash_file(path)}
     maximum = int(os.environ['ARTIFACT_BUDGET'])
+    total = sum(row['size'] for row in inventory.values())
     private = tuple(path.relative_to(raw).as_posix() for path in raw.rglob('private') if path.is_dir())
-    manifest = archive_evidence(raw, root / 'archive', candidate=CANDIDATE, run_id=run_id,
-                                retention_days=1, max_bytes=maximum, private=private,
-                                roots={'openpine': Path.cwd()})
-    verify_archive(root / 'archive/evidence.tar.gz', manifest,
-                   expected_manifest_hash=manifest['content_hash'],
-                   expected_candidate=CANDIDATE, expected_run_id=run_id)
-    report = audit(raw, candidate=CANDIDATE, run_id=run_id, max_bytes=maximum)
-    write_once_json(root / 'public-evidence-audit.json', report)
-    with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
-        stream.write('public_ready=false\n')
-    if not report['ok']:
-        raise ValueError('complete evidence is retained; existing public owner rejects required source/primary scope; reviewed durable transport required before dispatch')
-    check_upload_payload(root / 'archive', root / 'public-evidence-audit.json', max_bytes=maximum)
+    archivable = sum(row['size'] for name, row in inventory.items()
+                     if not any(name == p or name.startswith(p + '/') for p in private))
+    write_once_json(root / 'retention-inventory.json', seal({
+        'candidate': CANDIDATE, 'run_id': run_id, 'files': inventory,
+        'total_original_bytes': total, 'total_bytes': archivable,
+        'explicit_private_exclusions': private,
+        'archive_uncompressed_and_compressed_cap': maximum,
+        'upload_cap_also_includes_manifest_audit_and_zip_reserve': True,
+        'original_primaries_changed': False, 'full_product_accepted': False,
+    }))
+    # An audit of existing raw primaries is always recorded before a size failure.
+    # It is explicitly partial and cannot authorize upload of the planned scope.
+    write_once_json(root / 'retention-preflight-audit.json', audit(
+        raw, candidate=CANDIDATE, run_id=run_id, max_bytes=maximum))
+    failure = None
+    try:
+        if archivable > maximum:
+            raise ValueError('complete raw retention inventory exceeds archive uncompressed byte cap')
+        if time.time() >= float(os.environ.get('INT05_RETENTION_DEADLINE_EPOCH', 'inf')):
+            raise ValueError('retention deadline reached before copying original bytes')
+        for source, relative in inputs:
+            if source.is_dir():
+                shutil.copytree(source, raw / relative)
+            elif source.is_file():
+                shutil.copy2(source, raw / relative)
+        write_once_json(raw / 'transport-scope.json', seal({
+            'candidate_commit': CANDIDATE, 'workflow_commit': os.environ['INT05_WORKFLOW_SHA'],
+            'original_primary_bytes_changed': False, 'required_inputs_omitted': False,
+            'includes': 'prepared source archive, all Git provenance bundles, wheelhouse, identities, collections, plans, phases, JUnit and failed command logs',
+            'excludes': 'reproducible installed venvs and caches; explicit private trees only',
+            'full_product_qualified': False,
+        }))
+        report = audit(raw, candidate=CANDIDATE, run_id=run_id, max_bytes=maximum)
+        write_once_json(root / 'public-evidence-audit.json', report)
+        private = tuple(path.relative_to(raw).as_posix() for path in raw.rglob('private') if path.is_dir())
+        manifest = archive_evidence(raw, root / 'archive', candidate=CANDIDATE, run_id=run_id,
+                                    retention_days=1, max_bytes=maximum, private=private,
+                                    roots={'openpine': Path.cwd()})
+        verify_archive(root / 'archive/evidence.tar.gz', manifest,
+                       expected_manifest_hash=manifest['content_hash'],
+                       expected_candidate=CANDIDATE, expected_run_id=run_id)
+        if not report['ok']:
+            raise ValueError('complete evidence is retained; existing public owner rejects required source/primary scope; reviewed durable transport required before dispatch')
+        check_upload_payload(root / 'archive', root / 'public-evidence-audit.json', max_bytes=maximum)
+    except (OSError, ValueError) as error:
+        failure = error
+    if failure is not None:
+        write_once_json(root / 'retention-failure.json', seal({
+            'candidate': CANDIDATE, 'run_id': run_id, 'error_type': type(failure).__name__,
+            'error': str(failure), 'originals_retained': True, 'public_upload_ready': False,
+            'full_scope_public_audit_completed': (root / 'public-evidence-audit.json').is_file(),
+            'partial_preflight_audit': 'retention-preflight-audit.json',
+            'inventory': 'retention-inventory.json', 'total_original_bytes': total,
+            'archive_byte_cap': maximum, 'full_product_accepted': False,
+        }))
+        raise failure
     with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
         stream.write('public_ready=true\n')
 

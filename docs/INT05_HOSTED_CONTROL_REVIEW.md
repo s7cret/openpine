@@ -16,8 +16,9 @@ unchanged by the adapter.
 The sequence is one stock `test-ci prepare`, one stock offline
 `test-ci owner-environment` restore, fresh owner launch preparation, one
 `make_ci_plan` refreeze and one complete `run_campaign` / `aggregate_campaign`
-control. The resource wrapper is the previous stock-command measurement recipe,
-with only a lint annotation added. There are no mutant runs or automatic retries.
+control. The resource wrapper uses the existing declared-process and observation
+owners, with per-stage disk admission and shared deadline cancellation. There are
+no mutant runs or automatic retries.
 
 The prepared/restored environment must match exactly. Source inputs must equal
 the independently observed product source hash
@@ -41,21 +42,34 @@ Provider five live obligations and the remaining 68-requirement spec stay open.
   The unchanged optimizer gate subsequently checks pidfd and subreaper support.
   Existing AppArmor, bubblewrap, passwordless sudo and `openpine-worker` recipe
   must pass. No container workaround or gate bypass is included.
-* One job, **120-minute** ceiling: planning allocation 35 minutes prepare,
-  75 minutes control, 10 minutes retention. This is not a measured full duration.
+* One job, **120-minute** ceiling. Its first step sets shared work and retention
+  deadlines at minutes **100** and **110**, leaving a planned 10-minute upload
+  margin. The monitor refuses late admission and interrupts its declared child
+  on deadline, with a 30-second cleanup grace. This is not a measured full
+  duration or a guarantee that `always()` runs after runner loss, forced
+  cancellation or the platform's hard job timeout.
   Existing Node 24 / npm lock / Playwright Chromium preparation supplies actual
   executable locators without executing frontend acceptance.
 * Four CPUs / 16 GB RAM runner profile; campaign jobs **2**, parallel shards **1**,
-  one serial component window, campaign memory **6144 MiB**.
-* Initial measured free disk must be at least **20 GiB**. Prepare/restore use
-  hard **18 GiB**, soft **20 GiB**, sampled 64 MiB cancellation margin; the fresh
-  control plan freezes 18 GiB. No existing 21-manifest floor is edited.
-  GitHub documents only 14 GB SSD for standard runners, so adequate measured
-  free disk is an admission requirement, not a guaranteed property of the label.
-  Insufficient capacity stops the attempt; no OS cleanup or paid runner fallback.
-* Proposed complete artifact ceiling: **512 MiB**, including archive, manifest,
-  audit and existing conservative ZIP reserve. The default input remains 128 MiB;
-  the review must choose the appropriate ceiling. Retention is exactly **1 day**.
+  one serial component window. **6144 MiB** applies to the existing campaign's
+  sampled RSS/reservation enforcement. Other stages record RSS without claiming
+  that memory ceiling or a kernel hard limit; VM memory exhaustion remains a
+  possible infrastructure failure.
+* Actions reads actual free disk and the unchanged product policy floor
+  (**2 GiB**). The cloud's 18/20 GiB coordination reserve is not carried into
+  this new hosted plan. Additional stage allocations: bootstrap 0.5 GiB,
+  prepare 2 GiB, restore 1.25 GiB, npm 0.5 GiB, Chromium 1 GiB, refreeze 64 MiB,
+  control 2 GiB, retention twice the artifact cap plus 16 MiB. The monitor
+  requires floor plus allocation before launch, cancels on sampled global
+  growth above it, and keeps a 64 MiB floor margin. These are allocations to
+  test fit, not observed successful peaks. Provisioning and setup-node have
+  5-minute timeouts; their disk/RSS use is outside the wrapper and is checked
+  by the next admission. GitHub documents 14 GB SSD; no free capacity is inferred
+  from the label. No old 21-manifest floor is edited. Failure to fit stops work;
+  there is no OS cleanup or paid runner fallback.
+* The artifact cap remains **128 MiB** without an approved increase. It bounds
+  both uncompressed and compressed archive bytes; the complete upload including
+  manifest, audit and ZIP reserve must fit too. Retention is exactly **1 day**.
   Account free artifact allowance must be established before dispatch. Public
   standard compute is free; artifact storage has separate allowances. This delta
   does not authorize any storage overage or change account billing settings.
@@ -68,7 +82,13 @@ not estimates presented as successful preparation or control cost.
 
 ## Publication owner boundary that must be resolved before dispatch
 
-`retain` copies complete prepared inputs, including `host.tar`, `sources.tar.gz`,
+`retain` writes a complete original-byte inventory and a clearly marked partial
+preflight public audit before checking raw size. Oversize scope leaves originals
+untouched and records `retention-failure.json` before copying or archiving. When
+the scope fits, the complete public audit is written before creating the archive.
+Archive and complete upload failures retain explicit failure checkpoints too.
+
+The declared input scope includes `host.tar`, `sources.tar.gz`,
 all eight Git bundles and wheelhouse, plus identities, collection receipts,
 plans, phases, JUnit, command logs and resource observations. Existing
 `archive_evidence` seals and reads back original bytes, including failures.
@@ -89,6 +109,23 @@ over source/provenance and primary bytes, within confirmed free storage allowanc
 This change does not expand the public allowlist, redact originals, silently
 allow Git author PII or discard archive findings. Review this boundary together
 with W, runtime requirements and the one-control budget.
+
+`execution_binding.checked_locations` can rehash exact public source files
+reconstructed at new locations, without changing historical execution provenance.
+It does not change prepared transport: `verify_bundle` requires every original
+file and its exact hash. No source-SHA substitute is applied to that owner.
+`aggregate_campaign` requires raw `.coverage` and every descriptor-bound owner
+primary; derived coverage JSON or sanitized stdout cannot replace them.
+
+The smallest route proposed for owner review is the already-authorized public
+technical projection under the unchanged 128 MiB/1-day cap, plus a separately
+approved **free private durable destination** for originals that cannot be
+published. A private archive must not be uploaded as a public Actions artifact.
+The destination, enforceable byte ceiling and factual free allowance are unknown,
+so this remains a proposal. Retention's own final monitor receipt is produced
+after its archive operation and requires that durable collector too; it is not
+claimed to be inside the archive it measured. No public scope expansion, budget
+increase, reconstruction substitution or private upload is implemented.
 
 References: [standard runner resources](https://docs.github.com/en/actions/reference/runners/github-hosted-runners),
 [Actions compute and storage billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).

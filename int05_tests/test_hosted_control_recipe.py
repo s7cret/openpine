@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import json
 import tarfile
+import sys
 
 import pytest
 import yaml
@@ -53,6 +54,10 @@ def test_workflow_bounds_one_control_and_keeps_product_checkout_frozen():
     commands = '\n'.join(step.get('run', '') for step in steps)
     assert commands.count('int05_hosted_control.py" control') == 1
     assert commands.count('test-ci prepare') == 1
+    launches = [step['run'] for step in steps if step.get('name') in (
+        'Stock prepare exact eight-package candidate', 'Restore once through the stock owner')]
+    assert len(launches) == 2
+    assert all('-- "$INT05_PYTHON" -m openpine.verification' in command for command in launches)
     assert 'workflow_dispatch' in job['if']
     assert 'reviewed_workflow_sha' in job['if'] and 'github.sha' in job['if']
     assert 'steps.evidence.outputs.public_ready' in steps[-1]['if']
@@ -101,3 +106,60 @@ def test_retention_seals_failed_primary_and_inputs_but_withholds_unapproved_uplo
         assert archive.extractfile('control-full/owner/phases.json').read() == required['raw/control-full/owner/phases.json']
     audit = json.loads((root / 'public-evidence-audit.json').read_text())
     assert audit['ok'] is False and audit['original_primaries_changed'] is False
+
+
+@pytest.mark.parametrize('absolute', [False, True])
+def test_stock_monitor_uses_real_declared_process_absolute_boundary(tmp_path, monkeypatch, absolute):
+    """Execute the real operational wrapper/launcher, never a mocked owner."""
+    spec = importlib.util.spec_from_file_location(
+        'int05_monitor_contract', ROOT / 'scripts/int05_monitor_stock_command.py')
+    monitor = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(monitor)
+    output = tmp_path / 'monitor'
+    monkeypatch.setattr(sys, 'argv', ['monitor', '--output', str(output), '--cwd', str(tmp_path),
+                                    '--minimum-free-bytes', '0', '--',
+                                    sys.executable if absolute else 'python', '-c',
+                                    'print("int05-declared-child")'])
+    if absolute:
+        assert monitor.main() == 0
+        assert (output / 'stdout.log').read_text().strip() == 'int05-declared-child'
+        report = json.loads((output / 'measurement.json').read_text())
+        assert report['returncode'] == 0 and report['argv'][0] == sys.executable
+    else:
+        with pytest.raises(ValueError, match='absolute'):
+            monitor.main()
+        assert (output / 'stdout.log').read_bytes() == b''
+
+
+def test_elapsed_deadline_refuses_launch_and_retains_resource_receipt(tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location(
+        'int05_monitor_deadline', ROOT / 'scripts/int05_monitor_stock_command.py')
+    monitor = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(monitor)
+    output = tmp_path / 'monitor'
+    monkeypatch.setattr(sys, 'argv', ['monitor', '--output', str(output), '--cwd', str(tmp_path),
+                                    '--minimum-free-bytes', '0', '--deadline-epoch', '1',
+                                    '--', sys.executable, '-c', 'raise SystemExit(99)'])
+    assert monitor.main() == 1
+    report = json.loads((output / 'measurement.json').read_text())
+    assert report['deadline_cancelled'] is True and report['returncode'] is None
+    assert (output / 'stdout.log').read_bytes() == b''
+
+
+def test_raw_retention_cap_failure_keeps_inventory_and_audit_before_any_archive(tmp_path, monkeypatch):
+    root = tmp_path / 'attempt'
+    source = root / 'prepare/bundle/sources.tar.gz'
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b'x' * 256)
+    monkeypatch.setenv('GITHUB_OUTPUT', str(tmp_path / 'output'))
+    monkeypatch.setenv('ARTIFACT_BUDGET', '64')
+    monkeypatch.setenv('INT05_WORKFLOW_SHA', 'b' * 40)
+    with pytest.raises(ValueError, match='uncompressed byte cap'):
+        recipe().retain(root, 'raw-cap-boundary')
+    inventory = json.loads((root / 'retention-inventory.json').read_text())
+    assert inventory['total_bytes'] == 256
+    assert (root / 'retention-preflight-audit.json').is_file()
+    failure = json.loads((root / 'retention-failure.json').read_text())
+    assert failure['full_scope_public_audit_completed'] is False
+    assert failure['originals_retained'] is True
+    assert not (root / 'archive').exists() and source.read_bytes() == b'x' * 256

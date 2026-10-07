@@ -160,8 +160,16 @@ jobs:
       INT05_WORKFLOW_SHA: ${{ github.sha }}
       ARTIFACT_BUDGET: ${{ inputs.artifact_budget_bytes }}
       RETENTION_DAYS: ${{ inputs.retention_days }}
+      # Exact product policy floor; preflight reads it back independently.
+      INT05_DISK_FLOOR: '2147483648'
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
+    - name: Initialize bounded work and retention deadlines
+      working-directory: ${{ runner.temp }}
+      timeout-minutes: 1
+      run: |
+        INT05_JOB_EPOCH="$(date +%s)"
+        printf 'INT05_WORK_DEADLINE_EPOCH=%s\nINT05_RETENTION_DEADLINE_EPOCH=%s\n' "$((INT05_JOB_EPOCH + 6000))" "$((INT05_JOB_EPOCH + 6600))" >> "$GITHUB_ENV"
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       with:
         ref: ${{ github.sha }}
@@ -179,8 +187,12 @@ jobs:
     - name: Verify ordinary interpreter and hosted VM prerequisites
       run: |
         python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" preflight
-        python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt
+    - name: Bounded hashed bootstrap
+      run: |
+        INT05_PYTHON="$(python -c 'import sys; print(sys.executable)')"
+        PYTHONPATH="$PWD" "$INT05_PYTHON" "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/bootstrap-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes 536870912 --deadline-epoch "$INT05_WORK_DEADLINE_EPOCH" -- "$INT05_PYTHON" -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt
     - name: Provision existing protected worker prerequisites
+      timeout-minutes: 5
       shell: bash
       run: |
         set -euo pipefail
@@ -195,30 +207,37 @@ jobs:
         /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
     - name: Stock prepare exact eight-package candidate
       run: |
-        PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/prepare-resource" --cwd "$PWD" --minimum-free-bytes 19327352832 --soft-checkpoint-free-bytes 21474836480 -- python -m openpine.verification test-ci prepare --host-root "$PWD" --work "$RUNNER_TEMP/int05/prepare" --python-version 3.13
+        INT05_PYTHON="$(python -c 'import sys; print(sys.executable)')"
+        PYTHONPATH="$PWD" "$INT05_PYTHON" "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/prepare-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes 2147483648 --deadline-epoch "$INT05_WORK_DEADLINE_EPOCH" -- "$INT05_PYTHON" -m openpine.verification test-ci prepare --host-root "$PWD" --work "$RUNNER_TEMP/int05/prepare" --python-version 3.13
     - name: Restore once through the stock owner
       run: |
-        PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/restore-resource" --cwd "$PWD" --minimum-free-bytes 19327352832 --soft-checkpoint-free-bytes 21474836480 -- python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/int05/prepare/bundle" --work "$RUNNER_TEMP/int05/restored"
+        INT05_PYTHON="$(python -c 'import sys; print(sys.executable)')"
+        PYTHONPATH="$PWD" "$INT05_PYTHON" "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/restore-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes 1342177280 --deadline-epoch "$INT05_WORK_DEADLINE_EPOCH" -- "$INT05_PYTHON" -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/int05/prepare/bundle" --work "$RUNNER_TEMP/int05/restored"
     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      timeout-minutes: 5
       with:
         node-version: '24'
     - name: Prepare existing frontend owner launch locations
       working-directory: candidate/openpine-ui
       run: |
-        npm ci
-        npx playwright install --with-deps chromium
+        INT05_PYTHON="$(python -c 'import sys; print(sys.executable)')"
+        INT05_NPM="$(command -v npm)"
+        INT05_NPX="$(command -v npx)"
+        PYTHONPATH="$GITHUB_WORKSPACE/candidate" "$INT05_PYTHON" "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/npm-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes 536870912 --deadline-epoch "$INT05_WORK_DEADLINE_EPOCH" -- "$INT05_NPM" ci
+        PYTHONPATH="$GITHUB_WORKSPACE/candidate" "$INT05_PYTHON" "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/browser-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes 1073741824 --deadline-epoch "$INT05_WORK_DEADLINE_EPOCH" -- "$INT05_NPX" playwright install --with-deps chromium
         node -e 'console.log("INT05_CHROMIUM="+require("@playwright/test").chromium.executablePath())' >> "$GITHUB_ENV"
     - name: Refreeze new hosted identities and complete full obligations
       run: |
-        "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" freeze
+        "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/freeze-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes 67108864 --deadline-epoch "$INT05_WORK_DEADLINE_EPOCH" -- "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" freeze
     - name: Run exactly one complete control pytest campaign
       run: |
-        "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" control
+        "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/control-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes 2147483648 --deadline-epoch "$INT05_WORK_DEADLINE_EPOCH" -- "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" control
     - name: Preserve all available primaries and audit public transport
       id: evidence
       if: always()
       run: |
-        PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" retain
+        INT05_PYTHON="$(python -c 'import sys; print(sys.executable)')"
+        PYTHONPATH="$PWD" "$INT05_PYTHON" "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/retention-resource" --cwd "$PWD" --minimum-free-bytes "$INT05_DISK_FLOOR" --required-headroom-bytes "$((ARTIFACT_BUDGET * 2 + 16777216))" --deadline-epoch "$INT05_RETENTION_DEADLINE_EPOCH" -- "$INT05_PYTHON" "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" retain
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       if: ${{ always() && steps.evidence.outputs.public_ready == 'true' }}
       with:
