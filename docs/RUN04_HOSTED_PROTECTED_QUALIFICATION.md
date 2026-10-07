@@ -64,7 +64,7 @@ ref from the final approved SHA. The original execution ref is occupied by
 the failed attempt and remains unchanged. The prepared retry route is:
 
 ```sh
-git push origin FINAL_APPROVED_SHA:refs/heads/execution/run04-int04-int05-retry-20261007
+git push origin FINAL_APPROVED_SHA:refs/heads/execution/run04-int04-int05-fix2-20261007
 ```
 
 Creating that ref is an execution action and requires separate action-time
@@ -73,6 +73,8 @@ retention limitation. The ref must first be confirmed absent; no force push
 or ref reuse is authorized. Dispatch support is available once this workflow
 exists on the repository's default branch; it is not assumed available now.
 The workflow checks source/workflow/approved SHA equality before provisioning.
+Both earlier execution refs are now occupied and remain unchanged. The fresh
+`fix2` route is prepared only; a third run is not authorized by this code fix.
 
 The execution would use one standard public Ubuntu 24.04 VM, at most 4 CPU,
 16 GiB RAM, 90 minutes, a 3,000,000,000-byte disk reserve, and no cache upload.
@@ -138,6 +140,58 @@ the runner; available artifacts numbered zero. No supported reattach/private
 file-read mechanism was available for the completed standard hosted job.
 Physical VM deletion was not independently observed. No new run or changed
 policy upload is authorized by this development fix alone.
+
+The single approved retry `37696682368` at
+`5e7a5d28358d380a10afa7c7cb488099653f72c1` failed at the closed diagnostic
+`candidate-wheels / unexpected-error`. Prerequisites, the independent public
+guard and upload passed. The two-file ZIP was 1,239 bytes, artifact
+`11516105457`, digest
+`c2e7850b6c324220308686415be996e0e9142dc22c8e6fd44fe789a94d073298`.
+Upload's Node deprecation warnings are not attributed as its root cause.
+The exact private exception remains unavailable; local transport could not
+materialize the public ZIP (HTTP 403), so independent ZIP byte verification
+is not claimed.
+
+The retry's selector defect is reproduced against real material inputs:
+the unchanged prepare owner built and verified all eight actual projects,
+including eight wheels and eight sdists, installed them offline, checked
+their package trees and all eight installed origins. The identical hashed
+download command supplied the complete hosted dependency set, for a total
+75 wheels and eight sdists. The mandatory `setuptools-84.0.0` wheel has the
+lock's exact digest
+`51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670`,
+but contains thirteen METADATA members, twelve under its vendored packages.
+The old selector applies the strict stack-only METADATA reader to that
+third-party wheel and deterministically raises `CandidateFinalizationError`,
+mapped to the observed `unexpected-error`. This proves the implementation
+failure for the exact mandatory input; it does not invent the private trace.
+
+Selection now filters distributions using standard wheel filename parsing
+before reading candidate metadata. The exact eight stack wheels must have
+matching filename/metadata names and versions; missing input is
+`missing-input`, duplicates/mismatches/malformed candidates are `invalid-input`,
+and real build failure remains `command-failed`. These are existing approved
+error categories. The strict finalizer is unchanged. All candidates are
+validated before any selected bytes are linked; sdists and dependency wheels
+stay in the full restore bundle, while only eight unchanged wheel byte streams
+enter finalization. The closed allowlist bytes and limits remain unchanged.
+
+The local real-input suite verifies the full layout, every locked distribution
+and version, actual source/installed package-tree receipts, byte identities,
+the real finalizer and real negative package-build/missing/duplicate/mismatch
+cases. A `qualification_hosted preflight` action shares the actual preparation
+and candidate-finalization path with `run` and stops before restore/workers;
+its bounded result remains private and claims candidate preparation only.
+
+Full local prepare is explicitly still failed: the kernel does not expose the
+owned per-thread `/proc/<pid>/task/<tid>/children` file, returning ENOENT, so
+the unchanged optimizer containment prerequisite rejects it. This guard is
+not disabled or simulated. Local candidate-wheels tests use real phase inputs,
+not a forged accepted preparation bundle. The official setup-python Ubuntu
+24.04 x64 CPython 3.13.5 artifact was used, with real GIL, pidfd and ensurepip;
+only the container's existing proxy/index transport keys were restored locally
+for downloads. A complete supported-kernel preflight and the A/B runtime
+obligations remain outstanding before acceptance.
 
 Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
 and https://docs.github.com/en/billing/concepts/product-billing/github-actions.

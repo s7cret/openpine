@@ -103,7 +103,7 @@ def test_candidate_selection_rejects_ambiguous_or_missing_bytes(host, tmp_path, 
     if mutation == "missing":
         chosen.unlink()
     elif mutation == "duplicate":
-        shutil.copyfile(chosen, mixed / "duplicate.whl")
+        shutil.copyfile(chosen, mixed / "openpine-5.0.0rc6-1-py3-none-any.whl")
     elif mutation == "symlink":
         original = tmp_path / "original.whl"
         chosen.rename(original)

@@ -88,22 +88,40 @@ class DiagnosticState:
 
 def candidate_wheelhouse(source: dict[str, Any], wheelhouse: Path, output: Path) -> Path:
     """Select exact candidate bytes without weakening the strict finalizer."""
-    from scripts.finalize_stack_candidate import _wheel_metadata, normalize_name
+    from packaging.utils import InvalidWheelFilename, parse_wheel_filename
+    from packaging.version import InvalidVersion, Version
+    from scripts.finalize_stack_candidate import CandidateFinalizationError, _wheel_metadata, normalize_name
     from openpine.verification.qualification_public import COMPONENTS
     if set(source["components"]) != COMPONENTS:
         raise QualificationFailure("invalid-input")
-    expected = {normalize_name(name) for name in source["components"]}
-    output.mkdir(parents=True, exist_ok=False)
-    selected = set()
-    for path in sorted(wheelhouse.glob("*.whl")):
-        name, _, _ = _wheel_metadata(path)
-        if name in expected:
-            if name in selected or path.is_symlink():
-                raise QualificationFailure("invalid-input")
-            selected.add(name)
-            os.link(path, output / path.name)
-    if selected != expected:
+    if wheelhouse.is_symlink():
+        raise QualificationFailure("invalid-input")
+    if not wheelhouse.is_dir():
         raise QualificationFailure("missing-input")
+    expected = {normalize_name(name): row["version"] for name, row in source["components"].items()}
+    selected: dict[str, Path] = {}
+    for path in sorted(wheelhouse.glob("*.whl")):
+        if path.is_symlink() or not path.is_file():
+            raise QualificationFailure("invalid-input")
+        try:
+            name, version, _, _ = parse_wheel_filename(path.name)
+            # Third-party wheels can include vendored .dist-info/METADATA.
+            # Only candidate distributions enter the strict stack reader.
+            if name not in expected:
+                continue
+            metadata_name, metadata_version, _ = _wheel_metadata(path)
+            if (name in selected or metadata_name != name or metadata_version != expected[name]
+                    or version != Version(expected[name])):
+                raise QualificationFailure("invalid-input")
+        except (InvalidWheelFilename, InvalidVersion, CandidateFinalizationError) as error:
+            raise QualificationFailure("invalid-input") from error
+        selected[name] = path
+    if set(selected) != set(expected):
+        raise QualificationFailure("missing-input")
+    # Validate the full set before publishing any selected wheel bytes.
+    output.mkdir(parents=True, exist_ok=False)
+    for path in selected.values():
+        os.link(path, output / path.name)
     return output
 
 
@@ -147,12 +165,11 @@ def execute(spec: Path, folder: Path) -> int:
     return 0 if all(r["ok"] for r in rows) else 1
 
 
-def _prepare_and_run(host: Path, work: Path, approved_sha: str, state: DiagnosticState) -> int:
-    from openpine.verification.execution_ci import prepare, restore
+def _prepare_candidate(host: Path, work: Path, approved_sha: str, state: DiagnosticState) -> tuple[Path, Path, Path, dict[str, str]]:
+    from openpine.verification.execution_ci import prepare
     from scripts.materialize_stack_candidate import materialize_candidate
     from scripts.finalize_stack_candidate import finalize_candidate
     from datetime import datetime, timezone
-    from openpine.verification.pytest_gate import validate_inventory, validate_phase_reports
 
     git = shutil.which("git")
     if git is None:
@@ -177,12 +194,37 @@ def _prepare_and_run(host: Path, work: Path, approved_sha: str, state: Diagnosti
     state.at("candidate-wheels")
     exact_wheels = candidate_wheelhouse(source, bundle / "wheelhouse", private / "candidate-wheelhouse")
     state.at("candidate-manifest")
-    manifest = finalize_candidate(source, exact_wheels)
+    try:
+        manifest = finalize_candidate(source, exact_wheels)
+    except RuntimeError as error:
+        raise QualificationFailure("invalid-input") from error
     manifest_path = private / "candidate.json"
     write_primary(manifest_path, manifest)
     commits = {n: c["sha"] for n, c in manifest["components"].items()}
     if state.commits != commits:
         raise QualificationFailure("identity-mismatch")
+    return bundle, exact_wheels, manifest_path, commits
+
+
+def _prepare_and_run(host: Path, work: Path, approved_sha: str, state: DiagnosticState, *, preflight: bool = False) -> int:
+    from openpine.verification.execution_ci import restore, verify_bundle
+    from openpine.verification.pytest_gate import validate_inventory, validate_phase_reports
+
+    bundle, exact_wheels, manifest_path, commits = _prepare_candidate(host, work, approved_sha, state)
+    private = work / "private"
+    if preflight:
+        report = verify_bundle(bundle)
+        if report["host_commit"] != approved_sha or report["source_pins"] != {n: c for n, c in commits.items() if n != "openpine"}:
+            raise QualificationFailure("identity-mismatch")
+        files = [{"filename": path.name, "sha256": sha256(path), "size": path.stat().st_size}
+                 for path in sorted((bundle / "wheelhouse").iterdir())]
+        write_primary(private / "candidate-preflight.json", {"ok": True,
+            "scope": "real candidate preparation and finalization only; no restore or protected worker",
+            "source_commits": commits, "environment": report["environment"],
+            "wheelhouse_files": files, "selected_wheels": sorted(p.name for p in exact_wheels.iterdir()),
+            "candidate_manifest_sha256": sha256(manifest_path),
+            "raw_primaries_durable": False, "full_qualification_accepted": False})
+        return 0
     state.at("test-namespace")
     tests_root = private / "test-namespace"
     tests_root.mkdir()
@@ -255,7 +297,7 @@ def _prepare_and_run(host: Path, work: Path, approved_sha: str, state: Diagnosti
     return 0 if projection["ok"] else 1
 
 
-def prepare_and_run(host: Path, work: Path, approved_sha: str, public_approved: bool) -> int:
+def prepare_and_run(host: Path, work: Path, approved_sha: str, public_approved: bool, *, preflight: bool = False) -> int:
     state = DiagnosticState(host, work, approved_sha if SHA.fullmatch(approved_sha) else None, public_approved)
     owned = False
     try:
@@ -265,6 +307,10 @@ def prepare_and_run(host: Path, work: Path, approved_sha: str, public_approved: 
         state.publish()
         state.commits = declared_commits(host, state.candidate_sha)
         state.publish()
+        if preflight:
+            if public_approved:
+                raise QualificationFailure("invalid-input")
+            return _prepare_and_run(host, work, approved_sha, state, preflight=True)
         return _prepare_and_run(host, work, approved_sha, state)
     except (Exception, KeyboardInterrupt, SystemExit) as error:  # noqa: BLE001 -- closed CLI boundary: never exports exception text or private diagnostics
         if not owned:
@@ -290,7 +336,7 @@ def prepare_and_run(host: Path, work: Path, approved_sha: str, public_approved: 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("run", "execute"))
+    parser.add_argument("action", choices=("run", "execute", "preflight"))
     parser.add_argument("--host", type=Path)
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--approved-sha")
@@ -303,7 +349,7 @@ def main() -> int:
         return execute(args.spec, args.work)
     if args.host is None or args.approved_sha is None:
         parser.error("run requires --host and --approved-sha")
-    return prepare_and_run(args.host, args.work, args.approved_sha, args.public_approved)
+    return prepare_and_run(args.host, args.work, args.approved_sha, args.public_approved, preflight=args.action == "preflight")
 
 
 if __name__ == "__main__":
