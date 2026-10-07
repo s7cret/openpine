@@ -7,7 +7,7 @@ complete broker/IPC resume protocol. Checksums are not signatures or TV proofs.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from openpine_contracts import ExecutionEvent
@@ -32,6 +32,16 @@ _FIELDS = {
     "callback_receipts_identity",
 }
 _RECEIPT_FIELDS = {"runtime_sequence", "event", "intent_count", "intent_batch_hash"}
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedGeneratedCheckpoint:
+    """Detached local owner projection; never a replacement checkpoint codec."""
+
+    runtime: RuntimeSession
+    cursor: ExecutionCursor
+    receipts: AppendOnlyHistory
+    intent_sequence: int
 
 
 def validate_receipts(data, identity, runtime):
@@ -143,7 +153,7 @@ class GeneratedCheckpointMixin:
     def export_state(self) -> dict[str, Any]:
         if self.execution_cursor.open_bar is not None:
             raise ValueError("cannot export a generated session with an uncommitted bar")
-        checkpoint = self.session.checkpoint().to_dict()
+        checkpoint: dict[str, Any] = self.session.checkpoint().to_dict()
         if "pending_abort" in checkpoint["state"]:
             raise ValueError("cannot export a generated session with a pending abort")
         body = {
@@ -162,10 +172,12 @@ class GeneratedCheckpointMixin:
             raise ValueError("generated session checkpoint exceeds the configured limit")
         return body
 
-    def restore_state(self, state: Mapping[str, Any]) -> None:
+    def prepare_restore(self, state: Mapping[str, Any]) -> PreparedGeneratedCheckpoint:
+        """Completely validate a detached checkpoint before changing an owner."""
         if self.execution_cursor.open_bar is not None:
             raise ValueError("cannot restore a generated session with an uncommitted bar")
         self.session.checkpoint()
+        self.session.validate_checkpoint_input(state)
         if not isinstance(state, Mapping) or set(state) != _FIELDS or state["schema_id"] != SCHEMA:
             raise ValueError("generated session checkpoint schema mismatch")
         if len(canonical_json(state)) > self.session.policies.resource.max_checkpoint_bytes:
@@ -181,18 +193,7 @@ class GeneratedCheckpointMixin:
         event = (
             None if state["last_event"] is None else ExecutionEvent.from_dict(state["last_event"])
         )
-        previous = self.session
-        candidate = RuntimeSession(
-            previous.language,
-            previous.policies,
-            nominal_registry=previous.nominal_registry,
-            inputs=previous.inputs,
-            instrument=previous.instrument,
-            timeframe=previous.timeframe,
-            request_provider=previous.requests.provider,
-        )
-        candidate.commit_full_identity = previous.commit_full_identity
-        candidate.restore(state["runtime"])
+        candidate = self.session.prepare_restore(state["runtime"])
         if "pending_abort" in state["runtime"]["state"]:
             raise ValueError("cannot restore a generated session with a pending abort")
         journal, cursor, derived_sequence = validate_receipts(
@@ -202,9 +203,13 @@ class GeneratedCheckpointMixin:
             raise ValueError("generated checkpoint intent sequence differs from callback receipts")
         if event != cursor.last:
             raise ValueError("generated checkpoint last event differs from callback receipts")
+        return PreparedGeneratedCheckpoint(candidate, cursor, journal, sequence)
+
+    def restore_state(self, state: Mapping[str, Any]) -> None:
+        prepared = self.prepare_restore(state)
         # Replace only after complete validation. Bad input leaves the current
         # runtime, caches and cursors unchanged, including on partial decode.
-        self.session = candidate
-        self.execution_cursor = cursor
-        self._callback_receipts = journal
-        self._intent_sequence = sequence
+        self.session = prepared.runtime
+        self.execution_cursor = prepared.cursor
+        self._callback_receipts = prepared.receipts
+        self._intent_sequence = prepared.intent_sequence
