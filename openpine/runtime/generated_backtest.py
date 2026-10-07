@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import Any, TYPE_CHECKING
+from typing import Any, Callable, TYPE_CHECKING
 
 from backtest_engine import BacktestEngine
 from backtest_engine.core.engine_validation import validate_backtest_config
+from backtest_engine.core.realtime import BarTickSlice, cumulative_tick_bar
 from backtest_engine.core.strategy_capabilities import strategy_values_from_state
 from backtest_engine.errors import ResumeUnsupportedError
 from backtest_engine.execution_backends.base import PreparedNativeExecution
@@ -15,8 +16,10 @@ from backtest_engine.results import BacktestResult
 from openpine_contracts import ExecutionEvent
 from pinelib.runtime.metadata import BarValues
 
-from openpine.runtime.rc6_config import serialize_engine_config
-from openpine.runtime.generated_checkpoint import PreparedGeneratedCheckpoint
+from openpine.runtime.generated_checkpoint import (
+    PreparedGeneratedCheckpoint,
+    generated_owner_config,
+)
 
 if TYPE_CHECKING:
     from openpine.runtime.rc6_worker_runtime import RC6GeneratedScriptSession
@@ -39,6 +42,7 @@ def _validate_primary_prefix(
     prepared: PreparedGeneratedCheckpoint,
     series: BarSeries,
     cursor: int,
+    tick_schedule: tuple[BarTickSlice, ...] | None = None,
 ) -> None:
     """Bind the admitted owner's primary history to the independent broker input."""
     names = ("open", "high", "low", "close", "volume", "time", "time_close")
@@ -51,7 +55,12 @@ def _validate_primary_prefix(
             )
         histories[name] = storage.committed
     for index in range(cursor + 1):
-        expected = _primary_values(series.get_bar(index))
+        parent = series.get_bar(index)
+        expected = _primary_values(
+            parent
+            if tick_schedule is None
+            else cumulative_tick_bar(parent, tick_schedule[index].ticks)
+        )
         for name in names:
             value = histories[name][index]
             kinds = (int,) if name in ("time", "time_close") else (int, float)
@@ -64,11 +73,46 @@ def _validate_primary_prefix(
                 )
 
 
+def _validate_tick_receipts(
+    prepared: PreparedGeneratedCheckpoint,
+    schedule: tuple[BarTickSlice, ...],
+    cursor: int,
+) -> None:
+    """Bind every acknowledged callback coordinate to the admitted tick stream."""
+    visited: dict[int, set[int]] = {}
+    for receipt in prepared.receipts:
+        raw = receipt["event"]
+        if raw is None:
+            raise ResumeUnsupportedError("generated tick checkpoint contains direct callbacks")
+        event = ExecutionEvent.from_dict(raw)
+        if not 0 <= event.bar_index <= cursor:
+            raise ResumeUnsupportedError("generated tick callback is outside committed input")
+        ticks = schedule[event.bar_index].ticks
+        if (
+            not event.realtime
+            or not 0 <= event.tick_index < len(ticks)
+            or event.final_tick != (event.tick_index == len(ticks) - 1)
+            or event.last_bar_index != event.bar_index
+            or event.last_historical_bar_index != -1
+        ):
+            raise ResumeUnsupportedError(
+                "generated callback differs from admitted tick coordinates"
+            )
+        if event.cause == "TICK":
+            seen = visited.setdefault(event.bar_index, set())
+            if event.tick_index in seen:
+                raise ResumeUnsupportedError("generated tick callback was acknowledged twice")
+            seen.add(event.tick_index)
+    if any(visited.get(i) != set(range(len(schedule[i].ticks))) for i in range(cursor + 1)):
+        raise ResumeUnsupportedError("generated checkpoint omitted admitted tick callbacks")
+
+
 def generated_strategy(
     session: RC6GeneratedScriptSession,
     tape_events: list[dict[str, Any]],
     *,
     engine: BacktestEngine | None = None,
+    validate_resume: Callable[..., None] | None = None,
 ) -> type:
     """Share the existing bulk callback/intent adapter with the bytes bridge."""
     from backtest_engine.core.intent_replay import (
@@ -78,6 +122,13 @@ def generated_strategy(
 
     class _GeneratedStrategy:
         required_runtime_capabilities: tuple[str, ...] = ()
+        realtime_resume_runtime = "strategy"
+
+        @staticmethod
+        def validate_resume_state(state: Any, *, bar_index: int, committed_bar: Bar) -> None:
+            if validate_resume is None:
+                raise ResumeUnsupportedError("generated tick owner is missing admission context")
+            validate_resume(state, bar_index=bar_index, committed_bar=committed_bar)
 
         def __init__(self, params: dict[str, Any], runtime: Any, ctx: Any) -> None:
             del runtime
@@ -153,18 +204,18 @@ class RC6GeneratedExecutionBackend:
         series: BarSeries,
         resume_state: BacktestResumeState | None,
         callbacks: BacktestCallbacks | None,
+        tick_schedule: tuple[BarTickSlice, ...] | None = None,
     ) -> PreparedNativeExecution:
         session = self.session
         config = engine.config
         if (
             config.resume_validation_policy != "strict"
-            or config.calc_on_every_tick
             or config.runtime is not None
             or config.warmup_policy
             or config.force_close_on_end
         ):
             raise ResumeUnsupportedError(
-                "generated bytes bridge requires strict historical bars, no external runtime, "
+                "generated bytes bridge requires strict admission, no external runtime, "
                 "warmup or forced final close"
             )
         admission_config = copy(config)
@@ -177,7 +228,7 @@ class RC6GeneratedExecutionBackend:
             or session_config.semantic_profile != profile
         ):
             raise ResumeUnsupportedError("generated session and broker semantic profiles differ")
-        if serialize_engine_config(admission_config, profile) != serialize_engine_config(
+        if generated_owner_config(admission_config, profile) != generated_owner_config(
             session_config, profile
         ):
             raise ResumeUnsupportedError(
@@ -193,42 +244,62 @@ class RC6GeneratedExecutionBackend:
                 "generated backend parameters differ from applied Pine inputs"
             )
         state = resume_state
-        if state is not None:
-            if (
-                state.runtime_state is not None
-                or "realtime_tick_schedule_fingerprint" in state.metadata
-            ):
-                raise ResumeUnsupportedError(
-                    "generated bytes bridge has no external/tick runtime owner"
-                )
-            if state.bar_index < 0 or not isinstance(state.strategy_state, dict):
+        if config.calc_on_every_tick and tick_schedule is None:
+            raise ResumeUnsupportedError(
+                "generated tick owner requires the admitted native schedule"
+            )
+        if state is None:
+            # Admission must also reject a provisional/reused owner before the
+            # broker resets. Fresh callback execution starts at sequence zero.
+            session.export_state()
+            if session.execution_cursor.last is not None:
+                raise ResumeUnsupportedError("fresh generated execution requires an unused session")
+        else:
+            if state.runtime_state is not None:
+                raise ResumeUnsupportedError("generated bytes bridge has no external runtime owner")
+
+        def validate_owner(payload: Any, *, bar_index: int, committed_bar: Bar) -> None:
+            if bar_index < 0 or not isinstance(payload, dict):
                 raise ResumeUnsupportedError(
                     "generated bytes resume requires a committed strategy checkpoint"
                 )
             try:
-                prepared = session.prepare_restore(state.strategy_state)
+                prepared = session.prepare_restore(payload)
             except Exception as error:
                 raise ResumeUnsupportedError(
                     "generated owner preflight failed: " + str(error)
                 ) from error
             last = prepared.cursor.last
-            bar = series.get_bar(state.bar_index)
+            bar = committed_bar
             if (
                 last is None
-                or last.realtime
+                or last.realtime != config.calc_on_every_tick
                 or not last.final_tick
-                or last.bar_index != state.bar_index
+                or last.bar_index != bar_index
                 or last.bar_open_time_utc_ms != int(bar.time)
-                or last.last_bar_index != len(series) - 1
-                or last.last_historical_bar_index != len(series) - 1
+                or last.last_bar_index
+                != (bar_index if config.calc_on_every_tick else len(series) - 1)
+                or last.last_historical_bar_index
+                != (-1 if config.calc_on_every_tick else len(series) - 1)
             ):
                 raise ResumeUnsupportedError(
                     "generated checkpoint and broker committed boundary differ"
                 )
-            _validate_primary_prefix(prepared, series, state.bar_index)
+            _validate_primary_prefix(prepared, series, bar_index, tick_schedule)
+            if tick_schedule is not None:
+                _validate_tick_receipts(prepared, tick_schedule, bar_index)
+
+        if state is not None and not config.calc_on_every_tick:
+            validate_owner(
+                state.strategy_state,
+                bar_index=state.bar_index,
+                committed_bar=series.get_bar(state.bar_index),
+            )
 
         return PreparedNativeExecution(
-            generated_strategy(session, self.tape_events, engine=engine),
+            generated_strategy(
+                session, self.tape_events, engine=engine, validate_resume=validate_owner
+            ),
             selected_params,
             callbacks,
         )

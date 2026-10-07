@@ -39,6 +39,22 @@ _FIELDS = {
 _RECEIPT_FIELDS = {"runtime_sequence", "event", "intent_count", "intent_batch_hash"}
 
 
+def generated_owner_config(config: BacktestConfig, profile: str) -> dict[str, Any]:
+    """Serialize owner settings; native explicit ticks stay bound by the broker.
+
+    This local owner path does not change the protected worker config transport.
+    The native broker owns the explicit schedule and its processed-prefix digest.
+    """
+    portable = copy(config)
+    if portable.calc_on_every_tick:
+        if portable.realtime_tick_provider is not None or type(portable.realtime_ticks) not in (
+            list, tuple,
+        ):
+            raise ValueError("generated tick owner requires explicit list/tuple ticks")
+        portable.realtime_ticks = None
+    return serialize_engine_config(portable, profile)
+
+
 @dataclass(frozen=True, slots=True)
 class PreparedGeneratedCheckpoint:
     """Detached local owner projection; never a replacement checkpoint codec."""
@@ -151,7 +167,7 @@ class GeneratedCheckpointMixin:
         validate_backtest_config(intent_config)
         if intent_config.semantic_profile != self.identity.semantic_profile:
             raise ValueError("generated session semantic profile differs from intent config")
-        config = serialize_engine_config(intent_config, self.identity.semantic_profile)
+        config = generated_owner_config(intent_config, self.identity.semantic_profile)
         return {
             "artifact_hash": self._artifact_hash,
             "runtime_identity": self.session.identity_hash,
