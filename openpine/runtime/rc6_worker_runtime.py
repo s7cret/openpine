@@ -782,7 +782,6 @@ def run_bulk(request: Mapping[str, Any], protocol: Any) -> int:
 
     def on_bar_end(_bar: Any, index: int, _state: Any) -> None:
         nonlocal completed_bars
-        session.finalize_bar(index)
         completed_bars += 1
         progress.report(completed_bars, total)
 

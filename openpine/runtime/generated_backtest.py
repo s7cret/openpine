@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from copy import copy
-from dataclasses import replace
 from typing import Any, TYPE_CHECKING
 
 from backtest_engine import BacktestEngine, JsonResumeStateSerializer
@@ -20,9 +19,52 @@ from openpine_contracts import ExecutionEvent
 from pinelib.runtime.metadata import BarValues
 
 from openpine.runtime.rc6_config import serialize_engine_config
+from openpine.runtime.generated_checkpoint import PreparedGeneratedCheckpoint
 
 if TYPE_CHECKING:
     from openpine.runtime.rc6_worker_runtime import RC6GeneratedScriptSession
+
+
+def _primary_values(bar: Bar) -> BarValues:
+    """Use the same broker-to-runtime normalization for execution and admission."""
+    return BarValues(
+        open=float(bar.open),
+        high=float(bar.high),
+        low=float(bar.low),
+        close=float(bar.close),
+        volume=float(bar.volume or 0),
+        time=int(bar.time),
+        time_close=int(bar.time_close or bar.time),
+    )
+
+
+def _validate_primary_prefix(
+    prepared: PreparedGeneratedCheckpoint,
+    series: BarSeries,
+    cursor: int,
+) -> None:
+    """Bind the admitted owner's primary history to the independent broker input."""
+    names = ("open", "high", "low", "close", "volume", "time", "time_close")
+    histories = {}
+    for name in names:
+        storage = prepared.runtime.series.get(name)
+        if storage is None or len(storage.committed) != cursor + 1:
+            raise ResumeUnsupportedError(
+                "generated primary history differs from broker prefix: " + name
+            )
+        histories[name] = storage.committed
+    for index in range(cursor + 1):
+        expected = _primary_values(series.get_bar(index))
+        for name in names:
+            value = histories[name][index]
+            kinds = (int,) if name in ("time", "time_close") else (int, float)
+            if type(value) not in kinds or value != getattr(expected, name):
+                raise ResumeUnsupportedError(
+                    "generated primary history differs from broker prefix: "
+                    + name
+                    + " at bar "
+                    + str(index)
+                )
 
 
 def generated_strategy(
@@ -47,15 +89,7 @@ def generated_strategy(
             self.ctx = ctx
 
         def run_callback(self, bar: Any, event: ExecutionEvent) -> None:
-            values = BarValues(
-                open=float(bar.open),
-                high=float(bar.high),
-                low=float(bar.low),
-                close=float(bar.close),
-                volume=float(bar.volume or 0),
-                time=int(bar.time),
-                time_close=int(bar.time_close or bar.time),
-            )
+            values = _primary_values(bar)
             execution = session.execute_callback(
                 values,
                 event,
@@ -76,6 +110,9 @@ def generated_strategy(
 
         def export_state(self) -> dict[str, Any]:
             return session.export_state()
+
+        def _commit_bar(self, index: int) -> None:
+            session.finalize_bar(index)
 
         def restore_state(self, state: Any) -> None:
             session.restore_state(state)
@@ -121,9 +158,13 @@ def run_generated_backtest(
         )
     admission_config = copy(config)
     validate_backtest_config(admission_config)
+    session_config = copy(session.intent_config)
+    validate_backtest_config(session_config)
     profile = session.identity.semantic_profile
+    if admission_config.semantic_profile != profile or session_config.semantic_profile != profile:
+        raise ResumeUnsupportedError("generated session and broker semantic profiles differ")
     if serialize_engine_config(admission_config, profile) != serialize_engine_config(
-        session.intent_config, profile
+        session_config, profile
     ):
         raise ResumeUnsupportedError("generated session engine config differs from broker config")
     selected = engine._resolve_bars(bars)
@@ -179,16 +220,8 @@ def run_generated_backtest(
             raise ResumeUnsupportedError(
                 "generated checkpoint and broker committed boundary differ"
             )
+        _validate_primary_prefix(prepared, series, state.bar_index)
 
-    owner_callbacks = copy(callbacks) if callbacks is not None else BacktestCallbacks()
-    on_bar_end = owner_callbacks.on_bar_end or (owner_callbacks.extra or {}).get("on_bar_end")
-
-    def finalize(bar: Bar, index: int, state_view: object) -> None:
-        session.finalize_bar(index)
-        if on_bar_end is not None:
-            on_bar_end(bar, index, state_view)
-
-    owner_callbacks = replace(owner_callbacks, on_bar_end=finalize)
     events = tape_events if tape_events is not None else []
     # Existing restore_state re-admits the frozen decoded graph under the same
     # owner before its atomic replacement; no alternate decoder or schema lives here.
@@ -196,6 +229,6 @@ def run_generated_backtest(
         generated_strategy(session, events, engine=engine),
         params=dict(session.inputs.values),
         bars=selected,
-        callbacks=owner_callbacks,
+        callbacks=callbacks,
         resume_state=state,
     )

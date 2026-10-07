@@ -7,8 +7,13 @@ complete broker/IPC resume protocol. Checksums are not signatures or TV proofs.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from copy import copy
 from dataclasses import asdict, dataclass
 from typing import Any
+
+from backtest_engine import BacktestConfig
+from backtest_engine.core.engine_validation import validate_backtest_config
+from backtest_engine.core.intent_replay import IntentReplayIdentity
 
 from openpine_contracts import ExecutionEvent
 from pinelib import RuntimeSession
@@ -128,6 +133,9 @@ def validate_receipts(data, identity, runtime):
 class GeneratedCheckpointMixin:
     """Shared by the native generated-script session in both execution modes."""
 
+    intent_config: BacktestConfig
+    identity: IntentReplayIdentity
+
     def _record_callback(self, event, intents) -> None:
         self._callback_receipts.append(
             {
@@ -139,7 +147,11 @@ class GeneratedCheckpointMixin:
         )
 
     def _checkpoint_identity(self) -> dict[str, Any]:
-        config = serialize_engine_config(self.intent_config, self.identity.semantic_profile)
+        intent_config = copy(self.intent_config)
+        validate_backtest_config(intent_config)
+        if intent_config.semantic_profile != self.identity.semantic_profile:
+            raise ValueError("generated session semantic profile differs from intent config")
+        config = serialize_engine_config(intent_config, self.identity.semantic_profile)
         return {
             "artifact_hash": self._artifact_hash,
             "runtime_identity": self.session.identity_hash,
