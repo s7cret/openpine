@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from typing import Any
 
@@ -44,9 +44,7 @@ _ROLE_BY_KIND = {
     "FINALIZE": "parent",
     "ABORT": "parent",
 }
-_ROLES_BY_KIND = {
-    kind: frozenset({role}) for kind, role in _ROLE_BY_KIND.items()
-}
+_ROLES_BY_KIND = {kind: frozenset({role}) for kind, role in _ROLE_BY_KIND.items()}
 _ROLES_BY_KIND["ABORT"] = frozenset({"parent", "worker", "engine"})
 _BAR_CYCLE_KINDS = frozenset(
     {
@@ -98,7 +96,12 @@ def _semver(value: object) -> str:
 class WorkerProtocolTranscript:
     """Identity-stable builder that validates every message and transcript prefix."""
 
-    def __init__(self, execution_context: Mapping[str, Any]) -> None:
+    def __init__(
+        self,
+        execution_context: Mapping[str, Any],
+        *,
+        on_message: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
         context = deepcopy(dict(execution_context))
         validate_payload("openpine.execution_context.v1", context)
         if not verify_content_hash(context, schema_id="openpine.execution_context.v1"):
@@ -108,6 +111,7 @@ class WorkerProtocolTranscript:
         self._sequence = 0
         self._last: dict[str, Any] | None = None
         self._components = self._component_identities(context)
+        self._on_message = on_message
         for field in ("session_id", "run_id", "stack_manifest_hash"):
             if not isinstance(context.get(field), str) or not context[field]:
                 raise WorkerProtocolError(f"execution context {field} is missing")
@@ -129,9 +133,7 @@ class WorkerProtocolTranscript:
             version = versions.get(component)
             commit = commits.get(component)
             if not version or not isinstance(commit, str) or len(commit) != 40:
-                raise WorkerProtocolError(
-                    f"execution context identity for {component} is missing"
-                )
+                raise WorkerProtocolError(f"execution context identity for {component} is missing")
             identities[component] = (version, commit)
         return identities
 
@@ -145,6 +147,10 @@ class WorkerProtocolTranscript:
             return None
         return str(self._last["message_id"])
 
+    @property
+    def next_sequence(self) -> int:
+        return self._sequence
+
     def _check_transition(self, kind: str) -> None:
         if self._last is None and kind != "HELLO":
             raise WorkerProtocolError("worker protocol must start with HELLO")
@@ -156,10 +162,51 @@ class WorkerProtocolTranscript:
                 )
 
     def _remember(self, sealed: dict[str, Any]) -> None:
+        if self._on_message is not None:
+            self._on_message(deepcopy(sealed))
         self._last = sealed
         self._sequence += 1
         if sealed["kind"] not in _BAR_CYCLE_KINDS:
             self._messages.append(sealed)
+
+    @classmethod
+    def from_committed_messages(
+        cls,
+        execution_context: Mapping[str, Any],
+        messages: Sequence[Mapping[str, Any]],
+        *,
+        on_message: Callable[[dict[str, Any]], None] | None = None,
+    ) -> WorkerProtocolTranscript:
+        """Admit the entire durable prefix before constructing a live receiver.
+
+        The existing contracts validator requires a terminal message. A detached
+        FINALIZE proves this committed prefix; it is neither saved nor sent.
+        Historical frames are not delivered to the new sink during admission.
+        """
+        candidate = cls(execution_context)
+        prefix = [candidate.accept(message) for message in messages]
+        if not prefix or prefix[-1]["kind"] != "BAR_COMMIT":
+            raise WorkerProtocolError("protocol restore requires a BAR_COMMIT boundary")
+        commit = prefix[-1]
+        body = commit["body"]
+        final = candidate.append(
+            "FINALIZE",
+            {
+                "run_id": body["run_id"],
+                "final_sequence": commit["sequence"],
+                "final_state_hash": body["state_hash"],
+                "broker_projection_hash": body["broker_projection_hash"],
+                "last_commit_message_id": commit["message_id"],
+                "last_committed_sequence": commit["sequence"],
+            },
+            created_at_utc_ms=commit["created_at_utc_ms"],
+        )
+        validate_worker_protocol_sequence([*prefix, final])
+        restored = cls(execution_context)
+        for message in prefix:
+            restored.accept(message)
+        restored._on_message = on_message
+        return restored
 
     def accept(self, message: Mapping[str, Any]) -> dict[str, Any]:
         candidate_message = deepcopy(dict(message))
