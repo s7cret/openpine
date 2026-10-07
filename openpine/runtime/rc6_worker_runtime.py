@@ -221,6 +221,44 @@ class RC6WorkerProtocol:
         self._remember(accepted)
         return accepted
 
+    @classmethod
+    def from_committed_messages(
+        cls, context: Mapping[str, Any], messages: list[dict[str, Any]]
+    ) -> RC6WorkerProtocol:
+        """Use the host's complete-prefix admission, then seed this receiver.
+
+        Prefix frames are validation inputs and are never sent to the transport.
+        This is a local owner operation; it does not advertise wire resume.
+        """
+        from openpine.runtime.worker_protocol import WorkerProtocolTranscript
+
+        WorkerProtocolTranscript.from_committed_messages(context, messages)
+        candidate = cls(context)
+        for message in messages:
+            candidate.accept(message)
+        return candidate
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedInteractiveJobRestore:
+    """Local immutable admission token; the portable checkpoint stays JSON bytes.
+
+    The receiver handle is intentionally local and never serialized. Parent
+    native broker/config/data admission must finish before activation.
+    """
+
+    receiver: RC6GeneratedScriptSession
+    receiver_state_hash: str
+    job_id: str
+    worker_generation: int
+    checkpoint_hash: str
+    native_bytes: bytes
+    committed_sequence: int
+    last_acknowledged_frame: int
+    callback_sequence: int
+    intent_sequence: int
+    wire: bytes
+
 
 @dataclass(frozen=True, slots=True)
 class RC6BarExecution:
@@ -532,6 +570,75 @@ class RC6InteractiveCallbacks:
         self.current_bar: Mapping[str, Any] | None = None
         self.last_broker_message: Mapping[str, Any] | None = None
         self.last_commit: Mapping[str, Any] | None = None
+        self._active_restore: tuple[str, int, str] | None = None
+        self.restored_protocol: RC6WorkerProtocol | None = None
+
+    def prepare_job_restore(
+        self, wire: bytes, *, job_id: str, worker_generation: int
+    ) -> PreparedInteractiveJobRestore:
+        """Admit the complete job/Pine/protocol graph without changing this worker."""
+        from openpine.runtime.job_checkpoint import prepare_job_checkpoint
+        from pinelib.state.checkpoint import sha
+
+        if type(worker_generation) is not int or worker_generation < 1:
+            raise ValueError("worker restore generation must be a positive integer")
+        if self.current_bar is not None or self.last_broker_message is not None:
+            raise ValueError("worker restore refuses a provisional callback or broker batch")
+        receiver = self.session
+        before = receiver.export_state()
+        prepared = prepare_job_checkpoint(
+            wire, job_id=job_id, context=self.context, session=receiver,
+            worker_generation=worker_generation,
+        )
+        payload = prepared.payload
+        RC6WorkerProtocol.from_committed_messages(self.context, payload["protocol_messages"])
+        if self._active_restore is not None and worker_generation < self._active_restore[1]:
+            raise ValueError("stale worker restore generation")
+        return PreparedInteractiveJobRestore(
+            receiver, sha(before), job_id, worker_generation, payload["content_hash"],
+            prepared.native_bytes, payload["committed_sequence"], payload["last_acknowledged_frame"],
+            payload["callback_sequence"], payload["intent_sequence"], wire,
+        )
+
+    def activate_job_restore(self, prepared: PreparedInteractiveJobRestore) -> bool:
+        """Replace worker owners after native admission, with no callback replay.
+
+        Exact duplicate activation returns its existing result without resetting
+        the worker. A token prepared against another or changed receiver rejects.
+        Mutable cached projections are never trusted instead of portable bytes.
+        """
+        from backtest_engine import JsonResumeStateSerializer
+        from openpine.runtime.job_checkpoint import prepare_job_checkpoint
+        from pinelib.state.checkpoint import sha
+
+        if not isinstance(prepared, PreparedInteractiveJobRestore) or prepared.receiver is not self.session:
+            raise ValueError("worker restore token belongs to another receiver")
+        key = (prepared.job_id, prepared.worker_generation, prepared.checkpoint_hash)
+        if self._active_restore == key:
+            return False
+        if self._active_restore is not None and prepared.worker_generation < self._active_restore[1]:
+            raise ValueError("stale worker restore generation")
+        if self.current_bar is not None or self.last_broker_message is not None:
+            raise ValueError("worker restore refuses a provisional callback or broker batch")
+        if sha(self.session.export_state()) != prepared.receiver_state_hash:
+            raise ValueError("worker changed after restore preparation")
+        admitted = prepare_job_checkpoint(
+            prepared.wire, job_id=prepared.job_id, context=self.context, session=self.session,
+            worker_generation=prepared.worker_generation,
+        )
+        if admitted.payload["content_hash"] != prepared.checkpoint_hash:
+            raise ValueError("worker restore token checkpoint identity mismatch")
+        protocol = RC6WorkerProtocol.from_committed_messages(self.context, admitted.payload["protocol_messages"])
+        state = JsonResumeStateSerializer().loads(admitted.native_bytes)
+        if not isinstance(state.strategy_state, Mapping):
+            raise ValueError("worker restore requires its generated owner checkpoint")
+        last_commit = deepcopy(admitted.payload["protocol_messages"][-1])
+        self.session.restore_state(state.strategy_state)
+        self.last_commit = last_commit
+        self.current_bar = self.last_broker_message = None
+        self.restored_protocol = protocol
+        self._active_restore = key
+        return True
 
     def process(self, message: Mapping[str, Any], protocol: RC6WorkerProtocol) -> list[dict[str, Any]]:
         kind, body = message["kind"], message["body"]
