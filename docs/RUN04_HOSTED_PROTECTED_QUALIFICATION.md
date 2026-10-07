@@ -1,5 +1,9 @@
-This branch prepares a reviewable INT04/INT05 hosted attempt. It has not run
-the hosted fault matrix and does not claim full product qualification.
+This branch prepares a reviewable INT04/INT05 hosted attempt and its early
+failure diagnostics. The first approved attempt, run `37693515835` at
+`9dc473bf81a57b10bd0592f1414445db7e3e749c`, failed in the combined driver
+after prerequisites passed. No public projection was produced and no
+artifacts were uploaded. Actual owner/matrix denominators remain unconfirmed;
+this branch does not claim full product qualification.
 The base is Host PR #40, commit `89494613ba34d50c520e87e17a977b80754a6b29`.
 Reviewed owner changes are from frozen INT04
 `aea48bec52b609a9516f0d589ae7c47d6a95853a` and INT05
@@ -56,10 +60,11 @@ corrected to five without changing inventory identities, count or hash.
 The existing workflow has a separate protected job. Ordinary implementation
 branch pushes and PRs do not start it. The workflow is absent on `main`, so
 the immediately reviewable launch is creation of a fresh dedicated execution
-ref from the final approved SHA:
+ref from the final approved SHA. The original execution ref is occupied by
+the failed attempt and remains unchanged. The prepared retry route is:
 
 ```sh
-git push origin FINAL_APPROVED_SHA:refs/heads/execution/run04-int04-int05-20261007
+git push origin FINAL_APPROVED_SHA:refs/heads/execution/run04-int04-int05-retry-20261007
 ```
 
 Creating that ref is an execution action and requires separate action-time
@@ -82,7 +87,12 @@ The new public policy is
 `verification/protected-qualification-public-allowlist.json`. Only
 `projection.json` and `projection.sha256` may be uploaded to public
 `s7cret/openpine`. Permitted categories are candidate/source commit identities,
-policy hash, enum matrix case identities and boolean outcomes. There are no
+policy hash, enum matrix case identities and boolean outcomes. The proposed
+diagnostic amendment adds exactly `stage`, `error`, and aggregate `ok`, with
+the closed stage/error vocabularies recorded in that allowlist. An identity
+not yet available on an early failure is represented by `candidate_sha: null`
+and/or `source_commits: {}`; no source pins are invented. This changed
+allowlist requires action-time approval before the next upload/run. There are no
 raw logs, private paths, process/unit identifiers, environment, protocol,
 traces, sources, wheels, virtualenvs or old workspace evidence. Metadata is
 limited to 1 MiB, with a separate 64 MiB complete-upload ceiling and one-day
@@ -98,6 +108,38 @@ ephemeral acknowledgement permits execution but does not close that archive
 obligation. Both `raw_primaries_durable` and `full_qualification_accepted`
 remain false in the projection even if every matrix case passes.
 
+Static inspection and a metadata regression reproduced a driver defect:
+preparation's wheelhouse includes third-party dependencies, while the strict
+candidate finalizer requires exactly the eight stack distributions. The
+driver now selects those eight wheels by their embedded distribution metadata
+into a private wheelhouse using hard links; bytes and strict finalization stay
+unchanged. The full bundle remains available for dependency restoration. This
+is a likely early-failure explanation, not a proved root cause for the recorded
+run, because its private driver log was not recoverable.
+
+The driver writes a closed incomplete checkpoint before preparation and each
+subsequent phase, then replaces it with a validated failure/success outcome.
+Missing restored/matrix/owner outputs fail explicitly; owner receipts must
+match their locked inventory and all three pytest phases. The workflow's
+independent stdlib projection guard runs after a successful identity guard,
+including when the driver was skipped or failed before producing any outputs.
+It preserves valid outcomes and recovers absent/invalid metadata as a closed
+failure. Before upload it checks the exact two regular files, canonical JSON,
+policy, identities, booleans, digest and metadata size. It rejects foreign files
+and symlinks, and a failed driver cannot leave a green checkpoint. The public
+guard prints only `stage`, `error`, and `ok`; raw exceptions stay excluded.
+Caught driver tracebacks are written, when possible, only to a bounded primary
+under the attempt's private 0700 directory. A failure to save that private
+primary cannot prevent the closed public diagnostic.
+
+The completed run's saved Actions job log was retrieved read-only. GitHub's
+job-log REST API returns saved workflow output, not arbitrary private files on
+the runner; available artifacts numbered zero. No supported reattach/private
+file-read mechanism was available for the completed standard hosted job.
+Physical VM deletion was not independently observed. No new run or changed
+policy upload is authorized by this development fix alone.
+
 Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
 and https://docs.github.com/en/billing/concepts/product-billing/github-actions.
 Artifact readers: https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts.
+Saved job logs: https://docs.github.com/en/rest/actions/workflow-jobs#download-job-logs-for-a-workflow-run-job.

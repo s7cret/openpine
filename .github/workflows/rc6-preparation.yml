@@ -2,7 +2,7 @@
 name: RC6 preparation baseline
 'on':
   push:
-    branches: ['preparation/rc6-cpython313-20261006', 'execution/run04-int04-int05-20261007']
+    branches: ['preparation/rc6-cpython313-20261006', 'execution/run04-int04-int05-20261007', 'execution/run04-int04-int05-retry-20261007']
   workflow_dispatch:
     inputs:
       mode:
@@ -161,7 +161,7 @@ jobs:
   protected-qualification:
     # Creating the dedicated execution ref is an action-time approved launch,
     # separate from pushing this implementation branch or any ordinary PR.
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/execution/run04-int04-int05-20261007') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'int04-int05-protected' && inputs.qualification_security_approved && inputs.approved_candidate_sha != '' && inputs.qualification_raw_retention == 'ephemeral-acknowledged') }}
+    if: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/execution/run04-int04-int05-20261007' || github.ref == 'refs/heads/execution/run04-int04-int05-retry-20261007')) || (github.event_name == 'workflow_dispatch' && inputs.mode == 'int04-int05-protected' && inputs.qualification_security_approved && inputs.approved_candidate_sha != '' && inputs.qualification_raw_retention == 'ephemeral-acknowledged') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -180,6 +180,7 @@ jobs:
         fetch-depth: 0
         ref: ${{ inputs.approved_candidate_sha || github.sha }}
     - name: Refuse workflow or source drift before provisioning
+      id: identity
       shell: bash
       run: |
         set -euo pipefail
@@ -217,6 +218,7 @@ jobs:
         sudo -n -u openpine-worker -- /usr/bin/id -u
         /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
     - name: Run the exact installed A/B owners and actual protected fault matrix
+      id: qualification
       shell: bash
       run: |
         set -euo pipefail
@@ -231,8 +233,15 @@ jobs:
           echo 'Protected checks failed; private primaries retained only on this ephemeral VM.'
           exit 1
         fi
+    - name: Validate or recover a closed public outcome before upload
+      id: public_outcome
+      if: ${{ always() && steps.identity.outcome == 'success' && env.QUALIFICATION_PUBLIC == 'true' }}
+      env:
+        DRIVER_OUTCOME: ${{ steps.qualification.outcome }}
+      run: |
+        python -B -m openpine.verification.qualification_public --host "$GITHUB_WORKSPACE" --folder "$RUNNER_TEMP/run04-qualified/public" --candidate-sha "$APPROVED_SHA" --driver-outcome "$DRIVER_OUTCOME"
     - name: Upload only the new closed public projection
-      if: ${{ always() && env.QUALIFICATION_PUBLIC == 'true' }}
+      if: ${{ always() && steps.public_outcome.outcome == 'success' && env.QUALIFICATION_PUBLIC == 'true' }}
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: run04-protected-public-${{ github.run_id }}-${{ github.run_attempt }}
