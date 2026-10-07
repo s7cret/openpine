@@ -16,7 +16,7 @@ from backtest_engine import BacktestCallbacks, BacktestEngine, JsonResumeStateSe
 from backtest_engine.errors import ResumeUnsupportedError
 from openpine.compile.native_rc6 import NativeRC6CompilerAdapter
 from openpine.runtime.generated_backtest import RC6GeneratedExecutionBackend
-from test_rc6_generated_bytes import descriptor, inputs, mutate, projection, session
+from test_rc6_generated_bytes import descriptor_identity, inputs, mutate, projection, session
 
 SOURCE = """//@version=6
 strategy("compiled ticks")
@@ -37,7 +37,7 @@ plot(callbacks)
 
 
 def tick_descriptor():
-    data = descriptor()
+    data = descriptor_identity()
     compiled = NativeRC6CompilerAdapter().compile(
         SOURCE,
         module_name="run02_generated_ticks",
