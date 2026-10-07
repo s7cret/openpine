@@ -47,7 +47,7 @@ requested = request.security("", "", close)
 if na(missing) and array.size(prices) == 1 and requested == 100
     strategy.entry("foreign-entry", strategy.long, qty=3)
 if array.size(prices) == 3 and requested == 120
-    strategy.close("foreign-entry", qty=1, immediately=true)
+    strategy.close("foreign-entry", qty=array.get(prices, 0) == 100 ? 1 : 2, immediately=true)
 """
 
 
@@ -240,6 +240,7 @@ def literal_oracle(engine, tape):
         100.0,
     )
     assert engine.equity == 1080.0
+    assert engine.position.realized_profit == 20.0
 
 
 @pytest.fixture(scope="module")
@@ -533,6 +534,237 @@ def test_exporter_exits_before_independent_public_bytes_consumer(tmp_path):
         outcomes.append(json.loads((tmp_path / (mode + ".json")).read_text()))
     assert outcomes[0]["pid"] != outcomes[1]["pid"]
     assert all(result["passed"] for result in outcomes)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("open", 101),
+        ("high", 111),
+        ("low", 89),
+        ("close", 90),
+        ("volume", 2),
+        ("time_close", 59000),
+    ],
+)
+def test_independently_valid_primary_history_splice_rejects_before_reset(
+    compiled_descriptor,
+    field,
+    value,
+    monkeypatch,
+):
+    config, bars = inputs()
+    bars = [replace(bars[0], high=110, low=90), *bars[1:]]
+    a_owner = session(compiled_descriptor, config)
+    a_result = run_generated_backtest(BacktestEngine(config), a_owner, bars)
+    a = JsonResumeStateSerializer().loads(JsonResumeStateSerializer().dumps(a_result.resume_state))
+    donor_bars = [replace(bars[0], **{field: value}), *bars[1:]]
+    b_owner = session(compiled_descriptor, config)
+    b_result = run_generated_backtest(BacktestEngine(config), b_owner, donor_bars)
+    b_wire = JsonResumeStateSerializer().dumps(b_result.resume_state)
+    b = JsonResumeStateSerializer().loads(b_wire)
+    assert a.bar_index == b.bar_index == 0
+    assert a_owner.prepare_restore(a.strategy_state)
+    assert b_owner.prepare_restore(b.strategy_state)
+    assert a.metadata["bar_prefix_fingerprint"] != b.metadata["bar_prefix_fingerprint"]
+    # The donor is independently resumable against its own immutable inputs.
+    donor_engine, donor_tape = BacktestEngine(config), []
+    donor = session(compiled_descriptor, config)
+    run_generated_backtest(
+        donor_engine, donor, donor_bars, resume_state=b_wire, tape_events=donor_tape
+    )
+    if field == "close":
+        assert [(row["command_id"], row["qty"], row["bar_index"]) for row in donor_tape] == [
+            ("close:foreign-entry", "2", 2),
+        ]
+        assert donor_engine.equity == 1070 and donor_engine.position.size == 1
+    mixed = replace(a, strategy_state=b.strategy_state)
+    mixed_wire = JsonResumeStateSerializer().dumps(mixed)
+    receiver, engine = session(compiled_descriptor, config), BacktestEngine(config)
+    # Keep a nonempty, genuinely committed receiver to detect replacement/reset.
+    run_generated_backtest(engine, receiver, bars)
+    before_owner, before_engine = receiver.export_state(), projection(engine)
+    identities = (
+        receiver.session,
+        receiver.execution_cursor,
+        receiver._callback_receipts,
+        engine.position,
+        engine.orders,
+        engine.fills,
+        engine.state,
+    )
+    calls = []
+    monkeypatch.setattr(engine, "_reset_state", lambda: pytest.fail("primary splice reached reset"))
+    with pytest.raises(ResumeUnsupportedError, match="primary history differs from broker prefix"):
+        run_generated_backtest(
+            engine,
+            receiver,
+            bars,
+            resume_state=mixed_wire,
+            callbacks=BacktestCallbacks(on_bar_start=lambda *args: calls.append(args)),
+        )
+    assert receiver.export_state() == before_owner and projection(engine) == before_engine
+    assert all(
+        a is b
+        for a, b in zip(
+            identities,
+            (
+                receiver.session,
+                receiver.execution_cursor,
+                receiver._callback_receipts,
+                engine.position,
+                engine.orders,
+                engine.fills,
+                engine.state,
+            ),
+        )
+    )
+    assert calls == []
+
+
+def test_primary_history_binds_older_timestamps_not_only_last_coordinate(
+    compiled_descriptor,
+    monkeypatch,
+):
+    config, bars = inputs()
+    bars = [bars[0], replace(bars[1], high=100, close=100), *bars[2:]]
+
+    def cut(data):
+        first = run_generated_backtest(
+            BacktestEngine(config), session(compiled_descriptor, config), data
+        )
+        engine, owner = BacktestEngine(config), session(compiled_descriptor, config)
+        second = run_generated_backtest(
+            engine,
+            owner,
+            data,
+            resume_state=JsonResumeStateSerializer().dumps(first.resume_state),
+        )
+        assert second.resume_state.bar_index == 1
+        return JsonResumeStateSerializer().loads(
+            JsonResumeStateSerializer().dumps(second.resume_state)
+        )
+
+    a = cut(bars)
+    donor_bars = [replace(bars[0], time=1), *bars[1:]]
+    b = cut(donor_bars)
+    assert a.strategy_state["last_event"] == b.strategy_state["last_event"]
+    assert session(compiled_descriptor, config).prepare_restore(b.strategy_state)
+    mixed_wire = JsonResumeStateSerializer().dumps(replace(a, strategy_state=b.strategy_state))
+    engine, owner = BacktestEngine(config), session(compiled_descriptor, config)
+    before = owner.export_state()
+    monkeypatch.setattr(
+        engine, "_reset_state", lambda: pytest.fail("older time splice reached reset")
+    )
+    with pytest.raises(ResumeUnsupportedError, match="time at bar 0"):
+        run_generated_backtest(engine, owner, bars, resume_state=mixed_wire)
+    assert owner.export_state() == before
+
+
+@pytest.mark.parametrize("resume", [False, True])
+def test_actual_semantic_profile_mismatch_rejects_before_reset(
+    compiled_descriptor,
+    wire,
+    resume,
+    monkeypatch,
+):
+    config, bars = inputs()
+    owner = session(compiled_descriptor, config)
+    engine = BacktestEngine(replace(config, semantic_profile="legacy_4x"))
+    before, original_config = owner.export_state(), asdict(engine.config)
+    monkeypatch.setattr(
+        engine, "_reset_state", lambda: pytest.fail("profile mismatch reached reset")
+    )
+    with pytest.raises(ResumeUnsupportedError, match="semantic profiles differ"):
+        run_generated_backtest(engine, owner, bars, resume_state=wire if resume else None)
+    assert owner.export_state() == before and asdict(engine.config) == original_config
+
+
+@pytest.mark.parametrize(
+    "requirement", ["equity_curve", "required_metrics", "mfe_mae", "order_events"]
+)
+def test_both_detached_config_views_normalize_before_identity_admission(
+    compiled_descriptor,
+    requirement,
+    monkeypatch,
+):
+    config, bars = inputs()
+    options = {
+        "collect_equity_curve": False,
+        "collect_events": False,
+        "collect_mfe_mae": False,
+        "collect_trade_details": False,
+    }
+    if requirement == "required_metrics":
+        options["required_metrics"] = {"net_profit"}
+    else:
+        options["required_outputs"] = {requirement}
+    config = replace(config, **options)
+    owner, engine = session(compiled_descriptor, config), BacktestEngine(config)
+    # Only the authorized execution phase may normalize a live config.
+    before = asdict(config)
+    original_reset = engine._reset_state
+
+    def check_before_reset():
+        assert asdict(config) == before
+        original_reset()
+
+    monkeypatch.setattr(engine, "_reset_state", check_before_reset)
+    first = run_generated_backtest(engine, owner, bars)
+    wire = JsonResumeStateSerializer().dumps(first.resume_state)
+    receiver_config = replace(inputs()[0], **options)
+    receiver, consumer = (
+        session(compiled_descriptor, receiver_config),
+        BacktestEngine(receiver_config),
+    )
+    receiver_before = asdict(receiver_config)
+    original_prepare = receiver.prepare_restore
+    preparations = []
+
+    def check_detached_normalization(state):
+        if not preparations:
+            assert asdict(receiver_config) == receiver_before
+        preparations.append(True)
+        return original_prepare(state)
+
+    monkeypatch.setattr(receiver, "prepare_restore", check_detached_normalization)
+    tape = []
+    result = run_generated_backtest(consumer, receiver, bars, resume_state=wire, tape_events=tape)
+    assert result.status == "completed"
+    literal_oracle(consumer, tape)
+
+
+@pytest.mark.parametrize("callback_name", ["on_bar_start", "on_equity", "on_bar_end"])
+def test_required_owner_commit_survives_disabled_user_callbacks(
+    compiled_descriptor,
+    callback_name,
+):
+    config, bars = inputs()
+    config = replace(config, callback_error_policy="disable_callbacks")
+
+    def broken(*args):
+        raise ValueError("optional user callback failed")
+
+    callbacks = BacktestCallbacks(**{callback_name: broken})
+    owner, producer_engine = session(compiled_descriptor, config), BacktestEngine(config)
+    first = run_generated_backtest(producer_engine, owner, bars, callbacks=callbacks)
+    assert first.status == "early_stopped" and owner.execution_cursor.open_bar is None
+    wire = JsonResumeStateSerializer().dumps(first.resume_state)
+    consumer, receiver, tape = BacktestEngine(config), session(compiled_descriptor, config), []
+    result = run_generated_backtest(
+        consumer,
+        receiver,
+        bars,
+        resume_state=wire,
+        callbacks=callbacks,
+        tape_events=tape,
+    )
+    assert result.status == "completed" and consumer._callbacks_disabled
+    assert (
+        receiver.execution_cursor.open_bar is None and receiver.execution_cursor.last.bar_index == 3
+    )
+    assert JsonResumeStateSerializer().loads(JsonResumeStateSerializer().dumps(result.resume_state))
+    literal_oracle(consumer, tape)
 
 
 if __name__ == "__main__":
