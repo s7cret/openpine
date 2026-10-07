@@ -32,8 +32,32 @@ checkpoint contains JSON values and registered native types, with no links to
 objects in the producer process. Source-overlay process proofs are local evidence;
 they do not qualify rebuilt installed packages or protected workers.
 
-RUN03's full job cut remains open: durable job/output acknowledgments, worker
-generation and transport recovery are not carried by this local contract.
+`GeneratedJobExecution` adds a bounded historical job envelope over these same
+native/Pine owners. `JobExecutionStore` uses the existing job SQLite WAL/FULL
+transaction to publish a complete protocol prefix, native checkpoint, embedded
+immutable protocol artifact bytes and callback/intent/output/ack cursors together.
+Provisional frames stay private. Acknowledgments are contiguous and bind exact
+message IDs/hashes; exact transport repeats are idempotent, while conflicting
+repeats and gaps reject. An explicitly new run starts separate sequences. Job
+retry can resume the same run, and worker replacement advances a monotonic
+generation. Every outbox read, frame write, publication and ack checks the active
+run, live lease and generation. Recovery truncates only the unpublished suffix.
+
+Portable job bytes can restore a new ledger/engine/session without reading the
+producer's database or artifact paths. Complete owner/protocol/artifact admission
+precedes the import transaction; import refuses existing ledgers so it cannot
+roll back acknowledged effects. Protocol restoration validates the full prefix
+and constructs the next cursor without re-emitting historical messages. The
+generated graph uses its existing JSON bytes inside the protocol artifact, which
+preserves native floats and Pine values despite the outer protocol's scalar domain.
+
+The supported job boundary is a historical committed parent bar. The existing
+local native tick bridge remains separate; this durable job path refuses explicit
+ticks and export-disabled runs. The protocol outbox provides durable ordered
+delivery with exact IDs. An external consumer must acknowledge only after its
+own durable/idempotent application; external exactly-once delivery is not promised.
+
+RUN04's protected worker path remains open:
 `worker_capabilities.py` still advertises only `closed_bar`, and the interactive
 driver does not implement `CHECKPOINT`/`RESTORE` recovery. RUN04 capability and
 supervisor changes require that complete job restore path first. Protected fault
