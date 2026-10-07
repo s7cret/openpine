@@ -5,6 +5,15 @@ name: RC6 preparation baseline
     branches: ['preparation/rc6-cpython313-20261006']
   workflow_dispatch:
     inputs:
+      int05_control_calibration:
+        description: 'Reviewed INT05 stock prepare and ONE complete pytest control; no mutant campaigns'
+        type: boolean
+        required: true
+        default: false
+      reviewed_workflow_sha:
+        description: 'Exact workflow commit approved by the parent; empty disables INT05 dispatch'
+        required: false
+        default: ''
       public_evidence_approved:
         description: 'Run only after approval of the public evidence allowlist and storage route'
         type: boolean
@@ -26,7 +35,7 @@ concurrency:
 jobs:
   baseline:
     # Preparation branch pushes are approved within the recorded cumulative $0.10 budget.
-    if: ${{ github.event_name == 'push' || (inputs.public_evidence_approved && inputs.artifact_budget_bytes != '0') }}
+    if: ${{ !inputs.int05_control_calibration && (github.event_name == 'push' || (inputs.public_evidence_approved && inputs.artifact_budget_bytes != '0')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -133,5 +142,90 @@ jobs:
           ${{ runner.temp }}/preparation-archive/
           ${{ runner.temp }}/public-evidence-audit.json
         retention-days: ${{ env.RETENTION_DAYS }}
+        compression-level: 0
+        if-no-files-found: error
+  int05-control:
+    # Review only: the current public allowlist cannot transport the complete inputs.
+    # Do not dispatch until its owner supplies a reviewed durable route and free allowance.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.int05_control_calibration && inputs.reviewed_workflow_sha == github.sha && inputs.public_evidence_approved && inputs.artifact_budget_bytes != '0' && !github.event.repository.private }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: candidate
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+      INT05_WORKFLOW_SHA: ${{ github.sha }}
+      ARTIFACT_BUDGET: ${{ inputs.artifact_budget_bytes }}
+      RETENTION_DAYS: ${{ inputs.retention_days }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        ref: ${{ github.sha }}
+        path: workflow-owner
+        persist-credentials: false
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        ref: 4eee24fc458a2099f000211850f720ccfc6bfb2b
+        path: candidate
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      with:
+        python-version: '3.13.5'
+    - name: Verify ordinary interpreter and hosted VM prerequisites
+      run: |
+        python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" preflight
+        python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt
+    - name: Provision existing protected worker prerequisites
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y apparmor-profiles apparmor-utils bubblewrap
+        sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+        sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+        if ! getent passwd openpine-worker >/dev/null; then
+          sudo useradd --system --no-create-home --shell /usr/sbin/nologin openpine-worker
+        fi
+        sudo -n -u openpine-worker -- /usr/bin/id -u
+        /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+    - name: Stock prepare exact eight-package candidate
+      run: |
+        PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/prepare-resource" --cwd "$PWD" --minimum-free-bytes 19327352832 --soft-checkpoint-free-bytes 21474836480 -- python -m openpine.verification test-ci prepare --host-root "$PWD" --work "$RUNNER_TEMP/int05/prepare" --python-version 3.13
+    - name: Restore once through the stock owner
+      run: |
+        PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_monitor_stock_command.py" --output "$RUNNER_TEMP/int05/restore-resource" --cwd "$PWD" --minimum-free-bytes 19327352832 --soft-checkpoint-free-bytes 21474836480 -- python -m openpine.verification test-ci owner-environment --bundle "$RUNNER_TEMP/int05/prepare/bundle" --work "$RUNNER_TEMP/int05/restored"
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      with:
+        node-version: '24'
+    - name: Prepare existing frontend owner launch locations
+      working-directory: candidate/openpine-ui
+      run: |
+        npm ci
+        npx playwright install --with-deps chromium
+        node -e 'console.log("INT05_CHROMIUM="+require("@playwright/test").chromium.executablePath())' >> "$GITHUB_ENV"
+    - name: Refreeze new hosted identities and complete full obligations
+      run: |
+        "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" freeze
+    - name: Run exactly one complete control pytest campaign
+      run: |
+        "$RUNNER_TEMP/int05/restored/venv/bin/python" -I "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" control
+    - name: Preserve all available primaries and audit public transport
+      id: evidence
+      if: always()
+      run: |
+        PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/workflow-owner/scripts/int05_hosted_control.py" retain
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      if: ${{ always() && steps.evidence.outputs.public_ready == 'true' }}
+      with:
+        name: int05-control-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ runner.temp }}/int05/archive/
+          ${{ runner.temp }}/int05/public-evidence-audit.json
+        retention-days: '1'
         compression-level: 0
         if-no-files-found: error
