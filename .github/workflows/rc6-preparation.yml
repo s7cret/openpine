@@ -2,9 +2,31 @@
 name: RC6 preparation baseline
 'on':
   push:
-    branches: ['preparation/rc6-cpython313-20261006']
+    branches: ['preparation/rc6-cpython313-20261006', 'execution/run04-int04-int05-20261007']
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'Separate preparation or reviewed INT04/INT05 protected checks'
+        type: choice
+        options: [preparation, int04-int05-protected]
+        default: preparation
+      approved_candidate_sha:
+        description: 'Exact action-time approved workflow and candidate commit'
+        type: string
+        default: ''
+      qualification_security_approved:
+        description: 'Approve listed ephemeral VM AppArmor/user provisioning and exact UUID unit actions'
+        type: boolean
+        default: false
+      qualification_public_approved:
+        description: 'Approve the new closed public projection in public s7cret/openpine, 64 MiB, 1 day'
+        type: boolean
+        default: false
+      qualification_raw_retention:
+        description: 'Private primaries stay on the ephemeral VM; this does not close durable archive qualification'
+        type: choice
+        options: [hold, ephemeral-acknowledged]
+        default: hold
       public_evidence_approved:
         description: 'Run only after approval of the public evidence allowlist and storage route'
         type: boolean
@@ -26,7 +48,7 @@ concurrency:
 jobs:
   baseline:
     # Preparation branch pushes are approved within the recorded cumulative $0.10 budget.
-    if: ${{ github.event_name == 'push' || (inputs.public_evidence_approved && inputs.artifact_budget_bytes != '0') }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/preparation/rc6-cpython313-20261006') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'preparation' && inputs.public_evidence_approved && inputs.artifact_budget_bytes != '0') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
@@ -135,3 +157,89 @@ jobs:
         retention-days: ${{ env.RETENTION_DAYS }}
         compression-level: 0
         if-no-files-found: error
+
+  protected-qualification:
+    # Creating the dedicated execution ref is an action-time approved launch,
+    # separate from pushing this implementation branch or any ordinary PR.
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/execution/run04-int04-int05-20261007') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'int04-int05-protected' && inputs.qualification_security_approved && inputs.approved_candidate_sha != '' && inputs.qualification_raw_retention == 'ephemeral-acknowledged') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      APPROVED_SHA: ${{ inputs.approved_candidate_sha || github.sha }}
+      WORKFLOW_SHA: ${{ github.workflow_sha }}
+      QUALIFICATION_PUBLIC: ${{ github.event_name == 'push' || inputs.qualification_public_approved }}
+      PYTHONDONTWRITEBYTECODE: '1'
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+        ref: ${{ inputs.approved_candidate_sha || github.sha }}
+    - name: Refuse workflow or source drift before provisioning
+      shell: bash
+      run: |
+        set -euo pipefail
+        test "$GITHUB_SHA" = "$APPROVED_SHA"
+        test "$WORKFLOW_SHA" = "$APPROVED_SHA"
+        test "$(git rev-parse HEAD)" = "$APPROVED_SHA"
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+      with:
+        python-version: '3.13.5'
+        cache: ''
+    - name: Verify approved capacity before provisioning
+      run: |
+        python -B - <<'PY'
+        import os, platform, shutil, sys
+        assert sys.version_info[:3] == (3, 13, 5) and sys._is_gil_enabled()
+        assert platform.freedesktop_os_release()['VERSION_ID'] == '24.04'
+        assert 0 < len(os.sched_getaffinity(0)) <= 4
+        assert os.sysconf('SC_PHYS_PAGES') * os.sysconf('SC_PAGE_SIZE') <= 16 * 1024**3
+        assert shutil.disk_usage(os.environ['RUNNER_TEMP']).free >= 3000000000
+        PY
+    - name: Install only hashed driver dependencies
+      run: |
+        python -m pip install --require-hashes --only-binary=:all: -r verification/ci-bootstrap-requirements.txt -r verification/ci-runtime-requirements.txt
+    - name: Approved ephemeral protected worker provisioning
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y apparmor-profiles apparmor-utils bubblewrap
+        sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+        sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+        if ! getent passwd openpine-worker >/dev/null; then
+          sudo useradd --system --no-create-home --shell /usr/sbin/nologin openpine-worker
+        fi
+        sudo -n -u openpine-worker -- /usr/bin/id -u
+        /usr/bin/bwrap --ro-bind / / --unshare-net -- /usr/bin/true
+    - name: Run the exact installed A/B owners and actual protected fault matrix
+      shell: bash
+      run: |
+        set -euo pipefail
+        args=()
+        if test "$QUALIFICATION_PUBLIC" = 'true'; then args+=(--public-approved); fi
+        # Driver details and raw failure traces stay on the private ephemeral VM.
+        private_log="$RUNNER_TEMP/run04-qualified-driver.log"
+        install -m 0600 /dev/null "$private_log"
+        if python -B -m openpine.verification.qualification_hosted run --host "$GITHUB_WORKSPACE" --work "$RUNNER_TEMP/run04-qualified" --approved-sha "$APPROVED_SHA" "${args[@]}" >"$private_log" 2>&1; then
+          echo 'Protected checks completed; durable raw retention remains open.'
+        else
+          echo 'Protected checks failed; private primaries retained only on this ephemeral VM.'
+          exit 1
+        fi
+    - name: Upload only the new closed public projection
+      if: ${{ always() && env.QUALIFICATION_PUBLIC == 'true' }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: run04-protected-public-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ runner.temp }}/run04-qualified/public/projection.json
+          ${{ runner.temp }}/run04-qualified/public/projection.sha256
+        compression-level: 0
+        include-hidden-files: false
+        if-no-files-found: error
+        retention-days: 1

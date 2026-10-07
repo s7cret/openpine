@@ -1,0 +1,12 @@
+{
+  "schema_id": "openpine.protected_qualification.public_allowlist.v1",
+  "max_complete_upload_bytes": 67108864,
+  "retention_days": 1,
+  "files": ["projection.json", "projection.sha256"],
+  "top_fields": ["schema_id", "candidate_sha", "source_commits", "allowlist_sha256", "cases", "protected_matrix_passed", "owner_checks_passed", "raw_primaries_durable", "full_qualification_accepted"],
+  "case_fields": ["placement", "mode", "fault", "ok", "automatic_cleanup", "neighbour_survived", "neighbour_completed"],
+  "permitted_placements": ["A", "B"],
+  "permitted_modes": ["interactive", "bulk_backtest"],
+  "permitted_faults": ["timeout", "sigint", "controller-sigkill"],
+  "excluded": ["private paths", "raw argv/env", "stdin/protocol bodies", "stdout/stderr", "error/traceback text", "unit/PID/cgroup identifiers", "source/wheel archives", "virtualenvs/caches", "existing workspace evidence"]
+}
