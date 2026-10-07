@@ -193,10 +193,12 @@ class Commands:
         self.work = work
         self.index = 0
 
-    def run(self, argv: list[str], *, cwd: Path, roots: dict[str, Path] | None=None, timeout: int=1200):
+    def run(self, argv: list[str], *, cwd: Path, roots: dict[str, Path] | None=None, timeout: int=1200,
+            inherit_transport: bool=False):
         log = self.work / 'commands' / f'{self.index:04d}'
         self.index += 1
-        environment = clean_environment({n: str(p) for n, p in (roots or {}).items()}, self.work / 'private')
+        environment = clean_environment({n: str(p) for n, p in (roots or {}).items()}, self.work / 'private',
+                                        inherit_transport=inherit_transport)
         result = run_logged(argv, cwd=cwd, output=log, env=environment, timeout=timeout)
         if not result['ok']:
             # Keep the immutable full logs and expose bounded diagnostics in the
@@ -253,7 +255,8 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
                 shutil.copyfileobj(stream, dst)
             target.chmod(493 if member.mode & 73 else 420)
     for name, sha in pins.items():
-        command.run([git, 'clone', '--quiet', 'https://github.com/s7cret/' + name + '.git', str(stack / name)], cwd=work)
+        command.run([git, 'clone', '--quiet', 'https://github.com/s7cret/' + name + '.git', str(stack / name)], cwd=work,
+                    inherit_transport=True)
         command.run([git, 'checkout', '--detach', sha], cwd=stack / name)
         if command.run([git, 'rev-parse', 'HEAD'], cwd=stack / name).strip() != sha:
             raise ValueError('sibling source commit mismatch')
@@ -280,6 +283,7 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
             str(tools_lock),
         ],
         cwd=work,
+        inherit_transport=True,
     )
     runtime_lock = host / 'verification/ci-runtime-requirements.txt'
     if not runtime_lock.is_file():
@@ -296,6 +300,7 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
             str(runtime_lock),
         ],
         cwd=work,
+        inherit_transport=True,
     )
     wheels = bundle / 'wheelhouse'
     wheels.mkdir()
@@ -359,7 +364,8 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
     observed = json.loads(command.run([executable, '-c', 'import json; from openpine.verification.execution_identity import environment_snapshot; print(json.dumps(environment_snapshot()))'], cwd=work, roots=roots))
     locked = '\n'.join((n + '==' + v for n, v in observed['distributions'].items())) + '\n'
     (bundle / 'locked-versions.txt').write_text(locked)
-    command.run([executable, '-m', 'pip', 'download', '--require-hashes', '--no-deps', '--only-binary=:all:', '--dest', str(wheels), '-r', str(tools_lock), '-r', str(runtime_lock)], cwd=work)
+    command.run([executable, '-m', 'pip', 'download', '--require-hashes', '--no-deps', '--only-binary=:all:', '--dest', str(wheels), '-r', str(tools_lock), '-r', str(runtime_lock)], cwd=work,
+                inherit_transport=True)
     argv = [executable, '-m', 'openpine.verification', 'test-collect', '--host-root', str(roots['openpine']), '--stack-root', str(stack), '--python', 'py' + python_label.replace('.', '') + '=' + executable, '--output', str(bundle / 'collection.json'), '--collection-timeout', '600']
     for name in COMPONENTS:
         if name != 'openpine' or python_label in {'3.13'}:
