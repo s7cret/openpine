@@ -675,7 +675,10 @@ def test_actual_semantic_profile_mismatch_rejects_before_reset(
     monkeypatch.setattr(
         engine, "_reset_state", lambda: pytest.fail("profile mismatch reached reset")
     )
-    with pytest.raises(ResumeUnsupportedError, match="semantic profiles differ"):
+    with pytest.raises(
+        ResumeUnsupportedError,
+        match="config hash does not match" if resume else "semantic profiles differ",
+    ):
         run_generated_backtest(engine, owner, bars, resume_state=wire if resume else None)
     assert owner.export_state() == before and asdict(engine.config) == original_config
 
