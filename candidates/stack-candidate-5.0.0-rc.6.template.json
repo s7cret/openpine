@@ -47,7 +47,7 @@
     },
     "openpine": {
       "repo": "s7cret/openpine",
-      "ref": "implementation/int05-reader-candidate-integration-20261006",
+      "ref": "implementation/int05-transport-candidate-integration-20261007",
       "version": "5.0.0rc6"
     }
   },
