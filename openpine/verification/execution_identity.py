@@ -172,6 +172,7 @@ def read_artifact(root: Path, descriptor: Mapping[str, str]) -> Any:
 
 def _configured_transport_environment() -> dict[str, str]:
     """Forward configured proxy/CA files without credentials or TLS bypasses."""
+    from ipaddress import ip_address
     from urllib.parse import urlsplit
     result = {}
     for name in sorted(TRANSPORT_ENV_KEYS):
@@ -182,12 +183,27 @@ def _configured_transport_environment() -> dict[str, str]:
             if any(ord(c) < 32 or ord(c) == 127 for c in value):
                 raise ValueError
             if name.lower() in {'http_proxy', 'https_proxy'}:
+                if any(c.isspace() for c in value) or '\\' in value:
+                    raise ValueError
                 endpoint = urlsplit(value)
                 if (endpoint.scheme not in {'http', 'https'} or not endpoint.hostname
                         or endpoint.username is not None or endpoint.password is not None
                         or '%' in endpoint.netloc or endpoint.query or endpoint.fragment
                         or endpoint.path not in {'', '/'}):
                     raise ValueError
+                if not re.fullmatch(r'(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::[0-9]+)?',
+                                    endpoint.netloc):
+                    raise ValueError
+                hostname = endpoint.hostname
+                try:
+                    ip_address(hostname)
+                except ValueError:
+                    dns = hostname.removesuffix('.')
+                    if (':' in hostname or all(c in '0123456789.' for c in hostname)
+                            or len(dns) > 253 or not all(
+                                re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?', label)
+                                for label in dns.split('.'))):
+                        raise ValueError
                 port = endpoint.port  # Parser errors can disclose the value.
                 if port == 0:
                     raise ValueError

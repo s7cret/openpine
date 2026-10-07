@@ -152,6 +152,56 @@ def test_credential_proxy_is_rejected_before_child_or_receipt(configured, monkey
     assert not (work / 'commands/0000').exists()
 
 
+@pytest.mark.parametrize('proxy', [
+    'https://bad host:8080',
+    ' https://proxy.invalid:8080',
+    'https://proxy.invalid:8080 ',
+    'https://bad\thost:8080',
+    'https://bad\u00a0host:8080',
+    'https://bad\u2003host:8080',
+    'https://bad\\host:8080',
+    'https://proxy.invalid\\@other.invalid:8080',
+    'https://bad_host:8080',
+    'https://-bad.invalid:8080',
+    'https://bad-.invalid:8080',
+    'https://bad..invalid:8080',
+    'https://' + 'a' * 64 + '.invalid:8080',
+    'https://' + '.'.join(['a' * 63] * 4) + ':8080',
+    'https://999.1.2.3:8080',
+    'https://proxy.invalid:',
+    'https://[::1]extra:8080',
+    'https://proxy.invalid:8080\\',
+], ids=['embedded-space', 'leading-space', 'trailing-space', 'tab', 'nbsp',
+        'unicode-space', 'hostname-backslash', 'authority-backslash', 'underscore',
+        'leading-hyphen', 'trailing-hyphen', 'empty-label', 'long-label', 'long-host',
+        'bad-ipv4', 'empty-port', 'ipv6-authority-suffix', 'trailing-backslash'])
+def test_malformed_hostname_rejected_before_child_without_value_leak(
+        configured, monkeypatch, tmp_path, proxy):
+    monkeypatch.setenv('HTTPS_PROXY', proxy)
+    work = tmp_path / 'commands'
+    launched = tmp_path / 'child-launched'
+    program = 'from pathlib import Path; Path(' + repr(str(launched)) + ').touch()'
+    with pytest.raises(ValueError) as caught:
+        Commands(work).run([sys.executable, '-c', program], cwd=tmp_path,
+                           inherit_transport=True)
+    rendered = ''.join(traceback.format_exception(caught.value))
+    assert str(caught.value) == 'invalid configured transport setting: HTTPS_PROXY'
+    assert proxy not in rendered
+    assert SYNTHETIC_SECRET not in rendered
+    assert not launched.exists()
+    assert not (work / 'commands/0000').exists()
+
+
+@pytest.mark.parametrize('proxy', ['http://localhost:8080', 'https://proxy.invalid.:443',
+                                 'http://127.0.0.1:8080', 'https://[::1]:8443',
+                                 'http://xn--bcher-kva.invalid:8080'])
+def test_bounded_dns_ipv4_ipv6_proxy_hosts_remain_supported(
+        configured, monkeypatch, tmp_path, proxy):
+    monkeypatch.setenv('HTTPS_PROXY', proxy)
+    env = clean_environment({}, tmp_path / 'private', inherit_transport=True)
+    assert env['HTTPS_PROXY'] == proxy
+
+
 def test_existing_hashed_locks_cover_the_declared_extras_transitively():
     import re
     host = Path(__file__).resolve().parents[1]
