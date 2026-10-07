@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 from copy import copy
+from decimal import Decimal
 from typing import Any, Callable, TYPE_CHECKING
 
 from backtest_engine import BacktestEngine
 from backtest_engine.core.engine_validation import validate_backtest_config
 from backtest_engine.core.realtime import BarTickSlice, cumulative_tick_bar
+from backtest_engine.core.state_snapshot import BrokerSnapshot
 from backtest_engine.core.strategy_capabilities import strategy_values_from_state
 from backtest_engine.errors import ResumeUnsupportedError
 from backtest_engine.execution_backends.base import PreparedNativeExecution
 from backtest_engine.models import BacktestCallbacks, BacktestResumeState, Bar, BarSeries
 from backtest_engine.results import BacktestResult
-from openpine_contracts import ExecutionEvent
+from openpine_contracts import ExecutionEvent, decimal_string
 from pinelib.runtime.metadata import BarValues
 
 from openpine.runtime.generated_checkpoint import (
@@ -105,6 +107,57 @@ def _validate_tick_receipts(
             seen.add(event.tick_index)
     if any(visited.get(i) != set(range(len(schedule[i].ticks))) for i in range(cursor + 1)):
         raise ResumeUnsupportedError("generated checkpoint omitted admitted tick callbacks")
+
+
+def _validate_fill_receipts(
+    prepared: PreparedGeneratedCheckpoint,
+    state: BacktestResumeState,
+    *,
+    calc_on_order_fills: bool,
+    tick_schedule: tuple[BarTickSlice, ...] | None = None,
+) -> None:
+    """Bind owner fill recalculations to ordered native fills in the same cut.
+
+    Native close-activated scans may coalesce several fills into one callback.
+    Each recorded cause must still identify a distinct ordered actual fill, and
+    each filled parent bar must have its required recalculation when enabled.
+    """
+    broker = state.broker_state
+    if not isinstance(broker, BrokerSnapshot):
+        raise ResumeUnsupportedError("generated cut requires the admitted native broker owner")
+    fills = broker.fills
+    next_fill = 0
+    covered_bars: set[int] = set()
+    for receipt in prepared.receipts:
+        if receipt["event"] is None:
+            continue
+        event = ExecutionEvent.from_dict(receipt["event"])
+        if event.cause != "ORDER_FILL":
+            continue
+        if not calc_on_order_fills:
+            raise ResumeUnsupportedError(
+                "generated fill receipt conflicts with broker recalc config"
+            )
+        fill_time = event.bar_open_time_utc_ms
+        if event.realtime:
+            if tick_schedule is None:
+                raise ResumeUnsupportedError("generated fill receipt has no admitted tick stream")
+            fill_time = tick_schedule[event.bar_index].ticks[event.tick_index].time
+        while next_fill < len(fills):
+            fill = fills[next_fill]
+            next_fill += 1
+            if (
+                fill.bar_index == event.bar_index
+                and fill.time == fill_time
+                and str(fill.order_id) == event.fill_order_id
+                and decimal_string(Decimal(repr(float(fill.price)))) == event.fill_price
+            ):
+                covered_bars.add(fill.bar_index)
+                break
+        else:
+            raise ResumeUnsupportedError("generated fill receipt differs from broker fill history")
+    if calc_on_order_fills and {fill.bar_index for fill in fills} != covered_bars:
+        raise ResumeUnsupportedError("generated checkpoint omitted broker fill recalculations")
 
 
 def generated_strategy(
@@ -288,6 +341,13 @@ class RC6GeneratedExecutionBackend:
             _validate_primary_prefix(prepared, series, bar_index, tick_schedule)
             if tick_schedule is not None:
                 _validate_tick_receipts(prepared, tick_schedule, bar_index)
+            if state is not None:
+                _validate_fill_receipts(
+                    prepared,
+                    state,
+                    calc_on_order_fills=admission_config.calc_on_order_fills,
+                    tick_schedule=tick_schedule,
+                )
 
         if state is not None and not config.calc_on_every_tick:
             validate_owner(
