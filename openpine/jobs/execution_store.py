@@ -339,6 +339,22 @@ class JobExecutionStore(JobV1Store):
             )
             return encode_job_checkpoint(payload)
 
+    def delivery_checkpoint(self, binding: Any, *, now_ms: int) -> bytes:
+        """Read the active owned cut and physical binding in one transaction."""
+        with self._transaction():
+            run = self._fence(
+                binding.job_id, binding.run_id, binding.worker_generation, now_ms=now_ms
+            )
+            context = json.loads(run["context"])
+            if (
+                binding.worker_id != run["worker_id"]
+                or binding.session_id != context["session_id"]
+                or binding.stack_id != context["stack_manifest_hash"]
+                or binding.producer_commit != context["producer_commits"]["openpine"]
+            ):
+                raise JobV1Error("delivery physical binding differs from its durable owner")
+            return self.checkpoint(binding.job_id, binding.run_id)
+
     def acknowledge(
         self,
         job_id: str,

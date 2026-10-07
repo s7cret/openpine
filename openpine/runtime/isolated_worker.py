@@ -22,9 +22,9 @@ import tempfile
 import threading
 import time
 import uuid
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast, BinaryIO
 
 from ast2python.artifacts import verify_generated_artifact_v3
 from ast2python.errors import BundleInvariantError
@@ -73,6 +73,9 @@ def main():
         raise RuntimeError("RC6 request stack identity mismatch")
     from openpine.runtime.request_transport import inflate_request_config
     inflate_request_config(request, sys.stdin)
+    if "worker_delivery" in request:
+        from openpine.runtime.worker_delivery import run_delivery_exchange
+        return run_delivery_exchange(request, sys.stdin.buffer, sys.stdout.buffer)
     protocol = RC6WorkerProtocol(context)
     if request.get("bulk_backtest") is True:
         return run_bulk(request, protocol)
@@ -129,6 +132,11 @@ _TRUSTED_NAMES = (
 )
 _RUNTIME_ROOTS = ("/usr", "/lib", "/lib64")
 _WORKER_SUPPORT_MODULES = (
+    "runtime/worker_delivery.py",
+    "runtime/job_checkpoint.py",
+    "runtime/worker_protocol.py",
+    "runtime/generated_backtest.py",
+    "runtime/rc6_worker_runtime.py",
     "runtime/worker_capabilities.py",
     "runtime/strategy_host.py",
     "runtime/generated_checkpoint.py",
@@ -1057,6 +1065,128 @@ class InteractiveWorkerSession:
                 pass
             finally:
                 self._kill()
+
+
+class _DeliveryPipe:
+    """Deadline-bounded raw pipe access after the JSON bootstrap is flushed."""
+
+    def __init__(self, descriptor: int, deadline: float) -> None:
+        self.descriptor, self.deadline = descriptor, deadline
+        self.bytes = 0
+        os.set_blocking(descriptor, False)
+
+    def read(self, count: int) -> bytes:
+        remaining = self.deadline - time.monotonic()
+        if remaining <= 0 or not select.select([self.descriptor], [], [], remaining)[0]:
+            raise IsolatedWorkerError("delivery worker timed out")
+        data = os.read(self.descriptor, count)
+        self.bytes += len(data)
+        return data
+
+    def write(self, data: bytes) -> int:
+        remaining = self.deadline - time.monotonic()
+        if remaining <= 0 or not select.select([], [self.descriptor], [], remaining)[1]:
+            raise IsolatedWorkerError("delivery worker timed out")
+        written = os.write(self.descriptor, data)
+        self.bytes += written
+        return written
+
+    def flush(self) -> None:
+        pass
+
+
+def execute_committed_delivery(
+    sender: Any,
+    request: Mapping[str, Any],
+    *,
+    admitted_manifest: AdmittedManifest,
+    clock: Callable[[], int],
+    timeout_s: float = 30.0,
+    cgroup_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    """Execute one opt-in protected committed exchange with existing cleanup.
+
+    This finite delivery path leaves legacy InteractiveWorkerSession unchanged.
+    The native producer commits the authoritative cut before the worker verifies
+    its restored callback suffix. It is not a live/provisional resume API.
+    """
+    from openpine.runtime.worker_delivery import read_batch, write_batch
+
+    context = sender.context
+    if request.get("execution_context") != context:
+        raise IsolatedWorkerError("delivery request context differs from its job owner")
+    source = request.get("source")
+    if type(source) is not str or len(source.encode()) > 500_000:
+        raise IsolatedWorkerError("delivery artifact source exceeds its byte budget")
+    _validate_interactive_generated_artifact(
+        source.encode(), request["generated_artifact"], context
+    )
+    packet = sender.prepare_exchange(now_ms=clock())
+    bootstrap = {
+        **request,
+        "interactive": True,
+        "stack_id": context["stack_manifest_hash"],
+        "worker_delivery": sender.descriptor(),
+    }
+    raw = json.dumps(bootstrap, separators=(",", ":"), allow_nan=False).encode() + b"\n"
+    if len(raw) > WORKER_LINE_LIMIT_BYTES:
+        raise IsolatedWorkerError("delivery bootstrap exceeds its byte budget")
+    if cgroup_dir is not None:
+        prepare_worker_cgroup(cgroup_dir)
+    unit_name = _worker_unit_name()
+    proc = subprocess.Popen(  # noqa: S603 - exact admitted argv, no shell
+        _bwrap_argv(admitted_manifest, unit_name),
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=0,
+    )
+    try:
+        if cgroup_dir is not None:
+            attach_worker_tree(cgroup_dir, proc.pid)
+        assert proc.stdin is not None and proc.stdout is not None
+        deadline = time.monotonic() + timeout_s
+        outgoing = _DeliveryPipe(proc.stdin.fileno(), deadline)
+        incoming = _DeliveryPipe(proc.stdout.fileno(), deadline)
+        data = raw
+        while data:
+            data = data[outgoing.write(data) :]
+        hello = read_batch(cast(BinaryIO, incoming))
+        if len(hello) != 1:
+            raise IsolatedWorkerError("delivery worker did not emit one physical HELLO")
+        sender.negotiate(hello[0], now_ms=clock())
+        current = sender.store.delivery_checkpoint(sender.binding, now_ms=clock())
+        if current not in sender.cut_wires.values():
+            raise IsolatedWorkerError("durable delivery cut changed during worker negotiation")
+        sender.history = list(packet)
+        write_batch(cast(BinaryIO, outgoing), packet)
+        acknowledgments = read_batch(cast(BinaryIO, incoming))
+        proc.stdin.close()
+        remaining = deadline - time.monotonic()
+        if remaining <= 0 or proc.wait(timeout=remaining) != 0:
+            raise IsolatedWorkerError("delivery worker did not complete its committed exchange")
+        from openpine_contracts.worker_delivery import validate_delivery_sequence
+
+        validate_delivery_sequence(
+            [*sender.history, *acknowledgments],
+            sender.binding,
+            durable_cuts=tuple(sender.cuts.values()),
+            restored_cut=sender.cut,
+        )
+        changed = sum(sender.accept_ack(wire, now_ms=clock()) for wire in acknowledgments)
+        return {
+            "worker_pid": proc.pid,
+            "worker_unit": unit_name,
+            "returncode": proc.returncode,
+            "acknowledged_frames": changed,
+            "ack_records": len(acknowledgments),
+            "bytes_sent": outgoing.bytes,
+            "bytes_received": incoming.bytes,
+            "worker_generation": sender.binding.worker_generation,
+            "protocol": "openpine.worker.delivery.v1/1.0.0",
+        }
+    finally:
+        _cleanup_worker_process(proc, unit_name)
 
 
 def evaluate_artifact(
