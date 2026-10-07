@@ -83,7 +83,7 @@ def head(root):
     ).strip()
 
 
-def descriptor():
+def descriptor_identity():
     import backtest_engine
     import pinelib
 
@@ -93,6 +93,12 @@ def descriptor():
         "backtest_engine": head(Path(backtest_engine.__file__).resolve().parents[1]),
         "pinelib": head(Path(pinelib.__file__).resolve().parents[1]),
     }
+    return {"pins": pins, "source": SOURCE, "stack_id": sha(pins)}
+
+
+def descriptor():
+    data = descriptor_identity()
+    pins = data["pins"]
     compiled = NativeRC6CompilerAdapter().compile(
         SOURCE,
         module_name="run02_generated_bytes",
@@ -101,13 +107,11 @@ def descriptor():
     )
     assert compiled.success, compiled.errors
     return {
+        **data,
         "artifact": {
             "generated_artifact": compiled.generated_artifact,
             "python_code": compiled.python_code,
         },
-        "pins": pins,
-        "source": SOURCE,
-        "stack_id": sha(pins),
     }
 
 

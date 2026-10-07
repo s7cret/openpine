@@ -33,6 +33,44 @@ if TYPE_CHECKING:
 class GeneratedJobExecution:
     """Publish one supported cut, then expose its outbox for ordered delivery."""
 
+    def delivery_sender(self, *, requested_capabilities: tuple[str, ...]) -> Any:
+        """Opt into delivery after publication; legacy construction stays unchanged."""
+        from openpine.runtime.worker_delivery import JobDeliverySender, binding_for
+
+        return JobDeliverySender(
+            self.store,
+            binding_for(
+                self.context,
+                job_id=self.job_id,
+                worker_id=self.worker_id,
+                generation=self.generation,
+            ),
+            self.context,
+            requested_capabilities=requested_capabilities,
+            now_ms=self.clock(),
+        )
+
+    def deliver_committed(
+        self,
+        request: Mapping[str, Any],
+        *,
+        requested_capabilities: tuple[str, ...],
+        admitted_manifest: Mapping[str, Any],
+        timeout_s: float = 30.0,
+        cgroup_dir: str | Path | None = None,
+    ) -> dict[str, Any]:
+        """Opt into a finite protected cut exchange after durable publication."""
+        from openpine.runtime.isolated_worker import execute_committed_delivery
+
+        return execute_committed_delivery(
+            self.delivery_sender(requested_capabilities=requested_capabilities),
+            request,
+            admitted_manifest=admitted_manifest,
+            clock=self.clock,
+            timeout_s=timeout_s,
+            cgroup_dir=cgroup_dir,
+        )
+
     def __init__(
         self,
         store: JobExecutionStore,
