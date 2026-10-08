@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import signal
 import subprocess
+from types import SimpleNamespace
 
 import pytest
 
@@ -15,6 +16,56 @@ from openpine.verification.qualification_public import COMPONENTS, project, writ
 UNIT = "openpine-worker-" + "a" * 32
 ALLOWLIST = Path(__file__).resolve().parents[1] / "verification/protected-qualification-public-allowlist.json"
 COMMITS = {name: "a" * 40 for name in COMPONENTS}
+
+
+@pytest.fixture
+def candidate_bound_bars(monkeypatch):
+    from rc6_tests import test_rc6_marketdata_boundary as marketdata
+
+    monkeypatch.setattr(marketdata, "STACK", marketdata.STACK)
+    monkeypatch.setattr(marketdata, "COMMIT", marketdata.COMMIT)
+    manifest = {"manifest_hash": "sha256:" + "a" * 64,
+                "components": {name: {"sha": sha} for name, sha in COMMITS.items()}}
+    context = {"stack_manifest_hash": manifest["manifest_hash"],
+               "producer_commits": COMMITS, "series_id": "binance:spot:SOLUSDT:1m",
+               "instrument_id": "binance:spot:SOLUSDT", "timeframe": "1m"}
+    return marketdata, manifest, context
+
+
+def test_fault_fixture_produces_bars_bound_to_actual_candidate(candidate_bound_bars):
+    from openpine.runtime.rc6_marketdata import decode_canonical_bar
+
+    marketdata, manifest, context = candidate_bound_bars
+    stale = marketdata.bar()
+    original = copy.deepcopy(stale)
+    with pytest.raises(ValueError, match="execution context identity mismatch"):
+        decode_canonical_bar(stale, context=context)
+    libraries, native, deployment = SimpleNamespace(), SimpleNamespace(), object()
+    harness.bind_fixture_candidate(libraries, native, marketdata, manifest, deployment)
+    assert libraries.ALL_COMMITS == COMMITS
+    assert libraries._deployment() is deployment
+    assert libraries._manifest() is manifest and native._manifest() is manifest
+    for index in range(6):
+        produced = marketdata.bar(open_time_utc_ms=marketdata.OPENED + index * 60000,
+                                  open=100 + index, high=101 + index,
+                                  low=99 + index, close=100 + index)
+        assert produced["stack_id"] == manifest["manifest_hash"]
+        assert produced["producer_commit"] == COMMITS["marketdata-provider"]
+        assert decode_canonical_bar(produced, context=context).close == 100 + index
+    assert stale == original
+    with pytest.raises(ValueError, match="execution context identity mismatch"):
+        decode_canonical_bar(stale, context=context)
+
+
+@pytest.mark.parametrize("field,value", [("stack_id", "sha256:" + "b" * 64),
+                                        ("producer_commit", "b" * 40)])
+def test_bound_fault_fixture_still_rejects_foreign_bars(candidate_bound_bars, field, value):
+    from openpine.runtime.rc6_marketdata import decode_canonical_bar
+
+    marketdata, manifest, context = candidate_bound_bars
+    harness.bind_fixture_candidate(SimpleNamespace(), SimpleNamespace(), marketdata, manifest, object())
+    with pytest.raises(ValueError, match="execution context identity mismatch"):
+        decode_canonical_bar(marketdata.bar(**{field: value}), context=context)
 
 
 @pytest.mark.parametrize("unit", ["", "openpine-worker-*", UNIT + ".service", "../" + UNIT, "other-" + "a" * 32])

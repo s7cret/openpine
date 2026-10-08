@@ -179,6 +179,19 @@ def cleaned_unit(snapshot: dict[str, Any], handles: list[StableProcess]) -> bool
             and not snapshot["members"] and not any(h.alive() for h in handles))
 
 
+def bind_fixture_candidate(libraries: Any, native: Any, marketdata: Any,
+                           manifest: dict[str, Any], deployment: Any) -> None:
+    """Bind the compiler, context and canonical producer to the same candidate."""
+    libraries.ALL_COMMITS = {name: row["sha"] for name, row in manifest["components"].items()}
+    libraries._deployment = lambda: deployment
+    libraries._manifest = lambda: manifest
+    native._manifest = lambda: manifest
+    # bar() imports keep this producer's module globals. Set its inputs before
+    # canonical creation; never rewrite or reseal an already produced envelope.
+    marketdata.STACK = manifest["manifest_hash"]
+    marketdata.COMMIT = libraries.ALL_COMMITS["marketdata-provider"]
+
+
 def fixture(spec_path: Path, folder: Path, mode: str) -> None:
     """Run the original native fixture/assertions with actual candidate admission."""
     spec = read_json(spec_path)
@@ -192,6 +205,7 @@ def fixture(spec_path: Path, folder: Path, mode: str) -> None:
     from openpine.admission import load_active_deployment_identity
     from openpine.runtime import isolated_worker as worker
     from rc6_tests import test_rc6_library_imports as libraries
+    from rc6_tests import test_rc6_marketdata_boundary as marketdata
     from rc6_tests import test_rc6_numeric_search_integration as native
 
     manifest_path = Path(spec["candidate_manifest"])
@@ -202,10 +216,7 @@ def fixture(spec_path: Path, folder: Path, mode: str) -> None:
     commits = {name: row["sha"] for name, row in manifest["components"].items()}
     if commits != spec["source_commits"]:
         raise ValueError("candidate producer commits differ from qualification binding")
-    libraries.ALL_COMMITS = commits
-    libraries._deployment = lambda: deployment
-    libraries._manifest = lambda: manifest
-    native._manifest = lambda: manifest
+    bind_fixture_candidate(libraries, native, marketdata, manifest, deployment)
     original = worker.InteractiveWorkerSession.__init__
     original_unit = worker._worker_unit_name
 
