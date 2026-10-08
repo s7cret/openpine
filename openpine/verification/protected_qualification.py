@@ -23,6 +23,8 @@ import sys
 import time
 from typing import Any
 
+from openpine.verification.qualification_public import FAMILY_ERRORS
+
 UNIT = re.compile(r"openpine-worker-[0-9a-f]{32}\Z")
 MODULE = "openpine.verification.protected_qualification"
 MODES = ("interactive", "bulk_backtest")
@@ -285,6 +287,27 @@ def wait_ready(path: Path, process: subprocess.Popen, deadline: float) -> dict[s
     return value
 
 
+class FaultPrimaryError(ValueError):
+    """A fixed public code with private validation context kept separate."""
+
+    def __init__(self, code: str, message: str):
+        if not isinstance(code, str) or code not in FAMILY_ERRORS:
+            raise ValueError("fault primary diagnostic is outside its closed vocabulary")
+        self.code = code
+        super().__init__(message)
+
+
+def read_fault_primary(path: Path, kind: str) -> dict[str, Any]:
+    if kind not in {"family", "receipt"}:
+        raise ValueError("unknown fault primary kind")
+    try:
+        return read_json(path)
+    except FileNotFoundError as error:
+        raise FaultPrimaryError(kind + "-missing", "fault primary is missing") from error
+    except (OSError, ValueError, TypeError) as error:
+        raise FaultPrimaryError(kind + "-invalid", "fault primary is unreadable or invalid") from error
+
+
 def validate_fault_family(family: dict[str, Any], fault: str, controller_pid: int,
                           coordinator_pid: int, returncode: int,
                           receipt: dict[str, Any] | None) -> None:
@@ -294,50 +317,74 @@ def validate_fault_family(family: dict[str, Any], fault: str, controller_pid: in
                         # The real guardian receives PDEATHSIG=SIGTERM, so its
                         # cancelled reason also proves this owned crash path.
                         "controller-sigkill": {"controller-crashed", "cancelled"}}[fault]
+    message = "fault process-family observation is incomplete or unclean"
+    checks = (
+        (family.get("controller_pid") == controller_pid, "family-controller-mismatch"),
+        (family.get("command_pid") == coordinator_pid, "family-command-mismatch"),
+        (isinstance(family.get("reason"), str) and family["reason"] in expected_reasons, "family-reason-mismatch"),
+        # Report the specific mandatory observation before its derived cleanup
+        # flag. Multiple failures still fail; this only chooses the public code.
+        (family.get("observation_errors") == [], "family-observation-errors"),
+        (family.get("surviving_processes") == [], "family-survivors"),
+        (family.get("cleanup_verified") is True, "family-cleanup-unverified"),
+    )
+    for passed, code in checks:
+        if not passed:
+            raise FaultPrimaryError(code, message)
     identities = family.get("observed_family")
-    if (family.get("controller_pid") != controller_pid
-            or family.get("command_pid") != coordinator_pid
-            or family.get("reason") not in expected_reasons
-            or family.get("cleanup_verified") is not True
-            or family.get("surviving_processes") != []
-            or family.get("observation_errors") != []
-            or not isinstance(identities, list) or not 1 <= len(identities) <= 4096):
-        raise ValueError("fault process-family observation is incomplete or unclean")
+    if not isinstance(identities, list) or not 1 <= len(identities) <= 4096:
+        raise FaultPrimaryError("family-ledger-invalid", message)
     keys = set()
     for row in identities:
-        if (not isinstance(row, dict) or set(row) != {"pid", "create_time", "name"}
+        try:
+            invalid = (not isinstance(row, dict) or set(row) != {"pid", "create_time", "name"}
                 or type(row["pid"]) is not int or row["pid"] <= 0
                 or type(row["create_time"]) not in (int, float)
                 or not math.isfinite(row["create_time"]) or row["create_time"] <= 0
-                or not isinstance(row["name"], str) or not row["name"]
-                or (row["pid"], row["create_time"]) in keys):
-            raise ValueError("invalid retained fault process identity")
+                or not isinstance(row["name"], str) or not row["name"])
+        except (OverflowError, TypeError, ValueError):
+            invalid = True
+        if invalid:
+            raise FaultPrimaryError("family-identity-invalid", "invalid retained fault process identity")
+        if (row["pid"], row["create_time"]) in keys:
+            raise FaultPrimaryError("family-identity-duplicate", "invalid retained fault process identity")
         keys.add((row["pid"], row["create_time"]))
     if coordinator_pid not in {pid for pid, _ in keys}:
-        raise ValueError("fault family omitted its actual fixture coordinator")
+        raise FaultPrimaryError("family-coordinator-missing", "fault family omitted its actual fixture coordinator")
     signals = family.get("cleanup_signals")
     if not isinstance(signals, list) or len(signals) > 2 * len(keys):
-        raise ValueError("unbounded fault cleanup signal ledger")
+        raise FaultPrimaryError("family-signals-invalid", "unbounded fault cleanup signal ledger")
     seen = set()
     for row in signals:
         if (not isinstance(row, dict) or set(row) != {"pid", "create_time", "signal"}
-                or (row["pid"], row["create_time"]) not in keys
                 or type(row["signal"]) is not int
                 or row["signal"] not in (signal.SIGTERM, signal.SIGKILL)):
-            raise ValueError("invalid fault cleanup signal identity")
+            raise FaultPrimaryError("family-signal-invalid", "invalid fault cleanup signal identity")
+        try:
+            owned = (row["pid"], row["create_time"]) in keys
+        except TypeError as error:
+            raise FaultPrimaryError("family-signal-invalid", "invalid fault cleanup signal identity") from error
+        if not owned:
+            raise FaultPrimaryError("family-signal-foreign", "invalid fault cleanup signal identity")
         key = (row["pid"], row["create_time"], row["signal"])
         if key in seen:
-            raise ValueError("duplicate fault cleanup signal")
+            raise FaultPrimaryError("family-signal-duplicate", "duplicate fault cleanup signal")
         seen.add(key)
+    message = "requested fault was not proved by actual exit/command primaries"
+    if returncode != (-signal.SIGKILL if fault == "controller-sigkill" else 1):
+        raise FaultPrimaryError("fault-exit-mismatch", message)
     if fault == "controller-sigkill":
-        verified = returncode == -signal.SIGKILL and receipt is None
-    elif fault == "timeout":
-        verified = returncode == 1 and receipt is not None and receipt.get("status") == "timeout"
-    else:
-        verified = (returncode == 1 and receipt is not None and receipt.get("status") == "failed"
-                    and family.get("command_returncode") in (-signal.SIGINT, 128 + signal.SIGINT))
-    if not verified:
-        raise ValueError("requested fault was not proved by actual exit/command primaries")
+        if receipt is not None:
+            raise FaultPrimaryError("receipt-unexpected", message)
+        return
+    if receipt is None:
+        raise FaultPrimaryError("receipt-missing", message)
+    if not isinstance(receipt, dict):
+        raise FaultPrimaryError("receipt-invalid", message)
+    if receipt.get("status") != ("timeout" if fault == "timeout" else "failed"):
+        raise FaultPrimaryError("receipt-status-mismatch", message)
+    if fault == "sigint" and family.get("command_returncode") not in (-signal.SIGINT, 128 + signal.SIGINT):
+        raise FaultPrimaryError("command-exit-mismatch", message)
 
 
 def _complete_neighbour(process: subprocess.Popen, folder: Path, result: dict[str, Any]) -> None:
@@ -471,8 +518,8 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
         while not family.exists() and time.monotonic() < deadline:
             time.sleep(0.02)
         receipt_path = output / "affected/command/command.json"
-        receipt = read_json(receipt_path) if receipt_path.exists() else None
-        validate_fault_family(read_json(family), fault, processes[0].pid,
+        receipt = read_fault_primary(receipt_path, "receipt") if receipt_path.exists() else None
+        validate_fault_family(read_fault_primary(family, "family"), fault, processes[0].pid,
                               coordinator.pid, returncode, receipt)
         result["family_sha256"] = sha256(family)
         result["controller_returncode"] = returncode
@@ -483,7 +530,8 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
         if not result["ok"] and result["case_error"] == "none":
             result["case_error"] = "failed"
     except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001 -- fault boundary retains failure and always disposes only owned resources
-        result["case_error"] = ("interrupted" if isinstance(error, KeyboardInterrupt) else
+        result["case_error"] = (error.code if isinstance(error, FaultPrimaryError) else
+                                "interrupted" if isinstance(error, KeyboardInterrupt) else
                                 "timeout" if isinstance(error, (TimeoutError, subprocess.TimeoutExpired)) else "failed")
         result["error_type"] = type(error).__name__
         result["error"] = str(error)[:2048]

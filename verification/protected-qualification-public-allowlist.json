@@ -6,7 +6,7 @@
   "top_fields": ["schema_id", "candidate_sha", "source_commits", "allowlist_sha256", "cases", "protected_matrix_passed", "owner_checks_passed", "raw_primaries_durable", "full_qualification_accepted", "stage", "error", "ok"],
   "case_fields": ["placement", "mode", "fault", "ok", "automatic_cleanup", "neighbour_survived", "neighbour_completed", "case_stage", "case_error", "neighbour_completion_state"],
   "permitted_case_stages": ["setup", "fault", "automatic-observation", "family-receipt", "neighbour-release", "neighbour-wait", "native-result", "complete"],
-  "permitted_case_errors": ["none", "failed", "timeout", "interrupted", "nonzero-exit", "missing-result", "invalid-result", "disposal-failed"],
+  "permitted_case_errors": ["none", "failed", "timeout", "interrupted", "nonzero-exit", "missing-result", "invalid-result", "disposal-failed", "family-missing", "family-invalid", "receipt-missing", "receipt-invalid", "family-controller-mismatch", "family-command-mismatch", "family-reason-mismatch", "family-observation-errors", "family-survivors", "family-cleanup-unverified", "family-ledger-invalid", "family-identity-invalid", "family-identity-duplicate", "family-coordinator-missing", "family-signals-invalid", "family-signal-invalid", "family-signal-foreign", "family-signal-duplicate", "fault-exit-mismatch", "receipt-unexpected", "receipt-status-mismatch", "command-exit-mismatch"],
   "permitted_neighbour_completion_states": ["not-reached", "unverified", "observed-false", "observed-true"],
   "permitted_placements": ["A", "B"],
   "permitted_modes": ["interactive", "bulk_backtest"],

@@ -20,8 +20,15 @@ TOP = {"schema_id", "candidate_sha", "source_commits", "allowlist_sha256", "case
 CASE_BOOLEANS = {"ok", "automatic_cleanup", "neighbour_survived", "neighbour_completed"}
 CASE_STAGES = {"setup", "fault", "automatic-observation", "family-receipt",
                "neighbour-release", "neighbour-wait", "native-result", "complete"}
+FAMILY_ERRORS = {"family-missing", "family-invalid", "receipt-missing", "receipt-invalid",
+                 "family-controller-mismatch", "family-command-mismatch", "family-reason-mismatch",
+                 "family-observation-errors", "family-survivors", "family-cleanup-unverified",
+                 "family-ledger-invalid", "family-identity-invalid", "family-identity-duplicate",
+                 "family-coordinator-missing", "family-signals-invalid", "family-signal-invalid",
+                 "family-signal-foreign", "family-signal-duplicate", "fault-exit-mismatch",
+                 "receipt-unexpected", "receipt-status-mismatch", "command-exit-mismatch"}
 CASE_ERRORS = {"none", "failed", "timeout", "interrupted", "nonzero-exit",
-               "missing-result", "invalid-result", "disposal-failed"}
+               "missing-result", "invalid-result", "disposal-failed"} | FAMILY_ERRORS
 COMPLETION_STATES = {"not-reached", "unverified", "observed-false", "observed-true"}
 CASE_DIAGNOSTICS = {"case_stage": CASE_STAGES, "case_error": CASE_ERRORS,
                     "neighbour_completion_state": COMPLETION_STATES}
@@ -98,7 +105,9 @@ def project(candidate_sha: str | None, commits: dict[str, str], rows: list[dict[
                 or (case["case_error"] == "nonzero-exit"
                     and (case["case_stage"], completion) != ("neighbour-wait", "observed-false"))
                 or (case["case_error"] in {"missing-result", "invalid-result"}
-                    and (case["case_stage"], completion) != ("native-result", "observed-false"))):
+                    and (case["case_stage"], completion) != ("native-result", "observed-false"))
+                or (case["case_error"] in FAMILY_ERRORS
+                    and (case["case_stage"], completion) != ("family-receipt", "not-reached"))):
             raise ValueError("public case diagnostic contradicts its reached stage")
         if case["ok"] and not all(case[k] for k in ("automatic_cleanup", "neighbour_survived", "neighbour_completed")):
             raise ValueError("successful fault contradicts its required observations")
@@ -107,6 +116,10 @@ def project(candidate_sha: str | None, commits: dict[str, str], rows: list[dict[
             raise ValueError("successful fault contradicts its case diagnostics")
         if case["case_stage"] == "complete" and (case["case_error"] == "none") != case["ok"]:
             raise ValueError("completed fault contradicts its closed error outcome")
+        if ((case["case_error"] == "receipt-unexpected" and case["fault"] != "controller-sigkill")
+                or (case["case_error"] == "receipt-status-mismatch" and case["fault"] == "controller-sigkill")
+                or (case["case_error"] == "command-exit-mismatch" and case["fault"] != "sigint")):
+            raise ValueError("public primary diagnostic contradicts its requested fault")
         cases.append(case)
     if len(cases) > 12:
         raise ValueError("public case inventory exceeds the reviewed matrix")

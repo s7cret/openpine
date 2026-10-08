@@ -2,7 +2,7 @@
 name: RC6 preparation baseline
 'on':
   push:
-    branches: ['preparation/rc6-cpython313-20261006', 'execution/run04-int04-int05-20261007', 'execution/run04-int04-int05-retry-20261007', 'execution/run04-int04-int05-fix2-20261007', 'execution/run04-int04-int05-fix3-20261008', 'execution/run04-int04-int05-diag5-20261008']
+    branches: ['preparation/rc6-cpython313-20261006', 'execution/run04-int04-int05-20261007', 'execution/run04-int04-int05-retry-20261007', 'execution/run04-int04-int05-fix2-20261007', 'execution/run04-int04-int05-fix3-20261008', 'execution/run04-int04-int05-diag5-20261008', 'execution/run04-int04-int05-diag6-20261008']
   workflow_dispatch:
     inputs:
       mode:
@@ -161,7 +161,7 @@ jobs:
   protected-qualification:
     # Creating the dedicated execution ref is an action-time approved launch,
     # separate from pushing this implementation branch or any ordinary PR.
-    if: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/execution/run04-int04-int05-20261007' || github.ref == 'refs/heads/execution/run04-int04-int05-retry-20261007' || github.ref == 'refs/heads/execution/run04-int04-int05-fix2-20261007' || github.ref == 'refs/heads/execution/run04-int04-int05-fix3-20261008' || github.ref == 'refs/heads/execution/run04-int04-int05-diag5-20261008')) || (github.event_name == 'workflow_dispatch' && inputs.mode == 'int04-int05-protected' && inputs.qualification_security_approved && inputs.approved_candidate_sha != '' && inputs.qualification_raw_retention == 'ephemeral-acknowledged') }}
+    if: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/execution/run04-int04-int05-20261007' || github.ref == 'refs/heads/execution/run04-int04-int05-retry-20261007' || github.ref == 'refs/heads/execution/run04-int04-int05-fix2-20261007' || github.ref == 'refs/heads/execution/run04-int04-int05-fix3-20261008' || github.ref == 'refs/heads/execution/run04-int04-int05-diag5-20261008' || github.ref == 'refs/heads/execution/run04-int04-int05-diag6-20261008')) || (github.event_name == 'workflow_dispatch' && inputs.mode == 'int04-int05-protected' && inputs.qualification_security_approved && inputs.approved_candidate_sha != '' && inputs.qualification_raw_retention == 'ephemeral-acknowledged') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:

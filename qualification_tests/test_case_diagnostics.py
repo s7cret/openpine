@@ -100,8 +100,8 @@ def test_unexpected_wait_failure_does_not_claim_observed_false(tmp_path):
 
 
 @pytest.mark.parametrize("invalid,expected", [
-    ("family", ("family-receipt", "failed", "not-reached")),
-    ("receipt", ("family-receipt", "failed", "not-reached")),
+    ("family", ("family-receipt", "family-observation-errors", "not-reached")),
+    ("receipt", ("family-receipt", "receipt-status-mismatch", "not-reached")),
     ("fault-timeout", ("fault", "timeout", "not-reached")),
     ("automatic", ("automatic-observation", "failed", "not-reached")),
     ("wait-interrupted", ("neighbour-wait", "interrupted", "unverified")),
