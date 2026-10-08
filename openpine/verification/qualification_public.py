@@ -17,6 +17,8 @@ COMPONENTS = {"openpine", "openpine-contracts", "pine2ast", "ast2python",
 TOP = {"schema_id", "candidate_sha", "source_commits", "allowlist_sha256", "cases",
        "protected_matrix_passed", "owner_checks_passed", "raw_primaries_durable", "full_qualification_accepted",
        "stage", "error", "ok"}
+TOP_BOOLEANS = {"protected_matrix_passed", "owner_checks_passed", "raw_primaries_durable",
+                "full_qualification_accepted", "ok"}
 CASE_BOOLEANS = {"ok", "automatic_cleanup", "neighbour_survived", "neighbour_completed"}
 CASE_STAGES = {"setup", "fault", "automatic-observation", "family-receipt",
                "neighbour-release", "neighbour-wait", "native-result", "complete"}
@@ -40,6 +42,38 @@ STAGES = {"identity", "prepare", "candidate-wheels", "candidate-manifest", "test
 ERRORS = {"none", "incomplete", "identity-mismatch", "unsupported-runtime", "disk-reserve",
           "missing-input", "invalid-input", "command-failed", "missing-output", "timeout",
           "io-failed", "interrupted", "unexpected-error", "projection-invalid"}
+CASE_EXPLANATIONS = {
+    "none": "The required case observations have not all been confirmed.",
+    "failed": "A required operation or observation failed at the reported stage.",
+    "timeout": "The operation at the reported stage exceeded its deadline.",
+    "interrupted": "The operation at the reported stage was interrupted.",
+    "nonzero-exit": "The independent neighbour controller exited unsuccessfully.",
+    "missing-result": "The neighbour native result was not found.",
+    "invalid-result": "The neighbour native result did not match the required result contract.",
+    "disposal-failed": "Forced disposal of the owned resources was not verified.",
+    "family-missing": "The process-family receipt was not found.",
+    "family-invalid": "The process-family receipt could not be read as a valid object.",
+    "receipt-missing": "The required command receipt was not found.",
+    "receipt-invalid": "The command receipt could not be read as a valid object.",
+    "family-controller-mismatch": "The family receipt does not identify the expected controller.",
+    "family-command-mismatch": "The family receipt does not identify the expected fixture coordinator.",
+    "family-reason-mismatch": "The guardian termination reason does not match the requested fault.",
+    "family-observation-errors": "The guardian reported process observation or signalling errors, or its error list is missing.",
+    "family-survivors": "The family receipt does not prove that no processes survived automatic cleanup.",
+    "family-cleanup-unverified": "The guardian did not confirm automatic family cleanup.",
+    "family-ledger-invalid": "The retained process-family inventory is empty, invalid or exceeds its bound.",
+    "family-identity-invalid": "A retained process identity has invalid fields.",
+    "family-identity-duplicate": "The process-family inventory repeats a retained identity.",
+    "family-coordinator-missing": "The process-family inventory omits the fixture coordinator.",
+    "family-signals-invalid": "The cleanup signal inventory is invalid or exceeds its bound.",
+    "family-signal-invalid": "A cleanup signal record has invalid fields or signal type.",
+    "family-signal-foreign": "A cleanup signal record refers to an identity outside the retained family.",
+    "family-signal-duplicate": "The cleanup inventory repeats a signal for the same process identity.",
+    "fault-exit-mismatch": "The controller exit does not prove the requested fault.",
+    "receipt-unexpected": "A command receipt was present after the controller SIGKILL fault.",
+    "receipt-status-mismatch": "The command receipt status does not match the requested fault.",
+    "command-exit-mismatch": "The coordinator exit does not prove the requested SIGINT.",
+}
 
 
 def project(candidate_sha: str | None, commits: dict[str, str], rows: list[dict[str, Any]],
@@ -178,6 +212,52 @@ def replace_projection(folder: Path, value: dict[str, Any]) -> None:
                 temporary.unlink(missing_ok=True)
 
 
+def _validated_value(value: Any, allowlist: Path) -> dict[str, Any]:
+    if (not isinstance(value, dict) or set(value) != TOP or not isinstance(value["cases"], list)
+            or any(not isinstance(row, dict) or set(row) != CASE for row in value["cases"])):
+        raise ValueError("projection field set differs from its closed contract")
+    if any(type(value[key]) is not bool for key in TOP_BOOLEANS):
+        raise ValueError("public top-level outcomes must be booleans")
+    expected = project(value["candidate_sha"], value["source_commits"], value["cases"], allowlist,
+                       owner_checks_passed=value["owner_checks_passed"], stage=value["stage"], error=value["error"])
+    if value != expected:
+        raise ValueError("projection outcome differs from its validated observations")
+    return expected
+
+
+def diagnostic_lines(value: dict[str, Any], allowlist: Path) -> list[str]:
+    """Render only revalidated public enums/booleans and fixed explanations."""
+    value = _validated_value(value, allowlist)
+    if set(CASE_EXPLANATIONS) != CASE_ERRORS:
+        raise ValueError("case explanations differ from the closed vocabulary")
+    lines = [f"Qualification outcome: stage={value['stage']} code={value['error']} ok={str(value['ok']).lower()}"]
+    for row in value["cases"]:
+        if row["ok"]:
+            continue
+        lines.append(
+            f"FAILED case: placement={row['placement']} mode={row['mode']} fault={row['fault']} "
+            f"stage={row['case_stage']} code={row['case_error']} "
+            f"automatic_cleanup={str(row['automatic_cleanup']).lower()} "
+            f"neighbour_survived={str(row['neighbour_survived']).lower()} "
+            f"neighbour_completion_state={row['neighbour_completion_state']} "
+            f"-- {CASE_EXPLANATIONS[row['case_error']]}"
+        )
+    if not value["ok"] and not any(not row["ok"] for row in value["cases"]):
+        lines.append("No failed case diagnostic was recorded; the reported overall stage/code remains the available evidence.")
+    return lines
+
+
+def _append_step_summary(lines: list[str]) -> None:
+    destination = os.environ.get("GITHUB_STEP_SUMMARY")
+    if destination:
+        try:
+            with Path(destination).open("a", encoding="utf-8") as stream:
+                stream.write("\n```text\n" + "\n".join(lines) + "\n```\n")
+        except (OSError, ValueError):
+            # A summary write must not hide the diagnostic or replace its status.
+            print("Public diagnostic summary could not be written.")
+
+
 def validate_projection(folder: Path, allowlist: Path) -> dict[str, Any]:
     if folder.is_symlink():
         raise ValueError("unsafe projection directory")
@@ -192,13 +272,8 @@ def validate_projection(folder: Path, allowlist: Path) -> dict[str, Any]:
     raw = files[0].read_bytes()
     if files[1].read_text() != hashlib.sha256(raw).hexdigest() + "\n":
         raise ValueError("projection digest mismatch")
-    value = json.loads(raw)
-    if (not isinstance(value, dict) or set(value) != TOP or not isinstance(value["cases"], list)
-            or any(not isinstance(row, dict) or set(row) != CASE for row in value["cases"])):
-        raise ValueError("projection field set differs from its closed contract")
-    expected = project(value["candidate_sha"], value["source_commits"], value["cases"], allowlist,
-                       owner_checks_passed=value["owner_checks_passed"], stage=value["stage"], error=value["error"])
-    if value != expected or raw != json.dumps(expected, sort_keys=True, separators=(",", ":")).encode():
+    value = _validated_value(json.loads(raw), allowlist)
+    if raw != json.dumps(value, sort_keys=True, separators=(",", ":")).encode():
         raise ValueError("projection outcome differs from its validated observations")
     return value
 
@@ -263,10 +338,14 @@ def main() -> int:
     args = parser.parse_args()
     try:
         value = ensure_projection(args.host, args.folder, args.candidate_sha, args.driver_outcome)
+        lines = diagnostic_lines(value, args.host / "verification/protected-qualification-public-allowlist.json")
     except (Exception, KeyboardInterrupt, SystemExit):  # noqa: BLE001 -- final public boundary exports only closed constants, never exception text
         print(json.dumps({"stage": "publication", "error": "projection-invalid", "ok": False}))
         return 1
     print(json.dumps({key: value[key] for key in ("stage", "error", "ok")}, sort_keys=True))
+    for line in lines:
+        print(line)
+    _append_step_summary(lines)
     return 0
 
 

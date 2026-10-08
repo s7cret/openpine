@@ -453,6 +453,7 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
                     "--spec", str(spec), "--output", str(folder), "--mode", mode,
                     "--gate-fd", str(gate_read),
                     "--timeout", "60" if role == "affected" and fault == "timeout" else "180"]
+            process = None
             try:
                 with (folder / "controller.stdout").open("xb") as out, (folder / "controller.stderr").open("xb") as err:
                     process = subprocess.Popen(argv, cwd=folder, stdout=out, stderr=err,  # noqa: S603 -- this interpreter, closed environment, declared module argv, no shell
@@ -467,8 +468,11 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
             except BaseException:
                 os.close(gate_write)
                 gate_write = -1
-                if "process" in locals():
-                    process.wait(timeout=3)  # EOF refuses gate before any worker launch
+                if process is not None:
+                    try:
+                        process.wait(timeout=3)  # EOF refuses gate before any worker launch
+                    except subprocess.TimeoutExpired:
+                        pass  # Keep the launch error; owned disposal still runs below.
                 raise
             finally:
                 if gate_read >= 0:
