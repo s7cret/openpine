@@ -231,6 +231,12 @@ def run_stabilization_gate(
         raise ValueError("stabilization requires all eight candidate components")
     for name in COMPONENTS:
         tasks = [t for t in plan["tasks"] if t["component"] == name]
+        required_versions = set(policy["components"][name]["pythons"])
+        required_environments = {
+            key for key, environment in plan["environments"].items()
+            if ".".join(environment["identity"]["python"].split(".")[:2])
+            in required_versions
+        }
         versions = {
             ".".join(
                 plan["environments"][t["environment"]]["identity"]["python"].split(".")[
@@ -239,13 +245,23 @@ def run_stabilization_gate(
             )
             for t in tasks
         }
-        if not set(policy["components"][name]["pythons"]).issubset(versions):
-            raise ValueError("mandatory interpreter missing: " + name)
+        actual_environments = {task["environment"] for task in tasks}
+        if (
+            not required_versions.issubset(versions)
+            or actual_environments != required_environments
+        ):
+            raise ValueError(
+                "mandatory interpreter missing: " + name
+                + "; missing versions=" + str(sorted(required_versions - versions))
+                + "; missing environments=" + str(sorted(required_environments - actual_environments))
+                + "; unexpected environments=" + str(sorted(actual_environments - required_environments))
+            )
         for task in tasks:
             validate_inventory(task["nodeids"], inventory[name], task["deselected"])
     packet = read_json(evidence_path(evidence, "stabilization-inputs.json"))
     if (
-        packet.get("schema_id") != "openpine.rc6_stabilization_inputs.v1"
+        not isinstance(packet, dict)
+        or packet.get("schema_id") != "openpine.rc6_stabilization_inputs.v1"
         or packet.get("plan_hash") != plan["content_hash"]
         or packet.get("candidate_hash") != plan["source"]["content_hash"]
         or packet.get("run_id") != run_id
@@ -257,6 +273,8 @@ def run_stabilization_gate(
     )
     specs = policy.get("stabilization", {})
     entries = packet.get("gates", {})
+    if not isinstance(specs, dict) or not isinstance(entries, dict):
+        raise ValueError("stabilization owner policy and locator mappings must be objects")
     if set(entries) - set(STABILIZATION_GATES):
         raise ValueError("unexpected stabilization owner")
     gates = {}
@@ -264,7 +282,7 @@ def run_stabilization_gate(
         if not aggregation["pytest_scope_passed"]:
             gates[gate] = {"status": "blocked", "errors": aggregation["errors"]}
             continue
-        if gate not in entries or gate not in specs:
+        if entries.get(gate) is None or specs.get(gate) is None:
             gates[gate] = {
                 "status": "not_run",
                 "errors": ["missing owner evidence or reviewed raw-evidence policy"],
@@ -272,6 +290,8 @@ def run_stabilization_gate(
             continue
         entry, spec = entries[gate], specs[gate]
         try:
+            if not isinstance(entry, dict) or not isinstance(spec, dict):
+                raise ValueError("owner locator and reviewed raw-evidence policy must be objects")
             owner_evidence = evidence
             if gate in {"frontend", "packages"}:
                 owner_evidence, entry = _owner_evidence_root(
@@ -377,7 +397,7 @@ def run_stabilization_gate(
                 "raw_result_hash": digest(result),
                 "errors": [],
             }
-        except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
+        except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError) as error:
             gates[gate] = {"status": "blocked", "errors": [str(error)]}
     accepted = all(row["status"] == "passed" for row in gates.values())
     # Frozen remaining matrix is authority for the language debt, not summaries
@@ -581,7 +601,7 @@ def _checked_product_pending(plan: dict, policy: dict, locations: dict) -> dict:
     inventories = {task["component"] + "@" + task["environment"]:
                    {"nodeids": task["nodeids"], "deselected": task["deselected"]}
                    for task in plan["tasks"]}
-    pending = pending_required_inventories(policy, {n:Path(p) for n,p in locations.items()},
+    pending: dict = pending_required_inventories(policy, {n:Path(p) for n,p in locations.items()},
         plan["source"], inventories, list(COMPONENTS))
     if plan.get("pending_required_inventories", {}) != pending:
         raise ValueError("saved external inventory differs from reviewed source obligations")

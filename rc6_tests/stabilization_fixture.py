@@ -58,7 +58,7 @@ def freeze_fixture_environment(roots, folder, inputs):
 
 
 def build_fixture(base, *, portable=False, owner_namespaces=False, product=False,
-                  product_unconfigured=False):
+                  product_unconfigured=False, stabilization_unconfigured=False):
     stack, evidence = base / "stack", base / "evidence"
     evidence.mkdir()
     roots = {name: stack / name for name in COMPONENTS}
@@ -423,6 +423,13 @@ def build_fixture(base, *, portable=False, owner_namespaces=False, product=False
             policy['owner_locator_slots'].update(attempt='directory', package_attempt='directory')
             locations.update(attempt=str(evidence), package_attempt=str(evidence))
         launch = freeze_owner_launch(policy, locations)
+    if stabilization_unconfigured:
+        # Freeze missing specifications before candidate/plan/execution. Existing
+        # raw receipts cannot supply the independently reviewed owner contract.
+        for gate in STABILIZATION_GATES:
+            policy["stabilization"][gate] = None
+        if portable:
+            launch = freeze_owner_launch(policy, locations)
     put(host / "verification/execution-policy.json", policy)
     # Remove backend build detritus before freezing actual source identity.
     for root in roots.values():

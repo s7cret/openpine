@@ -422,6 +422,115 @@ def test_each_missing_owner_is_not_run_not_accepted(full_fixture, gate):
         path.write_bytes(original)
 
 
+@pytest.mark.parametrize("gate", [
+    "branch-reconciliation", "foundation", "protected-workers", "coverage",
+    "frontend", "packages", "test-performance",
+])
+def test_null_owner_locator_is_not_run_not_accepted(full_fixture, gate):
+    _, _, evidence, packet = full_fixture
+    changed = copy.deepcopy(packet)
+    changed["gates"][gate] = None
+    path = evidence / "stabilization-inputs.json"
+    original = path.read_bytes()
+    try:
+        path.write_text(json.dumps(changed))
+        current = replay(full_fixture)
+        assert current["stabilization"]["gates"][gate]["status"] == "not_run"
+        assert not current["ok"] and current["full_release_accepted"] is False
+    finally:
+        path.write_bytes(original)
+
+
+def test_null_frozen_owner_specs_remain_not_run_despite_real_raw_inputs(tmp_path):
+    from rc6_tests.stabilization_fixture import build_fixture
+
+    fixture = build_fixture(tmp_path, stabilization_unconfigured=True)
+    host, plan, _, packet = fixture
+    policy = read_json(host / "verification/execution-policy.json")
+    assert set(packet["gates"]) == set(policy["stabilization"]) - {"package_harness_inputs"}
+    current = replay(fixture)
+    assert all(row["status"] == "not_run" for row in current["stabilization"]["gates"].values())
+    assert not current["ok"] and current["full_release_accepted"] is False
+    assert current["plan_hash"] == plan["content_hash"]
+
+
+@pytest.mark.parametrize("gate", [
+    "branch-reconciliation", "foundation", "protected-workers", "coverage",
+    "frontend", "packages", "test-performance",
+])
+@pytest.mark.parametrize("invalid", [[], False, "owner-receipt"])
+def test_malformed_nonnull_owner_locator_is_blocked(full_fixture, gate, invalid):
+    _, _, evidence, packet = full_fixture
+    changed = copy.deepcopy(packet)
+    changed["gates"][gate] = invalid
+    path = evidence / "stabilization-inputs.json"
+    original = path.read_bytes()
+    try:
+        path.write_text(json.dumps(changed))
+        current = replay(full_fixture)
+        row = current["stabilization"]["gates"][gate]
+        assert row["status"] == "blocked" and row["errors"]
+        assert not current["ok"] and current["full_release_accepted"] is False
+    finally:
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize("invalid", [None, [], False, "owner-bindings"])
+def test_malformed_frontend_binding_is_blocked(full_fixture, invalid):
+    _, _, evidence, packet = full_fixture
+    changed = copy.deepcopy(packet)
+    changed["gates"]["frontend"]["binding"] = invalid
+    path = evidence / "stabilization-inputs.json"
+    original = path.read_bytes()
+    try:
+        path.write_text(json.dumps(changed))
+        current = replay(full_fixture)
+        assert current["stabilization"]["gates"]["frontend"]["status"] == "blocked"
+        assert not current["ok"]
+    finally:
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize("invalid", [None, [], False, "owner-locators"])
+def test_malformed_owner_locator_mapping_is_rejected(full_fixture, invalid):
+    _, _, evidence, packet = full_fixture
+    changed = copy.deepcopy(packet)
+    changed["gates"] = invalid
+    path = evidence / "stabilization-inputs.json"
+    original = path.read_bytes()
+    try:
+        path.write_text(json.dumps(changed))
+        with pytest.raises(ValueError, match="locator mappings must be objects"):
+            replay(full_fixture)
+    finally:
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize("omission", ["whole-environment", "single-component"])
+def test_each_frozen_compatible_environment_requires_complete_component_tasks(
+    full_fixture, omission
+):
+    from openpine.verification.execution_plan import validate_plan
+    from openpine.verification.stage_gate import run_stabilization_gate
+
+    host, plan, evidence, packet = full_fixture
+    changed = copy.deepcopy(plan)
+    changed["environments"]["second"] = copy.deepcopy(plan["environments"]["py"])
+    if omission == "single-component":
+        for task in plan["tasks"]:
+            if task["component"] == "pine2ast":
+                continue
+            second = copy.deepcopy(task)
+            second["environment"] = "second"
+            second["id"] = second["component"] + "@second"
+            changed["tasks"].append(second)
+    changed = reseal(changed)
+    validate_plan(changed, expected_hash=changed["content_hash"])
+    with pytest.raises(ValueError, match="mandatory interpreter missing"):
+        run_stabilization_gate(host, changed, evidence,
+            expected_plan_hash=changed["content_hash"], run_id=packet["run_id"])
+
+
 @pytest.mark.parametrize("field", ["plan_hash", "candidate_hash", "run_id"])
 def test_foreign_historical_packet_rejected(full_fixture, field):
     _, _, evidence, packet = full_fixture

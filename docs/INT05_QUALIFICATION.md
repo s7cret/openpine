@@ -1,13 +1,44 @@
-# INT05: qualified profile boundaries, parent review checkpoint
+# INT05: profile evidence and remaining qualification
 
-This bounded package starts at OpenPine commit
+The seventh approved hosted protected run
+[`37760914024`](https://github.com/s7cret/openpine/actions/runs/37760914024)
+passed at exact Host candidate `bef63351708e676a14d5b0c5ccd744835da48b19`.
+Each independent installed A/B placement passed the locked 76 INT05 owner
+contracts, alongside 49 INT04 and 227 selected protected-worker obligations;
+all 12 real fault cases passed automatic cleanup and concurrent neighbour
+survival/completion. This establishes that bounded protected scope. Actual
+positive affected/full patch campaigns remain unexecuted, so **INT-05 remains
+open**. The ten negative mutation probes below establish sensitivity and do
+not supply green positive comparison pairs.
+
+Run7's public artifact is two files / 4,075 ZIP bytes, with recorded expiry
+2026-10-09 10:24:57 UTC (13:24:57 Europe/Moscow). Its raw primaries were not
+durably retained; `raw_primaries_durable=false` and
+`full_qualification_accepted=false`. PR #41 remains draft at `486443f4`, five
+commits behind `bef6335`, with no reviews; its head's protected check failed.
+The run7 push published only its execution ref. These local changes do not
+publish a source/PR update. See
+[the hosted checkpoint](RUN04_HOSTED_PROTECTED_QUALIFICATION.md) for exact
+identities, observations and historical failures.
+
+The hosted RUN04 label does not close spec **RUN-04**, which requires the full
+worker checkpoint/restore/resume path and recovery-boundary qualification.
+INT-04 private retention/lifecycle acceptance, INT-03 full owner composition,
+INT-06 measured performance and all existing product owner gates also remain
+separate. No full acceptance verdict is inferred from these owner contract tests.
+
+## Historical package provenance
+
+The original bounded package started at OpenPine commit
 `3fbd28568948340bb75def1db2f882d3d65ce72c`, tree
 `8a8f7086c435c85977fa817fbf542831741e4394`, and preserves all seven library
 pins, including PineLib `b953e803d618a9784b117f8047ca709791aaca79`.
 The remaining-spec source was verified against SHA256
 `3f09ed3901f8ecf1262ffa983c6eaf52a51ceaf2087abe98db2093d45d9ca622`.
-Execution uses ordinary CPython 3.13.5 with enabled GIL, a separate editable
-environment, and verified imports from eight separate worktrees.
+Its local evidence used ordinary CPython 3.13.5 with enabled GIL, a separate
+editable environment, and verified imports from eight separate worktrees.
+The counts and timings below belong to that package. They are historical
+evidence, not the inventory or campaign receipt of a later integration candidate.
 
 ## Implementation and independent negative tests
 
@@ -39,8 +70,10 @@ PineLib from `strategy_capabilities.py` and `delegated_strategy_intents.py`.
 Changing PineLib's `is_na` broke the existing Backtest Engine projection test
 while the old graph omitted Backtest Engine and Optimizer. An observed-boundary
 dependency floor in the planner now includes both consumer suites and records
-PineLib as preparation for a Backtest Engine component/smoke plan. The reserved
-policy file remains untouched; its owner should reconcile this declaration.
+PineLib as preparation for a Backtest Engine component/smoke plan. The original
+package left the reserved policy file untouched; the later integration's central
+policy declares PineLib as a Backtest Engine dependency and retains transitive
+Optimizer selection.
 The independently failing pre-fix scope test and real failing consumer oracle
 are retained in the checkpoint evidence.
 
@@ -74,7 +107,7 @@ ten-campaign performance self-test remains excluded. Instrumentation drift was
 first reproduced as two failing negative checks, then rejected before evidence
 aggregation; ordered plugin and producer-identity drift have separate guards.
 
-The existing `test-collect` command verified the complete current policy scope:
+The existing `test-collect` command verified this historical package's policy scope:
 
 | Owner | Collected obligations | Deselected |
 | --- | ---: | ---: |
@@ -118,11 +151,11 @@ command does not execute tests or acceptance gates and rejects stale source.
 For example, the provider consumer-boundary affected scope contains provider,
 optimizer and OpenPine: 13,038 obligations. The narrow OpenPine scope contains
 11,855 obligations and seven preparation owners. Shared semantic changes and
-integration/stage-full/release-full retain all 26,047 current policy obligations.
+integration/stage-full/release-full retained all 26,047 package policy obligations.
 An owner smoke contains its exact policy node; component contains the owner's
 complete collected suite. These counts do not assert a runtime speedup.
 
-## Compare actual affected and full campaigns after parent review
+## Compare actual affected and full campaigns on the final candidate
 
 Use the existing `test-ci` source-attestation owner path before execution.
 `test-plan` and `reproduce_profiles.py` produce planning-only structures without
@@ -146,10 +179,11 @@ The affected composition is also launched through the existing `run_campaign`
 without an explicit build commit, as `test-run` does: restored Git provenance
 supplies the exact host identity and stale caller producer settings are replaced.
 
-After the parent has reviewed the fixes, assembled one exact integration
-candidate and freed the heavy pool, prepare that candidate once with the existing
-owner. These commands are a recipe; preparation and full execution were not run
-for this package:
+Assemble and review one exact integration candidate, then prepare it once with
+the existing owner before complete campaigns. These commands describe the
+separate affected/full route; they have not executed a complete comparison.
+Run7's hosted preparation does not supply the independently anchored local
+bundle/full-plan/patch inputs needed by this route:
 
 ```bash
 python -m openpine.verification test-ci prepare \
@@ -181,8 +215,11 @@ python -m int05_tests.affected_from_ci \
 This small planning adapter calls the existing bundle verifier, attestation
 owner, collection joiner and planner. It writes an existing-schema plan only
 after source commits, source/environment identity, independently expected owner
-scope, selected nodes and instrumentation agree with the full plan. It has no
-runner or acceptance logic. Record its execution hash in the external checkpoint.
+scope, selected nodes and instrumentation agree with the full plan. The complete
+stage-full obligations are rebuilt from the verified prepared collection, with
+owner/environment inventories, reviewed locks and owner gates checked before
+narrowing. It has no runner or acceptance logic. Record its execution hash
+in the external checkpoint.
 Use existing `test-bind` to bind each plan to **all eight** `restored.json` roots
 and its actual `py313` executable. Run both plans using the restored interpreter
 and the existing `test-run`, with the independently frozen expected hash,
@@ -224,7 +261,23 @@ Passing pytest comparison never grants full stage/release acceptance. Two
 small synthetic comparator tests demonstrate the positive and omitted-failure
 guards; they do not qualify the eight-owner stack.
 
-## Real patch campaign proposed for parent review
+## Real positive patch campaign
+
+Canonical `test-ci` collection combines the Host policy selectors with
+`rc6_tests/selected_regressions.json`. The latter already includes
+`tests/test_timezone_settings.py`, including the `narrow-local` scenario's
+independent oracle. Read-only collection of the run7 base confirmed all six
+original timezone obligations. Recollect and refreeze the final candidate;
+the oracle membership check remains strict, and historical package counts
+cannot substitute for that candidate's canonical collection.
+
+The local closeout retains all 12,197 Host obligations from the run7 base and
+adds 39 current-owner admission regressions, for 12,236 collected obligations.
+The separate protected INT05 lock retains its original 76 contracts and adds
+44 replay/comparison/orchestration regressions, for 120. Both locks preserve
+the previous hashed baseline through explicit reviewed additions; no old
+node IDs were removed. These collection counts are not a new hosted result
+or a completed full-stack campaign.
 
 The ten deliberately failing mutations are sensitivity probes. Even an affected
 run that catches the same failures as a full run is not a green qualification
@@ -232,10 +285,11 @@ pair. Keep their negative evidence separate; never reuse the unmutated full run
 as evidence for different mutant bytes.
 
 `freeze_real_patches.py` archives the last actual Git edit of each scenario file,
-its real parent preimage, current candidate postimage and native Git patch.
-It checks clean exact library pins, replays each patch and verifies every oracle
-is in the reviewed product inventory. It retains an existing-owner source archive
-and eight Git provenance bundles. Before images hold all other current candidate
+its real parent preimage, current candidate postimage and native Git patch,
+including before/after executable modes. It checks clean exact library pins,
+complete owner inventory and independent scope, replays each patch and verifies
+every oracle is in the reviewed product inventory. It retains an existing-owner
+source archive and eight Git provenance bundles. Before images hold all other current candidate
 files constant; they are single-file replay inputs, not historical whole-stack
 snapshots. This command performs no test execution or package preparation:
 
@@ -249,28 +303,70 @@ Proposed positive comparison: one full run on the exact reviewed common postimag
 and ten actual affected runs for these real replay transitions. Full evidence may
 be reused only when the comparator proves identical source, environment, policy,
 producer commits, reviewed node inventories, plugins and per-node instrumentation.
-The parent must review this campaign design before execution. A new integration
-commit or central policy change invalidates the preview and requires recollection,
-patch refreezing, attestation and new externally recorded plan hashes.
+The final candidate and campaign inputs require review before execution. A new
+integration commit or central policy change invalidates the preview and requires
+recollection, patch refreezing, attestation and new externally recorded plan hashes.
+
+`int05_tests.positive_campaign` makes that preparation explicit. Its `prepare`
+action validates independently frozen bundle, full-plan, real-patch manifest
+and scenario identities, checks the reviewed collection, then writes one full
+plan, ten affected plans and `checkpoint.json` outside source roots. It performs
+no campaign execution or inventory rebaseline:
+
+```bash
+python -m int05_tests.positive_campaign prepare \
+  --bundle /external/ci-prepared-001/bundle \
+  --full-plan /external/attested-full.json \
+  --patch-manifest /external/real-patches-attempt-001/manifest.json \
+  --reviewed-collection /external/reviewed-candidate-collection.json \
+  --scenarios int05_tests/patch_scenarios.json \
+  --expected-bundle-hash sha256:REVIEWED_BUNDLE \
+  --expected-full-hash sha256:REVIEWED_FULL \
+  --expected-patch-manifest-sha256 sha256:REVIEWED_PATCH_MANIFEST \
+  --expected-scenarios-sha256 sha256:REVIEWED_SCENARIOS \
+  --output /external/positive-campaign-attempt-001
+```
+
+Freeze the returned checkpoint content hash independently. `run` takes that
+`--checkpoint` and `--expected-checkpoint-hash`, one explicit `--campaign-id`
+(`full` or a declared scenario), `--restored`, a unique `--run-id` and `--output`,
+and bounded `--jobs 2 --max-parallel-shards 1 --memory-mib 6144`. It delegates
+to the existing binding, campaign and aggregation owners without retries.
+`check` takes the same checkpoint anchors, `--evidence-index`, independently
+recorded `--expected-evidence-index-sha256` and a fresh `--output`; it delegates
+all ten pairs to the existing comparator. The evidence index names one full
+run and every affected scenario, each with its explicit evidence root and run
+ID. Missing or failed evidence cannot turn a planning checkpoint into acceptance.
+Manifest, scenario and evidence-index SHA256 anchors hash complete file bytes
+(`sha256:<64 hex>`), separately from sealed plan/checkpoint content hashes.
+These commands remain an unexecuted complete-campaign recipe.
 
 At this package's counts this is 254,110 executed obligations across 11 campaigns
 (9.756 full-suite equivalents). Separate full runs for all ten postimages plus
 one baseline would be 514,580 obligations across 21 campaigns (19.756 equivalents).
 These are workload counts, not measured speed. An assumed full-run range of
 8–30 minutes gives about 1.3–4.9 hours for the common-postimage comparison, plus
-preparation; the first actual full run must replace that forecast. Reserve up to
-10 GiB additional disk for one preparation, one restored environment, source
-inputs and all raw/coverage artifacts; keep at least 2 GiB free. Checkpoint after
-each attempt, make no automatic retries and preserve every failed log and primary.
-Only disposable private trees owned by that attempt may be removed.
+preparation; the first actual full run must replace that forecast. The original
+proposal estimated up to 10 GiB additional disk for preparation, restoration,
+source inputs and raw/coverage evidence, with a 2 GiB floor. The current frozen
+resource policy instead requires **3,000,000,000 bytes** free; the old estimate
+does not authorize storage expansion. Checkpoint after each attempt, make no
+automatic retries and preserve every failed log and primary. Only disposable
+private trees owned by that attempt may be removed.
 
 Functional profile comparison does not replace full owner coverage, foundation,
 builtin, frontend, lifecycle, package and final stage/release obligations. Their
 existing owner path and policy gates remain required for full acceptance.
 
-Parent review and release of the heavy slot are required before actual complete
-campaigns. The parent's latest reservation is hosted run `37529938988` at
-`f02dfb6` (target 6,318); this package
-does not launch or cancel hosted runs. Full builds, final candidate acceptance,
-provider live cases and the complete 68-requirement spec remain open. No merge,
-release or paid resource action is authorized by this checkpoint.
+The useful next local step is to freeze a reviewable positive-campaign checkpoint
+on the final candidate and prepare explicit primary archival with verified
+readback. Recollect current inventories and refreeze real patches rather than
+reusing the historical counts above. Actual full/affected execution, complete
+owner gate evidence, REL-01 normal/sdist-rebuilt acceptance, REL-08 final archive
+acceptance and provider live cases remain pending. This bounded result does not
+accept the complete 68-requirement spec.
+
+No source/PR push, PR edit, new hosted run, upload, storage expansion, merge,
+release or paid resource action is authorized by this local checkpoint. Saved
+execution receipt hashes remain external evidence identities and are not added
+to semantic source policy.

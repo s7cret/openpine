@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import hashlib
+import io
 import os
 import re
 import shutil
@@ -50,7 +51,7 @@ def _private_paths(root: Path, private: tuple[str, ...]) -> list[str]:
 
 
 def _inventory(root: Path, private: list[str], max_bytes: int) -> dict:
-    files = {}
+    files: dict[str, dict] = {}
     total = 0
     for directory, subdirs, filenames in os.walk(root, followlinks=False):
         base = Path(directory)
@@ -75,6 +76,26 @@ def _inventory(root: Path, private: list[str], max_bytes: int) -> dict:
     if not files:
         raise ValueError('no primary evidence to archive')
     return dict(sorted(files.items()))
+
+
+def _primary_inventory(root: Path, artifacts: dict, max_bytes: int) -> dict:
+    """Read an owner's frozen regular-file descriptors, never loose selectors."""
+    if not isinstance(artifacts, dict) or not 0 < len(artifacts) <= MAX_FILES:
+        raise ValueError('invalid primary artifact inventory')
+    files, total = {}, 0
+    for relative, record in sorted(artifacts.items()):
+        path = evidence_path(root, relative)
+        if (not isinstance(record, dict) or set(record) != {'size', 'sha256'}
+                or type(record['size']) is not int or record['size'] < 0
+                or not isinstance(record['sha256'], str) or not HASH.fullmatch(record['sha256'])):
+            raise ValueError('invalid primary artifact descriptor')
+        total += record['size']
+        if total > max_bytes:
+            raise ValueError('primary artifact inventory exceeds archive budget')
+        if path.stat().st_size != record['size'] or hash_file(path) != record['sha256']:
+            raise ValueError('primary artifact differs from owner inventory')
+        files[relative] = dict(record)
+    return files
 
 
 def _check_primary_exclusions(root: Path, files: dict, private: list[str]) -> None:
@@ -129,6 +150,33 @@ class _BoundedOutput:
 
     def flush(self):
         self.stream.flush()
+
+
+class _BoundedInput(io.RawIOBase):
+    def __init__(self, stream, limit: int):
+        self.stream, self.limit, self.count = stream, limit, 0
+
+    def read(self, size: int = -1) -> bytes:
+        remaining = self.limit - self.count
+        data: bytes = self.stream.read(remaining + 1 if size < 0 else min(size, remaining + 1))
+        self.count += len(data)
+        if self.count > self.limit:
+            raise ValueError('expanded evidence archive framing exceeds budget')
+        return data
+
+
+def _tar_budget(files: dict) -> int:
+    # Bound headers (including the exact path's PAX encoding), content padding
+    # and both EOF blocks before rounding to a full tar record. A member ending
+    # one block before a record boundary needs padding into the following record.
+    # Even malformed PAX metadata is read boundedly.
+    total = 2 * tarfile.BLOCKSIZE
+    for relative, record in files.items():
+        member = tarfile.TarInfo(relative)
+        member.size, member.mode, member.mtime = record['size'], 0o600, 0
+        total += len(member.tobuf(format=tarfile.PAX_FORMAT))
+        total += (record['size'] + tarfile.BLOCKSIZE - 1) // tarfile.BLOCKSIZE * tarfile.BLOCKSIZE
+    return (total + tarfile.RECORDSIZE - 1) // tarfile.RECORDSIZE * tarfile.RECORDSIZE
 
 
 def _validate_manifest(manifest: dict) -> None:
@@ -197,7 +245,10 @@ def verify_archive(archive: Path, manifest: dict, *, expected_manifest_hash: str
     total = 0
     try:
         with gzip.open(archive, 'rb') as expanded:
-            with tarfile.open(fileobj=expanded, mode='r|') as stream:
+            bounded = _BoundedInput(expanded, _tar_budget(manifest['files']))
+            # A larger tar read buffer can swallow payload after the end marker,
+            # hiding it from the footer/tail check below.
+            with tarfile.open(fileobj=bounded, mode='r|', bufsize=tarfile.BLOCKSIZE) as stream:
                 for member in stream:
                     record = manifest['files'].get(member.name)
                     if (not member.isfile() or member.name in seen or record is None
@@ -221,7 +272,7 @@ def verify_archive(archive: Path, manifest: dict, *, expected_manifest_hash: str
                         raise ValueError('archived evidence file checksum mismatch')
             # Exhaust gzip to validate its footer even after tar's end marker.
             # Normal tar record padding is bounded; appended payload is rejected.
-            tail = expanded.read(10_241)
+            tail = bounded.read(10_241)
             if len(tail) > 10_240 or tail.strip(b'\0'):
                 raise ValueError('unexpected evidence archive trailing payload')
     except (tarfile.TarError, EOFError, OSError) as error:
@@ -241,8 +292,14 @@ def verify_archive(archive: Path, manifest: dict, *, expected_manifest_hash: str
 def archive_evidence(evidence: Path, output: Path, *, roots: dict[str, Path],
                      candidate: str, run_id: str, retention_days: int,
                      max_bytes: int, private: tuple[str, ...] = (),
-                     source_hash: str | None = None) -> dict:
-    """Create once, read back, and retain original evidence after any outcome."""
+                     source_hash: str | None = None,
+                     primary_artifacts: dict | None = None) -> dict:
+    """Create once, read back, and retain original evidence after any outcome.
+
+    A mixed owner tree may supply its exact frozen primary descriptors. This
+    API has no CLI selector, and selected primaries cannot use private exclusions.
+    Completeness and referenced-primary closure remain that owner's obligation.
+    """
     evidence = _directory(evidence)
     output = Path(output).absolute()
     ensure_external_output(output, roots)
@@ -262,10 +319,15 @@ def archive_evidence(evidence: Path, output: Path, *, roots: dict[str, Path],
             or (source_hash is not None and (not isinstance(source_hash, str) or not HASH.fullmatch(source_hash)))):
         raise ValueError('invalid evidence archive identity or retention')
     exclusions = _private_paths(evidence, private)
-    files = _inventory(evidence, exclusions, max_bytes)
+    if primary_artifacts is not None and exclusions:
+        raise ValueError('primary artifact archives cannot exclude private trees')
+    def inventory():
+        return (_inventory(evidence, exclusions, max_bytes) if primary_artifacts is None
+                else _primary_inventory(evidence, primary_artifacts, max_bytes))
+    files = inventory()
     _check_primary_exclusions(evidence, files, exclusions)
     total = sum(record['size'] for record in files.values())
-    output.mkdir(parents=True, exist_ok=True)
+    output.mkdir(mode=0o700, parents=True, exist_ok=True)
     output = _directory(output)
     archive = evidence_path(output, 'evidence.tar.gz', must_exist=False)
     partial = evidence_path(output, 'evidence.tar.gz.partial', must_exist=False)
@@ -276,6 +338,7 @@ def archive_evidence(evidence: Path, output: Path, *, roots: dict[str, Path],
         raise ValueError('insufficient free disk for bounded evidence archive')
     # Failed writes intentionally retain .partial diagnostics; no broad cleanup.
     with partial.open('xb') as raw:
+        os.fchmod(raw.fileno(), 0o600)
         bounded = _BoundedOutput(raw, max_bytes)
         with gzip.GzipFile(filename='', fileobj=bounded, mode='wb', mtime=0) as zipped:
             with tarfile.open(fileobj=zipped, mode='w|', format=tarfile.PAX_FORMAT) as stream:
@@ -289,7 +352,7 @@ def archive_evidence(evidence: Path, output: Path, *, roots: dict[str, Path],
                         stream.addfile(member, data)
         raw.flush()
         os.fsync(raw.fileno())
-    manifest = seal({'schema_id': ARCHIVE_SCHEMA, 'candidate': candidate,
+    manifest: dict = seal({'schema_id': ARCHIVE_SCHEMA, 'candidate': candidate,
                      'source_hash': source_hash, 'run_id': run_id,
                      'retention_days': retention_days, 'max_bytes': max_bytes,
                      'private_exclusions': exclusions, 'files': files,
@@ -302,7 +365,7 @@ def archive_evidence(evidence: Path, output: Path, *, roots: dict[str, Path],
     verify_archive(partial, manifest, expected_manifest_hash=manifest['content_hash'],
                    expected_candidate=candidate, expected_run_id=run_id,
                    expected_source_hash=source_hash)
-    if _inventory(evidence, exclusions, max_bytes) != files:
+    if inventory() != files:
         raise ValueError('primary evidence inventory changed during archive readback')
     os.link(partial, archive)
     write_once_json(manifest_path, manifest)

@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from int05_tests.check_full_comparison import check_pair
+from int05_tests.check_full_comparison import (
+    check_pair, ensure_external_comparison_output, validate_pair_contract,
+)
+from openpine.verification.execution_binding import make_binding
 from openpine.verification.execution_campaign import run_campaign
 from openpine.verification.execution_identity import source_snapshot, write_once_json
 from openpine.verification.execution_plan import make_plan, validate_plan
@@ -101,3 +104,89 @@ def test_valid_plan_instrumentation_drift_rejected_before_evidence(tmp_path, mon
             full_hash=full['content_hash'], affected_run='affected', full_run='full',
             expected_owners=['tiny'])
     assert observations == []
+
+
+@pytest.mark.parametrize('omitted_from', ['full', 'affected', 'both'])
+def test_each_selected_owner_retains_all_interpreter_tasks(tmp_path, omitted_from):
+    seed, _ = tiny_plan(tmp_path, profile='stage-full')
+    full = copy.deepcopy(seed)
+    full['environments']['second'] = copy.deepcopy(full['environments']['py'])
+    task = copy.deepcopy(full['tasks'][0])
+    task.update(id='tiny@second', environment='second')
+    full['tasks'].append(task)
+    full = reseal(full)
+    affected = copy.deepcopy(full)
+    affected.update(profile='affected', required_gates=[])
+    if omitted_from in {'full', 'both'}:
+        full['tasks'].pop()
+        full = reseal(full)
+    if omitted_from in {'affected', 'both'}:
+        affected['tasks'].pop()
+    affected = reseal(affected)
+    policy = {'components': {'tiny': {'dependencies': [], 'pythons': ['3.13'],
+                'smoke': ['test_a.py::test_value'], 'timeout_seconds': 30}},
+              'required_gates': {'stage-full': ['foundation'], 'release-full': ['release-owner']}}
+    with pytest.raises(ValueError, match='owner/interpreter task'):
+        validate_pair_contract(policy, affected, full, affected_hash=affected['content_hash'],
+            full_hash=full['content_hash'], expected_owners=['tiny'])
+
+
+def test_required_interpreter_absent_from_both_plans_is_rejected(tmp_path):
+    full, _ = tiny_plan(tmp_path, profile='stage-full')
+    policy = {'components': {'tiny': {'pythons': ['3.13', '3.14']}},
+              'required_gates': {'stage-full': ['foundation']}}
+    full['policy_hash'] = digest(policy)
+    full = reseal(full)
+    affected = reseal({**full, 'profile': 'affected', 'required_gates': []})
+    with pytest.raises(ValueError, match='required interpreter'):
+        validate_pair_contract(policy, affected, full, affected_hash=affected['content_hash'],
+            full_hash=full['content_hash'], expected_owners=['tiny'])
+
+
+def test_declared_library_python312_scope_remains_comparable(tmp_path):
+    full, _ = tiny_plan(tmp_path, profile='stage-full')
+    policy = {'components': {'tiny': {'pythons': ['3.12']}},
+              'required_gates': {'stage-full': ['foundation']}}
+    full['policy_hash'] = digest(policy)
+    identity = dict(full['environments']['py']['identity'])
+    identity.update(python='3.12.9')
+    full['environments']['py']['identity'] = reseal(identity)
+    full = reseal(full)
+    affected = reseal({**full, 'profile': 'affected', 'required_gates': []})
+    assert validate_pair_contract(policy, affected, full, affected_hash=affected['content_hash'],
+        full_hash=full['content_hash'], expected_owners=['tiny']) == ['tiny']
+
+
+def test_comparison_output_cannot_write_into_relocated_source_binding(tmp_path):
+    import shutil
+    import sys
+
+    full, _ = tiny_plan(tmp_path, profile='stage-full')
+    roots = {n: Path(p) for n, p in full['roots'].items()}
+    relocated = {}
+    for name, root in roots.items():
+        target = tmp_path / 'relocated' / name
+        shutil.copytree(root, target)
+        relocated[name] = target
+    binding = make_binding(full, relocated, {'py': sys.executable})
+    evidence = tmp_path / 'evidence'
+    write_once_json(evidence / 'binding.json', binding)
+    with pytest.raises(ValueError, match='outside source roots'):
+        ensure_external_comparison_output(relocated['tiny'] / 'comparison.json', full, evidence)
+    assert not (relocated['tiny'] / 'comparison.json').exists()
+
+
+@pytest.mark.parametrize('field,value', [('timeout_seconds', 300), ('memory_mib', 512),
+                                        ('private_retention', 'delete-on-success')])
+def test_different_execution_settings_rejected_before_evidence(tmp_path, field, value):
+    full, _ = tiny_plan(tmp_path, profile='stage-full')
+    affected = copy.deepcopy(full)
+    affected.update(profile='affected', required_gates=[])
+    affected['tasks'][0][field] = value
+    affected = reseal(affected)
+    policy = {'components': {'tiny': {'dependencies': [], 'pythons': ['3.13'],
+                'smoke': ['test_a.py::test_value'], 'timeout_seconds': 30}},
+              'required_gates': {'stage-full': ['foundation'], 'release-full': ['release-owner']}}
+    with pytest.raises(ValueError, match='execution settings'):
+        validate_pair_contract(policy, affected, full, affected_hash=affected['content_hash'],
+            full_hash=full['content_hash'], expected_owners=['tiny'])
