@@ -245,6 +245,7 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path, *, launc
     sent_keys: set[tuple[int, float, int]] = set()
     errors: list[str] = []
     child = None
+    command_handle: _OwnedHandle | None = None
     absent = (psutil.NoSuchProcess, FileNotFoundError, ProcessLookupError)
 
     def record_error(error):
@@ -477,6 +478,9 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path, *, launc
             record_error(error)
     if child is not None:
         admit(child.pid, command=True)
+        # Retain the direct command's kernel identity, not a later PID lookup.
+        # Its integer label can be reused after Popen has reaped the command.
+        command_handle = handles.get(child.pid) or overflow.get(child.pid)
         observe()
         while child.poll() is None and not stopped and os.getppid() == parent_pid and not errors:
             observe()
@@ -491,8 +495,22 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path, *, launc
                 time.sleep(.02)
             if observe():
                 reason = 'orphan-descendants'
+    term_deadline: float | None = None
+    if (reason in {'cancelled', 'controller-crashed'} and not errors
+            and not pressure_started and command_handle is not None and command_handle.alive()):
+        # Closing the coordinator's pipes lets privileged wait/pipe clients
+        # finish without a signal the unprivileged guardian cannot deliver.
+        # Observe the whole family: the command may exit before those clients.
+        # Both stages share the existing TERM deadline; refusals for any client
+        # still live at fanout remain errors, never forgiven by later exit.
+        term_deadline = time.monotonic() + .5
+        send([command_handle], signal.SIGTERM)
+        quiescence = min(term_deadline, time.monotonic() + .2)
+        while observe() and time.monotonic() < quiescence and not errors:
+            reap()
+            time.sleep(.02)
     send(observe(), signal.SIGTERM)
-    deadline = time.monotonic() + .5
+    deadline = term_deadline if term_deadline is not None else time.monotonic() + .5
     while observe() and time.monotonic() < deadline:
         reap()
         time.sleep(.02)
