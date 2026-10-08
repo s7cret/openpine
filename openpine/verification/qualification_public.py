@@ -187,7 +187,11 @@ def ensure_projection(host: Path, folder: Path, candidate_sha: str, driver_outco
         if driver_outcome == "success" or not value["ok"]:
             return value
         # A failed/cancelled driver cannot leave an accepted success checkpoint.
-        error = "incomplete"
+        # Keep its already validated case observations while failing the run.
+        value = project(value["candidate_sha"], value["source_commits"], value["cases"], allowlist,
+            owner_checks_passed=value["owner_checks_passed"], stage="workflow-driver", error="incomplete")
+        replace_projection(folder, value)
+        return validate_projection(folder, allowlist)
     except FileNotFoundError:
         error = "missing-output"
     except (OSError, ValueError, KeyError, TypeError):

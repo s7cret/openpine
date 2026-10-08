@@ -64,7 +64,7 @@ ref from the final approved SHA. The original execution ref is occupied by
 the failed attempt and remains unchanged. The prepared retry route is:
 
 ```sh
-git push origin FINAL_APPROVED_SHA:refs/heads/execution/run04-int04-int05-fix2-20261007
+git push origin FINAL_APPROVED_SHA:refs/heads/execution/run04-int04-int05-fix3-20261008
 ```
 
 Creating that ref is an execution action and requires separate action-time
@@ -73,8 +73,9 @@ retention limitation. The ref must first be confirmed absent; no force push
 or ref reuse is authorized. Dispatch support is available once this workflow
 exists on the repository's default branch; it is not assumed available now.
 The workflow checks source/workflow/approved SHA equality before provisioning.
-Both earlier execution refs are now occupied and remain unchanged. The fresh
-`fix2` route is prepared only; a third run is not authorized by this code fix.
+All three earlier execution refs are now occupied and remain unchanged. The
+fresh `fix3` route is prepared for a possible fourth run after diagnosis and
+exact action review. This development push does not create that execution ref.
 
 The execution would use one standard public Ubuntu 24.04 VM, at most 4 CPU,
 16 GiB RAM, 90 minutes, a 3,000,000,000-byte disk reserve, and no cache upload.
@@ -192,6 +193,48 @@ not a forged accepted preparation bundle. The official setup-python Ubuntu
 only the container's existing proxy/index transport keys were restored locally
 for downloads. A complete supported-kernel preflight and the A/B runtime
 obligations remain outstanding before acceptance.
+
+The third approved run `37702782993`, at
+`976344a868f60aad008016e17a639596ad05f5c6`, completed with failure. Its closed
+diagnostic is `matrix-A / command-failed`; prerequisites, the independent public
+guard and upload passed. Artifact `11519201808` is 3,043 bytes, with ZIP digest
+`a87180b26296fdc5f10d7791631a0fe1d0123aea67ae562aa8503bd6d5501439` and one-day
+retention. The stage order shows preparation, candidate selection/finalization
+and restore A completed before entering matrix A. The diagnostic preserves the
+first failure; it does not establish later A/B owner or individual case results.
+The exact private command error remains unavailable. One supported local
+artifact transfer retry also failed; no independent ZIP/projection byte
+verification or per-case result count is claimed from upload size.
+
+Local diagnosis installed the exact final Host wheel and all seven pinned
+products offline into a separate CPython 3.13.5 GIL placement. All eight origins,
+Host package tree, wheel identities, candidate admission and original native
+fixture construction passed before worker launch. Full local protected execution
+is unavailable: this kernel lacks per-thread procfs children, the systemd runtime
+is absent, and no dedicated worker UID exists. None of those prerequisites was
+provisioned or bypassed. The frozen matrix contains six faults per placement;
+the existing owner inventories remain 49 INT04, 76 INT05 and 227 protected cases.
+
+Two independent result-retention defects are reproduced with controlled
+exceptions and installed code, not attributed as the private matrix failure:
+an exception during a later fault prevented publication of the earlier returned
+cases, and the workflow guard discarded all twelve valid cases when downgrading
+a green checkpoint after driver failure. Each returned fault now gets one
+immutable private case receipt, and a finally block seals an aggregate with a
+private completion flag. The parent validates and retains only already-permitted
+identities and booleans before rejecting an incomplete/invalid matrix. If the
+aggregate is absent, it reads only the six exact declared case filenames. Invalid
+later rows or symlinks cannot erase a validated prefix or expose raw fields.
+The independent guard keeps valid cases while failing the overall run. Raw
+primaries remain immutable; an incomplete matrix and failed driver remain failed.
+No public fields, categories, allowlist bytes, recipients or upload limits change.
+
+Validation passes 113 installed guard cases and all 339 pytest phases, including
+ten new retention/failure cases; Ruff and mypy pass. These checks prove the
+retention repair, not the hosted matrix's unknown failure cause. The fourth-run
+route retains the same VM/provisioning scope and two-file public policy; any
+launch must use the final reviewed exact SHA and current approval. There is no
+permission for an automatic fifth attempt.
 
 Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
 and https://docs.github.com/en/billing/concepts/product-billing/github-actions.

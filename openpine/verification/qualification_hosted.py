@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
@@ -155,14 +156,72 @@ def execute(spec: Path, folder: Path) -> int:
     binding = read_json(spec)
     if Path(sys.prefix).resolve() != Path(binding["prefix"]).resolve():
         raise ValueError("qualification is not running in its bound installed placement")
-    rows = []
-    for mode in MODES:
-        for fault in FAULTS:
-            row = run_fault(spec, folder / (mode + "-" + fault), mode, fault)
-            row["placement"] = binding["placement"]
-            rows.append(row)
-    write_primary(folder / "matrix.json", {"cases": rows})
+    if binding["placement"] not in {"A", "B"}:
+        raise ValueError("unknown qualification placement")
+    rows, complete = [], False
+    try:
+        for mode in MODES:
+            for fault in FAULTS:
+                row = run_fault(spec, folder / (mode + "-" + fault), mode, fault)
+                row["placement"] = binding["placement"]
+                rows.append(row)
+                # Each returned observation survives a later exception or a
+                # killed matrix process; no automatic primary is rewritten.
+                write_primary(folder / ("case-" + mode + "-" + fault + ".json"), row)
+        complete = True
+    finally:
+        write_primary(folder / "matrix.json", {"cases": rows, "complete": complete})
     return 0 if all(r["ok"] for r in rows) else 1
+
+
+def collect_matrix_results(state: DiagnosticState, folder: Path, placement: str) -> None:
+    """Retain validated closed observations before rejecting incomplete output."""
+    if folder.is_symlink() or not folder.is_dir() or placement not in {"A", "B"}:
+        raise QualificationFailure("invalid-input")
+
+    def checkpoints() -> Iterator[dict[str, Any]]:
+        for mode in MODES:
+            for fault in FAULTS:
+                path = folder / ("case-" + mode + "-" + fault + ".json")
+                if path.is_symlink() or path.exists() and not path.is_file():
+                    raise QualificationFailure("invalid-input")
+                if path.is_file():
+                    row = read_json(path)
+                    if row.get("mode") != mode or row.get("fault") != fault:
+                        raise QualificationFailure("invalid-input")
+                    yield row
+
+    matrix_path = folder / "matrix.json"
+    if matrix_path.is_symlink() or matrix_path.exists() and not matrix_path.is_file():
+        raise QualificationFailure("invalid-input")
+    if matrix_path.is_file():
+        matrix = require_output(matrix_path)
+        values = matrix.get("cases")
+        complete = matrix.get("complete", isinstance(values, list) and len(values) == 6)
+        if not isinstance(values, list):
+            raise QualificationFailure("invalid-input")
+    else:
+        values, complete = checkpoints(), False
+    expected = {(placement, mode, fault) for mode in MODES for fault in FAULTS}
+    observed = set()
+    for row in values:
+        try:
+            identity = tuple(row.get(key) for key in ("placement", "mode", "fault"))
+            if identity not in expected:
+                raise ValueError("foreign matrix identity")
+            value = project(state.candidate_sha, state.commits, [*state.rows, row],
+                state.host / "verification/protected-qualification-public-allowlist.json",
+                stage=state.stage, error="incomplete")
+        except (AttributeError, ValueError, KeyError, TypeError) as error:
+            raise QualificationFailure("invalid-input") from error
+        # Store only permitted fields. A later invalid row cannot erase this
+        # already validated prefix or copy raw per-fault errors to the public.
+        state.rows[:] = value["cases"]
+        observed.add(identity)
+    if type(complete) is not bool:
+        raise QualificationFailure("invalid-input")
+    if not complete or observed != expected:
+        raise QualificationFailure("missing-output")
 
 
 def _prepare_candidate(host: Path, work: Path, approved_sha: str, state: DiagnosticState) -> tuple[Path, Path, Path, dict[str, str]]:
@@ -232,7 +291,7 @@ def _prepare_and_run(host: Path, work: Path, approved_sha: str, state: Diagnosti
         shutil.copytree(host / namespace, tests_root / namespace)
     shutil.copy2(host / "pyproject.toml", tests_root / "pyproject.toml")
     shutil.copytree(host / "verification", tests_root / "verification")
-    rows, failures = state.rows, []
+    failures = []
     policy = read_json(host / "verification/execution-policy.json")
     protected = policy["stabilization"]["protected-workers"]["nodes"]["openpine"]
     write_primary(private / "protected-denominator.json", {"nodeids": protected, "count": len(protected)})
@@ -258,8 +317,7 @@ def _prepare_and_run(host: Path, work: Path, approved_sha: str, state: Diagnosti
         except QualificationFailure as error:
             failures.append("matrix-" + placement)
             state.fail(error.code)
-        matrix = output / "matrix.json"
-        rows.extend(require_output(matrix)["cases"])
+        collect_matrix_results(state, output, placement)
         # Exact copied test namespace, installed product modules, external cwd.
         for label, selectors in (("int04", ["rc6_tests/test_rc6_int04_lifecycle.py"]),
                                  ("int05-owner-contract", ["int05_tests"]),

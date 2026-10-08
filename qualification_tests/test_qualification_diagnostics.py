@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 from zipfile import ZipFile
 
 import pytest
@@ -237,6 +238,8 @@ def test_failed_workflow_cannot_publish_a_green_driver_checkpoint(host, tmp_path
     public.write_projection(folder, public.project(SHA, public.declared_commits(host, SHA), good_rows(), policy(host), owner_checks_passed=True))
     value = public.ensure_projection(host, folder, SHA, "failure")
     assert (value["stage"], value["error"], value["ok"]) == ("workflow-driver", "incomplete", False)
+    assert value["cases"] == public.project(SHA, public.declared_commits(host, SHA), good_rows(), policy(host))["cases"]
+    assert value["owner_checks_passed"] is True
 
 
 def test_guard_preserves_valid_failure_and_exact_pass(host, tmp_path):
@@ -365,3 +368,112 @@ def test_projection_types_fail_closed(host, mutate):
     mutate(value)
     with pytest.raises(ValueError):
         public.project(value["candidate_sha"], value["source_commits"], value["cases"], policy(host), stage=value["stage"])
+
+
+@pytest.mark.parametrize("error", [OSError(SECRET), KeyboardInterrupt(SECRET)])
+@pytest.mark.parametrize("aggregate_lost", [False, True])
+def test_matrix_exception_retains_prior_case_without_raw_fields(host, tmp_path, monkeypatch, error, aggregate_lost):
+    spec = tmp_path / "binding.json"
+    hosted.write_primary(spec, {"prefix": sys.prefix, "placement": "A"})
+    folder = tmp_path / "matrix"
+    folder.mkdir()
+    calls = []
+
+    def fault(spec, output, mode, fault):
+        calls.append((mode, fault))
+        if len(calls) == 2:
+            raise error
+        return {**good_rows()[0], "raw_error": SECRET}
+
+    monkeypatch.setattr(hosted, "run_fault", fault)
+    with pytest.raises(type(error)):
+        hosted.execute(spec, folder)
+    assert calls == [("interactive", "timeout"), ("interactive", "sigint")]
+    matrix = hosted.read_json(folder / "matrix.json")
+    assert matrix["complete"] is False and len(matrix["cases"]) == 1
+    if aggregate_lost:
+        (folder / "matrix.json").unlink()
+    state = hosted.DiagnosticState(host, tmp_path / "work", SHA, True,
+        commits=public.declared_commits(host, SHA), stage="matrix-A")
+    state.fail("command-failed")
+    with pytest.raises(hosted.QualificationFailure) as caught:
+        hosted.collect_matrix_results(state, folder, "A")
+    assert caught.value.code == "missing-output"
+    state.publish()
+    value = assert_closed(host, state.work, "matrix-A", "command-failed")
+    assert len(value["cases"]) == 1 and value["cases"][0]["ok"] is True
+    assert value["protected_matrix_passed"] is False
+    assert SECRET not in json.dumps(state.rows)
+    assert public.ensure_projection(host, state.work / "public", SHA, "failure") == value
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_each_completed_matrix_case_is_immutable_and_preserved(host, tmp_path, monkeypatch, failed):
+    spec = tmp_path / "binding.json"
+    hosted.write_primary(spec, {"prefix": sys.prefix, "placement": "A"})
+    folder = tmp_path / "matrix"
+    folder.mkdir()
+
+    def fault(spec, output, mode, fault):
+        row = next(copy.deepcopy(row) for row in good_rows() if row["placement"] == "A"
+                   and row["mode"] == mode and row["fault"] == fault)
+        row.update(ok=not (failed and fault == "sigint"), raw_error=SECRET)
+        return row
+
+    monkeypatch.setattr(hosted, "run_fault", fault)
+    assert hosted.execute(spec, folder) == int(failed)
+    assert hosted.read_json(folder / "matrix.json")["complete"] is True
+    assert len(list(folder.glob("case-*.json"))) == 6
+    state = hosted.DiagnosticState(host, tmp_path / "work", SHA, True,
+        commits=public.declared_commits(host, SHA), stage="matrix-A")
+    if failed:
+        state.fail("command-failed")
+    hosted.collect_matrix_results(state, folder, "A")
+    value = state.publish()
+    assert len(value["cases"]) == 6
+    assert sum(row["ok"] for row in value["cases"]) == (4 if failed else 6)
+    assert SECRET not in json.dumps(value) and value["ok"] is False
+    checkpoint = folder / "case-interactive-timeout.json"
+    with pytest.raises(FileExistsError):
+        hosted.write_primary(checkpoint, {"ok": False})
+
+
+@pytest.mark.parametrize("mutation", ["boolean", "placement", "duplicate"])
+def test_bad_matrix_row_cannot_erase_a_valid_prefix(host, tmp_path, mutation):
+    folder = tmp_path / "matrix"
+    folder.mkdir()
+    values = copy.deepcopy(good_rows()[:2])
+    if mutation == "boolean":
+        values[1]["ok"] = SECRET
+    elif mutation == "placement":
+        values[1]["placement"] = "B"
+    else:
+        values[1] = values[0]
+    hosted.write_primary(folder / "matrix.json", {"cases": values, "complete": False})
+    state = hosted.DiagnosticState(host, tmp_path / "work", SHA, True,
+        commits=public.declared_commits(host, SHA), stage="matrix-A")
+    with pytest.raises(hosted.QualificationFailure) as caught:
+        hosted.collect_matrix_results(state, folder, "A")
+    assert caught.value.code == "invalid-input"
+    state.fail(caught.value.code)
+    value = state.publish()
+    assert len(value["cases"]) == 1 and value["cases"][0]["ok"] is True
+    assert value["ok"] is False and SECRET not in json.dumps(value)
+
+
+def test_unsafe_later_checkpoint_keeps_previously_validated_observation(host, tmp_path):
+    folder = tmp_path / "matrix"
+    folder.mkdir()
+    hosted.write_primary(folder / "case-interactive-timeout.json", good_rows()[0])
+    outside = tmp_path / "outside.json"
+    outside.write_text(SECRET)
+    (folder / "case-interactive-sigint.json").symlink_to(outside)
+    state = hosted.DiagnosticState(host, tmp_path / "work", SHA, True,
+        commits=public.declared_commits(host, SHA), stage="matrix-A")
+    with pytest.raises(hosted.QualificationFailure) as caught:
+        hosted.collect_matrix_results(state, folder, "A")
+    assert caught.value.code == "invalid-input"
+    state.fail(caught.value.code)
+    value = state.publish()
+    assert len(value["cases"]) == 1 and SECRET not in json.dumps(value)
+    assert outside.read_text() == SECRET
