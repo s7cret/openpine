@@ -116,7 +116,7 @@ class InventoryGate:
 
     def pytest_sessionstart(self, session):
         from openpine.verification.execution_identity import environment_snapshot, source_snapshot
-        from openpine.verification.execution_plan import task_shard, validate_plan
+        from openpine.verification.execution_plan import _task_shard_from_validated_plan, validate_plan
         from openpine.verification.identity import read_json
         plan_path = _option(self.config, '--verification-plan')
         if not plan_path:
@@ -126,13 +126,13 @@ class InventoryGate:
             raise pytest.UsageError('planned run needs plan-hash/task/shard/run-id/attempt-id')
         try:
             self.plan = validate_plan(read_json(Path(plan_path)), expected_hash=_option(self.config, '--verification-plan-hash'))
-            self.task, self.shard = task_shard(self.plan, _option(self.config, '--verification-task'), _option(self.config, '--verification-shard'))
+            self.task, self.shard = _task_shard_from_validated_plan(self.plan, _option(self.config, '--verification-task'), _option(self.config, '--verification-shard'))
             if _option(self.config, '--verification-suite') != self.task['component']:
                 raise ValueError('suite does not match the planned task')
-            from openpine.verification.execution_binding import locations
+            from openpine.verification.execution_binding import _locations_for_validated_plan
             binding_path = _option(self.config, '--verification-binding')
             binding = read_json(Path(binding_path)) if binding_path else None
-            self.execution_roots, executables = locations(self.plan, binding)
+            self.execution_roots, executables = _locations_for_validated_plan(self.plan, binding)
             if self.task['environment'] not in executables:
                 raise ValueError('binding does not locate this task interpreter')
             self.binding_hash = binding['content_hash'] if binding else None

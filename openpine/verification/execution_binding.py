@@ -15,6 +15,11 @@ BINDING_SCHEMA = 'openpine.execution_binding.v1'
 
 def validate_binding(plan: dict, binding: dict) -> dict:
     validate_plan(plan)
+    return _validate_binding_for_validated_plan(plan, binding)
+
+
+def _validate_binding_for_validated_plan(plan: dict, binding: dict) -> dict:
+    """Validate all locator authority against the caller's just-validated plan."""
     verify(binding, BINDING_SCHEMA)
     required = {'schema_id', 'content_hash', 'plan_hash', 'roots', 'interpreters'}
     if not required.issubset(binding) or set(binding) - required - {'owner_paths'}:
@@ -43,7 +48,7 @@ def validate_binding(plan: dict, binding: dict) -> dict:
 
 def make_binding(plan: dict, roots: Mapping[str, Path], interpreters: Mapping[str, str]) -> dict:
     binding = seal({'schema_id': BINDING_SCHEMA, 'plan_hash': plan['content_hash'], 'roots': {name: str(Path(path).absolute()) for name, path in sorted(roots.items())}, 'interpreters': dict(sorted(interpreters.items()))})
-    validate_binding(plan, binding)
+    # checked_locations performs the same complete binding validation below.
     checked_locations(plan, binding)
     return binding
 
@@ -73,4 +78,17 @@ def locations(plan: dict, binding: dict | None=None) -> tuple[dict[str, str], di
     if binding is None:
         return (dict(plan['roots']), {key: env['executable'] for key, env in plan['environments'].items()})
     validate_binding(plan, binding)
+    return (dict(binding['roots']), dict(binding['interpreters']))
+
+
+def _locations_for_validated_plan(plan: dict, binding: dict | None=None) -> tuple[dict[str, str], dict[str, str]]:
+    """Use only immediately after the same caller validates its local plan.
+
+    Binding schema/hash/authority checks remain complete and fresh. This helper
+    provides no filesystem attestation; the executor still observes all live
+    sources and its environment independently before and after execution.
+    """
+    if binding is None:
+        return (dict(plan['roots']), {key: env['executable'] for key, env in plan['environments'].items()})
+    _validate_binding_for_validated_plan(plan, binding)
     return (dict(binding['roots']), dict(binding['interpreters']))
