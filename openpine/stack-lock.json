@@ -7,7 +7,7 @@
       "name": "openpine",
       "package": "openpine",
       "repository": "s7cret/openpine",
-      "tree_sha256": "2f6e3f499cdc00dc2bae3c9788dffd985f787e4330ca0787610f7354009829cf",
+      "tree_sha256": "e0d48f715c01f3298fdf90c8ccb2f4c8f8b084d2d76bc2333ffc923dd01443c9",
       "version": "5.0.0rc6"
     },
     {
@@ -36,25 +36,25 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "b953e803d618a9784b117f8047ca709791aaca79",
+      "commit": "720e5c642328de955e78f9372b250fd0f1c63703",
       "contracts": {
         "runtime": "1.4"
       },
       "name": "pinelib",
       "package": "pinelib",
       "repository": "s7cret/pinelib",
-      "tree_sha256": "8592d553de836479a03ee713a2dbf4ee13138165bc9632654bfd8fe5830aba62",
+      "tree_sha256": "70baf91d17fd844042e0999237c74fb2dd753fe552841d0e6e072b571730bb72",
       "version": "5.0.0rc6"
     },
     {
-      "commit": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+      "commit": "76570b32cd6fa78adbcacb7b5d6582f7a9bafa3f",
       "contracts": {
         "tick_replay": "deterministic-explicit-v1"
       },
       "name": "backtest_engine",
       "package": "backtest-engine",
       "repository": "s7cret/backtest_engine",
-      "tree_sha256": "442b1f4919ff7b84075d962e4daa844c69e182d09ae135ddb95b9d9801989c7f",
+      "tree_sha256": "1381980b2d71f2dd804f6a94c4e88ef2c80a272c4997c541cf9e8149cf56fdf4",
       "version": "5.0.0rc6"
     },
     {
@@ -79,14 +79,14 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "db1745756516b47466756c9c5d38fbbb95595a3b",
+      "commit": "79e7f329baf3feb28459b03577e3f236bf411ee2",
       "contracts": {
         "generated_artifact": "openpine.generated_artifact.v3"
       },
       "name": "openpine_contracts",
       "package": "openpine-contracts",
       "repository": "s7cret/openpine-contracts",
-      "tree_sha256": "940d21749bc4d6f70e8c78a7924b9f3401f062132d1efab36d652ecee58385c0",
+      "tree_sha256": "46e2f2258606c8cc20ec1fc82d073dd518239ae73d2c81643d3d591006ba44ec",
       "version": "5.0.0rc6"
     }
   ],

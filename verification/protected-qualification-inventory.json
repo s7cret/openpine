@@ -1,0 +1,17 @@
+{
+  "int04": {
+    "count": 49,
+    "deselected": 0,
+    "sha256": "sha256:ab375e25196754a92b103494a96b928c30c200fc8f5f930407f5ef0b7dfe8eab"
+  },
+  "int05-owner-contract": {
+    "count": 76,
+    "deselected": 0,
+    "sha256": "sha256:188f9037ec42b79502a245cb1c1c348e995173738435513976004c8530a1cd44"
+  },
+  "protected": {
+    "count": 227,
+    "deselected": 0,
+    "sha256": "sha256:b695b0ec857b9ba977227d80115793e839a3af4c24136cf41ea645bac0107c3a"
+  }
+}
