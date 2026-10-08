@@ -17,8 +17,15 @@ COMPONENTS = {"openpine", "openpine-contracts", "pine2ast", "ast2python",
 TOP = {"schema_id", "candidate_sha", "source_commits", "allowlist_sha256", "cases",
        "protected_matrix_passed", "owner_checks_passed", "raw_primaries_durable", "full_qualification_accepted",
        "stage", "error", "ok"}
-CASE = {"placement", "mode", "fault", "ok", "automatic_cleanup",
-        "neighbour_survived", "neighbour_completed"}
+CASE_BOOLEANS = {"ok", "automatic_cleanup", "neighbour_survived", "neighbour_completed"}
+CASE_STAGES = {"setup", "fault", "automatic-observation", "family-receipt",
+               "neighbour-release", "neighbour-wait", "native-result", "complete"}
+CASE_ERRORS = {"none", "failed", "timeout", "interrupted", "nonzero-exit",
+               "missing-result", "invalid-result", "disposal-failed"}
+COMPLETION_STATES = {"not-reached", "unverified", "observed-false", "observed-true"}
+CASE_DIAGNOSTICS = {"case_stage": CASE_STAGES, "case_error": CASE_ERRORS,
+                    "neighbour_completion_state": COMPLETION_STATES}
+CASE = {"placement", "mode", "fault"} | CASE_BOOLEANS | CASE_DIAGNOSTICS.keys()
 STAGES = {"identity", "prepare", "candidate-wheels", "candidate-manifest", "test-namespace",
           "restore-A", "matrix-A", "int04-A", "int05-A", "protected-A",
           "restore-B", "matrix-B", "int04-B", "int05-B", "protected-B",
@@ -32,7 +39,8 @@ def project(candidate_sha: str | None, commits: dict[str, str], rows: list[dict[
             allowlist: Path, *, owner_checks_passed: bool = False,
             stage: str = "complete", error: str = "none") -> dict[str, Any]:
     policy = json.loads(allowlist.read_bytes())
-    if (set(policy["top_fields"]) != TOP or set(policy["case_fields"]) != CASE
+    if (policy["schema_id"] != "openpine.protected_qualification.public_allowlist.v2"
+            or set(policy["top_fields"]) != TOP or set(policy["case_fields"]) != CASE
             or policy["files"] != ["projection.json", "projection.sha256"]
             or policy["max_complete_upload_bytes"] != 67108864
             or policy["retention_days"] != 1
@@ -41,6 +49,9 @@ def project(candidate_sha: str | None, commits: dict[str, str], rows: list[dict[
             or set(policy["permitted_faults"]) != {"timeout", "sigint", "controller-sigkill"}
             or set(policy["permitted_stages"]) != STAGES
             or set(policy["permitted_errors"]) != ERRORS
+            or set(policy["permitted_case_stages"]) != CASE_STAGES
+            or set(policy["permitted_case_errors"]) != CASE_ERRORS
+            or set(policy["permitted_neighbour_completion_states"]) != COMPLETION_STATES
             or policy["unknown_identity_on_failure"] != {"candidate_sha": None, "source_commits": {}}):
         raise ValueError("public projection policy differs from its closed contract")
     if not isinstance(stage, str) or not isinstance(error, str) or stage not in STAGES or error not in ERRORS:
@@ -65,18 +76,42 @@ def project(candidate_sha: str | None, commits: dict[str, str], rows: list[dict[
             raise ValueError("duplicate public fault case")
         identities.add(identity)
         case = {k: row[k] for k in ("placement", "mode", "fault")}
-        for key in CASE - set(case):
+        for key in CASE_BOOLEANS:
             value = row.get(key, False)
             if type(value) is not bool:
                 raise ValueError("public case outcome must be a boolean")
             case[key] = value
+        for key, permitted in CASE_DIAGNOSTICS.items():
+            value = row.get(key)
+            if not isinstance(value, str) or value not in permitted:
+                raise ValueError("public case diagnostic is outside its closed vocabulary")
+            case[key] = value
+        completion = case["neighbour_completion_state"]
+        if case["neighbour_completed"] != (completion == "observed-true"):
+            raise ValueError("neighbour completion contradicts its explicit observation")
+        if ((completion == "not-reached" and case["case_stage"] not in {
+                "setup", "fault", "automatic-observation", "family-receipt", "neighbour-release"})
+                or (completion in {"unverified", "observed-false"}
+                    and case["case_stage"] not in {"neighbour-wait", "native-result"})
+                or (completion == "observed-true"
+                    and case["case_stage"] not in {"native-result", "complete"})
+                or (case["case_error"] == "nonzero-exit"
+                    and (case["case_stage"], completion) != ("neighbour-wait", "observed-false"))
+                or (case["case_error"] in {"missing-result", "invalid-result"}
+                    and (case["case_stage"], completion) != ("native-result", "observed-false"))):
+            raise ValueError("public case diagnostic contradicts its reached stage")
         if case["ok"] and not all(case[k] for k in ("automatic_cleanup", "neighbour_survived", "neighbour_completed")):
             raise ValueError("successful fault contradicts its required observations")
+        if case["ok"] and (case["case_stage"], case["case_error"], completion) != (
+                "complete", "none", "observed-true"):
+            raise ValueError("successful fault contradicts its case diagnostics")
+        if case["case_stage"] == "complete" and (case["case_error"] == "none") != case["ok"]:
+            raise ValueError("completed fault contradicts its closed error outcome")
         cases.append(case)
     if len(cases) > 12:
         raise ValueError("public case inventory exceeds the reviewed matrix")
     matrix_passed = len(cases) == 12 and all(c["ok"] for c in cases)
-    return {"schema_id": "openpine.protected_qualification.public_projection.v1",
+    return {"schema_id": "openpine.protected_qualification.public_projection.v2",
             "candidate_sha": candidate_sha, "source_commits": commits,
             "allowlist_sha256": "sha256:" + hashlib.sha256(allowlist.read_bytes()).hexdigest(),
             "cases": sorted(cases, key=lambda r: (r["placement"], r["mode"], r["fault"])),

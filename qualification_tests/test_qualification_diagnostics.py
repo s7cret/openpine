@@ -67,7 +67,8 @@ def mixed_wheels(host, folder):
 
 def good_rows():
     return [{"placement": p, "mode": mode, "fault": fault, "ok": True,
-             "automatic_cleanup": True, "neighbour_survived": True, "neighbour_completed": True}
+             "automatic_cleanup": True, "neighbour_survived": True, "neighbour_completed": True,
+             "case_stage": "complete", "case_error": "none", "neighbour_completion_state": "observed-true"}
             for p in ("A", "B") for mode in hosted.MODES for fault in hosted.FAULTS]
 
 
@@ -418,6 +419,7 @@ def test_each_completed_matrix_case_is_immutable_and_preserved(host, tmp_path, m
         row = next(copy.deepcopy(row) for row in good_rows() if row["placement"] == "A"
                    and row["mode"] == mode and row["fault"] == fault)
         row.update(ok=not (failed and fault == "sigint"), raw_error=SECRET)
+        row["case_error"] = "none" if row["ok"] else "disposal-failed"
         return row
 
     monkeypatch.setattr(hosted, "run_fault", fault)

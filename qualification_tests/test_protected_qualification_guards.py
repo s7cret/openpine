@@ -133,6 +133,8 @@ def test_persistence_failure_does_not_prevent_exact_startup_unit_disposal(tmp_pa
     monkeypatch.setattr(isolated_worker, "_stop_worker_unit", stopped.append)
     result = harness.run_fault(tmp_path / "unused.json", tmp_path / "fault", "interactive", "timeout")
     assert result["ok"] is False and stopped == [UNIT]
+    assert (result["case_stage"], result["case_error"], result["neighbour_completion_state"]) == (
+        "setup", "failed", "not-reached")
     assert saved == ["automatic-result.json", "forced-disposal.json"]
     disposal = harness.read_json(tmp_path / "fault/forced-disposal.json")
     assert "automatic primary persistence" in disposal["errors"][0]
@@ -141,6 +143,7 @@ def test_persistence_failure_does_not_prevent_exact_startup_unit_disposal(tmp_pa
 def rows():
     return [{"placement": p, "mode": mode, "fault": fault, "ok": True,
              "automatic_cleanup": True, "neighbour_survived": True, "neighbour_completed": True,
+             "case_stage": "complete", "case_error": "none", "neighbour_completion_state": "observed-true",
              "raw_private_path": "/private/do-not-project", "error": "do-not-project"}
             for p in ("A", "B") for mode in harness.MODES for fault in harness.FAULTS]
 

@@ -329,6 +329,46 @@ def validate_fault_family(family: dict[str, Any], fault: str, controller_pid: in
         raise ValueError("requested fault was not proved by actual exit/command primaries")
 
 
+def _complete_neighbour(process: subprocess.Popen, folder: Path, result: dict[str, Any]) -> None:
+    """Keep completion evidence explicit; only closed diagnostics are projected."""
+    result["case_stage"] = "neighbour-release"
+    try:
+        (folder / "release").touch(exist_ok=False)
+    except OSError:
+        result["case_error"] = "failed"
+        return
+    result["case_stage"] = "neighbour-wait"
+    result["neighbour_completion_state"] = "unverified"
+    try:
+        returncode = process.wait(timeout=15)
+    except subprocess.TimeoutExpired:
+        result["case_error"] = "timeout"
+        result["neighbour_completion_state"] = "observed-false"
+        return
+    if returncode != 0:
+        result["case_error"] = "nonzero-exit"
+        result["neighbour_completion_state"] = "observed-false"
+        return
+    result["case_stage"] = "native-result"
+    try:
+        native = read_json(folder / "native-result.json")
+    except FileNotFoundError:
+        result["case_error"] = "missing-result"
+        result["neighbour_completion_state"] = "observed-false"
+        return
+    except (OSError, ValueError, TypeError):
+        result["case_error"] = "invalid-result"
+        result["neighbour_completion_state"] = "observed-false"
+        return
+    if native != {"ok": True, "bars": 6, "intent": ["search", 2, 3], "trade": [103, 3]}:
+        result["case_error"] = "invalid-result"
+        result["neighbour_completion_state"] = "observed-false"
+        return
+    result["neighbour_completed"] = True
+    result["neighbour_completion_state"] = "observed-true"
+    result["case_stage"] = "complete"
+
+
 def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]:
     from openpine.runtime.isolated_worker import _stop_worker_unit
     if mode not in MODES or fault not in FAULTS:
@@ -344,7 +384,8 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
     before: dict[str, Any] = {}
     result: dict[str, Any] = {"mode": mode, "fault": fault, "ok": False,
                               "automatic_cleanup": False, "neighbour_survived": False,
-                              "neighbour_completed": False}
+                              "neighbour_completed": False, "case_stage": "setup",
+                              "case_error": "none", "neighbour_completion_state": "not-reached"}
     try:
         for role in ("affected", "neighbour"):
             folder = output / role
@@ -393,11 +434,13 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
         if not any(p.pid == processes[0].pid for p in psutil.Process(coordinator.pid).parents()):
             raise ValueError("fixture coordinator is outside the owned controller family")
         write_primary(output / "before.json", before)
+        result["case_stage"] = "fault"
         if fault != "timeout":
             target = coordinator if fault == "sigint" else controls[0]
             assert target is not None
             target.send(signal.SIGINT if fault == "sigint" else signal.SIGKILL)
         returncode = processes[0].wait(timeout=75)
+        result["case_stage"] = "automatic-observation"
         deadline = time.monotonic() + 5
         while True:
             affected = observer.snapshot(ready["affected"]["unit"], before["affected"]["properties"]["ControlGroup"])
@@ -411,6 +454,7 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
             and all(h.alive() for h in neighbour_handles)
             and neighbour["properties"]["MainPID"] == before["neighbour"]["properties"]["MainPID"]
             and neighbour["properties"]["ControlGroup"] == before["neighbour"]["properties"]["ControlGroup"])
+        result["case_stage"] = "family-receipt"
         family = output / "affected/command/process-family.json"
         deadline = time.monotonic() + 5
         while not family.exists() and time.monotonic() < deadline:
@@ -422,14 +466,14 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
         result["family_sha256"] = sha256(family)
         result["controller_returncode"] = returncode
         result["command_receipt_present"] = receipt is not None
-        (output / "neighbour/release").touch(exist_ok=False)
-        neighbour_returncode = processes[1].wait(timeout=15)
-        native = read_json(output / "neighbour/native-result.json")
-        result["neighbour_completed"] = neighbour_returncode == 0 and native == {
-            "ok": True, "bars": 6, "intent": ["search", 2, 3], "trade": [103, 3]}
+        _complete_neighbour(processes[1], output / "neighbour", result)
         result["ok"] = (result["automatic_cleanup"] and result["neighbour_survived"]
                         and result["neighbour_completed"])
+        if not result["ok"] and result["case_error"] == "none":
+            result["case_error"] = "failed"
     except (Exception, KeyboardInterrupt) as error:  # noqa: BLE001 -- fault boundary retains failure and always disposes only owned resources
+        result["case_error"] = ("interrupted" if isinstance(error, KeyboardInterrupt) else
+                                "timeout" if isinstance(error, (TimeoutError, subprocess.TimeoutExpired)) else "failed")
         result["error_type"] = type(error).__name__
         result["error"] = str(error)[:2048]
     finally:
@@ -492,6 +536,8 @@ def run_fault(spec: Path, output: Path, mode: str, fault: str) -> dict[str, Any]
         result["forced_disposal_ok"] = not disposal["errors"]
         if disposal["errors"]:
             result["ok"] = False
+            if result["case_error"] == "none":
+                result["case_error"] = "disposal-failed"
         write_primary(output / "forced-disposal.json", disposal)
     return result
 
