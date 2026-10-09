@@ -263,7 +263,7 @@ def collect_inventories(args):
             folder.mkdir()
             settings = policy['components'][name]
             selection = list(settings.get('selectors', []))
-            if name == 'openpine':
+            if name == 'openpine' and 'tests' not in selection:
                 selection += read_json(args.host_root / 'rc6_tests/selected_regressions.json')
             argv = [executable, '-m', 'pytest', '--collect-only', '-q', '-p', 'openpine.verification.pytest_gate', '--verification-lock=' + str(lock_path), '--verification-suite=' + name, '--verification-output=' + str(folder / 'inventory.json')]
             for plugin in settings.get('plugins', []):

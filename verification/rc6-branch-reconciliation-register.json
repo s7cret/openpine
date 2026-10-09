@@ -15,7 +15,7 @@
         {
           "component": "openpine",
           "path": "openpine/verification/__main__.py",
-          "sha256": "sha256:8ada165382abda3eb01f67a10128905fa19b5a5f5cbf6661db214b5ade429013",
+          "sha256": "sha256:991c3a0e348d60b7a69cde0b14f0203e1257f535987fe8513b64d248e315ace6",
           "nodes": []
         }
       ],
@@ -26,7 +26,16 @@
           "sha256": "sha256:ae3b7aa312dfb50df5b25707a5daa7e50546afd7900359a3330d44765035db68",
           "nodes": []
         }
-      ]
+      ],
+      "blocker_fix_18_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "openpine/verification/__main__.py",
+          "sha256": "sha256:8ada165382abda3eb01f67a10128905fa19b5a5f5cbf6661db214b5ade429013",
+          "nodes": []
+        }
+      ],
+      "blocker_fix_18_note": "Current exact bytes after additive inventory and subprocess coverage repair; prior mapping and decision retained."
     },
     {
       "id": "openpine/verification/pytest_gate.py",

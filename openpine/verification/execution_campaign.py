@@ -231,7 +231,34 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
                 _stop_group(process)
                 if status == 'completed':
                     status, error = ('failed', f'orphan child process after pytest exit; group members: {members[:16]!r}')
+    coverage_files = sorted(folder.glob('.coverage.*'))
+    coverage_combine = None
+    if coverage_files and status == 'completed':
+        try:
+            if any(path.is_symlink() or not path.is_file() for path in coverage_files):
+                raise ValueError('unsafe subprocess coverage data')
+            from openpine.verification.execution_process import run_logged
+            coverage_combine = run_logged(
+                [executable, '-m', 'coverage', 'combine', '--keep',
+                 '--rcfile=' + str(Path(execution_roots[task['component']]) / 'pyproject.toml'),
+                 '--data-file=' + str(folder / '.coverage'),
+                 *[str(path) for path in coverage_files]],
+                cwd=execution_roots[task['component']], output=folder / 'coverage-combine',
+                env=env, timeout=180,
+            )
+            if not coverage_combine['ok']:
+                raise ValueError('subprocess coverage union failed')
+        except (OSError, ValueError) as caught:
+            status, error = ('infrastructure_error', str(caught))
     artifacts = {}
+    for path in coverage_files:
+        if path.is_file() and not path.is_symlink():
+            artifacts['coverage-process:' + path.name] = descriptor(output, path)
+    if coverage_combine is not None:
+        artifacts['coverage-combine'] = descriptor(output, folder / 'coverage-combine/command.json')
+        for path in sorted((folder / 'coverage-combine').iterdir()):
+            if path.is_file() and not path.is_symlink():
+                artifacts['coverage-combine:' + path.name] = descriptor(output, path)
     for key, filename in (('phases', 'phases.json'), ('junit', 'junit.xml'), ('stdout', 'stdout.log'), ('selectors', 'nodeids.args'), ('coverage', '.coverage'), ('process-family', 'process-family.json')):
         path = folder / filename
         if path.is_file() and (not path.is_symlink()):

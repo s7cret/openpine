@@ -13,7 +13,7 @@ EXPECTED_SHAS = {
     "openpine-contracts": "79e7f329baf3feb28459b03577e3f236bf411ee2",
     "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
     "pinelib": "720e5c642328de955e78f9372b250fd0f1c63703",
-    "backtest_engine": "a4edb288273d300d8be79f21ecd055dc0faae930",
+    "backtest_engine": "900bcb230bb5bcac2a23325f87216750118918b7",
     "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
     "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
     "optimizer": "9c0e53ac9dbab7217b0459dc753f53b120f0ed34",

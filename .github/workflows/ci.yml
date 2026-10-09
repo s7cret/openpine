@@ -90,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
-          ref: ${{ steps.stack.outputs.backtest_engine_sha || 'a4edb288273d300d8be79f21ecd055dc0faae930' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '900bcb230bb5bcac2a23325f87216750118918b7' }}
           path: stack/backtest_engine
           fetch-depth: 0
       - name: Checkout Marketdata Provider

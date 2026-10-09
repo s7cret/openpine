@@ -108,9 +108,15 @@ def main(argv=None) -> int:
         verify(plan, "openpine.builtin_evidence_plan.v1")
         if plan["content_hash"] != args.expected_plan_hash:
             raise ValueError("evidence plan changed: review the required groups explicitly")
+        surface_lock = read_json(args.surface_lock)
+        if args.surface_lock.name == "stage2-callable-current-lock.json":
+            from openpine.verification.callable_migration import reviewed_surface_lock
+            reviewed = reviewed_surface_lock(args.host_root)
+            if surface_lock != reviewed:
+                raise ValueError("current surface lock differs from the reviewed migration")
         report = build_evidence_index(
             build_builtin_surface(),
-            read_json(args.surface_lock),
+            surface_lock,
             plan,
             host_root=args.host_root,
             evidence_roots=args.evidence,

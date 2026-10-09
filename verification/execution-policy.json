@@ -108,7 +108,8 @@
         "3.13"
       ],
       "selectors": [
-        "rc6_tests"
+        "rc6_tests",
+        "tests"
       ],
       "smoke": [
         "rc6_tests/test_rc6_execution_platform.py::test_affected_graph_escalation_and_cycle_rejection"
@@ -602,7 +603,7 @@
         "verification/stage2-audit-inventory-review.json",
         "verification/stage2-source-lock.json"
       ],
-      "sha256": "sha256:6a56005c9e73df7ead2ee4f3d763daa44b51a2deea3606d865e6920e885fd9ae"
+      "sha256": "sha256:04412b4b73b990cafb7657bcd8a330c76cea64adca6ca49062416704e389d87d"
     },
     "coverage": {},
     "foundation": {

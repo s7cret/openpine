@@ -140,6 +140,8 @@ disallow_untyped_defs = false
 [tool.coverage.run]
 source = ["openpine"]
 branch = true
+# Record ordinary Python subprocesses in this shard; worker admission stays closed.
+patch = ["subprocess"]
 
 [tool.coverage.report]
 fail_under = 90

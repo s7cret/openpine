@@ -23,8 +23,8 @@
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
-      "ref": "a4edb288273d300d8be79f21ecd055dc0faae930",
-      "sha": "a4edb288273d300d8be79f21ecd055dc0faae930",
+      "ref": "900bcb230bb5bcac2a23325f87216750118918b7",
+      "sha": "900bcb230bb5bcac2a23325f87216750118918b7",
       "version": "5.0.0rc6"
     },
     "pine2ast": {
