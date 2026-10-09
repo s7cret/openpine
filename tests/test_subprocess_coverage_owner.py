@@ -57,3 +57,39 @@ def test_child_only_execution_is_retained_and_respects_owner_threshold(tmp_path,
         plan, output, expected_plan_hash=plan["content_hash"], expected_run_id=run["run_id"]
     )
     assert not altered["pytest_scope_passed"]
+
+
+@pytest.mark.parametrize("uncovered", [False, True])
+def test_isolated_script_coverage_survives_foreign_working_directory(tmp_path, uncovered):
+    foreign = tmp_path / "foreign-cwd"
+    foreign.mkdir()
+    # The child imports no package: an absolute source scope must trace __main__.
+    body = "import subprocess, sys\nfrom pathlib import Path\ndef test_value():\n    subprocess.run([sys.executable, '-I', str(Path(__file__).parent/'tiny/runner.py')], cwd=" + repr(str(foreign)) + ", check=True)\n"
+    plan, _ = tiny_plan(tmp_path, bodies={"test_script.py": body})
+    root = Path(plan["roots"]["tiny"])
+    (root / "tiny").mkdir()
+    (root / "tiny/__init__.py").write_text("")
+    script = "def left(x):\n    return x+1\nassert left(1)==2\n"
+    if uncovered:
+        script += "def never_called():\n    return 99\n"
+    (root / "tiny/runner.py").write_text(script)
+    (root / "pyproject.toml").write_text(
+        '[tool.coverage.run]\nsource=["tiny"]\npatch=["subprocess"]\n'
+        '[tool.coverage.report]\nfail_under=100\n')
+    plan["source"] = source_snapshot({n: Path(p) for n, p in plan["roots"].items()})
+    task = plan["tasks"][0]
+    task["coverage"] = True
+    task["coverage_package"] = "tiny"
+    for shard in task["shards"]:
+        shard["coverage"] = True
+    plan = reseal(plan)
+    path = tmp_path / "foreign-cwd-plan.json"
+    write_once_json(path, plan)
+    output = tmp_path / "run"
+    run = run_campaign(plan, path, output, jobs=1, run_id="foreign-cwd-coverage")
+    aggregate = aggregate_campaign(plan, output, expected_plan_hash=plan["content_hash"], expected_run_id=run["run_id"])
+    assert aggregate["pytest_scope_passed"], aggregate
+    result = combine_task_coverage(plan, output, "tiny@py", tmp_path / "owner", run_id=run["run_id"])
+    assert result["ok"] is (not uncovered), result
+    totals = read_json(tmp_path / "owner/coverage.json")["totals"]
+    assert (totals["percent_covered"] == 100) is (not uncovered)

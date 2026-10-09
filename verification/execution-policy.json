@@ -4456,5 +4456,6 @@
   },
   "untraced_markers": [
     "performance"
-  ]
+  ],
+  "inventory_lock": "verification/remediation-additive-inventory-20261009.json"
 }

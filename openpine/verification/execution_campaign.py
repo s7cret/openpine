@@ -188,7 +188,12 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
     executable = executables[task['environment']]
     argv = [executable, '-m']
     if shard.get('coverage', task.get('coverage', False)):
-        argv += ['coverage', 'run', '--data-file=' + str(folder / '.coverage'), '--rcfile=' + str(Path(execution_roots[task['component']]) / 'pyproject.toml'), '--source=' + task['coverage_package'], '-m']
+        source_directory = Path(execution_roots[task['component']]) / task['coverage_package']
+        # Absolute package directories survive a child's changed cwd and -I.
+        # Single-file owners retain their importable module scope; never widen
+        # measurement to the source root or include their test files.
+        coverage_source = str(source_directory) if source_directory.is_dir() else task['coverage_package']
+        argv += ['coverage', 'run', '--data-file=' + str(folder / '.coverage'), '--rcfile=' + str(Path(execution_roots[task['component']]) / 'pyproject.toml'), '--source=' + coverage_source, '-m']
     argv += ['pytest', '-q', '--durations=30', '-p', 'openpine.verification.pytest_gate']
     for plugin in task['plugins']:
         argv.extend(['-p', plugin])
