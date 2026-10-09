@@ -366,10 +366,10 @@
             "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<broken]",
             "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<testsuites/>]",
             "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[]",
-            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import os\\ndef test_value():\\n    os._exit(9)\\n]",
-            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    raise ValueError(\"setup\")\\ndef test_value():\\n    assert True\\n]",
-            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    yield\\n    raise ValueError(\"teardown\")\\ndef test_value():\\n    assert True\\n]",
-            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\ndef test_value():\\n    pytest.skip(\"synthetic verifier negative case\")\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[process-exit]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[setup-error]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[teardown-error]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[skip]",
             "rc6_tests/test_rc6_execution_platform.py::test_snapshot_includes_tests_expected_and_verification_but_not_generated_cache"
           ]
         }
@@ -404,7 +404,38 @@
           ]
         }
       ],
-      "preparation_mapping_note": "Current preparation bytes: ordinary CPython 3.13 GIL support and reviewed neutral pytest display IDs; existing decision and previous exact mapping retained."
+      "preparation_mapping_note": "Current preparation bytes: ordinary CPython 3.13 GIL support and reviewed neutral pytest display IDs; existing decision and previous exact mapping retained.",
+      "display_alias_previous_mappings": [
+        {
+          "component": "openpine",
+          "path": "rc6_tests/test_rc6_execution_platform.py",
+          "sha256": "sha256:5e0b53fbc613c5651ff031efe1100de7ee6d867fea7c4586c5a66397d241dd11",
+          "nodes": [
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[collect-only]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[duplicate-shard]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[empty-xml]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[missing-shard]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[missing-teardown]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[nonzero-exit]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[stdout-tamper]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[wrong-env]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[wrong-run]",
+            "rc6_tests/test_rc6_execution_platform.py::test_aggregate_rejects_mutated_real_evidence[xml-tamper]",
+            "rc6_tests/test_rc6_execution_platform.py::test_changed_source_rejects_campaign_before_execution",
+            "rc6_tests/test_rc6_execution_platform.py::test_full_profile_does_not_drop_missing_python",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<!DOCTYPE a><testsuites/>]",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<broken]",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[<testsuites/>]",
+            "rc6_tests/test_rc6_execution_platform.py::test_invalid_empty_xml_does_not_prove_execution[]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import os\\ndef test_value():\\n    os._exit(9)\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    raise ValueError(\"setup\")\\ndef test_value():\\n    assert True\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\n@pytest.fixture(autouse=True)\\ndef fail():\\n    yield\\n    raise ValueError(\"teardown\")\\ndef test_value():\\n    assert True\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_real_unsuccessful_shards_never_pass[import pytest\\ndef test_value():\\n    pytest.skip(\"synthetic verifier negative case\")\\n]",
+            "rc6_tests/test_rc6_execution_platform.py::test_snapshot_includes_tests_expected_and_verification_but_not_generated_cache"
+          ]
+        }
+      ],
+      "display_alias_note": "Only the four already-reviewed neutral display IDs from inventory.nodeid_aliases are updated; original mappings retained. Test bodies, inventory count and historical baseline unchanged."
     },
     {
       "id": "stage2-continuation/continuation-work/completion-checks/test_version_invariance.py",
