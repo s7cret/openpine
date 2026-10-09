@@ -67,7 +67,10 @@ def _config(plan: dict, binding: dict, tmp_path: Path, name: str) -> SimpleNames
     plan_path, binding_path = tmp_path / (name + "-plan.json"), tmp_path / (name + "-binding.json")
     write_json(plan_path, plan)
     write_json(binding_path, binding)
-    shard = next(item for item in plan["tasks"][0]["shards"] if item["coverage"] is False)
+    import coverage
+    # Keep the gate strict: this in-process fixture must declare its real lane.
+    instrumented = coverage.Coverage.current() is not None
+    shard = next(item for item in plan["tasks"][0]["shards"] if item["coverage"] is instrumented)
     options = {
         "--verification-plan": str(plan_path),
         "--verification-plan-hash": plan["content_hash"],
