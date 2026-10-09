@@ -1371,7 +1371,7 @@ def _receive_backtest_startup_identity(receiver) -> tuple[int, int] | None:
     if (
         not isinstance(payload, tuple)
         or len(payload) != 2
-        or not all(isinstance(value, int) for value in payload)
+        or not all(type(value) is int for value in payload)
         or payload[0] <= 0
         or payload[1] < 0
     ):
