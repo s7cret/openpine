@@ -649,7 +649,6 @@ def _terminate_current_process_descendants(timeout: float = 2.0) -> None:
             raise RuntimeError("backtest worker descendants did not stop")
         if _descendant_process_identities(root_pid):
             raise RuntimeError("backtest worker descendants appeared after cleanup")
-        _reap_adopted_zombies(deadline)
     except BaseException:
         for _start_time, descriptor in owned.values():
             try:
@@ -1484,7 +1483,12 @@ def _supervised_backtest_process_entry(
                 except OSError:
                     pass
         try:
+            cleanup_deadline = time.monotonic() + 3.0
             _terminate_current_process_descendants(timeout=3.0)
+            # The dedicated supervisor owns every remaining child after its
+            # callable has exited. Generic termination must leave wait status
+            # available to Popen and multiprocessing owners.
+            _reap_adopted_zombies(cleanup_deadline)
             if cleanup_complete is not None:
                 cleanup_complete.set()
         except BaseException as exc:
