@@ -676,7 +676,7 @@ def derive_execution_context(
             "generated artifact envelope is required",
             code="GENERATED_ARTIFACT_REQUIRED",
         )
-    generated_artifact_hash(artifact)
+    verified_generated_source(artifact)
     payload = dict(base_context)
     payload.pop("content_hash", None)
     payload.update(

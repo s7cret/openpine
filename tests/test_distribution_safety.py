@@ -309,8 +309,10 @@ def test_backend_ci_covers_every_supported_python_minor() -> None:
     workflow = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
     assert "python-version: ${{ matrix.python-version }}" in workflow
-    for version in ("'3.11'", "'3.12'", "'3.13'"):
-        assert version in workflow
+    # The approved ordinary CPython/GIL policy supersedes the old multi-minor claim.
+    assert "python-version: ['3.13']" in workflow
+    config = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert config["project"]["requires-python"] == ">=3.13,<3.14"
 
 
 def test_runtime_imports_are_declared_as_package_dependencies() -> None:

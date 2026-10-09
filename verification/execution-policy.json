@@ -108,7 +108,8 @@
         "3.13"
       ],
       "selectors": [
-        "rc6_tests"
+        "rc6_tests",
+        "tests"
       ],
       "smoke": [
         "rc6_tests/test_rc6_execution_platform.py::test_affected_graph_escalation_and_cycle_rejection"
@@ -602,7 +603,7 @@
         "verification/stage2-audit-inventory-review.json",
         "verification/stage2-source-lock.json"
       ],
-      "sha256": "sha256:8b939b926cfd4253af847b32545590ba4a27d67e6f84e767c6b750c7ee142e9a"
+      "sha256": "sha256:04412b4b73b990cafb7657bcd8a330c76cea64adca6ca49062416704e389d87d"
     },
     "coverage": {},
     "foundation": {
@@ -4455,5 +4456,6 @@
   },
   "untraced_markers": [
     "performance"
-  ]
+  ],
+  "inventory_lock": "verification/remediation-additive-inventory-20261009.json"
 }

@@ -447,6 +447,42 @@ def _process_tasks_are_stopped(pid: int, start_time: int) -> bool:
     return False
 
 
+def _reap_adopted_zombies(deadline: float) -> None:
+    """Reap direct adopted children through stable pidfds before reporting cleanup."""
+    while True:
+        pending = False
+        for children_path in Path('/proc/self/task').glob('*/children'):
+            try:
+                children = children_path.read_text().split()
+            except FileNotFoundError:
+                continue
+            for label in children:
+                pid = int(label)
+                identity = _proc_identity(pid)
+                if identity is None or identity[0] != 'Z':
+                    continue
+                pending = True
+                try:
+                    descriptor = _pidfd_open(pid)
+                except ProcessLookupError:
+                    continue
+                try:
+                    current = _proc_identity(pid)
+                    if current is None or current[2] != identity[2]:
+                        continue
+                    try:
+                        os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG)
+                    except ChildProcessError:
+                        pass  # Another owning thread may already have reaped it.
+                finally:
+                    os.close(descriptor)
+        if not pending:
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError('backtest adopted children were not reaped')
+        time.sleep(0.005)
+
+
 def _terminate_current_process_descendants(timeout: float = 2.0) -> None:
     """Freeze, discover to a fixed point, then kill every owned descendant."""
 
@@ -1335,7 +1371,7 @@ def _receive_backtest_startup_identity(receiver) -> tuple[int, int] | None:
     if (
         not isinstance(payload, tuple)
         or len(payload) != 2
-        or not all(isinstance(value, int) for value in payload)
+        or not all(type(value) is int for value in payload)
         or payload[0] <= 0
         or payload[1] < 0
     ):
@@ -1447,7 +1483,12 @@ def _supervised_backtest_process_entry(
                 except OSError:
                     pass
         try:
+            cleanup_deadline = time.monotonic() + 3.0
             _terminate_current_process_descendants(timeout=3.0)
+            # The dedicated supervisor owns every remaining child after its
+            # callable has exited. Generic termination must leave wait status
+            # available to Popen and multiprocessing owners.
+            _reap_adopted_zombies(cleanup_deadline)
             if cleanup_complete is not None:
                 cleanup_complete.set()
         except BaseException as exc:

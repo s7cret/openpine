@@ -108,9 +108,15 @@ def test_interactive_session_still_requires_per_bar_roundtrip_by_default() -> No
 def test_run_bulk_admits_sealed_intents_without_repeating_schema() -> None:
     from openpine.runtime import rc6_worker_runtime as runtime
 
+    from openpine.runtime.generated_backtest import generated_strategy
+
+    # Bulk execution delegates admission to the shared callback adapter.
     source = runtime.run_bulk.__code__.co_names
-    assert "admit_sealed_intent_tape" in source
+    assert "generated_strategy" in source
+    adapter_source = generated_strategy.__code__.co_names
+    assert "admit_sealed_intent_tape" in adapter_source
     assert "require_live_tape" not in source
+    assert "require_live_tape" not in adapter_source
 
 
 def test_run_bulk_converts_bar_envelopes_immediately() -> None:

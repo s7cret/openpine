@@ -562,7 +562,7 @@ path=Path(sys.argv[1]);run_campaign(read_json(path),path,Path(sys.argv[2]),run_i
 
 
 def test_actual_memory_budget_cancels_after_real_allocation_preserving_failed_private(tmp_path):
-    from openpine.verification.execution_campaign import aggregate_campaign, run_campaign
+    from openpine.verification.execution_campaign import aggregate_campaign
 
     body = """import time
 def test_value(tmp_path):
@@ -573,7 +573,24 @@ def test_value(tmp_path):
 """
     plan, path = tiny_plan(tmp_path, bodies={"test_a.py": body}, shards=1, timeout=20)
     output = tmp_path / "memory-run"
-    run = run_campaign(plan, path, output, run_id="actual-memory-budget", memory_mib=512)
+    # The memory budget includes its controller. Isolate that controller from
+    # the parent pytest process, whose imports/coverage grow across the suite.
+    controller = """import json,sys
+from pathlib import Path
+from openpine.verification.execution_campaign import run_campaign
+plan_path=Path(sys.argv[1])
+run_campaign(json.loads(plan_path.read_text()), plan_path, Path(sys.argv[2]),
+             run_id="actual-memory-budget", memory_mib=512)
+"""
+    report = run_logged(
+        [sys.executable, "-B", "-c", controller, str(path), str(output)],
+        cwd=tmp_path,
+        output=tmp_path / "memory-controller",
+        env=dict(os.environ, PYTHONPATH=str(Path(__file__).resolve().parents[1])),
+        timeout=40,
+    )
+    assert report["ok"] is True
+    run = json.loads((output / "run.json").read_text())
     assert any("RSS exceeded campaign memory budget" in error for error in run["errors"])
     assert run["attempts"][0]["status"] == "cancelled"
     assert list(output.glob("tiny@py/s000/a001/private/pytest/test_value*/allocation-started"))

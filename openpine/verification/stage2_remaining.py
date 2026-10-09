@@ -33,6 +33,10 @@ def build_stage2_remaining(host_root: Path, builtin_index: dict) -> dict:
     verify(builtin_index, "openpine.builtin_evidence_index.v1")
     plan_lock = read_json(root / "verification/stage2-evidence-plan-lock.json")
     surface_lock = read_json(root / "verification/stage2-callable-lock.json")
+    current_lock_path = root / "verification/stage2-callable-current-lock.json"
+    if current_lock_path.is_file() and builtin_index["lock_hash"] != surface_lock["content_hash"]:
+        from openpine.verification.callable_migration import reviewed_surface_lock
+        surface_lock = reviewed_surface_lock(root)
     if (
         builtin_index["plan_hash"] != plan_lock["plan_hash"]
         or builtin_index["lock_hash"] != surface_lock["content_hash"]

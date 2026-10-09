@@ -84,6 +84,17 @@ def synthesize(plan, root, name, organization):
                        'artifacts': {k: descriptor(root, folder/v) for k,v in
                                      [('phases','phases.json'),('junit','junit.xml'),
                                       ('stdout','stdout.log'),('selectors','nodeids.args')]}}
+            # Explicitly handwritten model input for this synthetic verifier unit.
+            # These labels are not PID observations or product execution evidence.
+            family = {'argv': argv, 'cwd': attempt['cwd'],
+                      'controller_pid': 1, 'supervisor_pid': 2, 'command_pid': 3,
+                      'reason': 'command-exited', 'command_returncode': 0,
+                      'observed_family': [{'pid': 3, 'create_time': 1.0, 'name': 'SYNTHETIC_NOT_MEASURED'}],
+                      'cleanup_signals': [], 'surviving_processes': [],
+                      'observation_errors': [], 'cleanup_verified': True}
+            family_path = folder/'SYNTHETIC_NOT_MEASURED-family.json'
+            put(family_path, family)
+            attempt['artifacts']['process-family'] = descriptor(root, family_path)
             put(folder/'execution.json', attempt)
             attempts.append(attempt)
             index += 1
@@ -118,9 +129,31 @@ def case(tmp_path):
         root.mkdir(parents=True)
         (root/'fixture.txt').write_text('SYNTHETIC_NOT_MEASURED\n')
         roots[name] = root
+    # Keep required external obligations in this explicitly synthetic corpus.
+    # No production inventory or source-bound history is rewritten.
+    pending_counts = {}
+    for name, settings in bounded['components'].items():
+        required = settings.get('required_inventory')
+        if required is None:
+            continue
+        relative = 'test_external.py'
+        external = relative + '::test_external'
+        external_source = roots[name] / relative
+        external_source.write_text('# SYNTHETIC_NOT_MEASURED external obligation\n')
+        manifest = seal({
+            'schema_id': 'openpine.required_external_inventory.v1',
+            'component': name, 'gate': 'data', 'status': 'NOT_EXECUTED',
+            'full_nodeids': sorted([*nodes, external]), 'pending_nodeids': [external],
+            'full_lock': {'count': len(nodes)+1, 'sha256': collection_hash(sorted([*nodes, external])), 'deselected': 0},
+            'node_sources': {external: {'path': relative, 'sha256': descriptor(roots[name], external_source)['sha256']}},
+        })
+        target = roots[required['owner']] / required['path']
+        put(target, manifest)
+        settings['required_inventory'] = {**required, 'sha256': descriptor(roots[required['owner']], target)['sha256']}
+        pending_counts[name] = 1
     source = source_snapshot(roots)
-    inventories = {name+'@py': {'nodeids': nodes, 'deselected': 0,
-                               'reviewed_lock': {'count': 4, 'sha256': collection_hash(nodes), 'deselected': 0},
+    inventories = {name+'@py': {'nodeids': nodes, 'deselected': pending_counts.get(name, 0),
+                               'reviewed_lock': {'count': 4, 'sha256': collection_hash(nodes), 'deselected': pending_counts.get(name, 0)},
                                'source_hash': source['content_hash'], 'environment_hash': env['content_hash']}
                    for name in roots}
     plans = {organization: make_plan(profile='stage-full', policy=bounded, roots=roots,
@@ -169,7 +202,7 @@ def test_real_planner_and_owner_accept_exact_4gib_synthetic_packet(case):
         optimizer = next(t for t in plan['tasks'] if t['component']=='optimizer')
         assert (optimizer['cpu_slots'], optimizer['exclusive_group']) == (2, 'optimizer-trials')
         assert all(t['private_retention']=='delete-on-success' for t in plan['tasks'])
-        assert plan['disk_free_guard'] == {'minimum_free_bytes': 2147483648}
+        assert plan['disk_free_guard'] == {'minimum_free_bytes': 3000000000}
 
 
 @pytest.mark.parametrize('organization', ['before','after'])

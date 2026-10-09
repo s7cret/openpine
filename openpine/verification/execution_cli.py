@@ -240,12 +240,28 @@ def preflight(args):
     write_once_json(args.output, report)
     return report
 
+def inventory_lock_path(host_root: Path, policy: dict, override: Path | None = None) -> Path:
+    """Use the explicitly declared current inventory; keep historical locks intact."""
+    if override is not None:
+        return override.resolve()
+    relative = policy.get('inventory_lock', 'verification/inventory.json')
+    if (not isinstance(relative, str) or not relative or '\\' in relative
+            or Path(relative).is_absolute()
+            or any(part in {'', '.', '..'} for part in relative.split('/'))):
+        raise ValueError('invalid declared inventory lock path')
+    selected = host_root / relative
+    resolved = selected.resolve()
+    if selected.is_symlink() or not resolved.is_relative_to(host_root.resolve()):
+        raise ValueError('declared inventory lock escapes the source root')
+    return resolved
+
+
 def collect_inventories(args):
     roots, policy, components, interpreters = _prepare(args)
     ensure_external_output(args.output, roots)
     evidence = args.output.with_suffix('.evidence')
     evidence.mkdir(parents=True, exist_ok=False)
-    lock_path = (args.inventory_lock or args.host_root / 'verification/inventory.json').resolve()
+    lock_path = inventory_lock_path(args.host_root, policy, args.inventory_lock)
     locks = read_json(lock_path)
     source = source_snapshot(roots)
     inventories, environments, errors = ({}, {}, [])
@@ -263,7 +279,7 @@ def collect_inventories(args):
             folder.mkdir()
             settings = policy['components'][name]
             selection = list(settings.get('selectors', []))
-            if name == 'openpine':
+            if name == 'openpine' and 'tests' not in selection:
                 selection += read_json(args.host_root / 'rc6_tests/selected_regressions.json')
             argv = [executable, '-m', 'pytest', '--collect-only', '-q', '-p', 'openpine.verification.pytest_gate', '--verification-lock=' + str(lock_path), '--verification-suite=' + name, '--verification-output=' + str(folder / 'inventory.json')]
             for plugin in settings.get('plugins', []):

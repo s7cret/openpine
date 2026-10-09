@@ -52,7 +52,19 @@ def test_locked_historical_identity_cannot_be_dropped_or_credited():
     surface = build_builtin_surface()
     lock = read_json(root / "verification/stage2-callable-lock.json")
     comparison = compare_surface_lock(surface, lock)
-    assert comparison["ok"], comparison
+    # Current Pine v6 binary-search contracts differ from the frozen denominator.
+    # Keep that mismatch visible: no historical identity is removed or credited,
+    # and the production comparison must continue to reject this surface.
+    assert comparison["ok"] is False, comparison
+    assert comparison["added"] == comparison["removed"] == []
+    assert comparison["denominator_kind_changed"] is False
+    assert comparison["catalog_identities_changed"] is True
+    assert {tuple(row) for row in comparison["contract_changed"]} == {
+        (6, f"pine:{kind}:{name.removeprefix('pine:function:')}",
+         f"pine:{kind}:{name.removeprefix('pine:function:')}#canonical", form)
+        for name in HISTORICAL
+        for kind, form in (("function", "NAMESPACE_FUNCTION"), ("method", "METHOD"))
+    }
     assert comparison["locked_count"] == comparison["current_count"] == 2390
     assert {
         row["symbol_id"]

@@ -1,14 +1,53 @@
-This branch prepares a reviewable INT04/INT05 hosted attempt and its early
-failure diagnostics. The first approved attempt, run `37693515835` at
-`9dc473bf81a57b10bd0592f1414445db7e3e749c`, failed in the combined driver
-after prerequisites passed. No public projection was produced and no
-artifacts were uploaded. Actual owner/matrix denominators remain unconfirmed;
-this branch does not claim full product qualification.
+# Hosted INT04/INT05 protected qualification
+
+The seventh approved hosted run
+[`37760914024`](https://github.com/s7cret/openpine/actions/runs/37760914024),
+at exact candidate `bef63351708e676a14d5b0c5ccd744835da48b19`, passed on
+2026-10-08. Its protected job succeeded and its baseline job was skipped.
+The independent public guard reported `stage=complete`, `error=none`, `ok=true`.
+That guard requires all 12 fault cases and the locked owner checks to pass:
+each installed placement A/B passed 49 INT04, 76 INT05 and 227 selected
+protected-worker obligations. The fault cases cover interactive/bulk backtest
+with timeout, coordinator SIGINT and controller SIGKILL; automatic cleanup,
+concurrent neighbour survival and neighbour completion passed in every case.
+Individual successful cases are omitted from the human failure log; the saved
+guard outcome, rather than log line counts, establishes these denominators.
+
+The public artifact `11543157855` contains only `projection.json` and
+`projection.sha256`: two files, 4,075 uploaded ZIP bytes. Its recorded expiry
+is **2026-10-09 10:24:57 UTC / 13:24:57 Europe/Moscow**. The upload-log ZIP
+digest matches GitHub metadata; the ZIP was not downloaded and independently
+rehashed locally. Saved read-only evidence is `final-result.json` and
+`public-job.log` in the external `run04-hosted-public-log7-20261008-bef6335`
+attempt directory. Raw primaries were private to the ephemeral runner:
+`raw_primaries_durable=false` and `full_qualification_accepted=false` remain
+the actual result. Public projection retention does not close private archival.
+
+This is bounded INT-04/INT-05 protected qualification. It does not establish
+complete INT-05 affected/full comparisons, the complete INT-04 retention and
+lifecycle acceptance, or whole-product stage/release acceptance. The filename's
+RUN04 prefix is a hosted campaign label; spec requirement **RUN-04** remains
+the separate worker-protocol checkpoint/restore/resume obligation, including
+recovery boundaries and rejection of stale generations or incompatible inputs.
+
+## Source and publication checkpoint
+
 The base is Host PR #40, commit `89494613ba34d50c520e87e17a977b80754a6b29`.
 Reviewed owner changes are from frozen INT04
 `aea48bec52b609a9516f0d589ae7c47d6a95853a` and INT05
 `0bbcfc08206efa8325a6148390fe228785247e5d`.
 Their original worktrees and primary evidence remain unchanged.
+
+At the post-run7 read-only checkpoint, PR #41 remains draft at head
+`486443f4d32db9472ac8bd2e06903435081604d7`, based on
+`89494613ba34d50c520e87e17a977b80754a6b29`, with no reviews. Candidate
+`bef6335` is five commits ahead and zero behind that PR head. The PR-head
+protected check failed; the successful run7 check belongs to `bef6335`, with
+baseline skipped. Only `execution/run04-int04-int05-log7-20261008` was published
+for run7. The PR source branch and its documents were not updated by that push.
+These documentation changes are local continuation; they do not update PR #41.
+
+## Executed protected scope
 
 The exact seven producer commits are in both `docs/RC6_LIFECYCLE_SOURCES.json`
 and the candidate template. The action injects its approved Host commit,
@@ -57,27 +96,14 @@ locks before computing additions. No test IDs were removed. The established
 Provider `not live_network` marker deselects five cases; its stale zero was
 corrected to five without changing inventory identities, count or hash.
 
-The existing workflow has a separate protected job. Ordinary implementation
-branch pushes and PRs do not start it. The workflow is absent on `main`, so
-the immediately reviewable launch is creation of a fresh dedicated execution
-ref from the final approved SHA. The original execution ref is occupied by
-the failed attempt and remains unchanged. The prepared retry route is:
+The workflow has a separate protected job, selected by dedicated execution refs.
+It checks source/workflow/approved SHA equality before provisioning. All seven
+execution refs preserve their original attempts. No eighth run, source/PR push,
+PR edit, merge, release, private upload or storage expansion is authorized by
+this local continuation. Any later external action needs its own exact reviewed
+candidate and scope; a previous attempt's approval is not a retry allowance.
 
-```sh
-git push origin FINAL_APPROVED_SHA:refs/heads/execution/run04-int04-int05-fix3-20261008
-```
-
-Creating that ref is an execution action and requires separate action-time
-approval of the exact SHA, security provisioning, public projection and raw
-retention limitation. The ref must first be confirmed absent; no force push
-or ref reuse is authorized. Dispatch support is available once this workflow
-exists on the repository's default branch; it is not assumed available now.
-The workflow checks source/workflow/approved SHA equality before provisioning.
-All three earlier execution refs are now occupied and remain unchanged. The
-fresh `fix3` route is prepared for a possible fourth run after diagnosis and
-exact action review. This development push does not create that execution ref.
-
-The execution would use one standard public Ubuntu 24.04 VM, at most 4 CPU,
+Run7 used one standard public Ubuntu 24.04 VM, at most 4 CPU,
 16 GiB RAM, 90 minutes, a 3,000,000,000-byte disk reserve, and no cache upload.
 Its security actions are exactly: apt update/install of AppArmor tools/profile
 and bubblewrap; install/load `bwrap-userns-restrict`; create the absent system
@@ -86,30 +112,37 @@ UUID unit creation, manager observation and exact owned-unit disposal. There
 is no sudoers, sysctl or global cgroup change. Wheel/dependency preparation
 uses the existing hashed dependency locks and seven pinned GitHub sources.
 
-The new public policy is
+The executed public policy is
 `verification/protected-qualification-public-allowlist.json`. Only
 `projection.json` and `projection.sha256` may be uploaded to public
 `s7cret/openpine`. Permitted categories are candidate/source commit identities,
-policy hash, enum matrix case identities and boolean outcomes. The proposed
-diagnostic amendment adds exactly `stage`, `error`, and aggregate `ok`, with
-the closed stage/error vocabularies recorded in that allowlist. An identity
+policy hash, enum matrix case identities, boolean outcomes and the closed
+diagnostics recorded in that allowlist. Top-level diagnostics are
+`stage`, `error`, and aggregate `ok`; cases include `case_stage`, `case_error`
+and `neighbour_completion_state`. An identity
 not yet available on an early failure is represented by `candidate_sha: null`
-and/or `source_commits: {}`; no source pins are invented. This changed
-allowlist requires action-time approval before the next upload/run. There are no
+and/or `source_commits: {}`; no source pins are invented. There are no
 raw logs, private paths, process/unit identifiers, environment, protocol,
 traces, sources, wheels, virtualenvs or old workspace evidence. Metadata is
 limited to 1 MiB, with a separate 64 MiB complete-upload ceiling and one-day
-retention. The old preparation 128 MiB/$0.10 permission is not reused.
-Proposed new storage ceiling is $0.01 for this attempt; account quota is
-unknown. Standard public-runner compute is free under the published GitHub
-pricing; the 64 MiB one-day maximum storage estimate is below $0.0006 at
-$0.25/GiB-month. These are estimates, not a configured billing guard.
+retention. The old preparation 128 MiB/$0.10 permission was not reused.
+Run7 retained the aggregate $0.01 ceiling across all seven attempts. Saved
+artifact metadata totals 19,922 public ZIP bytes across them. The conservative
+seven-attempt 64 MiB/day storage bound was $0.00390625; it is an estimate,
+not an independently verified billing receipt or a configured billing guard.
 
 Raw primaries and detailed driver traces stay in the ephemeral VM's private
 paths. No private durable endpoint, readers or quota is approved. Explicit
 ephemeral acknowledgement permits execution but does not close that archive
 obligation. Both `raw_primaries_durable` and `full_qualification_accepted`
-remain false in the projection even if every matrix case passes.
+remain false in the successful run7 result.
+
+## Historical failures and local repairs
+
+The first approved attempt, run `37693515835` at
+`9dc473bf81a57b10bd0592f1414445db7e3e749c`, failed in the combined driver
+after prerequisites passed. No public projection or artifact was produced.
+Its actual owner/matrix denominators remain unconfirmed.
 
 Static inspection and a metadata regression reproduced a driver defect:
 preparation's wheelhouse includes third-party dependencies, while the strict
@@ -130,12 +163,13 @@ It preserves valid outcomes and recovers absent/invalid metadata as a closed
 failure. Before upload it checks the exact two regular files, canonical JSON,
 policy, identities, booleans, digest and metadata size. It rejects foreign files
 and symlinks, and a failed driver cannot leave a green checkpoint. The public
-guard prints only `stage`, `error`, and `ok`; raw exceptions stay excluded.
+guard prints closed top-level diagnostics. The run7 candidate also prints
+validated failure case codes and static explanations; raw exceptions stay excluded.
 Caught driver tracebacks are written, when possible, only to a bounded primary
 under the attempt's private 0700 directory. A failure to save that private
 primary cannot prevent the closed public diagnostic.
 
-The completed run's saved Actions job log was retrieved read-only. GitHub's
+The first run's saved Actions job log was retrieved read-only. GitHub's
 job-log REST API returns saved workflow output, not arbitrary private files on
 the runner; available artifacts numbered zero. No supported reattach/private
 file-read mechanism was available for the completed standard hosted job.
@@ -184,15 +218,15 @@ cases. A `qualification_hosted preflight` action shares the actual preparation
 and candidate-finalization path with `run` and stops before restore/workers;
 its bounded result remains private and claims candidate preparation only.
 
-Full local prepare is explicitly still failed: the kernel does not expose the
+Full local prepare at that checkpoint failed: the kernel does not expose the
 owned per-thread `/proc/<pid>/task/<tid>/children` file, returning ENOENT, so
 the unchanged optimizer containment prerequisite rejects it. This guard is
 not disabled or simulated. Local candidate-wheels tests use real phase inputs,
 not a forged accepted preparation bundle. The official setup-python Ubuntu
 24.04 x64 CPython 3.13.5 artifact was used, with real GIL, pidfd and ensurepip;
 only the container's existing proxy/index transport keys were restored locally
-for downloads. A complete supported-kernel preflight and the A/B runtime
-obligations remain outstanding before acceptance.
+for downloads. That local environment did not establish supported-kernel
+preflight or A/B runtime acceptance; run7 later passed the hosted protected scope.
 
 The third approved run `37702782993`, at
 `976344a868f60aad008016e17a639596ad05f5c6`, completed with failure. Its closed
@@ -229,12 +263,59 @@ The independent guard keeps valid cases while failing the overall run. Raw
 primaries remain immutable; an incomplete matrix and failed driver remain failed.
 No public fields, categories, allowlist bytes, recipients or upload limits change.
 
-Validation passes 113 installed guard cases and all 339 pytest phases, including
-ten new retention/failure cases; Ruff and mypy pass. These checks prove the
-retention repair, not the hosted matrix's unknown failure cause. The fourth-run
-route retains the same VM/provisioning scope and two-file public policy; any
-launch must use the final reviewed exact SHA and current approval. There is no
-permission for an automatic fifth attempt.
+The retention repair passed 113 installed guard cases and all 339 pytest phases,
+including ten new retention/failure cases; Ruff and mypy passed. These checks prove the
+retention repair, not the hosted matrix's unknown failure cause.
+
+The subsequently approved fourth, fifth and sixth runs also failed at
+`matrix-A / command-failed`: `37708037067` at `486443f4d32db9472ac8bd2e06903435081604d7`,
+`37713082720` at `58b697dd58945fc5e4ba53c4a9a62d2c313e57b1`, and
+`37746705432` at `3d6fadf7b39d76e9e00c05fe9e79c0674373f2ef`. Their saved
+results remain failed. Before run7, local probes proved and repaired family
+cancellation ordering and preservation of the original controller launch
+exception. Run7 success does not retrospectively identify the sixth run's
+exact private errno or strict failed check.
+
+## Remaining work
+
+INT-04 still needs private primary retention with an approved endpoint, readers,
+quota, immutable candidate/run binding and verified readback, plus review of its
+complete required lifecycle scope. Local archive preparation cannot recover
+unretrieved files from the completed ephemeral run. INT-05 still needs real
+positive affected/full patch campaigns with separately frozen identities,
+complete raw evidence and the existing owner comparison gates. Recollect and
+refreeze for the final assembled candidate before those campaigns; run7's
+candidate result does not qualify later source changes.
+
+For an existing locally retained private work tree with a sealed prepared
+bundle and finalized candidate provenance, the explicit archive action is:
+
+```bash
+python -B -m openpine.verification.qualification_hosted archive \
+  --host /candidate/openpine --work /external/completed-private-work \
+  --approved-sha REVIEWED_HOST_SHA --run-id REVIEWED_RUN_ID \
+  --source-hash sha256:REVIEWED_PREPARED_SOURCE \
+  --expected-candidate-manifest-sha256 sha256:REVIEWED_CANDIDATE_FILE \
+  --archive-output /external/new-private-archive \
+  --max-bytes APPROVED_BYTE_CEILING --retention-days REVIEWED_RETENTION
+```
+
+Supply the source/candidate/run anchors independently of the archive inputs.
+The action retains known raw and referenced primaries, excludes build/venv
+scaffolding and delegates archive integrity/readback to `execution_evidence`.
+Verify the result with that owner's existing `verify` action and an independently
+recorded expected manifest hash. Missing provenance is rejected and originals
+are preserved. A local archive still records durable/full flags as false;
+`retention-days` records intent, not a storage-service guarantee or a deletion
+schedule. This action cannot retrieve run7's unavailable ephemeral primaries
+and performs no upload or external storage allocation.
+
+INT-03 full owner composition, INT-06 measured before/after performance, RUN-04
+worker resume, RUN-07's full fault-point matrix and REL-01/REL-08 package/final
+archive acceptance remain separate gates. The useful local next step is to make
+the private archive and positive-campaign inputs reviewable while preserving
+the successful run7 evidence and every earlier failure. No generated receipt
+hash is imported into semantic source policy.
 
 Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
 and https://docs.github.com/en/billing/concepts/product-billing/github-actions.

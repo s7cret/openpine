@@ -1,0 +1,60 @@
+{
+  "schema_id": "openpine.callable_metadata_migration.v1",
+  "parent_lock_hash": "sha256:a952fe691e4002903b2fc24db5f7ab5b16605a8d349dea51312561db9f42e012",
+  "current_lock_hash": "sha256:e1a3eac0d804aea94124b8226b118a22fb43135b2a0eb33048d81115f23c2705",
+  "publication_commit": "1bc8ddb72ae6a30b209b5491622dd386b3ade7f5",
+  "publication_fixture_hash": "sha256:a1d211f1268255a2f04f400aaa5c5ef516b7c75fc115abbbbbdb275ef97347f8",
+  "authority_url": "https://www.tradingview.com/pine-script-docs/release-notes/#binary-search-in-udt-arrays",
+  "changes": [
+    {
+      "pine_version": 6,
+      "symbol_id": "pine:function:array.binary_search",
+      "overload_id": "pine:function:array.binary_search#canonical",
+      "call_form": "NAMESPACE_FUNCTION",
+      "before_contract_hash": "sha256:3fea10a27acbc73114ec3912393af293c20d779700b8d83f58943c0dec0eaf47",
+      "after_contract_hash": "sha256:174e017d398ddef2759937350e1a80600f5f736ac3f857aa27d0ab0ab7e8e6e9"
+    },
+    {
+      "pine_version": 6,
+      "symbol_id": "pine:function:array.binary_search_leftmost",
+      "overload_id": "pine:function:array.binary_search_leftmost#canonical",
+      "call_form": "NAMESPACE_FUNCTION",
+      "before_contract_hash": "sha256:3fea10a27acbc73114ec3912393af293c20d779700b8d83f58943c0dec0eaf47",
+      "after_contract_hash": "sha256:174e017d398ddef2759937350e1a80600f5f736ac3f857aa27d0ab0ab7e8e6e9"
+    },
+    {
+      "pine_version": 6,
+      "symbol_id": "pine:function:array.binary_search_rightmost",
+      "overload_id": "pine:function:array.binary_search_rightmost#canonical",
+      "call_form": "NAMESPACE_FUNCTION",
+      "before_contract_hash": "sha256:3fea10a27acbc73114ec3912393af293c20d779700b8d83f58943c0dec0eaf47",
+      "after_contract_hash": "sha256:174e017d398ddef2759937350e1a80600f5f736ac3f857aa27d0ab0ab7e8e6e9"
+    },
+    {
+      "pine_version": 6,
+      "symbol_id": "pine:method:array.binary_search",
+      "overload_id": "pine:method:array.binary_search#canonical",
+      "call_form": "METHOD",
+      "before_contract_hash": "sha256:6514c320027ce13c987fc4ff2f97039539bfb8e4ca7be671ab16e003a5b8c404",
+      "after_contract_hash": "sha256:28855876b6f72a7334e4a71b87fd9c967450153820aa671c007f33c48c8613de"
+    },
+    {
+      "pine_version": 6,
+      "symbol_id": "pine:method:array.binary_search_leftmost",
+      "overload_id": "pine:method:array.binary_search_leftmost#canonical",
+      "call_form": "METHOD",
+      "before_contract_hash": "sha256:6514c320027ce13c987fc4ff2f97039539bfb8e4ca7be671ab16e003a5b8c404",
+      "after_contract_hash": "sha256:28855876b6f72a7334e4a71b87fd9c967450153820aa671c007f33c48c8613de"
+    },
+    {
+      "pine_version": 6,
+      "symbol_id": "pine:method:array.binary_search_rightmost",
+      "overload_id": "pine:method:array.binary_search_rightmost#canonical",
+      "call_form": "METHOD",
+      "before_contract_hash": "sha256:6514c320027ce13c987fc4ff2f97039539bfb8e4ca7be671ab16e003a5b8c404",
+      "after_contract_hash": "sha256:28855876b6f72a7334e4a71b87fd9c967450153820aa671c007f33c48c8613de"
+    }
+  ],
+  "scope": "Pine v6 sort_field metadata only; no runtime conformance or acceptance credit",
+  "content_hash": "sha256:738d8de99f890aaa94d6687a7f16e7a65086da0f20d2ef602ad3db526db52b98"
+}

@@ -7,7 +7,7 @@
       "name": "openpine",
       "package": "openpine",
       "repository": "s7cret/openpine",
-      "tree_sha256": "3ef39cd95c9267611082368bf64bf5c75761caf6dd097ed3c7876bb4f7eaa114",
+      "tree_sha256": "11f4f1b30b0c34930e91ccf2e14880466bcf9dd86383aad214590684c5c3e4b7",
       "version": "5.0.0rc6"
     },
     {
@@ -47,14 +47,14 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "76570b32cd6fa78adbcacb7b5d6582f7a9bafa3f",
+      "commit": "900bcb230bb5bcac2a23325f87216750118918b7",
       "contracts": {
         "tick_replay": "deterministic-explicit-v1"
       },
       "name": "backtest_engine",
       "package": "backtest-engine",
       "repository": "s7cret/backtest_engine",
-      "tree_sha256": "1381980b2d71f2dd804f6a94c4e88ef2c80a272c4997c541cf9e8149cf56fdf4",
+      "tree_sha256": "773420c1d2b93b09cfba74c5d32b3e8fe87061b12471b64c07ad712748b23093",
       "version": "5.0.0rc6"
     },
     {
@@ -70,7 +70,7 @@
       "version": "5.0.0rc6"
     },
     {
-      "commit": "623e2639581d23242109dd47e20f14f799fa7b88",
+      "commit": "9c0e53ac9dbab7217b0459dc753f53b120f0ed34",
       "contracts": {},
       "name": "optimizer",
       "package": "optimizer",

@@ -336,18 +336,21 @@ def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
             raise ValueError('invalid task deselection count')
         if task['component'] in preparation_components:
             raise ValueError('preparation component is also a test obligation')
+        markers = None
+        if 'node_markers' in task:
+            markers = task['node_markers']
+            if not isinstance(markers, dict) or set(markers) != set(nodes):
+                raise ValueError('task markers omit required nodes')
+            if any((not isinstance(v, list) or any((not isinstance(m, str) for m in v))
+                    or len(set(v)) != len(v) for v in markers.values())):
+                raise ValueError('malformed marker evidence')
         assigned, shard_ids = ([], [])
         for shard in task['shards']:
             if not re.fullmatch('s[0-9]{3}', shard['id']):
                 raise ValueError('invalid shard ID')
             if type(shard.get('coverage', task.get('coverage', False))) is not bool:
                 raise ValueError('invalid shard instrumentation')
-            if 'node_markers' in task:
-                markers = task['node_markers']
-                if set(markers) != set(nodes):
-                    raise ValueError('task markers omit required nodes')
-                if any((not isinstance(v, list) or len(set(v)) != len(v) or any((not isinstance(m, str) for m in v)) for v in markers.values())):
-                    raise ValueError('malformed marker evidence')
+            if markers is not None:
                 for node in shard['nodeids']:
                     desired = bool(task.get('coverage', False)) and (not set(markers[node]).intersection(task.get('untraced_markers', [])))
                     if shard.get('coverage', task.get('coverage', False)) != desired:
@@ -380,6 +383,15 @@ def validate_plan(plan: dict, *, expected_hash: str | None=None) -> dict:
 
 def task_shard(plan: dict, task_id: str, shard_id: str) -> tuple[dict, dict]:
     validate_plan(plan)
+    return _task_shard_from_validated_plan(plan, task_id, shard_id)
+
+
+def _task_shard_from_validated_plan(plan: dict, task_id: str, shard_id: str) -> tuple[dict, dict]:
+    """Select immediately after this caller validates the same local plan.
+
+    This is not a cache or an input boundary. Public task_shard still validates
+    every call; do not retain a mutable plan's validation across callbacks.
+    """
     matches = [t for t in plan['tasks'] if t['id'] == task_id]
     if len(matches) != 1:
         raise ValueError('unknown task')

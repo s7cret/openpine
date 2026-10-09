@@ -70,13 +70,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.pinelib_repo || 's7cret/pinelib' }}
-          ref: ${{ steps.stack.outputs.pinelib_sha || '6493311b5eec8cc3caf61d44fae3d4b5203e14b4' }}
+          ref: ${{ steps.stack.outputs.pinelib_sha || '720e5c642328de955e78f9372b250fd0f1c63703' }}
           path: pinelib
       - name: Checkout Backtest Engine
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.backtest_engine_repo || 's7cret/backtest_engine' }}
-          ref: ${{ steps.stack.outputs.backtest_engine_sha || 'd9210fbb6a72689e76da918c2eba422b22f439f6' }}
+          ref: ${{ steps.stack.outputs.backtest_engine_sha || '900bcb230bb5bcac2a23325f87216750118918b7' }}
           path: backtest_engine
       - name: Checkout Marketdata Provider
         uses: actions/checkout@v4
@@ -88,7 +88,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.stack.outputs.optimizer_repo || 's7cret/optimizer' }}
-          ref: ${{ steps.stack.outputs.optimizer_sha || '623e2639581d23242109dd47e20f14f799fa7b88' }}
+          ref: ${{ steps.stack.outputs.optimizer_sha || '9c0e53ac9dbab7217b0459dc753f53b120f0ed34' }}
           path: optimizer
       - name: Verify candidate checkout identities
         if: ${{ steps.stack.outputs.mode == 'candidate' }}

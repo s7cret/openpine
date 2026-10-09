@@ -29,22 +29,47 @@ def affected_from_ci(bundle, full, *, expected_bundle_hash, expected_full_hash,
     if digest(policy) != full['policy_hash']:
         raise ValueError('CI policy changed before affected preparation')
     observed = join_collections([read_json(bundle / 'collection.json')], roots)
+    if observed['policy_hash'] != full['policy_hash']:
+        raise ValueError('CI collection differs from frozen policy')
     if observed['environments'] != full['environments']:
         raise ValueError('CI interpreter changed before affected preparation')
     coverage = {t['coverage'] for t in full['tasks']}
     if len(coverage) != 1:
         raise ValueError('CI mixed instrumentation needs an explicit reviewed profile')
+    coverage = coverage.pop()
+    # A structurally valid, resealed full plan can still omit an owner or carry
+    # a different reviewed lock. Reconstruct its obligations through the owner
+    # before using it as the authority for any narrowed execution plan.
+    reviewed_full = make_plan(profile='stage-full', policy=policy, roots=roots,
+        source=observed['source'], inventories=observed['inventories'],
+        environments=observed['environments'], shard_count=4,
+        coverage=coverage, owner_launch=full.get('owner_launch'))
+    for field in ('required_gates', 'preparation_components',
+                  'pending_required_inventories', 'disk_free_guard',
+                  'full_acceptance_requires_owner_gates'):
+        if full.get(field) != reviewed_full.get(field):
+            raise ValueError('CI full plan differs from reviewed owner requirements: ' + field)
+    full_tasks = {t['id']: t for t in full['tasks']}
+    reviewed_tasks = {t['id']: t for t in reviewed_full['tasks']}
+    if set(full_tasks) != set(reviewed_tasks):
+        raise ValueError('CI full plan omitted reviewed owner/interpreter obligations')
+    for task_id, reference in reviewed_tasks.items():
+        task = full_tasks[task_id]
+        # Shard grouping is not an obligation; actual per-node instrumentation is.
+        if ({k: v for k, v in task.items() if k != 'shards'}
+                != {k: v for k, v in reference.items() if k != 'shards'}
+                or instrumentation_contract(task) != instrumentation_contract(reference)):
+            raise ValueError('CI full obligations differ from reviewed collection: ' + task_id)
     plan = make_plan(profile='affected', policy=policy, roots=roots,
         source=observed['source'], inventories=observed['inventories'],
         environments=observed['environments'], changes=changes, shard_count=4,
-        coverage=coverage.pop(), owner_launch=full.get('owner_launch'))
+        coverage=coverage, owner_launch=full.get('owner_launch'))
     # Reuse make_ci_plan's sealing composition only after the existing
     # verify_bundle/attest_ci_source_commits owner path succeeds.
     plan = seal({**{k: v for k, v in plan.items() if k != 'content_hash'}, 'source_commits': commits})
     validate_plan(plan)
-    if sorted(t['component'] for t in plan['tasks']) != sorted(expected_owners):
+    if sorted({t['component'] for t in plan['tasks']}) != sorted(expected_owners):
         raise ValueError('affected scope differs from independent scenario expectation')
-    full_tasks = {t['id']: t for t in full['tasks']}
     for task in plan['tasks']:
         reference = full_tasks[task['id']]
         if (task['nodeids'] != reference['nodeids']
