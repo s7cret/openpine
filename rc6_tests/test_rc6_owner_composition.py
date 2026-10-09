@@ -91,8 +91,11 @@ def test_projection_fails_closed(tmp_path, mutation):
 
 @pytest.fixture(scope='module')
 def owners(tmp_path_factory):
+    return build_owners(tmp_path_factory.mktemp('composed-owners'))
+
+
+def build_owners(base):
     from rc6_tests.stabilization_fixture import build_fixture
-    base = tmp_path_factory.mktemp('composed-owners')
     host, plan, evidence, packet = build_fixture(base, portable=True, owner_namespaces=True)
     for path in evidence.rglob('*'):
         if path.is_symlink():
@@ -215,10 +218,12 @@ def test_frontend_input_failclosed_controls(owners, tmp_path, mutation):
             ci.finalize_stabilization(plan, host, [native], output, packet['run_id'], frontend=frontend)
 
 
-def test_composed_archive_replays_after_original_staging_removed(owners, tmp_path):
+def test_composed_archive_replays_after_original_staging_removed(tmp_path):
     from openpine.verification.execution_binding import make_binding
     from openpine.verification.stage_gate import run_stabilization_gate
-    host, plan, evidence, packet, native = owners
+    base = tmp_path / 'original-staging'
+    base.mkdir()
+    host, plan, evidence, packet, native = build_owners(base)
     original = evidence.parent
     output = original / 'common-archive'
     expected = ci.finalize_stabilization(plan, host, [native], output, packet['run_id'],

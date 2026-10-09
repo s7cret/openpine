@@ -77,7 +77,8 @@ def bounded_run(tmp_path, monkeypatch, failure=None):
     if failure:
         import psutil
         assert run['attempts'][0]['status'] == 'cancelled'
-        assert run['attempts'][0]['returncode'] < 0
+        from rc6_tests.cancelled_family import assert_cancelled_family
+        assert_cancelled_family(output, run['attempts'][0])
         assert not psutil.pid_exists(int(marker.read_text()))
         assert list(output.rglob('valuable'))
         assert list(output.rglob('stdout.log')) and list(output.rglob('execution.json'))
@@ -176,7 +177,8 @@ def test_stream_write_error_cancels_owned_preserves_partial(tmp_path, monkeypatc
     run = campaign.run_campaign(plan, path, output, run_id='storage-error')
     assert marker.exists()
     assert run['attempts'][0]['status'] == 'cancelled'
-    assert run['attempts'][0]['returncode'] < 0
+    from rc6_tests.cancelled_family import assert_cancelled_family
+    assert_cancelled_family(output, run['attempts'][0])
     assert not psutil.pid_exists(int(marker.read_text()))
     assert list(output.rglob('valuable')) and list(output.rglob('stdout.log'))
     assert list(output.rglob('execution.json'))

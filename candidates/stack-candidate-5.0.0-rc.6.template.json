@@ -23,8 +23,8 @@
     },
     "backtest_engine": {
       "repo": "s7cret/backtest_engine",
-      "ref": "76570b32cd6fa78adbcacb7b5d6582f7a9bafa3f",
-      "sha": "76570b32cd6fa78adbcacb7b5d6582f7a9bafa3f",
+      "ref": "a4edb288273d300d8be79f21ecd055dc0faae930",
+      "sha": "a4edb288273d300d8be79f21ecd055dc0faae930",
       "version": "5.0.0rc6"
     },
     "pine2ast": {
@@ -41,8 +41,8 @@
     },
     "optimizer": {
       "repo": "s7cret/optimizer",
-      "ref": "623e2639581d23242109dd47e20f14f799fa7b88",
-      "sha": "623e2639581d23242109dd47e20f14f799fa7b88",
+      "ref": "9c0e53ac9dbab7217b0459dc753f53b120f0ed34",
+      "sha": "9c0e53ac9dbab7217b0459dc753f53b120f0ed34",
       "version": "5.0.0rc6"
     },
     "openpine": {

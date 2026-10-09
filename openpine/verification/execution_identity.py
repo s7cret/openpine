@@ -167,7 +167,7 @@ def read_artifact(root: Path, descriptor: Mapping[str, str]) -> Any:
         raise ValueError(f"evidence checksum mismatch: {descriptor['path']}")
     return read_json(path)
 
-def clean_environment(roots: dict[str, str], private: Path, *, build_commit: str | None=None) -> dict[str, str]:
+def clean_environment(roots: dict[str, str], private: Path, *, build_commit: str | None=None, primary_component: str | None=None) -> dict[str, str]:
     if build_commit is not None and (not isinstance(build_commit, str) or re.fullmatch('[0-9a-f]{40}', build_commit) is None):
         raise ValueError('invalid exact build commit')
     private.mkdir(parents=True, exist_ok=True)
@@ -175,7 +175,10 @@ def clean_environment(roots: dict[str, str], private: Path, *, build_commit: str
         (private / name).mkdir(exist_ok=True)
     result = {key: value for key, value in os.environ.items() if key in {'PATH', 'SYSTEMROOT', 'WINDIR', 'LANG', 'LC_ALL', 'TZ'}}
     result['OPENPINE_SOURCE_ROOTS'] = __import__('json').dumps(roots, sort_keys=True)
-    result.update(PYTHONPATH=os.pathsep.join((roots[name] for name in sorted(roots))), PYTEST_DISABLE_PLUGIN_AUTOLOAD='1', PYTHONHASHSEED='0', HOME=str(private / 'home'), TMPDIR=str(private / 'tmp'), XDG_CACHE_HOME=str(private / 'cache'), OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1')
+    if primary_component is not None and primary_component not in roots:
+        raise ValueError('unknown primary source component')
+    ordered = ([primary_component] if primary_component is not None else []) + [name for name in sorted(roots) if name != primary_component]
+    result.update(PYTHONPATH=os.pathsep.join(roots[name] for name in ordered), PYTEST_DISABLE_PLUGIN_AUTOLOAD='1', PYTHONHASHSEED='0', HOME=str(private / 'home'), TMPDIR=str(private / 'tmp'), XDG_CACHE_HOME=str(private / 'cache'), OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', MKL_NUM_THREADS='1')
     if build_commit is not None:
         result['OPENPINE_BUILD_COMMIT'] = build_commit
     return result

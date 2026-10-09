@@ -49,21 +49,8 @@ if bar_index == 2 and strategy.position_size == 3
 
 
 def descriptor():
-    roots = {
-        name: Path("/workspace") / name
-        for name in (
-            "pine2ast",
-            "ast2python",
-            "openpine-contracts",
-            "marketdata-provider",
-            "optimizer",
-        )
-    }
-    roots.update(
-        openpine=Path(__file__).resolve().parents[1],
-        backtest_engine=Path("/workspace/backtest-engine-run02-bridge-review"),
-        pinelib=Path("/workspace/pinelib-run02-owner-preflight"),
-    )
+    from rc6_tests.source_roots import imported_source_roots
+    roots = imported_source_roots()
     pins = {name: head(root) for name, root in roots.items()}
     compiled = NativeRC6CompilerAdapter().compile(
         SOURCE,

@@ -10,13 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "candidates" / "stack-candidate-5.0.0-rc.6.template.json"
 HISTORICAL = ROOT / "candidates" / "historical" / "stack-candidate-5.0.0-rc.2.json"
 EXPECTED_SHAS = {
-    "openpine-contracts": "db1745756516b47466756c9c5d38fbbb95595a3b",
+    "openpine-contracts": "79e7f329baf3feb28459b03577e3f236bf411ee2",
     "marketdata-provider": "da6c25c55289cea4cbb9329997c165abc1b2af5e",
-    "pinelib": "6493311b5eec8cc3caf61d44fae3d4b5203e14b4",
-    "backtest_engine": "d9210fbb6a72689e76da918c2eba422b22f439f6",
+    "pinelib": "720e5c642328de955e78f9372b250fd0f1c63703",
+    "backtest_engine": "a4edb288273d300d8be79f21ecd055dc0faae930",
     "pine2ast": "eb249402e67199b07e9880fadc14e03fb1651edc",
     "ast2python": "9080ed559e5cd9acbfe1400f284314d2af3f9193",
-    "optimizer": "623e2639581d23242109dd47e20f14f799fa7b88",
+    "optimizer": "9c0e53ac9dbab7217b0459dc753f53b120f0ed34",
 }
 TEST_HOST_SHA = "a" * 40
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
@@ -66,7 +66,7 @@ def test_candidate_template_pins_eight_repos_and_is_not_active() -> None:
     assert "sha" not in components["openpine"]
     assert (
         components["openpine"]["ref"]
-        == "implementation/int01-stack-reconciliation-20261006"
+        == "implementation/run04-hosted-int04-int05-qualification-20261007"
     )
     for name, row in components.items():
         assert row["version"] == "5.0.0rc6"
@@ -135,7 +135,7 @@ def test_candidate_workflows_bind_the_rc6_template_and_component_shas(
     expected_literals = (
         sha for component, sha in EXPECTED_SHAS.items() if component != "openpine"
     )
-    if workflow_name == "stack-ci.yml":
+    if workflow_name in {"ci.yml", "stack-ci.yml"}:
         expected_literals = (
             sha
             for component, sha in EXPECTED_SHAS.items()

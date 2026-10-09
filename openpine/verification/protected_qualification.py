@@ -203,7 +203,13 @@ def fixture(spec_path: Path, folder: Path, mode: str) -> None:
     tests = Path(spec["tests_root"]).resolve()
     if not (tests / "rc6_tests").is_dir() or (tests / "openpine").exists():
         raise ValueError("fault fixture namespace must contain tests only")
-    sys.path.insert(0, str(tests))
+    from importlib.machinery import ModuleSpec
+    from importlib.util import module_from_spec
+    if 'rc6_tests' in sys.modules:
+        raise ValueError('qualification fixture namespace was already loaded')
+    namespace_spec = ModuleSpec('rc6_tests', loader=None, is_package=True)
+    namespace_spec.submodule_search_locations = [str(tests / 'rc6_tests')]
+    sys.modules['rc6_tests'] = module_from_spec(namespace_spec)
     from openpine.admission import load_active_deployment_identity
     from openpine.runtime import isolated_worker as worker
     from rc6_tests import test_rc6_library_imports as libraries

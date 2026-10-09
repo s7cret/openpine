@@ -179,7 +179,7 @@ def _execute_shard(plan: dict, plan_path: Path, output: Path, task: dict, shard:
     folder = output / relative
     folder.mkdir(parents=True, exist_ok=False)
     execution_roots, executables = locations(plan, binding)
-    env = clean_environment(execution_roots, folder / 'private', build_commit=build_commit if task['component'] == 'openpine' else None)
+    env = clean_environment(execution_roots, folder / 'private', build_commit=build_commit if task['component'] == 'openpine' else None, primary_component=task['component'])
     if task['component'] == 'openpine':
         env['OPENPINE_PRODUCER_COMMITS_JSON'] = compiler_commit_environment(plan.get('source_commits', {}))
     env['OPENPINE_STAGE1_EVIDENCE'] = str(folder / 'owner-evidence')

@@ -82,7 +82,8 @@ def test_live_floor_cancels_owned_process_preserves_private(tmp_path, monkeypatc
     assert len(run['attempts']) == 1 and run['attempts'][0]['status'] == 'cancelled'
     import psutil
     assert not psutil.pid_exists(int(marker.read_text())), 'owned child remains alive after join'
-    assert run['attempts'][0]['returncode'] < 0
+    from rc6_tests.cancelled_family import assert_cancelled_family
+    assert_cancelled_family(output, run['attempts'][0])
     assert run['errors'] and len(calls) >= 3
     assert list(output.rglob('valuable')), 'cancelled private evidence was removed'
     assert list(output.rglob('stdout.log')) and list(output.rglob('execution.json'))

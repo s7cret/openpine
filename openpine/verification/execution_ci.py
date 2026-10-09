@@ -217,7 +217,6 @@ class Commands:
 def prepare(host: Path, work: Path, python_label: str) -> dict:
     import re
     from openpine.verification.execution_identity import validate_python_support
-    validate_python_support(read_json(host / 'verification/execution-policy.json'), environment_snapshot())
     if '.'.join(map(str, sys.version_info[:2])) != python_label:
         raise ValueError('actual interpreter differs from requested matrix lane')
     work.mkdir(parents=True, exist_ok=False)
@@ -234,6 +233,7 @@ def prepare(host: Path, work: Path, python_label: str) -> dict:
         raise ValueError('git is required to prepare pinned CI sources')
     head = command.run([git, 'rev-parse', 'HEAD'], cwd=host).strip()
     command.run([git, 'diff', '--exit-code', 'HEAD'], cwd=host)
+    validate_python_support(read_json(host / 'verification/execution-policy.json'), environment_snapshot())
     host_tar = work / 'host.tar'
     command.run([git, 'archive', '--format=tar', '--output=' + str(host_tar), head], cwd=host)
     (stack / 'openpine').mkdir()

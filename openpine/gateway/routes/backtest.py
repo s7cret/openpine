@@ -447,6 +447,42 @@ def _process_tasks_are_stopped(pid: int, start_time: int) -> bool:
     return False
 
 
+def _reap_adopted_zombies(deadline: float) -> None:
+    """Reap direct adopted children through stable pidfds before reporting cleanup."""
+    while True:
+        pending = False
+        for children_path in Path('/proc/self/task').glob('*/children'):
+            try:
+                children = children_path.read_text().split()
+            except FileNotFoundError:
+                continue
+            for label in children:
+                pid = int(label)
+                identity = _proc_identity(pid)
+                if identity is None or identity[0] != 'Z':
+                    continue
+                pending = True
+                try:
+                    descriptor = _pidfd_open(pid)
+                except ProcessLookupError:
+                    continue
+                try:
+                    current = _proc_identity(pid)
+                    if current is None or current[2] != identity[2]:
+                        continue
+                    try:
+                        os.waitid(os.P_PIDFD, descriptor, os.WEXITED | os.WNOHANG)
+                    except ChildProcessError:
+                        pass  # Another owning thread may already have reaped it.
+                finally:
+                    os.close(descriptor)
+        if not pending:
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError('backtest adopted children were not reaped')
+        time.sleep(0.005)
+
+
 def _terminate_current_process_descendants(timeout: float = 2.0) -> None:
     """Freeze, discover to a fixed point, then kill every owned descendant."""
 
@@ -613,6 +649,7 @@ def _terminate_current_process_descendants(timeout: float = 2.0) -> None:
             raise RuntimeError("backtest worker descendants did not stop")
         if _descendant_process_identities(root_pid):
             raise RuntimeError("backtest worker descendants appeared after cleanup")
+        _reap_adopted_zombies(deadline)
     except BaseException:
         for _start_time, descriptor in owned.values():
             try:

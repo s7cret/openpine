@@ -528,6 +528,8 @@ def _supervise_family(argv: list[str], parent_pid: int, evidence: Path, *, launc
             errors[-1] = message
         else:
             errors.append(message)
+    if child is not None:
+        returncode = child.poll()
     body = {
         'argv': argv, 'cwd': os.getcwd(), 'supervisor_pid': owner_pid, 'controller_pid': parent_pid,
         'command_pid': child.pid if child is not None else None, 'reason': reason,
