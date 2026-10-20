@@ -1,0 +1,5 @@
+//@version=1
+study("Pine v1")
+plot(ema(close,3), "same")
+plot(ema(close,1), "same")
+plot(ema(ema(close,3),3), "nested")

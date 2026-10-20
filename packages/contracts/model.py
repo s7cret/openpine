@@ -52,6 +52,7 @@ class ProgramIdentity:
     semantic_profile_id: str
     implementation_profile_id: str
     implementation_sha256: str
+    compatibility_notes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

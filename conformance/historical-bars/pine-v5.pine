@@ -1,3 +1,3 @@
 //@version=5
-indicator("Unimplemented v5")
+indicator("Version five EMA")
 plot(ta.ema(close, 3))

@@ -1,63 +1,38 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:openpine:spec:import:1",
   "$defs": {
     "lock": {
-      "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "schema_version": {
-          "const": "openpine.spec.lock.1"
-        },
-        "snapshot": {
-          "type": "string",
-          "minLength": 1
-        },
-        "source_commit": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{40}$"
-        },
         "manifest_sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "semantic_hash": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "semantic_profile_id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "schema_sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
         },
         "profiles": {
-          "type": "object",
+          "additionalProperties": false,
           "properties": {
             "spec/profiles/pine-v1.json": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
             },
             "spec/profiles/pine-v2.json": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
             },
             "spec/profiles/pine-v3.json": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
             },
             "spec/profiles/pine-v4.json": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
             },
             "spec/profiles/pine-v5.json": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
             },
             "spec/profiles/pine-v6.json": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
             }
           },
           "required": [
@@ -68,7 +43,48 @@
             "spec/profiles/pine-v5.json",
             "spec/profiles/pine-v6.json"
           ],
-          "additionalProperties": false
+          "type": "object"
+        },
+        "schema_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.spec.lock.1"
+        },
+        "semantic_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "semantic_profile_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "snapshot": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "source_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "version_review": {
+          "additionalProperties": false,
+          "properties": {
+            "manifest_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "path": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "manifest_sha256"
+          ],
+          "type": "object"
         }
       },
       "required": [
@@ -81,45 +97,45 @@
         "schema_sha256",
         "profiles"
       ],
-      "additionalProperties": false
+      "type": "object"
     },
     "manifest": {
-      "type": "object",
+      "additionalProperties": false,
       "properties": {
+        "files": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minProperties": 1,
+          "type": "object"
+        },
+        "import_policy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "release": {
+          "minLength": 1,
+          "type": "string"
+        },
         "schema_version": {
           "const": "openpine.spec.snapshot.1"
         },
-        "release": {
-          "type": "string",
-          "minLength": 1
+        "semantic_bundle": {
+          "minLength": 1,
+          "type": "string"
         },
         "source_commit": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{40}$"
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
         },
         "source_inputs": {
-          "type": "object",
-          "minProperties": 1,
           "additionalProperties": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          }
-        },
-        "semantic_bundle": {
-          "type": "string",
-          "minLength": 1
-        },
-        "files": {
-          "type": "object",
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
           "minProperties": 1,
-          "additionalProperties": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          }
-        },
-        "import_policy": {
-          "type": "string",
-          "minLength": 1
+          "type": "object"
         }
       },
       "required": [
@@ -131,44 +147,44 @@
         "files",
         "import_policy"
       ],
-      "additionalProperties": false
+      "type": "object"
     },
     "profile": {
-      "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "schema_version": {
-          "const": "openpine.spec.profile.2"
-        },
-        "profile_id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "language_version": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 6
-        },
-        "snapshot": {
-          "type": "string",
-          "minLength": 1
-        },
-        "reference": {
-          "type": "string",
-          "minLength": 1
-        },
-        "semantic_profile_ids": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "uniqueItems": true
+        "default_when_unspecified": {
+          "type": "boolean"
         },
         "inheritance": {
           "const": "explicit_only"
         },
-        "default_when_unspecified": {
-          "type": "boolean"
+        "language_version": {
+          "maximum": 6,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "profile_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "reference": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.spec.profile.2"
+        },
+        "semantic_profile_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "snapshot": {
+          "minLength": 1,
+          "type": "string"
         }
       },
       "required": [
@@ -181,127 +197,68 @@
         "inheritance",
         "default_when_unspecified"
       ],
-      "additionalProperties": false
+      "type": "object"
     },
     "reference": {
-      "type": "object",
+      "additionalProperties": false,
       "properties": {
-        "schema_version": {
-          "const": "openpine.spec.reference.1"
-        },
-        "language_version": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 6
-        },
-        "source_snapshot": {
-          "type": "string",
-          "minLength": 1
-        },
-        "source_coverage": {
-          "type": "string",
-          "minLength": 1
-        },
-        "source_catalog_sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "source_issues": {
-          "type": "array",
-          "items": {
-            "type": "object"
-          }
-        },
         "entries": {
-          "type": "array",
           "items": {
-            "type": "object",
+            "additionalProperties": false,
             "properties": {
-              "entry_id": {
-                "type": "string",
-                "minLength": 1
-              },
-              "language_version": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 6
-              },
-              "name": {
-                "type": "string",
-                "minLength": 1
+              "basis": {
+                "minLength": 1,
+                "type": "string"
               },
               "category": {
-                "type": "string",
-                "minLength": 1
+                "minLength": 1,
+                "type": "string"
+              },
+              "entry_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "executable_contract": {
+                "const": false
+              },
+              "family_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "language_version": {
+                "maximum": 6,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "name": {
+                "minLength": 1,
+                "type": "string"
               },
               "namespace": {
                 "type": "string"
               },
-              "symbol_id": {
-                "type": "string",
-                "minLength": 1
-              },
               "overload_id": {
-                "type": "string",
-                "minLength": 1
-              },
-              "structure_role": {
-                "type": "string",
-                "minLength": 1
-              },
-              "family_id": {
-                "type": "string",
-                "minLength": 1
-              },
-              "basis": {
-                "type": "string",
-                "minLength": 1
-              },
-              "syntax_spellings": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
+                "minLength": 1,
+                "type": "string"
               },
               "parameters": {
-                "type": "array",
                 "items": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
-                    "parameter_id": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "type_spellings": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "requiredness_claim": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
                     "default_claim": {
-                      "type": "object",
+                      "additionalProperties": false,
                       "properties": {
-                        "state": {
-                          "type": "string",
-                          "minLength": 1
+                        "evidence_sha256": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
                         },
                         "spellings": {
-                          "type": "array",
-                          "items": {}
+                          "items": {},
+                          "type": "array"
                         },
-                        "evidence_sha256": {
-                          "type": "string",
-                          "pattern": "^[0-9a-f]{64}$"
+                        "state": {
+                          "minLength": 1,
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -309,7 +266,27 @@
                         "spellings",
                         "evidence_sha256"
                       ],
-                      "additionalProperties": false
+                      "type": "object"
+                    },
+                    "name": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "parameter_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "requiredness_claim": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "type_spellings": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
                     }
                   },
                   "required": [
@@ -319,30 +296,42 @@
                     "requiredness_claim",
                     "default_claim"
                   ],
-                  "additionalProperties": false
-                }
+                  "type": "object"
+                },
+                "type": "array"
               },
               "result_type_spellings": {
-                "type": "array",
                 "items": {
                   "type": "string"
-                }
-              },
-              "sources": {
-                "type": "array",
-                "items": {
-                  "type": "object"
-                }
-              },
-              "source_record_sha256": {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": "array"
               },
               "review_status": {
                 "const": "reference_only"
               },
-              "executable_contract": {
-                "const": false
+              "source_record_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "sources": {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "structure_role": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "symbol_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "syntax_spellings": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               }
             },
             "required": [
@@ -364,9 +353,36 @@
               "review_status",
               "executable_contract"
             ],
-            "additionalProperties": false
+            "type": "object"
           },
-          "minItems": 1
+          "minItems": 1,
+          "type": "array"
+        },
+        "language_version": {
+          "maximum": 6,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": "openpine.spec.reference.1"
+        },
+        "source_catalog_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "source_coverage": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "source_issues": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "source_snapshot": {
+          "minLength": 1,
+          "type": "string"
         }
       },
       "required": [
@@ -378,7 +394,275 @@
         "source_issues",
         "entries"
       ],
-      "additionalProperties": false
+      "type": "object"
+    },
+    "versions_manifest": {
+      "additionalProperties": false,
+      "properties": {
+        "base_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "files": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minProperties": 1,
+          "type": "object"
+        },
+        "release": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.spec.versions-manifest.1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "release",
+        "base_manifest_sha256",
+        "files"
+      ],
+      "type": "object"
+    },
+    "versions_review": {
+      "additionalProperties": false,
+      "properties": {
+        "base_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "external_pine_execution": {
+          "const": false
+        },
+        "policy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.spec.versions.1"
+        },
+        "versions": {
+          "additionalProperties": false,
+          "properties": {
+            "1": {
+              "additionalProperties": false,
+              "properties": {
+                "caveats": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "evidence_level": {
+                  "enum": [
+                    "reconstructed",
+                    "documentation_derived"
+                  ]
+                },
+                "registry": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_profile_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "semantic_sha256",
+                "semantic_profile_id",
+                "evidence_level",
+                "caveats"
+              ],
+              "type": "object"
+            },
+            "2": {
+              "additionalProperties": false,
+              "properties": {
+                "caveats": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "evidence_level": {
+                  "enum": [
+                    "reconstructed",
+                    "documentation_derived"
+                  ]
+                },
+                "registry": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_profile_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "semantic_sha256",
+                "semantic_profile_id",
+                "evidence_level",
+                "caveats"
+              ],
+              "type": "object"
+            },
+            "3": {
+              "additionalProperties": false,
+              "properties": {
+                "caveats": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "evidence_level": {
+                  "enum": [
+                    "reconstructed",
+                    "documentation_derived"
+                  ]
+                },
+                "registry": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_profile_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "semantic_sha256",
+                "semantic_profile_id",
+                "evidence_level",
+                "caveats"
+              ],
+              "type": "object"
+            },
+            "4": {
+              "additionalProperties": false,
+              "properties": {
+                "caveats": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "evidence_level": {
+                  "enum": [
+                    "reconstructed",
+                    "documentation_derived"
+                  ]
+                },
+                "registry": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_profile_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "semantic_sha256",
+                "semantic_profile_id",
+                "evidence_level",
+                "caveats"
+              ],
+              "type": "object"
+            },
+            "5": {
+              "additionalProperties": false,
+              "properties": {
+                "caveats": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "evidence_level": {
+                  "enum": [
+                    "reconstructed",
+                    "documentation_derived"
+                  ]
+                },
+                "registry": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_profile_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "semantic_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "registry",
+                "semantic_sha256",
+                "semantic_profile_id",
+                "evidence_level",
+                "caveats"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_version",
+        "base_manifest_sha256",
+        "versions",
+        "external_pine_execution",
+        "policy"
+      ],
+      "type": "object"
     }
-  }
+  },
+  "$id": "urn:openpine:spec:import:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

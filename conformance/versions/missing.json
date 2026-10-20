@@ -1,0 +1,1 @@
+{"bars":[{"close":null,"time":0},{"close":10.0,"time":60000},{"close":null,"time":120000},{"close":20.0,"time":180000},{"close":30.0,"time":240000},{"close":null,"time":300000},{"close":40.0,"time":360000}],"context_id":"fixture.versions.missing","schema_version":"openpine.historical-bars.1","symbol":"TEST:VERSIONS","timeframe":"1"}

@@ -53,6 +53,16 @@ class SpecificationTests(unittest.TestCase):
         manifest["files"] = files
         (bundle / "manifest.json").write_bytes(encode(manifest))
         lock["manifest_sha256"] = sha((bundle / "manifest.json").read_bytes())
+        if "version_review" in lock:
+            directory = root / lock["version_review"]["path"]
+            review = read_json(directory / "review.json")
+            review["base_manifest_sha256"] = lock["manifest_sha256"]
+            (directory / "review.json").write_bytes(encode(review))
+            version_manifest = read_json(directory / "manifest.json")
+            version_manifest["base_manifest_sha256"] = lock["manifest_sha256"]
+            version_manifest["files"]["review.json"] = sha((directory / "review.json").read_bytes())
+            (directory / "manifest.json").write_bytes(encode(version_manifest))
+            lock["version_review"]["manifest_sha256"] = sha((directory / "manifest.json").read_bytes())
         for path in lock["profiles"]:
             lock["profiles"][path] = sha((root / path).read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
@@ -81,7 +91,8 @@ class SpecificationTests(unittest.TestCase):
             row = report["versions"][version - 1]
             self.assertNotIn("openpine_implementation", row)
             if version < 6:
-                self.assertEqual(row["admitted_assertions"], 0)
+                self.assertEqual(row["admitted_assertions"], 15)
+                self.assertEqual(row["evidence_level"], "reconstructed" if version < 3 else "documentation_derived")
 
     def test_profiles_and_resolved_values_are_returned_as_copies(self):
         profile = self.snapshot.profile(6)

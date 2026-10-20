@@ -19,13 +19,12 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
     grammar = snapshot.grammar
     version = language_version(source, grammar["directive_pattern"])
     snapshot.profile(version)
-    if version != 6:
-        raise OpenPineError(Diagnostic("IMPLEMENTATION_MISSING", "LANGUAGE_PROFILE_UNIMPLEMENTED",
-            f"Pine v{version} is recorded but not implemented in this execution slice.", source.span(0, 0),
-            language_version=version))
+    if version != catalog.language_version:
+        raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE", "CATALOG_VERSION", "Compiler catalog does not match the source version.", source.span(0, 0), language_version=version))
+    semantic_profile, semantic_hash, notes = snapshot.semantic_identity(version)
     identity = ProgramIdentity(hashlib.sha256(text.encode("utf-8")).hexdigest(), version,
-        snapshot.lock["manifest_sha256"], value_sha(snapshot.lock), snapshot.lock["semantic_hash"], snapshot.lock["semantic_profile_id"],
-        implementation_profile, implementation_sha256)
+        snapshot.lock["manifest_sha256"], value_sha(snapshot.lock), semantic_hash, semantic_profile,
+        implementation_profile, implementation_sha256, notes)
     try:
         statements = Parser(source, grammar).parse()
         return lower_program(Binder(catalog).program(statements, source.span(0, 0)), identity)

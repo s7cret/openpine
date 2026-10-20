@@ -60,8 +60,8 @@ class ExecutionTests(unittest.TestCase):
 
     def test_independent_corpus_and_recorded_outcomes(self):
         report = run_cases(self.session)
-        self.assertEqual(report["executed_programs"], 3)
-        self.assertEqual(report["expected_rejections"], 5)
+        self.assertEqual(report["executed_programs"], 5)
+        self.assertEqual(report["expected_rejections"], 3)
         self.assertTrue(all(row["passed"] for row in report["results"]))
 
     def test_first_program_is_typed_resolved_and_deterministic(self):
@@ -109,17 +109,20 @@ class ExecutionTests(unittest.TestCase):
                 with self.subTest(expression=expression):
                     self.reject(f'//@version=6\nindicator("bad")\nplot({expression})\n', "LANGUAGE_INVALID", code)
 
-    def test_versions_v1_to_v5_are_explicitly_unimplemented(self):
+    def test_versions_v1_to_v5_have_explicit_numeric_profiles(self):
         for version in range(1, 6):
             with self.subTest(version=version):
-                error = self.reject(f'//@version={version}\nindicator("old")\nplot(-2.5)',
-                                    "IMPLEMENTATION_MISSING", "LANGUAGE_PROFILE_UNIMPLEMENTED")
-                self.assertEqual(error.language_version, version)
-        self.assertEqual(self.reject('study("old")\nplot(abs(-2.5))', "IMPLEMENTATION_MISSING").language_version, 1)
+                declaration = "study" if version < 5 else "indicator"
+                program, result = self.session.run(f'//@version={version}\n{declaration}("old")\nplot(-2.5)')
+                self.assertEqual(program.identity.language_version, version)
+                self.assertEqual(result.outputs[0].values, (-2.5,))
+        program, result = self.session.run('study("old")\nplot(abs(-2.5))')
+        self.assertEqual(program.identity.language_version, 1)
+        self.assertEqual(result.outputs[0].values, (2.5,))
 
     def test_directives_in_strings_and_comments_are_not_selected(self):
         source = 'indicator("//@version=6")\nplot(-2.5)'
-        self.assertEqual(self.reject(source, "IMPLEMENTATION_MISSING").language_version, 1)
+        self.assertEqual(self.reject(source, "LANGUAGE_INVALID").language_version, 1)
         source = '// an ordinary //@version=5 comment\n' + SOURCE.replace('R6 first run', '//@version=3')
         _, result = self.session.run(source)
         self.assertEqual(result.identity.language_version, 6)

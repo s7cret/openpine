@@ -71,31 +71,33 @@ def type_options(description: dict) -> tuple[str, ...]:
 
 
 class Catalog:
-    def __init__(self, snapshot: Snapshot, capabilities: dict[str, tuple[str, ...]], reference_slots=None):
+    def __init__(self, snapshot: Snapshot, capabilities: dict[str, tuple[tuple[str, ...], ...]], reference_slots=None, language_version=6):
         self.snapshot, self.capabilities = snapshot, capabilities
+        self.language_version = language_version
+        registry = snapshot.registry_for(language_version)
         self.rules = {}
-        rules = {row["rule_id"]: row for row in snapshot.registry["rules"]}
+        rules = {row["rule_id"]: row for row in registry["rules"]}
         for rule_id in ("rule.binding", "rule.overload", "rule.types", "rule.grammar", "rule.arguments.left_to_right"):
             rule = rules.get(rule_id)
             if not rule:
                 raise SpecError("SPEC_UNRESOLVED", f"Required compiler rule is missing: {rule_id}")
-            self.rules[rule_id] = snapshot.resolve(rule["semantic_assertion"], 6)
+            self.rules[rule_id] = snapshot.resolve(rule["semantic_assertion"], language_version)
         self.signatures = {}
         self.contracts = {}
         self.references = {}
-        for symbol in snapshot.registry["symbols"]:
-            if 6 not in symbol["language_versions"]:
+        for symbol in registry["symbols"]:
+            if language_version not in symbol["language_versions"]:
                 continue
             if symbol["name"] in (reference_slots or {}):
                 assertion_id = symbol["value_assertion_ref"]
-                value = snapshot.resolve(assertion_id, 6)
+                value = snapshot.resolve(assertion_id, language_version)
                 self.references[symbol["name"]] = ReferenceContract(
                     symbol["symbol_id"], assertion_id, value_sha(value), reference_slots[symbol["name"]],
                     ValueType(type_options(value["type"])[0], value["qualifier"]))
             for overload in symbol["overloads"]:
                 assertion_id = overload["signature_assertion"]
                 try:
-                    signature = snapshot.resolve(assertion_id, 6)
+                    signature = snapshot.resolve(assertion_id, language_version)
                 except SpecError as error:
                     if error.code in ("SPEC_UNRESOLVED", "PROFILE_UNCOVERED"):
                         continue
@@ -103,7 +105,7 @@ class Catalog:
                 contract = None
                 parameters = signature["parameters"]
                 names = tuple(parameter["name"] for parameter in parameters)
-                if self.capabilities.get(signature["operation"]) == names:
+                if names in self.capabilities.get(signature["operation"], ()):
                     if any(parameter["variadic"] or parameter["evaluation_policy"] != "eager" for parameter in parameters):
                         raise SpecError("IMPLEMENTATION_MISSING", "Kernel does not support this argument evaluation contract")
                     result = signature["result"]
@@ -135,7 +137,7 @@ class Binder:
         self.qualifiers = catalog.rules["rule.types"]["qualifier_order"]
 
     def fail(self, category: str, code: str, message: str, span: SourceSpan, rule="rule.binding"):
-        raise OpenPineError(Diagnostic(category, code, message, span, rule, 6))
+        raise OpenPineError(Diagnostic(category, code, message, span, rule, self.catalog.language_version))
 
     def expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
         if isinstance(expression, parser.Literal):
@@ -152,7 +154,7 @@ class Binder:
             return BoundUnary(expression.operator, operand, operand.value_type, expression.span)
         candidates = self.catalog.signatures.get(expression.name)
         if not candidates:
-            known = any(row["name"] == expression.name for row in self.catalog.snapshot.references[6]["entries"])
+            known = any(row["name"] == expression.name for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
             self.fail("SPEC_UNRESOLVED" if known else "LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE",
                       f"No admitted signature for {expression.name}.", expression.span)
         implemented = [(signature, contract) for signature, contract in candidates if contract]
@@ -187,7 +189,9 @@ class Binder:
         for source_index, (argument, expression) in enumerate(zip(call.arguments, expressions, strict=True)):
             if argument.name is not None:
                 named_seen = True
-                if not signature["binding"]["named"] or argument.name not in positions:
+                if not signature["binding"]["named"]:
+                    self.fail("PROFILE_UNCOVERED", "NAMED_ARGUMENT_UNVERIFIED", "Named calls are not established for this historical signature.", argument.span)
+                if argument.name not in positions:
                     self.fail("LANGUAGE_INVALID", "UNKNOWN_ARGUMENT", f"Unknown argument {argument.name!r}.", argument.span)
                 position = positions[argument.name]
             else:

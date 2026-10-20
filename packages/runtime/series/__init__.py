@@ -1,6 +1,8 @@
 """EMA recurrence and the precise admitted rule forms this kernel implements."""
 
-from dataclasses import dataclass
+import copy
+import math
+from dataclasses import dataclass, field
 
 
 def expression(operation, *arguments):
@@ -30,6 +32,15 @@ SUPPORTED_RULES = {
 }
 
 
+def supported_rules(language_version):
+    rules = copy.deepcopy(SUPPORTED_RULES)
+    if language_version < 5:
+        rules["rule.ema"].update(seed="sma_first_length_non_na", first_defined_result="length_non_na_sources", minimum_history="length")
+    if language_version < 3:
+        rules["rule.ema.length"]["parameter_name"] = "y"
+    return rules
+
+
 class KernelError(ValueError):
     def __init__(self, code, message, rule_id):
         self.code, self.rule_id = code, rule_id
@@ -51,3 +62,21 @@ class EMAState:
             alpha = 2.0 / (length + 1)
             self.previous = alpha * source + (1.0 - alpha) * self.previous
         return self.previous
+
+
+@dataclass
+class SMASeedEMAState(EMAState):
+    pending: list[float] = field(default_factory=list)
+
+    def update(self, source: float | None, length: int) -> float | None:
+        if length <= 0:
+            raise KernelError("EMA_LENGTH", "EMA length must be greater than zero.", "rule.ema.length")
+        if self.previous is None:
+            if source is not None:
+                self.pending.append(source)
+            if len(self.pending) < length:
+                return None
+            self.previous = math.fsum(value / length for value in self.pending)
+            self.pending.clear()
+            return self.previous
+        return super().update(source, length)

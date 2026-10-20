@@ -13,6 +13,8 @@ CASES = "conformance/literal-harness/cases.json"
 REPORT = "conformance/results/literal-harness.1.json"
 BAR_CASES = "conformance/historical-bars/cases.json"
 BAR_REPORT = "conformance/results/historical-bars.1.json"
+VERSION_CASES = "conformance/versions/cases.json"
+VERSION_REPORT = "conformance/results/versions.1.json"
 
 
 def operations(node):
@@ -40,11 +42,14 @@ def run_cases(session=None, *, cases_path=CASES):
         raise ValueError("Corpus oracle attribution has changed")
     index(corpus["cases"], "case_id")
     assertions = index(session.snapshot.registry["assertions"], "assertion_id")
+    for registry in session.snapshot.version_registries.values():
+        assertions.update(index(registry["assertions"], "assertion_id"))
     rules = index(session.snapshot.registry["rules"], "rule_id")
     if not set(corpus["rule_refs"]) <= rules.keys() or not set(corpus["assertion_refs"]) <= assertions.keys():
         raise ValueError("Corpus refers to missing specification entries")
     results = []
     exercised = set()
+    operations_by_version = {}
     for case in corpus["cases"]:
         source_path = safe_path(path.parent, case["source"])
         relative = source_path.relative_to(ROOT).as_posix()
@@ -65,8 +70,11 @@ def run_cases(session=None, *, cases_path=CASES):
                     raise AssertionError("Historical result lacks its executed dataset identity")
             observed_version = result.identity.language_version
             ir_hash = program_hash(program)
+            case_operations = set()
             for statement in program.statements:
-                exercised |= operations(statement)
+                case_operations |= operations(statement)
+            exercised |= case_operations
+            operations_by_version.setdefault(str(observed_version), set()).update(case_operations)
             if len({output.output_id for output in result.outputs}) != len(result.outputs):
                 raise AssertionError("Outputs share a call-site identity")
         except OpenPineError as error:
@@ -77,6 +85,8 @@ def run_cases(session=None, *, cases_path=CASES):
         if observed_version != case["language_version"]:
             raise AssertionError(f"{case['case_id']}: wrong language profile")
         results.append({"case_id": case["case_id"], "source_sha256": sha(raw), "program_sha256": ir_hash,
+                        "language_version": observed_version,
+                        "semantic_profile_id": session.snapshot.semantic_identity(observed_version)[0],
                         "expected_sha256": sha(encode(case["expected"])), "observed": observed, "passed": True})
         if profile == HISTORICAL_PROFILE_ID:
             results[-1]["bars_sha256"] = sha(bars_path.read_bytes()) if bars_path else None
@@ -87,16 +97,22 @@ def run_cases(session=None, *, cases_path=CASES):
             "executed_programs": sum(row["observed"]["status"] == "executed" for row in results),
             "expected_rejections": sum(row["observed"]["status"] == "rejected" for row in results),
             "exercised_operations": sorted(exercised),
+            "operations_by_version": {key: sorted(value) for key, value in sorted(operations_by_version.items())},
             "scope": ("Literal/call harness, one synthetic observation, no market data or complete Pine-version compatibility claim."
-                      if profile == PROFILE_ID else "Pine v6 close and EMA on fixed confirmed historical bars; no realtime, requests or full-version compatibility claim.")}
+                      if profile == PROFILE_ID else "Explicit version-specific close/EMA profiles on confirmed historical bars; documentation-derived or reconstructed policies, not external Pine execution proof.")}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path == VERSION_CASES:
+            matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
+                      for key, values in report["operations_by_version"].items()}
+            if set(matrix) != {str(version) for version in range(1, 7)} or any(value != matrix["6"] for value in matrix.values()):
+                raise SystemExit("Version matrix is incomplete: each version needs explicit cases for the declared feature families.")
         encoded = encode(report)
         path = ROOT / report_path
         if args.write_report:

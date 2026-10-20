@@ -1,1 +1,1 @@
-{"default_when_unspecified":false,"inheritance":"explicit_only","language_version":5,"profile_id":"openpine.pine-v5.spec.1","reference":"reference/v5.json","schema_version":"openpine.spec.profile.2","semantic_profile_ids":[],"snapshot":"spec/bundles/pine-spec-20261020.1"}
+{"default_when_unspecified":false,"inheritance":"explicit_only","language_version":5,"profile_id":"openpine.pine-v5.spec.1","reference":"reference/v5.json","schema_version":"openpine.spec.profile.2","semantic_profile_ids":["pine5.historical-core.1"],"snapshot":"spec/bundles/pine-spec-20261020.1"}

@@ -1,0 +1,3 @@
+//@version=6
+indicator("Pine v6")
+plot(close, "close")

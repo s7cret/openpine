@@ -52,7 +52,7 @@ class HistoricalTests(unittest.TestCase):
 
     def test_independent_historical_corpus(self):
         report = run_cases(self.session, cases_path=BAR_CASES)
-        self.assertEqual((report["executed_programs"], report["expected_rejections"]), (5, 6))
+        self.assertEqual((report["executed_programs"], report["expected_rejections"]), (6, 5))
         self.assertIn("series.ema", report["exercised_operations"])
         self.assertIn("context.close", report["exercised_operations"])
 
@@ -133,15 +133,17 @@ class HistoricalTests(unittest.TestCase):
         _, result = self.session.run(SOURCE, data=self.data)
         self.assertEqual(result.outputs[0].values, (10.0, 15.0, 22.5, 31.25))
 
-    def test_profiles_require_data_and_preserve_version_boundaries(self):
+    def test_profiles_require_data_and_select_version_contracts(self):
         with self.assertRaises(OpenPineError) as caught:
             self.session.run(SOURCE)
         self.assertEqual(caught.exception.diagnostic.code, "BARS_REQUIRED")
         for version in range(1, 6):
-            with self.subTest(version=version), self.assertRaises(OpenPineError) as caught:
-                self.session.run(SOURCE.replace('version=6', f'version={version}'), data=self.data)
-            self.assertEqual((caught.exception.diagnostic.code, caught.exception.diagnostic.language_version),
-                             ("LANGUAGE_PROFILE_UNIMPLEMENTED", version))
+            source = SOURCE.replace('version=6', f'version={version}')
+            if version < 5:
+                source = source.replace('indicator(', 'study(').replace('ta.ema(', 'ema(')
+            program, result = self.session.run(source, data=self.data)
+            self.assertEqual(program.identity.language_version, version)
+            self.assertEqual(result.outputs[0].values, (None, None, 20.0, 30.0) if version < 5 else (10.0, 15.0, 22.5, 31.25))
         literal = Session(snapshot=self.session.snapshot)
         with self.assertRaises(OpenPineError) as caught:
             literal.run('//@version=6\nindicator("literal")\nplot(1)', data=self.data)

@@ -1,4 +1,4 @@
-"""Compile or run the bounded literal and historical Pine v6 profiles."""
+"""Compile or run bounded, explicitly qualified Pine v1-v6 profiles."""
 
 import argparse
 import json

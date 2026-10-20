@@ -136,8 +136,16 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     if destination.exists() and file_map(destination) != {name: sha(raw) for name, raw in files.items()}:
         raise SpecError("SPEC_IMMUTABLE", "release already exists with different contents; choose a new release")
     generated = {}
+    existing_lock = read_json(root / "spec/lock.json") if (root / "spec/lock.json").exists() else {}
+    version_pin = existing_lock.get("version_review")
+    version_review = read_json(safe_path(root, version_pin["path"]) / "review.json") if version_pin else None
+    if version_review and version_review["base_manifest_sha256"] != sha(files["manifest.json"]):
+        raise SpecError("SPEC_PROVENANCE", "version review must be replaced when changing its base snapshot")
     for version in range(1, 7):
-        generated[f"spec/profiles/pine-v{version}.json"] = encode(profile(version, destination_relative, source_manifest))
+        selected = profile(version, destination_relative, source_manifest)
+        if version_review and str(version) in version_review["versions"]:
+            selected["semantic_profile_ids"] = [version_review["versions"][str(version)]["semantic_profile_id"]]
+        generated[f"spec/profiles/pine-v{version}.json"] = encode(selected)
     lock = {
         "schema_version": "openpine.spec.lock.1", "snapshot": destination_relative,
         "source_commit": source_commit, "manifest_sha256": sha(files["manifest.json"]),
@@ -146,6 +154,8 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
         "schema_sha256": sha((root / "spec/schema/import.schema.json").read_bytes()),
         "profiles": {name: sha(raw) for name, raw in generated.items()},
     }
+    if version_pin:
+        lock["version_review"] = version_pin
     generated["spec/lock.json"] = encode(lock)
     if check:
         if not destination.exists():

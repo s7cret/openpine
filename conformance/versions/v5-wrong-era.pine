@@ -1,0 +1,3 @@
+//@version=5
+indicator("Pine v5")
+plot(ema(close,3))

@@ -18,6 +18,7 @@ class Kernel:
     parameters: tuple[str, ...]
     effects: tuple[str, ...]
     function: Callable[[tuple, object], object]
+    aliases: tuple[tuple[str, ...], ...] = ()
 
 
 def absolute(arguments, context):
@@ -36,9 +37,14 @@ def ema(arguments, context):
     return context.ema().update(*arguments)
 
 
+def legacy_ema(arguments, context):
+    return context.ema(sma_seed=True).update(*arguments)
+
+
 KERNELS = MappingProxyType({
-    "numeric.abs": Kernel(("number",), (), absolute),
+    "numeric.abs": Kernel(("number",), (), absolute, (("x",),)),
     "harness.indicator": Kernel(("title", "shorttitle", "overlay"), ("declaration",), indicator),
     "visual.plot": Kernel(("series", "title"), ("emits_plot",), plot),
     "series.ema": Kernel(("source", "length"), ("reads_history", "updates_state"), ema),
+    "series.ema.sma_seed": Kernel(("source", "length"), ("reads_history", "updates_state"), legacy_ema, (("x", "y"),)),
 })

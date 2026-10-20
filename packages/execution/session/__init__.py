@@ -6,13 +6,14 @@ import sys
 from importlib.metadata import version
 
 from packages.compiler.compile import compile_source
+from packages.compiler.frontend.parser import Source, language_version
 from packages.compiler.semantic.binder import Catalog
 from packages.compiler.semantic.specification import ROOT, SpecError, load_snapshot, require_python
 from packages.contracts import BarFrame, Diagnostic, HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, OpenPineError, ValueType
 from packages.marketdata import data_identity
 from packages.runtime.engine import Runtime
 from packages.runtime.operations import KERNELS
-from packages.runtime.series import SUPPORTED_RULES
+from packages.runtime.series import supported_rules
 
 PROFILE_ID = LITERAL_PROFILE_ID
 
@@ -33,33 +34,44 @@ class Session:
             raise ValueError("Unknown implementation profile")
         self.profile_id = profile_id
         self.snapshot = snapshot if snapshot is not None else load_snapshot()
-        capabilities = {name: kernel.parameters for name, kernel in KERNELS.items()
-                        if profile_id == HISTORICAL_PROFILE_ID or name != "series.ema"}
-        self.catalog = Catalog(self.snapshot, capabilities, {"close": "close"} if profile_id == HISTORICAL_PROFILE_ID else {})
-        if profile_id == HISTORICAL_PROFILE_ID:
-            rules = {row["rule_id"]: row for row in self.snapshot.registry["rules"]}
-            for rule_id, supported in SUPPORTED_RULES.items():
-                if rule_id not in rules:
-                    raise SpecError("SPEC_UNRESOLVED", f"Required runtime rule is missing: {rule_id}")
-                admitted = self.snapshot.resolve(rules[rule_id]["semantic_assertion"], 6)
-                if admitted != supported:
-                    raise SpecError("IMPLEMENTATION_MISSING", f"Kernel does not implement the admitted rule: {rule_id}")
-            if self.catalog.references["close"].value_type != ValueType("float", "series"):
-                raise SpecError("IMPLEMENTATION_MISSING", "Unsupported close value contract")
+        self.capabilities = {name: (kernel.parameters, *kernel.aliases) for name, kernel in KERNELS.items()
+                             if profile_id == HISTORICAL_PROFILE_ID or not name.startswith("series.ema")}
+        self.catalogs = {}
+        self.catalog = self.catalog_for(6)  # Compatibility accessor for callers inspecting the original slice.
         self.implementation_sha256 = implementation_hash()
 
+    def catalog_for(self, version):
+        if version in self.catalogs:
+            return self.catalogs[version]
+        catalog = Catalog(self.snapshot, self.capabilities, {"close": "close"} if self.profile_id == HISTORICAL_PROFILE_ID else {}, version)
+        if self.profile_id == HISTORICAL_PROFILE_ID:
+            rules = {row["rule_id"]: row for row in self.snapshot.registry_for(version)["rules"]}
+            for rule_id, supported in supported_rules(version).items():
+                if rule_id not in rules:
+                    raise SpecError("SPEC_UNRESOLVED", f"Required runtime rule is missing: {rule_id}")
+                admitted = self.snapshot.resolve(rules[rule_id]["semantic_assertion"], version)
+                if admitted != supported:
+                    raise SpecError("IMPLEMENTATION_MISSING", f"Kernel does not implement the admitted rule: {rule_id}")
+            if catalog.references["close"].value_type != ValueType("float", "series"):
+                raise SpecError("IMPLEMENTATION_MISSING", "Unsupported close value contract")
+        self.catalogs[version] = catalog
+        return catalog
+
     def compile(self, source: str, source_name: str = "<source>"):
-        return compile_source(source, source_name, self.catalog, self.implementation_sha256, self.profile_id)
+        version = language_version(Source(source, source_name), self.snapshot.grammar["directive_pattern"])
+        return compile_source(source, source_name, self.catalog_for(version), self.implementation_sha256, self.profile_id)
 
     def run(self, source: str, source_name: str = "<source>", *, data=None):
         program = self.compile(source, source_name)
-        runtime = Runtime(program.identity, self.catalog.contracts.values(), self.catalog.references.values())
+        version = program.identity.language_version
+        catalog = self.catalog_for(version)
+        runtime = Runtime(program.identity, catalog.contracts.values(), catalog.references.values())
         if self.profile_id == PROFILE_ID:
             if data is not None:
-                raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Select the historical profile for bar input.", language_version=6))
+                raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Select the historical profile for bar input.", language_version=version))
             return program, runtime.run(program)
         if data is None:
-            raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=6))
+            raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=version))
         identity = data_identity(data)
         evaluation = runtime.prepare(program)
         for index, bar in enumerate(data.bars):

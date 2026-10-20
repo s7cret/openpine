@@ -1,0 +1,5 @@
+//@version=5
+indicator("Pine v5")
+plot(ta.ema(close,3), "same")
+plot(ta.ema(close,1), "same")
+plot(ta.ema(ta.ema(close,3),3), "nested")

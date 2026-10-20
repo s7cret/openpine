@@ -1,0 +1,3 @@
+//@version=2
+study("Pine v2")
+plot(ema(x=close,y=3))

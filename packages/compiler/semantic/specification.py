@@ -7,7 +7,7 @@ import hashlib
 import json
 import math
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
 from jsonschema import Draft202012Validator
@@ -291,6 +291,23 @@ class Snapshot:
     profiles: dict[int, dict]
     references: dict[int, dict]
     grammar: dict
+    version_registries: dict[int, dict] = field(default_factory=dict)
+    version_review: dict = field(default_factory=dict)
+
+    def registry_for(self, language_version: int) -> dict:
+        self.profile(language_version)
+        if language_version == 6:
+            return self.registry
+        if language_version not in self.version_registries:
+            raise SpecError("SPEC_UNRESOLVED", "No admitted registry for this language version")
+        return self.version_registries[language_version]
+
+    def semantic_identity(self, language_version: int) -> tuple[str, str, tuple[str, ...]]:
+        self.profile(language_version)
+        if language_version == 6:
+            return self.lock["semantic_profile_id"], self.lock["semantic_hash"], ()
+        row = self.version_review["versions"][str(language_version)]
+        return row["semantic_profile_id"], row["semantic_sha256"], tuple(row["caveats"])
 
     def profile(self, language_version: int | None = None) -> dict:
         if language_version is None:
@@ -303,11 +320,14 @@ class Snapshot:
     def resolve(self, assertion_id: str, language_version: int,
                 platform_profile: str = "historical.confirmed.1"):
         profile = self.profile(language_version)
-        assertions = index(self.registry["assertions"], "assertion_id")
+        registry = self.registry
+        if assertion_id not in {row["assertion_id"] for row in registry["assertions"]} and language_version in self.version_registries:
+            registry = self.version_registries[language_version]
+        assertions = index(registry["assertions"], "assertion_id")
         assertion = assertions.get(assertion_id)
         if not assertion:
             raise SpecError("SPEC_UNRESOLVED", f"unknown assertion: {assertion_id}")
-        problem = resolution_problem(assertion, self.registry)
+        problem = resolution_problem(assertion, registry)
         if problem:
             raise SpecError("SPEC_UNRESOLVED", problem)
         scope = assertion["scope"]
@@ -315,8 +335,42 @@ class Snapshot:
             profile["semantic_profile_ids"]
         ) or scope["platform_profile_id"] != platform_profile:
             raise SpecError("PROFILE_UNCOVERED", "fact is outside the selected version/context profile")
-        decision = index(self.registry["decisions"], "decision_id")[assertion["decision_ref"]]
+        decision = index(registry["decisions"], "decision_id")[assertion["decision_ref"]]
         return copy.deepcopy(assertions[decision["selected_assertion"]]["value"])
+
+
+def load_version_review(root, lock, definitions, registry_schema):
+    pin = lock.get("version_review")
+    if pin is None:
+        return {}, {}
+    directory = safe_path(root, pin["path"])
+    if sha((directory / "manifest.json").read_bytes()) != pin["manifest_sha256"]:
+        raise SpecError("SPEC_HASH", "version review manifest differs from lock")
+    manifest = read_json(directory / "manifest.json")
+    validate_document(manifest, definitions, "versions_manifest")
+    verify_files(directory, manifest["files"])
+    review = read_json(directory / "review.json")
+    validate_document(review, definitions, "versions_review")
+    if manifest["base_manifest_sha256"] != lock["manifest_sha256"] or review["base_manifest_sha256"] != lock["manifest_sha256"]:
+        raise SpecError("SPEC_PROVENANCE", "version review belongs to another base snapshot")
+    evidence = read_json(directory / "evidence.json")
+    registries = {}
+    for version in range(1, 6):
+        row = review["versions"][str(version)]
+        path = safe_path(directory, row["registry"])
+        if sha(path.read_bytes()) != row["semantic_sha256"]:
+            raise SpecError("SPEC_HASH", "version semantic identity differs from its registry")
+        registry = read_json(path)
+        version_schema = copy.deepcopy(registry_schema)
+        version_schema["$defs"]["profile"]["properties"]["language_version"] = {"const": version}
+        validate_registry(registry, evidence, version_schema)
+        expected_scope = {"language_versions": [version], "semantic_profile_id": row["semantic_profile_id"], "platform_profile_id": "historical.confirmed.1"}
+        if any(fact["scope"] != expected_scope for fact in registry["assertions"]) or any(
+            symbol["language_versions"] != [version] for symbol in registry["symbols"]
+        ) or len(registry["profiles"]) != 1 or registry["profiles"][0]["language_version"] != version or registry["profiles"][0]["semantic_profile_id"] != row["semantic_profile_id"]:
+            raise SpecError("SPEC_VERSION", "version review has cross-version members")
+        registries[version] = registry
+    return registries, review
 
 
 def load_snapshot(root: Path = ROOT) -> Snapshot:
@@ -351,11 +405,13 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError("SPEC_HASH", f"source {name} hash mismatch")
     registry = read_json(bundle / "review/registry.json")
     evidence = read_json(source_bundle / "evidence.json")
-    validate_registry(registry, evidence, read_json(source_bundle / "registry.schema.json"))
+    registry_schema = read_json(source_bundle / "registry.schema.json")
+    validate_registry(registry, evidence, registry_schema)
     if semantic_projection(registry) != semantic["registry"]:
         raise SpecError("SPEC_REVIEW", "reviewed registry differs from published semantic projection")
     if read_json(bundle / "review/grammar.json") != semantic["grammar"]:
         raise SpecError("SPEC_REVIEW", "grammar differs from published bundle")
+    version_registries, version_review = load_version_review(root, lock, definitions, registry_schema)
     profiles, references = {}, {}
     identities = read_json(source_bundle / "identities.json")
     aliases, parameter_aliases = validate_identities(identities)
@@ -375,6 +431,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         if profile["default_when_unspecified"] != (version == 1):
             raise SpecError("SPEC_VERSION", "Pine without a version annotation must select v1")
         allowed = [source_manifest["semantic_profile_id"]] if version == source_manifest["language_version"] else []
+        if version in version_registries:
+            allowed = [version_review["versions"][str(version)]["semantic_profile_id"]]
         if profile["semantic_profile_ids"] != allowed:
             raise SpecError("SPEC_VERSION", "unreviewed inheritance of another language profile")
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
@@ -396,32 +454,45 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 if parameter_aliases.get((key, parameter["name"])) != parameter["parameter_id"]:
                     raise SpecError("SPEC_IDENTITY", "catalog parameter differs from stable alias")
         profiles[version], references[version] = profile, reference
+    if version_registries:
+        directory = safe_path(root, lock["version_review"]["path"])
+        for source in read_json(directory / "evidence.json")["sources"]["sources"]:
+            if source["kind"] != "pinned_reference_review":
+                continue
+            reference = references[source["language_version"]]
+            entry = index(reference["entries"], "entry_id").get(source["entry_id"])
+            if entry is None or entry["source_record_sha256"] != source["source_record_sha256"] or reference["source_catalog_sha256"] != source["catalog_sha256"]:
+                raise SpecError("SPEC_PROVENANCE", "review evidence differs from pinned catalog entry")
     catalog_parameters = {(entry["entry_id"], parameter["name"])
                           for reference in references.values() for entry in reference["entries"]
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"])
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review)
 
 
 def coverage(snapshot: Snapshot) -> dict:
     rows = []
     for version in range(1, 7):
         profile = snapshot.profiles[version]
-        applicable = [row for row in snapshot.registry["assertions"]
+        registries = [snapshot.registry]
+        if version in snapshot.version_registries:
+            registries.append(snapshot.version_registries[version])
+        applicable = [(row, registry) for registry in registries for row in registry["assertions"]
                       if version in row["scope"]["language_versions"]]
-        admitted = [row for row in applicable
+        admitted = [row for row, registry in applicable
                     if row["scope"]["semantic_profile_id"] in profile["semantic_profile_ids"]
-                    and resolution_problem(row, snapshot.registry) is None]
+                    and resolution_problem(row, registry) is None]
         rows.append({
             "language_version": version,
             "reference_entries": len(snapshot.references[version]["entries"]),
             "reference_source_coverage": snapshot.references[version]["source_coverage"],
             "imported_applicable_assertions": len(applicable),
             "admitted_assertions": len(admitted),
-            "unresolved_assertion_refs": sorted(row["assertion_id"] for row in applicable
-                                                if resolution_problem(row, snapshot.registry)),
+            "unresolved_assertion_refs": sorted(row["assertion_id"] for row, registry in applicable
+                                                if resolution_problem(row, registry)),
             "semantic_profile_ids": profile["semantic_profile_ids"],
+            "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],
             "versions": rows, "reference_entries": sum(row["reference_entries"] for row in rows),

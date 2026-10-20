@@ -1,0 +1,3 @@
+//@version=3
+study("Pine v3")
+plot(ema(3,3), "ema")
