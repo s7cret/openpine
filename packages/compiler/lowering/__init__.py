@@ -1,7 +1,7 @@
 """Lower already bound expressions without resolving names again."""
 
-from packages.compiler.semantic.binder import BoundCall, BoundExpression, BoundLiteral, BoundUnary
-from packages.contracts import ArgumentIR, CallIR, LiteralIR, ProgramIR, UnaryIR
+from packages.compiler.semantic.binder import BoundCall, BoundConversion, BoundExpression, BoundLiteral, BoundReference, BoundUnary
+from packages.contracts import ArgumentIR, CallIR, ConvertIR, LiteralIR, ProgramIR, ReferenceIR, UnaryIR
 
 
 def lower(expression: BoundExpression):
@@ -9,6 +9,10 @@ def lower(expression: BoundExpression):
         return LiteralIR(expression.value, expression.value_type, expression.span)
     if isinstance(expression, BoundUnary):
         return UnaryIR(expression.operator, lower(expression.operand), expression.value_type, expression.span)
+    if isinstance(expression, BoundReference):
+        return ReferenceIR(expression.contract, expression.value_type, expression.span)
+    if isinstance(expression, BoundConversion):
+        return ConvertIR(lower(expression.operand), expression.value_type, expression.span)
     contract = expression.contract
     return CallIR(
         contract.symbol_id, contract.overload_id, contract.assertion_id, contract.signature_sha256,

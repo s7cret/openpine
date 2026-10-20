@@ -1,0 +1,12 @@
+{
+  "schema_version": "openpine.historical-bars.1",
+  "context_id": "fixture.fixed.1",
+  "symbol": "TEST:FIXED",
+  "timeframe": "1",
+  "bars": [
+    {"time": 0, "close": 10.0},
+    {"time": 60000, "close": 20.0},
+    {"time": 120000, "close": 30.0},
+    {"time": 180000, "close": 40.0}
+  ]
+}

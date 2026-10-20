@@ -1,0 +1,4 @@
+//@version=6
+indicator("EMA skips missing source")
+plot(close, "close")
+plot(ta.ema(close, 3), "ema")

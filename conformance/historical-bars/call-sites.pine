@@ -1,0 +1,5 @@
+//@version=6
+indicator("Independent calls")
+plot(ta.ema(close, 3), "same")
+plot(ta.ema(length=1, source=close), "same")
+plot(ta.ema(ta.ema(close, 3), 3), "nested")

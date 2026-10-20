@@ -31,7 +31,7 @@ CLI выдаёт UTF-8 JSON. `run` содержит `status=executed`, `result.o
 4. `packages/runtime/engine.py` проверяет совместимость всего IR перед исполнением. Runtime вызывает разрешённые operation IDs и использует уже привязанные аргументы; исходные имена/defaults он повторно не разрешает. В runtime нет импортов compiler, tools или приложения.
 5. `packages/execution/session/` связывает compiler, допущенную спецификацию и capabilities runtime. Приложение находится в `apps/openpine`.
 
-Каждая программа закрепляет исходник, spec manifest, весь spec lock, semantic profile и hash реализации. Последний включает Python-исходники `packages`/`apps`, версию Python и валидатора схем. Public IR имеет версию `openpine.literal-ir.1`; сейчас поддерживается только передача typed objects внутри процесса. JSON из `compile` не является обещанием загрузки старых артефактов или checkpoint/resume.
+Каждая программа закрепляет исходник, spec manifest, весь spec lock, semantic profile и hash реализации. Последний включает Python-исходники `packages`/`apps`, версию Python и валидатора схем. Public IR имеет версию `openpine.typed-ir.2`: добавлены разрешённые context references и явное преобразование int → float. Сейчас поддерживается только передача typed objects внутри процесса. JSON из `compile` не является обещанием загрузки старых артефактов или checkpoint/resume.
 
 ## Объём реализации
 
@@ -39,7 +39,7 @@ Implementation profile: `openpine.literal-harness.1`, semantic profile: `pine6.c
 
 Поддержаны числовые/bool/string литералы, скобки, унарные `+`/`-`, вложенные `math.abs`, именованные/позиционные аргументы и явные defaults трёх harness-сигнатур. `math.abs` сохраняет тип int/float; bool не считается числом. Декларация записывает title/shorttitle/overlay; каждый plot получает собственный output ID, в том числе при одинаковом title.
 
-Исполнение состоит из одного синтетического наблюдения, без рынка, баров и временных меток. `indicator`/`plot` — ограниченный наблюдательный harness. Plot handles, переменные, binary operators, история, EMA, запросы, стратегии, библиотеки, realtime и worker требуют следующих этапов. Известный контракт без kernel даёт `IMPLEMENTATION_MISSING`; отсутствующий принятый контракт — `SPEC_UNRESOLVED`; конструкция вне среза — `PROFILE_UNCOVERED`. Это отдельные случаи от установленной ошибки `LANGUAGE_INVALID`.
+В literal-профиле исполнение состоит из одного синтетического наблюдения, без баров и временных меток. Отдельный [исторический профиль](HISTORICAL_EXECUTION.md) поддерживает `close` и EMA на локальных барах. `indicator`/`plot` — ограниченный наблюдательный harness. Plot handles, пользовательские переменные, binary operators, оператор истории, запросы, стратегии, библиотеки, realtime и worker требуют следующих этапов. Известный контракт без kernel даёт `IMPLEMENTATION_MISSING`; отсутствующий принятый контракт — `SPEC_UNRESOLVED`; конструкция вне среза — `PROFILE_UNCOVERED`. Это отдельные случаи от установленной ошибки `LANGUAGE_INVALID`.
 
 Входной Pine v1–v5 отвергается с указанием своей версии и отсутствующей реализации. Без аннотации выбирается v1. Строки и обычные комментарии с текстом `//@version` версию не переключают.
 
@@ -47,4 +47,4 @@ Implementation profile: `openpine.literal-harness.1`, semantic profile: `pine6.c
 
 Позиции считают Unicode code points в исходной декодированной строке, сохраняющей CRLF: offsets начинаются с нуля, end исключается, line/column начинаются с единицы. Это единая convention frontend → diagnostics → IR.
 
-Независимые ожидания и фактический отчёт находятся в [conformance](../conformance/README.md). Следующий срез — данные `close` и последовательность наблюдений, после него EMA и отдельные request contexts.
+Независимые ожидания и фактические отчёты находятся в [conformance](../conformance/README.md). Исторический срез уже добавлен; request contexts требуют отдельного этапа и собственных проверок.

@@ -1,9 +1,12 @@
-"""The small, immutable contract of the literal-harness execution slice."""
+"""Immutable values crossing compiler, execution and runtime boundaries."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Literal
+
+LITERAL_PROFILE_ID = "openpine.literal-harness.1"
+HISTORICAL_PROFILE_ID = "openpine.historical-bars.1"
 
 
 @dataclass(frozen=True)
@@ -69,6 +72,31 @@ class UnaryIR:
 
 
 @dataclass(frozen=True)
+class ReferenceContract:
+    symbol_id: str
+    assertion_id: str
+    value_sha256: str
+    slot: str
+    value_type: ValueType
+
+
+@dataclass(frozen=True)
+class ReferenceIR:
+    contract: ReferenceContract
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="reference", init=False)
+
+
+@dataclass(frozen=True)
+class ConvertIR:
+    operand: NodeIR
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="convert", init=False)
+
+
+@dataclass(frozen=True)
 class ArgumentIR:
     parameter_id: str
     expression: NodeIR
@@ -92,14 +120,14 @@ class CallIR:
     kind: str = field(default="call", init=False)
 
 
-type NodeIR = LiteralIR | UnaryIR | CallIR
+type NodeIR = LiteralIR | UnaryIR | ReferenceIR | ConvertIR | CallIR
 
 
 @dataclass(frozen=True)
 class ProgramIR:
     identity: ProgramIdentity
     statements: tuple[CallIR, ...]
-    schema_version: str = field(default="openpine.literal-ir.1", init=False)
+    schema_version: str = field(default="openpine.typed-ir.2", init=False)
 
 
 @dataclass(frozen=True)
@@ -114,6 +142,7 @@ class CallContract:
     qualifier_limits: tuple[str, ...]
     result_parameter: int | None
     effects: tuple[str, ...]
+    result_type: ValueType = ValueType("void")
 
 
 @dataclass(frozen=True)
@@ -121,7 +150,39 @@ class PlotOutput:
     output_id: str
     title: str
     value_type: ValueType
-    values: tuple[int | float, ...]
+    values: tuple[int | float | None, ...]
+
+
+@dataclass(frozen=True)
+class HistoricalBar:
+    time: int
+    close: float | None
+
+
+@dataclass(frozen=True)
+class HistoricalData:
+    context_id: str
+    symbol: str
+    timeframe: str
+    bars: tuple[HistoricalBar, ...]
+    schema_version: str = field(default="openpine.historical-bars.1", init=False)
+
+
+@dataclass(frozen=True)
+class BarFrame:
+    context_id: str
+    bar_index: int
+    time: int
+    close: float | None
+
+
+@dataclass(frozen=True)
+class DataIdentity:
+    sha256: str
+    context_id: str
+    symbol: str
+    timeframe: str
+    times: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -138,4 +199,5 @@ class RunResult:
     declaration: IndicatorDeclaration
     outputs: tuple[PlotOutput, ...]
     observation_count: int = 1
-    schema_version: str = field(default="openpine.run-result.1", init=False)
+    data: DataIdentity | None = None
+    schema_version: str = field(default="openpine.run-result.2", init=False)

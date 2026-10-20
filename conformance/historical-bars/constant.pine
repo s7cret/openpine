@@ -1,0 +1,3 @@
+//@version=6
+indicator("Integer source promotion")
+plot(ta.ema(3, math.abs(-3)), "ema")

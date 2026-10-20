@@ -1,0 +1,3 @@
+//@version=6
+indicator("Invalid zero length")
+plot(ta.ema(close, 0))

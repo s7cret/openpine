@@ -4,28 +4,38 @@ import argparse
 import sys
 
 from packages.compiler.semantic.specification import ROOT, encode, index, read_json, safe_path, sha
-from packages.contracts import LiteralIR, OpenPineError, UnaryIR
+from packages.contracts import ConvertIR, HISTORICAL_PROFILE_ID, LiteralIR, OpenPineError, ReferenceIR, UnaryIR
 from packages.execution.session import PROFILE_ID, Session
+from packages.marketdata import read_bars
 from packages.runtime.engine import program_hash
 
 CASES = "conformance/literal-harness/cases.json"
 REPORT = "conformance/results/literal-harness.1.json"
+BAR_CASES = "conformance/historical-bars/cases.json"
+BAR_REPORT = "conformance/results/historical-bars.1.json"
 
 
 def operations(node):
     if isinstance(node, LiteralIR):
         return set()
+    if isinstance(node, ReferenceIR):
+        return {f"context.{node.contract.slot}"}
+    if isinstance(node, ConvertIR):
+        return {"conversion.int.float"} | operations(node.operand)
     if isinstance(node, UnaryIR):
         return {f"operator.unary.{node.operator}"} | operations(node.operand)
     return {node.operation} | set().union(*(operations(argument.expression) for argument in node.arguments))
 
 
-def run_cases(session=None):
-    session = session if session is not None else Session()
-    path = ROOT / CASES
+def run_cases(session=None, *, cases_path=CASES):
+    path = ROOT / cases_path
     corpus = read_json(path)
-    if corpus["schema_version"] != "openpine.conformance.cases.1" or corpus["implementation_profile_id"] != PROFILE_ID:
+    profile = corpus["implementation_profile_id"]
+    if corpus["schema_version"] != "openpine.conformance.cases.1" or profile not in (PROFILE_ID, HISTORICAL_PROFILE_ID):
         raise ValueError("Unsupported conformance corpus")
+    session = session if session is not None else Session(profile_id=profile)
+    if session.profile_id != profile:
+        raise ValueError("Session and corpus profiles differ")
     if corpus["oracle"]["kind"] != "independent_manual_expectations" or corpus["oracle"]["external_pine_execution"] is not False:
         raise ValueError("Corpus oracle attribution has changed")
     index(corpus["cases"], "case_id")
@@ -40,12 +50,19 @@ def run_cases(session=None):
         relative = source_path.relative_to(ROOT).as_posix()
         raw = source_path.read_bytes()
         ir_hash = None
+        bars_path = safe_path(path.parent, case["bars"]) if "bars" in case else None
+        data = read_bars(bars_path) if bars_path else None
         try:
-            program, result = session.run(raw.decode("utf-8"), relative)
+            program, result = session.run(raw.decode("utf-8"), relative, data=data)
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
                                      "values": list(output.values)} for output in result.outputs]}
+            if profile == HISTORICAL_PROFILE_ID:
+                observed["observation_count"] = result.observation_count
+                observed["qualifiers"] = [output.value_type.qualifier for output in result.outputs]
+                if result.data is None or result.data.times != tuple(bar.time for bar in data.bars):
+                    raise AssertionError("Historical result lacks its executed dataset identity")
             observed_version = result.identity.language_version
             ir_hash = program_hash(program)
             for statement in program.statements:
@@ -61,30 +78,34 @@ def run_cases(session=None):
             raise AssertionError(f"{case['case_id']}: wrong language profile")
         results.append({"case_id": case["case_id"], "source_sha256": sha(raw), "program_sha256": ir_hash,
                         "expected_sha256": sha(encode(case["expected"])), "observed": observed, "passed": True})
-    return {"schema_version": "openpine.conformance.results.1", "implementation_profile_id": PROFILE_ID,
+        if profile == HISTORICAL_PROFILE_ID:
+            results[-1]["bars_sha256"] = sha(bars_path.read_bytes()) if bars_path else None
+    return {"schema_version": "openpine.conformance.results.1", "implementation_profile_id": profile,
             "implementation_sha256": session.implementation_sha256,
             "spec_lock_sha256": sha(encode(session.snapshot.lock)), "cases_sha256": sha(path.read_bytes()),
             "python": sys.version.split()[0], "oracle": corpus["oracle"], "results": results,
             "executed_programs": sum(row["observed"]["status"] == "executed" for row in results),
             "expected_rejections": sum(row["observed"]["status"] == "rejected" for row in results),
             "exercised_operations": sorted(exercised),
-            "scope": "Literal/call harness, one synthetic observation, no market data or complete Pine-version compatibility claim."}
+            "scope": ("Literal/call harness, one synthetic observation, no market data or complete Pine-version compatibility claim."
+                      if profile == PROFILE_ID else "Pine v6 close and EMA on fixed confirmed historical bars; no realtime, requests or full-version compatibility claim.")}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    report = run_cases()
-    encoded = encode(report)
-    path = ROOT / REPORT
-    if args.write_report:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(encoded)
-    elif not path.is_file() or path.read_bytes() != encoded:
-        raise SystemExit("Conformance report is missing/stale; review changes and run --write-report.")
-    print(f"Conformance: {report['executed_programs']} executed programs, "
-          f"{report['expected_rejections']} expected rejections, Python {report['python']}.")
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT)):
+        report = run_cases(cases_path=cases_path)
+        encoded = encode(report)
+        path = ROOT / report_path
+        if args.write_report:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(encoded)
+        elif not path.is_file() or path.read_bytes() != encoded:
+            raise SystemExit(f"Conformance report {report_path} is missing/stale; review changes and run --write-report.")
+        print(f"Conformance {report['implementation_profile_id']}: {report['executed_programs']} executed programs, "
+              f"{report['expected_rejections']} expected rejections, Python {report['python']}.")
     return 0
 
 

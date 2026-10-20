@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from packages.compiler.frontend import parser
 from packages.compiler.semantic.specification import Snapshot, SpecError, value_sha
-from packages.contracts import CallContract, Diagnostic, OpenPineError, SourceSpan, ValueType
+from packages.contracts import CallContract, Diagnostic, OpenPineError, ReferenceContract, SourceSpan, ValueType
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,20 @@ class BoundLiteral:
 @dataclass(frozen=True)
 class BoundUnary:
     operator: str
+    operand: BoundExpression
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundReference:
+    contract: ReferenceContract
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundConversion:
     operand: BoundExpression
     value_type: ValueType
     span: SourceSpan
@@ -41,7 +55,7 @@ class BoundCall:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundCall
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall
 
 
 def literal_type(value) -> ValueType:
@@ -57,7 +71,7 @@ def type_options(description: dict) -> tuple[str, ...]:
 
 
 class Catalog:
-    def __init__(self, snapshot: Snapshot, capabilities: dict[str, tuple[str, ...]]):
+    def __init__(self, snapshot: Snapshot, capabilities: dict[str, tuple[str, ...]], reference_slots=None):
         self.snapshot, self.capabilities = snapshot, capabilities
         self.rules = {}
         rules = {row["rule_id"]: row for row in snapshot.registry["rules"]}
@@ -68,9 +82,16 @@ class Catalog:
             self.rules[rule_id] = snapshot.resolve(rule["semantic_assertion"], 6)
         self.signatures = {}
         self.contracts = {}
+        self.references = {}
         for symbol in snapshot.registry["symbols"]:
             if 6 not in symbol["language_versions"]:
                 continue
+            if symbol["name"] in (reference_slots or {}):
+                assertion_id = symbol["value_assertion_ref"]
+                value = snapshot.resolve(assertion_id, 6)
+                self.references[symbol["name"]] = ReferenceContract(
+                    symbol["symbol_id"], assertion_id, value_sha(value), reference_slots[symbol["name"]],
+                    ValueType(type_options(value["type"])[0], value["qualifier"]))
             for overload in symbol["overloads"]:
                 assertion_id = overload["signature_assertion"]
                 try:
@@ -86,8 +107,13 @@ class Catalog:
                     if any(parameter["variadic"] or parameter["evaluation_policy"] != "eager" for parameter in parameters):
                         raise SpecError("IMPLEMENTATION_MISSING", "Kernel does not support this argument evaluation contract")
                     result = signature["result"]
-                    if result["kind"] not in ("void", "dependent"):
+                    if result["kind"] not in ("void", "dependent", "scalar"):
                         raise SpecError("IMPLEMENTATION_MISSING", "Kernel result contract is not implemented")
+                    result_type = ValueType("void")
+                    if result["kind"] == "scalar":
+                        if result["qualifier"]["relation"] != "exact":
+                            raise SpecError("IMPLEMENTATION_MISSING", "Scalar result qualifier is not implemented")
+                        result_type = ValueType(type_options(result["type"])[0], result["qualifier"]["value"])
                     contract = CallContract(
                         symbol["symbol_id"], overload["overload_id"], assertion_id, value_sha(signature),
                         signature["operation"], tuple(parameter["parameter_id"] for parameter in parameters),
@@ -95,6 +121,7 @@ class Catalog:
                         tuple(parameter["qualifier_constraint"]["value"] for parameter in parameters),
                         names.index(result["parameter"]) if result["kind"] == "dependent" else None,
                         tuple(signature["effects"]),
+                        result_type,
                     )
                     if any(parameter["qualifier_constraint"]["relation"] != "at_most" for parameter in parameters):
                         raise SpecError("IMPLEMENTATION_MISSING", "Qualifier relation is not implemented")
@@ -113,6 +140,11 @@ class Binder:
     def expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
         if isinstance(expression, parser.Literal):
             return BoundLiteral(expression.value, literal_type(expression.value), expression.span)
+        if isinstance(expression, parser.Reference):
+            contract = self.catalog.references.get(expression.name)
+            if contract is None:
+                self.fail("PROFILE_UNCOVERED", "VALUE_REFERENCE", f"Reference {expression.name!r} is outside this implementation profile.", expression.span)
+            return BoundReference(contract, contract.value_type, expression.span)
         if isinstance(expression, parser.Unary):
             operand = self.expression(expression.operand)
             if operand.value_type.base not in ("int", "float"):
@@ -126,7 +158,7 @@ class Binder:
         implemented = [(signature, contract) for signature, contract in candidates if contract]
         if not implemented:
             self.fail("IMPLEMENTATION_MISSING", "OPERATION_UNAVAILABLE",
-                      f"{expression.name} is outside the literal runtime capabilities.", expression.span)
+                      f"{expression.name} is outside this implementation profile's runtime capabilities.", expression.span)
         # Bind nested source expressions once, independent of overload selection.
         arguments = tuple(self.expression(argument.expression) for argument in expression.arguments)
         matches, errors = [], []
@@ -145,7 +177,7 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
-        if contract.effects and not top_level:
+        if set(contract.effects) & {"declaration", "emits_plot"} and not top_level:
             self.fail("PROFILE_UNCOVERED", "NESTED_EFFECT", "Declaration and plot handles cannot be used as values in this slice.", call.span)
         parameters = signature["parameters"]
         positions = {parameter["name"]: position for position, parameter in enumerate(parameters)}
@@ -178,6 +210,11 @@ class Binder:
                 bound[position] = BoundArgument(parameter["parameter_id"],
                     BoundLiteral(default["value"], literal_type(default["value"]), call.span), "default", None)
             value_type = bound[position].expression.value_type
+            if value_type.base == "int" and "float" in contract.parameter_types[position] and "int" not in contract.parameter_types[position] and ["int", "float"] in self.catalog.rules["rule.types"]["implicit_conversions"]:
+                previous = bound[position]
+                promoted = BoundConversion(previous.expression, ValueType("float", value_type.qualifier), previous.expression.span)
+                bound[position] = BoundArgument(previous.parameter_id, promoted, previous.origin, previous.source_index)
+                value_type = promoted.value_type
             if value_type.base not in contract.parameter_types[position]:
                 self.fail("LANGUAGE_INVALID", "ARGUMENT_TYPE", f"Invalid type for {parameter['name']!r}.",
                           bound[position].expression.span, "rule.types")
@@ -188,7 +225,7 @@ class Binder:
             arguments[position].origin == "default",
             arguments[position].source_index if arguments[position].source_index is not None else position,
         )))
-        result_type = arguments[contract.result_parameter].expression.value_type if contract.result_parameter is not None else ValueType("void")
+        result_type = arguments[contract.result_parameter].expression.value_type if contract.result_parameter is not None else contract.result_type
         return BoundCall(contract, arguments, order, result_type, call.span)
 
     def program(self, statements: tuple[parser.Call, ...], empty_span: SourceSpan) -> tuple[BoundCall, ...]:

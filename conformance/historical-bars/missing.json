@@ -1,0 +1,14 @@
+{
+  "schema_version": "openpine.historical-bars.1",
+  "context_id": "fixture.missing.1",
+  "symbol": "TEST:MISSING",
+  "timeframe": "1",
+  "bars": [
+    {"time": 0, "close": null},
+    {"time": 60000, "close": 10.0},
+    {"time": 120000, "close": null},
+    {"time": 180000, "close": 20.0},
+    {"time": 240000, "close": 30.0},
+    {"time": 300000, "close": null}
+  ]
+}

@@ -25,6 +25,12 @@ class Literal:
 
 
 @dataclass(frozen=True)
+class Reference:
+    name: str
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class Unary:
     operator: str
     operand: Expression
@@ -45,7 +51,7 @@ class Call:
     span: SourceSpan
 
 
-type Expression = Literal | Unary | Call
+type Expression = Literal | Reference | Unary | Call
 
 
 class Source:
@@ -219,7 +225,7 @@ class Parser:
         if token.kind == "NAME":
             self.take()
             if self.current.text != "(":
-                self.source.fail("PROFILE_UNCOVERED", "VALUE_REFERENCE", "Variable/context references are not implemented in this slice.", token.start, token.end)
+                return Reference(token.text, self.source.span(token.start, token.end))
             self.take()
             arguments = []
             while self.current.text != ")":

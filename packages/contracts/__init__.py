@@ -3,4 +3,6 @@
 from .model import (
     ArgumentIR, CallContract, CallIR, Diagnostic, IndicatorDeclaration, LiteralIR, OpenPineError, PlotOutput,
     ProgramIR, ProgramIdentity, RunResult, SourceSpan, UnaryIR, ValueType,
+    BarFrame, ConvertIR, DataIdentity, HistoricalBar, HistoricalData, ReferenceContract, ReferenceIR,
+    HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID,
 )

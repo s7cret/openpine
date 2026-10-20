@@ -1,0 +1,3 @@
+//@version=6
+indicator("Invalid boolean source")
+plot(ta.ema(true, 3))
