@@ -1,0 +1,12 @@
+//@version=4
+study("Language v4")
+a = 2 + 3 * 4
+b = (2 + 3) * 4
+c = 10 - 3 - 2
+q = -5 / 2
+float promoted = 1
+plot(a)
+plot(b)
+plot(c)
+plot(q)
+plot(promoted)

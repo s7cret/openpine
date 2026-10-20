@@ -1,0 +1,5 @@
+//@version=6
+indicator("Language v6")
+int x = 1
+x := 1.5
+plot(x)

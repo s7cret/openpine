@@ -1,0 +1,4 @@
+//@version=2
+study("Language v2")
+varip float x = 0
+plot(x)

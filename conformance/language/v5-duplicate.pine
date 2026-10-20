@@ -1,0 +1,5 @@
+//@version=5
+indicator("Language v5")
+x = 1
+x = 2
+plot(x)

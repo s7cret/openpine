@@ -52,7 +52,7 @@ class EMAState:
     previous: float | None = None
 
     def update(self, source: float | None, length: int) -> float | None:
-        if length <= 0:
+        if type(length) is not int or length <= 0:
             raise KernelError("EMA_LENGTH", "EMA length must be greater than zero.", "rule.ema.length")
         if source is None:
             return self.previous
@@ -69,7 +69,7 @@ class SMASeedEMAState(EMAState):
     pending: list[float] = field(default_factory=list)
 
     def update(self, source: float | None, length: int) -> float | None:
-        if length <= 0:
+        if type(length) is not int or length <= 0:
             raise KernelError("EMA_LENGTH", "EMA length must be greater than zero.", "rule.ema.length")
         if self.previous is None:
             if source is not None:

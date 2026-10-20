@@ -4,7 +4,10 @@ import argparse
 import sys
 
 from packages.compiler.semantic.specification import ROOT, encode, index, read_json, safe_path, sha
-from packages.contracts import ConvertIR, HISTORICAL_PROFILE_ID, LiteralIR, OpenPineError, ReferenceIR, UnaryIR
+from packages.contracts import (
+    BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
+    LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR,
+)
 from packages.execution.session import PROFILE_ID, Session
 from packages.marketdata import read_bars
 from packages.runtime.engine import program_hash
@@ -15,15 +18,30 @@ BAR_CASES = "conformance/historical-bars/cases.json"
 BAR_REPORT = "conformance/results/historical-bars.1.json"
 VERSION_CASES = "conformance/versions/cases.json"
 VERSION_REPORT = "conformance/results/versions.1.json"
+LANGUAGE_CASES = "conformance/language/cases.json"
+LANGUAGE_REPORT = "conformance/results/language.1.json"
 
 
 def operations(node):
     if isinstance(node, LiteralIR):
         return set()
+    if isinstance(node, NAIR):
+        return {"value.na"}
+    if isinstance(node, LoadIR):
+        return {"variable.load"}
+    if isinstance(node, StoreIR):
+        feature = ("variable.var" if node.binding.mode == "var" else "variable.declare") if node.declaration else "variable.assign"
+        return {feature} | operations(node.expression)
+    if isinstance(node, IfIR):
+        return {"statement.if"} | operations(node.condition) | set().union(*(operations(child) for child in (*node.body, *node.otherwise)))
+    if isinstance(node, BinaryIR):
+        return {f"operator.binary.{node.operator}"} | operations(node.left) | operations(node.right)
+    if isinstance(node, ConditionalIR):
+        return {"operator.conditional"} | operations(node.condition) | operations(node.when_true) | operations(node.when_false)
     if isinstance(node, ReferenceIR):
         return {f"context.{node.contract.slot}"}
     if isinstance(node, ConvertIR):
-        return {"conversion.int.float"} | operations(node.operand)
+        return {f"conversion.{node.operand.value_type.base}.{node.value_type.base}"} | operations(node.operand)
     if isinstance(node, UnaryIR):
         return {f"operator.unary.{node.operator}"} | operations(node.operand)
     return {node.operation} | set().union(*(operations(argument.expression) for argument in node.arguments))
@@ -106,11 +124,14 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path == VERSION_CASES:
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
+            # Numeric condition conversion intentionally differs in v6.
+            for values in matrix.values():
+                values.difference_update({"conversion.int.bool", "conversion.float.bool"})
             if set(matrix) != {str(version) for version in range(1, 7)} or any(value != matrix["6"] for value in matrix.values()):
                 raise SystemExit("Version matrix is incomplete: each version needs explicit cases for the declared feature families.")
         encoded = encode(report)

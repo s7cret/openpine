@@ -1,0 +1,8 @@
+//@version=3
+study("Language v3")
+value = close > 20 ? ema(close,3) : 0.0
+f = close > 20 and ema(close,3) > 25
+g = close < 30 or ema(close,3) > 25
+plot(value)
+plot(f ? 1 : 0)
+plot(g ? 1 : 0)

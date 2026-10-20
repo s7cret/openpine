@@ -14,6 +14,7 @@ from packages.marketdata import data_identity
 from packages.runtime.engine import Runtime
 from packages.runtime.operations import KERNELS
 from packages.runtime.series import supported_rules
+from packages.runtime.language import language_policy
 
 PROFILE_ID = LITERAL_PROFILE_ID
 
@@ -44,6 +45,8 @@ class Session:
         if version in self.catalogs:
             return self.catalogs[version]
         catalog = Catalog(self.snapshot, self.capabilities, {"close": "close"} if self.profile_id == HISTORICAL_PROFILE_ID else {}, version)
+        if catalog.policy != language_policy(version):
+            raise SpecError("IMPLEMENTATION_MISSING", "Statement policy is not implemented by this runtime")
         if self.profile_id == HISTORICAL_PROFILE_ID:
             rules = {row["rule_id"]: row for row in self.snapshot.registry_for(version)["rules"]}
             for rule_id, supported in supported_rules(version).items():

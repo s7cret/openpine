@@ -53,6 +53,15 @@ class VersionTests(unittest.TestCase):
         manifest["files"] = {key: value for key, value in file_map(directory).items() if key != "manifest.json"}
         (directory / "manifest.json").write_bytes(encode(manifest))
         lock["version_review"]["manifest_sha256"] = sha((directory / "manifest.json").read_bytes())
+        if "language_release" in lock:
+            language_directory = root / lock["language_release"]["path"]
+            policy = read_json(language_directory / "policy.json")
+            policy["version_review_manifest_sha256"] = lock["version_review"]["manifest_sha256"]
+            (language_directory / "policy.json").write_bytes(encode(policy))
+            language_manifest = read_json(language_directory / "manifest.json")
+            language_manifest["files"]["policy.json"] = sha((language_directory / "policy.json").read_bytes())
+            (language_directory / "manifest.json").write_bytes(encode(language_manifest))
+            lock["language_release"]["manifest_sha256"] = sha((language_directory / "manifest.json").read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
         return directory
 

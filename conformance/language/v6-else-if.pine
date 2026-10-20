@@ -1,0 +1,14 @@
+//@version=6
+indicator("Language v6")
+var int state = 0
+if close < 20
+    state := 1
+else if close <= 30
+    state := 2
+else
+    state := 3
+same = close == 20
+different = close != 20
+plot(state)
+plot(same ? 1 : 0)
+plot(different ? 1 : 0)

@@ -146,7 +146,7 @@ class ExecutionTests(unittest.TestCase):
         self.reject(SOURCE.replace('math.abs(-2.5)', '__import__("os")'), "LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE")
 
     def test_uncovered_syntax_and_limits_produce_diagnostics(self):
-        for body in ('float value = -2.5', 'plot(close)', 'plot(1 + 2)', 'plot("""text""")'):
+        for body in ('varip float value = -2.5', 'plot(close)', 'plot(1 % 2)', 'plot("""text""")'):
             with self.subTest(body=body):
                 self.reject('//@version=6\nindicator("slice")\n' + body, "PROFILE_UNCOVERED")
         for expression in ('(' * 60 + '1' + ')' * 60, '9' * 5000, '1e999'):

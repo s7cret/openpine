@@ -5,4 +5,5 @@ from .model import (
     ProgramIR, ProgramIdentity, RunResult, SourceSpan, UnaryIR, ValueType,
     BarFrame, ConvertIR, DataIdentity, HistoricalBar, HistoricalData, ReferenceContract, ReferenceIR,
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID,
+    BinaryIR, ConditionalIR, IfIR, LanguagePolicy, LoadIR, NAIR, StoreIR, VariableContract,
 )

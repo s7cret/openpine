@@ -1,0 +1,5 @@
+//@version=6
+indicator("Language v6")
+float missing = na
+plot(missing + 1.0)
+plot(1 / 0)

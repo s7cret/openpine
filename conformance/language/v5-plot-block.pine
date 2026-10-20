@@ -1,0 +1,5 @@
+//@version=5
+indicator("Language v5")
+if true
+    plot(close)
+plot(close)

@@ -11,7 +11,8 @@ def main() -> int:
     if sys.version_info[:3] != (3, 14, 8):
         print("The R6 gate requires Python 3.14.8.", file=sys.stderr)
         return 2
-    for arguments in (("-m", "tools.verify_spec"), ("-m", "unittest", "discover", "-s", "tests", "-v"),
+    for arguments in (("-m", "tools.verify_spec"), ("-m", "tools.language_spec", "--check"),
+                      ("-m", "unittest", "discover", "-s", "tests", "-v"),
                       ("-m", "tools.conformance")):
         result = subprocess.run([sys.executable, "-X", "utf8", *arguments], cwd=ROOT, check=False)
         if result.returncode:

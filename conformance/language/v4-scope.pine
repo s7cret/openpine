@@ -1,0 +1,13 @@
+//@version=4
+study("Language v4")
+var float carry = 0
+x = close
+if close >= 30
+    var float first = close
+    first := first + 1.0
+    x = 2.0
+    if x == 2.0
+        x := x * 2.0
+    carry := first + x
+plot(x)
+plot(carry)

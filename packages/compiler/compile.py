@@ -27,7 +27,9 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
         implementation_profile, implementation_sha256, notes)
     try:
         statements = Parser(source, grammar).parse()
-        return lower_program(Binder(catalog).program(statements, source.span(0, 0)), identity)
+        binder = Binder(catalog)
+        bound = binder.program(statements, source.span(0, 0))
+        return lower_program(bound, identity, binder.bindings, catalog.policy)
     except OpenPineError as error:
         if error.diagnostic.language_version is None:
             raise OpenPineError(replace(error.diagnostic, language_version=version)) from error

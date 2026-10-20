@@ -1,0 +1,5 @@
+//@version=2
+study("Language v2")
+float missing = na
+plot(missing + 1.0)
+plot(1 / 0)

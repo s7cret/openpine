@@ -1,0 +1,8 @@
+//@version=1
+study("Language v1")
+var count = 0
+count := count + 1
+ordinary = 0
+ordinary := ordinary + 1
+plot(count)
+plot(ordinary)

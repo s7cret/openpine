@@ -1,0 +1,8 @@
+//@version=5
+indicator("Language v5")
+value = close > 20 ? ta.ema(close,3) : 0.0
+f = close > 20 and ta.ema(close,3) > 25
+g = close < 30 or ta.ema(close,3) > 25
+plot(value)
+plot(f ? 1 : 0)
+plot(g ? 1 : 0)

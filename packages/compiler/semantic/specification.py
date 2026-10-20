@@ -293,6 +293,13 @@ class Snapshot:
     grammar: dict
     version_registries: dict[int, dict] = field(default_factory=dict)
     version_review: dict = field(default_factory=dict)
+    language: dict = field(default_factory=dict)
+
+    def language_policy(self, version):
+        self.profile(version)
+        if not self.language:
+            raise SpecError("SPEC_UNRESOLVED", "No statement policy is pinned")
+        return copy.deepcopy(self.language["versions"][str(version)])
 
     def registry_for(self, language_version: int) -> dict:
         self.profile(language_version)
@@ -305,9 +312,14 @@ class Snapshot:
     def semantic_identity(self, language_version: int) -> tuple[str, str, tuple[str, ...]]:
         self.profile(language_version)
         if language_version == 6:
-            return self.lock["semantic_profile_id"], self.lock["semantic_hash"], ()
-        row = self.version_review["versions"][str(language_version)]
-        return row["semantic_profile_id"], row["semantic_sha256"], tuple(row["caveats"])
+            profile, digest, notes = self.lock["semantic_profile_id"], self.lock["semantic_hash"], ()
+        else:
+            row = self.version_review["versions"][str(language_version)]
+            profile, digest, notes = row["semantic_profile_id"], row["semantic_sha256"], tuple(row["caveats"])
+        if self.language:
+            profile += "+" + self.language["profiles"][str(language_version)]
+            digest = value_sha({"core": digest, "language": value_sha(self.language)})
+        return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
         if language_version is None:
@@ -412,6 +424,22 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
     if read_json(bundle / "review/grammar.json") != semantic["grammar"]:
         raise SpecError("SPEC_REVIEW", "grammar differs from published bundle")
     version_registries, version_review = load_version_review(root, lock, definitions, registry_schema)
+    language = {}
+    if "language_release" in lock:
+        pin = lock["language_release"]
+        directory = safe_path(root, pin["path"])
+        if sha((directory / "manifest.json").read_bytes()) != pin["manifest_sha256"]:
+            raise SpecError("SPEC_HASH", "language release differs from lock")
+        language_manifest = read_json(directory / "manifest.json")
+        validate_document(language_manifest, definitions, "language_manifest")
+        verify_files(directory, language_manifest["files"])
+        language = read_json(directory / "policy.json")
+        validate_document(language, definitions, "language_policy")
+        if language["base_manifest_sha256"] != lock["manifest_sha256"] or language["version_review_manifest_sha256"] != lock["version_review"]["manifest_sha256"] or language["grammar_sha256"] != sha((bundle / "review/grammar.json").read_bytes()):
+            raise SpecError("SPEC_PROVENANCE", "statement policy belongs to other core inputs")
+        for version in range(1, 7):
+            if language["versions"][str(version)]["language_version"] != version:
+                raise SpecError("SPEC_VERSION", "statement policy version differs from its row")
     profiles, references = {}, {}
     identities = read_json(source_bundle / "identities.json")
     aliases, parameter_aliases = validate_identities(identities)
@@ -435,6 +463,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             allowed = [version_review["versions"][str(version)]["semantic_profile_id"]]
         if profile["semantic_profile_ids"] != allowed:
             raise SpecError("SPEC_VERSION", "unreviewed inheritance of another language profile")
+        if profile.get("language_profile_ids", []) != ([language["profiles"][str(version)]] if language else []):
+            raise SpecError("SPEC_VERSION", "unreviewed statement-profile selection")
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -468,7 +498,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -492,6 +522,7 @@ def coverage(snapshot: Snapshot) -> dict:
             "unresolved_assertion_refs": sorted(row["assertion_id"] for row, registry in applicable
                                                 if resolution_problem(row, registry)),
             "semantic_profile_ids": profile["semantic_profile_ids"],
+            "language_profile_ids": profile.get("language_profile_ids", []),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

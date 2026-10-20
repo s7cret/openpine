@@ -1,4 +1,4 @@
-"""Literal/call subset of the pinned Pine grammar; no Python evaluation."""
+"""Bounded statements and Pratt expressions from the pinned grammar."""
 
 from __future__ import annotations
 
@@ -51,7 +51,48 @@ class Call:
     span: SourceSpan
 
 
-type Expression = Literal | Reference | Unary | Call
+@dataclass(frozen=True)
+class Binary:
+    operator: str
+    left: Expression
+    right: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class Conditional:
+    condition: Expression
+    when_true: Expression
+    when_false: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class Declaration:
+    name: str
+    annotation: str | None
+    mode: str
+    expression: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class Reassignment:
+    name: str
+    expression: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class If:
+    condition: Expression
+    body: tuple[Statement, ...]
+    otherwise: tuple[Statement, ...]
+    span: SourceSpan
+
+
+type Expression = Literal | Reference | Unary | Call | Binary | Conditional
+type Statement = Call | Declaration | Reassignment | If
 
 
 class Source:
@@ -119,7 +160,29 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
     matcher = re.compile(pattern)
     tokens = []
     position = depth = 0
+    line_start = True
+    indentation = [0]
     while position < len(source.text):
+        if line_start and depth == 0:
+            start = position
+            while position < len(source.text) and source.text[position] in " \t":
+                position += 1
+            spaces = source.text[start:position]
+            if position == len(source.text):
+                break
+            if source.text[position] not in "\r\n" and not source.text.startswith("//", position):
+                if "\t" in spaces or len(spaces) % 4:
+                    source.fail("PROFILE_UNCOVERED", "INDENTATION", "Blocks require multiples of four spaces.", start, position)
+                if len(spaces) > indentation[-1]:
+                    if len(spaces) != indentation[-1] + 4:
+                        source.fail("LANGUAGE_INVALID", "INDENTATION", "A block must increase indentation by four spaces.", start, position)
+                    indentation.append(len(spaces))
+                    tokens.append(Token("INDENT", "", position, position))
+                else:
+                    while len(spaces) < indentation[-1]:
+                        indentation.pop()
+                        tokens.append(Token("DEDENT", "", position, position))
+            line_start = False
         character = source.text[position]
         if source.text.startswith("//", position):
             end = source.text.find("\n", position)
@@ -129,6 +192,7 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
             end = position + (2 if source.text.startswith("\r\n", position) else 1)
             if depth == 0:
                 tokens.append(Token("NEWLINE", source.text[position:end], position, end))
+            line_start = True
             position = end
             continue
         if character in "\"'" and source.text.startswith(character * 3, position):
@@ -140,6 +204,7 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
             source.fail("PROFILE_UNCOVERED", "TOKEN_UNCOVERED", "Token is outside the literal/call slice.", position, position + 1)
         kind, text, end = match.lastgroup, match.group(), match.end()
         if kind != "SPACE":
+            line_start = False
             if text == "(":
                 depth += 1
             elif text == ")":
@@ -150,6 +215,11 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
             if len(tokens) > 4096:
                 source.fail("PROFILE_UNCOVERED", "TOKEN_LIMIT", "Literal slice token limit exceeded.", position, end)
         position = end
+    while len(indentation) > 1:
+        indentation.pop()
+        tokens.append(Token("DEDENT", "", len(source.text), len(source.text)))
+    if len(tokens) > 4096:
+        source.fail("PROFILE_UNCOVERED", "TOKEN_LIMIT", "Token limit exceeded.", 0, 0)
     tokens.append(Token("EOF", "", len(source.text), len(source.text)))
     return tuple(tokens)
 
@@ -160,6 +230,20 @@ class Parser:
         self.tokens = tokenize(source, grammar["token_pattern"])
         self.position = 0
         self.binary_operators = {row["token"] for row in grammar["operators"]}
+        self.precedence = {row["token"]: row["precedence"] for row in grammar["operators"]}
+        self.uncovered = set(grammar["uncovered_keywords"]) | {"varip", "once"}
+        self.levels = {}
+        self.block_depth = 0
+
+    def mark(self, node, *children):
+        height = 1 + max((self.levels[id(child)] for child in children), default=0)
+        if height > 48:
+            self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_DEPTH", "Expression nesting limit exceeded.", node.span.start, node.span.end)
+        self.levels[id(node)] = height
+        return node
+
+    def peek(self, offset=1):
+        return self.tokens[min(self.position + offset, len(self.tokens) - 1)]
 
     @property
     def current(self) -> Token:
@@ -195,14 +279,31 @@ class Parser:
             position += 1
         return "".join(result)
 
-    def expression(self, depth: int = 0) -> Expression:
+    def expression(self, minimum=0, depth: int = 0) -> Expression:
+        left = self.primary(depth)
+        while True:
+            token = self.current
+            if token.text == "?" and minimum <= 5:
+                self.take()
+                when_true = self.expression(0, depth + 1)
+                self.expect(":")
+                when_false = self.expression(5, depth + 1)
+                left = self.mark(Conditional(left, when_true, when_false, self.source.span(left.span.start, when_false.span.end)), left, when_true, when_false)
+            elif token.text in self.precedence and self.precedence[token.text] >= minimum:
+                self.take()
+                right = self.expression(self.precedence[token.text] + 1, depth + 1)
+                left = self.mark(Binary(token.text, left, right, self.source.span(left.span.start, right.span.end)), left, right)
+            else:
+                return left
+
+    def primary(self, depth: int) -> Expression:
         token = self.current
         if depth > 48:
             self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_DEPTH", "Literal slice nesting limit exceeded.", token.start, token.end)
-        if token.text in ("+", "-"):
+        if token.text in ("+", "-", "not"):
             self.take()
-            operand = self.expression(depth + 1)
-            return Unary(token.text, operand, self.source.span(token.start, operand.span.end))
+            operand = self.expression(70, depth + 1)
+            return self.mark(Unary(token.text, operand, self.source.span(token.start, operand.span.end)), operand)
         if token.kind == "NUMBER":
             self.take()
             if len(token.text) > 256:
@@ -210,22 +311,24 @@ class Parser:
             value = float(token.text) if any(marker in token.text for marker in ".eE") else int(token.text)
             if (type(value) is float and not math.isfinite(value)) or (type(value) is int and value > 2**63 - 1):
                 self.source.fail("PROFILE_UNCOVERED", "NUMERIC_RANGE", "Literal is outside this implementation's finite numeric range.", token.start, token.end)
-            return Literal(value, self.source.span(token.start, token.end))
+            return self.mark(Literal(value, self.source.span(token.start, token.end)))
         if token.kind == "STRING":
             self.take()
-            return Literal(self.string(token), self.source.span(token.start, token.end))
-        if token.text in ("true", "false"):
+            return self.mark(Literal(self.string(token), self.source.span(token.start, token.end)))
+        if token.text in ("true", "false", "na"):
             self.take()
-            return Literal(token.text == "true", self.source.span(token.start, token.end))
+            return self.mark(Literal(None if token.text == "na" else token.text == "true", self.source.span(token.start, token.end)))
         if token.text == "(":
             self.take()
-            result = self.expression(depth + 1)
+            result = self.expression(0, depth + 1)
             self.expect(")")
             return result
         if token.kind == "NAME":
+            if token.text in self.uncovered or token.text in ("if", "else"):
+                self.source.fail("PROFILE_UNCOVERED", "CONSTRUCT_UNCOVERED", "Construct is outside this statement profile.", token.start, token.end)
             self.take()
             if self.current.text != "(":
-                return Reference(token.text, self.source.span(token.start, token.end))
+                return self.mark(Reference(token.text, self.source.span(token.start, token.end)))
             self.take()
             arguments = []
             while self.current.text != ")":
@@ -234,7 +337,7 @@ class Parser:
                 if self.current.kind == "NAME" and self.tokens[self.position + 1].text == "=":
                     name = self.take().text
                     self.take()
-                expression = self.expression(depth + 1)
+                expression = self.expression(0, depth + 1)
                 arguments.append(Argument(name, expression, self.source.span(start, expression.span.end)))
                 if self.current.text != ",":
                     break
@@ -242,25 +345,88 @@ class Parser:
                 if self.current.text == ")":
                     self.source.fail("PROFILE_UNCOVERED", "TRAILING_COMMA", "Trailing commas are outside this slice.", self.current.start, self.current.end)
             closing = self.expect(")")
-            return Call(token.text, tuple(arguments), self.source.span(token.start, closing.end))
+            return self.mark(Call(token.text, tuple(arguments), self.source.span(token.start, closing.end)), *(argument.expression for argument in arguments))
         if token.text == "[":
             self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Tuple/collection expressions are outside this slice.", token.start, token.end)
         self.source.fail("LANGUAGE_INVALID", "EXPECTED_EXPRESSION", "Expected a literal or call expression.", token.start, token.end)
 
-    def parse(self) -> tuple[Call, ...]:
+    def newlines(self):
+        while self.current.kind == "NEWLINE":
+            self.take()
+
+    def block(self) -> tuple[Statement, ...]:
+        if self.current.kind != "NEWLINE":
+            self.source.fail("LANGUAGE_INVALID", "BLOCK_NEWLINE", "A block header requires a newline.", self.current.start, self.current.end)
+        self.newlines()
+        if self.current.kind != "INDENT":
+            self.source.fail("LANGUAGE_INVALID", "BLOCK_REQUIRED", "Expected an indented nonempty block.", self.current.start, self.current.end)
+        self.take()
+        self.block_depth += 1
+        if self.block_depth > 24:
+            self.source.fail("PROFILE_UNCOVERED", "BLOCK_DEPTH", "Block nesting limit exceeded.", self.current.start, self.current.end)
         statements = []
-        while self.current.kind != "EOF":
-            if self.current.kind == "NEWLINE":
-                self.take()
-                continue
-            token = self.current
-            if token.start != self.source.starts[bisect.bisect_right(self.source.starts, token.start) - 1]:
-                self.source.fail("PROFILE_UNCOVERED", "INDENTED_STATEMENT", "Only unindented global calls are implemented.", token.start, token.end)
+        self.newlines()
+        while self.current.kind not in ("DEDENT", "EOF"):
+            statements.append(self.statement())
+            self.newlines()
+        if self.current.kind != "DEDENT" or not statements:
+            self.source.fail("LANGUAGE_INVALID", "BLOCK_REQUIRED", "Expected a complete nonempty block.", self.current.start, self.current.end)
+        self.take()
+        self.block_depth -= 1
+        return tuple(statements)
+
+    def if_statement(self) -> If:
+        start = self.expect("if")
+        condition = self.expression()
+        body = self.block()
+        self.newlines()
+        otherwise = ()
+        if self.current.text == "else":
+            self.take()
+            otherwise = (self.if_statement(),) if self.current.text == "if" else self.block()
+        end = (otherwise or body)[-1].span.end
+        return If(condition, body, otherwise, self.source.span(start.start, end))
+
+    def statement(self) -> Statement:
+        token = self.current
+        if token.text == "if":
+            return self.if_statement()
+        if token.text in self.uncovered:
+            self.source.fail("PROFILE_UNCOVERED", "CONSTRUCT_UNCOVERED", "Construct is outside this statement profile.", token.start, token.end)
+        mode = "bar"
+        annotation = None
+        if token.text == "var":
+            self.take()
+            mode = "var"
+        if self.current.text in ("int", "float", "bool", "string") and self.peek().kind == "NAME":
+            annotation = self.take().text
+        is_declaration = mode == "var" or annotation is not None or (self.current.kind == "NAME" and self.peek().text == "=")
+        if is_declaration:
+            name = self.take()
+            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "true", "false", "na", "not", "and", "or"}:
+                self.source.fail("LANGUAGE_INVALID", "VARIABLE_NAME", "Invalid variable name.", name.start, name.end)
+            self.expect("=")
+            value = self.expression()
+            statement = Declaration(name.text, annotation, mode, value, self.source.span(token.start, value.span.end))
+        elif self.current.kind == "NAME" and self.peek().text == ":=":
+            name = self.take()
+            self.take()
+            value = self.expression()
+            statement = Reassignment(name.text, value, self.source.span(token.start, value.span.end))
+        else:
             statement = self.expression()
             if not isinstance(statement, Call):
-                self.source.fail("PROFILE_UNCOVERED", "STATEMENT_UNCOVERED", "Only global call statements are implemented.", statement.span.start, statement.span.end)
-            if self.current.kind not in ("NEWLINE", "EOF"):
-                token = self.current
-                self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Expression syntax is outside the literal/call slice.", token.start, token.end)
-            statements.append(statement)
+                self.source.fail("PROFILE_UNCOVERED", "STATEMENT_UNCOVERED", "Expected declaration, assignment, block or call.", statement.span.start, statement.span.end)
+        if self.current.kind not in ("NEWLINE", "DEDENT", "EOF"):
+            self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Syntax is outside this statement profile.", self.current.start, self.current.end)
+        self.newlines()
+        return statement
+
+    def parse(self) -> tuple[Statement, ...]:
+        statements = []
+        self.newlines()
+        while self.current.kind != "EOF":
+            if self.current.kind in ("INDENT", "DEDENT"):
+                self.source.fail("LANGUAGE_INVALID", "INDENTATION", "Unexpected indentation.", self.current.start, self.current.end)
+            statements.append(self.statement())
         return tuple(statements)

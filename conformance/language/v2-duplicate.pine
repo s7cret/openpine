@@ -1,0 +1,5 @@
+//@version=2
+study("Language v2")
+x = 1
+x = 2
+plot(x)

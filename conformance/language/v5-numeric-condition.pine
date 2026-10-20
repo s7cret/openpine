@@ -1,0 +1,4 @@
+//@version=5
+indicator("Language v5")
+x = close ? 1 : 0
+plot(x)

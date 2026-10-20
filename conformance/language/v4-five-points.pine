@@ -1,0 +1,19 @@
+//@version=4
+study("Language v4")
+length = 3
+src = close
+average = ema(src, length)
+difference = src - average
+var float total = 0
+ordinary = 1
+ordinary := ordinary + 1
+if src > 20
+    total := total + src
+else
+    total := total - src
+signal = (src >= 20 and not (src > 30)) or false
+chosen = signal ? difference : 0.0
+plot(difference)
+plot(total)
+plot(ordinary)
+plot(chosen)

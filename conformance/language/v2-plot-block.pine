@@ -1,0 +1,5 @@
+//@version=2
+study("Language v2")
+if true
+    plot(close)
+plot(close)

@@ -1,0 +1,5 @@
+//@version=2
+study("Language v2")
+int x = 1
+x := 1.5
+plot(x)

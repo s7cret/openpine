@@ -1,0 +1,4 @@
+//@version=6
+indicator("Language v6")
+varip float x = 0
+plot(x)

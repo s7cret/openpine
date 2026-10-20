@@ -1,0 +1,4 @@
+//@version=4
+study("Language v4")
+x = na
+plot(x)

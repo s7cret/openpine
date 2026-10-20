@@ -1,0 +1,5 @@
+//@version=6
+indicator("Language v6")
+if true
+    plot(close)
+plot(close)

@@ -64,6 +64,63 @@ class LiteralIR:
 
 
 @dataclass(frozen=True)
+class LanguagePolicy:
+    language_version: int
+    integer_division: str
+    logical_evaluation: str
+    numeric_conditions: bool
+    ordinary_initialization: str = "each_bar"
+    persistent_initialization: str = "first_execution"
+    comparison_na: bool = False
+    zero_division: str = "na"
+
+
+@dataclass(frozen=True)
+class NAIR:
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="na", init=False)
+
+
+@dataclass(frozen=True)
+class VariableContract:
+    binding_id: str
+    name: str
+    value_type: ValueType
+    mode: str
+    scope_id: str
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class LoadIR:
+    binding_id: str
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="load", init=False)
+
+
+@dataclass(frozen=True)
+class BinaryIR:
+    operator: str
+    left: NodeIR
+    right: NodeIR
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="binary", init=False)
+
+
+@dataclass(frozen=True)
+class ConditionalIR:
+    condition: NodeIR
+    when_true: NodeIR
+    when_false: NodeIR
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="conditional", init=False)
+
+
+@dataclass(frozen=True)
 class UnaryIR:
     operator: str
     operand: NodeIR
@@ -121,14 +178,37 @@ class CallIR:
     kind: str = field(default="call", init=False)
 
 
-type NodeIR = LiteralIR | UnaryIR | ReferenceIR | ConvertIR | CallIR
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | ConvertIR | CallIR
+
+
+@dataclass(frozen=True)
+class StoreIR:
+    binding: VariableContract
+    expression: NodeIR
+    declaration: bool
+    span: SourceSpan
+    kind: str = field(default="store", init=False)
+
+
+@dataclass(frozen=True)
+class IfIR:
+    condition: NodeIR
+    body: tuple[StatementIR, ...]
+    otherwise: tuple[StatementIR, ...]
+    span: SourceSpan
+    kind: str = field(default="if", init=False)
+
+
+type StatementIR = CallIR | StoreIR | IfIR
 
 
 @dataclass(frozen=True)
 class ProgramIR:
     identity: ProgramIdentity
-    statements: tuple[CallIR, ...]
-    schema_version: str = field(default="openpine.typed-ir.2", init=False)
+    statements: tuple[StatementIR, ...]
+    bindings: tuple[VariableContract, ...] = ()
+    language_policy: LanguagePolicy | None = None
+    schema_version: str = field(default="openpine.typed-ir.3", init=False)
 
 
 @dataclass(frozen=True)

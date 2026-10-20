@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from packages.compiler.frontend import parser
 from packages.compiler.semantic.specification import Snapshot, SpecError, value_sha
-from packages.contracts import CallContract, Diagnostic, OpenPineError, ReferenceContract, SourceSpan, ValueType
+from packages.contracts import CallContract, Diagnostic, LanguagePolicy, OpenPineError, ReferenceContract, SourceSpan, ValueType, VariableContract
 
 
 @dataclass(frozen=True)
@@ -39,6 +39,53 @@ class BoundConversion:
 
 
 @dataclass(frozen=True)
+class BoundNA:
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundLoad:
+    binding: VariableContract
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundBinary:
+    operator: str
+    left: BoundExpression
+    right: BoundExpression
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundConditional:
+    condition: BoundExpression
+    when_true: BoundExpression
+    when_false: BoundExpression
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundStore:
+    binding: VariableContract
+    expression: BoundExpression
+    declaration: bool
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundIf:
+    condition: BoundExpression
+    body: tuple[BoundStatement, ...]
+    otherwise: tuple[BoundStatement, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class BoundArgument:
     parameter_id: str
     expression: BoundExpression
@@ -55,7 +102,71 @@ class BoundCall:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional
+type BoundStatement = BoundCall | BoundStore | BoundIf
+
+
+@dataclass
+class BindingInfo:
+    declaration: parser.Declaration
+    scope_id: str
+    mutable: bool = False
+    value_type: ValueType | None = None
+
+    def contract(self):
+        span = self.declaration.span
+        return VariableContract(f"binding:{span.start}:{span.end}", self.declaration.name, self.value_type,
+                                self.declaration.mode, self.scope_id, span)
+
+
+class Resolver:
+    """Resolve lexical owners first, including writes that strengthen qualifiers."""
+
+    def __init__(self, fail):
+        self.fail = fail
+        self.references, self.declarations, self.assignments, self.call_variables = {}, {}, {}, {}
+        self.bindings = []
+
+    def expression(self, node, scopes):
+        if isinstance(node, parser.Reference):
+            self.references[id(node)] = next((scope[node.name] for scope in reversed(scopes) if node.name in scope), None)
+        elif isinstance(node, parser.Unary):
+            self.expression(node.operand, scopes)
+        elif isinstance(node, parser.Binary):
+            self.expression(node.left, scopes)
+            self.expression(node.right, scopes)
+        elif isinstance(node, parser.Conditional):
+            for child in (node.condition, node.when_true, node.when_false):
+                self.expression(child, scopes)
+        elif isinstance(node, parser.Call):
+            self.call_variables[id(node)] = any(node.name in scope for scope in scopes)
+            for argument in node.arguments:
+                self.expression(argument.expression, scopes)
+
+    def statements(self, statements, scopes=None, scope_id="scope:root"):
+        scopes = [{}] if scopes is None else scopes
+        for node in statements:
+            if isinstance(node, parser.Declaration):
+                if node.name in scopes[-1]:
+                    self.fail("LANGUAGE_INVALID", "DUPLICATE_VARIABLE", f"Variable {node.name!r} already exists in this scope.", node.span, "rule.scope")
+                self.expression(node.expression, scopes)
+                info = BindingInfo(node, scope_id, node.mode == "var")
+                scopes[-1][node.name] = info
+                self.declarations[id(node)] = info
+                self.bindings.append(info)
+            elif isinstance(node, parser.Reassignment):
+                info = next((scope[node.name] for scope in reversed(scopes) if node.name in scope), None)
+                if info is None:
+                    self.fail("LANGUAGE_INVALID", "ASSIGN_UNDEFINED", f"Cannot assign undeclared variable {node.name!r}.", node.span, "rule.scope")
+                info.mutable = True
+                self.assignments[id(node)] = info
+                self.expression(node.expression, scopes)
+            elif isinstance(node, parser.If):
+                self.expression(node.condition, scopes)
+                self.statements(node.body, [*scopes, {}], f"scope:{node.span.start}:then")
+                self.statements(node.otherwise, [*scopes, {}], f"scope:{node.span.start}:else")
+            else:
+                self.expression(node, scopes)
 
 
 def literal_type(value) -> ValueType:
@@ -74,6 +185,7 @@ class Catalog:
     def __init__(self, snapshot: Snapshot, capabilities: dict[str, tuple[tuple[str, ...], ...]], reference_slots=None, language_version=6):
         self.snapshot, self.capabilities = snapshot, capabilities
         self.language_version = language_version
+        self.policy = LanguagePolicy(**snapshot.language_policy(language_version))
         registry = snapshot.registry_for(language_version)
         self.rules = {}
         rules = {row["rule_id"]: row for row in registry["rules"]}
@@ -135,23 +247,87 @@ class Binder:
     def __init__(self, catalog: Catalog):
         self.catalog = catalog
         self.qualifiers = catalog.rules["rule.types"]["qualifier_order"]
+        self.resolver = Resolver(self.fail)
+
+    def qualifier(self, *expressions):
+        return max((expression.value_type.qualifier for expression in expressions), key=self.qualifiers.index)
+
+    def coerce(self, expression, base, code="ASSIGNMENT_TYPE"):
+        if expression.value_type.base == base:
+            return expression
+        target = ValueType(base, expression.value_type.qualifier)
+        if isinstance(expression, BoundNA) and base in ("int", "float"):
+            return BoundNA(target, expression.span)
+        if expression.value_type.base == "int" and base == "float":
+            return BoundConversion(expression, target, expression.span)
+        self.fail("LANGUAGE_INVALID", code, f"Cannot use {expression.value_type.base} as {base}.", expression.span, "rule.types")
+
+    def condition(self, expression):
+        if expression.value_type.base == "bool":
+            return expression
+        if self.catalog.policy.numeric_conditions and expression.value_type.base in ("int", "float"):
+            return BoundConversion(expression, ValueType("bool", expression.value_type.qualifier), expression.span)
+        self.fail("LANGUAGE_INVALID", "CONDITION_TYPE", "Condition requires a boolean value.", expression.span, "rule.types")
+
+    def common(self, left, right, span):
+        bases = {left.value_type.base, right.value_type.base}
+        if bases <= {"int", "float", "na"}:
+            base = "float" if "float" in bases else "int" if "int" in bases else "float"
+            return self.coerce(left, base), self.coerce(right, base), base
+        if len(bases) == 1 and bases <= {"bool", "string"}:
+            return left, right, left.value_type.base
+        self.fail("LANGUAGE_INVALID", "EXPRESSION_TYPE", "Expression operands have incompatible types.", span, "rule.types")
 
     def fail(self, category: str, code: str, message: str, span: SourceSpan, rule="rule.binding"):
         raise OpenPineError(Diagnostic(category, code, message, span, rule, self.catalog.language_version))
 
     def expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
         if isinstance(expression, parser.Literal):
+            if expression.value is None:
+                return BoundNA(ValueType("na"), expression.span)
             return BoundLiteral(expression.value, literal_type(expression.value), expression.span)
         if isinstance(expression, parser.Reference):
+            info = self.resolver.references.get(id(expression))
+            if info is not None:
+                return BoundLoad(info.contract(), info.value_type, expression.span)
             contract = self.catalog.references.get(expression.name)
             if contract is None:
-                self.fail("PROFILE_UNCOVERED", "VALUE_REFERENCE", f"Reference {expression.name!r} is outside this implementation profile.", expression.span)
+                known = any(row["name"] == expression.name and row["category"] == "variables" for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
+                self.fail("PROFILE_UNCOVERED" if known else "LANGUAGE_INVALID", "VALUE_REFERENCE" if known else "UNDEFINED_VARIABLE", f"No available variable {expression.name!r}.", expression.span, "rule.scope")
             return BoundReference(contract, contract.value_type, expression.span)
         if isinstance(expression, parser.Unary):
             operand = self.expression(expression.operand)
+            if expression.operator == "not":
+                operand = self.condition(operand)
+                return BoundUnary("not", operand, operand.value_type, expression.span)
             if operand.value_type.base not in ("int", "float"):
                 self.fail("LANGUAGE_INVALID", "UNARY_TYPE", "Unary signs require a numeric value.", expression.span, "rule.types")
             return BoundUnary(expression.operator, operand, operand.value_type, expression.span)
+        if isinstance(expression, parser.Binary):
+            left, right = self.expression(expression.left), self.expression(expression.right)
+            operator = expression.operator
+            if operator in ("and", "or"):
+                left, right = self.condition(left), self.condition(right)
+                base = "bool"
+            else:
+                if operator == "%":
+                    self.fail("PROFILE_UNCOVERED", "OPERATOR_UNCOVERED", "Modulo is outside this language slice.", expression.span)
+                left, right, base = self.common(left, right, expression.span)
+                if operator in ("==", "!=", "<", "<=", ">", ">="):
+                    if operator not in ("==", "!=") and base not in ("int", "float"):
+                        self.fail("LANGUAGE_INVALID", "ORDERING_TYPE", "Ordering requires numeric operands.", expression.span, "rule.types")
+                    base = "bool"
+                elif base not in ("int", "float") and not (operator == "+" and base == "string"):
+                    self.fail("LANGUAGE_INVALID", "ARITHMETIC_TYPE", "Arithmetic requires numeric operands.", expression.span, "rule.types")
+                elif operator == "/" and (base == "float" or self.catalog.policy.integer_division == "float"):
+                    base = "float"
+            return BoundBinary(operator, left, right, ValueType(base, self.qualifier(left, right)), expression.span)
+        if isinstance(expression, parser.Conditional):
+            condition = self.condition(self.expression(expression.condition))
+            left, right, base = self.common(self.expression(expression.when_true), self.expression(expression.when_false), expression.span)
+            return BoundConditional(condition, left, right, ValueType(base, self.qualifier(condition, left, right)), expression.span)
+        if self.resolver.call_variables.get(id(expression)):
+            self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A variable cannot be called as a function.", expression.span, "rule.scope")
         candidates = self.catalog.signatures.get(expression.name)
         if not candidates:
             known = any(row["name"] == expression.name for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
@@ -214,6 +390,13 @@ class Binder:
                 bound[position] = BoundArgument(parameter["parameter_id"],
                     BoundLiteral(default["value"], literal_type(default["value"]), call.span), "default", None)
             value_type = bound[position].expression.value_type
+            if value_type.base == "na":
+                numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
+                if numeric:
+                    previous = bound[position]
+                    converted = self.coerce(previous.expression, "float" if "float" in numeric else numeric[0])
+                    bound[position] = BoundArgument(previous.parameter_id, converted, previous.origin, previous.source_index)
+                    value_type = converted.value_type
             if value_type.base == "int" and "float" in contract.parameter_types[position] and "int" not in contract.parameter_types[position] and ["int", "float"] in self.catalog.rules["rule.types"]["implicit_conversions"]:
                 previous = bound[position]
                 promoted = BoundConversion(previous.expression, ValueType("float", value_type.qualifier), previous.expression.span)
@@ -232,14 +415,48 @@ class Binder:
         result_type = arguments[contract.result_parameter].expression.value_type if contract.result_parameter is not None else contract.result_type
         return BoundCall(contract, arguments, order, result_type, call.span)
 
-    def program(self, statements: tuple[parser.Call, ...], empty_span: SourceSpan) -> tuple[BoundCall, ...]:
-        bound = tuple(self.expression(statement, top_level=True) for statement in statements)
-        declarations = [statement for statement in bound if "declaration" in statement.contract.effects]
+    def statements(self, statements, scope_id="scope:root"):
+        bound = []
+        for node in statements:
+            if isinstance(node, parser.Declaration):
+                info = self.resolver.declarations[id(node)]
+                value = self.expression(node.expression)
+                if value.value_type.base == "void":
+                    self.fail("LANGUAGE_INVALID", "VOID_ASSIGNMENT", "A void expression cannot initialize a variable.", node.span, "rule.types")
+                if node.annotation:
+                    value = self.coerce(value, node.annotation)
+                elif value.value_type.base == "na":
+                    self.fail("LANGUAGE_INVALID", "UNTYPED_NA", "A na initializer requires an explicit numeric type.", node.span, "rule.types")
+                info.value_type = ValueType(value.value_type.base, "series" if info.mutable else value.value_type.qualifier)
+                bound.append(BoundStore(info.contract(), value, True, node.span))
+            elif isinstance(node, parser.Reassignment):
+                info = self.resolver.assignments[id(node)]
+                value = self.coerce(self.expression(node.expression), info.value_type.base)
+                bound.append(BoundStore(info.contract(), value, False, node.span))
+            elif isinstance(node, parser.If):
+                condition = self.condition(self.expression(node.condition))
+                body = self.statements(node.body, f"scope:{node.span.start}:then")
+                otherwise = self.statements(node.otherwise, f"scope:{node.span.start}:else")
+                bound.append(BoundIf(condition, body, otherwise, node.span))
+            else:
+                if scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot"} for signature, _ in self.catalog.signatures.get(node.name, ())):
+                    self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls must be global.", node.span, "rule.scope")
+                bound.append(self.expression(node, top_level=scope_id == "scope:root"))
+        return tuple(bound)
+
+    @property
+    def bindings(self):
+        return tuple(info.contract() for info in self.resolver.bindings)
+
+    def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
+        self.resolver.statements(statements)
+        bound = self.statements(statements)
+        declarations = [statement for statement in bound if isinstance(statement, BoundCall) and "declaration" in statement.contract.effects]
         span = statements[0].span if statements else empty_span
         if len(declarations) != self.catalog.rules["rule.grammar"]["program_declaration_count"]:
             self.fail("LANGUAGE_INVALID", "DECLARATION_COUNT", "Exactly one indicator declaration is required.", span, "rule.grammar")
         if bound[0] is not declarations[0]:
             self.fail("PROFILE_UNCOVERED", "DECLARATION_ORDER", "This slice requires the declaration before output calls.", span, "rule.grammar")
-        if not any("emits_plot" in statement.contract.effects for statement in bound):
+        if not any(isinstance(statement, BoundCall) and "emits_plot" in statement.contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound

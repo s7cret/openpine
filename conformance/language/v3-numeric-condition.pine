@@ -1,0 +1,4 @@
+//@version=3
+study("Language v3")
+x = close ? 1 : 0
+plot(x)
