@@ -1,0 +1,131 @@
+{
+  "format": "pine-wiki.pratt-grammar.1",
+  "language_versions": [
+    6
+  ],
+  "authorship": "editorial_formalization_not_official_TradingView_grammar",
+  "directive_pattern": "^\\s*//@version=(\\d+)\\s*$",
+  "token_pattern": "(?P<SPACE>[ \\t]+)|(?P<NUMBER>(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)|(?P<STRING>\"(?:\\\\.|[^\"\\\\])*\"|\\x27(?:\\\\.|[^\\x27\\\\])*\\x27)|(?P<NAME>[A-Za-z_][A-Za-z_0-9]*(?:\\.[A-Za-z_][A-Za-z_0-9]*)*)|(?P<OP>:=|==|!=|<=|>=|[+*/%<>?:=(),\\[\\]-])",
+  "operators": [
+    {
+      "token": "or",
+      "precedence": 10,
+      "associativity": "left",
+      "evaluation": "lazy"
+    },
+    {
+      "token": "and",
+      "precedence": 20,
+      "associativity": "left",
+      "evaluation": "lazy"
+    },
+    {
+      "token": "==",
+      "precedence": 30,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "!=",
+      "precedence": 30,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "<",
+      "precedence": 40,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": ">",
+      "precedence": 40,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "<=",
+      "precedence": 40,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": ">=",
+      "precedence": 40,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "+",
+      "precedence": 50,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "-",
+      "precedence": 50,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "*",
+      "precedence": 60,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "/",
+      "precedence": 60,
+      "associativity": "left",
+      "evaluation": "eager"
+    },
+    {
+      "token": "%",
+      "precedence": 60,
+      "associativity": "left",
+      "evaluation": "eager"
+    }
+  ],
+  "unary": [
+    "-",
+    "+",
+    "not"
+  ],
+  "postfix": [
+    "call",
+    "history_index"
+  ],
+  "productions": {
+    "program": "directive statement+",
+    "statement": "declaration | reassignment | if_block | once_block | expression",
+    "declaration": "[var|varip] [int|float|bool|string] NAME = expression | [NAME (, NAME)+] = expression",
+    "reassignment": "NAME := expression",
+    "if_block": "if expression NEWLINE INDENT statement+ DEDENT [else NEWLINE INDENT statement+ DEDENT]",
+    "once_block": "once [expression] NEWLINE INDENT statement+ DEDENT",
+    "expression": "Pratt(operators, unary, postfix) | expression ? expression : expression",
+    "primary": "literal | NAME | ( expression ) | [ expression (, expression)* ]",
+    "call": "NAME ( [argument (, argument)*] )",
+    "argument": "[NAME =] expression"
+  },
+  "indentation": {
+    "block_spaces": 4,
+    "line_wrap_in_parentheses": "any",
+    "line_wrap_in_square_brackets": {
+      "effective_from": "2026-09",
+      "date_precision": "month",
+      "spaces": "any"
+    }
+  },
+  "uncovered_keywords": [
+    "type",
+    "enum",
+    "import",
+    "export",
+    "strategy",
+    "method",
+    "for",
+    "while",
+    "switch",
+    "=>"
+  ]
+}

@@ -1,0 +1,219 @@
+"""Admission tests, not claims of executing Pine programs."""
+
+import copy
+import shutil
+import socket
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from tools.specification import (
+    ROOT, SpecError, coverage, encode, file_map, load_snapshot, loads,
+    read_json, require_python, safe_path, sha,
+)
+
+
+class SpecificationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if sys.version_info[:3] != (3, 14, 8):
+            raise RuntimeError("Tests must run on Python 3.14.8")
+        cls.temporary_root = ROOT / ".runtime/spec-tests"
+        cls.temporary_root.mkdir(parents=True, exist_ok=True)
+        cls.snapshot = load_snapshot()
+
+    def copied_root(self):
+        temporary = tempfile.TemporaryDirectory(prefix="case-", dir=self.temporary_root)
+        if not Path(temporary.name).resolve().is_relative_to(self.temporary_root.resolve()):
+            raise RuntimeError("Unexpected test temporary path")
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        shutil.copytree(ROOT / "spec", root / "spec")
+        return root
+
+    def repin(self, root, *, source_bundle=False):
+        """Simulate a newly proposed release with consistent byte hashes."""
+        lock = read_json(root / "spec/lock.json")
+        bundle = root / lock["snapshot"]
+        manifest = read_json(bundle / "manifest.json")
+        source = bundle / manifest["semantic_bundle"]
+        source_manifest = read_json(source / "manifest.json")
+        if source_bundle:
+            files = file_map(source)
+            files.pop("manifest.json")
+            source_manifest["files"] = files
+            for name in ("semantic", "documentation", "evidence"):
+                source_manifest[f"{name}_hash"] = files[f"{name}.json"]
+            (source / "manifest.json").write_bytes(encode(source_manifest))
+            lock["semantic_hash"] = source_manifest["semantic_hash"]
+        files = file_map(bundle)
+        files.pop("manifest.json")
+        manifest["files"] = files
+        (bundle / "manifest.json").write_bytes(encode(manifest))
+        lock["manifest_sha256"] = sha((bundle / "manifest.json").read_bytes())
+        for path in lock["profiles"]:
+            lock["profiles"][path] = sha((root / path).read_bytes())
+        (root / "spec/lock.json").write_bytes(encode(lock))
+
+    def expect_error(self, code, operation):
+        with self.assertRaises(SpecError) as caught:
+            operation()
+        self.assertEqual(caught.exception.code, code)
+
+    def test_interpreter_and_supported_python_boundary(self):
+        self.assertEqual(sys.version_info[:3], (3, 14, 8))
+        for version in ((3, 13, 9), (3, 15, 0)):
+            with self.subTest(version=version), patch("tools.specification.sys.version_info", version):
+                self.expect_error("PYTHON_VERSION", require_python)
+
+    def test_all_versions_keep_independent_profiles_and_zero_execution_claims(self):
+        report = coverage(self.snapshot)
+        self.assertEqual(report["reference_entries"], 4631)
+        self.assertEqual([row["reference_entries"] for row in report["versions"]],
+                         [315, 365, 361, 626, 1444, 1520])
+        for version in range(1, 7):
+            profile = self.snapshot.profile(version)
+            self.assertEqual(profile["language_version"], version)
+            self.assertEqual(profile["execution_support"], "not_implemented")
+            self.assertEqual(profile["inheritance"], "explicit_only")
+            row = report["versions"][version - 1]
+            self.assertEqual(row["openpine_implementation"]["executed_programs"], 0)
+            if version < 6:
+                self.assertEqual(row["admitted_assertions"], 0)
+
+    def test_profiles_and_resolved_values_are_returned_as_copies(self):
+        profile = self.snapshot.profile(6)
+        profile["semantic_profile_ids"].clear()
+        self.assertTrue(self.snapshot.profile(6)["semantic_profile_ids"])
+        fact = next(row for row in self.snapshot.registry["assertions"]
+                    if row["property_path"] == "signature" and row["value"]["operation"] == "numeric.abs")
+        resolved = self.snapshot.resolve(fact["assertion_id"], 6)
+        self.assertEqual(resolved["operation"], "numeric.abs")
+        resolved["operation"] = "changed"
+        self.assertEqual(self.snapshot.resolve(fact["assertion_id"], 6)["operation"], "numeric.abs")
+        self.expect_error("PROFILE_UNCOVERED", lambda: self.snapshot.resolve(fact["assertion_id"], 5))
+        self.expect_error("PROFILE_UNCOVERED", lambda: self.snapshot.resolve(fact["assertion_id"], 6, "realtime"))
+
+    def test_unsupported_version_never_falls_back_to_v6(self):
+        self.assertEqual(self.snapshot.profile()["language_version"], 1)
+        for version in (0, 7, True, "6"):
+            with self.subTest(version=version):
+                self.expect_error("LANGUAGE_VERSION_UNSUPPORTED", lambda: self.snapshot.profile(version))
+
+    def test_unresolved_v5_defaults_remain_unusable(self):
+        facts = coverage(self.snapshot)["versions"][4]["unresolved_assertion_refs"]
+        self.assertEqual(len(facts), 3)
+        for fact in facts:
+            self.expect_error("SPEC_UNRESOLVED", lambda: self.snapshot.resolve(fact, 5))
+        self.expect_error("SPEC_UNRESOLVED", lambda: self.snapshot.resolve("missing.fact", 6))
+
+    def test_reference_spellings_never_become_active_defaults(self):
+        study = next(entry for entry in self.snapshot.references[1]["entries"] if entry["name"] == "study")
+        overlay = next(parameter for parameter in study["parameters"] if parameter["name"] == "overlay")
+        self.assertEqual(overlay["default_claim"]["spellings"], ["false"])
+        self.assertFalse(study["executable_contract"])
+        self.assertEqual(study["review_status"], "reference_only")
+
+    def test_reader_works_with_network_disabled(self):
+        with patch.object(socket, "create_connection", side_effect=AssertionError("unexpected network")), \
+             patch.object(socket, "getaddrinfo", side_effect=AssertionError("unexpected DNS")):
+            self.assertEqual(load_snapshot().lock, self.snapshot.lock)
+
+    def test_changed_or_missing_file_is_rejected(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing):
+                root = self.copied_root()
+                path = root / self.snapshot.lock["snapshot"] / "reference/v1.json"
+                if missing:
+                    path.unlink()
+                else:
+                    path.write_bytes(path.read_bytes() + b" ")
+                self.expect_error("SPEC_HASH", lambda: load_snapshot(root))
+
+    def test_extra_snapshot_file_is_rejected(self):
+        root = self.copied_root()
+        (root / self.snapshot.lock["snapshot"] / "extra.json").write_bytes(b"{}")
+        self.expect_error("SPEC_FILES", lambda: load_snapshot(root))
+
+    def test_manifest_rehash_without_external_pin_is_rejected(self):
+        root = self.copied_root()
+        path = root / self.snapshot.lock["snapshot"] / "manifest.json"
+        value = read_json(path)
+        value["source_commit"] = "0" * 40
+        path.write_bytes(encode(value))
+        self.expect_error("SPEC_HASH", lambda: load_snapshot(root))
+
+    def test_review_cannot_be_bypassed_by_rehashing_semantic_files(self):
+        root = self.copied_root()
+        bundle = root / self.snapshot.lock["snapshot"]
+        registry_path = bundle / "review/registry.json"
+        registry = read_json(registry_path)
+        fact = next(row for row in registry["assertions"]
+                    if row["property_path"] == "signature" and row["value"]["operation"] == "numeric.abs")
+        fact["value"]["parameters"][0]["requiredness"]["state"] = "optional"
+        registry_path.write_bytes(encode(registry))
+        semantic_path = bundle / read_json(bundle / "manifest.json")["semantic_bundle"] / "semantic.json"
+        semantic = read_json(semantic_path)
+        next(row for row in semantic["registry"]["assertions"]
+             if row["assertion_id"] == fact["assertion_id"])["value"] = fact["value"]
+        semantic_path.write_bytes(encode(semantic))
+        self.repin(root, source_bundle=True)
+        self.expect_error("SPEC_REVIEW", lambda: load_snapshot(root))
+
+    def test_cross_version_profile_inheritance_is_rejected_even_if_repinned(self):
+        root = self.copied_root()
+        path = root / "spec/profiles/pine-v5.json"
+        profile = read_json(path)
+        profile["semantic_profile_ids"] = self.snapshot.profile(6)["semantic_profile_ids"]
+        path.write_bytes(encode(profile))
+        self.repin(root)
+        self.expect_error("SPEC_VERSION", lambda: load_snapshot(root))
+
+    def test_duplicate_identity_is_rejected_even_if_repinned(self):
+        root = self.copied_root()
+        bundle = root / self.snapshot.lock["snapshot"]
+        path = bundle / read_json(bundle / "manifest.json")["semantic_bundle"] / "identities.json"
+        identities = read_json(path)
+        identities["aliases"].append(copy.deepcopy(identities["aliases"][0]))
+        path.write_bytes(encode(identities))
+        self.repin(root, source_bundle=True)
+        self.expect_error("SPEC_IDENTITY", lambda: load_snapshot(root))
+
+    def test_unknown_bundle_schema_is_rejected_even_if_repinned(self):
+        root = self.copied_root()
+        bundle = root / self.snapshot.lock["snapshot"]
+        path = bundle / read_json(bundle / "manifest.json")["semantic_bundle"] / "manifest.json"
+        manifest = read_json(path)
+        manifest["schema_version"] = "2.0.0"
+        path.write_bytes(encode(manifest))
+        self.repin(root)
+        self.expect_error("SPEC_SCHEMA", lambda: load_snapshot(root))
+
+    def test_catalog_provenance_mismatch_is_rejected_even_if_repinned(self):
+        root = self.copied_root()
+        path = root / self.snapshot.lock["snapshot"] / "reference/v1.json"
+        reference = read_json(path)
+        reference["source_catalog_sha256"] = "0" * 64
+        path.write_bytes(encode(reference))
+        self.repin(root)
+        self.expect_error("SPEC_PROVENANCE", lambda: load_snapshot(root))
+
+    def test_strict_json_and_safe_paths(self):
+        for text in ('{"a":1,"a":2}', '{"a":NaN}', '{"a":Infinity}', '{"a":1e999}'):
+            self.expect_error("SPEC_JSON", lambda: loads(text))
+        for path in ("../outside", "/absolute", "C:/outside", "x\\y", "a/../b"):
+            self.expect_error("SPEC_PATH", lambda: safe_path(ROOT, path))
+
+    def test_local_schema_rejects_remote_references(self):
+        from tools.specification import validate_schema
+        self.expect_error("SPEC_SCHEMA", lambda: validate_schema({}, {"$ref": "https://example.invalid/schema"}))
+
+    def test_coverage_is_derived_from_admitted_data(self):
+        self.assertEqual((ROOT / "spec/coverage.json").read_bytes(), encode(coverage(self.snapshot)))
+        self.assertEqual(coverage(self.snapshot)["versions"][5]["admitted_assertions"], 55)
+
+
+if __name__ == "__main__":
+    unittest.main()

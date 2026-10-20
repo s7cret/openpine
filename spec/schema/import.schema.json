@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:openpine:spec:import:1",
+  "$defs": {
+    "lock": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "openpine.spec.lock.1"
+        },
+        "snapshot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "semantic_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "semantic_profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "profiles": {
+          "type": "object",
+          "properties": {
+            "spec/profiles/pine-v1.json": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "spec/profiles/pine-v2.json": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "spec/profiles/pine-v3.json": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "spec/profiles/pine-v4.json": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "spec/profiles/pine-v5.json": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "spec/profiles/pine-v6.json": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "spec/profiles/pine-v1.json",
+            "spec/profiles/pine-v2.json",
+            "spec/profiles/pine-v3.json",
+            "spec/profiles/pine-v4.json",
+            "spec/profiles/pine-v5.json",
+            "spec/profiles/pine-v6.json"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "snapshot",
+        "source_commit",
+        "manifest_sha256",
+        "semantic_hash",
+        "semantic_profile_id",
+        "schema_sha256",
+        "profiles"
+      ],
+      "additionalProperties": false
+    },
+    "manifest": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "openpine.spec.snapshot.1"
+        },
+        "release": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "source_inputs": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "semantic_bundle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "import_policy": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "release",
+        "source_commit",
+        "source_inputs",
+        "semantic_bundle",
+        "files",
+        "import_policy"
+      ],
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "openpine.spec.profile.1"
+        },
+        "profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "language_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "snapshot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "semantic_profile_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "inheritance": {
+          "const": "explicit_only"
+        },
+        "execution_support": {
+          "const": "not_implemented"
+        },
+        "default_when_unspecified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "profile_id",
+        "language_version",
+        "snapshot",
+        "reference",
+        "semantic_profile_ids",
+        "inheritance",
+        "execution_support",
+        "default_when_unspecified"
+      ],
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "openpine.spec.reference.1"
+        },
+        "language_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "source_snapshot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_coverage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_catalog_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_issues": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entry_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "language_version": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "minLength": 1
+              },
+              "namespace": {
+                "type": "string"
+              },
+              "symbol_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "overload_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "structure_role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "family_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "basis": {
+                "type": "string",
+                "minLength": 1
+              },
+              "syntax_spellings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "parameters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "parameter_id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "type_spellings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "requiredness_claim": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "default_claim": {
+                      "type": "object",
+                      "properties": {
+                        "state": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "spellings": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "evidence_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        }
+                      },
+                      "required": [
+                        "state",
+                        "spellings",
+                        "evidence_sha256"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "parameter_id",
+                    "name",
+                    "type_spellings",
+                    "requiredness_claim",
+                    "default_claim"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "result_type_spellings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "sources": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "source_record_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "review_status": {
+                "const": "reference_only"
+              },
+              "executable_contract": {
+                "const": false
+              }
+            },
+            "required": [
+              "entry_id",
+              "language_version",
+              "name",
+              "category",
+              "namespace",
+              "symbol_id",
+              "overload_id",
+              "structure_role",
+              "family_id",
+              "basis",
+              "syntax_spellings",
+              "parameters",
+              "result_type_spellings",
+              "sources",
+              "source_record_sha256",
+              "review_status",
+              "executable_contract"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "language_version",
+        "source_snapshot",
+        "source_coverage",
+        "source_catalog_sha256",
+        "source_issues",
+        "entries"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

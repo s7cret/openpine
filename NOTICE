@@ -1,0 +1,8 @@
+OpenPine's MIT license applies to its own code.
+
+The local Pine specification snapshot includes attributed reference metadata,
+editorial rules, examples and historical evidence originating in Pine Wiki.
+Those materials retain their original rights and notices; importing them does
+not apply OpenPine's MIT license to third-party material.
+
+See THIRD_PARTY.md and spec/bundles/pine-spec-20261020.1/attribution/.

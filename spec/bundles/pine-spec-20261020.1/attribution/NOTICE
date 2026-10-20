@@ -1,0 +1,19 @@
+Pine Wiki is an unofficial reference, not affiliated with or endorsed by TradingView.
+Pine Script and TradingView names and marks belong to their respective owners.
+
+The project owner's choice of MIT covers the project's own code only.
+Original reference prose, examples, archived snapshots, and derived translations
+remain subject to their respective copyright holders' rights and terms.
+No permission to redistribute those materials is granted by the MIT license here.
+
+The catalog keeps per-item source URLs and saved-source SHA-256 identifiers.
+These identify provenance; they are not license grants. The same distinction
+applies to downloaded JSON catalogs.
+
+Primary reference: https://www.tradingview.com/pine-script-reference/
+Documentation: https://www.tradingview.com/pine-script-docs/
+Terms: https://www.tradingview.com/policies/
+Archived reference snapshots: https://web.archive.org/
+Other cited GitHub repositories and gists: see source URLs in the catalogs.
+
+See THIRD_PARTY.md and docs/source-inventory.csv for the source inventory.
