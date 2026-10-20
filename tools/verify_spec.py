@@ -19,7 +19,7 @@ def main() -> int:
     print(f"Specification verified: {report['reference_entries']} reference entries, Pine v1-v6.")
     for row in report["versions"]:
         print(f"v{row['language_version']}: {row['reference_entries']} references, "
-              f"{row['admitted_assertions']} admitted assertions; OpenPine not implemented.")
+              f"{row['admitted_assertions']} admitted assertions.")
     return 0
 
 

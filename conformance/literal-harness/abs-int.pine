@@ -1,0 +1,3 @@
+//@version=6
+indicator("Integer abs")
+plot(math.abs(-7), "absolute")

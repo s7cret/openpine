@@ -76,10 +76,10 @@ class SpecificationTests(unittest.TestCase):
         for version in range(1, 7):
             profile = self.snapshot.profile(version)
             self.assertEqual(profile["language_version"], version)
-            self.assertEqual(profile["execution_support"], "not_implemented")
+            self.assertNotIn("execution_support", profile)
             self.assertEqual(profile["inheritance"], "explicit_only")
             row = report["versions"][version - 1]
-            self.assertEqual(row["openpine_implementation"]["executed_programs"], 0)
+            self.assertNotIn("openpine_implementation", row)
             if version < 6:
                 self.assertEqual(row["admitted_assertions"], 0)
 

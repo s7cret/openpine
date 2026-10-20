@@ -1,0 +1,3 @@
+//@version=6
+indicator("R6 first run")
+plot(math.abs(-2.5))

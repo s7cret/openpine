@@ -137,7 +137,7 @@
       "type": "object",
       "properties": {
         "schema_version": {
-          "const": "openpine.spec.profile.1"
+          "const": "openpine.spec.profile.2"
         },
         "profile_id": {
           "type": "string",
@@ -167,9 +167,6 @@
         "inheritance": {
           "const": "explicit_only"
         },
-        "execution_support": {
-          "const": "not_implemented"
-        },
         "default_when_unspecified": {
           "type": "boolean"
         }
@@ -182,7 +179,6 @@
         "reference",
         "semantic_profile_ids",
         "inheritance",
-        "execution_support",
         "default_when_unspecified"
       ],
       "additionalProperties": false

@@ -1,0 +1,3 @@
+//@version=6
+indicator("Bool is not a number")
+plot(math.abs(true))

@@ -105,12 +105,12 @@ def prepare(source: Path, source_commit: str, release: str) -> tuple[dict[str, b
 
 def profile(version: int, snapshot: str, source_manifest: dict) -> dict:
     return {
-        "schema_version": "openpine.spec.profile.1", "profile_id": f"openpine.pine-v{version}.spec.1",
+        "schema_version": "openpine.spec.profile.2", "profile_id": f"openpine.pine-v{version}.spec.1",
         "language_version": version, "snapshot": snapshot, "reference": f"reference/v{version}.json",
         "default_when_unspecified": version == 1,
         "semantic_profile_ids": [source_manifest["semantic_profile_id"]]
                                 if version == source_manifest["language_version"] else [],
-        "inheritance": "explicit_only", "execution_support": "not_implemented",
+        "inheritance": "explicit_only",
     }
 
 

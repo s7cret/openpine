@@ -1,0 +1,3 @@
+//@version=6
+indicator("Duplicate argument")
+plot(math.abs(-2.5, number=-3.0))

@@ -1,4 +1,4 @@
-"""Single gate for the current R6 specification stage."""
+"""Single gate for the specification and first R6 execution slice."""
 
 import subprocess
 import sys
@@ -11,11 +11,12 @@ def main() -> int:
     if sys.version_info[:3] != (3, 14, 8):
         print("The R6 gate requires Python 3.14.8.", file=sys.stderr)
         return 2
-    for arguments in (("-m", "tools.verify_spec"), ("-m", "unittest", "discover", "-s", "tests", "-v")):
+    for arguments in (("-m", "tools.verify_spec"), ("-m", "unittest", "discover", "-s", "tests", "-v"),
+                      ("-m", "tools.conformance")):
         result = subprocess.run([sys.executable, "-X", "utf8", *arguments], cwd=ROOT, check=False)
         if result.returncode:
             return result.returncode
-    print("R6 specification gate passed on Python 3.14.8.")
+    print("R6 gate passed on Python 3.14.8.")
     return 0
 
 

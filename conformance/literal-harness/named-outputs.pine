@@ -1,0 +1,4 @@
+//@version=6
+indicator(overlay=true, title="Имена 🎄", shorttitle="R6")
+plot(title="same", series=math.abs(number=-3.0))
+plot(series=math.abs(+4.0), title="same")
